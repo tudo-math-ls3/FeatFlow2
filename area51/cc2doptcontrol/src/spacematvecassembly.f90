@@ -146,6 +146,11 @@ module spacematvecassembly
   ! Edge-oriented stabilisation; configured by dupsam as 'gamma'
   integer, parameter :: CCMASM_STAB_EDGEORIENTED      = 2
 
+  ! Streamline diffusion; configured by dupsam, new implementation
+  integer, parameter :: CCMASM_STAB_STREAMLINEDIFF2   = 3
+
+  ! Edge-oriented stabilisation; configured by dupsam as 'gamma', new implementation
+  integer, parameter :: CCMASM_STAB_EDGEORIENTED2     = 4
 !</constantblock>
 
 !<constantblock description="Matrix type ID's specifying the general matrix class to set up.">
@@ -319,8 +324,8 @@ module spacematvecassembly
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
     ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
-    integer :: iupwind1 = CCMASM_STAB_STREAMLINEDIFF
-    integer :: iupwind2 = CCMASM_STAB_STREAMLINEDIFF
+    integer :: iupwind1 = CCMASM_STAB_STREAMLINEDIFF2
+    integer :: iupwind2 = CCMASM_STAB_STREAMLINEDIFF2
     
     ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
     ! a nonlinearity is set up.
@@ -400,7 +405,7 @@ module spacematvecassembly
   ! when assembling it.
   type t_convecStabilisation
     ! Stabilisation type
-    integer :: iupwind = CCMASM_STAB_STREAMLINEDIFF
+    integer :: iupwind = CCMASM_STAB_STREAMLINEDIFF2
     
     ! Stabilisation parameter
     real(DP) :: dupsam = 0.0_DP
@@ -810,6 +815,7 @@ contains
     integer :: i,j
     type(t_optcoperator) :: roptcoperator
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
+    type(t_blockDiscretisation) :: rvelDiscr
     
     logical, parameter :: bnewmethod = .false.
     
@@ -875,12 +881,18 @@ contains
         ! assign some data are explicitely switched on again.
         rmatrix%RmatrixBlock(:,:)%dscaleFactor = 0.0_DP
         
+        ! Derive a discretisation structure for either primal or
+        ! dual variables.
+        call spdiscr_deriveBlockDiscr (rmatrixComponents%p_rdiscretisation, rvelDiscr, &
+                                       1, 3)
+        
         ! Primal equation
         ! ---------------
         ! In the first step, assemble the linear parts
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
         call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
+        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
         call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
             rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
             rmatrixComponents%Dtheta(1,1),&
@@ -923,6 +935,7 @@ contains
         
         call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3,4,6)
+        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
         select case (rmatrixComponents%idualSol)
         case (1)
           call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector1, &
@@ -944,6 +957,7 @@ contains
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
         call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
+        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
         call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
             rmatrixComponents%Diota(2,2),rmatrixComponents%Dalpha(2,2),&
             rmatrixComponents%Dtheta(2,2),&
@@ -988,6 +1002,7 @@ contains
         
         call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
             LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6,1,3)
+        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
         
         ! Assemble linear parts.
         call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
@@ -1071,6 +1086,7 @@ contains
         call lsysbl_releaseMatrix(rtempMatrix)
         if (rtempVector%NEQ .ne. 0) &
           call lsysbl_releaseVector (rtempVector)
+        call spdiscr_releaseBlockDiscr(rvelDiscr)
 
         !call matio_writeBlockMatrixHR (rmatrix, 'matrix',&
         !    .true., 0, 'matrix1.txt', '(E12.5)', 1E-10_DP)
@@ -1655,6 +1671,7 @@ contains
     logical :: bshared
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
     
       ! Is A11=A22 physically?
@@ -1715,6 +1732,44 @@ contains
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix)
                               
+        case (CCMASM_STAB_STREAMLINEDIFF2)
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rmatrixComponents%dnu
+          
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
+              (dnewtonT .eq. 0.0_DP)) then
+          
+            ! If the submatrices A12 and A21 exist, fill them with zero.
+            ! If they don't exist, we don't have to do anything.
+            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            end if
+            
+          else
+
+            ! Clear A12/A21 that may receive parts of the Newton matrix
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          
+          end if
+
+          ! Call the SD method to calculate the nonlinearity.
+          ! As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+          
         case (CCMASM_STAB_UPWIND)
         
           call output_line ('Upwind not supported.', &
@@ -1770,9 +1825,75 @@ contains
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix)
                               
-          ! Release the temp matrix.
-          call lsysbl_releaseMatrix (rmatrix)          
-        
+          ! Set up the jump stabilisation structure.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = rstabilisation%dupsam
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          
+          ! Matrix weight
+          rjumpStabil%dtheta = dgamma
+
+          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! We can assemble the jump part any time as it's independent of any
+          ! convective parts...
+          call conv_jumpStabilisation2d (&
+                              rjumpStabil, CONV_MODMATRIX, &
+                              rmatrix%RmatrixBlock(1,1))   
+
+          !if (.not. bshared) then
+          !  call conv_jumpStabilisation2d (&
+          !                      rjumpStabil, CONV_MODMATRIX, &
+          !                      rmatrix%RmatrixBlock(2,2))   
+          !end if
+
+        case (CCMASM_STAB_EDGEORIENTED2)
+          ! Jump stabilisation.
+          ! In the first step, set up the matrix as above with central discretisation,
+          ! i.e. call SD to calculate the matrix without SD stabilisation.
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rmatrixComponents%dnu
+          
+          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          rstreamlineDiffusion2%dupsam = 0.0_DP
+          
+          ! Matrix weight
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
+              (dnewtonT .eq. 0.0_DP)) then
+
+            ! If the submatrices A12 and A21 exist, fill them with zero.
+            ! If they don't exist, we don't have to do anything.
+            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+            end if
+            
+          else
+
+            ! Clear A12/A21 that receives parts of the Newton matrix
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          
+            ! Activate the submatrices A12 and A21 if they aren't.
+            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+            
+          end if
+          
+          ! Call the SD method to calculate the nonlinearity.
+          ! As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector)
+                              
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -1808,7 +1929,7 @@ contains
         ! That's the Stokes-case. Jump stabilisation is possible...
       
         select case (rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED)
+        case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
           
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -2153,7 +2274,7 @@ contains
 !      ! matrix to the Y-discretisation structure.
 !      ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
 !      ! so this is not really necessary - we do this for sure...
-!      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+!      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
 !          p_rdiscretisation%RspatialDiscr(2))
 !                                       
 !      ! A 'full tensor matrix' consists also of blocks A12 and A21.
@@ -2319,7 +2440,7 @@ contains
 !      ! matrix to the Y-discretisation structure.
 !      ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
 !      ! so this is not really necessary - we do this for sure...
-!      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(5,5),&
+!      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(5,5),&
 !          p_rdiscretisation%RspatialDiscr(5))
 !                                          
 !      ! A 'full tensor matrix' consists also of blocks A12 and A21.
@@ -3464,6 +3585,7 @@ contains
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_convecStabilisation) :: rstabilisation    
     type(t_optcoperator) :: roptcoperator
+    type(t_blockDIscretisation) :: rvelDiscr
     
     logical, parameter :: bnewmethod = .false.
     
@@ -3693,10 +3815,16 @@ contains
       case (3)
         call lsysbl_deriveSubvector(rvector3,rvectorDual, 4,5,.true.)
       end select
-      
+
+      ! Create a block discretisation by deriving it from the 'full' matrix.
+      ! This will serve as a local discretisation structure for all
+      ! velocity modifications.
+      call spdiscr_deriveBlockDiscr (rmatrixComponents%p_rdiscretisation, &
+          rvelDiscr, 1, 2)
+
       ! Create a 2x2 matrix based on the structure of the FE space.
       ! The matrix does not need any entries, we only need the structure.
-      call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D)
+      call lsysbl_createMatBlockByDiscr (rvelDiscr,rtempMatrix)
       call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
           rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
@@ -3705,7 +3833,6 @@ contains
           rtempMatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixStokes,&
           rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsysbl_updateMatStrucInfo (rtempMatrix)
 
       ! 1.) Primal equation, y*grad(.), probably + grad(.)*y
       !
@@ -3840,6 +3967,7 @@ contains
       end if
       
       ! Release the temp vectors/matrices, that's it.
+      call spdiscr_releaseBlockDiscr(rvelDiscr)
       call lsysbl_releaseVector (rvectorDual)
       call lsysbl_releaseVector (rvectorPrimal)
       call lsysbl_releaseMatrix (rtempMatrix)
@@ -4463,6 +4591,7 @@ contains
     logical :: bshared
     type(t_convUpwind) :: rupwind
     type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
+    type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(t_jumpStabilisation) :: rjumpStabil
     
       ! Is A11=A22 physically?
@@ -4499,6 +4628,29 @@ contains
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rx,rb)
                               
+        case (CCMASM_STAB_STREAMLINEDIFF2)
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rmatrixComponents%dnu
+          
+          rstreamlineDiffusion2%dtheta = dcx
+                    
+          ! Set stabilisation parameter
+          rstreamlineDiffusion2%dupsam = rstabilisation%dupsam
+          
+          ! Matrix weights
+          rstreamlineDiffusion2%ddelta  = dgamma
+          rstreamlineDiffusion2%ddeltaT = dgammaT
+          rstreamlineDiffusion2%dnewton = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          ! Call the SD method to calculate the nonlinearity.
+          ! As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
+              rx,rb,rvector)
+
         case (CCMASM_STAB_UPWIND)
         
           call output_line ('Upwind not supported.', &
@@ -4524,28 +4676,6 @@ contains
           rstreamlineDiffusion%dnewton           = dnewton
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-            
-          end if
-          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
@@ -4555,6 +4685,58 @@ contains
                               1.0_DP, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rx,rb)
+                              
+          ! Set up the jump stabilisation structure.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          
+          rjumpStabil%dtheta = dcx
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = rstabilisation%dupsam
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          
+          ! Matrix weight
+          rjumpStabil%dtheta = dgamma
+
+          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! We can assemble the jump part any time as it's independent of any
+          ! convective parts...
+          call conv_jumpStabilisation2d (&
+                              rjumpStabil, CONV_MODDEFECT, &
+                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+
+          if (.not. bshared) then
+            call conv_jumpStabilisation2d (&
+                                rjumpStabil, CONV_MODDEFECT, &
+                                rmatrix%RmatrixBlock(2,2),rx,rb)   
+          end if
+
+        case (CCMASM_STAB_EDGEORIENTED2)
+          ! Jump stabilisation.
+          ! In the first step, set up the matrix as above with central discretisation,
+          ! i.e. call SD to calculate the matrix without SD stabilisation.
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion2%dnu = rmatrixComponents%dnu
+          
+          rstreamlineDiffusion2%dtheta = dcx
+          
+          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          rstreamlineDiffusion2%dupsam = 0.0_DP
+          
+          ! Matrix weight
+          rstreamlineDiffusion2%ddelta   = dgamma
+          rstreamlineDiffusion2%ddeltaT  = dgammaT
+          rstreamlineDiffusion2%dnewton  = dnewton
+          rstreamlineDiffusion2%dnewtonT = dnewtonT
+          
+          ! Call the SD method to calculate the nonlinearity.
+          ! As velocity vector, specify rvector!
+          ! Therefore, the primal velcity is always used for assembling
+          ! that thing!
+          call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
+              rx,rb,rvector)
                               
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4593,7 +4775,7 @@ contains
         ! That's the Stokes-case. Jump stabilisation is possible...
       
         select case (rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED)
+        case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
           
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -4615,11 +4797,11 @@ contains
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rx,rb)   
 
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
-          end if
+          !if (.not. bshared) then
+          !  call conv_jumpStabilisation2d (&
+          !                      rjumpStabil, CONV_MODDEFECT, &
+          !                      rmatrix%RmatrixBlock(2,2),rx,rb)   
+          !end if
           
         case default
           ! No stabilisation

@@ -610,11 +610,15 @@ contains
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                               'IUPWIND1', i)
-    if (i .eq. 2) cmatBuildType = BILF_MATC_EDGEBASED
+    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
+        (i .eq. CCMASM_STAB_EDGEORIENTED2)) &
+       cmatBuildType = BILF_MATC_EDGEBASED
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                               'IUPWIND2', i)
-    if (i .eq. 2) cmatBuildType = BILF_MATC_EDGEBASED
+    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
+        (i .eq. CCMASM_STAB_EDGEORIENTED2)) &
+       cmatBuildType = BILF_MATC_EDGEBASED
   
     ! Initialise all levels...
     do i=rproblem%NLMIN,rproblem%NLMAX
@@ -712,7 +716,7 @@ contains
           rproblem%RlevelInfo(i)%rmatrixB1%NCOLS,LSYSSC_MATRIX9)
       call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
           LSYSSC_SETM_UNDEFINED)
-      call lsyssc_assignDiscretDirectMat (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
+      call lsyssc_assignDiscrDirectMat (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
           p_rdiscretisation%RspatialDiscr(3))
           
       ! -----------------------------------------------------------------------
@@ -834,7 +838,7 @@ contains
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
-    call lsyssc_assignDiscretDirectMat (p_rmatrixMass,&
+    call lsyssc_assignDiscrDirectMat (p_rmatrixMass,&
         rlevelInfo%rdiscretisationMass)
 
     ! Call the standard matrix setup routine to build the matrix.                    

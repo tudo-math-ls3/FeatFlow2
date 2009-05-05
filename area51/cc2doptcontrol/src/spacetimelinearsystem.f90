@@ -448,6 +448,10 @@ contains
 
         rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 3
+        
+        ! Switch off any stabilisation
+        rmatrixComponents%dupsam1 = 0.0_DP
+        rmatrixComponents%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -509,6 +513,10 @@ contains
 
         rmatrixComponents%iprimalSol = 1
         rmatrixComponents%idualSol = 1
+
+        ! Switch off any stabilisation
+        rmatrixComponents%dupsam1 = 0.0_DP
+        rmatrixComponents%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
@@ -617,6 +625,10 @@ contains
         rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 3
 
+        ! Switch off any stabilisation
+        rmatrixComponents%dupsam1 = 0.0_DP
+        rmatrixComponents%dupsam2 = 0.0_DP
+
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
         rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
@@ -674,6 +686,10 @@ contains
         
         rmatrixComponents%iprimalSol = 1
         rmatrixComponents%idualSol = 1
+
+        ! Switch off any stabilisation
+        rmatrixComponents%dupsam1 = 0.0_DP
+        rmatrixComponents%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
