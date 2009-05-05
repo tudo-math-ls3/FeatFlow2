@@ -2584,6 +2584,13 @@ contains
   ! Parameters at the end of the master file will overwrite
   ! the parameters from the files in simportdatafiles.
   !
+  ! Sub-files specified in the main file are searched in the following
+  ! directories:
+  ! 1.) sdirectory (if specified)
+  ! 2.) the directory that contains sfilename (if sfilename specifies
+  !     a directory)
+  ! 3.) current directory
+  !
   ! The parameters read from the file(s) are added to the parameter list
   ! rparlist, which has to be initialised with parlst_init before
   ! calling the routine.
@@ -2618,7 +2625,8 @@ contains
     character(LEN=PARLST_MLDATA), dimension(:), pointer :: p_Ssubfiles,p_SsubfilesTemp
     character(LEN=PARLST_MLDATA) :: sstring,smainfile
     integer :: nsubfiles,nnewsubfiles,j
-    logical :: bexists
+    logical :: bexists,bmainpath
+    character(LEN=PARLST_LENLINEBUF) :: smainpath
 
     ! Filename/path of the master dat file.
     ! Search at first in the specified path.
@@ -2632,6 +2640,15 @@ contains
       smainfile = sfilename
       inquire(file=smainfile, exist=bexists)
     end if
+    
+    if (.not. bexists) then
+      ! Cancel if the file does not exist.
+      return
+    end if
+    
+    ! Get the main path of the file.
+    call io_pathExtract (smainfile, smainpath)
+    bmainpath = smainpath .ne. ""
 
     ! Create a list of files to be read.
     allocate(p_Ssubfiles(1))
@@ -2648,11 +2665,28 @@ contains
 
       ! Get the filename including the path. 
       bexists = .false.
+      
+      ! 1.) Search in the directory "directory+filename" -- if sdirectory is specified.
+      
       if (present(sdirectory)) then
         ! First search in the specified directory.
         sstring = trim(sdirectory)//"/"//trim(p_Ssubfiles(icurrentsubfile))
         inquire(file=sstring, exist=bexists)
       end if
+
+      ! 2.) Search in the directory "smainfile+sfilename":
+
+      if (bmainpath .and. (.not. bexists)) then
+        ! If no directory is specified or if no file was found there,
+        ! directly search for the file without specifying the
+        ! directory. So we will also find files where an absolute
+        ! path is specified.
+        sstring = trim(smainpath)//"/"//trim(p_Ssubfiles(icurrentsubfile))
+        inquire(file=sstring, exist=bexists)
+      end if
+      
+      ! 3.) Search directly for the file "sfilename", assuming it contains
+      !     a directory specification.
       
       if (.not. bexists) then
         ! If no directory is specified or if no file was found there,

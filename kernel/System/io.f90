@@ -356,7 +356,7 @@ contains
     integer :: i
   
     ! Find the last "/" or "\" in sfile
-    i = scan(sfile,"/\")
+    i = scan(sfile,"/\",.true.)
     if (i .ne. 0) then
       ! Directory ends at position i.
       sfilepath = sfile(1:i-1)
