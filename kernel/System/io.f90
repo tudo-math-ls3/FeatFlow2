@@ -20,6 +20,12 @@
 !# 4.) io_deleteFile
 !#     -> Deletes a file.
 !#
+!# 5.) io_pathExtract
+!#     -> Extracts path information from a filename
+!#
+!# 6.) io_pathConcat
+!#     -> Concatenates a filename to a path.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -319,5 +325,77 @@ contains
     end do
     
   end subroutine io_readlinefromfile
+
+  ! ***************************************************************************
+
+  !<subroutine>
+
+  subroutine io_pathExtract (sfile, sfilepath, sfilename)
+  
+  !<description>
+    ! Extracts the path of a file from a path+filename string.
+  !</description>
+  
+  !<input>
+    ! Filename + path of a specific file (or directory).
+    character(len=*), intent(in) :: sfile
+  !</input>
+  
+  !<output>
+    ! Receives the directory that contains the specific file, 
+    ! or "" if no directory was specified in sfile.
+    character(len=*), intent(out) :: sfilepath
+
+    ! OPTIONAL: Receives the name of the file without a probably preceding
+    ! directory string.
+    character(len=*), intent(out), optional :: sfilename
+  !</output>
+  
+  !</subroutine>
+  
+    integer :: i
+  
+    ! Find the last "/" or "\" in sfile
+    i = scan(sfile,"/\")
+    if (i .ne. 0) then
+      ! Directory ends at position i.
+      sfilepath = sfile(1:i-1)
+      if (present(sfilename)) sfilename = sfile(i+1:)
+    else
+      ! No directory specified.
+      sfilepath = ""
+      if (present(sfilename)) sfilename = sfile
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<function>
+
+  function io_pathConcat (spath,sfilename) result (sfile)
+  
+  !<description>
+    ! Concatenates a filename to a path specifier.
+  !</description>
+  
+  !<input>
+    ! Path to the file.
+    character(len=*), intent(in) :: spath
+
+    ! Name of the file (or directory)
+    character(len=*), intent(in) :: sfilename
+  !</input>
+  
+  !<result>
+    ! Path + filename to a specific file (or directory).
+    character(len=LEN_TRIM(spath)+LEN_TRIM(sfilename)+1) :: sfile
+  !</result>
+  
+  !</function>
+  
+    sfile = trim(spath)//"/"//trim(sfilename)
+  
+  end function
 
 end module io
