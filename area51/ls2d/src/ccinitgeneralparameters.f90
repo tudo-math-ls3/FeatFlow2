@@ -55,7 +55,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_getLogFiles (slogfile,serrorfile)
+  subroutine cc_getLogFiles (slogfile,serrorfile,sbenchlogfile)
   
 !<description>
   ! Temporarily reads the output DAT file to get the names of the output
@@ -68,27 +68,46 @@ contains
   
   ! Name of the error log file.
   character(LEN=*), intent(OUT) :: serrorfile
+
+  ! Name of the benchmark log file.
+  character(LEN=*), intent(OUT) :: sbenchlogfile
 !</output>
 
 !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: sstring
+    character(LEN=SYS_STRLEN) :: sstring,smaster
+    logical :: bexists
 
     ! Init parameter list that accepts parameters for output files
     call parlst_init (rparlist)
+    
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
 
     ! Read parameters that configure the output
-    call parlst_readfromfile (rparlist, './data/output.dat')
+    inquire(file=smaster, exist=bexists)
+    
+    if (bexists) then
+      ! Read the master file. That either one contains all parameters or
+      ! contains references to subfiles with data.
+      call parlst_readfromfile (rparlist, smaster)
+    else
+      call parlst_readfromfile (rparlist, './data/output.dat')
+    end if
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'')
+                                'smsgLog',sstring,'''''')
     read(sstring,*) slogfile
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',sstring,'')
+                                'serrorLog',sstring,'''''')
     read(sstring,*) serrorfile
+
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                                'sbenchLog',sstring,'''''')
+    read(sstring,*) sbenchlogfile
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -115,16 +134,20 @@ contains
 !</subroutine>
 
     logical :: bexists
+    character(LEN=SYS_STRLEN) :: smaster
     
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
-    inquire(file='./data/master.dat', exist=bexists)
+    inquire(file=smaster, exist=bexists)
     
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
       ! contains references to subfiles with data.
-      call parlst_readfromfile (rparamList, './data/master.dat','./data')
+      call parlst_readfromfile (rparamList, smaster)
     else
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
@@ -206,7 +229,7 @@ contains
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',dnu,1000.0_DP)
 
-    dnu = 1E0_DP/dnu
+    dnu = 1.0_DP/dnu
     rproblem%dnu = dnu
     
     ! Get min/max level from the parameter file.
@@ -221,7 +244,12 @@ contains
                               'NLMAX',ilvmax,4)
 
     ! Initialise the level in the problem structure
-    rproblem%NLMIN = ilvmin
+    if(ilvmin .le. 0) then
+      rproblem%NLMIN = max(1,ilvmax+ilvmin)
+    else
+      rproblem%NLMIN = ilvmin
+    end if
+    
     rproblem%NLMAX = ilvmax
     
     ! Allocate memory for all the levels.
