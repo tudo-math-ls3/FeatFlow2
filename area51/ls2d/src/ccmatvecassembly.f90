@@ -536,7 +536,7 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
@@ -1499,7 +1499,8 @@ contains
           rcollection%DquickAccess(5) = rnonlinearCCMatrix%dgamma*rho2
           CALL lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,rmatrix2,&
                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-          
+
+          
           rtriform%itermcount=1
           rtriform%BconstantCoeff= .FALSE.
           rtriform%ballcoeffconstant = .FALSE.
@@ -1510,18 +1511,18 @@ contains
         
           CALL trilf_buildMatrixScalar (rtriform,.TRUE.,rmatrix2,&
                                     rvector%rvectorBlock(1),coeff_Conv,rcollection)
-         
+
           rtriform%Idescriptors(2,1)=DER_DERIV_Y
-        
-          CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrix2,&
-                                    rvector%rvectorBlock(2),coeff_Conv,rcollection)
+
+          CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrix2,&
+              rvector%rvectorBlock(2),coeff_Conv,rcollection)
         
           CALL lsyssc_scalarMatVec (rmatrix2, rvector%rvectorBlock(1), rdefect%rvectorBlock(1),&
                                    -1.0_DP, 1.0_DP)
           CALL lsyssc_scalarMatVec (rmatrix2, rvector%rvectorBlock(2), rdefect%rvectorBlock(2),&
                                    -1.0_DP, 1.0_DP)
-          
-          CALL lsyssc_releaseMatrix(rmatrix2)                   
+
+          CALL lsyssc_releaseMatrix(rmatrix2)
           
           ! Set up the jump stabilisation structure.
           ! There's not much to do, only initialise the viscosity...
@@ -1611,10 +1612,10 @@ contains
         
           CALL trilf_buildMatrixScalar (rtriform,.TRUE.,rmatrix2,&
                                     rvector%rvectorBlock(1),coeff_Conv,rcollection)
-         
+
           rtriform%Idescriptors(2,1)=DER_DERIV_Y
         
-          CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrix2,&
+          CALL trilf_buildMatrixScalar (rtriform,.FALSE.,rmatrix2,&
                                     rvector%rvectorBlock(2),coeff_Conv,rcollection)
         
           CALL lsyssc_scalarMatVec (rmatrix2, rvector%rvectorBlock(1), rdefect%rvectorBlock(1),&

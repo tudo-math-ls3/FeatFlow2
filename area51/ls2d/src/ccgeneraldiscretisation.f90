@@ -83,8 +83,6 @@ module ccgeneraldiscretisation
   use ccnonlinearcoreinit
   
   USE levelset
-  USE newtrilinearform
-  USE newlinearform
   
   implicit none
   
@@ -375,7 +373,7 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
     ! solution vector.
-    call spdiscr_initBlockDiscr2D (&
+    call spdiscr_initBlockDiscr (&
         rdiscretisation,nequations,rtriangulation,rboundary)
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
@@ -761,7 +759,7 @@ contains
     do i=rproblem%NLMIN,rproblem%NLMAX
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisationLS
      
-      call spdiscr_initBlockDiscr2D (p_rdiscretisation,1,&
+      call spdiscr_initBlockDiscr (p_rdiscretisation,1,&
           rproblem%RlevelInfo(i)%rtriangulation,rproblem%rboundary)
       call spdiscr_initDiscr_simple ( &
         p_rdiscretisation%RspatialDiscr(1),EL_EM30,CUB_G4X4, &
@@ -994,7 +992,7 @@ contains
       ! Change the discretisation structure of the mass matrix to the
       ! correct one; at the moment it points to the discretisation structure
       ! of the Stokes matrix...
-      call lsyssc_assignDiscretDirectMat (p_rmatrixMass,rlevelInfo%rdiscretisationMass)
+      call lsyssc_assignDiscrDirectMat (p_rmatrixMass,rlevelInfo%rdiscretisationMass)
 
       ! Call the standard matrix setup routine to build the matrix. 
      rproblem%rcollection%p_rvectorQuickAccess1 => rvector
@@ -1199,12 +1197,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: istart
+    integer :: istart
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
 
     ! Get the parameter what to do with rvector
@@ -1299,12 +1297,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: idestLevel
+    integer :: idestLevel
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
 

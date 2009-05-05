@@ -178,7 +178,7 @@ contains
     ! local variables
     real(DP) :: dtmp
     real(DP), dimension(3) :: Dnorms1,Dnorms2
-    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    integer, dimension(3) :: Cnorms
     type(t_timeError),target :: rtimeErrorLocal
 
     ! Calculate d:=u2-u1
@@ -189,8 +189,8 @@ contains
     !
     ! ||d||_l2
     Cnorms = LINALG_NORML2
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
-    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
 
     ! Compatibility note: For full compatibility to the old CC2D version, one must
     ! test (dtmp .LE. 1.0_DP) everywhere here instead of (dtmp .EQ. 0.0_DP) !
@@ -205,8 +205,8 @@ contains
     
     ! ||d||_max
     Cnorms = LINALG_NORMMAX
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
-    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
 
     dtmp = max(Dnorms2(1),Dnorms2(2))
     if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
@@ -298,10 +298,10 @@ contains
 
     ! local variables
     real(DP), dimension(3) :: Dnorms1
-    integer(PREC_VECIDX), dimension(3) :: Cnorms
+    integer, dimension(3) :: Cnorms
     type(t_timeDerivatives),target :: rtimeNormLocal
     type(t_timeDerivatives), pointer :: p_rtimeNorm
-    integer(PREC_VECIDX) :: nequ,neqp
+    integer :: nequ,neqp
 
     ! Write the results of the time error analysis either to the local analysis
     ! block or to the one given as parameter.
@@ -320,7 +320,7 @@ contains
     !
     ! ||d||_l2 / dtstep
     Cnorms = LINALG_NORML2
-    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
     
     p_rtimeNorm%drelUL2 = sqrt( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
         / (sqrt(real(nequ,DP)) * dtstep)

@@ -377,7 +377,7 @@ contains
     ! The new RHS will be set up in rtempVectorRhs. Assign the discretisation/
     ! boundary conditions of rrhs to that vector so that rtempVectorRhs
     ! acts as a RHS vector.
-    call lsysbl_assignDiscretIndirect(rrhs,rtempVectorRhs)
+    call lsysbl_assignDiscrIndirect(rrhs,rtempVectorRhs)
     
     ! DEBUG!!!
     !CALL lsysbl_getbase_double (rvector,p_Ddata)
@@ -582,7 +582,7 @@ contains
     logical :: babortTimestep
     
     integer :: irepetition
-    integer(I32) :: isolverStatus,isolverStatusPredictor
+    integer :: isolverStatus,isolverStatusPredictor
     type(t_timeError) :: rtimeerror
     type(t_timeDerivatives) :: rtimeDerivative
 

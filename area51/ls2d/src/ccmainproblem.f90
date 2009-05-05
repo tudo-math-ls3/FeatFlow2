@@ -213,7 +213,7 @@ contains
     call output_line('Initialising levelset function...')
      
     call cc_generateMatVecLS (p_rproblem,rvecLS,rrhsLS)
-    call initSolutionLS(p_rproblem,rvecLS) 
+    call initSolutionLS(p_rproblem,rvecLS)
     
     call stat_stopTimer(rtimerMatrixGeneration)
     call output_lbrk ()

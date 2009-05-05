@@ -1215,7 +1215,7 @@ contains
       ! Calculate the max-norm of the correction vector.
       ! This is used for the stopping criterium in cc_resNormCheck!
       Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      call lsysbl_vectorNormBlock(rd,Cnorms,rnonlinearIteration%DresidualCorr)
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not
@@ -1272,7 +1272,7 @@ contains
       ! local variables
       real(DP) :: dnewton
       integer :: ilev,icol
-      integer(PREC_MATIDX), dimension(1) :: Irows = (/1/)
+      integer, dimension(1) :: Irows = (/1/)
       type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
       type(t_vectorScalar), pointer :: p_rvectorTemp
       type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse
@@ -1598,7 +1598,7 @@ contains
         ! The other MAX-norms have to be calculated from U...
         
         Cnorms(:) = LINALG_NORMMAX
-        Dresiduals(:) = lsysbl_vectorNormBlock (rx,Cnorms)
+        call lsysbl_vectorNormBlock (rx,Cnorms,Dresiduals)
 
         dtmp = max(Dresiduals(1),Dresiduals(2))
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
@@ -1629,7 +1629,7 @@ contains
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
-        bdivergence = .not. (dres/dresOld .lt. 1E2)
+        bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
         if((ddelU .le. depsUR).and.(ddelP .le. depsPR)   .and. &
@@ -1707,7 +1707,7 @@ contains
 
     ! RESF := max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rrhs,Cnorms)
+    call lsysbl_vectorNormBlock (rrhs,Cnorms,DresTmp)
     dresF = max(DresTmp(1),DresTmp(2))
     if (dresF .lt. 1.0E-8_DP) dresF = 1.0_DP
 
@@ -1715,12 +1715,12 @@ contains
     ! RESU = -----------------------------
     !        max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rdefect,Cnorms)
+    call lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
     Dresiduals(1) = sqrt(DresTmp(1)**2+DresTmp(2)**2)/dresF
 
     ! DNORMU = || (U1,U2) ||_l2 
 
-    DresTmp = lsysbl_vectorNormBlock (rvector,Cnorms)
+    call lsysbl_vectorNormBlock (rvector,Cnorms,DresTmp)
     dnormU = sqrt(DresTmp(1)**2+DresTmp(2)**2)
     if (dnormU .lt. 1.0E-8_DP) dnormU = 1.0_DP
 
@@ -1761,7 +1761,7 @@ contains
   ! A t_nlsolNode structure that contains the configuration of the nonlinear
   ! solver. The parameters are initialised according to the information
   ! in the section sname of the parameter list rparamList
-  type(t_nlsolNode) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
 !</output>
 
 !</subroutine>
@@ -1810,6 +1810,10 @@ contains
     ! Initial damping parameter.
     call parlst_getvalue_double (p_rsection, 'domegaIni', &
                                  rnlSolver%domega, rnlSolver%domega)
+
+    ! We write out the data of the nonlinear solver to the benchmark
+    ! log file as well.
+    rnlSolver%coutputMode = OU_MODE_STD+OU_MODE_BENCHLOG
 
   end subroutine
 
@@ -1953,8 +1957,11 @@ contains
         
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+          if (rsolverNode%ioutputLevel .ge. 0) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
+                coutputMode=rsolverNode%coutputMode)
+          end if
           rsolverNode%iresult = 3
           exit
         end if
@@ -1964,8 +1971,11 @@ contains
         ! iteration would behave exactly as before!
         ! So in this case, there's nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+          if (rsolverNode%ioutputLevel .ge. 1) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
+                coutputMode=rsolverNode%coutputMode)
+          end if
           exit
         else
           ! Add the correction vector in rd to rx;
@@ -1991,6 +2001,11 @@ contains
         
           ! Check for divergence
           if (bdivergence) then
+            if (rsolverNode%ioutputLevel .ge. 0) then
+              call output_line ('NLSOL: Iteration '//&
+                  trim(sys_siL(ite,10))//' canceled, divergence detected!',&
+                  coutputMode=rsolverNode%coutputMode)
+            end if
             rsolverNode%iresult = 1
             exit
           end if

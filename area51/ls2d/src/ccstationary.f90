@@ -111,8 +111,11 @@ contains
         rnonlinearIteration,rvector,rrhs)
 
     ! Call the nonlinear solver to solve the core equation.
-    call cc_solveCoreEquation (rproblem,rnonlinearIteration,rnlSol,&
-        rvector,rrhs)             
+    
+    ! Implementation not complete, currently deactivated!!!
+    !call cc_solveCoreEquation (rproblem,rnonlinearIteration,rnlSol,&
+    !    rvector,rrhs)             
+    call sys_halt()
              
     ! Release the preconditioner
     call cc_releasePreconditioner (rnonlinearIteration)
@@ -121,11 +124,14 @@ contains
     call cc_doneNonlinearLoop (rnonlinearIteration)
              
     call output_lbrk()
-    call output_line ('Nonlinear solver statistics')
-    call output_line ('---------------------------')
-    call output_line ('Intial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
+    call output_line ('Nonlinear solver statistics',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('---------------------------',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
     
   end subroutine
 
