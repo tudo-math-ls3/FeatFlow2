@@ -335,10 +335,10 @@ istabilisation = 1
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.05
+dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_AMR4
+ucdsolution = out/zpinch_energy_AMR3_run2
 
 # file for UCD output of error
 ucderror = out/
@@ -383,13 +383,13 @@ dinitialTime = 0.0
 dfinalTime = 0.9
 
 # initial time step size
-dinitialStep = 2.5e-5
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 2.5e-5
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 2.5e-5
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 1
@@ -743,7 +743,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 4
+npreadapt = 3
 
 # number of adaptation steps
 nadapt = 0
@@ -752,20 +752,20 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 1e-3
+dstepadapt = 3e-3
 
 # maximum number of refinement levels
-nsubdividemax = 4
+nsubdividemax = 3
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1e4
+drefinementTolerance = 0.8
 
 # coarsening tolerance
-dcoarseningTolerance = 1e3
+dcoarseningTolerance = 0.2
 
 
 ################################################################################
@@ -779,7 +779,7 @@ dcoarseningTolerance = 1e3
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 6
+ierrorestimator = 1
 
 # type or grid indicator
 # 0 = as is
@@ -788,16 +788,16 @@ ierrorestimator = 6
 igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.05
+dnoisefilter = 0.01
 
 # absolute filter
-dabsfilter = 0.001
+dabsfilter = 0.0001
 
 # number of protection layers
-nprotectLayers = 3
+nprotectLayers = 5
 
 # tolerance for protection layers
-dprotectLayerTolerance = 0.3
+dprotectLayerTolerance = 0.8
 
 # type of error variables
 #   density
@@ -809,4 +809,4 @@ dprotectLayerTolerance = 0.3
 #   machnumber
 serrorvariable(2) =
   density
-  energy
+  velocity_magnitude

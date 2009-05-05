@@ -1611,7 +1611,7 @@ contains
 
     ! local variables
     type(t_vectorScalar) :: rvectorScalar, rvectorTmp
-    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_Ddata, p_DdataTmp
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
@@ -1717,10 +1717,13 @@ contains
       else
         
         ! Update the global error
-        derror = derror + derrorTmp
+        derror = max(derror, derrorTmp)
 
         ! Update the element-wise error
-        call lsyssc_vectorLinearComb(rvectorTmp, rerror, 1.0_DP, 1.0_DP)
+        call lsyssc_getbase_double(rvectorTmp, p_DdataTmp)
+        call lsyssc_getbase_double(rerror, p_Ddata)
+        p_Ddata = max(p_Ddata, p_DdataTmp)
+!!$        call lsyssc_vectorLinearComb(rvectorTmp, rerror, 1.0_DP, 1.0_DP)
       end if
 
       ! Release scalar variable and temporal error
@@ -1728,12 +1731,12 @@ contains
       call lsyssc_releaseVector(rvectorTmp)
     end do
     
-    ! Scale the global and element-wise error by the number of error variables
-    if (nerrorVariables .gt. 1) then
-      dvalue = 1.0_DP/real(nerrorVariables, DP)
-      derror = derror*dvalue
-      call lsyssc_scaleVector(rerror, dvalue)
-    end if
+!!$    ! Scale the global and element-wise error by the number of error variables
+!!$    if (nerrorVariables .gt. 1) then
+!!$      dvalue = 1.0_DP/real(nerrorVariables, DP)
+!!$      derror = derror*dvalue
+!!$      call lsyssc_scaleVector(rerror, dvalue)
+!!$    end if
 
     
     !---------------------------------------------------------------------------

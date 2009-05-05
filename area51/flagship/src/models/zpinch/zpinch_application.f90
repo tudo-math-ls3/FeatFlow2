@@ -847,8 +847,8 @@ contains
     ! Pointer to the discretisation structure
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Vector for the element-wise error distribution
-    type(t_vectorScalar) :: relementError
+    ! Vector for the element-wise feature indicator
+    type(t_vectorScalar) :: rindicator
 
     ! Structure for h-adaptation
     type(t_hadapt) :: rhadapt
@@ -1011,20 +1011,20 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-            ! Compute the error estimator using recovery techniques
-            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
-                                             relementError, derror)
+!!$            ! Compute the error estimator using recovery techniques
+!!$            call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
+!!$                                             rindicator, derror)
 
-!!$            ! Compute the error estimator based on the tracer
-!!$            call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
+            ! Compute the error estimator based on the tracer
+            call zpinch_calcAdaptationIndicator(rsolutionEuler, rsolutionTransport, rindicator)
 
             ! Perform h-adaptation and update the triangulation structure
             call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                           relementError, rcollection)
+                                           rindicator, rcollection)
             
             ! Release element-wise error distribution
-            call lsyssc_releaseVector(relementError)
+            call lsyssc_releaseVector(rindicator)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -1241,13 +1241,13 @@ contains
         ! Start time measurement for error estimation
         call stat_startTimer(rappDescrTransport%rtimerErrorEstimation, STAT_TIMERSHORT)
 
-        ! Compute the error estimator using recovery techniques
-        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                         rsolutionEuler, rtimestepEuler%dinitialTime,&
-                                         relementError, derror)
+!!$        ! Compute the error estimator using recovery techniques
+!!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler, p_rproblemLevel,&
+!!$                                         rsolutionEuler, rtimestepEuler%dinitialTime,&
+!!$                                         rindicator, derror)
 
-!!$        ! Compute the error indicator based on the tracer
-!!$        call zpinch_calcTracerIndicator(rsolutionTransport, relementError)
+        ! Compute the error indicator based on the tracer
+        call zpinch_calcAdaptationIndicator(rsolutionEuler, rsolutionTransport, rindicator)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rappDescrTransport%rtimerErrorEstimation)
@@ -1271,10 +1271,10 @@ contains
         
         ! Perform h-adaptation and update the triangulation structure
         call zpinch_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                       relementError, rcollection)
+                                       rindicator, rcollection)
         
         ! Release element-wise error distribution
-        call lsyssc_releaseVector(relementError)
+        call lsyssc_releaseVector(rindicator)
 
         ! Update the template matrix according to the sparsity pattern
         call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
