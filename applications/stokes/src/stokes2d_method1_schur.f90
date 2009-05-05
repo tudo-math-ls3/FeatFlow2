@@ -267,7 +267,7 @@ contains
           Rlevels(i)%rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       
       ! Update discretisation of A2
-      call lsyssc_assignDiscretDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscrDirectMat (Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
           Rlevels(i)%rdiscretisation%RspatialDiscr(2))
       
       ! Assemble B1/B2 matrices

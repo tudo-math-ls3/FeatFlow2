@@ -569,7 +569,7 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
       p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixTemplateQ1

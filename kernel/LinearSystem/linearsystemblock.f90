@@ -1741,10 +1741,10 @@ contains
         if (lsysbl_isSubmatrixPresent(rmatrix,i,j,.true.)) then
 
           if (.not. present(rdiscrTest)) then
-            call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
+            call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(i,j),&
                 rdiscrTrial%RspatialDiscr(j),rdiscrTrial%RspatialDiscr(i))
           else
-            call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(i,j),&
+            call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(i,j),&
                 rdiscrTrial%RspatialDiscr(j),rdiscrTest%RspatialDiscr(i))
           end if
 

@@ -696,7 +696,7 @@ contains
       ! Change the discretisation structure of the mass matrix to the
       ! correct one; at the moment it points to the discretisation structure
       ! of the Stokes matrix...
-      call lsyssc_assignDiscretDirectMat (p_rmatrixMass,&
+      call lsyssc_assignDiscrDirectMat (p_rmatrixMass,&
           rlevelInfo%rdiscretisationMass)
 
       ! Call the standard matrix setup routine to build the matrix.                    

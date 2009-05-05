@@ -199,7 +199,7 @@
 !# 56.) lsyssc_createFullMatrix
 !#      -> Create a full square or rectangular matrix in matrix format 1
 !#
-!# 57.) lsyssc_assignDiscretDirectMat
+!# 57.) lsyssc_assignDiscrDirectMat
 !#      -> Assign a block discretisation to a matrix
 !#
 !# 58.) lsyssc_createFpdbObjectVec
@@ -17536,7 +17536,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_assignDiscretDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
+  subroutine lsyssc_assignDiscrDirectMat (rmatrix,rdiscrTrial,rdiscrTest)
   
 !<description>
   ! Assigns given discretisation structures for trial/test spaces to a
@@ -17561,7 +17561,7 @@ contains
 
     if (rmatrix%NCOLS .ne. dof_igetNDofGlob(rdiscrTrial)) then
       call output_line ('Discretisation invalid for the matrix!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+                        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscrDirectMat')
       call sys_halt()
     end if
           
@@ -17575,7 +17575,7 @@ contains
 
       if (rmatrix%NEQ .ne. dof_igetNDofGlob(rdiscrTest)) then
         call output_line ('Discretisation invalid for the matrix!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscrDirectMat')
         call sys_halt()
       end if
 
@@ -17585,7 +17585,7 @@ contains
       ! Trial and test functions coincide
       if (rmatrix%NEQ .ne. dof_igetNDofGlob(rdiscrTrial)) then
         call output_line ('Discretisation invalid for the matrix!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscretDirectMat')
+                          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_assignDiscrDirectMat')
         call sys_halt()
       end if
 
