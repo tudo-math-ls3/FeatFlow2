@@ -355,8 +355,13 @@ contains
   
     integer :: i
   
-    ! Find the last "/" or "\" in sfile
-    i = scan(sfile,"/\",.true.)
+    ! Find the last "/" or "\" in sfile.
+    ! Note that we specified "\\" and not "\" because the PGI compiler
+    ! (stupid thing) would otherwise use the backslash to escape the quote
+    ! character. So PGI sees "/\" and other compiler see "/\\", but this
+    ! doesn't matter since the string must only contain a couple of
+    ! delimiters which may occur more than once in the string.
+    i = scan(sfile,"/\\",.true.)
     if (i .ne. 0) then
       ! Directory ends at position i.
       sfilepath = sfile(1:i-1)
