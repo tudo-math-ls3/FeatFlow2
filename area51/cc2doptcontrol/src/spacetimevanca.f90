@@ -1062,11 +1062,7 @@ contains
           p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
 
       rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-      rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-      rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-      rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-      rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-
+      
       ! Fetch evaluation vectors for the nonlinearity
       if (ichunkPos .gt. 1) &
         call sptivec_getTimestepData (rspaceTimeMatrix%p_rsolution, ichunkPos-1, rtimeVector(1))

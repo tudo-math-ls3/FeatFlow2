@@ -261,7 +261,7 @@ contains
 
 !<input>
   ! Problem structure
-  type(t_problem), intent(IN) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! A t_ccoptSpaceTimeMatrix structure defining the discretisation of the
   ! coupled space-time matrix.
@@ -358,6 +358,48 @@ contains
     rmatrixComponents%Dtau(:,:) = 0.0_DP
     rmatrixComponents%Dkappa(:,:) = 0.0_DP
 
+    ! Basic initialisation of rmatrixComponents with the pointers to the
+    ! matrices / discretisation structures on the current level.
+    !
+    ! The weights in the rmatrixComponents structure are later initialised
+    ! according to the actual situation when the matrix is to be used.
+    rmatrixComponents%p_rdiscretisation => p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
+    rmatrixComponents%p_rmatrixStokes   => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
+    rmatrixComponents%p_rmatrixB1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
+    rmatrixComponents%p_rmatrixB2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
+    rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
+    rmatrixComponents%p_rmatrixIdentityPressure => &
+        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+
+    ! Get stabilisation parameters
+    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+
+    ! Get stabilisation parameters
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iUpwind1',rmatrixComponents%iupwind1,0)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iUpwind2',rmatrixComponents%iupwind2,0)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'dUpsam1',rmatrixComponents%dupsam1,0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'dUpsam2',rmatrixComponents%dupsam2,0.0_DP)
+
+    ! Change the sign of dupsam2 for a consistent stabilisation.
+    ! Reason: The stablisation is added to the dual operator by the SD/
+    ! EOJ stabilisation in the following way:
+    !
+    !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
+    !
+    ! We want to *add* the stabilisation, so we have to introduce a "-" sign
+    ! in dupsam2 to get
+    !
+    !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
+    ! <=>
+    !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
+    
+    rmatrixComponents%dupsam2 = -rmatrixComponents%dupsam2
+    
     ! The first and last substep is a little bit special concerning
     ! the matrix!
     if (isubstep .eq. 0) then
@@ -936,29 +978,6 @@ contains
     call lsysbl_getbase_double (rtempVectorEval(2),p_DxE2)
     call lsysbl_getbase_double (rtempVectorEval(3),p_DxE3)
     
-    ! Basic initialisation of rmatrixComponents with the pointers to the
-    ! matrices / discretisation structures on the current level.
-    !
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes         => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscretisation%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-
     ! If dnorm is specified, clear it.
     if (present(dnorm)) then
       dnorm = 0.0_DP
@@ -1311,10 +1330,31 @@ contains
     rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
         
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
+    
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iUpwind1',rmatrixComponents%iupwind1,0)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iUpwind2',rmatrixComponents%iupwind2,0)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'dUpsam1',rmatrixComponents%dupsam1,0.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'dUpsam2',rmatrixComponents%dupsam2,0.0_DP)
+
+    ! Change the sign of dupsam2 for a consistent stabilisation.
+    ! Reason: The stablisation is added to the dual operator by the SD/
+    ! EOJ stabilisation in the following way:
+    !
+    !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
+    !
+    ! We want to *add* the stabilisation, so we have to introduce a "-" sign
+    ! in dupsam2 to get
+    !
+    !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
+    ! <=>
+    !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
+    
+    rmatrixComponents%dupsam2 = -rmatrixComponents%dupsam2
     
     ! Set up the matrix weights the matrix in the 0th timestep.
     ! We set up only the stuff for the primal equation; for setting up
@@ -1359,7 +1399,7 @@ contains
 
 !<input>
   ! Problem structure
-  type(t_problem), intent(IN) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
   
   ! A t_ccoptSpaceTimeMatrix structure defining the discretisation of the
   ! coupled space-time matrix.

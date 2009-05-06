@@ -966,7 +966,7 @@ contains
         ! Assemble the nonlinearity u*grad(.) or the Newton nonlinearity
         ! u*grad(.)+grad(u)*(.) to the velocity.
         rstabilisation = t_convecStabilisation(&
-            rmatrixComponents%iupwind1,rmatrixComponents%dupsam1)
+            rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
         select case (rmatrixComponents%iprimalSol)
         case (1)
           call assembleConvection (&
@@ -1009,7 +1009,12 @@ contains
             rmatrixComponents%Diota(2,1),rmatrixComponents%Dalpha(2,1),&
             rmatrixComponents%Dtheta(2,1),&
             rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1),.false.)
-            
+
+        ! Co stabilisation in the convective parts here.            
+        ! rstabilisation = t_convecStabilisation(&
+        !    rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
+        rstabilisation = t_convecStabilisation(0,0.0_DP)
+
         select case (rmatrixComponents%idualSol)
         case (1)
           call lsysbl_deriveSubvector(rvector1,rtempVector, 4,6,.true.)
@@ -1843,11 +1848,11 @@ contains
                               rjumpStabil, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1))   
 
-          !if (.not. bshared) then
-          !  call conv_jumpStabilisation2d (&
-          !                      rjumpStabil, CONV_MODMATRIX, &
-          !                      rmatrix%RmatrixBlock(2,2))   
-          !end if
+          if (.not. bshared) then
+            call conv_jumpStabilisation2d (&
+                                rjumpStabil, CONV_MODMATRIX, &
+                                rmatrix%RmatrixBlock(2,2))   
+          end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
           ! Jump stabilisation.
@@ -1928,37 +1933,39 @@ contains
       
         ! That's the Stokes-case. Jump stabilisation is possible...
       
-        select case (rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
-          
-          ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rmatrixComponents%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+        if (rstabilisation%dupsam .ne. 0.0_DP) then
+          select case (rstabilisation%iupwind)
+          case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
+            
+            ! Set up the jump stabilisation structure.
+            ! There's not much to do, only initialise the viscosity...
+            rjumpStabil%dnu = rmatrixComponents%dnu
+            
+            ! Set stabilisation parameter
+            rjumpStabil%dgammastar = rstabilisation%dupsam
+            rjumpStabil%dgamma = rjumpStabil%dgammastar
+            
+            ! Matrix weight
+            rjumpStabil%dtheta = dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
-          ! convective parts...
-          call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODMATRIX, &
-                              rmatrix%RmatrixBlock(1,1))   
-
-          if (.not. bshared) then
+            ! Call the jump stabilisation technique to stabilise that stuff.   
+            ! We can assemble the jump part any time as it's independent of any
+            ! convective parts...
             call conv_jumpStabilisation2d (&
                                 rjumpStabil, CONV_MODMATRIX, &
-                                rmatrix%RmatrixBlock(2,2))   
-          end if
+                                rmatrix%RmatrixBlock(1,1))   
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                                  rjumpStabil, CONV_MODMATRIX, &
+                                  rmatrix%RmatrixBlock(2,2))   
+            end if
+            
+          case default
+            ! No stabilisation
           
-        case default
-          ! No stabilisation
-        
-        end select
+          end select
+        end if
         
       end if
       
@@ -3891,8 +3898,10 @@ contains
       !    (   N*(l) N*(l)              ) 
       !    (                            ) 
       
-      rstabilisation = t_convecStabilisation(&
-          rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
+      ! No stabilisation here
+      ! rstabilisation = t_convecStabilisation(&
+      !     rmatrixComponents%iupwind2,rmatrixComponents%dupsam2)
+      rstabilisation = t_convecStabilisation(0,0.0_DP)
       
       call lsysbl_deriveSubvector(rx,rtempVectorX,1,2,.true.)
       call lsysbl_deriveSubvector(rd,rtempVectorB,4,5,.true.)
@@ -4706,11 +4715,11 @@ contains
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rx,rb)   
 
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(2,2),rx,rb)   
-          end if
+!          if (.not. bshared) then
+!            call conv_jumpStabilisation2d (&
+!                                rjumpStabil, CONV_MODDEFECT, &
+!                                rmatrix%RmatrixBlock(2,2),rx,rb)   
+!          end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
           ! Jump stabilisation.
@@ -4758,11 +4767,11 @@ contains
                               rjumpStabil, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rx,rb)   
 
-          if (.not. bshared) then
-            call conv_jumpStabilisation2d (&
-                                rjumpStabil, CONV_MODDEFECT, &
-                                rmatrix%RmatrixBlock(2,2),rx,rb)   
-          end if
+!          if (.not. bshared) then
+!            call conv_jumpStabilisation2d (&
+!                                rjumpStabil, CONV_MODDEFECT, &
+!                                rmatrix%RmatrixBlock(2,2),rx,rb)   
+!          end if
 
         case default
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -4773,40 +4782,41 @@ contains
       else
       
         ! That's the Stokes-case. Jump stabilisation is possible...
-      
-        select case (rstabilisation%iupwind)
-        case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
-          
-          ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rmatrixComponents%dnu
-          
-          rjumpStabil%dtheta = dcx 
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+        if (rstabilisation%dupsam .ne. 0.0_DP) then
+          select case (rstabilisation%iupwind)
+          case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
+            
+            ! Set up the jump stabilisation structure.
+            ! There's not much to do, only initialise the viscosity...
+            rjumpStabil%dnu = rmatrixComponents%dnu
+            
+            rjumpStabil%dtheta = dcx 
+            
+            ! Set stabilisation parameter
+            rjumpStabil%dgammastar = rstabilisation%dupsam
+            rjumpStabil%dgamma = rjumpStabil%dgammastar
+            
+            ! Matrix weight
+            rjumpStabil%dtheta = dgamma
 
-          ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
-          ! convective parts...
-          call conv_jumpStabilisation2d (&
-                              rjumpStabil, CONV_MODDEFECT, &
-                              rmatrix%RmatrixBlock(1,1),rx,rb)   
+            ! Call the jump stabilisation technique to stabilise that stuff.   
+            ! We can assemble the jump part any time as it's independent of any
+            ! convective parts...
+            call conv_jumpStabilisation2d (&
+                                rjumpStabil, CONV_MODDEFECT, &
+                                rmatrix%RmatrixBlock(1,1),rx,rb)   
 
-          !if (.not. bshared) then
-          !  call conv_jumpStabilisation2d (&
-          !                      rjumpStabil, CONV_MODDEFECT, &
-          !                      rmatrix%RmatrixBlock(2,2),rx,rb)   
-          !end if
+!            if (.not. bshared) then
+!              call conv_jumpStabilisation2d (&
+!                                  rjumpStabil, CONV_MODDEFECT, &
+!                                  rmatrix%RmatrixBlock(2,2),rx,rb)   
+!            end if
+            
+          case default
+            ! No stabilisation
           
-        case default
-          ! No stabilisation
-        
-        end select
+          end select
+        end if
         
       end if
       

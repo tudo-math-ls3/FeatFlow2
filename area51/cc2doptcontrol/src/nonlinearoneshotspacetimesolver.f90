@@ -708,29 +708,6 @@ contains
     ! Create a global matrix:
     call lsysbl_createEmptyMatrix (rglobalA,6*(p_rspaceTimeDiscr%rtimeDiscr%nintervals+1))
 
-    ! Basic initialisation of rmatrixComponents with the pointers to the
-    ! matrices / discretisation structures on the current level.
-    !
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-
     ! Get a temporary system matrix
     call cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(ilevel),rmatrix)
     
@@ -1794,26 +1771,6 @@ contains
     ! Level of the discretisation
     ilevel = p_rspaceTimeDiscr%ilevel
     
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-    
     ! Create two additional temp vectors
     call lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX1,.true.)
     call lsysbl_createVecBlockIndirect (rtempVectorX,rtempVectorX3,.true.)
@@ -2767,9 +2724,9 @@ contains
           p_rcgrSolver%domega = domega
           
           ! DEBUG!!!
-          p_rcgrSolver%p_rsubnodeUMFPACK4%cwriteMatrix = 1
-          p_rcgrSolver%p_rsubnodeUMFPACK4%ixfirst = 7
-          p_rcgrSolver%p_rsubnodeUMFPACK4%iyfirst = 7
+          !p_rcgrSolver%p_rsubnodeUMFPACK4%cwriteMatrix = 1
+          !p_rcgrSolver%p_rsubnodeUMFPACK4%ixfirst = 1
+          !p_rcgrSolver%p_rsubnodeUMFPACK4%iyfirst = 1
 
         case (5)
           ! Forward backward SOR as preconditioner

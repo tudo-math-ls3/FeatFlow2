@@ -2402,29 +2402,6 @@ contains
     rtempVectorX3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorX3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
-    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
-    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
-    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
-    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
-        
-    rmatrixComponents%dnu = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
-    
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
     !
@@ -2887,29 +2864,6 @@ contains
 
     rtempVectorRHS%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorRHS%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
-    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
-    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
-    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
-    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
-        
-    rmatrixComponents%dnu = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
 
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
@@ -3709,29 +3663,6 @@ contains
 
     rtempVectorRHS%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorRHS%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%p_rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%p_rmatrixB1              
-    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%p_rmatrixB2              
-    rmatrixComponents%p_rmatrixB1T              => p_rlevelInfo%p_rmatrixB1T
-    rmatrixComponents%p_rmatrixB2T              => p_rlevelInfo%p_rmatrixB2T
-    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%p_rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%p_rmatrixIdentityPressure
-        
-    rmatrixComponents%dnu = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = &
-        collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = &
-        collct_getvalue_real (rsolverNode%p_rproblem%rcollection,'UPSAM2')
 
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
@@ -5200,30 +5131,6 @@ contains
     ! Create a global matrix:
     call lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%NEQtime))
   
-    ! Basic initialisation of rmatrixComponents with the pointers to the
-    ! matrices / discretisation structures on the current level.
-    !
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation         => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1               => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2               => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass             => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
-
     ! Get a temporary system matrix
     call cc_allocSystemMatrix (rproblem,p_rspaceTimeDiscr%p_rlevelInfo,rblockTemp)
     

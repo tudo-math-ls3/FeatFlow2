@@ -1854,7 +1854,13 @@ contains
               ! Probably because
               !    ( -c grad(phi_j), -c grad(phi_i) ) = + ( c grad(phi_j), c grad(phi_i) )
               ! see the paper of Heinkenschloss!
-              dtemp2 = dsumJ * (-DlocalDeltaDual(iel)*dsumI + dbasI)
+              !
+              ! HINT: Change reverted to '+'. The "-"-sign is now introduced
+              ! by a negative dupsam parameter to compensate the minus
+              ! sign of the operator.
+              ! dtemp2 = dsumJ * (-DlocalDeltaDual(iel)*dsumI + dbasI)
+              
+              dtemp2 = dsumJ * (DlocalDeltaDual(iel)*dsumI + dbasI)
 
               ! Weighten the calculated value AHxy by the cubature
               ! weight OM and add it to the local matrices. After the

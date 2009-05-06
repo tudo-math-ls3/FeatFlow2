@@ -154,23 +154,6 @@ contains
                               'isubEquation',i1,0)
     rproblem%isubEquation = i1
 
-    ! Stabilisation of nonlinearity
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind1',i1,0)
-    call collct_setvalue_int( rproblem%rcollection,'IUPWIND1',i1,.true.)
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam1',d1,0.0_DP)
-    call collct_setvalue_real (rproblem%rcollection,'UPSAM1',d1,.true.)
-
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind2',i1,0)
-    call collct_setvalue_int( rproblem%rcollection,'IUPWIND2',i1,.true.)
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam2',d1,0.0_DP)
-    call collct_setvalue_real (rproblem%rcollection,'UPSAM2',d1,.true.)
-
     ! Type of boundary conditions
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iBoundary',i1,0)
@@ -213,13 +196,6 @@ contains
     ! Remove information about boundary conditions
     call collct_deleteValue(rproblem%rcollection,'IBOUNDARY')
     
-    ! Remove information about stabilisation
-    call collct_deleteValue(rproblem%rcollection,'UPSAM1')
-    call collct_deleteValue(rproblem%rcollection,'IUPWIND1')
-
-    call collct_deleteValue(rproblem%rcollection,'UPSAM2')
-    call collct_deleteValue(rproblem%rcollection,'IUPWIND2')
-
     ! Remove type of problem to discretise
     call collct_deleteValue(rproblem%rcollection,'ISTOKES')
 
