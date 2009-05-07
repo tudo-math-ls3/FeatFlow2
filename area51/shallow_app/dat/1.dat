@@ -107,7 +107,9 @@ gravconst = 9.81
 # Choose the startvalues
 Startvalues = 9
 
-
+hstart = '1'
+hustart = '0'
+hvstart = '0'
 
 [VIDEO]
 
