@@ -403,11 +403,11 @@ module ucd
     integer :: htracers = ST_NOHANDLE
     
     ! An array containing the names of all tracer variables
-    character(LEN=SYS_NAMELEN), dimension(:), pointer :: StracerVariable => null()
+    character(LEN=SYS_NAMELEN), dimension(:), pointer :: p_StracerVariableNames => null()
     
     ! A list of handles to tracer data. Each handle identifies an
     ! "array[1..#tracers] of double", which specifies data for each
-    ! tracer. StracerVariable[i] os the name of the i'th array.
+    ! tracer. p_StracerVariableNames[i] os the name of the i'th array.
     integer, dimension(:), pointer :: p_HtracerVariables => null()
     
     ! A handle to an array containing for every cell a cell material id.
@@ -420,10 +420,10 @@ module ucd
     integer :: hIvertexMaterial = ST_NOHANDLE
     
     ! Pointer to material names for vertex materials
-    character(LEN=SYS_NAMELEN), dimension(:), pointer :: SvertexMaterials => null()
+    character(LEN=SYS_NAMELEN), dimension(:), pointer :: p_SvertexMaterials => null()
 
     ! Pointer to material names for cell materials
-    character(LEN=SYS_NAMELEN), dimension(:), pointer :: ScellMaterials => null()
+    character(LEN=SYS_NAMELEN), dimension(:), pointer :: p_ScellMaterials => null()
     
     ! Current length of the comment buffer
     integer :: ncommentBufSize = 0
@@ -1040,8 +1040,8 @@ contains
     if (rexport%hIvertexMaterial    .ne. ST_NOHANDLE) &
         call storage_free(rexport%hIvertexMaterial)
 
-    if (associated(rexport%SvertexMaterials)) deallocate(rexport%SvertexMaterials)
-    if (associated(rexport%ScellMaterials)) deallocate(rexport%ScellMaterials)
+    if (associated(rexport%p_SvertexMaterials)) deallocate(rexport%p_SvertexMaterials)
+    if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
     
     rexport%nvectors          = 0
     rexport%nvariables        = 0
@@ -1183,18 +1183,18 @@ contains
     end if
     
     ! Make a copy of the strings. Use ALLOCATE/DEALLOCATE directly.
-    if (associated(rexport%ScellMaterials)) deallocate(rexport%ScellMaterials)
-    allocate(rexport%ScellMaterials(size(SmaterialsCells)))
-    rexport%ScellMaterials = SmaterialsCells
+    if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
+    allocate(rexport%p_ScellMaterials(size(SmaterialsCells)))
+    rexport%p_ScellMaterials = SmaterialsCells
     
-    if (associated(rexport%SvertexMaterials)) deallocate(rexport%SvertexMaterials)
+    if (associated(rexport%p_SvertexMaterials)) deallocate(rexport%p_SvertexMaterials)
     
     if (present(SmaterialsVert)) then
-      allocate(rexport%SvertexMaterials(size(SmaterialsVert)))
-      rexport%SvertexMaterials = SmaterialsVert
+      allocate(rexport%p_SvertexMaterials(size(SmaterialsVert)))
+      rexport%p_SvertexMaterials = SmaterialsVert
     else
-      allocate(rexport%SvertexMaterials(size(SmaterialsCells)))
-      rexport%SvertexMaterials = SmaterialsCells
+      allocate(rexport%p_SvertexMaterials(size(SmaterialsCells)))
+      rexport%p_SvertexMaterials = SmaterialsCells
     end if
   
   end subroutine
@@ -1934,15 +1934,15 @@ contains
       else
 
         ! Cell material
-        if (associated(rexport%ScellMaterials) .and. &
+        if (associated(rexport%p_ScellMaterials) .and. &
             (rexport%hIcellMaterial .ne. ST_NOHANDLE)) then
           ! GMV only supports <= 1000 materials!
-          write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%ScellMaterials)),0
-          do i=1,min(1000,size(rexport%ScellMaterials))
+          write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%p_ScellMaterials)),0
+          do i=1,min(1000,size(rexport%p_ScellMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             write(mfile,'(A8)') &
-                sys_charreplace(trim(rexport%ScellMaterials(i)),' ','_')
+                sys_charreplace(trim(rexport%p_ScellMaterials(i)),' ','_')
           end do
           
           if (rexport%hIcellMaterial .ne. ST_NOHANDLE) then
@@ -1956,15 +1956,15 @@ contains
         end if
         
         ! Vertex materials; coincide with cell materials if not specified.
-        if (associated(rexport%SvertexMaterials) .and. &
+        if (associated(rexport%p_SvertexMaterials) .and. &
             (rexport%hIvertexMaterial .ne. ST_NOHANDLE)) then
           ! GMV only supports <= 1000 materials!
-          write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%SvertexMaterials)),1
-          do i=1,min(1000,size(rexport%SvertexMaterials))
+          write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%p_SvertexMaterials)),1
+          do i=1,min(1000,size(rexport%p_SvertexMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             write(mfile,'(A8)') &
-                sys_charreplace(trim(rexport%SvertexMaterials(i)),' ','_')
+                sys_charreplace(trim(rexport%p_SvertexMaterials(i)),' ','_')
           end do
           
           if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
@@ -1976,15 +1976,15 @@ contains
             end do
           end if
         else
-          if (associated(rexport%ScellMaterials) .and. &
+          if (associated(rexport%p_ScellMaterials) .and. &
               (rexport%hIvertexMaterial .ne. ST_NOHANDLE)) then
             ! GMV only supports <= 1000 materials!
-            write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%ScellMaterials)),1
-            do i=1,min(1000,size(rexport%ScellMaterials))
+            write(mfile,'(A,1X,I10,I10)') 'material',min(1000,size(rexport%p_ScellMaterials)),1
+            do i=1,min(1000,size(rexport%p_ScellMaterials))
               ! GMV supports only <= 8 characters and does not allow spaces
               ! in the material name. We replace all invalid spaces by "_".
               write(mfile,'(A8)') &
-                  sys_charreplace(trim(rexport%ScellMaterials(i)),' ','_')
+                  sys_charreplace(trim(rexport%p_ScellMaterials(i)),' ','_')
             end do
           end if
           
@@ -2223,9 +2223,9 @@ contains
         ! First write all X-coordinates, then Y-coordinates, 
         ! then Z-coordinates -- if specified.
         do i=1,3
-          if (i .le. ubound(p_Ddata,1)) then
+          if (i .le. ubound(p_Ddata2d,1)) then
             do j=1,rexport%ntracers
-              write (mfile,rexport%sdataFormat) p_Ddata2D(j,i)
+              write (mfile,rexport%sdataFormat) p_Ddata2D(i,j)
             end do
           else
             do j=1,rexport%ntracers
@@ -2236,7 +2236,7 @@ contains
         
         ! Write tracer variables if specified
         do i=1,rexport%ntracerVariables
-          write (mfile,'(A32)') rexport%StracerVariable(i)
+          write (mfile,'(A32)') rexport%p_StracerVariableNames(i)
           
           call storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
           do j=1,rexport%ntracers
@@ -2984,14 +2984,14 @@ contains
     else
       
       ! Cell material
-      if (associated(rexport%ScellMaterials)) then
+      if (associated(rexport%p_ScellMaterials)) then
         ! GMV only supports <= 1000 materials!
-        call fgmvwrite_material_header(min(1000,int(size(rexport%ScellMaterials))),0)
-        do i=1,min(1000,size(rexport%ScellMaterials))
+        call fgmvwrite_material_header(min(1000,int(size(rexport%p_ScellMaterials))),0)
+        do i=1,min(1000,size(rexport%p_ScellMaterials))
           ! GMV supports only <= 8 characters and does not allow spaces
           ! in the material name. We replace all invalid spaces by "_".
           call fgmvwrite_material_name(&
-              sys_charreplace(trim(rexport%ScellMaterials(i)),' ','_'))
+              sys_charreplace(trim(rexport%p_ScellMaterials(i)),' ','_'))
         end do
         
         if (rexport%hIcellMaterial .ne. ST_NOHANDLE) then
@@ -3005,14 +3005,14 @@ contains
       end if
       
       ! Vertex materials; coincide with cell materials if not specified.
-      if (associated(rexport%SvertexMaterials)) then
+      if (associated(rexport%p_SvertexMaterials)) then
         ! GMV only supports <= 1000 materials!
-        call fgmvwrite_material_header(min(1000,int(size(rexport%SvertexMaterials))),1)
-        do i=1,min(1000,size(rexport%SvertexMaterials))
+        call fgmvwrite_material_header(min(1000,int(size(rexport%p_SvertexMaterials))),1)
+        do i=1,min(1000,size(rexport%p_SvertexMaterials))
           ! GMV supports only <= 8 characters and does not allow spaces
           ! in the material name. We replace all invalid spaces by "_".
           call fgmvwrite_material_name(&
-              sys_charreplace(trim(rexport%SvertexMaterials(i)),' ','_'))
+              sys_charreplace(trim(rexport%p_SvertexMaterials(i)),' ','_'))
         end do
         
         if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
@@ -3024,14 +3024,14 @@ contains
           end do
         end if
       else
-        if (associated(rexport%ScellMaterials)) then
+        if (associated(rexport%p_ScellMaterials)) then
           ! GMV only supports <= 1000 materials!
-          call fgmvwrite_material_header(min(1000,int(size(rexport%ScellMaterials))),1)
-          do i=1,min(1000,size(rexport%ScellMaterials))
+          call fgmvwrite_material_header(min(1000,int(size(rexport%p_ScellMaterials))),1)
+          do i=1,min(1000,size(rexport%p_ScellMaterials))
             ! GMV supports only <= 8 characters and does not allow spaces
             ! in the material name. We replace all invalid spaces by "_".
             call fgmvwrite_material_name(&
-                sys_charreplace(trim(rexport%ScellMaterials(i)),' ','_'))
+                sys_charreplace(trim(rexport%p_ScellMaterials(i)),' ','_'))
           end do
         end if
         
@@ -3314,27 +3314,27 @@ contains
       ! Allocate temporal memory
       allocate(X(rexport%ntracers), Y(rexport%ntracers), Z(rexport%ntracers))
 
-      select case(ubound(p_Ddata,1))
+      select case(ubound(p_Ddata2D,1))
 
       case(NDIM1D)
         do j=1,rexport%ntracers
-          X(j) = real(p_Ddata2D(j,1))
+          X(j) = real(p_Ddata2D(1,j))
           Y(j) = 0.0E0
           Z(j) = 0.0E0
         end do
 
       case(NDIM2D)
         do j=1,rexport%ntracers
-          X(j) = real(p_Ddata2D(j,1))
-          Y(j) = real(p_Ddata2D(j,2))
+          X(j) = real(p_Ddata2D(1,j))
+          Y(j) = real(p_Ddata2D(2,j))
           Z(j) = 0.0E0
         end do
 
       case(NDIM3D)
         do j=1,rexport%ntracers
-          X(j) = real(p_Ddata2D(j,1))
-          Y(j) = real(p_Ddata2D(j,2))
-          Z(j) = real(p_Ddata2D(j,3))
+          X(j) = real(p_Ddata2D(1,j))
+          Y(j) = real(p_Ddata2D(2,j))
+          Z(j) = real(p_Ddata2D(3,j))
         end do
       end select
       
@@ -3347,7 +3347,7 @@ contains
 !!$      
 !!$      ! Write tracer variables if specified
 !!$      DO i=1,rexport%ntracerVariables
-!!$        WRITE (mfile,'(A32)') rexport%StracerVariable(i)
+!!$        WRITE (mfile,'(A32)') rexport%p_StracerVariableNames(i)
 !!$        
 !!$        CALL storage_getbase_double (rexport%p_HtracerVariables(i), p_Ddata)
 !!$        DO j=1,rexport%ntracers
@@ -4261,7 +4261,8 @@ contains
 
 !</subroutine>
 
-    integer, dimension(:), pointer :: p_Hvariables 
+    integer, dimension(:), pointer :: p_Hvariables
+    character(LEN=SYS_NAMELEN), dimension(:), pointer :: p_StracerVariableNames
     integer :: nsize
 
     nsize = 0
@@ -4274,6 +4275,13 @@ contains
       deallocate(rexport%p_HtracerVariables)
     end if
     rexport%p_HtracerVariables => p_Hvariables
+    
+    allocate(p_StracerVariableNames(nsize+16))
+    if (associated(rexport%p_StracerVariableNames)) then
+      p_StracerVariableNames(1:nsize) = rexport%p_StracerVariableNames
+      deallocate(rexport%p_StracerVariableNames)
+    end if
+    rexport%p_StracerVariableNames => p_StracerVariableNames
 
   end subroutine
 
@@ -4798,7 +4806,7 @@ contains
     
     ! Remember total number of tracers
     rexport%ntracers = ubound(DtracerCoordinates,2)
-    
+
     ! Allocate a new vector for the data
     Ilength = ubound(DtracerCoordinates)
     call storage_new2D ('ucd_setTracers','htracers',&
@@ -4839,7 +4847,7 @@ contains
     end if
 
     ! Delete the coordinates of the tracers
-    if (rexport%htracers       .ne. ST_NOHANDLE) &
+    if (rexport%htracers .ne. ST_NOHANDLE) &
       call storage_free(rexport%htracers    )
         
     rexport%ntracers = 0
@@ -4894,11 +4902,17 @@ contains
     end if
 
     ! Create a new variable. If necessary, increase the size of the buffer.
+    if (.not. associated(rexport%p_HtracerVariables)) then
+      call ucd_moreVariables(rexport)
+    end if
+
     if (rexport%ntracerVariables .ge. size(rexport%p_HtracerVariables)) then
       call ucd_moreTracerVariables(rexport)
     end if
+    
     rexport%ntracerVariables = rexport%ntracerVariables+1
-    rexport%StracerVariable(rexport%ntracerVariables) = sname
+    
+    rexport%p_StracerVariableNames(rexport%ntracerVariables) = sname
     
     ! Allocate a new vector for the data
     call storage_new ('ucd_addTracerVariable','hvariable',&
