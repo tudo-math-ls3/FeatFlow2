@@ -338,7 +338,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_energy_AMR3_run2
+ucdsolution = out/zpinch_struct_AMR1
 
 # file for UCD output of error
 ucderror = out/
@@ -743,7 +743,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 3
+npreadapt = 1
 
 # number of adaptation steps
 nadapt = 0
@@ -752,10 +752,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 3e-3
+dstepadapt = 3e-4
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 1
 
 # adaptation strategy
 # 1 = red-green
