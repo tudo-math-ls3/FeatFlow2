@@ -238,9 +238,6 @@ contains
     ! Number of equations
     integer :: NEQ
 
-    ! Choosing startvalues
-    integer :: Startvalues
-
     ! What low order Method to use?
     integer :: Method
 
@@ -298,9 +295,6 @@ contains
     
     ! Gravitational constant. Default=9.81
     call parlst_getvalue_double(rparlist, 'PROBLEM', 'gravconst', gravconst, 9.81_DP)
-    
-    ! Choosing the Startvalues
-    call parlst_getvalue_int(rparlist, 'PROBLEM', 'Startvalues', Startvalues)
     
     ! Choosing the Method to use. Default=TVD
     call parlst_getvalue_int(rparlist, 'METHOD', 'Method', Method, 3)
@@ -603,7 +597,7 @@ contains
     ! the residual is reached.
     p_rsolverNode%depsRel = linreldef
     p_rsolverNode%depsAbs = linabsdef
-	! we don't have to solve the system to precise, as it is only used for
+	! we don't have to solve the system too precise, as it is only used for
 	! the inner loop of the defect correction
 
     ! Set the output level of the solver 
@@ -671,9 +665,9 @@ contains
     ! *************************************** !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
-    
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Bevor we start the timestepping we should set the initial values
+
+  ! Bevor we start the timestepping we should set the initial values
+
     ! get Pointer to the vertex coordinates
 	call storage_getbase_double2d(rtriangulation%h_DvertexCoords, p_dVertexCoords)
 
@@ -681,141 +675,32 @@ contains
     call fparser_init()
     call fparser_create(rfparser, 3)
 
-    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hstart', sstring); sstring='if(x<40, 5, 10)'
+	! Get function, that descrbes the startvalues of h
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hstart', sstring);
     call fparser_parseFunction(rfparser, 1, trim(adjustl(sstring)), cvariables)
 
-    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hustart', sstring); sstring='0'
+	! Get function, that descrbes the startvalues of hu
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hustart', sstring);
     call fparser_parseFunction(rfparser, 2, trim(adjustl(sstring)), cvariables)
 
-    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hvstart', sstring); sstring='0'
+	! Get function, that descrbes the startvalues of h
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'hvstart', sstring);
     call fparser_parseFunction(rfparser, 3, trim(adjustl(sstring)), cvariables)
 
+	! Fill in initialconditions for h, hu, hv
     do ieq = 1, rmatrixMC%neq
       call fparser_evalFunction(rfparser, 1, p_DvertexCoords(:,ieq), rarraySol(1)%Da(ieq))
       call fparser_evalFunction(rfparser, 2, p_DvertexCoords(:,ieq), rarraySol(2)%Da(ieq))
       call fparser_evalFunction(rfparser, 3, p_DvertexCoords(:,ieq), rarraySol(3)%Da(ieq))
     end do
 
+	! Release the function parser
     call fparser_release(rfparser)
-    
-!!$    if (Startvalues==1) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 0.1_DP
-!!$    rarraySol(2)%Da(1:rmatrixMC%neq) = 0_DP
-!!$    rarraySol(3)%Da(1:rmatrixMC%neq) = 0_DP
-!!$     rarraySol(1)%Da(1:rmatrixMC%neq) = 1_DP
-!!$    rarraySol(2)%Da(1:rmatrixMC%neq) = -5_DP
-!!$    rarraySol(3)%Da(1:rmatrixMC%neq) = 0_DP
-!!$    do i = 1, rmatrixMC%neq
-!!$        ! calculate squared distance to (0.0,0.0)
-!!$        dtmp1 = ((p_DvertexCoords(1,i)-0.0_DP)**2.0_DP+(p_DvertexCoords(2,i)-0.0_DP)**2.0_DP)
-!!$        if (dtmp1 < 2.5_DP**2.0_DP) then
-!!$            !rarraySol(1)%Da(i) = 1.0_DP + 0.4_DP*2.71_DP**(-5.0_DP*dtmp1)
-!!$    !        rarraySol(1)%Da(i) = 10.5_DP
-!!$        end if
-!!$        if (p_DvertexCoords(1,i)>0) then
-!!$         rarraySol(1)%Da(i) = 1_DP
-!!$    rarraySol(2)%Da(i) = 5.0_DP
-!!$    
-!!$        end if
-!!$      
-!!$    end do
-!!$
-!!$    elseif (Startvalues==2) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 1.0_DP
-!!$    do i = 1, rmatrixMC%neq
-!!$        ! calculate squared distance to (0,0)
-!!$        dtmp1 = ((p_DvertexCoords(1,i))**2.0_DP+(p_DvertexCoords(2,i))**2.0_DP)
-!!$        if (dtmp1 < 25) then
-!!$            
-!!$            rarraySol(1)%Da(i) = 10.0_DP
-!!$        end if
-!!$    end do
-!!$    
-!!$    elseif (Startvalues==3) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 1.0_DP
-!!$    do i = 1, rmatrixMC%neq
-!!$        ! calculate squared distance to (0,0)
-!!$        dtmp1 = ((p_DvertexCoords(1,i))**2.0_DP+(p_DvertexCoords(2,i))**2.0_DP)
-!!$        if (dtmp1 < 81) then
-!!$            
-!!$            rarraySol(1)%Da(i) = 3.0_DP
-!!$        end if
-!!$    end do
-!!$    
-!!$    elseif (Startvalues==4) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 1.0_DP
-!!$    do i = 1, rmatrixMC%neq
-!!$        ! calculate squared distance to (0,0)
-!!$        dtmp1 = ((p_DvertexCoords(1,i)-8)**2.0_DP+(p_DvertexCoords(2,i))**2.0_DP)
-!!$        if (dtmp1 < 1) then
-!!$            
-!!$            rarraySol(1)%Da(i) = 3.0_DP
-!!$            rarraySol(2)%Da(i) = 3.0_DP*3.0_DP
-!!$        end if
-!!$    end do
-!!$
-!!$elseif (Startvalues==5) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 1.0_DP
-!!$    where(p_DvertexCoords(1,:)<0)
-!!$        
-!!$            rarraySol(1)%Da(:) = 3.0_DP
-!!$           
-!!$        end where
-!!$
-!!$elseif (Startvalues==6) then
-!!$
-!!$    rarraySol(1)%Da(1:rmatrixMC%neq) = 1.0_DP
-!!$    do i = 1, rmatrixMC%neq
-!!$        ! calculate squared distance to (0,0)
-!!$        dtmp1 = ((p_DvertexCoords(1,i)-7)**2.0_DP+(p_DvertexCoords(2,i))**2.0_DP)
-!!$        if (dtmp1 < 4) then
-!!$            
-!!$            rarraySol(1)%Da(i) = 10.0_DP
-!!$            
-!!$        end if
-!!$    end do
-!!$
-!!$    elseif (Startvalues==7) then   ! Dam Break
-!!$        ! Set initial values
-!!$        rarraySol(1)%Da(1:rmatrixMC%neq) = 5.0_DP
-!!$        where(p_DvertexCoords(1,:)<101)
-!!$                rarraySol(1)%Da(:) = 10.0_DP
-!!$        end where
-!!$        ! Set boundary conditions 
-!!$        
-!!$        
-!!$    elseif (Startvalues==8) then   ! Balken
-!!$        ! Set initial values
-!!$        rarraySol(1)%Da(1:rmatrixMC%neq) = 5.0_DP
-!!$        where(p_DvertexCoords(1,:)<12)
-!!$                rarraySol(1)%Da(:) = 10.0_DP
-!!$        end where
-!!$        ! Set boundary conditions 
-!!$        
-!!$
-!!$    elseif (Startvalues==9) then   ! Zylinder
-!!$        ! Set initial values
-!!$        rarraySol(1)%Da(1:rmatrixMC%neq) = 5.0_DP
-!!$	rarraySol(2)%Da(1:rmatrixMC%neq) = 0.0_DP
-!!$	rarraySol(3)%Da(1:rmatrixMC%neq) = 0.0_DP
-!!$        where(p_DvertexCoords(1,:)>40)
-!!$                rarraySol(1)%Da(:) = 10.0_DP
-!!$        end where
-!!$        ! Set boundary conditions 
-!!$        
-!!$        
-!!$    end if
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
-    ! Write first video file (the initial conditions)
-	!  if we want to make a video
+    !  Write first video file (the initial conditions)
+	! if we want to make a video
     if (makevideo == 1) then
         ! Start UCD export to GMV file:
         call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
