@@ -381,26 +381,28 @@ contains
       DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
       DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
     end do
-    if (ive .eq. TRIA_NVETRI2D+1) then
-      call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
-    else
-      call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
-    end if
-    
-    bcheck=.TRUE.
-    
-    if (bcheck) then
-      if (present(iresult)) iresult = 1
-      if (present(ilastElement)) ilastElement = iel
-      if (present(ilastEdge)) ilastEdge = 0
-      !return
-    end if
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
     ! let's hope a point is not moved more than imaxIter elements in 
     ! one step...
     ieliteration: do ite = 1,imaxIter
     
+      ! Check if the point is in the element.
+      ! bcheck will be set to TRUE if that's the case.
+      if (ive .eq. TRIA_NVETRI2D+1) then
+        call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+      else
+        call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+      end if
+      
+      if (bcheck) then
+        ! We found the element.
+        if (present(iresult)) iresult = 1
+        if (present(ilastElement)) ilastElement = iel
+        if (present(ilastEdge)) ilastEdge = 0
+        return
+      end if
+      
       ! Calculate a point inside of the element. We start the ray from there.
       ! For simplicity (assuming convexity of the element) we take half the
       ! line from vertex 1 to vertex 3.
@@ -426,7 +428,7 @@ contains
           
           call gaux_isIntersection_line2D (dx1,dy1,dx2,dy2,dxmid,dymid,&
               Dpoint(1),Dpoint(2),bcheck)
-          bcheck=.true.
+          
           if (bcheck) then
           
             ! Go on searching in the neighbour element
