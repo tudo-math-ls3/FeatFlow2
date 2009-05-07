@@ -2452,7 +2452,7 @@ contains
           call sys_halt()
         end if
       
-        if ((j1 .eq. 0) .or. (j2 .le. j1)) then
+        if ((j1 .eq. 0) .or. (j2 .le. j1) .or. (i .le. j1)) then
         
           ityp = 2
           
