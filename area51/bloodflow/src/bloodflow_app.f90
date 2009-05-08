@@ -12,27 +12,38 @@ program bloodflow_app
 
   use bloodflow
   use fsystem
+  use paramlist
   
   implicit none 
 
   type(t_bloodflow) :: rbloodflow
-  real(DP) :: dtime
+  real(DP) :: dtime,dtimeStop,dtimeStep
 
   ! Initialization
   call bloodflow_init(rbloodflow, 'blood1.dat', 'data')
 
-  ! Set simulation time by hand
-  dtime = 0.4
+  ! Get time stepping values
+  call parlst_getvalue_double(rbloodflow%rparlist, 'Timestepping', 'dtimeStart', dtime)
+  call parlst_getvalue_double(rbloodflow%rparlist, 'Timestepping', 'dtimeStop',  dtimeStop)
+  call parlst_getvalue_double(rbloodflow%rparlist, 'Timestepping', 'dtimeStep',  dtimeStep)
 
-  ! Evaluate the object location at simulation time
-  call bloodflow_evalObject(rbloodflow, dtime)
+  ! Time stepping loop
+  do while (dtime+dtimeStep .le. dtimeStop)
   
-  ! Evaluate the bloodflow structure
-  call bloodflow_evalIndicator(rbloodflow)
+    ! Update simulation time
+    dtime = dtime+dtimeStep
 
-  ! Write the content of the bloodflow structure to GMV file
-  call bloodflow_outputStructure(rbloodflow)
+    ! Evaluate the object location at simulation time
+    call bloodflow_evalObject(rbloodflow, dtime)
+    
+    ! Evaluate the bloodflow structure
+    call bloodflow_evalIndicator(rbloodflow)
+    
+    ! Write the content of the bloodflow structure to GMV file
+!    call bloodflow_outputStructure(rbloodflow)
 
+  end do
+  
   ! Finalization
   call bloodflow_done(rbloodflow)
   
