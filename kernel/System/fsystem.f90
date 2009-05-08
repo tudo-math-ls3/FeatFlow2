@@ -2037,19 +2037,19 @@ contains
 
       ! Copy complete string
       sresult = svalueInEnv
-      sys_getenv_string = .TRUE.
+      sys_getenv_string = .true.
 
     case (1)
       ! Environment variable does not exist
       sresult = ""
-      sys_getenv_string = .FALSE.
+      sys_getenv_string = .false.
 
     case default
       !  2: Processor does not support environment variables
       ! >2: Some error occurred
       ! -1: variable svalueInEnv too short to absorb environment variables` content
       sresult = ""
-      sys_getenv_string = .FALSE.
+      sys_getenv_string = .false.
 
     end select
 
