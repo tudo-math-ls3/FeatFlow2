@@ -3002,6 +3002,7 @@ contains
     !CALL cc_assembleSpaceTimeRHS (rproblem, &
     !  RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
     !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
+    call output_line ('NLST-Solver: Assembling the RHS vector...')
     call trhsevl_assembleRHS (rproblem, &
       RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, .false.)
 
@@ -3015,6 +3016,8 @@ contains
 
     ! Now work with rd, our 'defect' vector
     call sptivec_copyVector (rb,rd)
+
+    call output_line ('NLST-Solver: Assembling the initial defect...')
 
     ! Assemble the defect.
     !CALL cc_assembleSpaceTimeDefect (rproblem, rspaceTimeMatrix, &
