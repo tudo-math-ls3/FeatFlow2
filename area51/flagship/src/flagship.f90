@@ -97,7 +97,11 @@ program flagship
   call output_line('  Parameterfile:   '//trim(sparameterfileName))
   call output_separator(OU_SEP_STAR)
   call output_lbrk()
-  
+  call output_line('The following settings are used for simulation')
+  call output_separator(OU_SEP_MINUS)
+  call parlst_info(rparlist)
+  call output_separator(OU_SEP_MINUS)
+
 
   ! Call application module
   select case(trim(application))
