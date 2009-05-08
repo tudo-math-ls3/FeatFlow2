@@ -6022,7 +6022,7 @@ end subroutine
 
   ! local variables
   real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
-  real(DP) :: drho1,drho0,dfr
+  real(DP) :: drho1,drho0,dfr,dresscale
   integer :: ite,i
 
   ! The system matrix
@@ -6116,18 +6116,29 @@ end subroutine
     call tbc_implementBCdefect (rsolverNode%p_rproblem,&
         p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
 
-    if (bprec) then
-      ! Perform preconditioning with the assigned preconditioning
-      ! solver structure.
-      call sptils_precondDefect (p_rprecSubnode,p_DR)
-      call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
-    end if
-    
     ! Get the norm of the residuum
     dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
     if (.not.((dres .ge. 1E-99_DP) .and. &
               (dres .le. 1E99_DP))) dres = 0.0_DP
 
+    if (bprec) then
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      call sptils_precondDefect (p_rprecSubnode,p_DR)
+      call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      
+      ! We scane the absolute stopping criterion by the difference
+      ! between the preconditioned and unpreconditioned defect --
+      ! to encounter the difference in the residuals.
+      ! This is of course an approximation to 
+      dresscale = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+      if (.not.((dresscale .ge. 1E-99_DP) .and. &
+                (dresscale .le. 1E99_DP))) dresscale = 1.0_DP
+      dresscale = dres / dresscale
+    else
+      dresscale = 1.0_DP
+    end if
+    
     ! Initialize starting residuum
       
     rsolverNode%dinitialDefect = dres
@@ -6148,9 +6159,15 @@ end subroutine
     else
 
       if (rsolverNode%ioutputLevel .ge. 2) then
-        call output_line ('Space-Time-BiCGStab: Iteration '// &
-             trim(sys_siL(0,10))//',  !!RES!! = '//&
-             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        if (bprec) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(rsolverNode%dinitialDefect*dresscale,15)) )
+        else
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        end if
       end if
 
       call sptivec_copyVector(p_DR,p_DR0)
@@ -6260,6 +6277,7 @@ end subroutine
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
+        dfr = dfr*dresscale
         if (sptils_testDivergence(rsolverNode,dfr)) then
           call output_line ('Space-Time-BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
@@ -6278,9 +6296,15 @@ end subroutine
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
-          call output_line ('Space-Time-BiCGStab: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
-              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          if (bprec) then
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+                trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+          else
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          end if
         end if
 
       end do
@@ -6297,9 +6321,15 @@ end subroutine
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
           (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
-        call output_line ('Space-Time-BiCGStab: Iteration '// &
-            trim(sys_siL(ITE,10))//',  !!RES!! = '//&
-            trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        if (bprec) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+        else
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        end if
       end if
 
     end if
