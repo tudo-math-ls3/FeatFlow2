@@ -430,7 +430,7 @@ contains
   ! OPTIONAL: Name of an log file for deterministic benchmark messages. If 
   ! not present or set to "", benchmark messages are not written out. The 
   ! name of the file may also coincide with slogFilename.
-  character(LEN=*), intent(IN), OPTIONAL :: sbenchLogfile
+  character(LEN=*), intent(IN), optional :: sbenchLogfile
   
 !</input>
 
