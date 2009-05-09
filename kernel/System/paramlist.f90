@@ -2282,11 +2282,12 @@ contains
   integer, intent(OUT) :: ios
   
   ! local variables
-  integer :: eol
+  integer :: eol,isize
   character :: c
   
   sdata = ''
   ilinelen = 0
+  isize = 0
   
   ! Read the data - as long as the line/file does not end.
   eol = NO
@@ -2297,7 +2298,7 @@ contains
     ! Unfortunately, Fortran forces me to use this dirty GOTO
     ! to decide processor-independently whether the line or
     ! the record ends.
-    read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
+    read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20,size=isize) c
     goto 30
     
 10  continue
@@ -2314,7 +2315,7 @@ contains
     
 30  continue    
     ! Don't do anything in case of an error
-    if (ios .eq. 0) then
+    if ((ios .eq. 0) .and. (isize .ge. 1)) then
     
       ilinelen = ilinelen + 1
       sdata (ilinelen:ilinelen) = c
