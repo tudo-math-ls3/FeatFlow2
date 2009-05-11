@@ -43,11 +43,11 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX+NLMIN) as coarse grid
 
-NLMIN              = 4
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 4
+NLMAX              = 6
 
 # ------------------------------------------------------------------------
 
@@ -98,7 +98,10 @@ iElementType       = 5
 # 0=Streamline Diffusion
 # 1=upwind
 # 2=unified edge oriented jump stabilisation
+# 3=Streamline Diffusion (new implementation)
+# 4=unified edge oriented jump stabilisation (new implementation)
 # iUpwind1 holds for the primal equation, iUpwind2 for the dual one.
+# 5=UEO stabilisation with precomputed matrix and optimised matrix stencils
 
 iUpwind1           = 0
 iUpwind2           = 0
@@ -287,6 +290,8 @@ iconvectionExplicit = 0
 #     Implemented by DOF.
 # =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
 #     Implemented by cubature point (more exact). Analytic Newton matrix.
+# =3: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by DOF. Newton matrix is approximative.
 ccontrolConstraints = 0
 
 # Constraints on u_1
