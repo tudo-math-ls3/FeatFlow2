@@ -946,10 +946,8 @@ contains
 !</input>
 
 !<result>
-
     ! double precision value
     real(DP) :: dvalue
-
 !</result>
 !</function>
     
@@ -1006,10 +1004,8 @@ contains
 !</input>
 
 !<result>
-
     ! single precision value
     real(SP) :: fvalue
-
 !</result>
 !</function>
     
@@ -1704,20 +1700,20 @@ contains
     ! filled up with white spaces.
 !</description>
 
-!<result>
-    ! String representation of the value (left-aligned),
-    ! fixed length of idigits characters
-    character (len=idigits) :: soutput
-!</result>
-
 !<input>
-
     ! value to be converted
     integer, intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in) :: idigits
 !</input>
+
+!<result>
+    ! String representation of the value (left-aligned),
+    ! fixed length of idigits characters
+    character (len=idigits) :: soutput
+!</result>
+
 !</function>
 
     soutput = adjustl(sys_si(ivalue, idigits))
@@ -1736,12 +1732,6 @@ contains
     ! filled up with zeros.
 !</description>
 
-!<result>
-    ! String representation of the value (left-aligned),
-    ! fixed length of idigits characters
-    character (len=idigits) :: soutput
-!</result>
-
 !<input>
 
     ! value to be converted
@@ -1750,6 +1740,12 @@ contains
     !number of decimals
     integer, intent(in) :: idigits
 !</input>
+
+!<result>
+    ! String representation of the value (left-aligned),
+    ! fixed length of idigits characters
+    character (len=idigits) :: soutput
+!</result>
 !</function>
 
     soutput = adjustl(sys_si0(ivalue, idigits))
@@ -1767,20 +1763,19 @@ contains
     ! This routine converts a long integer value to a string of length idigits.
 !</description>
 
-!<result>
-    ! String representation of the value (left-aligned),
-    ! fixed length of idigits characters
-    character (len=idigits) :: soutput
-!</result>
-
 !<input>
-
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
 !</input>
+
+!<result>
+    ! String representation of the value (left-aligned),
+    ! fixed length of idigits characters
+    character (len=idigits) :: soutput
+!</result>
 !</function>
 
     soutput = adjustl(sys_sli(ivalue, idigits))
@@ -1798,20 +1793,19 @@ contains
     ! This routine converts a long integer value to a string of length idigits.
 !</description>
 
-!<result>
-    ! String representation of the value (left-aligned),
-    ! fixed length of idigits characters
-    character (len=idigits) :: soutput
-!</result>
-
 !<input>
-
     ! value to be converted
     integer(I64), intent(in) :: ivalue
 
     !number of decimals
     integer, intent(in)      :: idigits
 !</input>
+
+!<result>
+    ! String representation of the value (left-aligned),
+    ! fixed length of idigits characters
+    character (len=idigits) :: soutput
+!</result>
 !</function>
 
     soutput = adjustl(sys_sli0(ivalue, idigits))
