@@ -257,7 +257,7 @@ TOKEN6 := 0
 
 ifeq ($(call match,$(ID),alpha-ev6-osf1-cf90-.*),yes)
 # invokes the Compaq Fortran 77/90 (formerly DIGITAL Fortran 77/90)
-# compiler, local umfpack, local metis
+# compiler, local umfpack
 # No MPI wrappers installed on our alphas
 MPIWRAPPERS = NO
 include $(TEMPLATESDIR)/alpha-ev6-osf1-generic.mk
@@ -307,7 +307,7 @@ endif
 
 ifeq ($(call match,$(ID),ibm-powerpc_power4-aix-xlf-.*-poempi),yes)
 # invokes the IBM XL Fortran compiler, uses POE MPI
-# local umfpack, local metis
+# local umfpack
 TOKEN6 := 1
 include $(TEMPLATESDIR)/xlf-generic.mk
 include $(TEMPLATESDIR)/ibm-powerpc_power4-aix-generic.mk
@@ -340,7 +340,7 @@ endif
 ################################ Itanium 2 #################################
 
 ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-blas-mpi),yes)
-# invokes the intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
 include $(TEMPLATESDIR)/blas-generic.mk
@@ -353,7 +353,7 @@ TOKEN6 := 1
 endif
 
 ifeq ($(call match,$(ID),ia64-itanium2-linux-intel-mkl-mpi),yes)
-# invokes the intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/intel64-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
@@ -373,7 +373,7 @@ endif
 ############################ Itanium 2 Dual Core #############################
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-cygwin_nt.*-g95-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 #CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
@@ -381,7 +381,7 @@ include $(TEMPLATESDIR)/g95-generic.mk
 endif
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-g95-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 #CFLAGSF77:=$(CFLAGSF77) -fno-underscoring
@@ -390,7 +390,7 @@ endif
 
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-gcc-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -407,7 +407,7 @@ endif
 
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/ia64-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 endif
@@ -431,7 +431,7 @@ endif
 
 
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-.*-ompi),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/openmpi-generic.mk
 # Add preprocessor flag to enable 64bit UMFPACK support.
 # UMFPACK documentation states to also add -DLP64, but there is no
@@ -445,7 +445,7 @@ endif
 ################################# Athlon 64 ##################################
 
 ifeq ($(call match,$(ID),pc-athlon64-cygwin_nt.*-g95-.*),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -459,7 +459,7 @@ endif
 endif
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-g95-.*),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -474,7 +474,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-gcc-.*),yes)
-# invokes the gfortran Fortran 77/90 compiler, local umfpack, local metis
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -489,7 +489,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -504,7 +504,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlon64-linux-sunstudio-.*),yes)
-# invokes the Sunstudio Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Sunstudio Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
@@ -556,7 +556,7 @@ endif
 ################################# Turion X2 ##################################
 
 ifeq ($(call match,$(ID),pc-turionx2-cygwin_nt.*-g95-*),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 include $(TEMPLATESDIR)/openmpi-generic.mk
@@ -572,7 +572,7 @@ endif
 endif
 
 ifeq ($(call match,$(ID),pc-turionx2-linux-g95-goto-ompi),yes)
-# invokes the G95 Fortran 77/90 compiler, local umfpack, local metis
+# invokes the G95 Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 include $(TEMPLATESDIR)/openmpi-generic.mk
@@ -592,7 +592,7 @@ endif
 ################################# Athlon XP ##################################
 
 ifeq ($(call match,$(ID),pc-athlonxp-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -605,7 +605,7 @@ endif
 endif
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -619,7 +619,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -633,7 +633,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -647,7 +647,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-athlonxp-linux-pgi-.*),yes)
-# invokes the Portland Group Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
@@ -693,7 +693,7 @@ endif
 ################################# CoreDuo 32bit ################################
 
 ifeq ($(call match,$(ID),pc-coreduo-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
+# invokes the GNU Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -714,7 +714,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack, local metis
+# invokes the GNU Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -729,7 +729,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -753,7 +753,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coreduo-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -795,7 +795,7 @@ endif
 ################################# CoreDuo 64bit ################################
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -819,7 +819,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -829,6 +829,27 @@ CFLAGSF90     := -xT $(CFLAGSF90)
 CFLAGSC       := -xT $(CFLAGSC)
 CFLAGSCXX     := -xT $(CFLAGSCXX)
 LDFLAGS       := -xT $(LDFLAGS)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc64-coreduo-linux-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: Not yet sure whether optimisation flags are optimal!';
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp=core2-64
+CFLAGSF77     := $(CFLAGSF77) -tp=core2-64
+CFLAGSF90     := $(CFLAGSF90) -tp=core2-64
+CFLAGSC       := $(CFLAGSC) -tp=core2-64
+LDFLAGS       := $(LDFLAGS) -tp=core2-64
+endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
 endif
 endif
 
@@ -851,6 +872,12 @@ include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-acml.*),yes)
+# Use AMD Core Math Library
+include $(TEMPLATESDIR)/acml-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
@@ -867,7 +894,7 @@ endif
 ################################# CoreSolo 32 bit ###############################
 
 ifeq ($(call match,$(ID),pc-coresolo-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -890,7 +917,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -913,7 +940,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -928,7 +955,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-gcc-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -943,7 +970,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-coresolo-linux-sunstudio-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 endif
@@ -977,7 +1004,7 @@ endif
 ############################### Opteron 32bit ################################
 
 ifeq ($(call match,$(ID),pc-opteron-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -991,7 +1018,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1005,7 +1032,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -1018,7 +1045,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1033,7 +1060,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-opteron-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+# invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
@@ -1083,7 +1110,7 @@ endif
 ########################### Opteron 32bit DualCore ##########################
 
 ifeq ($(call match,$(ID),pc-opteronx2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1118,7 +1145,7 @@ endif
 ########################### Opteron 64bit DualCore ##########################
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1132,8 +1159,8 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1152,8 +1179,8 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1172,7 +1199,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1191,7 +1218,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+# invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Sun Studio seems to optimise automatically for the detected CPU.
@@ -1240,8 +1267,8 @@ endif
 ############################### Opteron 64bit ################################
 
 ifeq ($(call match,$(ID),pc64-opteron-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1260,8 +1287,8 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1285,7 +1312,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1309,7 +1336,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1328,7 +1355,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-pgi-.*),yes)
-# invokes the Portland Group Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
@@ -1347,7 +1374,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-psc-.*),yes)
-# invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
+# invokes the PathScale Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pathscale-generic.mk
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64
@@ -1371,7 +1398,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+# invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # # # # # # # # # # #      WARNING !!!     # # # # # # # # # # #
@@ -1489,7 +1516,7 @@ endif
 ###################### Opteron 64bit running 32bit app #######################
 
 ifeq ($(call match,$(ID),pc64-opteron_ia32-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
@@ -1508,7 +1535,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc64-opteron_ia32-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 CFLAGSF77LIBS := -m32 $(CFLAGSF77LIBS)
@@ -1542,7 +1569,7 @@ endif
 ################################# Pentium 3 ##################################
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -1555,7 +1582,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1569,7 +1596,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1583,7 +1610,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium3-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1625,7 +1652,7 @@ endif
 ################################# Pentium M ##################################
 
 ifeq ($(call match,$(ID),pc-pentiumm-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -1659,7 +1686,7 @@ endif
 ################################# Pentium 4 ##################################
 
 ifeq ($(call match,$(ID),pc-pentium4-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1673,7 +1700,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1687,7 +1714,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1728,7 +1755,7 @@ endif
 ############################# Pentium 4 (Nocona) #############################
 
 ifeq ($(call match,$(ID),pc64-pentium4-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1769,7 +1796,7 @@ endif
 ############################## Pentium 4 Mobile ##############################
 
 ifeq ($(call match,$(ID),pc-pentium4m-cygwin_nt.*-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1783,7 +1810,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-g95-.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 ifeq ($(call optimise), YES)
@@ -1797,7 +1824,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack, local metis
+# invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
 ifeq ($(call optimise), YES)
@@ -1810,7 +1837,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1824,7 +1851,7 @@ endif
 
 
 ifeq ($(call match,$(ID),pc-pentium4m-linux-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+# invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 #CFLAGSC       := -xc99 $(CFLAGSC)
@@ -1859,7 +1886,7 @@ endif
 ######################### Penryn 64 bit (Xeon E5450) #########################
 
 ifeq ($(call match,$(ID),pc64-penryn-linux-intel-.*),yes)
-# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+# invokes the Intel Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
 ifeq ($(call optimise), YES)
@@ -1883,9 +1910,36 @@ endif
 endif
 
 
+ifeq ($(call match,$(ID),pc64-penryn-linux-pgi-.*),yes)
+# invokes the Portland Group Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pgi-generic.mk
+ifeq ($(call optimise), YES)
+MESSAGE  := $(MESSAGE) \
+	    echo '*** Warning: Not yet sure whether optimisation flags are optimal!';
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp penryn-64
+CFLAGSF77     := $(CFLAGSF77) -tp=penryn-64
+CFLAGSF90     := $(CFLAGSF90) -tp=penryn-64
+CFLAGSC       := $(CFLAGSC) -tp=penryn-64
+LDFLAGS       := $(LDFLAGS) -tp=penryn-64
+endif
+# Probably activate 64 bit integer support
+ifeq ($(strip $(INTSIZE)), LARGE)
+CFLAGSF77     := $(CFLAGSF77) -i8
+CFLAGSF90     := $(CFLAGSF90) -i8
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-acml.*),yes)
+# Use AMD Core Math Library
+include $(TEMPLATESDIR)/acml-generic.mk
 endif
 
 
@@ -1893,7 +1947,7 @@ endif
 ############################### Sun Ultrasparc v8 #############################
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-blas.*),yes)
-# invokes the GNU g95 compiler, local umfpack, local metis
+# invokes the GNU g95 compiler, local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
@@ -1910,7 +1964,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-g95-perf.*),yes)
 # invokes the GNU g95 compiler, uses LAM MPI, Perflib BLAS,
-# local umfpack, local metis
+# local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
 include $(TEMPLATESDIR)/sunperf-generic.mk
@@ -1939,7 +1993,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv8-sunos-sunstudio-.*),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
-# local umfpack, local metis
+# local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
@@ -1986,7 +2040,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-blas-lammpi),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
-# local umfpack, local metis
+# local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 include $(TEMPLATESDIR)/lammpi-generic.mk
@@ -2015,7 +2069,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-ompi),yes)
 # invokes the Sun Studio Compiler suite, uses OpenMPI, Perflib BLAS,
-# local umfpack, local metis
+# local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 include $(TEMPLATESDIR)/openmpi-generic.mk
@@ -2040,7 +2094,7 @@ endif
 
 ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-lammpi),yes)
 # invokes the Sun Studio Compiler suite, uses LAM MPI, Perflib BLAS,
-# local umfpack, local metis
+# local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
 include $(TEMPLATESDIR)/lammpi-generic.mk
@@ -2067,7 +2121,7 @@ endif
 ########################## Sun Whatever Solaris 10 ###########################
 
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-sunstudio-.*),yes)
-# invokes the Sun Studio Compiler suite, local umfpack, local metis
+# invokes the Sun Studio Compiler suite, local umfpack
 #
 # not fully tested settings
 MESSAGE := $(MESSAGE) \
@@ -2095,7 +2149,7 @@ endif
 
 
 ifeq ($(call match,$(ID),sun4v-sparcv9-sunos-gcc-.*),yes)
-# invokes the GNU Compiler suite, local umfpack, local metis
+# invokes the GNU Compiler suite, local umfpack
 #
 # not fully tested settings
 MESSAGE := $(MESSAGE) \
