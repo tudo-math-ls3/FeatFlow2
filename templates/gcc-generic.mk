@@ -91,8 +91,9 @@ CFLAGSF90     := -DENABLE_USE_ONLY -DHAS_INTRINSIC_FLUSH -DHAS_INTRINSIC_IARGC \
 		 -DHAS_INTRINSIC_ISATTY $(CFLAGSF90) $(CFLAGSF77LIBS) \
 		 -J$(OBJDIR) -fbounds-check \
 		 -Wcharacter-truncation -Winline \
-		 -Wline-truncation -Wnonstd-intrinsics -Wsurprising  \
+		 -Wline-truncation -Wsurprising  \
 		 -Wunreachable-code -Wunused-label -Wunused-variable
+		 # -Wnonstd-intrinsics: not available in 4.4.0
 		 # -Wuninitialized -Wimplicit-interface -Wunused-variable
 # Do not specify:
 # * -std=f95 
