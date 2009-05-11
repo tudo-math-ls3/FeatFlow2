@@ -12,8 +12,8 @@
 !#
 !# There are a couple of examples provided how to solve this problem.
 !# Each example has its own characteristics how to solve the problem.
-!# 
-!# There are examples for 1D, 2D and 3D triangulations. The 
+!#
+!# There are examples for 1D, 2D and 3D triangulations. The
 !# poissonXd_method0_simple modules show the very basic steps how to solve the
 !# Poisson problem. On top of that, the poissonXd_method1_XXXX modules
 !# extend the poissonXd_method0_simple to more general situations (mmultigrid,
@@ -27,7 +27,71 @@
 !##############################################################################
 
 program poisson
-   
+
+#ifdef ENABLE_USE_ONLY
+  use fsystem, only: &
+       ! global variables and constants
+       SYS_STRLEN, &
+       ! functions
+       system_init, sys_getenv_string
+  use genoutput, only: &
+       ! functions
+       output_init, output_lbrk, output_line
+  use storage, only: &
+       ! functions
+       storage_init, storage_info, storage_done
+  use poisson1d_method0_simple, only: &
+       ! functions
+       poisson1d_0_simple
+  use poisson1d_method1_mg, only: &
+       ! functions
+       poisson1d_1_mg
+  use poisson2d_method0_simple, only: &
+       ! functions
+       poisson2d_0_simple
+  use poisson2d_method1_mg, only: &
+       ! functions
+       poisson2d_1_mg
+  use poisson2d_method1_ncc, only: &
+       ! functions
+       poisson2d_1_ncc
+  use poisson2d_method1_em30, only: &
+       ! functions
+       poisson2d_1_em30
+  use poisson2d_method1_fbc, only: &
+       ! functions
+       poisson2d_1_fbc
+  use poisson2d_method1_hadapt, only: &
+       ! functions
+       poisson2d_1_hadapt
+  use poisson2d_method1_l2prj, only: &
+       ! functions
+       poisson2d_1_l2prj
+  use poisson2d_method1_prolmat, only: &
+       ! functions
+       poisson2d_1_prolmat
+  use poisson2d_method2, only: &
+       ! functions
+       poisson2d_2
+  use poisson2d_method2_collect, only: &
+       ! functions
+       poisson2d_2_collect
+  use poisson2d_method2_cmsort, only: &
+       ! functions
+       poisson2d_2_cmsort
+  use poisson2d_method2_mg, only: &
+       ! functions
+       poisson2d_2_mg
+  use poisson3d_method0_simple, only: &
+       ! functions
+       poisson3d_0_simple
+  use poisson3d_method1_mg, only: &
+       ! functions
+       poisson3d_1_mg
+  use poisson3d_method1_em30, only: &
+       ! functions
+       poisson3d_1_em30
+#else
   use poisson1d_method0_simple
   use poisson1d_method1_mg
   use poisson2d_method0_simple
@@ -45,20 +109,21 @@ program poisson
   use poisson3d_method1_mg
   use poisson3d_method1_em30
   use poisson2d_method1_ncc
-  
+#endif
+
   implicit none
-  
+
   ! local variables
   character(len=SYS_STRLEN) :: slogdir,slogfile
-  
-  ! The very first thing in every application: 
+
+  ! The very first thing in every application:
   ! Initialise system-wide settings:
-  
+
   call system_init()
-  
+
   ! Initialise the output system.
   !
-  ! Normally, we write all the output to the screen and to a file 
+  ! Normally, we write all the output to the screen and to a file
   ! './log/output.txt'.
   ! In the case that environment variables "$logdir"/"$resultsfile" exists,
   ! we write all the output to that file. This can be used e.g. in
@@ -70,10 +135,10 @@ program poisson
     call output_init ('./log/output.txt')
   end if
 
-  ! The very second thing in every program: 
-  ! Initialise the FEAT 2.0 storage management: 
+  ! The very second thing in every program:
+  ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
- 
+
   ! Call the problem to solve. Poisson 1D method 1 - simple:
   call output_lbrk ()
   call output_line ('Calculating Poisson-1D-Problem with method 0 - simple')
@@ -97,7 +162,7 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 1 - ncc')
   call output_line ('--------------------------------------------------')
   call poisson2d_1_ncc
-  
+
   ! Call the problem to solve. Poisson 2D method 1 - multigrid:
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 1 - multigrid')
@@ -121,13 +186,13 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 1 - hadapt')
   call output_line ('-----------------------------------------------------')
   call poisson2d_1_hadapt
-  
+
   ! Call the problem to solve. Poisson 2D method 1 - L2-projection:
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 1 - L2-projection')
   call output_line ('------------------------------------------------------------')
   call poisson2d_1_l2prj
-  
+
   ! Call the problem to solve. Poisson 2D method 1 - Prolongation matrix:
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix')
@@ -139,13 +204,13 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 2')
   call output_line ('--------------------------------------------')
   call poisson2d_2
-  
+
   ! Call the problem to solve. Poisson 3: Sorting with Cuthill McKee
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 2 - CM-sorting')
   call output_line ('---------------------------------------------------------')
   call poisson2d_2_cmsort
-  
+
   ! Call the problem to solve. Poisson 5:
   call output_lbrk ()
   call output_line ('Calculating Poisson-2D-Problem with method 2 - multigrid')
@@ -157,7 +222,7 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 2 - collection')
   call output_line ('---------------------------------------------------------')
   call poisson2d_2_collect
-  
+
   ! Call the problem to solve. Poisson3D-1:
   call output_lbrk ()
   call output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
@@ -181,8 +246,8 @@ program poisson
   ! This should display 'Handles in use=0' and 'Memory in use=0'!
   call output_lbrk ()
   call storage_info(.true.)
-  
+
   ! Clean up the storage management, finish
   call storage_done()
-  
+
 end program
