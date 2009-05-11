@@ -39,7 +39,7 @@ UNPACK=if test -f $(LOCKFILE); then \
 		test -n '$(PATCHTEXT1)' && echo $(PATCHTEXT1); \
 		test -n '$(PATCHTEXT2)' && echo $(PATCHTEXT2); \
 		test -n '$(PATCHTEXT3)' && echo $(PATCHTEXT3); \
-		echo $(PATCHCMD); \
+		echo "$(PATCHCMD)"; \
 		$(PATCHCMD); \
 		echo "\# Sources patched."; \
 	    fi; \
