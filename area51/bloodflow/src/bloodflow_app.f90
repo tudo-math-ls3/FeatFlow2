@@ -40,7 +40,7 @@ program bloodflow_app
     call bloodflow_evalIndicator(rbloodflow)
     
     ! Write the content of the bloodflow structure to GMV file
-!    call bloodflow_outputStructure(rbloodflow)
+    call bloodflow_outputStructure(rbloodflow)
 
   end do
   

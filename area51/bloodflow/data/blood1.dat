@@ -16,7 +16,7 @@ trifilename = grids/blood1.tri
 prmfilename = grids/blood1.prm
 
 # Number of global refinement levels
-iglobRefLevel = 8
+iglobRefLevel = 5
 
 ################################################################################
 [Output]
@@ -38,13 +38,13 @@ ylength = 2.5
 [Object]
 ################################################################################
 
-npoints = 200
+npoints = 100
 L       = 1.0
 c       = 1.0
 
 ################################################################################
 [Timestepping]
 ################################################################################
-dtimeStart = 0.0
-dtimeStop  = 6.283185307179586477
+dtimeStart = 0.5
+dtimeStop  = 0.51 #6.283185307179586477
 dtimestep  = 0.01

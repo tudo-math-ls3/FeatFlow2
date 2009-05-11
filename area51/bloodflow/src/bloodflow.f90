@@ -364,6 +364,7 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_msd) :: rmsd
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Dindicator
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
@@ -647,8 +648,22 @@ contains
     !
     !---------------------------------------------------------------------------
     
-    
+    call bloodflow_createMSDSystem(rmsd, rbloodflow%rtriangulation)
 
+    do i = 1, size(p_DvertexCoords, 2)
+
+      if (p_DvertexCoords(2, i) .ge.  1.5_DP .or.&
+          p_DvertexCoords(2, i) .le. -0.5_DP .or.&
+          p_DvertexCoords(1, i) .le. 0.5_DP .or.&
+          p_DvertexCoords(1, i) .ge. 1.5_DP) rmsd%Rparticles(i)%bfixed = .true.
+    end do
+
+    rmsd%Rparticles(1014)%Dcoords = rmsd%Rparticles(1014)%Dcoords+0.1
+    rmsd%Rparticles(1014)%bfixed = .true.
+
+    call bloodflow_solveMSDSystem(rmsd, rbloodflow%rtriangulation)
+    call bloodflow_releaseMSDSystem(rmsd)
+    
   contains
     
     !***************************************************************************
