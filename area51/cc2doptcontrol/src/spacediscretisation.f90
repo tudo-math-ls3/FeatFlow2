@@ -611,13 +611,15 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                               'IUPWIND1', i)
     if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
-        (i .eq. CCMASM_STAB_EDGEORIENTED2)) &
+        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
+        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
        cmatBuildType = BILF_MATC_EDGEBASED
 
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                               'IUPWIND2', i)
     if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
-        (i .eq. CCMASM_STAB_EDGEORIENTED2)) &
+        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
+        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
        cmatBuildType = BILF_MATC_EDGEBASED
   
     ! Initialise all levels...
@@ -794,6 +796,11 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
+    ! Stabilisation stuff
+    type(t_jumpStabilisation) :: rjumpStabil
+    integer :: iupwind1,iupwind2
+    real(DP) :: dupsam1,dupsam2
+    
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
@@ -844,12 +851,85 @@ contains
     ! Call the standard matrix setup routine to build the matrix.                    
     call stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
 
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    ! -----------------------------------------------------------------------
+    ! EOJ matrix, if the edge oriented stabilisation is active
+    ! -----------------------------------------------------------------------
+
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND1', iupwind1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND2', iupwind2)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'DUPSAM1', dupsam1)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'DUPSAM2', dupsam2)
+                              
+    if ((iupwind1 .eq. CCMASM_STAB_EDGEORIENTED3)) then
+      ! Create an empty matrix
+      call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+          rlevelInfo%rmatrixEOJ1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rlevelInfo%rmatrixEOJ1)
+    
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do, only initialise the viscosity...
+      rjumpStabil%dnu = rproblem%dnu
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgammastar = dupsam1
+      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+
+      ! Call the jump stabilisation technique to stabilise that stuff.   
+      ! We can assemble the jump part any time as it's independent of any
+      ! convective parts...
+      call conv_jumpStabilisation2d (&
+                          rjumpStabil, CONV_MODMATRIX, &
+                          rlevelInfo%rmatrixEOJ1)   
+    end if
+
+    if ((iupwind2 .eq. CCMASM_STAB_EDGEORIENTED3)) then
+    
+      ! Perhaps the second matrix is like the first, then we don't
+      ! have to assemble it.
+      if ((dupsam1 .eq. dupsam2) .and. (iupwind1 .eq. iupwind2)) then
+        ! Take that from the primal space.
+        call lsyssc_duplicateMatrix (rlevelInfo%rmatrixEOJ1,rlevelInfo%rmatrixEOJ2,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      else
+        ! Create an empty matrix
+        call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
+            rlevelInfo%rmatrixEOJ2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix (rlevelInfo%rmatrixEOJ2)
+
+        ! Set up the jump stabilisation structure.
+        ! There's not much to do, only initialise the viscosity...
+        rjumpStabil%dnu = rproblem%dnu
+        
+        ! Set stabilisation parameter
+        rjumpStabil%dgammastar = dupsam2
+        rjumpStabil%dgamma = rjumpStabil%dgammastar
+        
+        ! Matrix weight
+        rjumpStabil%dtheta = 1.0_DP
+
+        ! Call the jump stabilisation technique to stabilise that stuff.   
+        ! We can assemble the jump part any time as it's independent of any
+        ! convective parts...
+        call conv_jumpStabilisation2d (&
+                            rjumpStabil, CONV_MODMATRIX, &
+                            rlevelInfo%rmatrixEOJ2)   
+      end if
+    end if
 
     ! -----------------------------------------------------------------------
     ! Initialise the identity matrix
+    ! -----------------------------------------------------------------------
     call lsyssc_initialiseIdentityMatrix (rlevelInfo%rmatrixIdentityPressure)
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
 
@@ -1241,6 +1321,10 @@ contains
 
       ! If there is an existing mass matrix, release it.
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
+
+      ! Release the EOJ matrices if they exist.
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ2)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ1)
 
       ! Release Stokes, B1 and B2 matrix
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)

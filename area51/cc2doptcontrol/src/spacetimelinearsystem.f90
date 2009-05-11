@@ -367,9 +367,11 @@ contains
     rmatrixComponents%p_rmatrixStokes   => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
     rmatrixComponents%p_rmatrixB2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
+    rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass
     rmatrixComponents%p_rmatrixIdentityPressure => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%p_rmatrixEOJ1     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ1
+    rmatrixComponents%p_rmatrixEOJ2     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ2
 
     ! Get stabilisation parameters
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
@@ -1328,6 +1330,8 @@ contains
     rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%rmatrixB2              
     rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
+    rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1
+    rmatrixComponents%p_rmatrixEOJ2             => p_rlevelInfo%rmatrixEOJ2
         
     rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
     

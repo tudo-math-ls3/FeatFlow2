@@ -72,6 +72,10 @@ module cc2dmediumm2basic
 
     ! B2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB2
+    
+    ! Matrix with a precomputed EOJ stabilisation operator -- if EOJ is active.
+    type(t_matrixScalar) :: rmatrixEOJ1
+    type(t_matrixScalar) :: rmatrixEOJ2
 
     ! Three temp vectors for the full system.
     type(t_vectorBlock) :: rtempVector1
