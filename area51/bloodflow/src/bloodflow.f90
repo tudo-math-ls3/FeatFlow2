@@ -10,6 +10,7 @@
 
 module bloodflow
 
+  use bloodflow_msd
   use boundary
   use genoutput
   use geometry
@@ -77,6 +78,8 @@ module bloodflow
   end type t_bloodflow
 
 !</typeblock>
+
+!</types>
 
   !*****************************************************************************
    
@@ -397,7 +400,7 @@ contains
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
 
     !---------------------------------------------------------------------------
-    ! (1) Find element surrounding/meeting at first point of object:
+    ! (1) Find element surrounding/meeting at first point of the object:
     !
     !     The algorithm is really simply. An extensive search over all
     !     element of the triangulation is performed and the first
@@ -435,14 +438,14 @@ contains
     ipoint = ipoint+1
 
     !---------------------------------------------------------------------------
-    ! (2) Find elements surrounding/metting at all others points of object:
+    ! (2) Find elements surrounding/meeting at all others points of the object:
     !
     !     This algorithm is slightly more complicated. The list of
     !     points on the thin object is visited segment-by-segment. If
     !     the starting point (aka previous point) of the segment is
     !     located inside an element, then nothing needs to be done. If
     !     the previous point was located on an edge, then the opposite
-    !     elelemtn is also marked. Finally, if the previous point
+    !     element is also marked. Finally, if the previous point
     !     coincides with some corner vertex, then all elements meeting
     !     at that point are marked.
     !
@@ -450,7 +453,10 @@ contains
     !     inside the same element, then the above procedure applies to
     !     the endpoint. Otherwise, the segment must either intersect
     !     one edge of the current element or run through a corner
-    !     vertex.
+    !     vertex. In any case, we proceed to the adjacent element(s)
+    !     and check if the end point is located inside that element or
+    !     coincides with one of its edges/corners. This process
+    !     continues until the endpoint of the last segment is reached.
     !
     !---------------------------------------------------------------------------
 
@@ -634,7 +640,15 @@ contains
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
+
+
+    !---------------------------------------------------------------------------
+    ! (3) Find nearest neighbor of all points of the object:
+    !
+    !---------------------------------------------------------------------------
     
+    
+
   contains
     
     !***************************************************************************
@@ -776,7 +790,7 @@ contains
       end if
 
     end subroutine LinesIntersectionTest
-    
+
   end subroutine bloodflow_evalIndicator
 
 end module bloodflow
