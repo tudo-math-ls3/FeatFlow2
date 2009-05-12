@@ -395,7 +395,7 @@ contains
       
       !Assemble the concentration matrix
       !
-      CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rvector%rvectorBlock(4),1.0_DP)
+      CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,-1.0_DP)
       
       ! Assemble the gradient submatrices
       !          
@@ -1144,7 +1144,7 @@ contains
     end subroutine
       
       ! ***************************************************************************
-  SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rconcentration,dvectorWeight)
+  SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,dvectorWeight)
         
     ! Assembles the concentration matrix in the block matrix rmatrix at position (4,4):
     !
@@ -1160,7 +1160,7 @@ contains
 
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    TYPE(t_vectorScalar), OPTIONAL :: rconcentration
+    !TYPE(t_vectorScalar), OPTIONAL :: rconcentration
     
     ! Weight for the velocity vector; standard = -1.
     REAL(DP), INTENT(IN), OPTIONAL :: dvectorWeight
