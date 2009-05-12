@@ -463,7 +463,7 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
+    Dcoefficients(:,:,:) = 1.0_DP
 
   end subroutine
 
@@ -1426,7 +1426,7 @@ contains
 
    
      IF (cderivative .EQ. DER_FUNC) THEN
-       Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(1,:,:)) 
+       Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(1./(Dpoints(1,:,:)+1.)) 
      ELSE   
        Dvalues(:,:) = 0.0_DP
      END IF
