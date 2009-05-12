@@ -814,7 +814,7 @@ contains
     integer :: j,istrongDerivativeBmatrix
 
     ! A pointer to the Stokes and mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixStokes
+    type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixTemplateQ1
     
     ! A pointer to the PMass and masscoup matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
@@ -846,6 +846,8 @@ contains
     ! Get a pointer to the (scalar) Stokes matrix:
     p_rmatrixStokes => rlevelInfo%rmatrixStokes
     
+    ! Get a pointer to the (scalar) concentration matrix:
+    p_rmatrixTemplateQ1=> rlevelInfo%rmatrixTemplateQ1
     ! The global system looks as follows:
     !
     !    ( A         B1 )   ( A         B1 )
@@ -892,6 +894,8 @@ contains
     ! If it's necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
     call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
+
+    call stdop_assembleLaplaceMatrix (p_rmatrixTemplateQ1,.true.,-0.0001_DP)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)
@@ -1335,7 +1339,7 @@ contains
       !         p_rdiscretisation%RspatialDiscr(4),rlinform,.true.,&
       !          rvector1%RvectorBlock(4),coeff_AnalyticSolution_C,&
       !          rproblem%rcollection)                          
-      call anprj_discrDirect (rvector%RvectorBlock(4),ffunction_TargetC)                          
+      call anprj_discrDirect (rvector1%RvectorBlock(4),ffunction_TargetC)                          
       ! Clean up the collection (as we are done with the assembly.
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -1397,7 +1401,10 @@ contains
           call output_line(&
               'Cannot compute L2 projection, solver broke down. Using zero!')
           call lsysbl_clearVector (rvector)
-          
+        
+        
+       
+        
         else
           ! -----
           ! And the pressure. For that one we have to reinitialise the solver,
@@ -1435,6 +1442,8 @@ contains
             call output_line(&
                 'Cannot compute L2 projection, solver broke down. Using zero!')
             call lsysbl_clearVector (rvector)
+            
+ 
           end if
         end if
       end if
