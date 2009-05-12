@@ -108,9 +108,9 @@ ineumannBoundary = -1
 # Benchmark configuration:
 bdComponent1(4)=
    1.0  3  1  'Dirichlet0'  'Dirichlet0' 'Dirichlet0'  # [0.0,1.0] : Dirichlet-0 boundary
-   2.0  0  0                                           # ]1.0,2.0[ : Neumann boundary = do-nothing
-   3.0  1  1  'Dirichlet0'  'Dirichlet0'  ''           # [2.0,3.0] : Dirichlet-0 boundary
-   4.0  3  1  'ParProfile'  'Dirichlet0' 'Dirichlet0'  # [3.0,4.0] : parabolic profile in X, 0.0 in Y
+   2.0  0  0                                                       # ]1.0,2.0[ : Neumann boundary = do-nothing
+   3.0  1  1  'Dirichlet0'  'Dirichlet0' ''  # [2.0,3.0] : Dirichlet-0 boundary
+   4.0  3  1  'ParProfile'  'Dirichlet0' 'ParProfile'  # [3.0,4.0] : parabolic profile in X, 0.0 in Y
 
 # Driven cavity would be:
 # bdComponent1(4)=
@@ -119,5 +119,5 @@ bdComponent1(4)=
 #    3.0  3  1  'Dirichlet1'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
 #    4.0  3  1  'Dirichlet0'  'Dirichlet0'   # [3.0,4.0] : Dirichlet-0 boundary
 
-bdComponent2(1)=
-   4.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0'# Complete boundary component Dirichlet-0 boundary
+#bdComponent2(1)=
+#   4.0  3  1  'Dirichlet0'  'Dirichlet0'  'Dirichlet0' 'Dirichlet0'# Complete boundary component Dirichlet-0 boundary

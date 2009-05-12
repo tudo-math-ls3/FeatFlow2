@@ -41,7 +41,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #     'direct' method, bypassing the defect correction approach.
 #     (-> specialised variant of 10, but faster)
 
-ismootherType = 3
+ismootherType = 0
 
 # Name of the section in this file which configures the smoother.
 
@@ -52,7 +52,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =1: Defect correction with diagonal VANCA preconditioning.
 # =2: BiCGStab with diagonal VANCA preconditioning
 
-icoarseGridSolverType = 0
+icoarseGridSolverType =0
 
 # Name of the section in this file which configures the coarse grid solver.
 

@@ -59,11 +59,11 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 2
+NLMAX              =4
 
 
 # ------------------------------------------------------------------------
@@ -87,7 +87,7 @@ RE                 = 5000
 # 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
 #   in every timestep of the simulation
 
-iRHS               = 0
+iRHS               = 2
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
