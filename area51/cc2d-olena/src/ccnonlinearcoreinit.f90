@@ -520,8 +520,8 @@ contains
       ! pressure equation with -1. This (un)symmetrises the operator and gives
       ! much better convergence rates.
       call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
-      call cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,NDIM2D+1)
-      p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(3) &
+      call cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,NDIM2D+2)
+      p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(4) &
           = -1.0_DP
       
       ! Init standard solver parameters and extended multigrid parameters
