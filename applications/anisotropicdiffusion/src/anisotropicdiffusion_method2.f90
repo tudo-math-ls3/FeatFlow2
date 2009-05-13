@@ -34,18 +34,26 @@ module anisotropicdiffusion_method2
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use sortstrategy
+  use coarsegridcorrection
+  use scalarpde
   use ucd
-  use genoutput
-  use statistics
+  use pprocerror
   use paramlist
-  use collection
   use meshmodification
+  use spatialdiscretisation
   use spdiscprojection
+  
+  use collection
+
   use hadaptivity
   use jumpstabilisation
     
