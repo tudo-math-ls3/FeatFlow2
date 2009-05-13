@@ -16,17 +16,24 @@ module stokes3d_method1_mg
 
   use fsystem
   use storage
-  use linearsolver
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
+  use scalarpde
+  use linearsystemscalar
+  use linearsystemblock
+  use multilevelprojection
+  use bilinearformevaluation
+  use linearformevaluation
+  use filtersupport
+  use linearsolver
   use ucd
   use meshregion
   

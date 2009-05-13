@@ -52,12 +52,13 @@ module stokes3d_callback
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
+  use spatialdiscretisation
   use bcassembly
+  use bilinearformevaluation
+  use linearformevaluation
   
   implicit none
 

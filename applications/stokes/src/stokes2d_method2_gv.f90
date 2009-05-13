@@ -23,18 +23,25 @@ module stokes2d_method2_gv
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
-  use coarsegridcorrection
+  use linearsystemscalar
+  use linearsystemblock
   use spdiscprojection
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use discretebc
+  use filtersupport
+  use coarsegridcorrection
+  use linearsolver
   use ucd
   
   use collection
@@ -1219,7 +1226,7 @@ contains
     ! Initialise the collection
     call collct_init (rproblem%rcollection)
     do i=1,NLMAX
-      call collct_addlevel_all (rproblem%rcollection)
+      call collct_addlevel (rproblem%rcollection)
     end do
 
     ! So now the different steps - one after the other.

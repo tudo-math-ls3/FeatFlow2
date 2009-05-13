@@ -16,18 +16,27 @@ module stokes2d_method0_simple
 
   use fsystem
   use storage
-  use linearsolver
+  use genoutput
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
+  use linearalgebra
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
-  use coarsegridcorrection
+  use linearsystemscalar
+  use linearsystemblock
   use spdiscprojection
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use discretebc
+  use filtersupport
+  use coarsegridcorrection
+  use linearsolver
   use ucd
   
   use stokes2d_callback
