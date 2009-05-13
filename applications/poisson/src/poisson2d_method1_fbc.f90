@@ -29,12 +29,16 @@ module poisson2d_method1_fbc
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
   use matrixfilters
   use vectorfilters
+  use linearsystemscalar
+  use linearsystemblock
   use bcassembly
   use triangulation
   use spatialdiscretisation
   use ucd
+  use scalarpde
     
   use poisson2d_callback
   

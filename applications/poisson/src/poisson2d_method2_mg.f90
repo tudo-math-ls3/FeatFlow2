@@ -30,6 +30,9 @@ module poisson2d_method2_mg
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -37,6 +40,7 @@ module poisson2d_method2_mg
   use spatialdiscretisation
   use sortstrategy
   use coarsegridcorrection
+  use scalarpde
   use ucd
   use pprocerror
   
@@ -980,7 +984,7 @@ contains
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
     do i=1,NLMAX
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
 
     ! So now the different steps - one after the other.

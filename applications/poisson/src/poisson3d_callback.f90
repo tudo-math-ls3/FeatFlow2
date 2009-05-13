@@ -60,6 +60,10 @@ module poisson3d_callback
   use storage
   use linearsolver
   use boundary
+  use derivatives
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use bilinearformevaluation
   use linearformevaluation
   use cubature

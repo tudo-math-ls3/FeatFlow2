@@ -21,11 +21,16 @@ module poisson3d_method1_mg
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use element
+  use linearsystemscalar
+  use linearsystemblock
+  use filtersupport
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use scalarpde
   use ucd
   use pprocerror
   use genoutput

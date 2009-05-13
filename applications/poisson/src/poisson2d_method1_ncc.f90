@@ -29,16 +29,21 @@ module poisson2d_method1_ncc
   use boundary
   use bilinearformevaluation
   use linearformevaluation
+  use linearsystemscalar
+  use linearsystemblock
   use cubature
+  use filtersupport
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
   use ucd
+  use scalarpde
   use pprocerror
   use genoutput
   use feevaluation
+  use collection
     
   use poisson2d_callback
   

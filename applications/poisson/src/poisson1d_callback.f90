@@ -51,6 +51,10 @@ module poisson1d_callback
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use derivatives
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly

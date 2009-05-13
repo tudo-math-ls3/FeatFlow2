@@ -31,12 +31,16 @@ module poisson2d_method2_cmsort
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
   use sortstrategy
+  use scalarpde
   use ucd
   use pprocerror
   

@@ -19,12 +19,17 @@ module poisson1d_method0_simple
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use scalarpde
   use ucd
+  use element
   use pprocerror
   use genoutput
   use matrixio

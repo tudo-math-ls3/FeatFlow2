@@ -20,21 +20,28 @@ module poisson2d_method1_l2prj
   use fsystem
   use genoutput
   use storage
+  use linearalgebra
   use linearsolver
   use boundary
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use linearsystemscalar
+  use linearsystemblock
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
   use ucd
+  use scalarpde
   use pprocerror
   use genoutput
   use stdoperators
+  use coarsegridcorrection
+  use filtersupport
   use multileveloperators
+  use multilevelprojection
     
   use poisson2d_callback
   
