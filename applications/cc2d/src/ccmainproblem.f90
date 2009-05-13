@@ -40,6 +40,7 @@ module ccmainproblem
   use nonlinearsolver
   use paramlist
   use statistics
+  use dofmapping
   
   use collection
   use convection

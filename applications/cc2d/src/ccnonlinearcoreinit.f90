@@ -83,9 +83,11 @@ module ccnonlinearcoreinit
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
+  use filtersupport
   use nonlinearsolver
   use paramlist
   use linearsolverautoinitialise
+  use multilevelprojection
   use matrixrestriction
   use statistics
   
@@ -532,7 +534,7 @@ contains
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
-        call parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
         read (sstring,*) spreconditionerSection
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -725,7 +727,7 @@ contains
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
         'itypePreconditioning', &
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
