@@ -33,9 +33,8 @@ module cc3dmini_method1
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -44,6 +43,14 @@ module cc3dmini_method1
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
+  use scalarpde
+  use linearsystemscalar
+  use linearsystemblock
+  use bilinearformevaluation
+  use linearformevaluation
+  use filtersupport
+  use multilevelprojection
+  use element
   use ucd
   use meshregion
   
@@ -1922,7 +1929,7 @@ contains
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
     do i=1,NLMAX
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
 
     ! Add the (global) viscosity parameter
