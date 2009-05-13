@@ -27,6 +27,7 @@ module cc2dminim2postprocessing
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection

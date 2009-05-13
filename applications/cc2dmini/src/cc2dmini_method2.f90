@@ -105,7 +105,7 @@ contains
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
     do i=1,NNLEV
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
     
     ! Initialise the parameter list object. This creates an empty parameter list.

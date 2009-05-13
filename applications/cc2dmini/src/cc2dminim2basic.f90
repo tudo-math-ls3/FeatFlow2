@@ -28,6 +28,10 @@ module cc2dminim2basic
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use boundarycondition
+  use discretebc
+  use linearsystemscalar
+  use linearsystemblock
   
   use collection
     

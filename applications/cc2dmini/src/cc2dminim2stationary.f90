@@ -46,6 +46,7 @@ module cc2dminim2stationary
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use basicgeometry
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -57,6 +58,9 @@ module cc2dminim2stationary
   use paramlist
   use linearsolverautoinitialise
   use matrixrestriction
+  use element
+  use filtersupport
+  use multilevelprojection
   
   use collection
   use convection
@@ -949,9 +953,9 @@ contains
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
-                                     'itypePreconditioning', &
-                                     rpreconditioner%itypePreconditioning, 1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
+                              'itypePreconditioning', &
+                              rpreconditioner%itypePreconditioning, 1)
     
     select case (rpreconditioner%itypePreconditioning)
     case (1)

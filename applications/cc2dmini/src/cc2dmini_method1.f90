@@ -33,9 +33,8 @@ module cc2dmini_method1
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use scalarpde
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -45,6 +44,17 @@ module cc2dmini_method1
   use spdiscprojection
   use nonlinearsolver
   use ucd
+  use boundarycondition
+  use discretebc
+  use linearsystemscalar
+  use linearsystemblock
+  use scalarpde
+  use derivatives
+  use element
+  use bilinearformevaluation
+  use linearformevaluation
+  use filtersupport
+  use multilevelprojection
   
   use collection
   use convection
@@ -1947,7 +1957,7 @@ contains
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
     do i=1,NNLEV
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
 
     ! Add the (global) viscosity parameter

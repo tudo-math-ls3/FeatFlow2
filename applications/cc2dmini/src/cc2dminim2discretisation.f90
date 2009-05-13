@@ -34,11 +34,14 @@ module cc2dminim2discretisation
   use boundary
   use bilinearformevaluation
   use linearformevaluation
+  use scalarpde
+  use derivatives
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection

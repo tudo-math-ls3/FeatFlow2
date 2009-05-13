@@ -51,6 +51,7 @@ module cc2dmini_callback
   use storage
   use linearsolver
   use boundary
+  use spatialdiscretisation
   use bilinearformevaluation
   use linearformevaluation
   use cubature
