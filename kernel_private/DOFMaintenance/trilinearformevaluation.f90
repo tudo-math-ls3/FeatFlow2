@@ -44,6 +44,7 @@ module trilinearformevaluation
   use linearalgebra
   use transformation
   use triangulation
+  use dofmapping
   use collection, only: t_collection
   
   implicit none
