@@ -38,12 +38,13 @@ module codire_callback
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use spatialdiscretisation
+  use bilinearformevaluation
+  use linearformevaluation
   
   implicit none
 

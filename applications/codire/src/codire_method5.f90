@@ -24,19 +24,28 @@
 module codire_method5
 
   use fsystem
+  use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
-  use triangulation
-  use spatialdiscretisation
   use sortstrategy
+  use triangulation
+  use element
+  use spatialdiscretisation
   use coarsegridcorrection
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
+  use discretebc
   use ucd
   
   use collection
@@ -1054,7 +1063,7 @@ contains
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
     do i=1,NLMAX
-      call collct_addlevel_all (rproblem%rcollection)
+      call collct_addlevel (rproblem%rcollection)
     end do
 
     call collct_setvalue_parlst (rproblem%rcollection, 'PARAMS', rparams, .true.)
