@@ -34,6 +34,7 @@
 module dom3d_cube
 
   use fsystem
+  use storage
   use paramlist
   use triangulation
   use meshregion

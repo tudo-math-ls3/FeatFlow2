@@ -14,20 +14,25 @@ module ccbasic
 
   use fsystem
   use storage
-  use linearsolver
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
   use timestepping
+  use bcassembly
+  use discretebc
+  use discretefbc
+  use linearsolver
+  use bilinearformevaluation
+  use linearformevaluation
   
   use collection
   

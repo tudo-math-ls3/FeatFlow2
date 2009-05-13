@@ -58,16 +58,20 @@ module ccmatvecassembly
 
   use fsystem
   use storage
+  use genoutput
   use linearsystemblock
   use linearsolver
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use basicgeometry
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver

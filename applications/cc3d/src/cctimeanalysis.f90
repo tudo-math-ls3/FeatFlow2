@@ -26,6 +26,7 @@
 module cctimeanalysis
 
   use fsystem
+  use linearalgebra
   use linearsystemblock
     
   implicit none

@@ -49,15 +49,18 @@ module ccgeneraldiscretisation
   use fsystem
   use storage
   use linearsolver
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use derivatives
+  use scalarpde
+  use element
   use coarsegridcorrection
+  use bilinearformevaluation
+  use linearformevaluation
   use spdiscprojection
   use nonlinearsolver
   use paramlist
@@ -282,8 +285,8 @@ contains
       ! Time-dependent problem
       ! -----------------------------------------------------------------------
 
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
+      call parlst_getvalue_int(rproblem%rparamList, 'TIME-DISCRETISATION', &
+                               'ITIMEDEPENDENCE', j, 0)
       if (j .ne. 0) then
       
         ! Initialise a discretisation structure for the mass matrix.
@@ -310,14 +313,14 @@ contains
         end do
 
         ! Should we do mass lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASS', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+            'IMASS', j, 0)
                                         
         if (j .eq. 0) then
         
           ! How to do lumping?
-          call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                          'IMASSLUMPTYPE', j, 0)
+          call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+              'IMASSLUMPTYPE', j, 0)
                                           
           ! Set cubature formula for lumping. The constant from the DAT file corresponds
           ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -383,8 +386,8 @@ contains
       ! Time-dependent problem
       ! -----------------------------------------------------------------------
 
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'TIME-DISCRETISATION', &
+          'ITIMEDEPENDENCE', j, 0)
       if (j .ne. 0) then
         ! Release the mass matrix discretisation.
         call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
@@ -679,8 +682,8 @@ contains
     ! Time-dependent problem
     ! -----------------------------------------------------------------------
 
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                     'ITIMEDEPENDENCE', j, 0)
+    call parlst_getvalue_int (rproblem%rparamList, 'TIME-DISCRETISATION', &
+        'ITIMEDEPENDENCE', j, 0)
     if (j .ne. 0) then
     
       p_rmatrixMass => rlevelInfo%rmatrixMass
@@ -703,14 +706,14 @@ contains
       call stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC3D,DER_FUNC3D)
                   
       ! Should we do mass lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+          'IMASS', j, 0)
                                       
       if (j .eq. 0) then
       
         ! How to do lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+            'IMASSLUMPTYPE', j, 0)
                                         
         ! Lump the mass matrix. The constant from the DAT file corresponds
         ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.

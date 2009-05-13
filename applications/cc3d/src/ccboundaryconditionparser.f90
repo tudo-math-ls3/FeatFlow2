@@ -27,6 +27,7 @@ module ccboundaryconditionparser
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use basicgeometry
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -190,7 +191,7 @@ contains
     
     ! Create a parser structure for as many expressions as configured
     call fparser_create (rparser,&
-         parlst_querysubstrings_indir (p_rsection, 'bdExpressions'))
+         parlst_querysubstrings (p_rsection, 'bdExpressions'))
     
     ! Add the parser to the collection
     call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
@@ -198,9 +199,9 @@ contains
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    do i=1,parlst_querysubstrings_indir (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
     
-      call parlst_getvalue_string_indir (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, '', i)
       
       ! Get the type and decide on the identifier how to save the expression.
       read(cstr,*) cname,ityp
@@ -286,16 +287,16 @@ contains
     
     ! Loop through all boundary regions we have.
     cstr = 'bdRegion'
-    i = parlst_queryvalue_indir (p_rbdcond, cstr)
+    i = parlst_queryvalue (p_rbdcond, cstr)
     if (i .ne. 0) then
 
-      do iregion = 1,parlst_querysubstrings_indir (p_rbdcond, cstr)
+      do iregion = 1,parlst_querysubstrings (p_rbdcond, cstr)
       
         ! If the domain does not have this region, we can already exit here
         if (iregion .gt. inumRegions) exit
         
-        call parlst_getvalue_string_fetch (p_rbdcond, i, cstr, &
-                                           isubstring=iregion)
+        call parlst_getvalue_string (p_rbdcond, i, cstr, &
+                                     isubstring=iregion)
                                            
         ! Read the region parameters
         read(cstr,*) ibctyp
@@ -539,7 +540,7 @@ contains
     call collct_done (rcoll)
 
     ! The setting in the DAT file may overwrite our guess about Neumann boundaries.
-    call parlst_getvalue_int_indir (p_rbdcond, 'ineumannBoundary', i, -1)
+    call parlst_getvalue_int (p_rbdcond, 'ineumannBoundary', i, -1)
     select case (i)
     case (0)
       bNeumann = .false.

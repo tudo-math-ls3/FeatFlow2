@@ -86,6 +86,8 @@ module ccnonlinearcoreinit
   use paramlist
   use linearsolverautoinitialise
   use matrixrestriction
+  use filtersupport
+  use multilevelprojection
   
   use collection
   use convection
@@ -518,7 +520,7 @@ contains
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DFNAVST)
         end select
         
-        call parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
         read (sstring,*) spreconditionerSection
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -711,7 +713,7 @@ contains
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC3D-NONLINEAR', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC3D-NONLINEAR', &
         'itypePreconditioning', &
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
