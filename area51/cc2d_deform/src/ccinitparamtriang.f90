@@ -38,6 +38,7 @@ module ccinitparamtriang
   use griddeform
   use collection
   use convection
+  use ucd
     
   use ccbasic
   
@@ -239,7 +240,7 @@ contains
     !</subroutine>
     ! local variables
      real(dp),dimension(:,:),allocatable :: Dpoints
-     integer(PREC_VERTEXIDX) :: ive,i1,ipoints
+     integer :: ive,i1,ipoints
      integer :: iMethod
      real(DP) :: Dist,t,dt,dmin
      iMethod = 4

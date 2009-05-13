@@ -111,22 +111,26 @@ module ccnonlinearcore
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use linearalgebra
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use bilinearformevaluation
+  use linearformevaluation
   use linearsolverautoinitialise
+  use multilevelprojection
+  use filtersupport
+  use linearsolver
   use matrixrestriction
+  use matrixmodification
   use trilinearformevaluation
   use matrixio
   use statistics

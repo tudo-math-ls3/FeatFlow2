@@ -39,6 +39,7 @@ module ccmainproblem
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use dofmapping
   use statistics
   
   use collection
