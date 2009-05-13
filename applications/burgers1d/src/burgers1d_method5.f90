@@ -40,16 +40,19 @@ module burgers1d_method5
 
   use fsystem
   use storage
+  use genoutput
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use scalarpde
+  use element
+  use bilinearformevaluation
+  use linearformevaluation
   use sortstrategy
   use nonlinearsolver
   use ucd
@@ -1042,7 +1045,7 @@ contains
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
     do i=1,NLMAX
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
 
     ! So now the different steps - one after the other.
