@@ -25,22 +25,28 @@
 module heatcond_partridiscr
 
   use fsystem
+  use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
-  use triangulation
-  use spatialdiscretisation
   use sortstrategy
+  use triangulation
+  use element
+  use spatialdiscretisation
   use coarsegridcorrection
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
+  use discretebc
   use ucd
-  use timestepping
-  use genoutput
   
   use collection
   use paramlist

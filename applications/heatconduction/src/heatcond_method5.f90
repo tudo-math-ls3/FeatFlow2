@@ -47,22 +47,29 @@
 module heatcond_method5
 
   use fsystem
+  use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
-  use triangulation
-  use spatialdiscretisation
   use sortstrategy
+  use triangulation
+  use element
+  use spatialdiscretisation
   use coarsegridcorrection
+  use filtersupport
+  use linearsystemscalar
+  use linearsystemblock
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
+  use discretebc
   use ucd
-  use timestepping
-  use genoutput
   
   use collection
   use paramlist
@@ -204,7 +211,7 @@ contains
 
     ! Add space for level information in the collection
     do i=1,rproblem%ilvmax
-      call collct_addlevel_all (rproblem%rcollection)
+      call collct_addlevel (rproblem%rcollection)
     end do
     
     ! Allocate memory for the level information

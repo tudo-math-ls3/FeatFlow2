@@ -45,6 +45,7 @@ module heatcond_callback
   use vectorfilters
   use bcassembly
   use mprimitives
+  use spatialdiscretisation
   
   implicit none
 

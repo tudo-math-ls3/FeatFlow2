@@ -20,6 +20,11 @@ module heatcond_basic
   use spatialdiscretisation
   use sortstrategy
   use timestepping
+  use discretebc
+  use linearsystemscalar
+  use linearsystemblock
+  use filtersupport
+  use multilevelprojection
   
   use collection
   use paramlist

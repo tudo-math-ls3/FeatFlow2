@@ -28,6 +28,7 @@ module heatcond_matvec
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -35,6 +36,7 @@ module heatcond_matvec
   use spatialdiscretisation
   use sortstrategy
   use coarsegridcorrection
+  use scalarpde
   use ucd
   use timestepping
   use genoutput
