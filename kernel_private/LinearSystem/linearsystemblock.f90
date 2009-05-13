@@ -212,6 +212,13 @@
 !# 62.) lsysbl_getVectorMagnitude
 !#      -> Compute the vector magnitude.
 !#
+!# 63.) lsysbl_synchroniseSortVecVec
+!#      -> Synchronises the sorting between a vector and another vector
+!#
+!# 64.) lsysbl_synchroniseSortMatVec
+!#      -> Synchrionises the sorting of a vector according to the sorting
+!#         of a matrix
+!#
 !# </purpose>
 !##############################################################################
 
@@ -494,6 +501,8 @@ module linearsystemblock
   public :: lsysbl_allocEmptyMatrix
   public :: lsysbl_reintegrateSubmatrix
   public :: lsysbl_getVectorMagnitude
+  public :: lsysbl_synchroniseSortVecVec
+  public :: lsysbl_synchroniseSortMatVec
   
 contains
 
