@@ -9,7 +9,7 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) pperr_scalar
+!# 1.) pperr_scalar, pperr_scalarVec
 !#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
 !#        analytic reference function or the $L_1$-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
@@ -154,6 +154,7 @@ module pprocerror
 !</types>
 
   public :: pperr_scalar
+  public :: pperr_scalarVec
   public :: pperr_scalarBoundary2d
   public :: pperr_scalarErrorEstimate
   public :: pperr_blockErrorEstimate
