@@ -58,6 +58,7 @@
 module dom3d_c3d0
 
   use fsystem
+  use storage
   use triangulation
   use meshregion
 

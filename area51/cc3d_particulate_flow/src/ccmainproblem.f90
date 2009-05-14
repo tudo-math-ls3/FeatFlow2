@@ -26,11 +26,13 @@ module ccmainproblem
   use fsystem
   use storage
   use linearsolver
+  use boundary
   use bilinearformevaluation
   use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -39,7 +41,8 @@ module ccmainproblem
   use nonlinearsolver
   use paramlist
   use statistics
-  
+  use geometry
+  use dofmapping
   use collection
   use convection
     

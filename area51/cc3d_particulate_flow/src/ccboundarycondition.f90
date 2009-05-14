@@ -31,11 +31,13 @@ module ccboundarycondition
   use fsystem
   use storage
   use linearsolver
+  use boundary
   use bilinearformevaluation
   use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

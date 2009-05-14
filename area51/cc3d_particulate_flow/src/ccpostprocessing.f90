@@ -55,20 +55,31 @@ module ccpostprocessing
   use fsystem
   use storage
   use linearsolver
-  use bilinearformevaluation
-  use linearformevaluation
+  use boundary
+  use linearalgebra
   use cubature
+  use elementpreprocessing
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
+  use dofmapping
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use ccboundaryconditionparser
+  use bilinearformevaluation
+  use linearformevaluation
+  use statistics
+  use element
+  use multilevelprojection
+  use vectorio
   use analyticprojection
+  use transformation
+  use geometry
+  
   use collection
   use convection
   use geometry
@@ -77,6 +88,8 @@ module ccpostprocessing
   use pprocnavierstokes
   use pprocerror
   
+  use ccboundaryconditionparser
+  use ccmatvecassembly
   use ccbasic
   use cccallback
   
@@ -699,16 +712,16 @@ contains
     case (1)
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
       
-      call geom_sphere_polygonise(rgeometryObject, hpolyHandle,hpolyHandle1)
+      !call geom_sphere_polygonise(rgeometryObject, hpolyHandle,hpolyHandle1)
 
       
       ipoly = rgeometryObject%rsphere%ipoly
-      do iloop=1,ipoly
-        ! mach das p_DVertices array
-        call geom_sphere_getPolygon(rgeometryObject,iloop,hpolyHandle,&
-        hpolyHandle1,Dvertices)
-        call ucd_addPolygon(rexport,Dvertices,4)
-      end do
+!      do iloop=1,ipoly
+!        ! mach das p_DVertices array
+!        call geom_sphere_getPolygon(rgeometryObject,iloop,hpolyHandle,&
+!        hpolyHandle1,Dvertices)
+!        call ucd_addPolygon(rexport,Dvertices,4)
+!      end do
         call storage_free(hpolyHandle)
         call storage_free(hpolyHandle1)
 
