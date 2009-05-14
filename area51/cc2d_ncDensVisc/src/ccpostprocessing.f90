@@ -47,32 +47,41 @@ module ccpostprocessing
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use linearalgebra
   use matrixfilters
   use vectorfilters
+  use element
+  use dofmapping
   use bcassembly
   use triangulation
+  use elementpreprocessing
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use ccboundaryconditionparser
+  use domainintegration
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
   use statistics
   use geometry
   use collection
   use convection
   use analyticprojection
+  use transformation
   use ucd
+  use vectorio
+  use feevaluation
   
   use pprocnavierstokes
   use pprocerror
   
   use ccbasic
+  use ccboundaryconditionparser
   use cccallback
   
   implicit none
@@ -1355,7 +1364,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.

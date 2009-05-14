@@ -58,33 +58,39 @@ module ccmatvecassembly
 
   use fsystem
   use storage
-  use linearsystemblock
-  use linearsolver
+  use genoutput
+  use basicgeometry
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use derivatives
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use linearsolverautoinitialise
   use matrixrestriction
+  use scalarpde
+  use linearsystemscalar
+  use bilinearformevaluation
+  use linearformevaluation
   use trilinearformevaluation
   use matrixio
-  use vectorio
   use statistics
+  use linearsystemblock
+  use linearsolver
+  use linearsolverautoinitialise
+  use collection
   use feevaluation
   use convection
   use ccbasic
   use stdoperators  
-  use linearsystemscalar
   use geometry
+  use pprocnavierstokes
+  use vectorio
   
   implicit none
   
