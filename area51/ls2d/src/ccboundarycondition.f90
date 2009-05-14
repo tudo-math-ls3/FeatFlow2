@@ -37,6 +37,7 @@ module ccboundarycondition
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -116,7 +117,7 @@ contains
       ! This allows us to filter this vector when we create it.
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
       
-      ! The same for the fictitious boudary boundary conditions.
+      ! The same for the fictitious boundary boundary conditions.
       p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       

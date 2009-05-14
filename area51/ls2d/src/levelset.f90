@@ -12,6 +12,7 @@ MODULE levelset
   USE element
   USE elementpreprocessing
   USE multilevelprojection
+  use filtersupport
   
   USE ccbasic
   

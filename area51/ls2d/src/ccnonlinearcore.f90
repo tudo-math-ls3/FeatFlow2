@@ -113,11 +113,11 @@ module ccnonlinearcore
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
+  use linearalgebra
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -125,8 +125,13 @@ module ccnonlinearcore
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use multilevelprojection
+  use filtersupport
   use linearsolverautoinitialise
+  use bilinearformevaluation
+  use linearformevaluation
   use matrixrestriction
+  use matrixmodification
   use trilinearformevaluation
   use matrixio
   use statistics
@@ -562,9 +567,9 @@ contains
       
       ilvmax = rnonlinearIteration%NLMAX
       
-      call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_first', rho1, 2.0_DP)
-      call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_second', rho2, 1.0_DP)
           
       ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
@@ -703,9 +708,9 @@ contains
       call stat_clearTimer(rtimer)
       call stat_startTimer(rtimer)
       
-      call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_first', rho1, 2.0_DP)
-      call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_second', rho2, 1.0_DP)
       
       ! Get minimum/maximum level from the collection
@@ -1352,9 +1357,9 @@ contains
             ! CALL filter_applyFilterChainVec (p_rvectorCoarse, p_RfilterChain)
 
           end if
-          call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+          call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
                     'rho_first', rho1, 2.0_DP)
-          call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+          call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
                     'rho_second', rho2, 1.0_DP)
           ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
           ! matrix we want to have.

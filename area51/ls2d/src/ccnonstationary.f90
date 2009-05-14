@@ -38,6 +38,7 @@ module ccnonstationary
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -58,7 +59,7 @@ module ccnonstationary
 
   use ccnonlinearcore
   use ccnonlinearcoreinit
-!  use ccstationary
+  use ccstationary
   use adaptivetimestep
   use cctimeanalysis
   use ccgeneraldiscretisation
@@ -367,9 +368,9 @@ contains
     real (DP) :: rho1, rho2
     
     
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_first', rho1, 2.0_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_second', rho2, 1.0_DP)
         
        

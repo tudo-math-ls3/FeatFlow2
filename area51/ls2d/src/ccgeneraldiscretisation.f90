@@ -60,18 +60,20 @@ module ccgeneraldiscretisation
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
+  use bilinearformevaluation
+  use linearformevaluation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use scalarpde
   use stdoperators
   
   use collection
@@ -204,7 +206,7 @@ contains
       ! Time-dependent problem
       ! -----------------------------------------------------------------------
 
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
+      call parlst_getvalue_int (rproblem%rparamList, 'TIME-DISCRETISATION', &
                                        'ITIMEDEPENDENCE', j, 0)
       if (j .ne. 0) then
       
@@ -232,14 +234,14 @@ contains
         end do
 
         ! Should we do mass lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASS', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+            'IMASS', j, 0)
                                         
         if (j .eq. 0) then
         
           ! How to do lumping?
-          call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                          'IMASSLUMPTYPE', j, 0)
+          call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+              'IMASSLUMPTYPE', j, 0)
                                           
           ! Set cubature formula for lumping. The constant from the DAT file corresponds
           ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -539,8 +541,8 @@ contains
       ! Time-dependent problem
       ! -----------------------------------------------------------------------
 
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
-                                       'ITIMEDEPENDENCE', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'TIME-DISCRETISATION', &
+          'ITIMEDEPENDENCE', j, 0)
       if (j .ne. 0) then
         ! Release the mass matrix discretisation.
         call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
@@ -592,7 +594,7 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
@@ -827,17 +829,17 @@ contains
     real(DP):: rho1, rho2, dnu1,dnu2
     
     
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
         
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'dnu_first', dnu1, 0.001_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'dnu_second', dnu2, 0.001_DP)    
     
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_first', rho1, 2.0_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_second', rho2, 1.0_DP)    
         
 
@@ -975,7 +977,7 @@ contains
     ! Time-dependent problem
     ! -----------------------------------------------------------------------
 
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'TIME-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'TIME-DISCRETISATION', &
                                      'ITIMEDEPENDENCE', j, 0)
     if (j .ne. 0) then
     
@@ -1014,15 +1016,15 @@ contains
 !      call stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
                   
       ! Should we do mass lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+          'IMASS', j, 0)
       
                                     
       if (j .eq. 0) then
       
         ! How to do lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+            'IMASSLUMPTYPE', j, 0)
                                         
         ! Lump the mass matrix. The constant from the DAT file corresponds
         ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -1114,13 +1116,13 @@ contains
     ! block discretisation structure:
     p_rdiscretisation => rrhs%p_rblockDiscr
     
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_first', rho1, 2.0_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'rho_second', rho2, 1.0_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'gravity_first', gravity1, 0.0_DP)
-    call parlst_getvalue_double_direct(rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
         'gravity_second', gravity2, 0.0_DP)
      
     

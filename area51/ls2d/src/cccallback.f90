@@ -101,12 +101,13 @@ module cccallback
   use boundary
   use bilinearformevaluation
   use linearformevaluation
-  use trilinearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use mprimitives
+  use derivatives
   
   use ccbasic
   use feevaluation
