@@ -44,11 +44,9 @@ module navstokes2d_method0_simple
   use fsystem
   use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use linearalgebra
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -63,6 +61,16 @@ module navstokes2d_method0_simple
   use analyticprojection
   use optcontrolconvection
   use matrixio
+  use collection
+  use filtersupport
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
+  use matrixmodification
+  use feevaluation
+  use vectorio
     
   use navstokes2d_callback
   

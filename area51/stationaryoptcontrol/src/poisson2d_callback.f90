@@ -73,14 +73,17 @@ module poisson2d_callback
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use feevaluation
+  use derivatives
+  use spatialdiscretisation
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   
   implicit none
 

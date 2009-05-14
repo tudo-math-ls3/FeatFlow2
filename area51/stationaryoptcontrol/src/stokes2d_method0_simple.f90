@@ -96,11 +96,9 @@ module stokes2d_method0_simple
   use fsystem
   use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use linearalgebra
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -111,6 +109,18 @@ module stokes2d_method0_simple
   use genoutput
   use stdoperators
   use spdiscprojection
+  use convection
+  use analyticprojection
+  use optcontrolconvection
+  use matrixio
+  use collection
+  use filtersupport
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
+  use matrixmodification
     
   use stokes2d_callback
   

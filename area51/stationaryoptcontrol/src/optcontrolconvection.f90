@@ -24,8 +24,17 @@ module optcontrolconvection
 
   use fsystem
   use storage
+  use basicgeometry
+  use cubature
+  use linearalgebra
+  use element
+  use elementpreprocessing
+  use triangulation
+  use dofmapping
+  use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock
+  use transformation
   use derivatives
   use bilinearformevaluation
   

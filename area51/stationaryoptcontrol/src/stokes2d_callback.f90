@@ -73,15 +73,23 @@ module stokes2d_callback
 
   use fsystem
   use storage
-  use linearsolver
+  use genoutput
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use feevaluation
+  use derivatives
+  use triangulation
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
+  use element
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   
   implicit none
 
