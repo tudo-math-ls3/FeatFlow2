@@ -1,6 +1,10 @@
 module shallowwater2d_routines
 
     use fsystem
+    use storage
+    use triangulation
+    use spatialdiscretisation
+    use linearsystemscalar
     use linearsystemblock
     use boundary
 

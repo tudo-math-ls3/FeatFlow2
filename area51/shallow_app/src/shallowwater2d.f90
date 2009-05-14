@@ -14,11 +14,9 @@ module shallowwater2d
   use fsystem
   use genoutput
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use linearalgebra
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -30,6 +28,13 @@ module shallowwater2d
   use paramlist
   use stdoperators
   use fparser
+  use element
+  use derivatives
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use filtersupport
+  use linearsolver
 
   use shallowwater2d_routines
   
@@ -450,7 +455,7 @@ contains
 
     ! Create Vector Ksep
 	! It is used to to create the array Kedge
-    call storage_new1D ('tvd', 'Ksep', rmatrixMC%NEQ, ST_INT, &
+    call storage_new ('tvd', 'Ksep', rmatrixMC%NEQ, ST_INT, &
                      h_Sep, ST_NEWBLOCK_ZERO)
     
     ! and get Pointer to Ksep
@@ -462,7 +467,7 @@ contains
 	! Create Array Kedge
 	iSize(1)=4
 	iSize(2)=nedge
-	 call storage_new2D ('tvd', 'Kedge', iSize, ST_INT, h_Kedge, &
+	 call storage_new ('tvd', 'Kedge', iSize, ST_INT, h_Kedge, &
                             ST_NEWBLOCK_ZERO)
     
     ! and get Pointer to Kedge
@@ -497,7 +502,7 @@ contains
 	! Create Array fld1
 	iSize(1)=nvar2d*6
 	iSize(2)=rMatrixMC%neq
-	 call storage_new2D ('Limiter', 'fld1', iSize, ST_DOUBLE, h_fld1, &
+	 call storage_new ('Limiter', 'fld1', iSize, ST_DOUBLE, h_fld1, &
                             ST_NEWBLOCK_ZERO)
     
     ! and get Pointer to fld1
@@ -506,7 +511,7 @@ contains
 	! Create Array fld2
 	iSize(1)=nvar2d*4
 	iSize(2)=nedge
-	 call storage_new2D ('Limiter', 'fld2', iSize, ST_DOUBLE, h_fld2, &
+	 call storage_new ('Limiter', 'fld2', iSize, ST_DOUBLE, h_fld2, &
                             ST_NEWBLOCK_ZERO)
     
     ! and get Pointer to fld2
