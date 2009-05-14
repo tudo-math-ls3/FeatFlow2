@@ -60,18 +60,20 @@ module ccgeneraldiscretisation
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
+  use bilinearformevaluation
+  use linearformevaluation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use scalarpde
   use stdoperators
   
   use collection
@@ -226,14 +228,14 @@ contains
       end do
 
       ! Should we do mass lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                'IMASS', j, 0)
                                       
       if (j .eq. 0) then
       
         ! How to do lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                  'IMASSLUMPTYPE', j, 0)
                                         
         ! Set cubature formula for lumping. The constant from the DAT file corresponds
         ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -325,7 +327,7 @@ contains
   integer, parameter :: nequations = 4
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP, ieltypeC
+  integer(I32) :: ieltypeUV, ieltypeP, ieltypeC
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -460,7 +462,7 @@ contains
   integer, parameter :: nequations = 4
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP, ieltypeC
+  integer(I32) :: ieltypeUV, ieltypeP, ieltypeC
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -604,7 +606,7 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
@@ -828,7 +830,7 @@ contains
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
@@ -1026,14 +1028,14 @@ contains
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
     ! Should we do mass lumping?
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                    'IMASS', j, 0)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IMASS', j, 0)
                                     
     if (j .eq. 0) then
     
       ! How to do lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASSLUMPTYPE', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                'IMASSLUMPTYPE', j, 0)
                                       
       ! Lump the mass matrix. The constant from the DAT file corresponds
       ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -1187,7 +1189,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: istart,ctypeInitialSolution
+    integer :: istart,ctypeInitialSolution
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
@@ -1486,7 +1488,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: idestLevel
+    integer :: idestLevel
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString

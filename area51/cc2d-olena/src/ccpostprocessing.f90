@@ -49,11 +49,11 @@ module ccpostprocessing
   use storage
   use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
+  use linearalgebra
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -61,8 +61,12 @@ module ccpostprocessing
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use ccboundaryconditionparser
+  use bilinearformevaluation
+  use linearformevaluation
   use statistics
+  use element
+  use multilevelprojection
+  use vectorio
   
   use collection
   use convection
@@ -72,6 +76,8 @@ module ccpostprocessing
   use pprocnavierstokes
   use pprocerror
   
+  use ccboundaryconditionparser
+  use ccmatvecassembly
   use ccbasic
   use cccallback
   

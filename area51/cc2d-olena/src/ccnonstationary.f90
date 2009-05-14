@@ -38,6 +38,7 @@ module ccnonstationary
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -64,7 +65,7 @@ module ccnonstationary
   use ccgeneraldiscretisation
   use ccpostprocessing
   use ccboundarycondition
-  
+    
   USE poisson2d_method0_simple  
   
   implicit none
