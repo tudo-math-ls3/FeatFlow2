@@ -18,7 +18,9 @@
 !# 3.) conv_streamlineDiffusion3d
 !#     -> Apply streamline diffusion to a vector, a matrix or both.
 !#
-!# 4.) conv_JumpStabilisation2d
+!# 4.) conv_JumpStabilisation1d, 
+!#     conv_JumpStabilisation2d,
+!#     conv_JumpStabilisation3d
 !#     -> Apply jump stabilisation to a vector, a matrix or both.
 !# 
 !# 5.) conv_streamlineDiffusionBlk2d
@@ -356,7 +358,9 @@ module convection
   public :: conv_upwind2d
   public :: conv_streamlineDiffusion2d
   public :: conv_streamlineDiffusion3d
+  public :: conv_jumpstabilisation1d
   public :: conv_JumpStabilisation2d
+  public :: conv_jumpstabilisation3d
   public :: conv_streamlineDiffusionBlk2d
   public :: conv_streamlineDiffusionBlk3d
   public :: conv_streamDiff2Blk2dMat
