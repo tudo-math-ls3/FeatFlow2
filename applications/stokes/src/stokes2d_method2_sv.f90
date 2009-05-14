@@ -30,6 +30,7 @@ module stokes2d_method2_sv
   use matrixfilters
   use vectorfilters
   use linearalgebra
+  use discretebc
   use bcassembly
   use triangulation
   use element

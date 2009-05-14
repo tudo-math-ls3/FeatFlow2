@@ -40,6 +40,7 @@ module heatcond_method2
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use sortstrategy
   use triangulation

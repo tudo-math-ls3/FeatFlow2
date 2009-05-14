@@ -44,6 +44,7 @@ module stokes2d_method1_schur
   use matrixfilters
   use vectorfilters
   use linearalgebra
+  use discretebc
   use bcassembly
   use triangulation
   use element

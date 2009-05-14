@@ -119,6 +119,7 @@ module cccallback
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use mprimitives
   use derivatives

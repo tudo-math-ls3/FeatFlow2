@@ -41,6 +41,7 @@ module heatcond_method1
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use sortstrategy
   use triangulation

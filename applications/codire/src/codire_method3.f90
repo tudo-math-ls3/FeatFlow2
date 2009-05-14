@@ -30,6 +30,7 @@ module codire_method3
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use sortstrategy
   use triangulation

@@ -53,6 +53,7 @@ module ccpostprocessing
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

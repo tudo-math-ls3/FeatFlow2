@@ -31,6 +31,7 @@ module navst2d_method1_mg
   use matrixfilters
   use vectorfilters
   use linearalgebra
+  use discretebc
   use bcassembly
   use triangulation
   use element

@@ -28,6 +28,7 @@ module stokes2d_method2_gv
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use element
