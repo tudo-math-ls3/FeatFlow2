@@ -52,6 +52,7 @@ module jumpstabilisation
   use linearsystemscalar
   use linearsystemblock
   use cubature
+  use triangulation
   use spatialdiscretisation
   use domainintegration
   use derivatives
