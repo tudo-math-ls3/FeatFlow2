@@ -28,6 +28,7 @@ module ccboundaryconditionparser
   use basicgeometry
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -35,7 +36,6 @@ module ccboundaryconditionparser
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use bcassembly
   use fparser
   use bilinearformevaluation
   use linearformevaluation

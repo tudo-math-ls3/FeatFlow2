@@ -115,6 +115,7 @@ module ccnonlinearcore
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use linearalgebra
   use triangulation

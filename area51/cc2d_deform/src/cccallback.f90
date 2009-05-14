@@ -117,6 +117,7 @@ module cccallback
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use mprimitives
   use bilinearformevaluation

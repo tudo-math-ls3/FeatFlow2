@@ -64,6 +64,7 @@ module ccmatvecassembly
   use basicgeometry
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
