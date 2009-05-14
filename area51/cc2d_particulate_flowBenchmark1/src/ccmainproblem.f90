@@ -32,6 +32,7 @@ module ccmainproblem
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -41,6 +42,7 @@ module ccmainproblem
   use paramlist
   use statistics
   use geometry
+  use dofmapping
   use collection
   use convection
     
