@@ -29,6 +29,10 @@ module ccbasic
   use nonlinearsolver
   use paramlist
   use timestepping
+  use discretebc
+  use discretefbc
+  use linearsystemscalar
+  use linearsystemblock
   
   use collection
   
