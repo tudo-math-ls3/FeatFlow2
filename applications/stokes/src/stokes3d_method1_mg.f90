@@ -20,6 +20,7 @@ module stokes3d_method1_mg
   use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use element
