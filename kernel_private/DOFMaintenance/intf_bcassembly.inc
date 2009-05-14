@@ -12,6 +12,7 @@
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
     
     use fsystem
+    use boundary
     use collection
     use spatialdiscretisation
     use discretebc
