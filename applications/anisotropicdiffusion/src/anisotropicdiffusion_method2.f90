@@ -39,6 +39,7 @@ module anisotropicdiffusion_method2
   use linearsystemblock
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

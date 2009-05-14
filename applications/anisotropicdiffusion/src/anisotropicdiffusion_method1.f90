@@ -36,6 +36,7 @@ module anisotropicdiffusion_method1
   use linearsystemblock
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
