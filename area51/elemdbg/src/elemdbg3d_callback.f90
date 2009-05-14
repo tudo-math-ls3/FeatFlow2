@@ -11,14 +11,17 @@ module elemdbg3d_callback
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
+  use spatialdiscretisation
+  use discretebc
   use bcassembly
+  use derivatives
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   
   implicit none
 

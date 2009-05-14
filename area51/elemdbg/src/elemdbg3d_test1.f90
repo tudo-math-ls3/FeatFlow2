@@ -13,16 +13,20 @@ module elemdbg3d_test1
   use genoutput
   use paramlist
   use storage
-  use linearsolver
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use basicgeometry
   use meshregion
   use triangulation
+  use element
   use spatialdiscretisation
+  use transformation
+  use linearsystemscalar
+  use linearsystemblock
+  use discretebc
+  use scalarpde
   use pprocerror
   use stdoperators
   use meshmodification
@@ -31,7 +35,12 @@ module elemdbg3d_test1
   use convection
   use collection
   use sortstrategy
-
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
+  use convection
+  use pprocerror
+  
   use elemdbg3d_callback
   use disto3d_aux
   

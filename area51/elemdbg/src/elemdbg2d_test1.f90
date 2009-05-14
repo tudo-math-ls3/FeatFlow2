@@ -13,16 +13,23 @@ module elemdbg2d_test1
   use genoutput
   use paramlist
   use storage
-  use linearsolver
-  use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
   use bcassembly
+  use linearalgebra
+  use dofmapping
+  use basicgeometry
+  use meshregion
   use triangulation
+  use element
   use spatialdiscretisation
+  use transformation
+  use elementpreprocessing
+  use linearsystemscalar
+  use linearsystemblock
+  use discretebc
+  use scalarpde
   use pprocerror
   use stdoperators
   use meshmodification
@@ -31,8 +38,13 @@ module elemdbg2d_test1
   use convection
   use collection
   use sortstrategy
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
+  use pprocerror
     
   use elemdbg2d_callback
+  
   use disto2d_aux
   
   implicit none
