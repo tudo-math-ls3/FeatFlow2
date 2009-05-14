@@ -9,8 +9,8 @@
 !#
 !# The following routines can be found in this module:
 !#
-!#  1.) bgeom_initCoordSys2D
-!#      -> Creates a 2D coordinate system from an optionally given origin,
+!#  1.) bgeom_initCoordSys2D, bgeom_initCoordSys3D
+!#      -> Creates a 2D/3D coordinate system from an optionally given origin,
 !#         rotation and scaling factor.
 !#
 !#  2.) bgeom_transformPoint2D
@@ -169,6 +169,7 @@ module basicgeometry
   !</types>
 
   public :: bgeom_initCoordSys2D
+  public :: bgeom_initCoordSys3D
   public :: bgeom_transformPoint2D
   public :: bgeom_transformBackPoint2D
   
