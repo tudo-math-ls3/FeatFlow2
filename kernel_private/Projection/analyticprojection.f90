@@ -30,6 +30,7 @@ module analyticprojection
   use basicgeometry
   use linearalgebra
   use triangulation
+  use dofmapping
   use scalarpde
   use spatialdiscretisation
   use domainintegration
