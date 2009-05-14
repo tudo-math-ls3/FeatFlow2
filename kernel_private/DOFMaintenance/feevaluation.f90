@@ -88,6 +88,7 @@ module feevaluation
     module procedure fevl_evaluate_sim5
   end interface
   
+  public :: fevl_evaluate
   public :: fevl_evaluate_sim
   public :: fevl_evaluate_sim1
   public :: fevl_evaluate_sim2
