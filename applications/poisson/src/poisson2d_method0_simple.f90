@@ -24,6 +24,7 @@ module poisson2d_method0_simple
   use linearsystemblock
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

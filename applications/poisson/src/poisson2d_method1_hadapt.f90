@@ -28,6 +28,7 @@ module poisson2d_method1_hadapt
   use linearsystemblock
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

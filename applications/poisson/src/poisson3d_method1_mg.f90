@@ -27,6 +27,7 @@ module poisson3d_method1_mg
   use filtersupport
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

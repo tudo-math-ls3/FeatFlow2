@@ -35,6 +35,7 @@ module poisson1d_method0_simple
   use matrixio
   use vectorio
   use meshregion
+  use discretebc
     
   use poisson1d_callback
   

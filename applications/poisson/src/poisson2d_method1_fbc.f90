@@ -34,6 +34,7 @@ module poisson2d_method1_fbc
   use vectorfilters
   use linearsystemscalar
   use linearsystemblock
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation

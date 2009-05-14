@@ -35,6 +35,7 @@ module poisson2d_method1_ncc
   use filtersupport
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
