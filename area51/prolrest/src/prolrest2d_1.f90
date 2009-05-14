@@ -124,9 +124,9 @@ contains
     call spdiscr_initBlockDiscr (rdiscrF,1,rtriaF, rboundary)
 
     call spdiscr_initDiscr_simple (rdiscrC%RspatialDiscr(1), &
-                                   EL_E037,CUB_G5X5,rtriaC, rboundary)
+                                   EL_Q2TB,CUB_G5X5,rtriaC, rboundary)
     call spdiscr_initDiscr_simple (rdiscrF%RspatialDiscr(1), &
-                                   EL_E037,CUB_G5X5,rtriaF, rboundary)
+                                   EL_Q2TB,CUB_G5X5,rtriaF, rboundary)
 
     ! Allocate two block matrices
     call lsysbl_createMatBlockByDiscr (rdiscrC,rmatrixC)

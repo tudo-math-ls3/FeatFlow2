@@ -75,7 +75,7 @@ contains
     
     
     ! Specify the element to be used
-    ielem = EL_E037
+    ielem = EL_Q2TB
     
     ! Build Prolongation matrix?
     bProl = .true.

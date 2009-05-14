@@ -228,7 +228,7 @@ contains
     call mlprj_initL2Proj (rL2proj%RscalarProjection(1,1), &
                            rmatrix2Lvl, rmatrixF%RmatrixBlock(1,1))
     !rL2proj%RscalarProjection(1,1)%depsAbsL2 = SYS_EPSREAL
-    rL2proj%RscalarProjection(1,1)%imaxL2Iterations = 100
+    !rL2proj%RscalarProjection(1,1)%imaxL2Iterations = 100
     
     ! Create a dummy scalar vector
     call lsyssc_createVector(rprjTmpVec, 0, .false.)

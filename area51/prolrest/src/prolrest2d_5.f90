@@ -23,6 +23,7 @@ module prolrest2d_test5
   use boundary
   use cubature
   use triangulation
+  use element
   use spatialdiscretisation
   use genoutput
   use multileveloperators
@@ -77,7 +78,7 @@ contains
     
     
     ! Specify the element to be used
-    ielem = EL_E037
+    ielem = EL_Q2TB
     
     ! Compare Prolongation?
     bProl = .true.
