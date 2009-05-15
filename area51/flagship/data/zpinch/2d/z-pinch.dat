@@ -35,10 +35,10 @@ algorithm = transient_primal
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = bin/dummy.prm
+prmfile = bin/gebiet2.prm
 
 # file which contains the triangulation
-trifile = bin/dummy.tri
+trifile = bin/gebiet2.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -338,7 +338,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_struct_AMR1
+ucdsolution = out/zpinch_struct_AMR3_tria_DT_10E5
 
 # file for UCD output of error
 ucderror = out/
@@ -383,13 +383,13 @@ dinitialTime = 0.0
 dfinalTime = 0.9
 
 # initial time step size
-dinitialStep = 1e-4
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 1e-5
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 1e-5
 
 # adaptive time stepping algorithm
 iadaptTimestep = 1
@@ -434,10 +434,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -476,10 +476,10 @@ ssolvername = NonlinearSolverEuler
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -743,7 +743,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 1
+npreadapt = 3
 
 # number of adaptation steps
 nadapt = 0
@@ -755,7 +755,7 @@ dtimeadapt = 0.0
 dstepadapt = 3e-4
 
 # maximum number of refinement levels
-nsubdividemax = 1
+nsubdividemax = 3
 
 # adaptation strategy
 # 1 = red-green
