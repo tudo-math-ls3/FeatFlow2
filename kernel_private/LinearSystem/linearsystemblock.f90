@@ -219,6 +219,8 @@
 !#      -> Synchrionises the sorting of a vector according to the sorting
 !#         of a matrix
 !#
+!# 65.) lsysbl_createscalarfromvec
+!#      -> Create a scalar vector from a block vector
 !# </purpose>
 !##############################################################################
 
@@ -503,6 +505,7 @@ module linearsystemblock
   public :: lsysbl_getVectorMagnitude
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
+  public :: lsysbl_createscalarfromvec
   
 contains
 

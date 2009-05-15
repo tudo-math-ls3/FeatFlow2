@@ -291,6 +291,8 @@ module linearalgebra
   public :: lalg_clearVectorSngl
   public :: lalg_clearVectorDble
   public :: lalg_clearVectorQuad
+  public :: lalg_clearVectorSngl2D
+  public :: lalg_clearVectorDble2D
   public :: lalg_clearVectorQuad2D
 
   interface lalg_setVectorInt

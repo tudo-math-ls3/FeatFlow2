@@ -116,6 +116,7 @@ module externalstorage
   use genoutput
   use storage
   use io
+  use linearalgebra
 
   implicit none
   
@@ -4920,7 +4921,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that's all
-      call lalg_clearVectorSngl2D (Farray)
+      call lalg_clearVectorSngl (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -5532,7 +5533,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that's all
-      call lalg_clearVectorDble2D (Darray)
+      call lalg_clearVectorDble (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
