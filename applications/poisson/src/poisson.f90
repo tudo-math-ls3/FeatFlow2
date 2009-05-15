@@ -28,70 +28,6 @@
 
 program poisson
 
-#ifdef ENABLE_USE_ONLY
-  use fsystem, only: &
-       ! global variables and constants
-       SYS_STRLEN, &
-       ! functions
-       system_init, sys_getenv_string
-  use genoutput, only: &
-       ! functions
-       output_init, output_lbrk, output_line
-  use storage, only: &
-       ! functions
-       storage_init, storage_info, storage_done
-  use poisson1d_method0_simple, only: &
-       ! functions
-       poisson1d_0_simple
-  use poisson1d_method1_mg, only: &
-       ! functions
-       poisson1d_1_mg
-  use poisson2d_method0_simple, only: &
-       ! functions
-       poisson2d_0_simple
-  use poisson2d_method1_mg, only: &
-       ! functions
-       poisson2d_1_mg
-  use poisson2d_method1_ncc, only: &
-       ! functions
-       poisson2d_1_ncc
-  use poisson2d_method1_em30, only: &
-       ! functions
-       poisson2d_1_em30
-  use poisson2d_method1_fbc, only: &
-       ! functions
-       poisson2d_1_fbc
-  use poisson2d_method1_hadapt, only: &
-       ! functions
-       poisson2d_1_hadapt
-  use poisson2d_method1_l2prj, only: &
-       ! functions
-       poisson2d_1_l2prj
-  use poisson2d_method1_prolmat, only: &
-       ! functions
-       poisson2d_1_prolmat
-  use poisson2d_method2, only: &
-       ! functions
-       poisson2d_2
-  use poisson2d_method2_collect, only: &
-       ! functions
-       poisson2d_2_collect
-  use poisson2d_method2_cmsort, only: &
-       ! functions
-       poisson2d_2_cmsort
-  use poisson2d_method2_mg, only: &
-       ! functions
-       poisson2d_2_mg
-  use poisson3d_method0_simple, only: &
-       ! functions
-       poisson3d_0_simple
-  use poisson3d_method1_mg, only: &
-       ! functions
-       poisson3d_1_mg
-  use poisson3d_method1_em30, only: &
-       ! functions
-       poisson3d_1_em30
-#else
   use poisson1d_method0_simple
   use poisson1d_method1_mg
   use poisson2d_method0_simple
@@ -109,7 +45,6 @@ program poisson
   use poisson3d_method1_mg
   use poisson3d_method1_em30
   use poisson2d_method1_ncc
-#endif
 
   implicit none
 
