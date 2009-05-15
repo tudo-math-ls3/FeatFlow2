@@ -38,6 +38,9 @@ program bloodflow_app
     
     ! Evaluate the bloodflow structure
     call bloodflow_evalIndicator(rbloodflow)
+
+    ! Redistribute the mesh points
+    call bloodflow_redistMeshPoints(rbloodflow)
     
     ! Write the content of the bloodflow structure to GMV file
     call bloodflow_outputStructure(rbloodflow)

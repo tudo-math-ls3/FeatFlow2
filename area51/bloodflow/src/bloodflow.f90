@@ -10,12 +10,17 @@
 
 module bloodflow
 
-  use bloodflow_msd
+!!$  use bloodflow_msd
+  use bilinearformevaluation
   use boundary
   use genoutput
   use geometry
+  use linearalgebra
+  use linearsolver
   use linearsystemscalar
+  use linearsystemblock
   use paramlist
+  use spatialdiscretisation
   use storage
   use triangulation
   use ucd
@@ -33,6 +38,7 @@ module bloodflow
   public :: bloodflow_outputStructure
   public :: bloodflow_evalObject
   public :: bloodflow_evalIndicator
+  public :: bloodflow_redistMeshPoints
 
   !*****************************************************************************
 
@@ -40,8 +46,11 @@ module bloodflow
 
 !<constantblock description="Global constants for mesh spacing tolerances">
 
-  
+  ! Tolerance for considering two points as equivalent
   real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1e-4_DP
+
+  ! Stiffness parameter for mass spring system
+  real(DP), parameter :: SPRING_STIFFNESS = 1._DP
   
 !</constantblock>
 
@@ -357,6 +366,7 @@ contains
 !</description>
 
 !<inputoutput>
+
     ! Bloodflow structure
     type(t_bloodflow), intent(INOUT) :: rbloodflow
 
@@ -364,15 +374,13 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_msd) :: rmsd
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Dindicator
-    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement, p_Isprings
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
     integer, dimension(:), pointer :: IelementPatch
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,DIntersectionCoords
-    real(DP) :: daux
     integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch
     
     
@@ -641,29 +649,7 @@ contains
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
-
-
-    !---------------------------------------------------------------------------
-    ! (3) Find nearest neighbor of all points of the object:
-    !
-    !---------------------------------------------------------------------------
-    
-    call bloodflow_createMSDSystem(rmsd, rbloodflow%rtriangulation)
-
-    do i = 1, size(p_DvertexCoords, 2)
-
-      if (p_DvertexCoords(2, i) .ge.  1.5_DP .or.&
-          p_DvertexCoords(2, i) .le. -0.5_DP .or.&
-          p_DvertexCoords(1, i) .le. 0.5_DP .or.&
-          p_DvertexCoords(1, i) .ge. 1.5_DP) rmsd%Rparticles(i)%bfixed = .true.
-    end do
-
-    rmsd%Rparticles(1014)%Dcoords = rmsd%Rparticles(1014)%Dcoords+0.1
-    rmsd%Rparticles(1014)%bfixed = .true.
-
-    call bloodflow_solveMSDSystem(rmsd, rbloodflow%rtriangulation)
-    call bloodflow_releaseMSDSystem(rmsd)
-    
+  
   contains
     
     !***************************************************************************
@@ -807,5 +793,440 @@ contains
     end subroutine LinesIntersectionTest
 
   end subroutine bloodflow_evalIndicator
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine bloodflow_redistMeshPoints(rbloodflow)
+
+!<description>
+
+    ! This subroutine redistributes the mesh points based on the
+    ! equilibration of a two-dimensional mass spring system
+
+!</description>
+
+!<inputoutput>
+
+    ! Bloodflow structure
+    type(t_bloodflow), intent(INOUT) :: rbloodflow
+
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_blockDiscretisation) :: rdiscretisation
+    type(t_matrixBlock), dimension(1) :: Rmatrix
+    type(t_matrixScalar) :: rmatrixScalar
+    type(t_vectorBlock) :: rparticles, rforces, rincrement, rtemp
+    type(t_linsolNode), pointer :: p_rsolverNode
+    real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Dmatrix, p_Dparticles, p_Dforces
+    real(DP), dimension(1) :: dnorm1, dnorm2
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
+    integer :: h_Ksep, ierror, ite
+
+
+    ! Create matrix structure for standard P1 discretization
+    call spdiscr_initBlockDiscr(rdiscretisation, 1,&
+        rbloodflow%rtriangulation, rbloodflow%rboundary)
+    call spdiscr_initDiscr_simple(rdiscretisation%RspatialDiscr(1), &
+        EL_E001, SPDISC_CUB_AUTOMATIC, rbloodflow%rtriangulation, rbloodflow%rboundary)
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+        LSYSSC_MATRIX9, rmatrixScalar)
+    
+    ! Create scalar matrix with local 2x2 blocks
+    rmatrixScalar%NVAR = 2
+    rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9INTL
+    rmatrixScalar%cinterleavematrixFormat = LSYSSC_MATRIX1
+    call lsyssc_allocEmptyMatrix(rmatrixScalar, LSYSSC_SETM_UNDEFINED)
+
+    ! Create 1-block system matrix and set points
+    call lsysbl_createMatFromScalar(rmatrixScalar, Rmatrix(1), rdiscretisation)    
+    call lsyssc_getbase_double(rmatrixScalar, p_Dmatrix)
+    call lsyssc_getbase_Kld(rmatrixScalar, p_Kld)
+    call lsyssc_getbase_Kcol(rmatrixScalar, p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rmatrixScalar, p_Kdiagonal)
+    
+    ! Create diagonal separator
+    h_Ksep = ST_NOHANDLE
+    call storage_copy(rmatrixScalar%h_Kld, h_Ksep)
+    call storage_getbase_int(h_Ksep, p_Ksep, rmatrixScalar%NEQ+1)
+    
+    ! Create vectors
+    call lsysbl_createVecBlockIndMat(Rmatrix(1), rparticles, .true.)
+    call lsysbl_createVecBlockIndMat(Rmatrix(1), rforces, .true.)
+    call lsysbl_createVecBlockIndMat(Rmatrix(1), rincrement, .false.)
+    call lsysbl_createVecBlockIndMat(Rmatrix(1), rtemp, .false.)
+    call lsysbl_getbase_double(rparticles, p_Dparticles)
+    call lsysbl_getbase_double(rforces, p_Dforces)
+
+    ! Set pointers to coordinates vectors and triangulation data
+    call storage_getbase_double2d(&
+        rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_int2d(&
+        rbloodflow%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
+
+    ! Create a linear BiCGSTAB solver
+    call linsol_initBiCGStab(p_rsolverNode)
+    p_rsolverNode%ioutputLevel       = 1
+    p_rsolverNode%istoppingCriterion = LINSOL_STOP_ONEOF
+    p_rsolverNode%depsRel            = 1e-3
+    p_rsolverNode%depsAbs            = 1e-8
+    
+    ! Attach system matrix and initialize structures and data
+    call linsol_setMatrices(p_RsolverNode, Rmatrix)
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+
+    ! Initialize particle positions by point coordinates
+    call setParticles(p_DvertexCoords, rbloodflow%rtriangulation%NVT, p_Dparticles)
+
+!!$    ! Move point by hand
+!!$    p_Dparticles(2*1013+1) = p_Dparticles(2*1013+1) + 0.05
+!!$    p_Dparticles(2*1013+2) = p_Dparticles(2*1013+2) + 0.05
+    
+    ! Perform nonlinear iterations
+    newton: do ite = 1, 100
+
+      ! Clear matrix and force vector
+      call lalg_clearVector(p_Dmatrix)
+      call lalg_clearVector(p_Dforces)
+
+      ! Assemble matrix and force vector
+      call assembleForces(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_IverticesAtElement,&
+          rmatrixScalar%NA, rmatrixScalar%NEQ, rbloodflow%rtriangulation%NEL, &
+          p_Dmatrix, p_Dparticles, p_Dforces, p_DvertexCoords, p_DobjectCoords)
+      
+      ! Reset diagoanl separator
+      call lalg_copyVector(p_Kld, p_Ksep)
+
+      ! Set fixed points
+      call setFixedPoints(p_Kld, p_Kcol, p_Kdiagonal, rmatrixScalar%NA,&
+          rmatrixScalar%NEQ, p_Dmatrix, p_Dparticles, p_Dforces)
+      
+      ! Solve linear problem
+      call lsysbl_clearVector(rincrement)
+      call linsol_solveAdaptively (p_rsolverNode, rincrement, rforces, rtemp)
+      
+      ! Update particle positions
+      call lsysbl_vectorLinearComb(rincrement, rparticles, -1.0_DP, 1.0_DP)
+
+      ! Compute relative changes
+      call lsysbl_vectorNormBlock(rincrement, (/LINALG_NORMEUCLID/), Dnorm1)
+      call lsysbl_vectorNormBlock(rparticles, (/LINALG_NORMEUCLID/), Dnorm2)
+
+      print *, Dnorm1/Dnorm2, p_rsolverNode%dfinalDefect, p_rsolverNode%iiterations, p_rsolverNode%dinitialDefect
+
+      ! Check relative changes and exit Newton algorithm
+!      if (Dnorm1(1)/Dnorm2(1) .le. 1e-6) exit newton
+    end do newton
+
+    ! Update point coordinates
+    call setVertexCoords(rbloodflow%rtriangulation%NVT, p_Dparticles, p_DvertexCoords)
+
+    ! Release temporal memory
+    call storage_free(h_Ksep)
+    call lsysbl_releaseVector(rparticles)
+    call lsysbl_releaseVector(rforces)
+    call lsysbl_releaseVector(rincrement)
+    call lsysbl_releaseVector(rtemp)
+    call lsysbl_releaseMatrix(Rmatrix(1))
+    call lsyssc_releaseMatrix(rmatrixScalar)
+    call spdiscr_releaseBlockDiscr(rdiscretisation, .true.)
+    call linsol_doneData(p_rsolverNode)
+    call linsol_doneStructure(p_rsolverNode)
+    call linsol_releaseSolver(p_rsolverNode)
+
+  contains
+
+    !***************************************************************************
+
+    subroutine setParticles(DvertexCoords, n, Dparticles)
+
+      ! This subroutine initializes the particle positions by the
+      ! physical coordinates of the grid points
+
+      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      integer, intent(IN) :: n
+      real(DP), dimension(NDIM2D, n), intent(OUT) :: Dparticles
+
+      
+      ! Copy data
+      call lalg_copyVector(DvertexCoords, Dparticles)
+      
+    end subroutine setParticles
+
+    !***************************************************************************
+
+    subroutine setVertexCoords(n, Dparticles, DvertexCoords)
+
+      ! This subroutine updates the physical coordinates of the grid
+      ! points by the particle positions
+
+      integer, intent(IN) :: n
+      real(DP), dimension(NDIM2D, n), intent(IN) :: Dparticles
+      real(DP), dimension(:,:), intent(INOUT) :: DvertexCoords
+      
+      ! Copy data
+      call lalg_copyVector(Dparticles, DvertexCoords)
+      
+    end subroutine setVertexCoords
+    
+    !***************************************************************************
+    
+    subroutine assembleForces(Kld, Kcol, Kdiagonal, Ksep, IverticesAtElement,&
+        na, neq, nel, Dmatrix, Dparticles, Dforces, DvertexCoords, DobjectCoords)
+
+      ! This subroutine assembles the Jacobian matrix of the
+      ! spring-mass system and the force vector which contains the
+      ! forces for the linear edge springs satisfying Hooke's law.
+      ! The force vector contains both the contributions from the edge
+      ! springs and from the non-linear projection springs which are
+      ! required to prevent collapsing of elements.
+      
+      real(DP), dimension(NDIM2D,neq), intent(IN) :: Dparticles
+      real(DP), dimension(:,:), intent(IN) :: DvertexCoords, DobjectCoords
+      integer, dimension(:,:), intent(IN) :: IverticesAtElement
+      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, intent(IN) :: na, neq, nel
+      
+      real(DP), dimension(NDIM2D,NDIM2D,na), intent(INOUT) :: Dmatrix
+      real(DP), dimension(NDIM2D,neq), intent(INOUT) :: Dforces
+      integer, dimension(:), intent(INOUT) :: Ksep
+
+      ! local variables
+      real(DP), dimension(NDIM2D,NDIM2D) :: J_ij
+      real(DP), dimension(NDIM2D) :: f_ij, d_ij, Dproj
+      real(DP) :: dlength, dlength0, dprj, d2_ij, d3_ij
+      integer :: i,j,k,ii,ij,ji,jj,iel,ive
+
+      
+      ! Loop over all rows
+      rows: do i = 1, neq
+        
+        ! Get position of diagonal entry
+        ii = Kdiagonal(i)
+
+        ! Loop over all off-diagonal matrix entries such that i<j
+        cols: do ij = Kdiagonal(i)+1, Kld(i+1)-1
+
+          ! Get node number j, the corresponding matrix positions ji
+          j = Kcol(ij); jj = Kdiagonal(j); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Compute spring length and rest length
+          dlength  = sqrt((Dparticles(1,i)-Dparticles(1,j))**2 +&
+                          (Dparticles(2,i)-Dparticles(2,j))**2)
+          dlength0 = sqrt((DvertexCoords(1,i)-DvertexCoords(1,j))**2 +&
+                          (DvertexCoords(2,i)-DvertexCoords(2,j))**2)
+          
+          ! Compute coefficients and direction
+          d_ij  = (Dparticles(:,j)-Dparticles(:,i))
+          d2_ij = d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2)
+          d3_ij = d2_ij*sqrt(d2_ij)
+
+          ! Compute local Jacobian matrix
+          J_ij(1,1) = d2_ij - d_ij(1)*d_ij(1)
+          J_ij(2,1) =       - d_ij(2)*d_ij(1)
+          J_ij(1,2) =       - d_ij(1)*d_ij(2)
+          J_ij(2,2) = d2_ij - d_ij(2)*d_ij(2)
+
+          ! Scale local Jacobian matrix
+          J_ij = J_ij / d3_ij
+
+          ! Update local Jacobian matrix
+          J_ij(1,1) = SPRING_STIFFNESS - SPRING_STIFFNESS * dlength0 * J_ij(1,1)
+          J_ij(1,2) =                  - SPRING_STIFFNESS * dlength0 * J_ij(1,2)
+          J_ij(2,1) =                  - SPRING_STIFFNESS * dlength0 * J_ij(2,1)
+          J_ij(2,2) = SPRING_STIFFNESS - SPRING_STIFFNESS * dlength0 * J_ij(2,2)
+
+          ! Apply off-diagonal matrix entries
+          Dmatrix(:,:,ij) = J_ij
+          Dmatrix(:,:,ji) = J_ij
+
+          ! Update diagonal matrix entris
+          Dmatrix(:,:,ii) = Dmatrix(:,:,ii) - J_ij
+          Dmatrix(:,:,jj) = Dmatrix(:,:,jj) - J_ij
+          
+          ! Compute force vector by Hooke's law for edge (i,j)
+          f_ij =  SPRING_STIFFNESS * (dlength-dlength0) * d_ij / dlength
+    
+          ! Apply force vector to nodes i and j
+          Dforces(:,i) = Dforces(:,i) + f_ij
+          Dforces(:,j) = Dforces(:,j) - f_ij
+          
+        end do cols
+      end do rows
+      
+      i = 895
+
+      d_ij = DobjectCoords(:,100) - Dparticles(:,i)
+      d2_ij = sqrt(d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2))
+      d3_ij = d2_ij**3
+
+      ! Compute forces
+      Dforces(:,i) = Dforces(:,i) + d_ij / d3_ij
+
+      ! Compute local Jacobian matrix
+      J_ij(1,1) = d_ij(1)*d_ij(1)
+      J_ij(2,1) = d_ij(2)*d_ij(1)
+      J_ij(1,2) = d_ij(1)*d_ij(2)
+      J_ij(2,2) = d_ij(2)*d_ij(2)
+
+      ! Scale local Jacobian matrix
+      J_ij = 3 * J_ij / d2_ij**5
+
+      ! Update local Jacobian matrix
+      J_ij(1,1) = d2_ij**2 - J_ij(1,1)
+      J_ij(1,2) =          - J_ij(1,2)
+      J_ij(2,1) =          - J_ij(2,1)
+      J_ij(2,2) = d2_ij**2 - J_ij(2,2)
+      
+      ii = Kdiagonal(i)
+      Dmatrix(:,:,ii) = Dmatrix(:,:,ii) + J_ij
+
+
+
+      d_ij = DobjectCoords(:,99) - Dparticles(:,i)
+      d2_ij = sqrt(d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2))
+      d3_ij = d2_ij**3
+
+      ! Compute forces
+      Dforces(:,i) = Dforces(:,i) + d_ij / d3_ij
+
+      ! Compute local Jacobian matrix
+      J_ij(1,1) = d_ij(1)*d_ij(1)
+      J_ij(2,1) = d_ij(2)*d_ij(1)
+      J_ij(1,2) = d_ij(1)*d_ij(2)
+      J_ij(2,2) = d_ij(2)*d_ij(2)
+
+      ! Scale local Jacobian matrix
+      J_ij = 3 * J_ij / d2_ij**5
+
+      ! Update local Jacobian matrix
+      J_ij(1,1) = d2_ij**2 - J_ij(1,1)
+      J_ij(1,2) =          - J_ij(1,2)
+      J_ij(2,1) =          - J_ij(2,1)
+      J_ij(2,2) = d2_ij**2 - J_ij(2,2)
+
+      ii = Kdiagonal(i)
+      Dmatrix(:,:,ii) = Dmatrix(:,:,ii) + J_ij
+
+
+      return
+
+      ! Loop over all elements to assemble the repulsion forces
+      elems: do iel = 1, nel
+        
+        ! Loop over all corners
+        do ive = 1, 3
+          
+          ! Get global vertex numbers
+          i = p_IverticesAtElement(mod(ive-1, 3)+1, iel)
+          j = p_IverticesAtElement(mod(ive,   3)+1, iel)
+          k = p_IverticesAtElement(mod(ive+1, 3)+1, iel)
+
+          ! Compute position of initial projection point
+          d_ij  = DvertexCoords(:,k) - DvertexCoords(:,j)
+          d2_ij = d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2)
+          dprj  = d_ij(1)*(DvertexCoords(1,i)-DvertexCoords(1,j)) +&
+                  d_ij(2)*(DvertexCoords(2,i)-DvertexCoords(2,j))
+          Dproj = DvertexCoords(:,j) + dprj/d2_ij * d_ij
+
+          ! Compute square of rest length of the projection spring
+          dlength0 = (DvertexCoords(1,i)-Dproj(1))**2 + (DvertexCoords(2,i)-Dproj(2))**2
+
+          ! Compute position of effective projection point
+          d_ij  = Dparticles(:,k) - Dparticles(:,j)
+          d2_ij = d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2)
+          dprj  = d_ij(1)*(Dparticles(1,i)-Dparticles(1,j)) +&
+                  d_ij(2)*(Dparticles(2,i)-Dparticles(2,j))
+          Dproj = Dparticles(:,j) + dprj/d2_ij * d_ij
+
+          ! Compute direction and effective length of the projection spring
+          d_ij = Dproj-Dparticles(:,i)
+          dlength = sqrt(d_ij(1)*d_ij(1) + d_ij(2)*d_ij(2))
+
+          ! Compute force vector for repulsion spring
+          f_ij = SPRING_STIFFNESS * (dlength-dlength0/dlength) * d_ij / dlength
+          
+          ! Apply force vector to node i
+          Dforces(:,i) = Dforces(:,i) + f_ij
+
+
+          ! Update i-th row of matrix
+          ii = Kdiagonal(i)
+          Dmatrix(1,1,ii) = Dmatrix(1,1,ii) + SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(1,i)
+          Dmatrix(2,2,ii) = Dmatrix(2,2,ii) + SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(2,i)
+
+!!$          do ij = Kld(i), Kld(i+1)-1
+!!$            
+!!$            ! Update j-th column
+!!$            if (Kcol(ij) .eq. j) then
+!!$              Dmatrix(1,1,ij) = Dmatrix(1,1,ij) + SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(1,j) * dprj/d2_ij
+!!$              Dmatrix(2,2,ij) = Dmatrix(2,2,ij) + SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(2,j) * dprj/d2_ij
+!!$            end if
+!!$
+!!$            ! Update k-th column
+!!$            if (Kcol(ij) .eq. k) then
+!!$              Dmatrix(1,1,ij) = Dmatrix(1,1,ij) - SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(1,k) * dprj/d2_ij
+!!$              Dmatrix(2,2,ij) = Dmatrix(2,2,ij) - SPRING_STIFFNESS * (dlength0/dlength**2 - 1.0_DP) * Dparticles(2,k) * dprj/d2_ij
+!!$            end if
+!!$          end do
+
+        end do
+      end do elems
+      
+    end subroutine assembleForces
+
+    !***************************************************************************
+    
+    subroutine setFixedPoints(Kld, Kcol, Kdiagonal, na, neq, Dmatrix, Dparticles, Dforces)
+
+      ! This subroutine nullifies the force vector for fixed points
+      ! and replaces the corresponding row of the matrix by that of
+      ! the identity matrix.
+
+      real(DP), dimension(NDIM2D,neq), intent(IN) :: Dparticles
+      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, intent(IN) :: na, neq
+      
+      real(DP), dimension(NDIM2D,NDIM2D,na), intent(INOUT) :: Dmatrix
+      real(DP), dimension(NDIM2D,neq), intent(INOUT) :: Dforces
+
+      ! local variables
+      integer :: i,ii,ij
+
+
+      ! Loop over all rows
+      rows: do i = 1, neq
+
+        if (Dparticles(2,i) .ge. 1.5_DP .or. Dparticles(2,i) .le. -1.5_DP .or.&
+            Dparticles(1,i) .ge. 1.9_DP .or. Dparticles(1,i) .le.  0.1_DP) then
+
+          ! Nullify forces
+          Dforces(:,i) = 0.0_DP
+
+          ! Nullify row in matrix
+          do ij = Kld(i), Kld(i+1)-1
+            Dmatrix(:,:,ij) = 0.0_DP
+          end do
+
+          ! Set identity matrix at diagonal block
+          ii = Kdiagonal(i)
+          Dmatrix(1,1,ii) = 1.0_DP
+          Dmatrix(2,2,ii) = 1.0_DP
+
+        end if
+      end do rows
+      
+    end subroutine setFixedPoints
+
+  end subroutine bloodflow_redistMeshPoints
 
 end module bloodflow

@@ -62,11 +62,17 @@ module bloodflow_msd
 
   type t_spring
 
+    ! First point of the spring
+    integer :: i1 = 0
+
+    ! Second point of the spring
+    integer :: i2 = 0
+
     ! Elasticity constant of the spring
-    real(DP) :: delasticity = 0.1_DP
+    real(DP) :: delasticity = 0.25_DP
 
     ! Damping constant of the spring
-    real(DP) :: ddamping = 0.3_DP
+    real(DP) :: ddamping = 2.75_DP
 
     ! Rest length of the spring
     real(DP) :: drestLength = 0.0_DP
@@ -108,13 +114,14 @@ contains
 
 !<subroutine>
 
-  subroutine bloodflow_createMSDSystem(rmsd, rtriangulation)
+  subroutine bloodflow_createMSDSystem(rmsd, rtriangulation, DpointCoords, Isprings)
 
 !<description>
     
     ! This subroutine creates the mass-spring-damper system and
     ! initializes the particles and springs based on the given
-    ! triangulation structure.
+    ! triangulation structure. If the optional array DpointCoords is
+    ! present, then additional points are created at these coordinates.
 
 !</description>
 
@@ -122,6 +129,12 @@ contains
 
     ! Triangulation structure
     type(t_triangulation), intent(IN), target :: rtriangulation
+
+    ! OPTIONAL: coordinates of additional points
+    real(DP), dimension(:,:), intent(IN), optional :: DpointCoords
+
+    ! OPTIONAL: node pairs indicating spring connections
+    integer, dimension(:,:), intent(IN), optional :: Isprings
 
 !</input>
 
@@ -144,6 +157,8 @@ contains
     ! Set number of particles
     rmsd%nparticles = rtriangulation%NVT
 
+    if (present(DpointCoords)) rmsd%nparticles = rmsd%nparticles + size(DpointCoords, 2)
+
     ! Set pointer to triangulation
     rmsd%p_rtriangulation => rtriangulation
 
@@ -153,8 +168,8 @@ contains
     ! Set pointer to physical vertex coordinates
     call storage_getbase_double2d(rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
-    ! Loop over all particles
-    do i = 1, rmsd%nparticles     
+    ! Loop over all particles from the triangulation
+    do i = 1, rtriangulation%NVT
 
       ! Set particle position
       rmsd%Rparticles(i)%Dcoords = p_DvertexCoords(:, i)
@@ -162,6 +177,18 @@ contains
       ! Set initial velocity to zero
       rmsd%Rparticles(i)%Dvelocity = 0.0_DP
     end do
+
+    ! Loop over all additional particles (if any)
+    if (present(DpointCoords)) then
+      do i = 1, size(DpointCoords,2)
+        
+        ! Set particle position
+        rmsd%Rparticles(rtriangulation%NVT+i)%Dcoords = DpointCoords(:,i)
+
+        ! Set initial velocity to zero
+        rmsd%Rparticles(rtriangulation%NVT+i)%Dvelocity = 0.0_DP
+      end do
+    end if
 
     ! Set pointer
     call storage_getbase_int2D(rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
@@ -178,6 +205,8 @@ contains
       end do
     end do
     rmsd%nsprings = ispring + 3*rtriangulation%NEL
+
+    if (present(Isprings)) rmsd%nsprings = rmsd%nsprings+size(Isprings,2)
 
     ! Allocate memory
     allocate(rmsd%Rsprings(rmsd%nsprings))
@@ -197,6 +226,10 @@ contains
 
         ! Compute rest length of the spring
         Dx = p_DvertexCoords(:,i) - p_DvertexCoords(:,j)
+
+        ! Initialize spring
+        rmsd%Rsprings(ispring)%i1 = i
+        rmsd%Rsprings(ispring)%i2 = j
         rmsd%Rsprings(ispring)%drestLength = sqrt(sum(Dx*Dx))
       end do
     end do
@@ -236,6 +269,27 @@ contains
       
     end do
 
+    ! Initialize the additional springs
+    if (present(Isprings)) then
+      do k = 1, size(Isprings, 2)
+        
+        ! Update spring counter
+        ispring = ispring+1
+
+        ! Get global vertex numbers
+        i = Isprings(1, k)
+        j = Isprings(2, k)
+
+        ! Compute rest length of the spring
+        Dx = rmsd%Rparticles(i)%Dcoords - rmsd%Rparticles(j)%Dcoords
+
+        ! Initialize spring
+        rmsd%Rsprings(ispring)%i1 = i
+        rmsd%Rsprings(ispring)%i2 = j
+        rmsd%Rsprings(ispring)%drestLength = sqrt(sum(Dx*Dx))
+      end do
+    end if
+    
   end subroutine bloodflow_createMSDSystem
 
   !*****************************************************************************
@@ -311,18 +365,18 @@ contains
       call bloodflow_calcForces(rmsd)
 
       ! Update the particles
-      call bloodflow_updateParticles(rmsd, 0.1_DP, dchange)
+      call bloodflow_updateParticles(rmsd, 0.001_DP, dchange)
       
       print *, dchange
 
-!      if (dchange .le. 1e-6) exit
+      if (i .gt. 10 .and. dchange .le. 1e-6) exit
     end do
 
     ! Set point
     call storage_getbase_double2d(rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
     ! Update the vertex positions
-    do i = 1, rmsd%nparticles
+    do i = 1, size(p_DvertexCoords, 2)
       p_DvertexCoords(:,i) = rmsd%Rparticles(i)%Dcoords
     end do
     
@@ -385,7 +439,7 @@ contains
     call storage_getbase_int2d(p_rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
 
     
-    ! Compute the accumulated forces due to edge springs
+    ! Compute the accumulated forces due to edge springs according to Hooks spring law
     ispring = 0
     do iel = 1, p_rtriangulation%NEL
 
@@ -405,16 +459,13 @@ contains
         dSpringLength = sqrt(sum(Dx*Dx))
         
         ! Compute linear force for edge (i,j)
-        Dforce = rmsd%Rsprings(ispring)%delasticity *&
-                 (dSpringLength-rmsd%Rsprings(ispring)%drestLength)
-        
-        Dforce = Dforce +&
-                 rmsd%Rsprings(ispring)%ddamping *&
-                 (rmsd%Rparticles(i)%Dvelocity - rmsd%Rparticles(j)%Dvelocity) *&
-                 Dx / dSpringLength
-
-        Dforce = -Dforce * Dx / dSpringLength
-
+        Dforce = -(rmsd%Rsprings(ispring)%delasticity *&
+                     (dSpringLength-rmsd%Rsprings(ispring)%drestLength) +&
+                   rmsd%Rsprings(ispring)%ddamping *&
+                     sum( (rmsd%Rparticles(i)%Dvelocity-&
+                           rmsd%Rparticles(j)%Dvelocity)*Dx)/dSpringLength) *&
+                   Dx/dSpringLength
+       
         ! Apply force to node i (if required)
         if (.not.rmsd%Rparticles(i)%bfixed)&
             rmsd%Rparticles(i)%Dforce = rmsd%Rparticles(i)%Dforce + Dforce
@@ -446,10 +497,9 @@ contains
         dSpringLength = sqrt(sum(Dx*Dx))
         
         ! Compute non-linear force
-        Dforce = rmsd%Rsprings(ispring+1)%delasticity *&
-                 (dSpringLength-(rmsd%Rsprings(ispring+1)%drestLength**2) / dSpringLength)
-        
-        Dforce = -Dforce * Dx / dSpringLength
+        Dforce = -rmsd%Rsprings(ispring+1)%delasticity *&
+                 (dSpringLength-rmsd%Rsprings(ispring+1)%drestLength**2 / dSpringLength) *&
+                 Dx / dSpringLength
         
         ! Apply force to node i
         rmsd%Rparticles(i)%Dforce = rmsd%Rparticles(i)%Dforce + Dforce
@@ -468,10 +518,9 @@ contains
         dSpringLength = sqrt(sum(Dx*Dx))
 
         ! Compute non-linear force
-        Dforce = rmsd%Rsprings(ispring+2)%delasticity *&
-                 (dSpringLength-(rmsd%Rsprings(ispring+2)%drestLength**2) / dSpringLength)
-        
-        Dforce = -Dforce * Dx / dSpringLength
+        Dforce = -rmsd%Rsprings(ispring+2)%delasticity *&
+                  (dSpringLength-rmsd%Rsprings(ispring+2)%drestLength**2 / dSpringLength) *&
+                  Dx / dSpringLength
         
         ! Apply force to node j
         rmsd%Rparticles(j)%Dforce = rmsd%Rparticles(j)%Dforce + Dforce
@@ -490,10 +539,9 @@ contains
         dSpringLength = sqrt(sum(Dx*Dx))
 
         ! Compute non-linear force
-        Dforce = rmsd%Rsprings(ispring+3)%delasticity *&
-                 (dSpringLength-(rmsd%Rsprings(ispring+3)%drestLength**2) / dSpringLength)
-        
-        Dforce = -Dforce * Dx / dSpringLength
+        Dforce = -rmsd%Rsprings(ispring+3)%delasticity *&
+                  (dSpringLength-rmsd%Rsprings(ispring+3)%drestLength**2 / dSpringLength) *&
+                  Dx / dSpringLength
         
         ! Apply force to node k
         rmsd%Rparticles(k)%Dforce = rmsd%Rparticles(k)%Dforce + Dforce
@@ -502,6 +550,45 @@ contains
       ! Update spring counter
       ispring = ispring+3
       
+    end do
+
+    ! Compute forces between object and its nearest neighbors
+    do while (ispring .lt. rmsd%nsprings)
+
+      ! Update spring counter
+      ispring = ispring + 1
+
+      ! Get global vertex numbers
+      i = rmsd%Rsprings(ispring)%i1
+      j = rmsd%Rsprings(ispring)%i2
+
+      ! Compute length of the spring
+      Dx = rmsd%Rparticles(i)%Dcoords - rmsd%Rparticles(j)%Dcoords
+      dSpringLength = sqrt(sum(Dx*Dx))
+
+!!$      ! Compute linear force for edge (i,j)
+!!$      Dforce = -(rmsd%Rsprings(ispring)%delasticity * dSpringLength +&
+!!$                 rmsd%Rsprings(ispring)%ddamping *&
+!!$                   sum( (rmsd%Rparticles(i)%Dvelocity-&
+!!$                         rmsd%Rparticles(j)%Dvelocity)*Dx)/dSpringLength) *&
+!!$                 Dx/dSpringLength
+
+      ! Compute non-linear force for edge (i,j)
+      Dforce = -1e-4 * Dx / max(dSpringLength**3, SYS_EPSREAL)
+!!$                rmsd%Rsprings(ispring)%ddamping *&
+!!$                  sum( (rmsd%Rparticles(i)%Dvelocity-&
+!!$                        rmsd%Rparticles(j)%Dvelocity)*Dx)/dSpringLength) *&
+!!$                Dx/dSpringLength
+      
+      ! Apply force to node i (if required)
+      if (.not.rmsd%Rparticles(i)%bfixed)&
+          rmsd%Rparticles(i)%Dforce = rmsd%Rparticles(i)%Dforce + Dforce -&
+          rmsd%Rsprings(ispring)%ddamping*rmsd%Rparticles(i)%Dvelocity
+      
+      ! Apply force to node j (if required)
+      if (.not.rmsd%Rparticles(j)%bfixed)&
+          rmsd%Rparticles(j)%Dforce = rmsd%Rparticles(j)%Dforce - Dforce -&
+          rmsd%Rsprings(ispring)%ddamping*rmsd%Rparticles(j)%Dvelocity
     end do
 
   end subroutine bloodflow_calcForces
@@ -552,6 +639,9 @@ contains
 
     ! Loop over all particles
     do i = 1, rmsd%nparticles
+
+      ! Skip fixed particles
+      if (rmsd%Rparticles(i)%bfixed) cycle
 
       ! Update relative changes
       dchange = dchange + abs(sum(dstep * rmsd%Rparticles(i)%Dvelocity))
