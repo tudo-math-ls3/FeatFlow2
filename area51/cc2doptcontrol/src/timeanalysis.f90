@@ -26,6 +26,7 @@
 module timeanalysis
 
   use fsystem
+  use linearalgebra
   use linearsystemblock
     
   implicit none

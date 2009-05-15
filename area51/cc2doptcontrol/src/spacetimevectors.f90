@@ -81,8 +81,11 @@
 module spacetimevectors
 
   use fsystem
+  use storage
   use genoutput
+  use linearalgebra
   use externalstorage
+  use dofmapping
   use spatialdiscretisation
   use linearsystemscalar
   use linearsystemblock

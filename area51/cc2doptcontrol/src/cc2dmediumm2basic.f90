@@ -297,17 +297,6 @@ module cc2dmediumm2basic
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
-    ! A variable describing the analytic boundary conditions.    
-    type(t_boundaryConditions), pointer   :: p_rboundaryConditions
-
-    ! A variable describing the analytic boundary conditions for the primal
-    ! equation.
-    type(t_boundaryConditions), pointer   :: p_rboundaryConditionsPrimal
-
-    ! A variable describing the analytic boundary conditions for the dual
-    ! equation.
-    type(t_boundaryConditions), pointer   :: p_rboundaryConditionsDual
-
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer           :: p_rsolverNode
 

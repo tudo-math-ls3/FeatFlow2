@@ -71,10 +71,7 @@ module spacepreconditionerinit
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
@@ -87,6 +84,11 @@ module spacepreconditionerinit
   use paramlist
   use linearsolverautoinitialise
   use matrixrestriction
+  use filtersupport
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use linearsolver
   
   use collection
   use convection
@@ -332,7 +334,7 @@ contains
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
         
-        call parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
         read (sstring,*) spreconditionerSection
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -354,7 +356,7 @@ contains
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         
-        call parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
         read (sstring,*) spreconditionerSection
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&

@@ -89,10 +89,7 @@ module spacepreconditioner
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
@@ -103,6 +100,12 @@ module spacepreconditioner
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use filtersupport
+  use bilinearformevaluation
+  use linearformevaluation
+  use multilevelprojection
+  use matrixmodification
+  use linearsolver
   use linearsolverautoinitialise
   use matrixrestriction
   use trilinearformevaluation

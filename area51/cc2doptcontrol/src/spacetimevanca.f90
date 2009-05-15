@@ -177,7 +177,7 @@ contains
     ! Allocate memory for the pointer array that later allows quick access
     ! to the matrix columns. Each matrix is a 6x6 block matrix.
     Isize = (/6*(ntimesteps + 1),6*3/)
-    call storage_new2D ('createLocalMatrixQ1TQ0', 'ImatrixMapping', Isize, &
+    call storage_new ('createLocalMatrixQ1TQ0', 'ImatrixMapping', Isize, &
         ST_INT, h_ImatrixMapping,ST_NEWBLOCK_ZERO)
     call storage_getbase_int2d(h_ImatrixMapping,p_Iindex)
     

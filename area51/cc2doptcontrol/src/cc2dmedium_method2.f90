@@ -147,7 +147,7 @@ contains
       call parlst_readfromfile (rparamList, './cmdline.dat')
       
       ! Evaluate parameters
-      call parlst_getvalue_string_direct ( &
+      call parlst_getvalue_string ( &
           rparamList, '','datdirectory', sdata, DIR_DATA)
       read(sdata,*) DIR_DATA
 
@@ -271,7 +271,7 @@ contains
     call cc_initParameters (p_rproblem)
     
     do i=1,p_rproblem%NLMAX
-      call collct_addlevel_all (p_rproblem%rcollection)
+      call collct_addlevel (p_rproblem%rcollection)
     end do
     
     ! So now the different steps - one after the other.

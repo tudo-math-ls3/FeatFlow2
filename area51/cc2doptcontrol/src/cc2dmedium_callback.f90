@@ -91,18 +91,20 @@ module cc2dmedium_callback
 
   use fsystem
   use storage
-  use linearsolver
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
+  use derivatives
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use mprimitives
   use feevaluation
   use spacetimevectors
   use triasearch
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   
   use timeevaluation
   
@@ -1312,10 +1314,8 @@ contains
   ! ***************************************************************************
   ! Values in a fictitious boundary component:
 
-!<subroutine>
-
-  subroutine getBoundaryValuesFBC (Icomponents,rdiscretisation,rbcRegion, &
-                                   Revaluation, rcollection)
+  subroutine getBoundaryValuesFBC_2D (Icomponents,rdiscretisation,&
+                                      Revaluation, rcollection)
   
   use collection
   use spatialdiscretisation
@@ -1342,7 +1342,7 @@ contains
   !   (e.g. 1=1st solution component, e.g. X-velocity, 
   !         2=2nd solution component, e.g. Y-velocity,...,
   !         3=3rd solution component, e.g. pressure)
-  !   Example: Icomponents(:) = [1,2] -> Compute values for X- and Y-velocity
+  !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
   !     (1=x, 2=y component)
   integer, dimension(:), intent(IN)                           :: Icomponents
 
@@ -1351,15 +1351,9 @@ contains
   ! analytic boundary boundary description etc.
   type(t_blockDiscretisation), intent(IN)                     :: rdiscretisation
   
-  ! Boundary condition region that is currently being processed.
-  ! (This e.g. defines the type of boundary conditions that are 
-  !  currently being calculated (Dirichlet, Robin,...), as well as information
-  !  about the current boundary region 'what is discretised at the moment'.)
-  type(t_bcRegion), intent(IN)                                :: rbcRegion
-  
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional                 :: rcollection
 
 !</input>
 
@@ -1398,93 +1392,88 @@ contains
     ! Note: the definition of (analytic) fictitious boundary components 
     ! is performed in 'cc_parseFBDconditions'.
     
-    ! Are we evaluating our fictitious boundary component?
-    if (rbcRegion%rfictBoundaryRegion%sname .eq. 'CIRCLE') then
-    
-      ! Get the triangulation array for the point coordinates
-      p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
-      call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-                                     p_DvertexCoordinates)
-      call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-                                  p_IverticesAtElement)
-      call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
-                                  p_IverticesAtEdge)
+    ! Get the triangulation array for the point coordinates
+    p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                    p_DvertexCoordinates)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+                                p_IverticesAtElement)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
+                                p_IverticesAtEdge)
 
-      ! Definition of the circle
-      dxcenter = 0.6
-      dycenter = 0.2
-      dradius  = 0.05
-      
-      ! Loop through the points where to evaluate:
-      do idx = 1,Revaluation(1)%nvalues
-      
-        ! Get the number of the point to process; may also be number of an
-        ! edge or element...
-        ipoint = Revaluation(1)%p_Iwhere(idx)
-        
-        ! Get x- and y-coordinate
-        call getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-                         p_DvertexCoordinates,&
-                         p_IverticesAtElement,p_IverticesAtEdge,&
-                         p_rtriangulation%NVT,&
-                         dx,dy)
-        
-        ! Get the distance to the center
-        ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-        
-        ! Point inside?
-        if (ddistance .le. dradius) then
-        
-          ! Denote in the p_Iinside array that we prescribe a value here:
-          Revaluation(1)%p_Iinside (idx) = 1
-          Revaluation(2)%p_Iinside (idx) = 1
-          
-          ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
-          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-          Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-        
-        end if
-        
-      end do
-
-!      ! Definition of a 2nd circle
-!      dxcenter = 1.1
-!      dycenter = 0.31
-!      dradius  = 0.05
-!      
-!      ! Loop through the points where to evaluate:
-!      DO idx = 1,Revaluation(1)%nvalues
-!      
-!        ! Get the number of the point to process; may also be number of an
-!        ! edge or element...
-!        ipoint = Revaluation(1)%p_Iwhere(idx)
-!        
-!        ! Get x- and y-coordinate
-!        CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-!                         p_DvertexCoordinates,&
-!                         p_IverticesAtElement,p_IverticesAtEdge,&
-!                         p_rtriangulation%NVT,&
-!                         dx,dy)
-!        
-!        ! Get the distance to the center
-!        ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!        
-!        ! Point inside?
-!        IF (ddistance .LE. dradius) THEN
-!        
-!          ! Denote in the p_Iinside array that we prescribe a value here:
-!          Revaluation(1)%p_Iinside (idx) = 1
-!          Revaluation(2)%p_Iinside (idx) = 1
-!          
-!          ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
-!          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-!          Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!        
-!        END IF
-!        
-!      END DO
+    ! Definition of the circle
+    dxcenter = 0.6
+    dycenter = 0.2
+    dradius  = 0.05
     
-    end if
+    ! Loop through the points where to evaluate:
+    do idx = 1,Revaluation(1)%nvalues
+    
+      ! Get the number of the point to process; may also be number of an
+      ! edge or element...
+      ipoint = Revaluation(1)%p_Iwhere(idx)
+      
+      ! Get x- and y-coordinate
+      call getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
+                        p_DvertexCoordinates,&
+                        p_IverticesAtElement,p_IverticesAtEdge,&
+                        p_rtriangulation%NVT,&
+                        dx,dy)
+      
+      ! Get the distance to the center
+      ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+      
+      ! Point inside?
+      if (ddistance .le. dradius) then
+      
+        ! Denote in the p_Iinside array that we prescribe a value here:
+        Revaluation(1)%p_Iinside (idx) = 1
+        Revaluation(2)%p_Iinside (idx) = 1
+        
+        ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
+        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
+      
+      end if
+      
+    end do
+
+!    ! Definition of a 2nd circle
+!    dxcenter = 1.1
+!    dycenter = 0.31
+!    dradius  = 0.05
+!    
+!    ! Loop through the points where to evaluate:
+!    DO idx = 1,Revaluation(1)%nvalues
+!    
+!      ! Get the number of the point to process; may also be number of an
+!      ! edge or element...
+!      ipoint = Revaluation(1)%p_Iwhere(idx)
+!      
+!      ! Get x- and y-coordinate
+!      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
+!                       p_DvertexCoordinates,&
+!                       p_IverticesAtElement,p_IverticesAtEdge,&
+!                       p_rtriangulation%NVT,&
+!                       dx,dy)
+!      
+!      ! Get the distance to the center
+!      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+!      
+!      ! Point inside?
+!      IF (ddistance .LE. dradius) THEN
+!      
+!        ! Denote in the p_Iinside array that we prescribe a value here:
+!        Revaluation(1)%p_Iinside (idx) = 1
+!        Revaluation(2)%p_Iinside (idx) = 1
+!        
+!        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
+!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
+!      
+!      END IF
+!      
+!    END DO
     
   contains
   

@@ -604,8 +604,8 @@ contains
       rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
     ! Get GMV filename
-    call parlst_getvalue_string_direct (rproblem%rparamList, 'TIME-POSTPROCESSING', &
-                                        'sgmvFileName', stemp, 'gmv/u.gmv')
+    call parlst_getvalue_string (rproblem%rparamList, 'TIME-POSTPROCESSING', &
+                                 'sgmvFileName', stemp, 'gmv/u.gmv')
     read(stemp,*) sgmvName
     
     if (sgmvName .ne. '') then

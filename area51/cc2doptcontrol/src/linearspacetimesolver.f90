@@ -146,6 +146,7 @@ module linearspacetimesolver
   use matrixrestriction
   use paramlist
   use timestepping
+  use globalsystem
   
   use collection
   use convection

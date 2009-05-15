@@ -88,11 +88,8 @@ module spacematvecassembly
 
   use fsystem
   use storage
-  use linearsystemblock
-  use linearsolver
+  use genoutput
   use boundary
-  use bilinearformevaluation
-  use linearformevaluation
   use cubature
   use matrixfilters
   use vectorfilters
@@ -103,14 +100,20 @@ module spacematvecassembly
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use scalarpde
+  use linearsystemblock
+  use linearsolver
+  use bilinearformevaluation
+  use linearformevaluation
   use linearsolverautoinitialise
   use matrixrestriction
   use trilinearformevaluation
+  use matrixmodification
   use matrixio
   use feevaluation
   use optcontrolconvection
-  
   use convection
+  use collection
     
   implicit none
   
