@@ -157,7 +157,7 @@ contains
     call griddef_performDeformation(rgriddefInfo, rgriddefWork,idummy,&
                                     .TRUE., .FALSE., .FALSE., &
                                     .FALSE., NLMAX, 0, 0,&
-                                    tridef2d_monitorfct,rdiscretisation)    
+                                    tridef2d_monitorfct)    
                  
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
