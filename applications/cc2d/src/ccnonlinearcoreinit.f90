@@ -573,6 +573,27 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
+      case (3)
+        ! BiCGSTab with full VANKA preconditioning.
+        !
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
+        
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
+           'spreconditionerSection', sstring, '')
+        read (sstring,*) spreconditionerSection
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANKA as preconditioner.
+        call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rnonlinearIteration%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)        
       end select
       
       ! Put the coarse grid solver node to the preconditioner structure.
@@ -588,7 +609,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:5,101:105)
+        case (0:7,101:105)
 
           nullify(p_rsmoother)
         
@@ -606,6 +627,15 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVST)
           case (5)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTDIRECT)
+          case (6)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
+            call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rnonlinearIteration%p_RfilterChain)
+          case (7)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVST)
+            call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rnonlinearIteration%p_RfilterChain)
+          
           ! --- NEW IMPLEMENTATION ---
           case (101)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)

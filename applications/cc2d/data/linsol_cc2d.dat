@@ -40,6 +40,8 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #     (i.e. automatically chooses the best suitable VANKA variant).
 #     'direct' method, bypassing the defect correction approach.
 #     (-> specialised variant of 10, but faster)
+# =6: BiCGStab smoother with diagonal VANCA preconditioner
+# =7: BiCGStab smoother with full VANCA preconditioner
 #
 # The following smoothers are some new Vanka implementations.
 # Warning: You use the following ones at your own risk!
@@ -60,6 +62,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =0: Gauss elimination (UMFPACK)
 # =1: Defect correction with diagonal VANKA preconditioning.
 # =2: BiCGStab with diagonal VANKA preconditioning
+# =3: BiCGStab with full VANKA preconditioning
 
 icoarseGridSolverType = 2
 
