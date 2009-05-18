@@ -1425,13 +1425,9 @@ contains
           ! In this case, we have to include a unit vector to the pressure
           ! matrix to make the problem definite!
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 0) then
-            p_rmatrix => rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner
-            
             ! Include a unit vector
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-            call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-            
+            call mmod_replaceLinesByUnitBlk (&
+                rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner,3,Irows)
           end if
           
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 1) then
@@ -1441,13 +1437,9 @@ contains
             ! What we don't check is the smoother, thus we assume that smoothers
             ! are always solvers that allow the applicance of a filter chain.
             if (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) then
-              p_rmatrix => rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner
-              
               ! Include a unit vector
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-              call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-              
+              call mmod_replaceLinesByUnitBlk (&
+                  rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner,3,Irows)
             end if
             
           end if
