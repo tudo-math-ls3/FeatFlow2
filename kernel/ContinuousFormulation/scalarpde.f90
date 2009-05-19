@@ -18,12 +18,14 @@ module scalarpde
   
   implicit none
   
+  private
+  
 !<constants>
 
 !<constantblock>
 
   ! Maximum number of additive terms in the integral
-  integer, parameter :: SCPDE_NNAB = 21
+  integer, parameter, public :: SCPDE_NNAB = 21
 
 !</constantblock>
 
@@ -80,6 +82,8 @@ module scalarpde
     ! Otherwise: Not used.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
   end type
+  
+  public :: t_bilinearForm
   
   !</typeblock>
 
@@ -147,6 +151,8 @@ module scalarpde
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
   end type
   
+  public :: t_trilinearForm
+  
   !</typeblock>
 
   !<typeblock>
@@ -186,6 +192,8 @@ module scalarpde
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
     
   end type
+  
+  public :: t_linearForm
   
   !</typeblock>
 

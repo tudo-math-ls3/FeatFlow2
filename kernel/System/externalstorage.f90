@@ -116,22 +116,25 @@ module externalstorage
   use genoutput
   use storage
   use io
+  use linearalgebra
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Type flags identifying external storage container.">
 
   ! Undefined container
-  integer, parameter :: EXSTOR_CONT_UNDEFINED   = -1
+  integer, parameter, public :: EXSTOR_CONT_UNDEFINED   = -1
 
   ! In-memory/RamDrive container. The 'external storage' is actually 'in memory' and
   ! not on any hard disc or similar external storage.
-  integer, parameter :: EXSTOR_CONT_RAMDRIVE    = 0
+  integer, parameter, public :: EXSTOR_CONT_RAMDRIVE    = 0
   
   ! The external storage container is a subdirectory on the hard disc.
-  integer, parameter :: EXSTOR_CONT_DIRECTORY   = 1
+  integer, parameter, public :: EXSTOR_CONT_DIRECTORY   = 1
 
 !</constantblock>
 
@@ -139,7 +142,7 @@ module externalstorage
 
   ! Always choose the last existing container. If it's full, choose the
   ! last but one, etc.
-  integer, parameter :: EXSTOR_STRAT_LASTCONTAINER = 0
+  integer, parameter, public :: EXSTOR_STRAT_LASTCONTAINER = 0
 
 !</constantblock>
 
@@ -179,6 +182,8 @@ module externalstorage
     logical :: bformatted = .false.
 
   end type t_exstorageContainer
+  
+  public :: t_exstorageContainer
 
   !</typeblock>
 
@@ -240,6 +245,8 @@ module externalstorage
     character(LEN=SYS_NAMELEN) :: sfilename = ''
     
   end type t_exstorageNode
+
+  public :: t_exstorageNode
 
   !</typeblock>
 
@@ -304,6 +311,8 @@ module externalstorage
     integer(I64) :: itotalMemMax = 0_I64
 
   end type t_exstorageBlock
+  
+  public :: t_exstorageBlock
 
   !</typeblock>
 
@@ -426,10 +435,29 @@ module externalstorage
     module procedure exstor_setdata_char2D
   end interface
 
-  private :: exstor_newhandle
-  private :: exstor_releasehandle
-  private :: exstor_getContainer
-
+  public :: exstor_init
+  public :: exstor_attachRamdrive
+  public :: exstor_attachDirectory
+  public :: exstor_done
+  public :: exstor_info
+  public :: exstor_new, exstor_new1D, exstor_new2D
+  public :: exstor_free
+  public :: exstor_getsize, exstor_getsize1D, exstor_getsize2D
+  public :: exstor_getdata_int
+  public :: exstor_getdata_single
+  public :: exstor_getdata_double
+  public :: exstor_getdata_logical
+  public :: exstor_getdata_char
+  public :: exstor_getdata_storage
+  public :: exstor_setdata_int
+  public :: exstor_setdata_single
+  public :: exstor_setdata_double
+  public :: exstor_setdata_logical
+  public :: exstor_setdata_char
+  public :: exstor_setdata_storage
+  public :: exstor_clear
+  public :: exstor_copy
+  
 contains
 
 !************************************************************************
@@ -1573,7 +1601,7 @@ contains
 
     if (ihandle .le. ST_NOHANDLE) then
       call output_line ('Handle invalid!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
 
@@ -1583,14 +1611,14 @@ contains
     ! Is the node associated at all?
     if (p_rnode%cdataType .eq. ST_NOHANDLE) then
       call output_line ('Handle invalid: '//sys_siL(ihandle,10), &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
 
     ! What are we?
     if (p_rnode%idimension .ne. 2) then
       call output_line ('Handle '//trim(sys_siL(ihandle,10))//' is not 2-dimensional!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize2D')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getsize')
       call sys_halt()
     end if
     

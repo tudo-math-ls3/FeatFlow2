@@ -9,7 +9,8 @@
 
     subroutine ffunctionReference (cderivative,rdiscretisation, &
                   DpointsRef, Dpoints, Ielements, Dvalues, rcollection)
-    
+
+    use fsystem    
     use basicgeometry
     use triangulation
     use scalarpde

@@ -25,9 +25,23 @@
 module analyticprojection
 
   use fsystem
+  use storage
+  use genoutput
+  use basicgeometry
   use linearalgebra
+  use triangulation
+  use dofmapping
+  use elementpreprocessing
+  use scalarpde
+  use spatialdiscretisation
+  use domainintegration
   use linearsystemscalar
   use linearformevaluation
+  use cubature
+  use derivatives
+  use element
+  use transformation
+  use collection
   
   implicit none
   
@@ -465,7 +479,7 @@ contains
     ! Initialise with zero. For 'primal' elements e.g., the entries count
     ! how often a DOF was touched. The contributions are summed up and
     ! later on divided by this value.
-    call storage_new1D ('anprj_discrDirectEx31', 'Dweight', size(p_Ddata), &
+    call storage_new ('anprj_discrDirectEx31', 'Dweight', size(p_Ddata), &
         ST_DOUBLE, h_Dweight, ST_NEWBLOCK_ZERO)
     call storage_getbase_double(h_Dweight,p_Dweight)
 

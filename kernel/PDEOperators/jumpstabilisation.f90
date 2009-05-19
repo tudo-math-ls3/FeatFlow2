@@ -48,15 +48,29 @@ module jumpstabilisation
 
   use fsystem
   use genoutput
+  use storage
   use linearsystemscalar
   use linearsystemblock
   use cubature
+  use triangulation
+  use spatialdiscretisation
   use domainintegration
-  use bilinearformevaluation
+  use derivatives
+  use basicgeometry
+  use dofmapping
   use element
   use elementpreprocessing
+  use transformation
+  use bilinearformevaluation
   
   implicit none
+  
+  private
+
+  public :: jstab_calcUEOJumpStabilisation
+  public :: jstab_matvecUEOJumpStabilBlk2d
+  public :: jstab_calcReacJumpStabilisation
+  public :: jstab_matvecReacJumpStabilBlk2d
 
 contains
 
@@ -1406,7 +1420,7 @@ contains
 
   ! some other local variables
   integer(I32) :: celement, cevalTag, ctrafo
-  integer :: i, j, iel1, iel2, ivt, ivt1, ivt2, idx, irow
+  integer :: iel1, iel2, ivt, ivt1, ivt2, idx, irow
   integer, dimension(2) :: Iel
   real(DP) :: dh, dcoeff
 

@@ -30,6 +30,8 @@ module domainintegration
   use collection
   
   implicit none
+  
+  private
 
 !<types>
   
@@ -111,10 +113,16 @@ module domainintegration
     
   end type
   
+  public :: t_domainIntSubset
+  
 !</typeblock>
 
 !</types>
 
+  public :: domint_initIntegration
+  public :: domint_initIntegrationByEvalSet
+  public :: domint_doneIntegration
+  
 contains
   
   ! ***************************************************************************

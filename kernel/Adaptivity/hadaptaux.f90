@@ -71,13 +71,18 @@
 !##############################################################################
 
 module hadaptaux
-  
+
+  use storage  
   use arraylist
   use binarytree
   use fsystem
+  use genoutput
   use octree
   use quadtree
   use storage
+  use basicgeometry
+  use sort
+  use linearalgebra
   use triangulation
 
   implicit none
@@ -89,13 +94,13 @@ module hadaptaux
 !<constantblock description="Global flags for mesh refinement/coarsening">
 
   ! No refinement and coarsening
-  integer, parameter :: HADAPT_NOADAPTATION = 0
+  integer, parameter, public :: HADAPT_NOADAPTATION = 0
 
   ! Red-Green refinement and coarsening strategy (R. Banks et al.)
-  integer, parameter :: HADAPT_REDGREEN     = 1
+  integer, parameter, public :: HADAPT_REDGREEN     = 1
 
   ! Longest edge bisection strategy (M. Rivara)
-  integer, parameter :: HADAPT_LONGESTEDGE  = 2
+  integer, parameter, public :: HADAPT_LONGESTEDGE  = 2
 
 !</constantblock>
 
@@ -103,37 +108,37 @@ module hadaptaux
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
   ! Adaptation is undefined
-  integer, parameter :: HADAPT_UNDEFINED        = 2**0
+  integer, parameter, public :: HADAPT_UNDEFINED        = 2**0
   
   ! Parameters of adaptivity structure are initialized
-  integer, parameter :: HADAPT_HAS_PARAMETERS   = 2**1
+  integer, parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
 
   ! Btree/quadtree/octree for vertex coordinates is generated
-  integer, parameter :: HADAPT_HAS_COORDS       = 2**2
+  integer, parameter, public :: HADAPT_HAS_COORDS       = 2**2
 
   ! Array for IverticesAtElement is generated
-  integer, parameter :: HADAPT_HAS_VERTATELEM   = 2**3
+  integer, parameter, public :: HADAPT_HAS_VERTATELEM   = 2**3
 
   ! Array for IneighboursAtElement is generated
-  integer, parameter :: HADAPT_HAS_NEIGHATELEM  = 2**4
+  integer, parameter, public :: HADAPT_HAS_NEIGHATELEM  = 2**4
 
   ! Array for ImidneighboursAtElement is generated
-  integer, parameter :: HADAPT_HAS_MIDNEIGH     = 2**5
+  integer, parameter, public :: HADAPT_HAS_MIDNEIGH     = 2**5
 
   ! Boundary data is generated
-  integer, parameter :: HADAPT_HAS_BOUNDARY     = 2**6
+  integer, parameter, public :: HADAPT_HAS_BOUNDARY     = 2**6
 
   ! Nodal property is generated
-  integer, parameter :: HADAPT_HAS_NODALPROP    = 2**7
+  integer, parameter, public :: HADAPT_HAS_NODALPROP    = 2**7
 
   ! Number of elements for predefined type
-  integer, parameter :: HADAPT_HAS_NELOFTYPE    = 2**8
+  integer, parameter, public :: HADAPT_HAS_NELOFTYPE    = 2**8
 
   ! Array for IelementsAtVertex is generated
-  integer, parameter :: HADAPT_HAS_ELEMATVERTEX = 2**9
+  integer, parameter, public :: HADAPT_HAS_ELEMATVERTEX = 2**9
 
   ! Dynamic data structures in 1D are all generated
-  integer, parameter :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
+  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
                                                     HADAPT_HAS_COORDS+&
                                                     HADAPT_HAS_VERTATELEM+&
                                                     HADAPT_HAS_NEIGHATELEM+&
@@ -142,7 +147,7 @@ module hadaptaux
                                                     HADAPT_HAS_ELEMATVERTEX
 
   ! Dynamic data structures in 2D are all generated
-  integer, parameter :: HADAPT_HAS_DYNAMICDATA2D  = HADAPT_HAS_PARAMETERS+&
+  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA2D  = HADAPT_HAS_PARAMETERS+&
                                                     HADAPT_HAS_COORDS+&
                                                     HADAPT_HAS_VERTATELEM+&
                                                     HADAPT_HAS_NEIGHATELEM+&
@@ -152,7 +157,7 @@ module hadaptaux
                                                     HADAPT_HAS_NELOFTYPE+&
                                                     HADAPT_HAS_ELEMATVERTEX
   ! Dynamic data structures in 3D are all generated
-  integer, parameter :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
+  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
                                                     HADAPT_HAS_COORDS+&
                                                     HADAPT_HAS_VERTATELEM+&
                                                     HADAPT_HAS_NEIGHATELEM+&
@@ -161,13 +166,13 @@ module hadaptaux
                                                     HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
-  integer, parameter :: HADAPT_MARKEDREFINE     = 2**10
+  integer, parameter, public :: HADAPT_MARKEDREFINE     = 2**10
 
   ! Cells are marked for coarsening
-  integer, parameter :: HADAPT_MARKEDCOARSEN    = 2**11
+  integer, parameter, public :: HADAPT_MARKEDCOARSEN    = 2**11
 
   ! Cells are marked
-  integer, parameter :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
+  integer, parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
                                                   HADAPT_MARKEDCOARSEN
   
 !</constantblock>
@@ -176,101 +181,101 @@ module hadaptaux
 !<constantblock description="Global constants for grid modification operations">
 
   ! Operation identifier for initialization of callback function
-  integer, parameter :: HADAPT_OPR_INITCALLBACK     = -1
+  integer, parameter, public :: HADAPT_OPR_INITCALLBACK     = -1
 
   ! Operation identifier for finalization of callback function
-  integer, parameter :: HADAPT_OPR_DONECALLBACK     = -2
+  integer, parameter, public :: HADAPT_OPR_DONECALLBACK     = -2
 
   ! Operation identifier for adjustment of vertex dimension
-  integer, parameter :: HADAPT_OPR_ADJUSTVERTEXDIM  = 1
+  integer, parameter, public :: HADAPT_OPR_ADJUSTVERTEXDIM  = 1
 
   ! Operation identifier for vertex insertion at edge midpoint
-  integer, parameter :: HADAPT_OPR_INSERTVERTEXEDGE = 2
+  integer, parameter, public :: HADAPT_OPR_INSERTVERTEXEDGE = 2
 
   ! Operation identifier for vertex insertion at element centroid
-  integer, parameter :: HADAPT_OPR_INSERTVERTEXCENTR= 3
+  integer, parameter, public :: HADAPT_OPR_INSERTVERTEXCENTR= 3
 
   ! Operation identifier for vertex removal
-  integer, parameter :: HADAPT_OPR_REMOVEVERTEX     = 4
+  integer, parameter, public :: HADAPT_OPR_REMOVEVERTEX     = 4
 
   ! Operation identifier for refinment: 1-tria : 2-tria
-  integer, parameter :: HADAPT_OPR_REF_TRIA2TRIA    = 5
+  integer, parameter, public :: HADAPT_OPR_REF_TRIA2TRIA    = 5
 
   ! Operation identifier for refinment: 1-tria : 3-tria
-  integer, parameter :: HADAPT_OPR_REF_TRIA3TRIA12  = 6
-  integer, parameter :: HADAPT_OPR_REF_TRIA3TRIA23  = 7
+  integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA12  = 6
+  integer, parameter, public :: HADAPT_OPR_REF_TRIA3TRIA23  = 7
  
   ! Operation identifier for refinment: 1-tria : 4-tria
-  integer, parameter :: HADAPT_OPR_REF_TRIA4TRIA    = 8
+  integer, parameter, public :: HADAPT_OPR_REF_TRIA4TRIA    = 8
 
   ! Operation identifier for refinment: 1-quad : 2-quad
-  integer, parameter :: HADAPT_OPR_REF_QUAD2QUAD    = 9
+  integer, parameter, public :: HADAPT_OPR_REF_QUAD2QUAD    = 9
   
   ! Operation identifier for refinment: 1-quad : 3-tria
-  integer, parameter :: HADAPT_OPR_REF_QUAD3TRIA    = 10
+  integer, parameter, public :: HADAPT_OPR_REF_QUAD3TRIA    = 10
 
   ! Operation identifier for refinment: 1-quad : 4-tria
-  integer, parameter :: HADAPT_OPR_REF_QUAD4TRIA    = 11
+  integer, parameter, public :: HADAPT_OPR_REF_QUAD4TRIA    = 11
 
   ! Operation identifier for refinment: 1-quad : 4-quad
-  integer, parameter :: HADAPT_OPR_REF_QUAD4QUAD    = 12
+  integer, parameter, public :: HADAPT_OPR_REF_QUAD4QUAD    = 12
 
   ! Operation identifier for conversion: 2-tria : 4-tria
-  integer, parameter :: HADAPT_OPR_CVT_TRIA2TRIA    = 13
+  integer, parameter, public :: HADAPT_OPR_CVT_TRIA2TRIA    = 13
 
   ! Operation identifier for conversion: 2-quad : 4-tria
-  integer, parameter :: HADAPT_OPR_CVT_QUAD2QUAD    = 14
+  integer, parameter, public :: HADAPT_OPR_CVT_QUAD2QUAD    = 14
 
   ! Operation identifier for conversion: 3-tria : 4-quad
-  integer, parameter :: HADAPT_OPR_CVT_QUAD3TRIA    = 15
+  integer, parameter, public :: HADAPT_OPR_CVT_QUAD3TRIA    = 15
 
   ! Operation identifier for conversion: 4-tria : 4-quad
-  integer, parameter :: HADAPT_OPR_CVT_QUAD4TRIA    = 16
+  integer, parameter, public :: HADAPT_OPR_CVT_QUAD4TRIA    = 16
 
   ! Operation identifier for coarsening: 2-tria : 1-tria
-  integer, parameter :: HADAPT_OPR_CRS_2TRIA1TRIA   = 17
+  integer, parameter, public :: HADAPT_OPR_CRS_2TRIA1TRIA   = 17
 
   ! Operation identifier for coarsening: 4-tria : 1-tria
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA1TRIA   = 18
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA1TRIA   = 18
 
   ! Operation identifier for coarsening: 4-tria : 2-tria
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA2TRIA1  = 19
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA2TRIA2  = 20
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA2TRIA3  = 21
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA1  = 19
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA2  = 20
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA2TRIA3  = 21
 
   ! Operation identifier for coarsening: 4-quad : 1-quad
-  integer, parameter :: HADAPT_OPR_CRS_4QUAD1QUAD   = 22
+  integer, parameter, public :: HADAPT_OPR_CRS_4QUAD1QUAD   = 22
 
   ! Operation identifier for coarsening: 4-quad : 2-quad
-  integer, parameter :: HADAPT_OPR_CRS_4QUAD2QUAD   = 23
+  integer, parameter, public :: HADAPT_OPR_CRS_4QUAD2QUAD   = 23
 
   ! Operation identifier for coarsening: 4-quad : 3-tria
-  integer, parameter :: HADAPT_OPR_CRS_4QUAD3TRIA   = 24
+  integer, parameter, public :: HADAPT_OPR_CRS_4QUAD3TRIA   = 24
 
   ! Operation identifier for coarsening: 4-quad : 4-tria
-  integer, parameter :: HADAPT_OPR_CRS_4QUAD4TRIA   = 25
+  integer, parameter, public :: HADAPT_OPR_CRS_4QUAD4TRIA   = 25
 
   ! Operation identifier for coarsening: 2-quad : 1-quad
-  integer, parameter :: HADAPT_OPR_CRS_2QUAD1QUAD   = 26
+  integer, parameter, public :: HADAPT_OPR_CRS_2QUAD1QUAD   = 26
 
   ! Operation identifier for coarsening: 2-quad : 3-tria
-  integer, parameter :: HADAPT_OPR_CRS_2QUAD3TRIA   = 27
+  integer, parameter, public :: HADAPT_OPR_CRS_2QUAD3TRIA   = 27
 
   ! Operation identifier for coarsening: 3-tria : 1-quad
-  integer, parameter :: HADAPT_OPR_CRS_3TRIA1QUAD   = 28
+  integer, parameter, public :: HADAPT_OPR_CRS_3TRIA1QUAD   = 28
 
   ! Operation identifier for coarsening: 4-tria : 1-quad
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA1QUAD   = 29
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA1QUAD   = 29
 
   ! Operation identifier for coarsening: 4-tria : 3-tria
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA3TRIA2  = 30
-  integer, parameter :: HADAPT_OPR_CRS_4TRIA3TRIA3  = 31
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA3TRIA2  = 30
+  integer, parameter, public :: HADAPT_OPR_CRS_4TRIA3TRIA3  = 31
 
   ! Operation identifier for refinement: 1-line : 2-line
-  integer, parameter :: HADAPT_OPR_REF_LINE2LINE    = 32
+  integer, parameter, public :: HADAPT_OPR_REF_LINE2LINE    = 32
   
   ! Operation identifier for coarsening: 2-line : 1-line
-  integer, parameter :: HADAPT_OPR_CRS_2LINE1LINE   = 33
+  integer, parameter, public :: HADAPT_OPR_CRS_2LINE1LINE   = 33
 
 !</constantblock>
 
@@ -278,28 +283,28 @@ module hadaptaux
 !<constantblock description="Constants for grid adaptation">
   
   ! Array position of the boundary
-  integer, parameter :: BdrValue = 1
+  integer, parameter, public :: BdrValue = 1
   
   ! Array position of the previous boundary vertex
-  integer, parameter :: BdrPrev  = 1
+  integer, parameter, public :: BdrPrev  = 1
 
   ! Array position of the next boundary vertex
-  integer, parameter :: BdrNext  = 2
+  integer, parameter, public :: BdrNext  = 2
 
 !</constantblock>
 
 !<constantblock description="Duplication flags. Specifies which information is
 !                            shared between adaptivity structures">
 
-  integer(I32), parameter :: HADAPT_SHARE_IMARKER            = 2** 0
-  integer(I32), parameter :: HADAPT_SHARE_IVERTEXAGE         = 2** 1
-  integer(I32), parameter :: HADAPT_SHARE_INODALPROPERTY     = 2** 2
-  integer(I32), parameter :: HADAPT_SHARE_IVERTICESATELEMENT = 2** 3
-  integer(I32), parameter :: HADAPT_SHARE_INEIGHATELEMENT    = 2** 4
-  integer(I32), parameter :: HADAPT_SHARE_IMIDNEIGHATELEMENT = 2** 5
-  integer(I32), parameter :: HADAPT_SHARE_RVERTEXCOORDINATES = 2** 6
-  integer(I32), parameter :: HADAPT_SHARE_RBOUNDARY          = 2** 7
-  integer(I32), parameter :: HADAPT_SHARE_RELEMENTSATVERTEX  = 2** 8
+  integer(I32), parameter, public :: HADAPT_SHARE_IMARKER            = 2** 0
+  integer(I32), parameter, public :: HADAPT_SHARE_IVERTEXAGE         = 2** 1
+  integer(I32), parameter, public :: HADAPT_SHARE_INODALPROPERTY     = 2** 2
+  integer(I32), parameter, public :: HADAPT_SHARE_IVERTICESATELEMENT = 2** 3
+  integer(I32), parameter, public :: HADAPT_SHARE_INEIGHATELEMENT    = 2** 4
+  integer(I32), parameter, public :: HADAPT_SHARE_IMIDNEIGHATELEMENT = 2** 5
+  integer(I32), parameter, public :: HADAPT_SHARE_RVERTEXCOORDINATES = 2** 6
+  integer(I32), parameter, public :: HADAPT_SHARE_RBOUNDARY          = 2** 7
+  integer(I32), parameter, public :: HADAPT_SHARE_RELEMENTSATVERTEX  = 2** 8
 
 !</constantblock>
 
@@ -500,10 +505,31 @@ module hadaptaux
     ! Arraylist for elements-meeting-at-vertex structure
     type(t_arraylist) :: rElementsAtVertex
   end type t_hadapt
+  
+  public :: t_hadapt
 
   !</typeblock> 
 
 !</types>
+
+  public :: hadapt_getNVE
+  public :: hadapt_setVertexCoords1D
+  public :: hadapt_getVertexCoords1D
+  public :: hadapt_setVertexCoords2D
+  public :: hadapt_getVertexCoords2D
+  public :: hadapt_setVertexCoords3D
+  public :: hadapt_getVertexCoords3D
+  public :: hadapt_setVerticesAtElement
+  public :: hadapt_getVerticesAtElement
+  public :: hadapt_setNeighboursAtElement
+  public :: hadapt_getNeighboursAtElement
+  public :: hadapt_setNelOfType
+  public :: hadapt_getNelOfType
+  public :: hadapt_setBoundary
+  public :: hadapt_getBoundary
+  public :: hadapt_setNodalProperty
+  public :: hadapt_getNodalProperty
+  public :: hadapt_genElementsAtVertex
 
 contains
 

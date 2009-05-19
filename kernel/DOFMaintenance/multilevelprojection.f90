@@ -115,6 +115,8 @@
 module multilevelprojection
 
   use fsystem
+  use storage
+  use basicgeometry
   use genoutput
   use spatialdiscretisation
   use linearsystemscalar
@@ -123,6 +125,7 @@ module multilevelprojection
   use geometryaux
   use element
   use quicksolver
+  use linearalgebra
   
   implicit none
   

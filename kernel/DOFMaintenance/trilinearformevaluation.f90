@@ -32,6 +32,7 @@
 module trilinearformevaluation
 
   use fsystem
+  use storage
   use linearsystemscalar
   use spatialdiscretisation
   use scalarpde
@@ -40,19 +41,27 @@ module trilinearformevaluation
   use domainintegration
   use element
   use elementpreprocessing
+  use linearalgebra
+  use transformation
+  use triangulation
+  use dofmapping
   use collection, only: t_collection
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
-  integer, parameter :: TRILF_NELEMSIM   = 1000
+  integer, parameter, public :: TRILF_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
+
+  public :: trilf_buildMatrixScalar
 
 contains
 
@@ -424,7 +433,7 @@ contains
 
     ! Clear the entries in the matrix - we need to start with zero
     ! when assembling a new matrix!
-    call storage_new1D ('trilf_buildMatrix9d_conf2', 'DA', &
+    call storage_new ('trilf_buildMatrix9d_conf2', 'DA', &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
     call lsyssc_getbase_double (rmatrixScalar,p_DA)

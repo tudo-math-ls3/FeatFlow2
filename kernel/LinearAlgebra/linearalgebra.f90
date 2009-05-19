@@ -51,6 +51,8 @@ module linearalgebra
 
   implicit none
   
+  private
+  
   interface lalg_copyVectorInt
     module procedure lalg_copyVectorI8
     module procedure lalg_copyVectorI8I16
@@ -70,6 +72,8 @@ module linearalgebra
     module procedure lalg_copyVectorI64I32
   end interface
   
+  public :: lalg_copyVectorInt
+  
   interface lalg_copyVectorInt2D
     module procedure lalg_copyVectorI8_2D
     module procedure lalg_copyVectorI8I16_2D
@@ -88,6 +92,8 @@ module linearalgebra
     module procedure lalg_copyVectorI64I16_2D
     module procedure lalg_copyVectorI64I32_2D
   end interface  
+  
+  public :: lalg_copyVectorInt2D
 
   interface lalg_copyVectorReal
     module procedure lalg_copyVectorSngl
@@ -100,6 +106,8 @@ module linearalgebra
     !module procedure lalg_copyVectorQuadSngl
     !module procedure lalg_copyVectorQuadDbl
   end interface
+  
+  public :: lalg_copyVectorReal
 
   interface lalg_copyVectorReal2D
     module procedure lalg_copyVectorSngl2D
@@ -112,6 +120,8 @@ module linearalgebra
     !module procedure lalg_copyVectorQuadSngl2D
     !module procedure lalg_copyVectorQuadDbl2D
   end interface
+  
+  public :: lalg_copyVectorReal2D
 
   interface lalg_copyVector
     module procedure lalg_copyVectorSngl
@@ -169,6 +179,61 @@ module linearalgebra
     module procedure lalg_copyVectorLogical2D
     module procedure lalg_copyVectorChar2D
   end interface
+  
+  public :: lalg_copyVectorSngl
+  public :: lalg_copyVectorDble
+  public :: lalg_copyVectorQuad
+  public :: lalg_copyVectorSnglDbl
+  public :: lalg_copyVectorSnglQuad
+  public :: lalg_copyVectorDblSngl
+  public :: lalg_copyVectorDblQuad
+  public :: lalg_copyVectorQuadSngl
+  public :: lalg_copyVectorQuadDbl
+  public :: lalg_copyVectorI8
+  public :: lalg_copyVectorI8I16
+  public :: lalg_copyVectorI8I32
+  public :: lalg_copyVectorI8I64
+  public :: lalg_copyVectorI16
+  public :: lalg_copyVectorI16I8
+  public :: lalg_copyVectorI16I32
+  public :: lalg_copyVectorI16I64
+  public :: lalg_copyVectorI32
+  public :: lalg_copyVectorI32I8
+  public :: lalg_copyVectorI32I16
+  public :: lalg_copyVectorI32I64
+  public :: lalg_copyVectorI64
+  public :: lalg_copyVectorI64I8
+  public :: lalg_copyVectorI64I16
+  public :: lalg_copyVectorI64I32
+  public :: lalg_copyVectorLogical
+  public :: lalg_copyVectorChar
+  public :: lalg_copyVectorSngl2D
+  public :: lalg_copyVectorDble2D
+  public :: lalg_copyVectorQuad2D
+  public :: lalg_copyVectorSnglDbl2D
+  public :: lalg_copyVectorSnglQuad2D
+  public :: lalg_copyVectorDblSngl2D
+  public :: lalg_copyVectorDblQuad2D
+  public :: lalg_copyVectorQuadSngl2D
+  public :: lalg_copyVectorQuadDbl2D
+  public :: lalg_copyVectorI8_2D
+  public :: lalg_copyVectorI8I16_2D
+  public :: lalg_copyVectorI8I32_2D
+  public :: lalg_copyVectorI8I64_2D
+  public :: lalg_copyVectorI16_2D
+  public :: lalg_copyVectorI16I8_2D
+  public :: lalg_copyVectorI16I32_2D
+  public :: lalg_copyVectorI16I64_2D
+  public :: lalg_copyVectorI32_2D
+  public :: lalg_copyVectorI32I8_2D
+  public :: lalg_copyVectorI32I16_2D
+  public :: lalg_copyVectorI32I64_2D
+  public :: lalg_copyVectorI64_2D
+  public :: lalg_copyVectorI64I8_2D
+  public :: lalg_copyVectorI64I16_2D
+  public :: lalg_copyVectorI64I32_2D
+  public :: lalg_copyVectorLogical2D
+  public :: lalg_copyVectorChar2D
 
   interface lalg_scaleVector
     module procedure lalg_scaleVectorSngl
@@ -178,6 +243,14 @@ module linearalgebra
     module procedure lalg_scaleVectorDble2D
     !module procedure lalg_scaleVectorQuad2D
   end interface
+  
+  public :: lalg_scaleVector
+  public :: lalg_scaleVectorSngl
+  public :: lalg_scaleVectorDble
+  public :: lalg_scaleVectorQuad
+  public :: lalg_scaleVectorSngl2D
+  public :: lalg_scaleVectorDble2D
+  public :: lalg_scaleVectorQuad2D
 
   interface lalg_clearVectorInt
     module procedure lalg_clearVectorI8
@@ -185,6 +258,8 @@ module linearalgebra
     module procedure lalg_clearVectorI32
     module procedure lalg_clearVectorI64
   end interface
+  
+  public :: lalg_clearVectorInt
 
   interface lalg_clearVectorInt2D
     module procedure lalg_clearVectorI8_2D
@@ -192,6 +267,8 @@ module linearalgebra
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
   end interface
+  
+  public :: lalg_clearVectorInt2D
 
   interface lalg_clearVector
     module procedure lalg_clearVectorSngl
@@ -209,6 +286,14 @@ module linearalgebra
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
   end interface
+  
+  public :: lalg_clearVector
+  public :: lalg_clearVectorSngl
+  public :: lalg_clearVectorDble
+  public :: lalg_clearVectorQuad
+  public :: lalg_clearVectorSngl2D
+  public :: lalg_clearVectorDble2D
+  public :: lalg_clearVectorQuad2D
 
   interface lalg_setVectorInt
     module procedure lalg_setVectorI8
@@ -216,6 +301,8 @@ module linearalgebra
     module procedure lalg_setVectorI32
     module procedure lalg_setVectorI64
   end interface
+  
+  public :: lalg_setVectorInt
 
   interface lalg_setVectorInt2D
     module procedure lalg_setVectorI8_2D
@@ -223,6 +310,8 @@ module linearalgebra
     module procedure lalg_setVectorI32_2D
     module procedure lalg_setVectorI64_2D
   end interface
+  
+  public :: lalg_setVectorInt2D
 
   interface lalg_setVector
     module procedure lalg_setVectorSngl
@@ -244,6 +333,19 @@ module linearalgebra
     module procedure lalg_setVectorLogical2D
     module procedure lalg_setVectorChar2D
   end interface
+  
+  public :: lalg_setVector
+
+  public :: lalg_setVectorQuad
+  public :: lalg_setVectorQuad2D
+  public :: lalg_setVectorSngl
+  public :: lalg_setVectorDble
+  public :: lalg_setVectorLogical
+  public :: lalg_setVectorChar
+  public :: lalg_setVectorSngl2D
+  public :: lalg_setVectorDble2D
+  public :: lalg_setVectorLogical2D
+  public :: lalg_setVectorChar2D
 
   interface lalg_vectorLinearComb
     module procedure lalg_vectorLinearCombSngl
@@ -259,6 +361,20 @@ module linearalgebra
     !module procedure lalg_vectorLinearCombSnglQuad2D
     !module procedure lalg_vectorLinearCombDblQuad2D
   end interface
+  
+  public :: lalg_vectorLinearComb
+  public :: lalg_vectorLinearCombSngl
+  public :: lalg_vectorLinearCombDble
+  public :: lalg_vectorLinearCombQuad
+  public :: lalg_vectorLinearCombSnglDble
+  public :: lalg_vectorLinearCombSnglQuad
+  public :: lalg_vectorLinearCombDblQuad
+  public :: lalg_vectorLinearCombSngl2D
+  public :: lalg_vectorLinearCombDble2D
+  public :: lalg_vectorLinearCombQuad2D
+  public :: lalg_vectorLinearCombSnglDble2D
+  public :: lalg_vectorLinearCombSnglQuad2D
+  public :: lalg_vectorLinearCombDblQuad2D
 
   interface lalg_scalarProduct
     module procedure lalg_scalarProductSngl
@@ -268,23 +384,40 @@ module linearalgebra
     module procedure lalg_scalarProductDble2D
     !module procedure lalg_scalarProductQuad2D
   end interface
+  
+  public :: lalg_scalarProduct
+  public :: lalg_scalarProductSngl
+  public :: lalg_scalarProductDble
+  public :: lalg_scalarProductQuad
+  public :: lalg_scalarProductSngl2D
+  public :: lalg_scalarProductDble2D
+  public :: lalg_scalarProductQuad2D
 
   interface lalg_norm
     module procedure lalg_normSngl
     module procedure lalg_normDble
     !module procedure lalg_normQuad
   end interface
+  
+  public :: lalg_norm,lalg_normSngl,lalg_normDble,lalg_normQuad
 
   interface lalg_errorNorm
     module procedure lalg_errorNormSngl
     module procedure lalg_errorNormDble
     !module procedure lalg_errorNormQuad
   end interface
+  
+  public :: lalg_errorNorm
+  public :: lalg_errorNormSngl
+  public :: lalg_errorNormDble
+  public :: lalg_errorNormQuad
 
   interface lalg_vectorSortInt    
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
   end interface
+  
+  public :: lalg_vectorSortInt
 
   interface lalg_vectorSort
     module procedure lalg_vectorSortSngl
@@ -293,6 +426,13 @@ module linearalgebra
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
   end interface
+  
+  public :: lalg_vectorSort
+  public :: lalg_vectorSortSngl
+  public :: lalg_vectorSortDble
+  public :: lalg_vectorSortQuad
+  public :: lalg_vectorSortI32
+  public :: lalg_vectorSortI64
 
   interface lalg_vectorAddScalarInt
     module procedure lalg_vectorAddScalarI8
@@ -300,6 +440,8 @@ module linearalgebra
     module procedure lalg_vectorAddScalarI32
     module procedure lalg_vectorAddScalarI64
   end interface
+  
+  public :: lalg_vectorAddScalarInt
 
   interface lalg_vectorAddScalar
     module procedure lalg_vectorAddScalarSngl
@@ -313,25 +455,38 @@ module linearalgebra
     module procedure lalg_vectorAddScalarI32
     module procedure lalg_vectorAddScalarI64
   end interface
+  
+  public :: lalg_vectorAddScalar
+  public :: lalg_vectorAddScalarSngl
+  public :: lalg_vectorAddScalarDble
+  public :: lalg_vectorAddScalarQuad
+  public :: lalg_vectorAddScalarSngl2D
+  public :: lalg_vectorAddScalarDble2D
+  public :: lalg_vectorAddScalarQuad2D
+  public :: lalg_vectorAddScalarI8
+  public :: lalg_vectorAddScalarI16
+  public :: lalg_vectorAddScalarI32
+  public :: lalg_vectorAddScalarI64
+
 
 !<constants>
 
 !<constantblock description="Constants identifying vector norms">
 
   ! Sum of the absolute values of entries
-  integer, parameter :: LINALG_NORMSUM    = -1
+  integer, parameter, public :: LINALG_NORMSUM    = -1
 
   ! Euclidian vector norm: (vector,vector)
-  integer, parameter :: LINALG_NORMEUCLID = 0
+  integer, parameter, public :: LINALG_NORMEUCLID = 0
 
   ! $l_1$-norm: 1/NEQ * sum(abs(entries))
-  integer, parameter :: LINALG_NORML1     = 1
+  integer, parameter, public :: LINALG_NORML1     = 1
   
   ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector)
-  integer, parameter :: LINALG_NORML2     = 2
+  integer, parameter, public :: LINALG_NORML2     = 2
   
   ! max-norm
-  integer, parameter :: LINALG_NORMMAX    = 3
+  integer, parameter, public :: LINALG_NORMMAX    = 3
   
 !</constantblock>
 

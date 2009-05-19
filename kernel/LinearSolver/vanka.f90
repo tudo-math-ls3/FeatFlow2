@@ -164,9 +164,13 @@
 module vanka
 
   use fsystem
+  use storage
+  use genoutput
+  use element
   use linearsystemscalar
   use linearsystemblock
-  use genoutput
+  use spatialdiscretisation
+  use dofmapping
   
   use vanka_navst2d
   use vanka_bouss2d

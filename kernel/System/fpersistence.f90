@@ -88,44 +88,63 @@
 !#  5.) fpdb_getDataLength
 !#      -> Returns the record length of the DataItem
 !#
-!#  6.) fpdb_getdata_single1d,
-!#      fpdb_getdata_double1d,
-!#      fpdb_getdata_int1d,
-!#      fpdb_getdata_logical1d,
+!#  6.) fpdb_getdata_single1d
+!#      fpdb_getdata_double1d
+!#      fpdb_getdata_int1d
+!#      fpdb_getdata_logical1d
 !#      fpdb_getdata_char1d
+!#      fpdb_getdata_quad1d
+!#      fpdb_getdata_int8_1d
+!#      fpdb_getdata_int16_1d
+!#      fpdb_getdata_int32_1d
+!#      fpdb_getdata_int64_1d
+!#      fpdb_getdata_single2d
+!#      fpdb_getdata_double2d
+!#      fpdb_getdata_quad2d
+!#      fpdb_getdata_int2d
+!#      fpdb_getdata_int8_2d
+!#      fpdb_getdata_int16_2d
+!#      fpdb_getdata_int32_2d
+!#      fpdb_getdata_int64_2d
+!#      fpdb_getdata_logical2d
+!#      fpdb_getdata_char2d
+!#      ...
 !#      -> Import the data item associated to a DataItem
 !# </purpose>
 !##############################################################################
 module fpersistence
 
   use fsystem
+  use genoutput
   use io
   use uuid
   
   implicit none
+  
+  private 
 
 !<constants>
 
 !<constantblock description="Persistence database constants">
 
   ! Maximum number of dimensions supported by the persistence database
-  integer, parameter :: FPDB_MAXDIM = 2
+  integer, parameter, public :: FPDB_MAXDIM = 2
 !</constantblock>
 
 
 !<constantblock description="Flags for the persistence database specification bitfield">
 
   ! Database is readable
-  integer, parameter :: FPDB_MSPEC_ISREADABLE  = 0
+  integer, parameter, public :: FPDB_MSPEC_ISREADABLE  = 0
 
   ! Database is writeable
-  integer, parameter :: FPDB_MSPEC_ISWRITABLE  = 2**1
+  integer, parameter, public :: FPDB_MSPEC_ISWRITABLE  = 2**1
 
   ! Database is imported from disk
-  integer, parameter :: FPDB_MSPEC_IMPORTFIRST = 2**2
+  integer, parameter, public :: FPDB_MSPEC_IMPORTFIRST = 2**2
 
   ! Standard specifier for persistence database
-  integer, parameter :: FPDB_MSPEC_STANDARD    = FPDB_MSPEC_ISREADABLE+&
+  integer, parameter, public :: FPDB_MSPEC_STANDARD    = FPDB_MSPEC_ISREADABLE+&
                                                  FPDB_MSPEC_ISWRITABLE
 !</constantblock>
 
@@ -135,14 +154,14 @@ module fpersistence
   ! defines an undefined data item
   ! This allows to create a nullified data item,
   ! e.g., to indicate that a pointer is nullified
-  integer, parameter :: FPDB_NULL = 0
+  integer, parameter, public :: FPDB_NULL = 0
   
   ! defines an atomic ObjectItem as data item:
   ! This allows to create an ObjectItem for, say, a block matrix
   ! which has an array of scalar matrices as data. Note that the
   ! ObjectItem means that the corresponding item is physically
   ! created when it is imported from the persistence database.
-  integer, parameter :: FPDB_OBJECT = 1
+  integer, parameter, public :: FPDB_OBJECT = 1
   
   ! defines an atomic Link as data item:
   ! This allows to create a link to an ObjectItem. As an example
@@ -150,97 +169,97 @@ module fpersistence
   ! spatial discretisation. Note that the spatial discretisation
   ! is not created when the vector is created but only a pointer
   ! to the spatial discretisation is associated.
-  integer, parameter :: FPDB_LINK = 2
+  integer, parameter, public :: FPDB_LINK = 2
 
   ! defines an atomic single data item
-  integer, parameter :: FPDB_SINGLE = 3
+  integer, parameter, public :: FPDB_SINGLE = 3
 
   ! defines an atomic double data item
-  integer, parameter :: FPDB_DOUBLE = 4
+  integer, parameter, public :: FPDB_DOUBLE = 4
 
   ! defines an atomic quadle data item
-  integer, parameter :: FPDB_QUAD = 5
+  integer, parameter, public :: FPDB_QUAD = 5
 
   ! defines an atomic integer data item
-  integer, parameter :: FPDB_INT = 6
+  integer, parameter, public :: FPDB_INT = 6
 
   ! defines an atomic 8 bit integer data item
-  integer, parameter :: FPDB_INT8 = 7
+  integer, parameter, public :: FPDB_INT8 = 7
 
   ! defines an atomic 16 bit integer data item
-  integer, parameter :: FPDB_INT16 = 8
+  integer, parameter, public :: FPDB_INT16 = 8
 
   ! defines an atomic 32 bit integer data item
-  integer, parameter :: FPDB_INT32 = 9
+  integer, parameter, public :: FPDB_INT32 = 9
 
   ! defines an atomic 64 bit integer data item
-  integer, parameter :: FPDB_INT64 = 10
+  integer, parameter, public :: FPDB_INT64 = 10
 
   ! defines an atomic logical data item
-  integer, parameter :: FPDB_LOGICAL = 11
+  integer, parameter, public :: FPDB_LOGICAL = 11
 
   ! defines an atomic character data item
-  integer, parameter :: FPDB_CHAR = 12
+  integer, parameter, public :: FPDB_CHAR = 12
 
   ! defines a 1D single data item
-  integer, parameter :: FPDB_SINGLE1D = 13
+  integer, parameter, public :: FPDB_SINGLE1D = 13
 
   ! defines a 1D double data item
-  integer, parameter :: FPDB_DOUBLE1D = 14
+  integer, parameter, public :: FPDB_DOUBLE1D = 14
 
   ! defines a 1D quadle data item
-  integer, parameter :: FPDB_QUAD1D = 15
+  integer, parameter, public :: FPDB_QUAD1D = 15
 
   ! defines a 1D integer data item
-  integer, parameter :: FPDB_INT1D = 16
+  integer, parameter, public :: FPDB_INT1D = 16
 
   ! defines a 1D 8 bit integer data item
-  integer, parameter :: FPDB_INT8_1D = 17
+  integer, parameter, public :: FPDB_INT8_1D = 17
 
   ! defines a 1D 16 bit integer data item
-  integer, parameter :: FPDB_INT16_1D = 18
+  integer, parameter, public :: FPDB_INT16_1D = 18
 
   ! defines a 1D 32 bit integer data item
-  integer, parameter :: FPDB_INT32_1D = 19
+  integer, parameter, public :: FPDB_INT32_1D = 19
 
   ! defines a 1D 64 bit integer data item
-  integer, parameter :: FPDB_INT64_1D = 20
+  integer, parameter, public :: FPDB_INT64_1D = 20
 
   ! defines a 1D logical data item
-  integer, parameter :: FPDB_LOGICAL1D = 21
+  integer, parameter, public :: FPDB_LOGICAL1D = 21
 
   ! defines a 1D character data item
-  integer, parameter :: FPDB_CHAR1D = 22
+  integer, parameter, public :: FPDB_CHAR1D = 22
 
   ! defines a 2D single data item
-  integer, parameter :: FPDB_SINGLE2D = 23
+  integer, parameter, public :: FPDB_SINGLE2D = 23
 
   ! defines a 2D double data item
-  integer, parameter :: FPDB_DOUBLE2D = 24
+  integer, parameter, public :: FPDB_DOUBLE2D = 24
 
   ! defines a 2D quadle data item
-  integer, parameter :: FPDB_QUAD2D = 25
+  integer, parameter, public :: FPDB_QUAD2D = 25
 
   ! defines a 2D integer data item
-  integer, parameter :: FPDB_INT2D = 26
+  integer, parameter, public :: FPDB_INT2D = 26
 
   ! defines a 2D 32 bit integer data item
-  integer, parameter :: FPDB_INT8_2D = 27
+  integer, parameter, public :: FPDB_INT8_2D = 27
 
   ! defines a 2D 32 bit integer data item
-  integer, parameter :: FPDB_INT16_2D = 28
+  integer, parameter, public :: FPDB_INT16_2D = 28
 
   ! defines a 2D 32 bit integer data item
-  integer, parameter :: FPDB_INT32_2D = 29
+  integer, parameter, public :: FPDB_INT32_2D = 29
   
   ! defines a 2D 64 bit integer data item
-  integer, parameter :: FPDB_INT64_2D = 30
+  integer, parameter, public :: FPDB_INT64_2D = 30
 
   ! defines a 2D logical data item
-  integer, parameter :: FPDB_LOGICAL2D = 31
+  integer, parameter, public :: FPDB_LOGICAL2D = 31
 
   ! defines a 2D character data item
-  integer, parameter :: FPDB_CHAR2D = 32
+  integer, parameter, public :: FPDB_CHAR2D = 32
   
 !</constantblock>
 
@@ -285,6 +304,8 @@ module fpersistence
     type(t_fpdbObjectItem), pointer :: p_rfpdbObjectTable => null()
   end type t_fpdb
 
+  public :: t_fpdb
+
 !</typeblock>
 
 !<typeblock>
@@ -324,6 +345,8 @@ module fpersistence
     type(t_fpdbObjectItem), pointer :: p_rfpdbObjectRight => null()
     
   end type t_fpdbObjectItem
+  
+  public :: t_fpdbObjectItem
 
 !</typeblock>
 
@@ -402,6 +425,8 @@ module fpersistence
 
   end type t_fpdbDataItem
   
+  public :: t_fpdbDataItem
+  
 !</typeblock>
 
 !</types>
@@ -411,6 +436,39 @@ module fpersistence
     module procedure fpdb_retrieveObjectByName
   end interface
 
+
+  public :: fpdb_init
+  public :: fpdb_done
+  public :: fpdb_import
+  public :: fpdb_export
+  public :: fpdb_info
+  public :: fpdb_insertObject
+  public :: fpdb_removeObject
+  public :: fpdb_retrieveObject, fpdb_retrieveObjectByUUID, fpdb_retrieveObjectByName
+  public :: fpdb_getObjectLength
+  public :: fpdb_getDataLength
+  public :: fpdb_getdata_single1d
+  public :: fpdb_getdata_double1d
+  public :: fpdb_getdata_int1d
+  public :: fpdb_getdata_logical1d
+  public :: fpdb_getdata_char1d
+  public :: fpdb_getdata_quad1d
+  public :: fpdb_getdata_int8_1d
+  public :: fpdb_getdata_int16_1d
+  public :: fpdb_getdata_int32_1d
+  public :: fpdb_getdata_int64_1d
+  
+  public :: fpdb_getdata_single2d
+  public :: fpdb_getdata_double2d
+  public :: fpdb_getdata_quad2d
+  public :: fpdb_getdata_int2d
+  public :: fpdb_getdata_int8_2d
+  public :: fpdb_getdata_int16_2d
+  public :: fpdb_getdata_int32_2d
+  public :: fpdb_getdata_int64_2d
+  public :: fpdb_getdata_logical2d
+  public :: fpdb_getdata_char2d
+  
 contains
 
 !************************************************************************

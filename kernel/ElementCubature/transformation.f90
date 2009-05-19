@@ -42,7 +42,7 @@
 !#        trafo_calctrafoabs_sim calculates the absolute value of the Jacobian
 !#        determinant.
 !#
-!# 10.) trafo_calcJacPrepare
+!# 10.) trafo_prepJac
 !#     -> calculates auxiliary Jacobian factors for the transformation
 !#        from a reference quadrilateral to a real quadrilateral
 !#
@@ -107,6 +107,10 @@
 !#         fine mesh hexahedron to a coarse mesh hexahedron according to
 !#         the 2-level-ordering refinement algorithm.
 !#
+!# 25.) trafo_igetReferenceDimension
+!#      -> Calculates the dimension of the coordinate system on the
+!#         reference element
+!#
 !#  FAQ - Some explainations
 !# --------------------------
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -167,22 +171,26 @@ module transformation
 
   use fsystem
   use basicgeometry
+  use storage
   use triangulation
   use genoutput
+  use geometryaux
 
   implicit none
+  
+  private
   
 !<constants>
 !<constantblock description="Constants for size of auxiliary arrays.">
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 2D
-  integer, parameter :: TRAFO_NAUXJAC2D = 8
+  integer, parameter, public :: TRAFO_NAUXJAC2D = 8
 
   ! Number of entries in the array with the auxiliary Jacobian factors in 3D
-  integer, parameter :: TRAFO_NAUXJAC3D = 24
+  integer, parameter, public :: TRAFO_NAUXJAC3D = 24
 
   ! Max. Number of entries in the array, dimension independent
-  integer, parameter :: TRAFO_NAUXJACMAX = TRAFO_NAUXJAC3D
+  integer, parameter, public :: TRAFO_NAUXJACMAX = TRAFO_NAUXJAC3D
 
 !</constantblock>
 
@@ -191,7 +199,7 @@ module transformation
 
   ! Maximum number of dimensions on reference elements.
   ! =4 for Tetrahedra with barycentric coordinates in 3D
-  integer, parameter :: TRAFO_MAXDIMREFCOORD = NDIM3D+1
+  integer, parameter, public :: TRAFO_MAXDIMREFCOORD = NDIM3D+1
 
 !</constantblock>
 
@@ -199,101 +207,101 @@ module transformation
 !<constantblock description="Id values for bit 0..7 of the transformation ID.">
 
   ! Unspecified transformation
-  integer, parameter :: TRAFO_ID_UNKNOWN       = 0
+  integer, parameter, public :: TRAFO_ID_UNKNOWN       = 0
 
   ! Linear transformation for simplex-type elements (1D-lines, 2D-triangles, 
   ! 3D-tetrahedra)
-  integer, parameter :: TRAFO_ID_LINSIMPLEX    = 1
+  integer, parameter, public :: TRAFO_ID_LINSIMPLEX    = 1
 
   ! Multilinear (Bilinear/Trilinear) transformation for cubic-shaped elements 
   ! (2D-quadrilaterals, 3D-hexahedra)
-  integer, parameter :: TRAFO_ID_MLINCUBE     = 2
+  integer, parameter, public :: TRAFO_ID_MLINCUBE     = 2
   
   ! Multilinear transformation for pyramid shaped elements in 3D
-  integer, parameter :: TRAFO_ID_MLINPYRAMID  = 3
+  integer, parameter, public :: TRAFO_ID_MLINPYRAMID  = 3
   
   ! Multilinear transformation for prismic shaped elements in 3D
-  integer, parameter :: TRAFO_ID_MLINPRISM    = 4
+  integer, parameter, public :: TRAFO_ID_MLINPRISM    = 4
   
   ! Quadratic transformation for simplex-type elements (1D-lines, 2D-triangles, 
   ! 3D-tetrahedra)
-  integer, parameter :: TRAFO_ID_QUADSIMPLEX  = 11
+  integer, parameter, public :: TRAFO_ID_QUADSIMPLEX  = 11
 
   ! Multiquadratic (Biquadratic/Triquadratic) quadrilateral transformation 
   ! for cubic-shaped elements (2D-quadrilaterals, 3D-hexahedra)
-  integer, parameter :: TRAFO_ID_MQUADCUBE    = 12
+  integer, parameter, public :: TRAFO_ID_MQUADCUBE    = 12
 !</constantblock>
 
 
 !<constantblock description="Dimension constants for bit 8+9 of the transformation ID.">
   ! Bitmasks for dimension
-  integer(I32), parameter :: TRAFO_DIM_DIMENSION = 2**8 + 2**9
+  integer(I32), parameter, public :: TRAFO_DIM_DIMENSION = 2**8 + 2**9
 
   ! 1D element
-  integer(I32), parameter :: TRAFO_DIM_1D = ishft(NDIM1D,8)
+  integer(I32), parameter, public :: TRAFO_DIM_1D = ishft(NDIM1D,8)
 
   ! 2D element
-  integer(I32), parameter :: TRAFO_DIM_2D = ishft(NDIM2D,8)
+  integer(I32), parameter, public :: TRAFO_DIM_2D = ishft(NDIM2D,8)
   
   ! 3D element
-  integer(I32), parameter :: TRAFO_DIM_3D = ishft(NDIM3D,8)
+  integer(I32), parameter, public :: TRAFO_DIM_3D = ishft(NDIM3D,8)
 
   ! Bitmask for transformation ID, without additional information
-  integer(I32), parameter :: TRAFO_DIM_IDMASK = 255 
+  integer(I32), parameter, public :: TRAFO_DIM_IDMASK = 255 
 
   ! Bitmask for transformation ID including dimension, without additional information
-  integer(I32), parameter :: TRAFO_DIM_IDDIMMASK = TRAFO_DIM_IDMASK + TRAFO_DIM_DIMENSION
+  integer(I32), parameter, public :: TRAFO_DIM_IDDIMMASK = TRAFO_DIM_IDMASK + TRAFO_DIM_DIMENSION
 !</constantblock>
 
 
 !<constantblock description="id values for coordinate systems">
   ! Undefined coordinate system or no coordinate system
-  integer(I32), parameter :: TRAFO_CS_UNDEFINED   = 0
+  integer(I32), parameter, public :: TRAFO_CS_UNDEFINED   = 0
 
   ! Parameter value [-1..1] on reference interval in 1D
-  integer(I32), parameter :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
+  integer(I32), parameter, public :: TRAFO_CS_REF1D       = TRAFO_DIM_1D + 1
 
   ! Barycentric coordinates on triangle
-  integer(I32), parameter :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
+  integer(I32), parameter, public :: TRAFO_CS_BARY2DTRI   = TRAFO_DIM_2D + 2
 
   ! 2D coordinates on reference triangle
-  integer(I32), parameter :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
+  integer(I32), parameter, public :: TRAFO_CS_REF2DTRI    = TRAFO_DIM_2D + 3
 
   ! 2D coordinates on real triangle
-  integer(I32), parameter :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DTRI   = TRAFO_DIM_2D + 4
   
   ! 2D coordinates on reference quadrilateral
-  integer(I32), parameter :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
+  integer(I32), parameter, public :: TRAFO_CS_REF2DQUAD   = TRAFO_DIM_2D + 5
 
   ! 2D coordinates on real quadrilateral
-  integer(I32), parameter :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
+  integer(I32), parameter, public :: TRAFO_CS_REAL2DQUAD  = TRAFO_DIM_2D + 6
   
   ! Barycentric coordinates on tetrahedron
-  integer(I32), parameter :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
+  integer(I32), parameter, public :: TRAFO_CS_BARY3DTETRA = TRAFO_DIM_3D + 10
   
   ! 3D coordinates on reference tetrahedron
-  integer(I32), parameter :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
+  integer(I32), parameter, public :: TRAFO_CS_REF3DTETRA  = TRAFO_DIM_3D + 11
   
   ! 3D coodinates on real tetrahedron
-  integer(I32), parameter :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DTETRA = TRAFO_DIM_3D + 12
   
   ! 3D coordinates on reference hexahedron
-  integer(I32), parameter :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
+  integer(I32), parameter, public :: TRAFO_CS_REF3DHEXA   = TRAFO_DIM_3D + 13
   
   ! 3D coordinates on real hexahedron
-  integer(I32), parameter :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DHEXA  = TRAFO_DIM_3D + 14
   
   ! 3D coordinates on reference pyramid
-  integer(I32), parameter :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 15
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPYRA   = TRAFO_DIM_3D + 15
   
   ! 3D coordinates on real pyramid
-  integer(I32), parameter :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 16
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPYRA  = TRAFO_DIM_3D + 16
   
   ! 3D coordinates on reference prism
-  integer(I32), parameter :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 17
+  integer(I32), parameter, public :: TRAFO_CS_REF3DPRISM  = TRAFO_DIM_3D + 17
   
   ! 3D coordinates on real prism
-  integer(I32), parameter :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 18
+  integer(I32), parameter, public :: TRAFO_CS_REAL3DPRISM = TRAFO_DIM_3D + 18
 !</constantblock>
 
 !</constants>
@@ -302,6 +310,38 @@ module transformation
     module procedure trafo_calcRealCoords2D
     module procedure trafo_calcRealCoords_general
   end interface
+  
+  public :: trafo_getCoords
+  public :: trafo_getCoords_sim
+  public :: trafo_igetDimension
+  public :: trafo_igetNVE
+  public :: trafo_calctrafo, trafo_calctrafoabs
+  public :: trafo_calctrafo_mult, trafo_calctrafoabs_mult
+  public :: trafo_calctrafo_sim, trafo_calctrafoabs_sim
+  public :: trafo_calcRealCoords
+  public :: trafo_mapCubPts1Dto2D
+  public :: trafo_mapCubPts1Dto2DRefQuad
+  public :: trafo_mapCubPts1Dto2DTriBary
+  public :: trafo_calcBackTrafo_quad2d
+  public :: trafo_calcRefCoords
+  public :: trafo_mapCubPts2Dto3DRefHexa
+  public :: trafo_mapCubPtsRef2LvlEdge1D
+  public :: trafo_mapCubPtsRef2LvlTri2D
+  public :: trafo_mapCubPtsRef2LvlQuad2D
+  public :: trafo_mapCubPtsRef2LvlHexa3D
+  public :: trafo_prepJac_quad2D
+  public :: trafo_prepJac_hexa3D
+  public :: trafo_prepJac_pyra3D
+  public :: trafo_prepJac_prism3D
+  public :: trafo_calcJac_quad2D
+  public :: trafo_calcJac_hexa3D
+  public :: trafo_calcJac_pyra3D
+  public :: trafo_calcJac_prism3D
+  public :: trafo_calcTrafo_quad2d 
+  public :: trafo_calcTrafo_hexa3d 
+  public :: trafo_calcTrafo_pyra3d 
+  public :: trafo_calcTrafo_prism3d
+  public :: trafo_igetReferenceDimension
 
 contains
 

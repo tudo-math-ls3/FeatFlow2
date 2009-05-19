@@ -30,14 +30,17 @@ module boundaryintegral
   use storage
   use boundary
   use cubature
-  use triangulation
-  use linearsystemscalar
-  use linearsystemblock
-  use spatialdiscretisation
+  use derivatives
   use domainintegration
   use collection
   use feevaluation
   use mprimitives
+  use basicgeometry
+  use triangulation
+  use linearsystemscalar
+  use linearsystemblock
+  use spatialdiscretisation
+  use transformation
 
   implicit none
 

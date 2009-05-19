@@ -9,7 +9,7 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) pperr_scalar
+!# 1.) pperr_scalar, pperr_scalarVec
 !#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
 !#        analytic reference function or the $L_1$-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
@@ -53,33 +53,41 @@ module pprocerror
 
   use fsystem
   use storage
+  use genoutput
   use boundary
   use cubature
+  use basicgeometry
   use triangulation
   use linearalgebra
+  use dofmapping
+  use element
   use linearsystemscalar
   use linearsystemblock
   use scalarpde
+  use derivatives
   use spatialdiscretisation
   use domainintegration
   use elementpreprocessing
   use feevaluation
+  use transformation
   use collection
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description = "Identifiers for the type of error to be computed.">
 
   ! $L_2$-error/norm
-  integer, parameter :: PPERR_L2ERROR = 1
+  integer, parameter, public :: PPERR_L2ERROR = 1
   
   ! $H_1$-error/norm
-  integer, parameter :: PPERR_H1ERROR = 2
+  integer, parameter, public :: PPERR_H1ERROR = 2
 
   ! $L_1$-error/norm
-  integer, parameter :: PPERR_L1ERROR = 3
+  integer, parameter, public :: PPERR_L1ERROR = 3
   
   
 !</constantblock>
@@ -87,7 +95,7 @@ module pprocerror
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
   ! Number of elements to handle simultaneously when building vectors
-  integer :: PPERR_NELEMSIM   = 1000
+  integer, public :: PPERR_NELEMSIM   = 1000
   
 !</constantblock>
 
@@ -138,10 +146,21 @@ module pprocerror
     type(t_vectorScalar), dimension(:), pointer :: p_RvecErrorL1 => null()
   
   end type
+  
+  public :: t_errorScVec
 
 !</typeblock>
 
 !</types>
+
+  public :: pperr_scalar
+  public :: pperr_scalarVec
+  public :: pperr_scalarBoundary2d
+  public :: pperr_scalarErrorEstimate
+  public :: pperr_blockErrorEstimate
+  public :: pperr_scalarStandardDeviation
+  public :: pperr_blockStandardDeviation
+  public :: pperr_scalarTargetFunc
 
 contains
 

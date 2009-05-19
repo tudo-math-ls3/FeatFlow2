@@ -18,7 +18,9 @@
 !# 3.) conv_streamlineDiffusion3d
 !#     -> Apply streamline diffusion to a vector, a matrix or both.
 !#
-!# 4.) conv_JumpStabilisation2d
+!# 4.) conv_JumpStabilisation1d, 
+!#     conv_JumpStabilisation2d,
+!#     conv_JumpStabilisation3d
 !#     -> Apply jump stabilisation to a vector, a matrix or both.
 !# 
 !# 5.) conv_streamlineDiffusionBlk2d
@@ -44,52 +46,66 @@
 module convection
 
   use fsystem
+  use storage
+  use genoutput
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
   use cubature
   use vectorio
   use matrixio
   use domainintegration
-  use bilinearformevaluation
+  use derivatives
   use statistics
+  use basicgeometry
   use geometryaux
+  use dofmapping
   use jumpstabilisation
   use feevaluation
+  use triangulation
+  use element
+  use elementpreprocessing
+  use transformation
+  use spatialdiscretisation
+  use bilinearformevaluation
+  use collection
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Constants for cdef parameter of convection routine">
 
   ! Modify the matrix
-  integer, parameter :: CONV_MODMATRIX = 2**0
+  integer, parameter, public :: CONV_MODMATRIX = 2**0
   
   ! Set up defect vector
-  integer, parameter :: CONV_MODDEFECT = 2**1
+  integer, parameter, public :: CONV_MODDEFECT = 2**1
   
   ! Set up both, matrix and defect vector
-  integer, parameter :: CONV_MODBOTH   = CONV_MODMATRIX+CONV_MODDEFECT
+  integer, parameter, public :: CONV_MODBOTH   = CONV_MODMATRIX+CONV_MODDEFECT
 
 !</constantblock>
 
 !<constantblock description="Constants that define the upwind type">
 
   ! Standard Samarskji or simple upwind.
-  integer, parameter :: CONV_UPW_SAMARSKJI = 0
+  integer, parameter, public :: CONV_UPW_SAMARSKJI = 0
   
 !</constantblock>
 
 !<constantblock description="Constants that define the jump stabilisation type">
 
   ! No jump stabilisation
-  integer, parameter :: CONV_JUMP_NONE        = 0
+  integer, parameter, public :: CONV_JUMP_NONE        = 0
   
   ! Unified edge jump stabilisation
-  integer, parameter :: CONV_JUMP_UNIFIEDEDGE = 1
+  integer, parameter, public :: CONV_JUMP_UNIFIEDEDGE = 1
   
   ! Reactive jump stabilisation
-  integer, parameter :: CONV_JUMP_REACTIVE    = 2
+  integer, parameter, public :: CONV_JUMP_REACTIVE    = 2
   
 !</constantblock>
 
@@ -130,6 +146,8 @@ module convection
     logical :: bALE = .false.
     
   end type
+  
+  public :: t_convUpwind
   
 !</typeblock>
 
@@ -194,6 +212,8 @@ module convection
     logical :: bALE = .false.
     
   end type
+  
+  public :: t_convStreamlineDiffusion
   
 !</typeblock>
 
@@ -284,6 +304,8 @@ module convection
     
   end type
   
+  public :: t_convStreamDiff2
+  
 !</typeblock>
 
 !<typeblock>
@@ -326,14 +348,24 @@ module convection
     real(DP)              :: dtheta = 1.0_DP
     
   end type
+  
+  public :: t_jumpStabilisation
+  
 !</typeblock>
 
 !</types>
 
-  private :: getLocalMeshWidthQuad,getLocalDeltaQuad,intersectLines2D
-  private :: getLocalMeshWidthHexa,getHexaVolume
-  private :: getLocalDeltaHexaVol, getLocalDeltaHexaRay
-
+  public :: conv_upwind2d
+  public :: conv_streamlineDiffusion2d
+  public :: conv_streamlineDiffusion3d
+  public :: conv_jumpstabilisation1d
+  public :: conv_JumpStabilisation2d
+  public :: conv_jumpstabilisation3d
+  public :: conv_streamlineDiffusionBlk2d
+  public :: conv_streamlineDiffusionBlk3d
+  public :: conv_streamDiff2Blk2dMat
+  public :: conv_streamDiff2Blk2dDef
+  
 contains
 
   ! ***************************************************************************

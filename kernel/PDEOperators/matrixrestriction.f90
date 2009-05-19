@@ -36,11 +36,20 @@
 module matrixrestriction
 
   use fsystem
-  use linearsystemscalar
+  use storage
   use matrixmodification
+  use basicgeometry
   use geometryaux
+  use triangulation
+  use element
+  use spatialdiscretisation
+  use linearsystemscalar
   
   implicit none
+  
+  private
+  
+  public :: mrest_matrixRestrictionEX3Y
 
 contains
 

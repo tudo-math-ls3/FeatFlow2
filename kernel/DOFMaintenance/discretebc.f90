@@ -34,52 +34,55 @@
 module discretebc
 
   use fsystem
+  use storage
   use dofmapping
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="The type identifier for discrete (linear) boundary conditions">
 
   ! undefined discrete BC's
-  integer, parameter :: DISCBC_TPUNDEFINED    = 0
+  integer, parameter, public :: DISCBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
-  integer, parameter :: DISCBC_TPDIRICHLET    = 1
+  integer, parameter, public :: DISCBC_TPDIRICHLET    = 1
   
   ! Discrete FEAST mirror boundary conditions
-  integer, parameter :: DISCBC_TPFEASTMIRROR  = 2
+  integer, parameter, public :: DISCBC_TPFEASTMIRROR  = 2
   
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete nonlinear boundary conditions">
 
   ! Discrete pressure drop boundary conditions
-  integer, parameter :: DISCBC_TPPRESSUREDROP = 100
+  integer, parameter, public :: DISCBC_TPPRESSUREDROP = 100
 
   ! Discrete slip boundary conditions
-  integer, parameter :: DISCBC_TPSLIP         = 101
+  integer, parameter, public :: DISCBC_TPSLIP         = 101
 
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of BC's">
   
   ! Calculate the function value in a point on the boundary
-  integer, parameter :: DISCBC_NEEDFUNC         = 0
+  integer, parameter, public :: DISCBC_NEEDFUNC         = 0
 
   ! Calculate the function value in a point on an edge on the boundary
-  integer, parameter :: DISCBC_NEEDFUNCMID      = 1
+  integer, parameter, public :: DISCBC_NEEDFUNCMID      = 1
   
   ! Calculate the x- and y-derivative in a point on the boundary
-  integer, parameter :: DISCBC_NEEDDERIV        = 2
+  integer, parameter, public :: DISCBC_NEEDDERIV        = 2
 
   ! Calculate the integral mean value over an edge on the boundary
-  integer, parameter :: DISCBC_NEEDINTMEAN      = 3
+  integer, parameter, public :: DISCBC_NEEDINTMEAN      = 3
 
   ! Calculate the normal stress in a point. For flow-like problems,
   ! this corresponds to a prescribed pressure in pressure-drop problems.
-  integer, parameter :: DISCBC_NEEDNORMALSTRESS = 4
+  integer, parameter, public :: DISCBC_NEEDNORMALSTRESS = 4
 
 !</constantblock>
 
@@ -87,7 +90,7 @@ module discretebc
 
   ! Default blocksize for allocating new structures in the p_RdiscBCList
   ! list - if the list is full.
-  integer, parameter :: DISCBC_LISTBLOCKSIZE = 10
+  integer, parameter, public :: DISCBC_LISTBLOCKSIZE = 10
 
 !</constantblock>
 !</constants>
@@ -121,6 +124,8 @@ module discretebc
     integer :: h_DdirichletValues = ST_NOHANDLE
     
   end type
+  
+  public :: t_discreteBCDirichlet
   
 !</typeblock>
 
@@ -166,6 +171,8 @@ module discretebc
     
   end type
   
+  public :: t_discreteBCSlip
+  
 !</typeblock>
   
 !<typeblock>
@@ -206,6 +213,8 @@ module discretebc
     
   end type
   
+  public :: t_discreteBCpressureDrop
+  
 !</typeblock>
   
 !<typeblock>
@@ -243,6 +252,8 @@ module discretebc
     
   end type
   
+  public :: t_discreteBCFeastMirror
+  
 !</typeblock>
 
   
@@ -277,6 +288,8 @@ module discretebc
     
   end type
   
+  public :: t_discreteBCEntry
+  
 !</typeblock>
 
 !<typeblock>
@@ -299,6 +312,8 @@ module discretebc
     type(t_discreteBCEntry), dimension(:), pointer :: p_RdiscBCList => null()
   
   end type
+  
+  public :: t_discreteBC
 
 !</typeblock>
 

@@ -78,6 +78,7 @@ module hadaptivity
   use sort
   use storage
   use triangulation
+  use linearsystemscalar
 
   implicit none
 

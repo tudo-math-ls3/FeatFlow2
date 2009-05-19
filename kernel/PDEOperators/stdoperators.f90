@@ -23,9 +23,17 @@ module stdoperators
   use fsystem
   use genoutput
   use linearsystemscalar
+  use scalarpde
+  use derivatives
+  use spatialdiscretisation
   use bilinearformevaluation
   
   implicit none
+  
+  private
+  
+  public :: stdop_assembleLaplaceMatrix
+  public :: stdop_assembleSimpleMatrix
   
 contains
 

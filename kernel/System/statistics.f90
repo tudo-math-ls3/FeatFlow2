@@ -21,7 +21,7 @@
 !#  3.) stat_stopTimer
 !#      -> stops the timer object and calculates the time that has elapsed since it was started
 !#
-!#  4.) stat_sgetTime2
+!#  4.) stat_sgetTime_byTimer
 !#      -> Returns a string containing both CPU and real elapsed time
 !#
 !#  5.) stat_addTimers
@@ -121,22 +121,24 @@ module statistics
   use genoutput
 
   implicit none
+  
+  private
 
 !<constants>
   
   !<constantblock description="Timer types">
   
   ! Undefined timer, timer not running.
-  integer, parameter :: STAT_TIMERNOTRUNNING = 0
+  integer, parameter, public :: STAT_TIMERNOTRUNNING = 0
   
   ! Short-term timer
-  integer, parameter :: STAT_TIMERSHORT = 2**0
+  integer, parameter, public :: STAT_TIMERSHORT = 2**0
   
   ! Long-term timer
-  integer, parameter :: STAT_TIMERLONG = 2**1
+  integer, parameter, public :: STAT_TIMERLONG = 2**1
   
   ! Standard timer for both, short and long time time measurement
-  integer, parameter :: STAT_TIMERSTANDARD = STAT_TIMERSHORT + STAT_TIMERLONG
+  integer, parameter, public :: STAT_TIMERSTANDARD = STAT_TIMERSHORT + STAT_TIMERLONG
   
   !</constantblock>
 
@@ -183,10 +185,21 @@ module statistics
     integer :: istartCPUtime = 0
     
   end type t_timer
+  
+  public :: t_timer
 !</typeblock>
 
 !</types> 
 
+  public :: stat_clearTimer
+  public :: stat_startTimer
+  public :: stat_stopTimer
+  public :: stat_sgetTime_byTimer
+  public :: stat_addTimers
+  public :: stat_subTimers
+  public :: stat_rcloneTimer
+  public :: stat_calender_to_julian
+  
 contains
 
 ! ***************************************************************************

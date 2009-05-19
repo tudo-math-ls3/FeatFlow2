@@ -12,10 +12,20 @@
 
 module element_tetra3d
 
+  use fsystem
   use elementbase
   use derivatives
 
-implicit none
+  implicit none
+  
+  private
+  
+  public :: elem_P0_3D 
+  public :: elem_P0_3D_mult 
+  public :: elem_P0_3D_sim 
+  public :: elem_P1_3D 
+  public :: elem_P1_3D_mult 
+  public :: elem_P1_3D_sim 
 
 contains
 

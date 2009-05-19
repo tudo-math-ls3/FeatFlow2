@@ -11,10 +11,26 @@
 
 module element_tri2d
 
+  use fsystem
   use elementbase
   use derivatives
 
-implicit none
+  implicit none
+  
+  private
+
+  public :: elem_P0 
+  public :: elem_P0_mult 
+  public :: elem_P0_sim 
+  public :: elem_P1 
+  public :: elem_P1_mult 
+  public :: elem_P1_sim 
+  public :: elem_P2 
+  public :: elem_P2_mult 
+  public :: elem_P2_sim 
+  public :: elem_P1T 
+  public :: elem_P1T_mult 
+  public :: elem_P1T_sim 
 
 contains
 

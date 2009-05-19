@@ -31,88 +31,94 @@ module error
   use fsystem
   
   implicit none
+  
+  private
 
   !constants to use for subroutine error_print(...) indicating if the
   !error is critical (causing program exit).
-  logical, parameter :: ERR_CRITICAL     = .true.
-  logical, parameter :: ERR_NOT_CRITICAL = .false.
+  logical, parameter, public :: ERR_CRITICAL     = .true.
+  logical, parameter, public :: ERR_NOT_CRITICAL = .false.
 
 !********************************* 00 global ************************************
   ! No error
-  integer, parameter :: ERR_NO_ERROR = 0000
+  integer, parameter, public :: ERR_NO_ERROR = 0000
   
   !Yet not implemented
-  integer, parameter :: ERR_YNI = 0001
+  integer, parameter, public :: ERR_YNI = 0001
 
   !Conversion error string to int
-  integer, parameter :: ERR_STRING_TO_INT = 0002
+  integer, parameter, public :: ERR_STRING_TO_INT = 0002
 
   !Conversion error string to real
-  integer, parameter :: ERR_STRING_TO_REAL = 0003
+  integer, parameter, public :: ERR_STRING_TO_REAL = 0003
 
-  integer, parameter :: ERR_PARLST_ENV_VAR_NOT_FOUND = 0004
+  integer, parameter, public :: ERR_PARLST_ENV_VAR_NOT_FOUND = 0004
 
 !*********************************** 14 io *****************************************
-  integer, parameter :: ERR_IO_FILEIO             = 1401
-  integer, parameter :: ERR_IO_WRONGSTRUCT        = 1402
+  integer, parameter, public :: ERR_IO_FILEIO             = 1401
+  integer, parameter, public :: ERR_IO_WRONGSTRUCT        = 1402
 
   !empty file name
-  integer, parameter :: ERR_IO_EMPTYFILENAME      = 1403
+  integer, parameter, public :: ERR_IO_EMPTYFILENAME      = 1403
 
   !no free unit found in subroutine sys_getFreeunit
-  integer, parameter :: ERR_IO_NOFREEUNIT         = 1404
+  integer, parameter, public :: ERR_IO_NOFREEUNIT         = 1404
 
   !file not found error
-  integer, parameter :: ERR_IO_NOSUCHFILE         = 1405
+  integer, parameter, public :: ERR_IO_NOSUCHFILE         = 1405
 
   !trying to export a non-assembled matrix to disk
-  integer, parameter :: ERR_IO_MATRIX_UNASSEMBLED = 1406
+  integer, parameter, public :: ERR_IO_MATRIX_UNASSEMBLED = 1406
 
 !*********************************** 29 solver *************************************
 
   !matrix factorisation with UMFPACK failed
-  integer, parameter :: ERR_SLV_UMFPACKFACTORISESYMB    = 2901
-  integer, parameter :: ERR_SLV_UMFPACKFACTORISENUM     = 2902
+  integer, parameter, public :: ERR_SLV_UMFPACKFACTORISESYMB    = 2901
+  integer, parameter, public :: ERR_SLV_UMFPACKFACTORISENUM     = 2902
 
   !solving the linear system with UMFPACK failed
-  integer, parameter :: ERR_SLV_UMFPACKSOLVEFAILED      = 2903
-  integer, parameter :: ERR_SLV_READGLOBSOLSIZEMISMATCH = 2904
-  integer, parameter :: ERR_SLV_READGLOBSOLOUTOFRANGE   = 2905
+  integer, parameter, public :: ERR_SLV_UMFPACKSOLVEFAILED      = 2903
+  integer, parameter, public :: ERR_SLV_READGLOBSOLSIZEMISMATCH = 2904
+  integer, parameter, public :: ERR_SLV_READGLOBSOLOUTOFRANGE   = 2905
 
   !invalid keyword in ScaRC solver definition
-  integer, parameter :: ERR_SLV_INVALID_KEYWORD         = 2907
+  integer, parameter, public :: ERR_SLV_INVALID_KEYWORD         = 2907
 
   !invalid solver type in ScaRC solver definition
-  integer, parameter :: ERR_SLV_INVALID_SOLVER          = 2908
+  integer, parameter, public :: ERR_SLV_INVALID_SOLVER          = 2908
 
   !scarc solver file not found
-  integer, parameter :: ERR_SLV_SCARCFILE_NOT_FOUND     = 2909
+  integer, parameter, public :: ERR_SLV_SCARCFILE_NOT_FOUND     = 2909
   !wrong chlayer
-  integer, parameter :: ERR_SLV_WRONG_CHLAYER           = 2910
+  integer, parameter, public :: ERR_SLV_WRONG_CHLAYER           = 2910
 
   !wrong chlayer
-  integer, parameter :: ERR_SLV_GLOBALGRIDDEFECT        = 2911
+  integer, parameter, public :: ERR_SLV_GLOBALGRIDDEFECT        = 2911
 
 
 !*********************************** 31 storage ************************************
 
   !memory allocation error
-  integer, parameter :: ERR_ST_ALLOCF     = 3101
+  integer, parameter, public :: ERR_ST_ALLOCF     = 3101
   !no descriptor block free
-  integer, parameter :: ERR_ST_NODES      = 3102
+  integer, parameter, public :: ERR_ST_NODES      = 3102
   !wrong descriptor block
-  integer, parameter :: ERR_ST_DESF       = 3103
+  integer, parameter, public :: ERR_ST_DESF       = 3103
   !wrong descriptor type
-  integer, parameter :: ERR_ST_DESTF      = 3104
+  integer, parameter, public :: ERR_ST_DESTF      = 3104
   !not enough memory
-  integer, parameter :: ERR_ST_NOMEM      = 3105
+  integer, parameter, public :: ERR_ST_NOMEM      = 3105
   !request for negative or zero amount of memory
-  integer, parameter :: ERR_ST_INVREQUEST = 3106
+  integer, parameter, public :: ERR_ST_INVREQUEST = 3106
   !There cannot be more FREE storage blocks than the maximum number of blocks
-  integer, parameter :: ERR_ST_FREE_BLOCK_ERROR = 3107
+  integer, parameter, public :: ERR_ST_FREE_BLOCK_ERROR = 3107
 
   ! last error occurred
   integer, private :: ierror = ERR_NO_ERROR
+
+  public :: error_print
+  public :: error_print_aux
+  public :: error_clearError
 
 contains
 

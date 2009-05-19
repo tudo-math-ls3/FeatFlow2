@@ -282,6 +282,7 @@ module hadaptaux2d
   use fsystem
   use hadaptaux
   use linearsystemscalar
+  use io
   use collection
 
   implicit none

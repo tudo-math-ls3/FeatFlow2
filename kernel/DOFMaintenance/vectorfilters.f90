@@ -88,7 +88,7 @@
 !#      -> Apply the 'discrete fictitious boundary conditions for RHS vectors' 
 !#         filter onto a given (block) vector. 
 !#
-!#  7.) vecfil_discretFBCdef
+!#  7.) vecfil_discreteFBCdef
 !#      -> Linear filter
 !#      -> Apply the 'discrete fictitious boundary conditions for defect vectors' 
 !#         filter onto a given (block) vector. 
@@ -131,7 +131,7 @@
 !#      -> Implements discrete nonlinear slip BC's into a scalar defect vector
 !#         as configured in the slip BC structure.
 !#
-!#  6.) vecfil_normaliseSmallL1To0Sca (rx)
+!#  7.) vecfil_normaliseSmallL1To0Sca (rx)
 !#      -> Normalise a scalar vector to have an l1 vector sum = 0.
 !#
 !# </purpose>
@@ -140,15 +140,39 @@
 module vectorfilters
 
   use fsystem
+  use genoutput
+  use storage
+  use basicgeometry
   use linearsystemscalar
   use linearsystemblock
+  use element
   use discretebc
   use discretefbc
   use dofmapping
-  use genoutput
+  use spatialdiscretisation
   
   implicit none
+  
+  private
 
+  public :: vecfil_normaliseToL20Sca
+  public :: vecfil_discreteBCsol
+  public :: vecfil_discreteBCrhs
+  public :: vecfil_discreteBCdef
+  public :: vecfil_discreteFBCsol
+  public :: vecfil_discreteFBCrhs
+  public :: vecfil_discreteFBCdef
+  public :: vecfil_subvectorToL20
+  public :: vecfil_discreteNLSlipBCdef
+  public :: vecfil_discreteNLPDropBCrhs
+  public :: vecfil_subvectorSmallL1To0
+  public :: vecfil_imposeDirichletBC
+  public :: vecfil_imposeDirichletDefectBC
+  public :: vecfil_imposeDirichletFBC 
+  public :: vecfil_imposePressureDropBC
+  public :: vecfil_imposeNLSlipDefectBC 
+  public :: vecfil_normaliseSmallL1To0Sca
+  
 contains
 
 ! *****************************************************************************

@@ -29,29 +29,41 @@
 module feevaluation
 
   use fsystem
-  use linearsystemscalar
-  use linearsystemblock
+  use storage
+  use genoutput
   use triasearch
   use element
   use elementpreprocessing
+  use dofmapping
+  use spatialdiscretisation
+  use linearalgebra
+  use linearsystemscalar
+  use linearsystemblock
   use domainintegration
   use derivatives
   use spdiscprojection
+  use elementbase
+  use element
+  use elementpreprocessing
+  use transformation
+  use triangulation
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Constants for the cnonmeshPoints parameter.">
 
   ! Points outside of the domain not allowed.
-  integer, parameter :: FEVL_NONMESHPTS_NONE   = 0
+  integer, parameter, public :: FEVL_NONMESHPTS_NONE   = 0
 
   ! Points outside of the domain allowed, try to find an element nearby to evaluate.
-  integer, parameter :: FEVL_NONMESHPTS_NEARBY = 1
+  integer, parameter, public :: FEVL_NONMESHPTS_NEARBY = 1
 
   ! Points outside of the domain allowed, assume 0 as value there.
-  integer, parameter :: FEVL_NONMESHPTS_ZERO   = 2
+  integer, parameter, public :: FEVL_NONMESHPTS_ZERO   = 2
 
 !</constantblock>
 
@@ -63,6 +75,8 @@ module feevaluation
     module procedure fevl_evaluate_mult1
     module procedure fevl_evaluate_mult2
   end interface
+  
+  public :: fevl_evaluate_mult,fevl_evaluate_mult1,fevl_evaluate_mult2
 
   ! There are two functions fevl_evaluate_sim which do the same -- with
   ! different calling conventions and different complexities.
@@ -73,6 +87,15 @@ module feevaluation
     module procedure fevl_evaluate_sim4
     module procedure fevl_evaluate_sim5
   end interface
+  
+  public :: fevl_evaluate
+  public :: fevl_evaluate_sim
+  public :: fevl_evaluate_sim1
+  public :: fevl_evaluate_sim2
+  public :: fevl_evaluate_sim3
+  public :: fevl_evaluate_sim4
+  public :: fevl_evaluate_sim5
+  public :: fevl_getVectorMagnitude
 
 contains
 

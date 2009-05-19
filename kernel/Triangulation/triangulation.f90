@@ -493,8 +493,11 @@ module triangulation
   use boundary
   use geometryaux
   use sort
+  use io
 
   implicit none
+  
+  private
   
 !<constants>
 
@@ -502,82 +505,82 @@ module triangulation
   
   ! Maximum number of vertices per element supported by the triangulation
   ! module. Currently, this is 8 which is the case for 3D hexahedral meshes.
-  integer, parameter :: TRIA_MAXNVE   = 8
+  integer, parameter, public :: TRIA_MAXNVE   = 8
   
   ! Maximum number of corner-vertices in each 1D element.
-  integer, parameter :: TRIA_MAXNVE1D = 2
+  integer, parameter, public :: TRIA_MAXNVE1D = 2
 
   ! Maximum number of corner-vertices in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! May be set to higher vales in the future for the support of
   ! isoparametric elements! This is the old NNVE.
-  integer, parameter :: TRIA_MAXNVE2D = 4
+  integer, parameter, public :: TRIA_MAXNVE2D = 4
   
   ! Maximum number of edges in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
   ! This is the old NNVE, too.
-  integer, parameter :: TRIA_MAXNME2D = TRIA_MAXNVE2D
+  integer, parameter, public :: TRIA_MAXNME2D = TRIA_MAXNVE2D
 
   ! Maximum number of faces per element supported by the triangulation
   ! module. Currently, this is 6 which is the case for 3D hexahedral meshes.
-  integer, parameter :: TRIA_MAXNAE = 6
+  integer, parameter, public :: TRIA_MAXNAE = 6
 
   ! Number of elements of a 3D connector
-  integer, parameter :: TRIA_NCONNECT3D = 5
+  integer, parameter, public :: TRIA_NCONNECT3D = 5
 
 
   ! Number of vertices per line element in 1D.
-  integer, parameter :: TRIA_NVELINE1D = 2
+  integer, parameter, public :: TRIA_NVELINE1D = 2
   
   ! Number of vertices per element for triangular element shapes in 2D.
-  integer, parameter :: TRIA_NVETRI2D  = 3
+  integer, parameter, public :: TRIA_NVETRI2D  = 3
 
   ! Number of vertices per element for quadrilateral element shapes in 2D.
-  integer, parameter :: TRIA_NVEQUAD2D = 4
+  integer, parameter, public :: TRIA_NVEQUAD2D = 4
 
   ! Number of vertices per element for tetrahedral element shapes in 3D.
-  integer, parameter :: TRIA_NVETET3D  = 4
+  integer, parameter, public :: TRIA_NVETET3D  = 4
 
   ! Number of vertices per element for pyramidal element shapes in 3D.
-  integer, parameter :: TRIA_NVEPYR3D  = 5
+  integer, parameter, public :: TRIA_NVEPYR3D  = 5
 
   ! Number of vertices per element for prismatic element shapes in 3D.
-  integer, parameter :: TRIA_NVEPRIS3D = 6
+  integer, parameter, public :: TRIA_NVEPRIS3D = 6
 
   ! Number of vertices per element for hexahedral element shapes in 3D.
-  integer, parameter :: TRIA_NVEHEXA3D = 8
+  integer, parameter, public :: TRIA_NVEHEXA3D = 8
 
   
   ! Number of edges per element for triangular element shapes in 2D.
-  integer, parameter :: TRIA_NNETRI2D = 3
+  integer, parameter, public :: TRIA_NNETRI2D = 3
 
   ! Number of edges per element for quadrilateral element shapes in 2D.
-  integer, parameter :: TRIA_NNEQUAD2D = 4
+  integer, parameter, public :: TRIA_NNEQUAD2D = 4
 
   ! Number of edges per element for tetrahedral element shapes in 3D.
-  integer, parameter :: TRIA_NNETET3D = 6
+  integer, parameter, public :: TRIA_NNETET3D = 6
 
   ! Number of edges per element for pyramidal element shapes in 3D.
-  integer, parameter :: TRIA_NNEPYR3D = 8
+  integer, parameter, public :: TRIA_NNEPYR3D = 8
 
   ! Number of edges per element for prismatic element shapes in 3D.
-  integer, parameter :: TRIA_NNEPRIS3D = 9
+  integer, parameter, public :: TRIA_NNEPRIS3D = 9
   
   ! Number of edges per element for hexahedral element shapes in 3D.
-  integer, parameter :: TRIA_NNEHEXA3D = 12
+  integer, parameter, public :: TRIA_NNEHEXA3D = 12
 
 
   ! Number of faces per element for tetrahedral element shapes in 3D.
-  integer, parameter :: TRIA_NAETET3D = 4
+  integer, parameter, public :: TRIA_NAETET3D = 4
 
   ! Number of faces per element for pyramidal element shapes in 3D.
-  integer, parameter :: TRIA_NAEPYR3D = 5
+  integer, parameter, public :: TRIA_NAEPYR3D = 5
 
   ! Number of faces per element for prismatic element shapes in 3D.
-  integer, parameter :: TRIA_NAEPRIS3D = 5
+  integer, parameter, public :: TRIA_NAEPRIS3D = 5
 
   ! Number of faces per element for hexahedral element shapes in 3D.
-  integer, parameter :: TRIA_NAEHEXA3D = 6
+  integer, parameter, public :: TRIA_NAEHEXA3D = 6
 !</constantblock>
 
 !<constantblock description="KIND values for triangulation data">
@@ -587,19 +590,19 @@ module triangulation
   ! will be removed in future!
   
   ! DEPRECATED: kind value for indexing the vertices in a triangulation
-  integer, parameter :: PREC_VERTEXIDX  = I32
+  integer, parameter, public :: PREC_VERTEXIDX  = I32
 
   ! DEPRECATED: Alternative name for PREC_VERTEXIDX
-  integer, parameter :: PREC_POINTIDX   = PREC_VERTEXIDX
+  integer, parameter, public :: PREC_POINTIDX   = PREC_VERTEXIDX
 
   ! DEPRECATED: kind value for indexing the edges in a triangulation
-  integer, parameter :: PREC_EDGEIDX    = I32
+  integer, parameter, public :: PREC_EDGEIDX    = I32
   
   ! DEPRECATED: kind value for indexing the faces in a triangulation
-  integer, parameter :: PREC_FACEIDX    = I32
+  integer, parameter, public :: PREC_FACEIDX    = I32
 
   ! DEPRECATED: kind value for indexing the elements in a triangulation
-  integer, parameter :: PREC_ELEMENTIDX = I32
+  integer, parameter, public :: PREC_ELEMENTIDX = I32
 
 !</constantblock>
   
@@ -609,18 +612,18 @@ module triangulation
   ! were formally element midpoints on the coarse mesh were recalculated
   ! by taking the mean of the corners.
   ! This helps avoiding tangled elements when there is a 'hole' in the domain.
-  integer(I32), parameter :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2**0
+  integer(I32), parameter, public :: TRIA_R2LV_AVERAGEMIDPOINTS  = 2**0
 
   ! After refinement, the coordinates of points on the boundary are
   ! recalculated using their parameter values (only 2D)
-  integer(I32), parameter :: TRIA_R2LV_RECALCCOORDSONBD  = 2**1
+  integer(I32), parameter, public :: TRIA_R2LV_RECALCCOORDSONBD  = 2**1
 
   ! After refinement, don't produce an extended raw mesh, just produce
   ! a simple raw mesh.
-  integer(I32), parameter :: TRIA_R2LV_NOEXTENDEDRAW     = 2**2
+  integer(I32), parameter, public :: TRIA_R2LV_NOEXTENDEDRAW     = 2**2
 
   ! Standard parameter settings for 2-level refinement
-  integer(I32), parameter :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS + &
+  integer(I32), parameter, public :: TRIA_R2LV_STANDARD = TRIA_R2LV_AVERAGEMIDPOINTS + &
                                                   TRIA_R2LV_RECALCCOORDSONBD
 
 !</constantblock>
@@ -628,89 +631,89 @@ module triangulation
 !<constantblock description="Duplication flags. Specifies which information is shared \
 !                            between triangulation structures">
 
-  integer(I32), parameter :: TR_SHARE_DVERTEXCOORDS          = 2** 0  ! DCORVG 
-  integer(I32), parameter :: TR_SHARE_DFREEVERTEXCOORDINATES = 2** 1  ! DCORMG
-  integer(I32), parameter :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT 
-  integer(I32), parameter :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID  
-  integer(I32), parameter :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ  
-  integer(I32), parameter :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL  
-  integer(I32), parameter :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL  
-  integer(I32), parameter :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR  
-  integer(I32), parameter :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 8  ! KVBD  
-  integer(I32), parameter :: TR_SHARE_IELEMENTSATBOUNDARY    = 2** 9  ! KEBD  
-  integer(I32), parameter :: TR_SHARE_IBOUNDARYCPIDX         = 2**10  ! KBCT  
-  integer(I32), parameter :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**11  ! DVBDP 
-  integer(I32), parameter :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**12  ! DMBDP 
-  integer(I32), parameter :: TR_SHARE_IEDGESATBOUNDARY       = 2**13  ! KMBD  
-  integer(I32), parameter :: TR_SHARE_IVERTICESATEDGE        = 2**14  ! KEAN  
-  integer(I32), parameter :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**15  ! KVBDI 
-  integer(I32), parameter :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**16  ! KMBDI 
-  integer(I32), parameter :: TR_SHARE_DELEMENTAREA           = 2**17  ! DAREA 
-  integer(I32), parameter :: TR_SHARE_IREFINEMENTPATCH       = 2**18   
-  integer(I32), parameter :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**19  
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXCOORDS          = 2** 0  ! DCORVG 
+  integer(I32), parameter, public :: TR_SHARE_DFREEVERTEXCOORDINATES = 2** 1  ! DCORMG
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATELEMENT     = 2** 2  ! KVERT 
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATELEMENT        = 2** 3  ! KMID  
+  integer(I32), parameter, public :: TR_SHARE_INEIGHBOURSATELEMENT   = 2** 4  ! KADJ  
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATVERTEX      = 2** 5  ! KVEL  
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATEDGE        = 2** 6  ! KMEL  
+  integer(I32), parameter, public :: TR_SHARE_INODALPROPERTY         = 2** 7  ! KNPR  
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATBOUNDARY    = 2** 8  ! KVBD  
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATBOUNDARY    = 2** 9  ! KEBD  
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYCPIDX         = 2**10  ! KBCT  
+  integer(I32), parameter, public :: TR_SHARE_DVERTEXPARAMETERVALUE  = 2**11  ! DVBDP 
+  integer(I32), parameter, public :: TR_SHARE_DEDGEPARAMETERVALUE    = 2**12  ! DMBDP 
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATBOUNDARY       = 2**13  ! KMBD  
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATEDGE        = 2**14  ! KEAN  
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYVERTEXPOS     = 2**15  ! KVBDI 
+  integer(I32), parameter, public :: TR_SHARE_IBOUNDARYEDGEPOS       = 2**16  ! KMBDI 
+  integer(I32), parameter, public :: TR_SHARE_DELEMENTAREA           = 2**17  ! DAREA 
+  integer(I32), parameter, public :: TR_SHARE_IREFINEMENTPATCH       = 2**18   
+  integer(I32), parameter, public :: TR_SHARE_ICOARSEGRIDELEMENT     = 2**19  
   
-  integer(I32), parameter :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
-  integer(I32), parameter :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
-  integer(I32), parameter :: TR_SHARE_IELEMENTSATFACE        = 2**22
-  integer(I32), parameter :: TR_SHARE_IEDGESATFACE           = 2**23 
-  integer(I32), parameter :: TR_SHARE_IFACESATEDGE           = 2**24
-  integer(I32), parameter :: TR_SHARE_IFACESATVERTEX         = 2**25
-  integer(I32), parameter :: TR_SHARE_IFACESATBOUNDARY       = 2**26
+  integer(I32), parameter, public :: TR_SHARE_IVERTICESATFACE        = 2**20  ! KVAR 
+  integer(I32), parameter, public :: TR_SHARE_IFACESATELEMENT        = 2**21  ! KAREA
+  integer(I32), parameter, public :: TR_SHARE_IELEMENTSATFACE        = 2**22
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATFACE           = 2**23 
+  integer(I32), parameter, public :: TR_SHARE_IFACESATEDGE           = 2**24
+  integer(I32), parameter, public :: TR_SHARE_IFACESATVERTEX         = 2**25
+  integer(I32), parameter, public :: TR_SHARE_IFACESATBOUNDARY       = 2**26
   
-  integer(I32), parameter :: TR_SHARE_IEDGESATVERTEX         = 2**27
-  integer(I32), parameter :: TR_SHARE_ITWISTINDEX            = 2**28
+  integer(I32), parameter, public :: TR_SHARE_IEDGESATVERTEX         = 2**27
+  integer(I32), parameter, public :: TR_SHARE_ITWISTINDEX            = 2**28
   
-  integer(I32), parameter :: TR_SHARE_IMACRONODALPROPERTY    = 2**29  
+  integer(I32), parameter, public :: TR_SHARE_IMACRONODALPROPERTY    = 2**29  
   
   ! Share information for an extended raw mesh.
-  integer(I32), parameter :: TR_SHARE_EXTENDEDRAW            = &
+  integer(I32), parameter, public :: TR_SHARE_EXTENDEDRAW            = &
             TR_SHARE_IELEMENTSATVERTEX + TR_SHARE_INEIGHBOURSATELEMENT + &
             TR_SHARE_IEDGESATELEMENT + TR_SHARE_IFACESATELEMENT
   ! Share everything
-  integer(I32), parameter :: TR_SHARE_ALL = not(0_I32)
+  integer(I32), parameter, public :: TR_SHARE_ALL = not(0_I32)
 
 !</constantblock>
 
 !<constantblock description="Generation flags. Specifies which information should \
 !                            be generated in the standard mesh">
 
-  integer(I32), parameter :: TR_GEN_DVERTEXCOORDS          = TR_SHARE_DVERTEXCOORDS
-  integer(I32), parameter :: TR_GEN_DFREEVERTEXCOORDINATES = TR_SHARE_DFREEVERTEXCOORDINATES
-  integer(I32), parameter :: TR_GEN_IVERTICESATELEMENT     = TR_SHARE_IVERTICESATELEMENT
-  integer(I32), parameter :: TR_GEN_IEDGESATELEMENT        = TR_SHARE_IEDGESATELEMENT
-  integer(I32), parameter :: TR_GEN_INEIGHBOURSATELEMENT   = TR_SHARE_INEIGHBOURSATELEMENT
-  integer(I32), parameter :: TR_GEN_IELEMENTSATVERTEX      = TR_SHARE_IELEMENTSATVERTEX
-  integer(I32), parameter :: TR_GEN_IELEMENTSATEDGE        = TR_SHARE_IELEMENTSATEDGE
-  integer(I32), parameter :: TR_GEN_INODALPROPERTY         = TR_SHARE_INODALPROPERTY
-  integer(I32), parameter :: TR_GEN_IVERTICESATBOUNDARY    = TR_SHARE_IVERTICESATBOUNDARY
-  integer(I32), parameter :: TR_GEN_IELEMENTSATBOUNDARY    = TR_SHARE_IELEMENTSATBOUNDARY
-  integer(I32), parameter :: TR_GEN_IBOUNDARYCPIDX         = TR_SHARE_IBOUNDARYCPIDX
-  integer(I32), parameter :: TR_GEN_DVERTEXPARAMETERVALUE  = TR_SHARE_DVERTEXPARAMETERVALUE
-  integer(I32), parameter :: TR_GEN_DEDGEPARAMETERVALUE    = TR_SHARE_DEDGEPARAMETERVALUE
-  integer(I32), parameter :: TR_GEN_IEDGESATBOUNDARY       = TR_SHARE_IEDGESATBOUNDARY
-  integer(I32), parameter :: TR_GEN_IVERTICESATEDGE        = TR_SHARE_IVERTICESATEDGE
-  integer(I32), parameter :: TR_GEN_IBOUNDARYVERTEXPOS     = TR_SHARE_IBOUNDARYVERTEXPOS
-  integer(I32), parameter :: TR_GEN_IBOUNDARYEDGEPOS       = TR_SHARE_IBOUNDARYEDGEPOS
-  integer(I32), parameter :: TR_GEN_DELEMENTAREA           = TR_SHARE_DELEMENTAREA
-  integer(I32), parameter :: TR_GEN_IREFINEMENTPATCH       = TR_SHARE_IREFINEMENTPATCH
-  integer(I32), parameter :: TR_GEN_ICOARSEGRIDELEMENT     = TR_SHARE_ICOARSEGRIDELEMENT
+  integer(I32), parameter, public :: TR_GEN_DVERTEXCOORDS          = TR_SHARE_DVERTEXCOORDS
+  integer(I32), parameter, public :: TR_GEN_DFREEVERTEXCOORDINATES = TR_SHARE_DFREEVERTEXCOORDINATES
+  integer(I32), parameter, public :: TR_GEN_IVERTICESATELEMENT     = TR_SHARE_IVERTICESATELEMENT
+  integer(I32), parameter, public :: TR_GEN_IEDGESATELEMENT        = TR_SHARE_IEDGESATELEMENT
+  integer(I32), parameter, public :: TR_GEN_INEIGHBOURSATELEMENT   = TR_SHARE_INEIGHBOURSATELEMENT
+  integer(I32), parameter, public :: TR_GEN_IELEMENTSATVERTEX      = TR_SHARE_IELEMENTSATVERTEX
+  integer(I32), parameter, public :: TR_GEN_IELEMENTSATEDGE        = TR_SHARE_IELEMENTSATEDGE
+  integer(I32), parameter, public :: TR_GEN_INODALPROPERTY         = TR_SHARE_INODALPROPERTY
+  integer(I32), parameter, public :: TR_GEN_IVERTICESATBOUNDARY    = TR_SHARE_IVERTICESATBOUNDARY
+  integer(I32), parameter, public :: TR_GEN_IELEMENTSATBOUNDARY    = TR_SHARE_IELEMENTSATBOUNDARY
+  integer(I32), parameter, public :: TR_GEN_IBOUNDARYCPIDX         = TR_SHARE_IBOUNDARYCPIDX
+  integer(I32), parameter, public :: TR_GEN_DVERTEXPARAMETERVALUE  = TR_SHARE_DVERTEXPARAMETERVALUE
+  integer(I32), parameter, public :: TR_GEN_DEDGEPARAMETERVALUE    = TR_SHARE_DEDGEPARAMETERVALUE
+  integer(I32), parameter, public :: TR_GEN_IEDGESATBOUNDARY       = TR_SHARE_IEDGESATBOUNDARY
+  integer(I32), parameter, public :: TR_GEN_IVERTICESATEDGE        = TR_SHARE_IVERTICESATEDGE
+  integer(I32), parameter, public :: TR_GEN_IBOUNDARYVERTEXPOS     = TR_SHARE_IBOUNDARYVERTEXPOS
+  integer(I32), parameter, public :: TR_GEN_IBOUNDARYEDGEPOS       = TR_SHARE_IBOUNDARYEDGEPOS
+  integer(I32), parameter, public :: TR_GEN_DELEMENTAREA           = TR_SHARE_DELEMENTAREA
+  integer(I32), parameter, public :: TR_GEN_IREFINEMENTPATCH       = TR_SHARE_IREFINEMENTPATCH
+  integer(I32), parameter, public :: TR_GEN_ICOARSEGRIDELEMENT     = TR_SHARE_ICOARSEGRIDELEMENT
   
-  integer(I32), parameter :: TR_GEN_IVERTICESATFACE        = TR_SHARE_IVERTICESATFACE
-  integer(I32), parameter :: TR_GEN_IFACESATELEMENT        = TR_SHARE_IFACESATELEMENT
-  integer(I32), parameter :: TR_GEN_IELEMENTSATFACE        = TR_SHARE_IELEMENTSATFACE
-  integer(I32), parameter :: TR_GEN_IEDGESATFACE           = TR_SHARE_IEDGESATFACE
-  integer(I32), parameter :: TR_GEN_IFACESATEDGE           = TR_SHARE_IFACESATEDGE
-  integer(I32), parameter :: TR_GEN_IFACESATVERTEX         = TR_SHARE_IFACESATVERTEX
-  integer(I32), parameter :: TR_GEN_IFACESATBOUNDARY       = TR_SHARE_IFACESATBOUNDARY
+  integer(I32), parameter, public :: TR_GEN_IVERTICESATFACE        = TR_SHARE_IVERTICESATFACE
+  integer(I32), parameter, public :: TR_GEN_IFACESATELEMENT        = TR_SHARE_IFACESATELEMENT
+  integer(I32), parameter, public :: TR_GEN_IELEMENTSATFACE        = TR_SHARE_IELEMENTSATFACE
+  integer(I32), parameter, public :: TR_GEN_IEDGESATFACE           = TR_SHARE_IEDGESATFACE
+  integer(I32), parameter, public :: TR_GEN_IFACESATEDGE           = TR_SHARE_IFACESATEDGE
+  integer(I32), parameter, public :: TR_GEN_IFACESATVERTEX         = TR_SHARE_IFACESATVERTEX
+  integer(I32), parameter, public :: TR_GEN_IFACESATBOUNDARY       = TR_SHARE_IFACESATBOUNDARY
   
-  integer(I32), parameter :: TR_GEN_IEDGESATVERTEX         = TR_SHARE_IEDGESATVERTEX
-  integer(I32), parameter :: TR_GEN_ITWISTINDEX            = TR_SHARE_ITWISTINDEX
+  integer(I32), parameter, public :: TR_GEN_IEDGESATVERTEX         = TR_SHARE_IEDGESATVERTEX
+  integer(I32), parameter, public :: TR_GEN_ITWISTINDEX            = TR_SHARE_ITWISTINDEX
   
   ! Generate information for an extended raw mesh.
-  integer(I32), parameter :: TR_GEN_EXTENDEDRAW            = TR_SHARE_EXTENDEDRAW
+  integer(I32), parameter, public :: TR_GEN_EXTENDEDRAW            = TR_SHARE_EXTENDEDRAW
   
   ! Generate everything
-  integer(I32), parameter :: TR_GEN_ALL = not(0_I32)
+  integer(I32), parameter, public :: TR_GEN_ALL = not(0_I32)
 
 !</constantblock>
   
@@ -719,11 +722,11 @@ module triangulation
   ! Standard TRI file format, compatible to FEAT1.
   ! For 2D triangulations, Vertex coordinates of boundary vertices are
   ! replaced by parameter values.
-  integer(I32), parameter :: TRI_FMT_STANDARD          = 0
+  integer(I32), parameter, public :: TRI_FMT_STANDARD          = 0
   
   ! Standard TRI file format, but the vertex coordinates are 
   ! exported 'as they are', not as parameter values.
-  integer(I32), parameter :: TRI_FMT_NOPARAMETRISATION = 2**0
+  integer(I32), parameter, public :: TRI_FMT_NOPARAMETRISATION = 2**0
   
 !</constantblock>
   
@@ -732,16 +735,16 @@ module triangulation
 !</constantblock>
   
   ! All elements adjacent by vertices.
-  integer(i32), parameter :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2**0
+  integer(i32), parameter, public :: TRI_NEIGH_VERTEXNEIGHBOURS         = 2**0
   
   ! All elements adjacent by edges (only 2D and 3D).
-  integer(i32), parameter :: TRI_NEIGH_EDGENEIGHBOURS           = 2**1
+  integer(i32), parameter, public :: TRI_NEIGH_EDGENEIGHBOURS           = 2**1
   
   ! All elements adjacent by faces (only 3D).
-  integer(i32), parameter :: TRI_NEIGH_FACENEIGHBOURS           = 2**2
+  integer(i32), parameter, public :: TRI_NEIGH_FACENEIGHBOURS           = 2**2
   
   ! All adjacent elements
-  integer(i32), parameter :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &
+  integer(i32), parameter, public :: TRI_NEIGH_ALL = TRI_NEIGH_VERTEXNEIGHBOURS + &
                                              TRI_NEIGH_EDGENEIGHBOURS + &
                                              TRI_NEIGH_FACENEIGHBOURS
   
@@ -758,17 +761,23 @@ module triangulation
     integer, dimension(TRIA_MAXNVE1D) :: Icorners
   end type t_elementCorners1D
   
+  public :: t_elementCorners1D
+  
   ! Each 2D element consists of at most TRIA_MAXNVE2D points.
   ! Each point has a number, which is usually an integer value.
   type t_elementCorners2D
     integer, dimension(TRIA_MAXNVE2D) :: Icorners
   end type t_elementCorners2D
 
+  public :: t_elementCorners2D
+
   ! Each 2D element contains at most TRIA_MAXNME2D edges.
   ! Each edge has a number, which is usually an integer value.
   type t_elementEdges2D
     integer, dimension(TRIA_MAXNME2D) :: Iedges
   end type t_elementEdges2D
+  
+  public :: t_elementEdges2D
   
   ! Each 1D element contains at most TRIA_MAXNVE1D neighbour elements,
   ! each meeting the element in a vertice.
@@ -777,12 +786,16 @@ module triangulation
     integer, dimension(TRIA_MAXNVE1D) :: Ineighbours
   end type t_elementNeighbours1D
   
+  public :: t_elementNeighbours1D
+  
   ! Each 2D element contains at most NMAXEDGES neighbour elements,
   ! each meeting the element in an edge.
   ! Each neighbour element has a number, which is usually an integer value.
   type t_elementNeighbours2D
     integer, dimension(TRIA_MAXNME2D) :: Ineighbours
   end type t_elementNeighbours2D
+  
+  public :: t_elementNeighbours2D
   
 !<typeblock>
   
@@ -1447,6 +1460,8 @@ module triangulation
     integer        :: h_ItwistIndex = ST_NOHANDLE
 
   end type t_triangulation
+  
+  public :: t_triangulation
 
 !</typeblock>
 
@@ -1480,6 +1495,8 @@ module triangulation
     real(DP), dimension(:), pointer :: p_DallVerticesParameterValue => null()
     
   end type t_cellSet
+  
+  public :: t_cellSet
 
 !</typeblock>
 
@@ -1488,11 +1505,13 @@ module triangulation
   ! a connector connects to adjacent cells (i.e. a face in 3D)
   ! structure used to generate 3D connectivity
   type t_connector3D
-      ! the array stores at 1-4 the vertices of a face
-      ! at 5 the element the face belongs to
-      ! at 6 it stores the local face number
-      integer, dimension(6) :: I_conData
-    end type t_connector3D
+    ! the array stores at 1-4 the vertices of a face
+    ! at 5 the element the face belongs to
+    ! at 6 it stores the local face number
+    integer, dimension(6) :: I_conData
+  end type t_connector3D
+    
+  public :: t_connector3D
 
 !</typeblock>
   
@@ -1502,12 +1521,90 @@ module triangulation
     module procedure tria_getNVE_direct
     module procedure tria_getNVE_indirect
   end interface
+  
+  public :: tria_getNVE
 
   interface tria_getNAE
     module procedure tria_getNAE_direct
     module procedure tria_getNAE_indirect
   end interface
   
+  public :: tria_getNAE
+
+  public :: tria_duplicate
+  public :: tria_restore
+  public :: tria_done
+  public :: tria_createRawTria1D
+  public :: tria_readTriFile1D
+  public :: tria_readTriFile2D
+  public :: tria_readTriFile3D
+  public :: tria_resetToRaw
+  public :: tria_initExtendedRawMesh
+  public :: tria_initStandardMeshFromRaw
+  public :: tria_initMacroNodalProperty
+  public :: tria_refine2LevelOrdering
+  public :: tria_compress2LevelOrdHierarchy
+  public :: tria_quickRefine2LevelOrdering
+  public :: tria_rawGridToTri
+  public :: tria_infoStatistics
+  public :: tria_exportTriFile
+  public :: tria_exportPostScript
+  public :: tria_searchBoundaryNode
+  public :: tria_generateSubdomain
+  public :: tria_attachCells
+  public :: tria_cellGroupGreedy
+  public :: tria_getPointsOnEdge
+  public :: tria_getNeighbourVertex
+  public :: tria_getSubmeshNeighbourhood
+  public :: tria_getElementsAtMacroEdge
+  public :: tria_getElementsAtMacroVertex
+  public :: tria_getVerticesAtFaceDirect
+  public :: tria_readRawTriangulation1D 
+  public :: tria_readRawTriangulation2D 
+  public :: tria_readRawTriangulation3D
+  public :: tria_genRawBoundary1D 
+  public :: tria_genRawBoundary2D
+  public :: tria_genRawBoundary3D
+  public :: tria_genElementsAtVertex1D2D 
+  public :: tria_genElementsAtVertex3D
+  public :: tria_genNeighboursAtElement1D 
+  public :: tria_genNeighboursAtElement2D 
+  public :: tria_genNeighboursAtElement3D
+  public :: tria_genEdgesAtElement2D 
+  public :: tria_genEdgesAtElement3D
+  public :: tria_genFacesAtElement3D
+  public :: tria_genElementVolume1D 
+  public :: tria_genElementVolume2D
+  public :: tria_sortBoundaryVertices1D2D
+  public :: tria_genElementsAtBoundary1D2D
+  public :: tria_genBoundaryVertexPos1D2D
+  public :: tria_genElementsAtEdge2D 
+  public :: tria_genElementsAtEdge3D
+  public :: tria_genVerticesAtEdge2D 
+  public :: tria_genVerticesAtEdge3D
+  public :: tria_genEdgeNodalProperty2D 
+  public :: tria_genEdgeNodalProperty3D
+  public :: tria_genFaceNodalProperty3D
+  public :: tria_genEdgesAtBoundary2D 
+  public :: tria_genEdgesAtBoundary3D
+  public :: tria_genEdgeParameterValue2D
+  public :: tria_genBoundaryEdgePos2D
+  public :: tria_genEdgesAtVertex2D
+  public :: tria_genFacesAtBoundary3D
+  public :: tria_genFacesAtVertex3D
+  public :: tria_genFacesAtEdge3D
+  public :: tria_genEdgesAtFace3D
+  public :: tria_genElementsAtFace3D
+  public :: tria_genVerticesAtFace3D
+  public :: tria_genTwistIndex
+  public :: tria_propMacroNodalProperty2lv
+  public :: tria_genRefTags2lv
+  public :: tria_hangingNodeRefinement
+  public :: tria_buildConnectorList
+  public :: tria_sortElements3D
+  public :: tria_sortElements3DInt
+  public :: tria_mergesort
+  public :: tria_merge
 
 contains
 
@@ -2962,7 +3059,7 @@ contains
       ! Allocate memory for the new vertex coordinates and
       ! get the pointers to the coordinate array
       Isize = (/NDIM1D,rdestTriangulation%NVT/)
-      call storage_new2D ('tria_refineMesh2lv1D', 'DCORVG',&
+      call storage_new ('tria_refineMesh2lv1D', 'DCORVG',&
           Isize, ST_DOUBLE, &
           rdestTriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2D(&
@@ -3031,7 +3128,7 @@ contains
       ! Fill the array with zero, so we won't have problems when mixing
       ! triangles into a quad mesh.
       Isize = (/nnve,rdestTriangulation%NEL/)
-      call storage_new2D ('tria_refineMesh2lv1D', 'KVERT', Isize, ST_INT, &
+      call storage_new ('tria_refineMesh2lv1D', 'KVERT', Isize, ST_INT, &
           rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
       call storage_getbase_int2D(&
           rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
@@ -3205,7 +3302,7 @@ contains
       ! Allocate memory for the new vertex coordinates and
       ! get the pointers to the coordinate array
       Isize = (/NDIM2D,rdestTriangulation%NVT/)
-      call storage_new2D ('tria_refineMesh2lv2D', 'DCORVG',&
+      call storage_new ('tria_refineMesh2lv2D', 'DCORVG',&
           Isize, ST_DOUBLE, &
           rdestTriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2D(&
@@ -3236,7 +3333,7 @@ contains
       ! Fill the array with zero, so we won't have problems when mixing
       ! triangles into a quad mesh.
       Isize = (/nnve,rdestTriangulation%NEL/)
-      call storage_new2D ('tria_refineMesh2lv2D', 'KVERT', Isize, ST_INT, &
+      call storage_new ('tria_refineMesh2lv2D', 'KVERT', Isize, ST_INT, &
           rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
       call storage_getbase_int2D(&
           rdestTriangulation%h_IverticesAtElement,p_IvertAtElementDest)
@@ -4105,7 +4202,7 @@ contains
       ! Allocate memory for the new vertex coordinates and
       ! get the pointers to the coordinate array
       Isize = (/NDIM3D,rdestTriangulation%NVT/)
-      call storage_new2D('tria_refineMesh2lv3D', 'DCORVG',&
+      call storage_new('tria_refineMesh2lv3D', 'DCORVG',&
           Isize, ST_DOUBLE, &
           rdestTriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2D(&
@@ -4220,7 +4317,7 @@ contains
       ! Fill the array with zero, so we won't have problems when mixing
       ! different elements featuring less than NNVE corner vertices.
       Isize = (/nnve,rdestTriangulation%NEL/)
-      call storage_new2D('tria_refineMesh2lv3D', 'KVERT', Isize, ST_INT, &
+      call storage_new('tria_refineMesh2lv3D', 'KVERT', Isize, ST_INT, &
           rdestTriangulation%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
       call storage_getbase_int2D(&
           rdestTriangulation%h_IverticesAtElement, p_IvertAtElementDest)
@@ -6109,7 +6206,7 @@ p_InodalPropertyDest = -4711
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/rtriangulation%NNVE,rtriaDest%NEL/)
-    call storage_new2D ('tria_generateSubdomain', 'KVERT', Isize, ST_INT, &
+    call storage_new ('tria_generateSubdomain', 'KVERT', Isize, ST_INT, &
         rtriaDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
 
     ! Get the pointer to the IverticesAtElement array
@@ -6168,7 +6265,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for the basic arrays on the heap
     ! array of size(dimension, NVT)
     Isize = (/rtriangulation%ndim,rtriaDest%NVT/)
-    call storage_new2D ('tria_generateSubdomain', 'DCORVG',&
+    call storage_new ('tria_generateSubdomain', 'DCORVG',&
         Isize, ST_DOUBLE, &
         rtriaDest%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
@@ -6747,7 +6844,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for IverticesAtElement.
     ! 2d array of size(NVE, NEL)
     Isize = (/rtriaDest%NNVE,rtriaDest%NEL/)
-    call storage_new2D ('tria_attachCells', 'KVERT', Isize, ST_INT, &
+    call storage_new ('tria_attachCells', 'KVERT', Isize, ST_INT, &
         rtriaDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
 
     ! Get the pointer to the IverticesAtElement array
@@ -6806,7 +6903,7 @@ p_InodalPropertyDest = -4711
     ! Initialise with zero, so new points are originally at the origin.
     ! array of size(dimension, NVT)
     Isize = (/rtriangulation%ndim,rtriaDest%NVT/)
-    call storage_new2D ('tria_generateSubdomain', 'DCORVG',&
+    call storage_new ('tria_generateSubdomain', 'DCORVG',&
         Isize, ST_DOUBLE, &
         rtriaDest%h_DvertexCoords, ST_NEWBLOCK_ZERO)
         
@@ -9374,7 +9471,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for IverticesAtElement.
     ! 2d array of size(NVE, NEL)
     Isize = (/rtriaDest%NNVE,rtriaDest%NEL/)
-    call storage_new2D ('tria_hangingNodeRefinement', 'KVERT', Isize, ST_INT, &
+    call storage_new ('tria_hangingNodeRefinement', 'KVERT', Isize, ST_INT, &
         rtriaDest%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
 
     ! Get the pointer to the IverticesAtElement array
@@ -9470,7 +9567,7 @@ p_InodalPropertyDest = -4711
         
     ! Create the coordinate array.
     Isize = (/rtriaSource%ndim,rtriaDest%NVT/)
-    call storage_new2D ('tria_hangingNodeRefinement', 'DCORVG',&
+    call storage_new ('tria_hangingNodeRefinement', 'DCORVG',&
         Isize, ST_DOUBLE, &
         rtriaDest%h_DvertexCoords, ST_NEWBLOCK_ZERO)
         
@@ -9787,7 +9884,7 @@ p_InodalPropertyDest = -4711
 
     ! Allocate vertices
     Isize = (/1, nintv+1/)
-    call storage_new2D('tria_createRawTria1D', 'DCORVG',&
+    call storage_new('tria_createRawTria1D', 'DCORVG',&
         Isize, ST_DOUBLE,&
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
     call storage_getbase_double2D(rtriangulation%h_DvertexCoords,&
@@ -9808,7 +9905,7 @@ p_InodalPropertyDest = -4711
 
     ! Allocate elements
     Isize = (/2, nintv/)
-    call storage_new2D('tria_createRawTria1D', 'KVERT', Isize, &
+    call storage_new('tria_createRawTria1D', 'KVERT', Isize, &
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int2d(rtriangulation%h_IverticesAtElement, p_Iverts)
     
@@ -10002,7 +10099,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM1D,rtriangulation%NVT/)
-    call storage_new2D ('tria_readRawTriangulation1D', 'DCORVG',&
+    call storage_new ('tria_readRawTriangulation1D', 'DCORVG',&
         Isize, ST_DOUBLE,&
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
@@ -10022,7 +10119,7 @@ p_InodalPropertyDest = -4711
     ! build the old KVERT...
     ! 2d array of size(2, NEL)
     Isize = (/2,rtriangulation%NEL/)
-    call storage_new2D ('tria_readRawTriangulation1D', 'KVERT', Isize,&
+    call storage_new ('tria_readRawTriangulation1D', 'KVERT', Isize,&
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
@@ -10223,11 +10320,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
       Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
-      call storage_new2D ('tria_genNeighboursAtElement2D', 'KADJ', &
+      call storage_new ('tria_genNeighboursAtElement2D', 'KADJ', &
           Isize, ST_INT, &
           rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
+      call storage_getsize (rtriangulation%h_IneighboursAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genNeighboursAtElement2D', &
@@ -10539,7 +10636,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM2D, NVT)
     Isize = (/NDIM2D,rtriangulation%NVT/)
-    call storage_new2D ('tria_readRawTriangulation2D', 'DCORVG',&
+    call storage_new ('tria_readRawTriangulation2D', 'DCORVG',&
         Isize, ST_DOUBLE,&
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
         
@@ -10560,7 +10657,7 @@ p_InodalPropertyDest = -4711
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/nve,rtriangulation%NEL/)
-    call storage_new2D ('tria_readRawTriangulation2D', 'KVERT', Isize,&
+    call storage_new ('tria_readRawTriangulation2D', 'KVERT', Isize,&
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
         
     ! Get the pointer to the IverticesAtElement array and read the array
@@ -10865,7 +10962,7 @@ p_InodalPropertyDest = -4711
     
     ! Create a new p_IverticesAtElement array for the triangular mesh.
     Isize = (/TRIA_NVETRI2D,icount+rtriangulation%NEL/)
-    call storage_new2D ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
+    call storage_new ('tria_quadToTri', 'KVERTTRI', Isize, ST_INT, &
         h_IverticesAtElementTri,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int2d (h_IverticesAtElementTri,p_IverticesAtElementTri)
     
@@ -11140,11 +11237,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
       Isize = (/nnve,rtriangulation%NEL/)
-      call storage_new2D ('tria_genNeighboursAtElement2D', 'KADJ', &
+      call storage_new ('tria_genNeighboursAtElement2D', 'KADJ', &
           Isize, ST_INT, &
           rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
+      call storage_getsize (rtriangulation%h_IneighboursAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genNeighboursAtElement2D', &
@@ -11199,7 +11296,7 @@ p_InodalPropertyDest = -4711
 
     ! Create the auxiliary array for edge information.
     Isize = (/4,p_IedgeIdx(size(p_IedgeIdx))-1/)
-    call storage_new2D ('tria_genNeighboursAtElement2D', 'edgeAtVertex', &
+    call storage_new ('tria_genNeighboursAtElement2D', 'edgeAtVertex', &
         Isize, ST_INT, haux1, ST_NEWBLOCK_ZERO)
     call storage_getbase_int2d (haux1,p_IedgeAtVertex)
     
@@ -11343,12 +11440,12 @@ p_InodalPropertyDest = -4711
     
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IedgesAtElement .eq. ST_NOHANDLE) then
-      call storage_getsize2D (rtriangulation%h_IneighboursAtElement, Isize)
-      call storage_new2D ('tria_genEdgesAtElement2D', 'KMID', &
+      call storage_getsize (rtriangulation%h_IneighboursAtElement, Isize)
+      call storage_new ('tria_genEdgesAtElement2D', 'KMID', &
           Isize, ST_INT, &
           rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IedgesAtElement, Isize)
+      call storage_getsize (rtriangulation%h_IedgesAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genEdgesAtElement2D', &
@@ -11829,11 +11926,11 @@ p_InodalPropertyDest = -4711
     if (rtriangulation%h_IboundaryVertexPos .eq. ST_NOHANDLE) then
       ! We have as many elements on the boundary as vertices!
       Isize = (/2,rtriangulation%NVBD/)
-      call storage_new2D ('tria_genBoundaryVertexPos1D2D', 'KVBDI', &
+      call storage_new ('tria_genBoundaryVertexPos1D2D', 'KVBDI', &
           Isize, ST_INT, &
           rtriangulation%h_IboundaryVertexPos, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IboundaryVertexPos, Isize)
+      call storage_getsize (rtriangulation%h_IboundaryVertexPos, Isize)
       if (Isize(2) .ne. rtriangulation%NVBD) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genBoundaryVertexPos1D2D', &
@@ -11934,11 +12031,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IelementsAtEdge .eq. ST_NOHANDLE) then
       Isize = (/2,rtriangulation%NMT/)
-      call storage_new2D ('tria_genElementsAtEdge2D', 'KMID', &
+      call storage_new ('tria_genElementsAtEdge2D', 'KMID', &
           Isize, ST_INT, &
           rtriangulation%h_IelementsAtEdge, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IelementsAtEdge, Isize)
+      call storage_getsize (rtriangulation%h_IelementsAtEdge, Isize)
       if (Isize(2) .ne. rtriangulation%NMT) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genElementsAtEdge2D', &
@@ -12053,11 +12150,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
       Isize = (/2,rtriangulation%NMT/)
-      call storage_new2D ('tria_genVerticesAtEdge2D', 'KMID', &
+      call storage_new ('tria_genVerticesAtEdge2D', 'KMID', &
           Isize, ST_INT, &
           rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IverticesAtEdge, Isize)
+      call storage_getsize (rtriangulation%h_IverticesAtEdge, Isize)
       if (Isize(2) .ne. rtriangulation%NMT) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genVerticesAtEdge2D', &
@@ -12612,11 +12709,11 @@ p_InodalPropertyDest = -4711
     if (rtriangulation%h_IboundaryEdgePos .eq. ST_NOHANDLE) then
       ! We have as many elements on the boundary as vertices!
       Isize = (/2,rtriangulation%NMBD/)
-      call storage_new2D ('tria_genBoundaryVertexPos2D', 'KEBDI', &
+      call storage_new ('tria_genBoundaryVertexPos2D', 'KEBDI', &
           Isize, ST_INT, &
           rtriangulation%h_IboundaryEdgePos, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IboundaryEdgePos, Isize)
+      call storage_getsize (rtriangulation%h_IboundaryEdgePos, Isize)
       if (Isize(2) .ne. rtriangulation%NMBD) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genBoundaryEdgePos2D', &
@@ -12970,7 +13067,7 @@ p_InodalPropertyDest = -4711
     ! Allocate memory for the basic arrays on the heap
     ! 2d array of size(NDIM3D, NVT)
     Isize = (/NDIM3D, rtriangulation%NVT/)   
-    call storage_new2D('tria_readRawTriangulation3D', 'DCORVG',&
+    call storage_new('tria_readRawTriangulation3D', 'DCORVG',&
         Isize, ST_DOUBLE,&
         rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
     
@@ -12992,7 +13089,7 @@ p_InodalPropertyDest = -4711
     ! build the old KVERT...
     ! 2d array of size(NVE, NEL)
     Isize = (/rtriangulation%NNVE,rtriangulation%NEL/)
-    call storage_new2D('tria_readRawTriangulation3D', 'KVERT', Isize,&
+    call storage_new('tria_readRawTriangulation3D', 'KVERT', Isize,&
         ST_INT, rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
     
     ! Get the pointer to the IverticesAtElement array and read the array
@@ -13353,11 +13450,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IneighboursAtElement .eq. ST_NOHANDLE) then
       Isize = (/rtriangulation%NNAE, rtriangulation%NEL/)
-      call storage_new2D('tria_genNeighboursAtElement3D','KADJ',&
+      call storage_new('tria_genNeighboursAtElement3D','KADJ',&
           Isize, ST_INT,&
           rtriangulation%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D(rtriangulation%h_IneighboursAtElement, Isize)
+      call storage_getsize(rtriangulation%h_IneighboursAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genNeighboursAtElement3D', &
@@ -13514,10 +13611,10 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if (rtriangulation%h_IedgesAtElement .eq. ST_NOHANDLE) then
       Isize=(/rtriangulation%NNEE, rtriangulation%NEL/)
-      call storage_new2D('tria_genEdgesAtElement3D', 'KMID', Isize,&
+      call storage_new('tria_genEdgesAtElement3D', 'KMID', Isize,&
           ST_INT, rtriangulation%h_IedgesAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IedgesAtElement, Isize)
+      call storage_getsize (rtriangulation%h_IedgesAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genEdgesAtElement3D', &
@@ -13901,10 +13998,10 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if(rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) then
       Isize = (/rtriangulation%NNAE, rtriangulation%NEL/)
-      call storage_new2d('tria_genFacesAtElement3D', 'IfacesAtElement',&
+      call storage_new('tria_genFacesAtElement3D', 'IfacesAtElement',&
           Isize, ST_INT, rtriangulation%h_IfacesAtElement, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IfacesAtElement, Isize)
+      call storage_getsize (rtriangulation%h_IfacesAtElement, Isize)
       if (Isize(2) .ne. rtriangulation%NEL) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genFacesAtElement3D', &
@@ -14216,10 +14313,10 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if(rtriangulation%h_IverticesAtEdge .eq. ST_NOHANDLE) then
       Isize = (/2, rtriangulation%NMT/)
-      call storage_new2d('tria_genElementsAtEdge3D', 'IverticesAtEdge',&
+      call storage_new('tria_genElementsAtEdge3D', 'IverticesAtEdge',&
           Isize, ST_INT,  rtriangulation%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IverticesAtEdge, Isize)
+      call storage_getsize (rtriangulation%h_IverticesAtEdge, Isize)
       if (Isize(2) .ne. rtriangulation%NMT) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genElementsAtEdge3D', &
@@ -15302,11 +15399,11 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if(rtriangulation%h_IedgesAtFace .eq. ST_NOHANDLE) then
       Isize = (/4,rtriangulation%NAT/)
-      call storage_new2d('tria_genEdgesAtFace3D', 'IedgesAtFace',&
+      call storage_new('tria_genEdgesAtFace3D', 'IedgesAtFace',&
           Isize, ST_INT,&
           rtriangulation%h_IedgesAtFace, ST_NEWBLOCK_NOINIT)
     else
-      call storage_getsize2D (rtriangulation%h_IedgesAtFace, Isize)
+      call storage_getsize (rtriangulation%h_IedgesAtFace, Isize)
       if (Isize(2) .ne. rtriangulation%NAT) then
         ! If the size is wrong, reallocate memory.
         call storage_realloc ('tria_genEdgesAtFace3D', rtriangulation%NEL,&
@@ -15581,7 +15678,7 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if(rtriangulation%h_IelementsAtFace .eq. ST_NOHANDLE) then
       Isize = (/2,rtriangulation%NAT/)
-      call storage_new2d('tria_genElementsAtFace3D', 'IelementsAtFace', &
+      call storage_new('tria_genElementsAtFace3D', 'IelementsAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IelementsAtFace, ST_NEWBLOCK_NOINIT)
     else
@@ -15705,7 +15802,7 @@ p_InodalPropertyDest = -4711
     ! Do we have (enough) memory for that array?
     if(rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) then
       Isize = (/4, rtriangulation%NAT/)
-      call storage_new2d('tria_genVerticesAtFace3D', 'IverticesAtFace', &
+      call storage_new('tria_genVerticesAtFace3D', 'IverticesAtFace', &
           Isize, ST_INT, &
           rtriangulation%h_IverticesAtFace, ST_NEWBLOCK_NOINIT)
     else

@@ -74,27 +74,32 @@ module sortstrategy
   use fsystem
   use storage
   use genoutput
+  use basicgeometry
   use linearalgebra
   use spatialdiscretisation
   use element
   use triangulation
   use linearsystemscalar
   use adjacency
+  use dofmapping
+  use sort
 
   implicit none
+  
+  private
   
 !<constants>
 
 !<constantblock description="Sort strategy identifiers.">
 
   ! No sort strategy; this must be =0!
-  integer, parameter :: SSTRAT_UNSORTED     = 0
+  integer, parameter, public :: SSTRAT_UNSORTED     = 0
 
   ! Cuthill-McKee sort strategy
-  integer, parameter :: SSTRAT_CM           = 1
+  integer, parameter, public :: SSTRAT_CM           = 1
 
   ! Reverse Cuthill-McKee sort strategy
-  integer, parameter :: SSTRAT_RCM          = 2
+  integer, parameter, public :: SSTRAT_RCM          = 2
   
   ! Row-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
@@ -102,27 +107,27 @@ module sortstrategy
   ! the DOF's can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
   ! like the unit square.
-  integer, parameter :: SSTRAT_XYZCOORD     = 3
+  integer, parameter, public :: SSTRAT_XYZCOORD     = 3
   
   ! Column-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
   ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
   ! the DOF's can be identified with X/Y/Z coordinates.
-  integer, parameter :: SSTRAT_ZYXCOORD     = 4
+  integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
   
   ! General FEAST renumbering.
   ! The DOF's are numbered rowwise, independent of the geometrical
   ! structure of the domain.
   ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
-  integer, parameter :: SSTRAT_FEAST        = 5
+  integer, parameter, public :: SSTRAT_FEAST        = 5
   
   ! Stochastic renumbering / Random permutation.
   ! The permutation is completely random.
-  integer, parameter :: SSTRAT_STOCHASTIC   = 6
+  integer, parameter, public :: SSTRAT_STOCHASTIC   = 6
 
   ! Hierarchical renumbering: The permutation is calculated by a sequence of meshes,
   ! regularly refined.
-  integer, parameter :: SSTRAT_HIERARCHICAL = 7
+  integer, parameter, public :: SSTRAT_HIERARCHICAL = 7
   
 !</constantblock>
 
@@ -158,12 +163,21 @@ module sortstrategy
 
 !</types>
 
-  private :: t_levelHirarchy
-  
   interface sstrat_calcCuthillMcKee
     module procedure sstrat_calcCuthillMcKee_p
     module procedure sstrat_calcCuthillMcKee_h
   end interface
+  
+  public :: sstrat_calcCuthillMcKee
+  public :: sstrat_calcRevCuthillMcKee
+  public :: sstrat_calcXYZsorting
+  public :: sstrat_calcFEASTsorting
+  public :: sstrat_calcStochastic
+  public :: sstrat_calcHierarchical
+  public :: sstrat_calcColNumberingCM7
+  public :: sstrat_calcColNumberingCM9
+  public :: sstrat_calcPermutationCM
+  public :: sstrat_calcInversePermutation
 
 contains
 
@@ -1028,7 +1042,7 @@ contains
         
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = nvt+nmt+nel
-        call storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
         call storage_getbase_double2d (hhandle,p_Dcoords)
         
@@ -1078,7 +1092,7 @@ contains
         ! and sort for that. We have to calculate the midpoints for that...
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = rdiscretisation%p_rtriangulation%NMT
-        call storage_new2D ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
+        call storage_new ('rowwiseSorting', 'Dmidpoints', Isize, ST_DOUBLE, &
                             hhandle, ST_NEWBLOCK_NOINIT)
         call storage_getbase_double2d (hhandle,p_Dcoords)
         
@@ -1136,7 +1150,7 @@ contains
       ! Allocate a 2D array with (dim(Dcoords)+1,#coords) elements.
       Isize(1) = ubound(Dcoords,1)+1
       Isize(2) = ubound(Dcoords,2)
-      call storage_new2D ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
+      call storage_new ('rowwiseSorting', 'Dsort', Isize, ST_DOUBLE, &
                           h_Dsort, ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Dsort,p_Dsort)
       

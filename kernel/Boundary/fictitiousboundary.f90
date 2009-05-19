@@ -20,6 +20,8 @@ module fictitiousboundary
   use fsystem
 
   implicit none
+  
+  private
 
 !<types>
 
@@ -49,6 +51,8 @@ module fictitiousboundary
     real(DP) :: dtag = 0.0_DP
     
   end type
+  
+  public :: t_fictBoundaryRegion
   
 !</typeblock>
 

@@ -9,6 +9,7 @@
   
     subroutine fcb_getDefect (ite,rx,rb,rd,p_rcollection)
   
+    use fsystem
     use linearsystemblock
     use collection
     
@@ -51,6 +52,7 @@
   
     subroutine fcb_precondDefect (ite,rd,rx,rb,domega,bsuccess,p_rcollection)
   
+    use fsystem
     use linearsystemblock
     use collection
     

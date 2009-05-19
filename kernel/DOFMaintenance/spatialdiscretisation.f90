@@ -75,6 +75,13 @@
 !#
 !# 18.) spdiscr_igetNDofLocMax
 !#      -> Calculate the maximum number of local DOF's in a discretisation
+!#
+!# 19.) spdiscr_checkCubature
+!#      -> Checks if the cubature formula of type icubType can be applied
+!#         to the elements of the type celement
+!#
+!# 20.) spdiscr_releaseDofMapping
+!#      -> Release precomputed DOF-mapping data
 !# </purpose>
 !##############################################################################
 
@@ -83,6 +90,7 @@ module spatialdiscretisation
   use fsystem
   use storage
   use triangulation
+  use basicgeometry
   use boundary
   use transformation
   use element
@@ -91,30 +99,32 @@ module spatialdiscretisation
   
   implicit none
   
+  private
+  
 !<constants>
 
 !<constantblock description="Constants defining the complexity of the discretisation">
 
   ! Uniform discretisation: All elements are of the same type.
-  integer, parameter :: SPDISC_UNIFORM   = 0
+  integer, parameter, public :: SPDISC_UNIFORM   = 0
   
   ! Conformal discretisation: Elements of different FE spaces are mixed,
   ! but the DOF's 'fit together' (e.g. quads/tri elements with same DOF's,
   ! isoparametric elements on the boundary).
-  integer, parameter :: SPDISC_CONFORMAL = 1
+  integer, parameter, public :: SPDISC_CONFORMAL = 1
   
   ! Mixed discretisation: Elements of different FE spaces, arbitrary mixed.
-  integer, parameter :: SPDISC_MIXED     = 2
+  integer, parameter, public :: SPDISC_MIXED     = 2
 
 !</constantblock>
 
 !<constantblock description="Additional constants for cubature formulas">
 
   ! Automatically determine cubature formula for a discretisation.
-  integer, parameter :: SPDISC_CUB_AUTOMATIC = 0
+  integer, parameter, public :: SPDISC_CUB_AUTOMATIC = 0
 
   ! Cubature formula stays unchanged.
-  integer, parameter :: SPDISC_CUB_NOCHANGE  = -1
+  integer, parameter, public :: SPDISC_CUB_NOCHANGE  = -1
 
 !</constantblock>
 
@@ -174,6 +184,8 @@ module spatialdiscretisation
     integer :: h_IelementList       = ST_NOHANDLE
 
   end type
+  
+  public :: t_elementDistribution
   
 !</typeblock>
   
@@ -266,6 +278,8 @@ module spatialdiscretisation
     
   end type
   
+  public :: t_spatialDiscretisation
+  
 !</typeblock>
 
 !<typeblock>
@@ -317,9 +331,31 @@ module spatialdiscretisation
     
   end type
   
+  public :: t_blockDiscretisation
+  
 !</typeblock>
 
 !</types>
+
+  public :: spdiscr_initBlockDiscr
+  public :: spdiscr_initDiscr_simple
+  public :: spdiscr_initDiscr_triquad
+  public :: spdiscr_deriveBlockDiscr
+  public :: spdiscr_deriveSimpleDiscrSc
+  public :: spdiscr_deriveDiscr_triquad
+  public :: spdiscr_releaseDiscr
+  public :: spdiscr_createBlockDiscrInd
+  public :: spdiscr_releaseBlockDiscr
+  public :: spdiscr_checkCubature
+  public :: spdiscr_duplicateDiscrSc
+  public :: spdiscr_duplicateBlockDiscr
+  public :: spdiscr_getLumpCubature
+  public :: spdiscr_getStdCubature
+  public :: spdiscr_infoBlockDiscr
+  public :: spdiscr_infoDiscr
+  public :: spdiscr_infoElementDistr
+  public :: spdiscr_igetNDofLocMax
+  public :: spdiscr_releaseDofMapping
 
 contains
 
@@ -967,7 +1003,7 @@ contains
   
   ! All trial elements are celement:
   
-!  CALL storage_new1D ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
+!  CALL storage_new ('spdiscr_initDiscr_simple', 'h_ItrialElements', &
 !        rtriangulation%NEL, ST_INT, rspatialDiscr%h_ItrialElements,   &
 !        ST_NEWBLOCK_NOINIT)
 !  CALL storage_getbase_int (rspatialDiscr%h_ItrialElements,p_Iarray)
@@ -997,7 +1033,7 @@ contains
   ! Initialise an 'identity' array containing the numbers of all elements.
   ! This list defines the sequence how elements are processed, e.g. in the
   ! assembly of matrices/vectors.
-  call storage_new1D ('spdiscr_initDiscr_simple', 'h_IelementList', &
+  call storage_new ('spdiscr_initDiscr_simple', 'h_IelementList', &
       rtriangulation%NEL, ST_INT, p_relementDistr%h_IelementList,   &
       ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_relementDistr%h_IelementList,p_Iarray)
@@ -1097,13 +1133,13 @@ contains
   rspatialDiscr%ccomplexity      = SPDISC_CONFORMAL
   
   ! Allocate an array containing the element distribution for each element
-  call storage_new1D ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
+  call storage_new ('spdiscr_initDiscr_triquad', 'h_ItrialElements', &
       rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementDistr,   &
       ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rspatialDiscr%h_IelementDistr,p_Iarray)
 
   ! Allocate an array with an element counter for every element type.
-  call storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
+  call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementCounter', &
       rtriangulation%NEL, ST_INT, rspatialDiscr%h_IelementCounter,   &
       ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rspatialDiscr%h_IelementCounter,p_IelementCounter)
@@ -1184,7 +1220,7 @@ contains
   j = 0
   if (rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) then
     
-    call storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementList', &
+    call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementList', &
           rtriangulation%InelOfType(TRIA_NVETRI2D), &
           ST_INT, p_relementDistrTria%h_IelementList,   &
           ST_NEWBLOCK_NOINIT)
@@ -1212,7 +1248,7 @@ contains
   j = 0
   if (rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) then
     
-    call storage_new1D ('spdiscr_initDiscr_triquad', 'h_IelementList', &
+    call storage_new ('spdiscr_initDiscr_triquad', 'h_IelementList', &
           rtriangulation%InelOfType(TRIA_NVEQUAD2D), &
           ST_INT, p_relementDistrQuad%h_IelementList,   &
           ST_NEWBLOCK_NOINIT)
@@ -1799,7 +1835,7 @@ contains
 
      if (associated(rspatialDiscr%RelementDistr)) then
        do inumFESpace = 1, rspatialDiscr%inumFESpaces
-         call spdisc_infoElementDistr(rspatialDiscr%RelementDistr(inumFESpace))
+         call spdiscr_infoElementDistr(rspatialDiscr%RelementDistr(inumFESpace))
        end do
      end if
 
@@ -1809,7 +1845,7 @@ contains
 
 !<subroutine>
    
-   subroutine spdisc_infoElementDistr (relementDistr)
+   subroutine spdiscr_infoElementDistr (relementDistr)
 
 !<description>
      ! This subroutine outputs information about the spatial discretisation
@@ -1832,7 +1868,7 @@ contains
      call output_line ('NEL:             '//trim(sys_siL(relementDistr%NEL,15)))
      call output_line ('h_IelementList:  '//trim(sys_siL(relementDistr%h_IelementList,15)))
 
-   end subroutine spdisc_infoElementDistr
+   end subroutine spdiscr_infoElementDistr
 
   ! ***************************************************************************
 !<subroutine>

@@ -30,7 +30,7 @@
 !# 7.) vecio_writeVectorMaple
 !#     -> Writes a scalar vector into a text file in Maple syntax
 !#
-!# 7.) vecio_writeBlockVectorMaple
+!# 8.) vecio_writeBlockVectorMaple
 !#     -> Writes a block vector into a text file in Maple syntax
 !# </purpose>
 !#########################################################################
@@ -44,8 +44,19 @@ module vectorio
   use linearsystemblock
   
   implicit none
+  
+  private
+  
+  public :: vecio_writeArray_Dble
+  public :: vecio_readArray_Dble
+  public :: vecio_writeBlockVectorHR
+  public :: vecio_writeVectorHR
+  public :: vecio_readBlockVectorHR
+  public :: vecio_readVectorHR
+  public :: vecio_writeVectorMaple
+  public :: vecio_writeBlockVectorMaple  
 
-  contains
+contains
 
   ! ***************************************************************************
 

@@ -61,36 +61,58 @@
 !#       for debugging purposes
 !# 23.) griddef_qMeasureM1
 !#    -> compute the quality measure m1
+!# 24.) griddef_buildHGrid
+!#    -> ?
 !# </purpose>
 !##############################################################################
 
 
-MODULE griddeform
+module griddeform
 
-  USE triangulation
-  USE linearsystemblock
-  USE stdoperators
-  USE bcassembly
-  USE linearformevaluation
-  USE spdiscprojection
-  USE pprocerror
-  USE element
-  USE elementpreprocessing
-  USE pprocgradients
-  USE ucd  
+  use fsystem
+  use genoutput
+  use storage
+  use basicgeometry
+  use geometryaux
+  use boundary
+  use triangulation
+  use triasearch
+  use linearsystemscalar
+  use linearsystemblock
+  use spatialdiscretisation
+  use dofmapping
+  use stdoperators
+  use bcassembly
+  use bilinearformevaluation
+  use linearformevaluation
+  use spdiscprojection
+  use pprocerror
+  use cubature
+  use derivatives
+  use element
+  use elementpreprocessing
+  use pprocgradients
+  use vectorfilters
+  use matrixfilters
+  use filtersupport 
+  use transformation
   use linearsolver
+  use feevaluation
+  use ucd  
   
   implicit none
+  
+  private
 
 !<constants>
 
-  integer(i32), parameter :: GRIDDEF_CLASSICAL  = 0
+  integer(i32), parameter, private :: GRIDDEF_CLASSICAL  = 0
 
-  integer(i32), parameter :: GRIDDEF_MULTILEVEL = -1
+  integer(i32), parameter, private :: GRIDDEF_MULTILEVEL = -1
   
-  integer(i32), parameter :: GRIDDEF_FIXED      = 2
+  integer(i32), parameter, private :: GRIDDEF_FIXED      = 2
   
-  integer(i32), parameter :: GRIDDEF_USER       = 3
+  integer(i32), parameter, private :: GRIDDEF_USER       = 3
 
 !</constants>
 
@@ -101,14 +123,16 @@ MODULE griddeform
   ! so that they can be efficiently used in the deformation routine
   type t_hgridLevels
   
-  ! An object for saving the triangulation on the domain
-  type(t_triangulation) :: rtriangulation
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation) :: rtriangulation
 
   ! An object specifying the block discretisation
   ! (size of subvectors in the solution vector, trial/test functions,...)
   ! type(t_blockDiscretisation) :: rdiscretisation
   
   end type
+  
+  public :: t_hgridLevels
   
   !<\typeblock>
 
@@ -249,6 +273,8 @@ MODULE griddeform
     integer :: NLMAX
 
   end type t_griddefInfo
+  
+  public :: t_griddefInfo
   !</typeblock>
   
   !<typeblock>
@@ -279,8 +305,36 @@ MODULE griddeform
     logical             :: breinit = .false.
 
   end type t_griddefWork
+  
+  public :: t_griddefWork
   !</typeblock>
 !</types>    
+
+  public :: griddef_deformationInit
+  public :: griddef_DeformationDone
+  public :: griddef_freeWorkDef
+  public :: griddef_calcMonitorFunction
+  public :: griddef_prepareDeformation
+  public :: griddef_performDeformation
+  public :: griddef_computeAdapSteps
+  public :: griddef_performOneDefStep
+  public :: griddef_getArea
+  public :: griddef_buildMonFuncTest
+  public :: griddef_normaliseFctsNum
+  public :: griddef_blendmonitor
+  public :: griddef_normaliseFctsInv
+  public :: griddef_normaliseFctsInvAux
+  public :: griddef_createMatrixDef
+  public :: griddef_createRHS
+  public :: griddef_moveMesh
+  public :: griddef_performEE
+  public :: griddef_perform_boundary2
+  public :: griddef_evalPhi_Known
+  public :: griddef_evalphi_ray
+  public :: griddef_evalphi_ray_bound
+  public :: griddef_getAreaDeformed
+  public :: griddef_qMeasureM1
+  public :: griddef_buildHGrid
 
 contains
 
@@ -1909,7 +1963,7 @@ contains
   type(t_evalElementSet) :: rintSubset
   
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsTest,IdofFunc
+  integer, dimension(:,:), allocatable, target :: IdofsTest,IdofFunc
 
   ! Type of transformation from the reference to the real element 
   integer :: ctrafoType
@@ -2181,8 +2235,8 @@ contains
   real(dp), dimension(:), pointer :: p_DdataMon,p_DdataArea
 
   ! An allocateable array accepting the DOF's of a set of elements.
-  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsTest
-  integer(prec_dofidx), dimension(:,:), allocatable, target :: IdofsFunc
+  integer, dimension(:,:), allocatable, target :: IdofsTest
+  integer, dimension(:,:), allocatable, target :: IdofsFunc
   
   ! Allocateable arrays for the values of the basis functions - 
   ! for test space.
@@ -3902,7 +3956,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   
   ! Values of basis functions and DOF's
   real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
-  integer(prec_dofidx), dimension(el_maxnbas) :: Idofs
+  integer, dimension(el_maxnbas) :: Idofs
   
   ! List of element distributions in the discretisation structure
   type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
@@ -4106,7 +4160,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   
   ! Values of basis functions and DOF's
   REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
-  INTEGER(PREC_DOFIDX), DIMENSION(EL_MAXNBAS) :: Idofs
+  INTEGER, DIMENSION(EL_MAXNBAS) :: Idofs
   
   ! List of element distributions in the discretisation structure
   TYPE(t_elementDistribution), DIMENSION(:), POINTER :: p_RelementDistribution

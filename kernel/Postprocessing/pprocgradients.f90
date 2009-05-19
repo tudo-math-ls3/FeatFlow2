@@ -42,64 +42,79 @@
 
 module pprocgradients
 
-  use boundary
-  use collection
-  use cubature
-  use derivatives
-  use domainintegration
-  use feevaluation
   use fsystem
+  use storage
+  use boundary
   use genoutput
-  use linearsystemblock
-  use linearsystemscalar
   use mprimitives
-  use pprocerror
   use spatialdiscretisation
   use storage
   use triangulation
+  use basicgeometry
+  use elementpreprocessing
+  use element
+  use cubature
+  use derivatives
+  use dofmapping
+  use domainintegration
+  use feevaluation
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
+  use collection
+  use pprocerror
+  use transformation
 
   implicit none
+
+  private
 
 !<constants>
 
 !<constantblock description = "Identifiers for the method how to calculate a gradient vector.">
 
   ! Use standard interpolation to calculate a gradient vector. 1st order. 
-  integer, parameter :: PPGRD_INTERPOL = 0
+  integer, parameter, public :: PPGRD_INTERPOL = 0
   
   ! ZZ-technique for recovering a gradient. 2nd order on regular meshes.
-  integer, parameter :: PPGRD_ZZTECHNIQUE = 1
+  integer, parameter, public :: PPGRD_ZZTECHNIQUE = 1
   
   ! Limited gradient averaging technique. Only usable for special-type
   ! meshes consisting of only P1/Q1 finite elements.
-  integer, parameter :: PPGRD_LATECHNIQUE = 2
+  integer, parameter, public :: PPGRD_LATECHNIQUE = 2
   
 !</constantblock>
 
 !<constantblock description = "Identifiers for the type of patch used to recover the gradient vector.">
 
   ! Node-based patch: Use elements surrounding a particular node
-  integer, parameter :: PPGRD_NODEPATCH = 0
+  integer, parameter, public :: PPGRD_NODEPATCH = 0
 
   ! Element-based patch: Use elements surrounding a particular element
-  integer, parameter :: PPGRD_ELEMPATCH = 1
+  integer, parameter, public :: PPGRD_ELEMPATCH = 1
 
   ! Face-based patch: Use subset of element-based patch which has common face
-  integer, parameter :: PPGRD_FACEPATCH = 2
+  integer, parameter, public :: PPGRD_FACEPATCH = 2
 
 !</constantblock>
 
 !<constantblock description="Constants defining the blocking of the error calculation.">
 
   ! Number of elements to handle simultaneously when building vectors
-  integer :: PPGRD_NELEMSIM   = 1000
+  integer, public :: PPGRD_NELEMSIM   = 1000
 
   ! Number of patches to handle simultaneously when performing gradient recovery
-  integer :: PPGRD_NPATCHSIM  = 100
+  integer, public :: PPGRD_NPATCHSIM  = 100
   
 !</constantblock>
 
 !</constants>
+
+  public :: ppgrd_calcGradient
+  public :: ppgrd_calcGradientError
+  public :: ppgrd_calcGradInterpP12Q12cnf
+  public :: ppgrd_calcGradSuperPatchRecov
+  public :: ppgrd_calcGradLimAvgP1Q1cnf
 
 contains
 

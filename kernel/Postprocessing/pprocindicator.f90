@@ -17,10 +17,18 @@ module pprocindicator
 
   use fsystem
   use genoutput
-  use linearsystemscalar
-  use spatialdiscretisation
   use storage
   use triangulation
+  use basicgeometry
+  use element
+  use spatialdiscretisation
+  use linearsystemscalar
+
+  implicit none
+  
+  private
+  
+  public :: ppind_secondDifference
 
 contains
 

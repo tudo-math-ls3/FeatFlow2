@@ -231,38 +231,42 @@
  
 module geometry
 
+  use fsystem
+  use storage
   use basicgeometry
   use storage
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Geometry type identifiers">
 
   ! Composed geometry object with sub-objects
-  integer, parameter :: GEOM_COMPOSED  = -1
+  integer, parameter, public :: GEOM_COMPOSED  = -1
 
   ! No geometry object
-  integer, parameter :: GEOM_NONE      = 0
+  integer, parameter, public :: GEOM_NONE      = 0
 
   ! Circle object
-  integer, parameter :: GEOM_CIRCLE    = 1
+  integer, parameter, public :: GEOM_CIRCLE    = 1
 
   ! Square object
-  integer, parameter :: GEOM_SQUARE    = 2
+  integer, parameter, public :: GEOM_SQUARE    = 2
 
   ! Ellipse object
-  integer, parameter :: GEOM_ELLIPSE   = 3
+  integer, parameter, public :: GEOM_ELLIPSE   = 3
 
   ! Rectangle object
-  integer, parameter :: GEOM_RECT      = 4
+  integer, parameter, public :: GEOM_RECT      = 4
 
   ! Polygon object
-  integer, parameter :: GEOM_POLYGON   = 10
+  integer, parameter, public :: GEOM_POLYGON   = 10
   
   ! Sphere object
-  integer, parameter :: GEOM_SPHERE    = 11
+  integer, parameter, public :: GEOM_SPHERE    = 11
   
 
 !</constantblock>
@@ -270,23 +274,23 @@ module geometry
 !<constantblock description="Polygon type identifiers">
 
   ! General polygon
-  integer, parameter :: GEOM_POLYGON_GENERAL = 0
+  integer, parameter, public :: GEOM_POLYGON_GENERAL = 0
 
   ! Convex polygon
-  integer, parameter :: GEOM_POLYGON_CONVEX  = 1
+  integer, parameter, public :: GEOM_POLYGON_CONVEX  = 1
 
 !</constantblock>
 
 !<constantblock description="Composed type identifiers">
 
   ! No composed object
-  integer, parameter :: GEOM_COMP_TYPE_NONE = 0
+  integer, parameter, public :: GEOM_COMP_TYPE_NONE = 0
 
   ! Union of objects
-  integer, parameter :: GEOM_COMP_TYPE_OR   = 1
+  integer, parameter, public :: GEOM_COMP_TYPE_OR   = 1
   
   ! Intersection of objects
-  integer, parameter :: GEOM_COMP_TYPE_AND  = 2
+  integer, parameter, public :: GEOM_COMP_TYPE_AND  = 2
   
 !</constantblock>
 
@@ -320,6 +324,8 @@ module geometry
     
   end type
   
+  public :: t_boundaryApprox
+  
 !</typeblock>
 
 ! *****************************************************************************
@@ -342,6 +348,8 @@ module geometry
     type(t_boundaryApprox), pointer :: p_rboundaryApprox => null()
     
   end type
+  
+  public :: t_geometryComposed
 
 !</typeblock>
   
@@ -356,6 +364,8 @@ module geometry
     real(DP) :: dradius = 0.0_DP
     
   end type
+  
+  public :: t_geometryCircle
   
 !</typeblock>
   
@@ -373,6 +383,8 @@ module geometry
     
   end type
   
+  public :: t_geometrySphere
+  
 !</typeblock>
   
 ! *****************************************************************************
@@ -386,6 +398,8 @@ module geometry
     real(DP) :: dlength = 0.0_DP
     
   end type
+
+  public :: t_geometrySquare
 
 !</typeblock>
 
@@ -401,6 +415,8 @@ module geometry
     
   end type
 
+  public :: t_geometryEllipse
+
 !</typeblock>
 
 ! *****************************************************************************
@@ -415,6 +431,8 @@ module geometry
     real(DP), dimension(2) :: Dlength = (/ 0.0_DP, 0.0_DP /)
     
   end type
+
+  public :: t_geometryRectangle
 
 !</typeblock>
 
@@ -432,6 +450,8 @@ module geometry
     real(DP), dimension(:,:), pointer :: p_Dvertices => null()
 
   end type
+  
+  public :: t_geometryPolygon
 
 !</typeblock>
 
@@ -491,6 +511,8 @@ module geometry
     
   end type
   
+  public :: t_geometryObject
+  
 !</typeblock>
 !</types>
 
@@ -524,6 +546,24 @@ module geometry
     module procedure geom_init_sphere_direct
   end interface
 
+  public :: geom_init_circle
+  public :: geom_init_square
+  public :: geom_init_ellipse
+  public :: geom_init_rectangle
+  public :: geom_init_polygon
+  public :: geom_init_composed
+  public :: geom_init_sphere
+  public :: geom_composed_addNode
+  public :: geom_composed_updateBndApprox
+  public :: geom_done
+  public :: geom_moveto
+  public :: geom_rotate2D
+  public :: geom_isInGeometry
+  public :: geom_isInGeometryArray
+  public :: geom_projectToBoundary
+  public :: geom_calcSignedDistance
+  public :: geom_calcSignedDistanceArray
+  public :: geom_polygonise
   
 contains
 
@@ -1227,7 +1267,7 @@ end subroutine
       ! Allocate some space for us
       DmyDim(1) = 2
       DmyDim(2) = nvertsNeeded
-      call storage_new2D('geom_composed_updateBndApprox', 'Dverts', &
+      call storage_new('geom_composed_updateBndApprox', 'Dverts', &
                          DmyDim, ST_DOUBLE, h_Dverts, ST_NEWBLOCK_NOINIT)
 
       ! Store allocated size
@@ -1605,7 +1645,7 @@ end subroutine
   
     ! Allocate desired number of vertices
     Isize = (/ 2, ndesiredVerticeCount /)
-    call storage_new2D('geom_circle_polygonise', 'hpolyHandle', Isize, &
+    call storage_new('geom_circle_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
@@ -2136,7 +2176,7 @@ end subroutine
     dedge = rgeomObject%rsquare%dlength * 0.5_DP
   
     ! Allocate desired number of vertices
-    call storage_new2D('geom_square_polygonise', 'hpolyHandle', Isize, &
+    call storage_new('geom_square_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
@@ -2827,7 +2867,7 @@ end subroutine
   
     ! Allocate desired number of vertices
     Isize = (/ 2, ndesiredVerticeCount /)
-    call storage_new2D('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
+    call storage_new('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
@@ -3377,7 +3417,7 @@ end subroutine
     dedgeY = rgeomObject%rrectangle%Dlength(2) * 0.5_DP
   
     ! Allocate desired number of vertices
-    call storage_new2D('geom_rect_polygonise', 'hpolyHandle', Isize, &
+    call storage_new('geom_rect_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
@@ -4155,7 +4195,7 @@ end subroutine
   
     ! Allocate desired number of vertices
     Isize = (/ 2, inumVerts /)
-    call storage_new2D('geom_polygon_polygonise', 'hpolyHandle', Isize, &
+    call storage_new('geom_polygon_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
     ! Get vertice array
@@ -5151,257 +5191,4 @@ end subroutine
     
   end subroutine
 
-  ! ***************************************************************************
- 
-!<subroutine>
-  
-  subroutine geom_sphere_polygonise (rgeomObject, hpolyHandle,ihandle1)
-  
-!<description>
-  ! This routine converts a sphere to a polygon, so that it can
-  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
-  ! details).
-!</description>
-
-!<input>
-  ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
-  
-!</input>
-
-!<output>
-  ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
-  integer, intent(OUT) :: ihandle1
-!</output>
-
-!</subroutine>
-
-  integer :: i,ipoly,iloop
-  
-  real(DP), dimension(:,:), pointer :: p_Dvertices
-  integer, dimension(:,:), pointer :: p_Ivertices1
-  real(DP) :: dstep, dangle, dradius,s,t
-  
-  integer, dimension(2) :: Isize1,Isize2
-  
-    ! Calculate angle step
-    ! dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
-    
-    ! Get radius
-    dradius = rgeomObject%rsphere%dradius
-    
-    ipoly = rgeomObject%rsphere%ipoly
-  
-    ! Allocate desired number of vertices
-    Isize1 = (/ 3, 12 /)
-    call storage_new2D('geom_sphere_polygonise', 'ihandle1', Isize1, &
-                       ST_DOUBLE, ihandle1, ST_NEWBLOCK_NOINIT)
-
-    Isize2 = (/ 3, 20 /)
-    call storage_new2D('geom_sphere_polygonise', 'hpolyHandle', Isize2, &
-                       ST_INT, hpolyHandle, ST_NEWBLOCK_NOINIT)
-
-
-    ! Get vertice array
-    call storage_getbase_double2D(ihandle1, p_Dvertices)
-    
-    t = (1.0_dp + sqrt(5.0_dp))/2.0_dp
-    s = sqrt(1 + t**2)
-    
-    ! Set vertices
-    p_DVertices(1, 1) = t/s
-    p_DVertices(2, 1) = 1.0_dp/s
-    p_DVertices(3, 1) = 0.0_dp
-
-    p_DVertices(1, 2) = -t
-    p_DVertices(2, 2) = 1.0_dp/s
-    p_DVertices(3, 2) = 0.0_dp
-
-    p_DVertices(1, 3) = t/s
-    p_DVertices(2, 3) = -1.0_dp/s
-    p_DVertices(3, 3) = 0.0_dp
-
-    p_DVertices(1, 4) = -t/s
-    p_DVertices(2, 4) = -1.0_dp/s
-    p_DVertices(3, 4) = 0.0_dp
-
-    p_DVertices(1, 5) = 1.0_dp/s
-    p_DVertices(2, 5) = 0.0_dp
-    p_DVertices(3, 5) = t/s
-
-    p_DVertices(1, 6) = 1.0_dp/s
-    p_DVertices(2, 6) = 0.0_dp
-    p_DVertices(3, 6) = -t/s
-
-    p_DVertices(1, 7) = -1.0_dp/s
-    p_DVertices(2, 7) = 0.0_dp
-    p_DVertices(3, 7) = t/s
-
-    p_DVertices(1, 8) = -1.0_dp/s
-    p_DVertices(2, 8) = 0.0_dp
-    p_DVertices(3, 8) = -t/s
-
-    p_DVertices(1, 9) = 0.0_dp
-    p_DVertices(2, 9) = t/s
-    p_DVertices(3, 9) = 1.0_dp/s
-
-    p_DVertices(1, 10) = 0.0_dp
-    p_DVertices(2, 10) = -t/s
-    p_DVertices(3, 10) = 1.0_dp/s
-
-    p_DVertices(1, 11) = 0.0_dp
-    p_DVertices(2, 11) = t/s
-    p_DVertices(3, 11) = -1.0_dp/s
-
-    p_DVertices(1, 12) = 0.0_dp
-    p_DVertices(2, 12) = -t/s
-    p_DVertices(3, 12) = -1.0_dp/s
-
-
-    ! get the handles of the octa
-    call storage_getbase_int2D(hpolyHandle, p_Ivertices1)
-    
-    p_IVertices1(1, 1) = 1
-    p_IVertices1(2, 1) = 9
-    p_IVertices1(3, 1) = 5
-                        
-    p_IVertices1(1, 2) = 2
-    p_IVertices1(2, 2) = 11
-    p_IVertices1(3, 2) = 8
-                        
-    p_IVertices1(1, 3) = 3
-    p_IVertices1(2, 3) = 10
-    p_IVertices1(3, 3) = 12
-                        
-    p_IVertices1(1, 4) = 8
-    p_IVertices1(2, 4) = 4
-    p_IVertices1(3, 4) = 2
-                        
-    p_IVertices1(1, 5) = 1
-    p_IVertices1(2, 5) = 6
-    p_IVertices1(3, 5) = 11
-                        
-    p_IVertices1(1, 6) = 4
-    p_IVertices1(2, 6) = 10
-    p_IVertices1(3, 6) = 7
-                        
-    p_IVertices1(1, 7) = 4
-    p_IVertices1(2, 7) = 12
-    p_IVertices1(3, 7) = 10
-                        
-    p_IVertices1(1, 8) = 9
-    p_IVertices1(2, 8) = 7
-    p_IVertices1(3, 8) = 5
-
-    p_IVertices1(1, 9) = 3
-    p_IVertices1(2, 9) = 5
-    p_IVertices1(3, 9) = 10
-                        
-    p_IVertices1(1, 10) = 4
-    p_IVertices1(2, 10) = 8
-    p_IVertices1(3, 10) = 12
-                        
-    p_IVertices1(1, 11) = 5
-    p_IVertices1(2, 11) = 3
-    p_IVertices1(3, 11) = 1
-                        
-    p_IVertices1(1, 12) = 10
-    p_IVertices1(2, 12) = 5
-    p_IVertices1(3, 12) = 7
-                        
-    p_IVertices1(1, 13) = 3
-    p_IVertices1(2, 13) = 12
-    p_IVertices1(3, 13) = 6
-                        
-    p_IVertices1(1, 14) = 1
-    p_IVertices1(2, 14) = 11
-    p_IVertices1(3, 14) = 9
-                        
-    p_IVertices1(1, 15) = 6
-    p_IVertices1(2, 15) = 1
-    p_IVertices1(3, 15) = 3
-                        
-    p_IVertices1(1, 16) = 11
-    p_IVertices1(2, 16) = 6
-    p_IVertices1(3, 16) = 8
-
-    p_IVertices1(1, 17) = 2
-    p_IVertices1(2, 17) = 7
-    p_IVertices1(3, 17) = 9
-                        
-    p_IVertices1(1, 18) = 2
-    p_IVertices1(2, 18) = 9
-    p_IVertices1(3, 18) = 11
-                        
-    p_IVertices1(1, 19) = 7
-    p_IVertices1(2, 19) = 2
-    p_IVertices1(3, 19) = 4
-                        
-    p_IVertices1(1, 20) = 12
-    p_IVertices1(2, 20) = 8
-    p_IVertices1(3, 20) = 6
-                        
-
-    
-
-    !call storage_free (ihandle1)
-!    ! write the basic
-!    do iloop=0,ipoly-1
-! !     call geom_trimesh_getPolygon(p_rgeometryObject, iloop, hpolyHandle)
-!      call storage_getbase_double2D(hpolyHandle, p_Dvertices)        
-!    end do            
-
-  end subroutine
-  
-  ! ***************************************************************************
- 
-!<subroutine>
-  
-  subroutine geom_sphere_getPolygon(rgeomObject,ipoly,hpolyHandle,hpolyHandle1,DVertices)
-  
-!<description>
-  ! This routine converts a sphere to a polygon, so that it can
-  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
-  ! details).
-!</description>
-
-!<input>
-  ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
-  
-  ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(IN) :: hpolyHandle
-  integer, intent(IN) :: hpolyHandle1
-  integer, intent(IN) :: ipoly
-  
-!</input>
-
-!<inputoutput>
-  real(dp),dimension(:,:), intent(INOUT) :: DVertices
-!</inputoutput>
-
-!</subroutine>
-
-  integer :: i,iloop,ihandle1
-  
-  real(DP), dimension(:,:), pointer :: p_Dvertices
-  integer, dimension(:,:), pointer :: p_Ivertices1
-  
-  integer, dimension(2) :: Isize1,Isize2
-  
-  
-  ! get the handles of the octa
-  call storage_getbase_int2D(hpolyHandle, p_Ivertices1)
-  
-  ! Get vertice array
-  call storage_getbase_double2D(hpolyHandle1, p_Dvertices)
-  
-  do i=1,3
-    DVertices(:,i) = p_Dvertices(:,p_Ivertices1(i,ipoly))
-  end do
-  
-  end subroutine  
-  
-    
 end module

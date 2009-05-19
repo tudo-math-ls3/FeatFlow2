@@ -11,11 +11,31 @@
 
 module element_line1d
 
+  use fsystem
   use elementbase
   use derivatives
 
-implicit none
+  implicit none
+  
+  private
 
+  public :: elem_P0_1D 
+  public :: elem_P0_1D_mult 
+  public :: elem_P0_1D_sim 
+  public :: elem_P1_1D 
+  public :: elem_P1_1D_mult 
+  public :: elem_P1_1D_sim 
+  public :: elem_P2_1D 
+  public :: elem_P2_1D_mult 
+  public :: elem_P2_1D_sim 
+  public :: elem_S31_1D 
+  public :: elem_S31_1D_mult 
+  public :: elem_S31_1D_sim 
+  public :: elem_eval_P1_1D 
+  public :: elem_eval_P2_1D 
+  public :: elem_eval_S31_1D 
+  public :: elem_eval_PN_1D 
+  
 contains
 
 !**************************************************************************

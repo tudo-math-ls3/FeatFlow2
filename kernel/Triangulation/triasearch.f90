@@ -29,10 +29,15 @@
 
 module triasearch
 
+  use fsystem
+  use storage
+  use basicgeometry
   use triangulation
   use geometryaux
   
   implicit none
+  
+  private
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -42,16 +47,22 @@ module triasearch
     module procedure tsrch_getElem_BruteForce_dir
     module procedure tsrch_getElem_BruteForce_ind
   end interface
+  
+  public :: tsrch_getElem_BruteForce
 
   interface tsrch_getNearestElem_BruteForce
     module procedure tsrch_getNearestMPElem_BF_dir
     module procedure tsrch_getNearestMPElem_BF_ind
   end interface
+  
+  public :: tsrch_getNearestElem_BruteForce
 
   interface tsrch_getElem_raytrace2D
     module procedure tsrch_getElem_raytrace2d_dir
     module procedure tsrch_getElem_raytrace2d_ind
   end interface
+
+  public :: tsrch_getElem_raytrace2D
 
   ! ***************************************************************************
   ! ***************************************************************************

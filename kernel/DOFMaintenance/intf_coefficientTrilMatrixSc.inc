@@ -12,6 +12,7 @@
                   IdofsTrial,IdofsTest,rdomainIntSubset,&
                   Dcoefficients, rcollection)
     
+    use fsystem
     use basicgeometry
     use triangulation
     use scalarpde

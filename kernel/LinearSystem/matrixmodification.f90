@@ -37,6 +37,14 @@ module matrixmodification
   use genoutput
   
   implicit none
+  
+  private
+
+  public :: mmod_replaceLinesByUnit
+  public :: mmod_replaceLinesByZero
+  public :: mmod_clearOffdiags
+  public :: mmod_mergeLines
+  public :: mmod_replaceLinesByUnitBlk
 
 contains
  
@@ -53,7 +61,7 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer, intent(IN), dimension(:) :: Irows
+    integer, intent(in), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>

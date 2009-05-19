@@ -48,30 +48,30 @@
 
 module quicksolver
 
-use fsystem
-use genoutput
-use linearalgebra
-use linearsystemscalar
+  use fsystem
+  use genoutput
+  use linearalgebra
+  use linearsystemscalar
 
-implicit none
+  implicit none
 
-private
+  private
 
-public :: qsol_solveCG
-public :: qsol_solveCG_lsyssc
-public :: qsol_solveCG_double
-public :: qsol_solveCG_SSOR
-public :: qsol_solveCG_SSOR_lsyssc
-public :: qsol_solveCG_SSOR_double
-public :: qsol_solveSOR
-public :: qsol_solveSOR_lsyssc
-public :: qsol_solveSOR_double
-public :: qsol_precSOR
-public :: qsol_precSOR_lsyssc
-public :: qsol_precSOR_double
-public :: qsol_precSSOR
-public :: qsol_precSSOR_lsyssc
-public :: qsol_precSSOR_double
+  public :: qsol_solveCG
+  public :: qsol_solveCG_lsyssc
+  public :: qsol_solveCG_double
+  public :: qsol_solveCG_SSOR
+  public :: qsol_solveCG_SSOR_lsyssc
+  public :: qsol_solveCG_SSOR_double
+  public :: qsol_solveSOR
+  public :: qsol_solveSOR_lsyssc
+  public :: qsol_solveSOR_double
+  public :: qsol_precSOR
+  public :: qsol_precSOR_lsyssc
+  public :: qsol_precSOR_double
+  public :: qsol_precSSOR
+  public :: qsol_precSSOR_lsyssc
+  public :: qsol_precSSOR_double
 
 !<constants>
 
@@ -256,7 +256,7 @@ contains
     call lalg_copyVectorDble(p_Ddef,p_Ddir,n)
     
     ! Calculate initial gamma
-    dgamma = lalg_scalarProductDble(p_Ddef,p_Ddef,n)
+    dgamma = lalg_scalarProduct(p_Ddef,p_Ddef,n)
 
     ! Check against tolerance if desired
     if(dgamma .le. dtol2) then
@@ -303,14 +303,14 @@ contains
       dalpha = dgamma / dalpha
       
       ! Calculate Dx = Dx + alpha*Ddir
-      call lalg_vectorLinearCombDble(p_Ddir,Dx,dalpha,1.0_DP,n)
+      call lalg_vectorLinearComb(p_Ddir,Dx,dalpha,1.0_DP,n)
       
       ! Calculate Ddef = Ddef - alpha*Dtmp
-      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
+      call lalg_vectorLinearComb(p_Dtmp,p_Ddef,-dalpha,1.0_DP,n)
       
       ! Calculate new gamma and beta
       dbeta = dgamma
-      dgamma = lalg_scalarProductDble(p_Ddef,p_Ddef,n)
+      dgamma = lalg_scalarProduct(p_Ddef,p_Ddef,n)
       dbeta = dgamma / dbeta
       
       ! Check against tolerance if desired
@@ -510,7 +510,7 @@ contains
     if(dtol .gt. 0.0_DP) then
     
       ! Calculate defect then
-      ddef = lalg_normDble(p_Ddef, LINALG_NORMEUCLID, n=n)
+      ddef = lalg_norm(p_Ddef, LINALG_NORMEUCLID, n=n)
 
       ! Check against tolerance if desired
       if(ddef .le. dtol) then
@@ -535,7 +535,7 @@ contains
     call qsol_precSSOR(n,Kld,Kcol,Kdiag,Da,p_Ddir,drlx)
   
     ! Calculate initial gamma
-    dgamma = lalg_scalarProductDble(p_Ddef,p_Ddir,n)
+    dgamma = lalg_scalarProduct(p_Ddef,p_Ddir,n)
     
     ! Okay, start the CG iteration
     do ite = 1, niter
@@ -592,7 +592,7 @@ contains
       if(dtol .gt. 0.0_DP) then
       
         ! Calculate defect then
-        ddef = lalg_normDble(p_Ddef, LINALG_NORMEUCLID, n=n)
+        ddef = lalg_norm(p_Ddef, LINALG_NORMEUCLID, n=n)
 
         ! Check against tolerance if desired
         if(ddef .le. dtol) then
@@ -621,11 +621,11 @@ contains
       
       ! Calculate new gamma and beta
       dbeta = dgamma
-      dgamma = lalg_scalarProductDble(p_Ddef,p_Dtmp,n)
+      dgamma = lalg_scalarProduct(p_Ddef,p_Dtmp,n)
       dbeta = dgamma / dbeta
       
       ! Calculate Ddir = Dtmp + beta*Ddir
-      call lalg_vectorLinearCombDble(p_Dtmp,p_Ddir,1.0_DP,dbeta,n)
+      call lalg_vectorLinearComb(p_Dtmp,p_Ddir,1.0_DP,dbeta,n)
     
     end do
     

@@ -11,6 +11,7 @@
     subroutine fgetBoundaryValuesFBC (Icomponents,rdiscretisation,&
                                       Revaluation, rcollection)
     
+    use fsystem
     use collection
     use spatialdiscretisation
     use discretefbc

@@ -51,7 +51,9 @@ module adjacency
   use genoutput
   use storage
 
-implicit none
+  implicit none
+  
+  private
 
 !<constants>
 
@@ -60,23 +62,23 @@ implicit none
   ! If this flag is set, then the nodes on each level are sorted by their
   ! degree in ascending order.
   ! Cannot be used together with ADJ_CMK_FLAG_SORT_MAX.
-  integer(I32), parameter :: ADJ_CMK_FLAG_SORT_MIN = 1
+  integer(I32), parameter, public :: ADJ_CMK_FLAG_SORT_MIN = 1
   
   ! If this flag is set, then the nodes on each level are sorted by their
   ! degree in descending order.
   ! Cannot be used together with ADJ_CMK_FLAG_SORT_MIN.
-  integer(I32), parameter :: ADJ_CMK_FLAG_SORT_MAX = 2
+  integer(I32), parameter, public :: ADJ_CMK_FLAG_SORT_MAX = 2
   
   ! If this flag is set, then a root of minimum degree is chosen.
   ! Cannot be used together with ADJ_CMK_FLAG_ROOT_MAX.
-  integer(I32), parameter :: ADJ_CMK_FLAG_ROOT_MIN = 4
+  integer(I32), parameter, public :: ADJ_CMK_FLAG_ROOT_MIN = 4
 
   ! If this flag is set, then a root of maximum degree is chosen.
   ! Cannot be used together with ADJ_CMK_FLAG_ROOT_MIN.
-  integer(I32), parameter :: ADJ_CMK_FLAG_ROOT_MAX = 8
+  integer(I32), parameter, public :: ADJ_CMK_FLAG_ROOT_MAX = 8
 
   ! If this flag is set, then the Cuthill-McKee ordering is reversed.
-  integer(I32), parameter :: ADJ_CMK_FLAG_REVERSE = 16
+  integer(I32), parameter, public :: ADJ_CMK_FLAG_REVERSE = 16
 
 !</constantblock>
 
@@ -86,6 +88,11 @@ implicit none
     module procedure adj_applyPermutation_undirected
     module procedure adj_applyPermutation_directed
   end interface
+
+  public :: adj_applyPermutation
+  public :: adj_sortAdjacencies
+  public :: adj_calcColouring
+  public :: adj_calcCuthillMcKee
 
 contains
 

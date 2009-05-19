@@ -12,12 +12,59 @@
 
 module element_quad2d
 
+  use fsystem
+  use basicgeometry
   use elementbase
   use derivatives
   use mprimitives
   use transformation
 
-implicit none
+  implicit none
+  
+  private
+
+  public :: elem_Q0 
+  public :: elem_Q0_mult 
+  public :: elem_Q0_sim 
+  public :: elem_Q1 
+  public :: elem_Q1_mult 
+  public :: elem_Q1_sim 
+  public :: elem_Q2 
+  public :: elem_Q2_mult 
+  public :: elem_Q2_sim 
+  public :: elem_QP1 
+  public :: elem_EM30 
+  public :: elem_EM30_mult 
+  public :: elem_EM30_sim 
+  public :: elem_E030 
+  public :: elem_E030_mult 
+  public :: elem_E030_sim 
+  public :: elem_EB30 
+  public :: elem_EB30_mult 
+  public :: elem_EB30_sim 
+  public :: elem_EM31 
+  public :: elem_EM31_mult 
+  public :: elem_EM31_sim 
+  public :: elem_E031 
+  public :: elem_E031_mult 
+  public :: elem_E031_sim 
+  public :: elem_E050 
+  public :: elem_E050_mult 
+  public :: elem_E050_sim 
+  public :: elem_EB50 
+  public :: elem_EB50_mult 
+  public :: elem_EB50_sim 
+  public :: elem_eval_Q1_2D 
+  public :: elem_eval_EM11_2D 
+  public :: elem_eval_Q2_2D 
+  public :: elem_eval_Q2H_2D 
+  public :: elem_eval_QP1_2D 
+  public :: elem_eval_E030_2D 
+  public :: elem_eval_EB30_2D 
+  public :: elem_eval_EM30_2D 
+  public :: elem_eval_E050_2D 
+  public :: elem_eval_EB50_2D 
+  public :: elem_eval_EM50_2D 
 
 contains
   

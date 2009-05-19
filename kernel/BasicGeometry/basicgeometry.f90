@@ -9,8 +9,8 @@
 !#
 !# The following routines can be found in this module:
 !#
-!#  1.) bgeom_initCoordSys2D
-!#      -> Creates a 2D coordinate system from an optionally given origin,
+!#  1.) bgeom_initCoordSys2D, bgeom_initCoordSys3D
+!#      -> Creates a 2D/3D coordinate system from an optionally given origin,
 !#         rotation and scaling factor.
 !#
 !#  2.) bgeom_transformPoint2D
@@ -28,46 +28,48 @@ module basicgeometry
   use fsystem
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Dimension constants">
   
   ! Dimension constant for 1D triangulations.
-  integer, parameter :: NDIM1D = 1
+  integer, parameter, public :: NDIM1D = 1
 
   ! Dimension constant for 2D triangulations.
-  integer, parameter :: NDIM2D = 2
+  integer, parameter, public :: NDIM2D = 2
 
   ! Dimension constant for 3D triangulations.
-  integer, parameter :: NDIM3D = 3
+  integer, parameter, public :: NDIM3D = 3
 
 !</constantblock>
 
 !<constantblock description="Element shape identifiers">
   ! Unknown shape
-  integer(I32), parameter :: BGEOM_SHAPE_UNKNOWN = 0_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_UNKNOWN = 0_I32
   
   ! Line shape (1D)
-  integer(I32), parameter :: BGEOM_SHAPE_LINE  = 1000002_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_LINE  = 1000002_I32
   
   ! Triangle shape (2D)
-  integer(I32), parameter :: BGEOM_SHAPE_TRIA  = 2000303_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_TRIA  = 2000303_I32
   
   ! Quadrilateral shape (2D)
-  integer(I32), parameter :: BGEOM_SHAPE_QUAD  = 2000404_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_QUAD  = 2000404_I32
   
   ! Tetrahedron shape (3D)
-  integer(I32), parameter :: BGEOM_SHAPE_TETRA = 3040604_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_TETRA = 3040604_I32
   
   ! Hexahedron shape (3D)
-  integer(I32), parameter :: BGEOM_SHAPE_HEXA  = 3061208_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_HEXA  = 3061208_I32
   
   ! Pyramid shape (3D)
-  integer(I32), parameter :: BGEOM_SHAPE_PYRA  = 3050805_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_PYRA  = 3050805_I32
   
   ! Prism shape (3D)
-  integer(I32), parameter :: BGEOM_SHAPE_PRISM = 3050906_I32
+  integer(I32), parameter, public :: BGEOM_SHAPE_PRISM = 3050906_I32
 
 !</constantblock>
 
@@ -87,6 +89,8 @@ module basicgeometry
     real(DP) :: Y
   
   end type
+  
+  public :: t_point2D
 
   !<typeblock>
   
@@ -105,6 +109,8 @@ module basicgeometry
     real(DP) :: Z
     
   end type
+  
+  public :: t_point3D
 
   !</typeblock>
 
@@ -131,6 +137,8 @@ module basicgeometry
     
   end type
 
+  public :: t_coordinateSystem2D
+
   !</typeblock>
   
   !<typeblock>
@@ -153,11 +161,18 @@ module basicgeometry
     real(DP) :: dscalingFactor = 1.0_dp
     
   end type
+  
+    public :: t_coordinateSystem3D
 
   !</typeblock>
   
   !</types>
 
+  public :: bgeom_initCoordSys2D
+  public :: bgeom_initCoordSys3D
+  public :: bgeom_transformPoint2D
+  public :: bgeom_transformBackPoint2D
+  
 contains
 
   ! ***************************************************************************

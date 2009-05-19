@@ -606,6 +606,9 @@ module linearsolver
 
   use fsystem
   use storage
+  use spatialdiscretisation
+  use linearalgebra
+  use linearsystemscalar
   use linearsystemblock
   use multilevelprojection
   use filtersupport
@@ -619,25 +622,8 @@ module linearsolver
   
   implicit none
   
-  !private
+  private
   
-  public :: t_linsolNode
-  public :: t_linsolSubnodeILU01x1
-  public :: t_linsolSubnodeSOR
-  public :: t_linsolSubnodeSSOR
-  public :: t_linsolSubnodeDefCorr
-  public :: t_linsolSubnodeVANKA
-  public :: t_linsolSubnodeBiCGStab
-  public :: t_linsolSubnodeCG
-  public :: t_linsolSubnodeUMFPACK4
-  public :: t_linsolSubnodeGMRES
-  public :: t_linsolSubnodeMILUs1x1
-  public :: t_linsolMGTiming
-  public :: t_linsolMGLevelInfo
-  public :: t_linsolSubnodeMultigrid
-  public :: t_linsolMG2LevelInfo
-  public :: t_linsolSubnodeMultigrid2
-  public :: t_linsol_alterSolverConfig
   public :: linsol_setMatrices
   public :: linsol_matricesCompatible
   public :: linsol_setOnelevelMatrixDirect
@@ -670,6 +656,10 @@ module linearsolver
   public :: linsol_initMultigrid2
   public :: linsol_initSchur
   
+  public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
+  
+  public :: linsol_getMultigrid2Level,linsol_getMultigrid2LevelCount
+  
 !  interface linsol_addMultigridLevel
 !    module procedure linsol_addMultigridLevel1
 !    module procedure linsol_addMultigridLevel2
@@ -679,6 +669,8 @@ module linearsolver
     module procedure linsol_initProjMG2LvByPrj
     module procedure linsol_initProjMG2LvByDiscr
   end interface
+  
+  public :: linsol_initProjMultigrid2Level
 
 ! *****************************************************************************
 ! *****************************************************************************
@@ -1259,6 +1251,8 @@ module linearsolver
 
   end type
   
+  public :: t_linsolNode
+
 !</typeblock>
   
 ! *****************************************************************************
@@ -1278,6 +1272,8 @@ module linearsolver
     
   end type
   
+  public :: t_linsolSubnodeILU01x1
+
 !</typeblock>
   
 ! *****************************************************************************
@@ -1292,6 +1288,8 @@ module linearsolver
   
   end type
   
+  public :: t_linsolSubnodeSOR
+
 !</typeblock>
 
 ! *****************************************************************************
@@ -1312,6 +1310,8 @@ module linearsolver
     
   end type
   
+  public :: t_linsolSubnodeSSOR
+
 !</typeblock>
   
 ! *****************************************************************************
@@ -1341,6 +1341,8 @@ module linearsolver
   
   end type
   
+  public :: t_linsolSubnodeDefCorr
+
 !</typeblock>
 
 ! *****************************************************************************
@@ -1363,6 +1365,8 @@ module linearsolver
     type(t_vectorBlock) :: rtempVector
 
   end type
+  
+  public :: t_linsolSubnodeVANKA
   
 !</typeblock>
 
@@ -1390,6 +1394,8 @@ module linearsolver
   
   end type
   
+  public :: t_linsolSubnodeBiCGStab
+  
 !</typeblock>
 
 ! *****************************************************************************
@@ -1415,6 +1421,8 @@ module linearsolver
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
   
   end type
+
+  public :: t_linsolSubnodeCG
   
 !</typeblock>
 
@@ -1451,6 +1459,8 @@ module linearsolver
     type(t_vectorBlock) :: rtempVector
 
   end type
+
+  public :: t_linsolSubnodeUMFPACK4
   
 !</typeblock>
 
@@ -1495,6 +1505,8 @@ module linearsolver
     type(t_filterChain), dimension(:), pointer      :: p_RfilterChain => null()
 
   end type
+
+  public :: t_linsolSubnodeGMRES
   
 !</typeblock>
 
@@ -1521,6 +1533,8 @@ module linearsolver
     type(t_MILUdecomp) :: rMILUdecomp
 
   end type
+
+  public :: t_linsolSubnodeMILUs1x1
   
 !</typeblock>
 
@@ -1558,6 +1572,8 @@ module linearsolver
   
   end type
   
+  public :: t_linsolSubnodeSchur
+
 !</typeblock>
 
 ! *****************************************************************************
@@ -1587,6 +1603,8 @@ module linearsolver
     real(DP)                           :: d_tmCorrection
   
   end type
+
+  public :: t_linsolMGTiming
 
 !</typeblock>
 
@@ -1695,6 +1713,8 @@ module linearsolver
     integer                        :: icycleCount   = 0
     
   end type
+
+  public :: t_linsolMGLevelInfo
   
 !</typeblock>
 
@@ -1761,6 +1781,8 @@ module linearsolver
     type(t_vectorScalar) :: rprjTempVector
     
   end type
+
+  public :: t_linsolSubnodeMultigrid
   
 !</typeblock>
 
@@ -1878,6 +1900,8 @@ module linearsolver
     integer                        :: icycleCount   = 0
     
   end type
+
+  public :: t_linsolMG2LevelInfo
   
 !</typeblock>
 
@@ -1939,6 +1963,8 @@ module linearsolver
     
   end type
   
+  public :: t_linsolSubnodeMultigrid2
+  
 !</typeblock>
 
   ! ***************************************************************************
@@ -1962,6 +1988,8 @@ module linearsolver
     real(DP), dimension(16) :: Dconfig
   end type
   
+  public :: t_linsol_alterSolverConfig
+
 !</typeblock>
 
 !</types>

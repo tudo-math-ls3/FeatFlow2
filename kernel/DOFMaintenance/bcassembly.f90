@@ -44,19 +44,31 @@
 !#     -> Discretises Dirichlet boundary conditions on a mesh region 
 !#        (all dimensions)
 !#
-!# 8.) bcasm_initDiscreteFBC
+!# 8.) bcasm_newslipbconrealbd
+!#     -> Discretises slip boundary conditions n a 2D boundary region
+!#     
+!# 9.) bcasm_initDiscreteFBC
 !#     -> Initialise a structure collecting discrete fictitious 
 !#        boundary boundary conditions.
 !#
-!# 9.) bcasm_clearDiscreteFBC
+!# 10.) bcasm_clearDiscreteFBC
 !#     -> Clear a structure with discrete FBC's. Release memory that is used
 !#        by the discrete FBC's but don't destroy the structure itself.
 !#
-!# 10.) bcasm_releaseDiscreteFBC
+!# 11.) bcasm_releaseDiscreteFBC
 !#      -> Release a structure with discrete FBC's; deallocates all used memory.
 !#
-!# 11.) bcasm_newDirichletBConFBD
+!# 12.) bcasm_newDirichletBConFBD
 !#      -> Discretises dirichlet boundary conditions on a 2D fictitious boundary domain
+!#
+!# 14.) bcasm_getVertInBCregion
+!#      -> Determine the vertices in a boundary region
+!#
+!# 14.) bcasm_getEdgesInBCregion
+!#      -> Determine the edges in a boundary region
+!#
+!# 14.) bcasm_getElementsInBCregion
+!#      -> Determine the elements in a boundary region
 !#
 !# Some internal routines:
 !#
@@ -78,37 +90,46 @@
 module bcassembly
 
   use fsystem
+  use storage
+  use genoutput
   use discretebc
   use discretefbc
-  use collection, only: t_collection
+  use element
   use triangulation
   use dofmapping
   use mprimitives
+  use basicgeometry
   use meshregion
+  use spatialdiscretisation
+  use sort
+  use boundary
+  use collection, only: t_collection
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Complexity of the discretised BC's">
 
   ! Discretise BC's for implementing them into a defect vector
-  integer(I32), parameter :: BCASM_DISCFORDEF = 2**0
+  integer(I32), parameter, public :: BCASM_DISCFORDEF = 2**0
 
   ! Discretise BC's for implementing them into a solution vector
-  integer(I32), parameter :: BCASM_DISCFORSOL = 2**1
+  integer(I32), parameter, public :: BCASM_DISCFORSOL = 2**1
 
   ! Discretise BC's for implementing them into a RHS vector
-  integer(I32), parameter :: BCASM_DISCFORRHS = 2**2
+  integer(I32), parameter, public :: BCASM_DISCFORRHS = 2**2
 
   ! Discretise BC's for implementing them into a matrix
-  integer(I32), parameter :: BCASM_DISCFORMAT = 2**3
+  integer(I32), parameter, public :: BCASM_DISCFORMAT = 2**3
 
   ! Discretise BC's for implementing them into matrix and defect vector
-  integer(I32), parameter :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
+  integer(I32), parameter, public :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
   
   ! Discretise BC's for implementing them into everything
-  integer(I32), parameter :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
+  integer(I32), parameter, public :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
                                                 BCASM_DISCFORRHS + BCASM_DISCFORMAT
 
 !</constantblock>
@@ -117,7 +138,7 @@ module bcassembly
 
   ! Number of entries to handle simultaneously (-> number of points or edges,
   ! depending on the situation what to discretise)
-  integer, parameter :: FBCASM_MAXSIM   = 1000
+  integer, parameter, public :: FBCASM_MAXSIM   = 1000
   
 !</constantblock>
 
@@ -143,6 +164,9 @@ module bcassembly
     integer :: isubtype
     
   end type
+  
+  public :: t_configDiscreteFeastMirrorBC
+  
 !</typeblock>
 
 !<typeblock>
@@ -157,10 +181,31 @@ module bcassembly
     type(t_configDiscreteFeastMirrorBC) :: rconfigFeastMirrorBC
   
   end type
+  
+  public :: t_levelDependentBC
 
 !</typeblock>
 
 !</types>
+
+  public :: bcasm_initDiscreteBC
+  public :: bcasm_clearDiscreteBC
+  public :: bcasm_releaseDiscreteBC
+  public :: bcasm_newDirichletBC_1D
+  public :: bcasm_newDirichletBConRealBd
+  public :: bcasm_newPdropBConRealBd
+  public :: bcasm_newDirichletBConMR 
+  public :: bcasm_newSlipBConRealBd
+  public :: bcasm_initDiscreteFBC
+  public :: bcasm_clearDiscreteFBC
+  public :: bcasm_releaseDiscreteFBC
+  public :: bcasm_newDirichletBConFBD
+  public :: bcasm_getVertInBCregion
+  public :: bcasm_getEdgesInBCregion
+  public :: bcasm_getElementsInBCregion
+  public :: bcasm_releaseDirichlet
+  public :: bcasm_releasePressureDrop
+  public :: bcasm_releaseSlip
 
 contains
 
@@ -613,9 +658,9 @@ contains
       p_rdirichlet%nDOF = 1
 
       ! Allocate the arrays
-      call storage_new1D('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
+      call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      call storage_new1D('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
+      call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
       
       ! Get the arrays for the dirichlet DOFs and values
@@ -693,9 +738,9 @@ contains
       p_rdirichlet%nDOF = 1
 
       ! Allocate the arrays
-      call storage_new1D('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
+      call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
           1, ST_INT, p_rdirichlet%h_IdirichletDOFs, ST_NEWBLOCK_NOINIT)
-      call storage_new1D('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
+      call storage_new('bcasm_newDirichletBC_1D', 'h_DdirichletValues', &
           1, ST_DOUBLE, p_rdirichlet%h_DdirichletValues, ST_NEWBLOCK_NOINIT)
       
       ! Get the arrays for the dirichlet DOFs and values
@@ -2441,7 +2486,7 @@ contains
                     icount, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
     ImodifierSize = (/NDIM2D,icount/)
-    call storage_new2D('bcasm_discrBCpressureDrop', 'h_Dmodifier', & 
+    call storage_new('bcasm_discrBCpressureDrop', 'h_Dmodifier', & 
                       ImodifierSize, ST_DOUBLE, p_rpressureDropBCs%h_Dmodifier, &
                       ST_NEWBLOCK_NOINIT)
                       
@@ -2699,7 +2744,7 @@ contains
                     icount, ST_INT, p_rslipBCs%h_IslipDOFs, &
                     ST_NEWBLOCK_NOINIT)
     InormalsSize = (/NDIM2D,icount/)
-    call storage_new2D('bcasm_discrBCSlip', 'h_Dnormals', & 
+    call storage_new('bcasm_discrBCSlip', 'h_Dnormals', & 
                       InormalsSize, ST_DOUBLE, p_rslipBCs%h_DnormalVectors, &
                       ST_NEWBLOCK_NOINIT)
                       
@@ -2924,7 +2969,7 @@ contains
     
     IdofCount = (/nequations,nDOFs/)
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-      call storage_new2d ('bcasm_discrFBCDirichlet', 'DofValues', &
+      call storage_new ('bcasm_discrFBCDirichlet', 'DofValues', &
                         IdofCount, ST_DOUBLE, h_Ddofs, &
                         ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Ddofs,p_Ddofs)

@@ -43,6 +43,7 @@ module meshadjacency
   use fsystem
   use genoutput
   use storage
+  use basicgeometry
   use triangulation
 
   implicit none

@@ -280,139 +280,141 @@ module collection
   use graph, only: t_graph
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock>
   
   ! Maximum length of a section name.
-  integer, parameter :: COLLCT_MLSECTION = 64
+  integer, parameter, public :: COLLCT_MLSECTION = 64
 
   ! Maximum length of the name of a value: 32 characters
-  integer, parameter :: COLLCT_MLNAME = 32
+  integer, parameter, public :: COLLCT_MLNAME = 32
 
   ! Minimum number of free 'slots' per 'level' subgroup.
   ! If there are too many values in a 'level' subgroup, the
   ! structure is dynamically extended in terms of collct_NVALUES
   ! entries.
-  integer, parameter :: COLLCT_NVALUES = 32
+  integer, parameter, public :: COLLCT_NVALUES = 32
 
   ! Minimum number of level subgroups (additionally to the 0th).
   ! If there are too many levels in a parameter block, the
   ! structure is dynamically extended in terms of COLLCT_NLEVELS
   ! entries.
-  integer, parameter :: COLLCT_NLEVELS = 9
+  integer, parameter, public :: COLLCT_NLEVELS = 9
 
   ! Minimum number of sections - additionally to the unnamed one.
   ! If there are too many sections in a collection block, the
   ! structure is dynamically extended in terms of COLLCT_NSECTIONS
   ! entries.
-  integer, parameter :: COLLCT_NSECTIONS = 5
+  integer, parameter, public :: COLLCT_NSECTIONS = 5
 
   ! Length of each 'quick-access' array in the collection.
-  integer, parameter :: COLLCT_QALENGTH = 128
+  integer, parameter, public :: COLLCT_QALENGTH = 128
   
   ! Number of 'quick-access' strings in the collection
-  integer, parameter :: COLLCT_QASTRINGS = 4
+  integer, parameter, public :: COLLCT_QASTRINGS = 4
 !</constantblock>
 
 !<constantblock description="Type identifier for values">
   
   ! Undefined value
-  integer, parameter :: COLLCT_UNDEFINED    = 0
+  integer, parameter, public :: COLLCT_UNDEFINED    = 0
   
   ! Character value
-  integer, parameter :: COLLCT_CHARACTER    = 1
+  integer, parameter, public :: COLLCT_CHARACTER    = 1
 
   ! String value
-  integer, parameter :: COLLCT_STRING       = 2
+  integer, parameter, public :: COLLCT_STRING       = 2
   
   ! Integer value
-  integer, parameter :: COLLCT_INTEGER      = 3
+  integer, parameter, public :: COLLCT_INTEGER      = 3
   
   ! Double precision REAL value 
-  integer, parameter :: COLLCT_REAL         = 4
+  integer, parameter, public :: COLLCT_REAL         = 4
 
   ! Scalar discretisation structure
-  integer, parameter :: COLLCT_DISCR        = 5
+  integer, parameter, public :: COLLCT_DISCR        = 5
 
   ! Block discretisation structure
-  integer, parameter :: COLLCT_BLDISCR      = 5
+  integer, parameter, public :: COLLCT_BLDISCR      = 5
 
   ! Triangulation structure
-  integer, parameter :: COLLCT_TRIA         = 7
+  integer, parameter, public :: COLLCT_TRIA         = 7
 
   ! A scalar vector
-  integer, parameter :: COLLCT_SCAVECTOR    = 8
+  integer, parameter, public :: COLLCT_SCAVECTOR    = 8
 
   ! A scalar matrix
-  integer, parameter :: COLLCT_SCAMATRIX    = 9
+  integer, parameter, public :: COLLCT_SCAMATRIX    = 9
 
   ! A block vector
-  integer, parameter :: COLLCT_BLKVECTOR    = 10
+  integer, parameter, public :: COLLCT_BLKVECTOR    = 10
 
   ! A block matrix
-  integer, parameter :: COLLCT_BLKMATRIX    = 11
+  integer, parameter, public :: COLLCT_BLKMATRIX    = 11
   
   ! A parameter structure
-  integer, parameter :: COLLCT_PARAMETERS   = 12
+  integer, parameter, public :: COLLCT_PARAMETERS   = 12
 
   ! A linear solver structure
-  integer, parameter :: COLLCT_LINSOL       = 13
+  integer, parameter, public :: COLLCT_LINSOL       = 13
 
   ! Discretised-boundary-conditions structure
-  integer, parameter :: COLLCT_DISCRBC      = 14
+  integer, parameter, public :: COLLCT_DISCRBC      = 14
 
   ! A domain
-  integer, parameter :: COLLCT_BOUNDARY     = 15
+  integer, parameter, public :: COLLCT_BOUNDARY     = 15
 
   ! Scalar analytic boundary conditions
-  integer, parameter :: COLLCT_BOUNDARYCOND = 16
+  integer, parameter, public :: COLLCT_BOUNDARYCOND = 16
 
   ! Scalar interlevel projection structure
-  integer, parameter :: COLLCT_INTERLVPRJSC = 17
+  integer, parameter, public :: COLLCT_INTERLVPRJSC = 17
   
   ! Block interlevel projection structure
-  integer, parameter :: COLLCT_INTERLVPRJ   = 18
+  integer, parameter, public :: COLLCT_INTERLVPRJ   = 18
 
   ! A parser structure for a 'precompiled' expression
-  integer, parameter :: COLLCT_FPARSER      = 19
+  integer, parameter, public :: COLLCT_FPARSER      = 19
 
   ! A filter chain
-  integer, parameter :: COLLCT_FILTERCHAIN  = 20
+  integer, parameter, public :: COLLCT_FILTERCHAIN  = 20
 
   ! Integer value type array
-  integer, parameter :: COLLCT_INTEGERARR   = 21
+  integer, parameter, public :: COLLCT_INTEGERARR   = 21
   
   ! Double precision REAL value type array
-  integer, parameter :: COLLCT_REALARR      = 22
+  integer, parameter, public :: COLLCT_REALARR      = 22
 
   ! Geometry object
-  integer, parameter :: COLLCT_GEOMETRY     = 24
+  integer, parameter, public :: COLLCT_GEOMETRY     = 24
 
   ! The collection structure itself
-  integer, parameter :: COLLCT_COLLECTION   = 25
+  integer, parameter, public :: COLLCT_COLLECTION   = 25
 
   ! Grid adaptation object
-  integer, parameter :: COLLCT_HADAPT       = 26
+  integer, parameter, public :: COLLCT_HADAPT       = 26
 
   ! Stabilisation structure
-  integer, parameter :: COLLCT_AFCSTAB      = 27
+  integer, parameter, public :: COLLCT_AFCSTAB      = 27
 
   ! Timer structure
-  integer, parameter :: COLLCT_TIMER        = 28
+  integer, parameter, public :: COLLCT_TIMER        = 28
 
   ! Linked list
-  integer, parameter :: COLLCT_LIST         = 29
+  integer, parameter, public :: COLLCT_LIST         = 29
 
   ! Array list
-  integer, parameter :: COLLCT_ARRAYLIST    = 30
+  integer, parameter, public :: COLLCT_ARRAYLIST    = 30
 
   ! Binary search tree
-  integer, parameter :: COLLCT_BTREE        = 31
+  integer, parameter, public :: COLLCT_BTREE        = 31
 
   ! Graph structure
-  integer, parameter :: COLLCT_GRAPH        = 32
+  integer, parameter, public :: COLLCT_GRAPH        = 32
 
 !</constantblock>
 
@@ -529,6 +531,8 @@ module collection
     type(t_graph), pointer                      :: p_rgraph => null()
   end type
   
+  public :: t_collctValue
+  
 !</typeblock>
   
 !<typeblock>
@@ -550,6 +554,8 @@ module collection
     type(t_collctValue), dimension(:), pointer :: p_Rvalues => null()
     
   end type
+  
+  public :: t_collctLevel
   
 !</typeblock>
 
@@ -579,6 +585,8 @@ module collection
     type(t_collctLevel), dimension(:), pointer :: p_Rlevels => null()
     
   end type
+  
+  public :: t_collctSection
   
 !</typeblock>
   
@@ -664,19 +672,13 @@ module collection
     type(t_collctSection), dimension(:), pointer :: p_Rsections => null()
     
   end type
+  
+  public :: t_collection
 
 !</typeblock>
 
 !</types>
 
-  private :: collct_initlevel, collct_donelevel, collct_realloclevel
-  private :: collct_initsection, collct_donesection, collct_reallocsection
-  private :: collct_realloccollection
-  private :: collct_fetchparameter_indir, collct_fetchparameter_direct
-  
-  private :: collct_addlevel_indir, collct_queryvalue_indir, collct_addvalue
-  private :: collct_fetchsection, collct_fetchlevel,collct_getmaxlevel_indir 
-  
   interface collct_addlevel
     module procedure collct_addlevel_indir
     module procedure collct_addlevel_direct
@@ -688,6 +690,85 @@ module collection
     module procedure collct_queryvalue_indir
   end interface
   
+  public :: collct_init 
+  public :: collct_done 
+  public :: collct_addlevel
+  public :: collct_addsection 
+  public :: collct_deletesection 
+  public :: collct_cleanupvalue 
+  public :: collct_deletevalue 
+  public :: collct_printStatistics 
+  public :: collct_getvalue_struc 
+  public :: collct_getvalue_string 
+  public :: collct_getvalue_intarr 
+  public :: collct_getvalue_realarr 
+  public :: collct_setvalue_char 
+  public :: collct_setvalue_string 
+  public :: collct_setvalue_int 
+  public :: collct_setvalue_intarr 
+  public :: collct_setvalue_real 
+  public :: collct_setvalue_realarr 
+  public :: collct_setvalue_discr 
+  public :: collct_setvalue_bldiscr 
+  public :: collct_setvalue_tria 
+  public :: collct_setvalue_domain 
+  public :: collct_setvalue_bc 
+  public :: collct_setvalue_vecsca 
+  public :: collct_setvalue_matsca 
+  public :: collct_setvalue_vec 
+  public :: collct_setvalue_mat 
+  public :: collct_setvalue_parlst 
+  public :: collct_setvalue_linsol 
+  public :: collct_setvalue_discbc 
+  public :: collct_setvalue_ilvpsc 
+  public :: collct_setvalue_ilvp 
+  public :: collct_setvalue_coll 
+  public :: collct_setvalue_pars 
+  public :: collct_setvalue_geom 
+  public :: collct_setvalue_fchn 
+  public :: collct_setvalue_hadapt 
+  public :: collct_setvalue_afcstab 
+  public :: collct_setvalue_timer 
+  public :: collct_setvalue_list 
+  public :: collct_setvalue_arraylist 
+  public :: collct_setvalue_btree 
+  public :: collct_setvalue_graph 
+  public :: collct_queryvalue
+
+  public :: collct_getmaxlevel_direct 
+  public :: collct_getmaxlevel_indir 
+  public :: collct_queryvalue_indir 
+  public :: collct_queryvalue_direct 
+  public :: collct_gettype 
+  public :: collct_getvalue_char 
+  public :: collct_getvalue_int 
+  public :: collct_getvalue_real 
+  public :: collct_getvalue_discr 
+  public :: collct_getvalue_bldiscr 
+  public :: collct_getvalue_tria 
+  public :: collct_getvalue_domain 
+  public :: collct_getvalue_bc 
+  public :: collct_getvalue_vecsca 
+  public :: collct_getvalue_matsca 
+  public :: collct_getvalue_vec 
+  public :: collct_getvalue_mat 
+  public :: collct_getvalue_linsol 
+  public :: collct_getvalue_discbc 
+  public :: collct_getvalue_plst 
+  public :: collct_getvalue_ilvpsc 
+  public :: collct_getvalue_ilvp 
+  public :: collct_getvalue_coll 
+  public :: collct_getvalue_pars 
+  public :: collct_getvalue_geom 
+  public :: collct_getvalue_fchn 
+  public :: collct_getvalue_hadapt 
+  public :: collct_getvalue_afcstab 
+  public :: collct_getvalue_timer 
+  public :: collct_getvalue_list 
+  public :: collct_getvalue_arraylist 
+  public :: collct_getvalue_btree 
+  public :: collct_getvalue_graph 
+
 contains
   
   ! ***************************************************************************

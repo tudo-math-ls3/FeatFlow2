@@ -26,10 +26,13 @@
 !#         are stored in a kind of modified spare row format, where we get an
 !#         additional pointer to the rows of the matrix U
 !#
-!#  4.)iluk_lusolt
+!#  4.) iluk_lusolt
 !#      -> performs a forward and a backward solve for matrices L and U
 !#         stored in combined MSR format, with L unit upper triangular
 !#         computed by iluk_ilu or iluk_symbfac / iluk_numfac, respectively.
+!#
+!#  5.) iluk_freeDecomp
+!#      -> Release memory
 !#
 !#</purpose>
 !##########################################################################
@@ -41,6 +44,8 @@ module iluk
   use linearalgebra
   
   implicit none
+  
+  private
   
 !<typeblock>
 
@@ -83,8 +88,16 @@ module iluk
     integer  :: isize = 0
   
   end type
+  
+  public :: t_MILUdecomp
 
 !</typeblock>  
+  
+  public :: iluk_ilu
+  public :: iluk_symbfac
+  public :: iluk_numfac
+  public :: iluk_lusolt
+  public :: iluk_freeDecomp
   
 contains
 

@@ -80,15 +80,17 @@
 
 module vanka_navst2d
 
-use fsystem
-use genoutput
-use mprimitives
-use spatialdiscretisation
-use linearsystemscalar
-use linearsystemblock
-use dofmapping
+  use fsystem
+  use storage
+  use genoutput
+  use mprimitives
+  use element
+  use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
+  use dofmapping
 
-implicit none
+  implicit none
 
   private
   

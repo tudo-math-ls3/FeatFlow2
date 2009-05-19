@@ -31,49 +31,52 @@
 module discretefbc
 
   use fsystem
+  use storage
   use boundarycondition
   use dofmapping
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="General constants concerning filters">
 
   ! A standard length for arrays holding a set of discretised BC's
-  integer, parameter :: DISCFBC_MAXDISCBC         =  32
+  integer, parameter, public :: DISCFBC_MAXDISCBC         =  32
 
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete boundary conditions">
 
   ! undefined discrete BC's
-  integer, parameter :: DISCFBC_TPUNDEFINED    = 0
+  integer, parameter, public :: DISCFBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
-  integer, parameter :: DISCFBC_TPDIRICHLET    = 1
+  integer, parameter, public :: DISCFBC_TPDIRICHLET    = 1
   
 !</constantblock>
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of FBC's">
   
   ! Calculate the function value in corner vertices of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNC           = 0
+  integer, parameter, public :: DISCFBC_NEEDFUNC           = 0
 
   ! Calculate the function value in a edge midpoints of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNCMID        = 1
+  integer, parameter, public :: DISCFBC_NEEDFUNCMID        = 1
   
   ! Calculate the integral mean value on edges in the object
-  integer, parameter :: DISCFBC_NEEDINTMEAN        = 2
+  integer, parameter, public :: DISCFBC_NEEDINTMEAN        = 2
 
   ! Calculate the function value in midpoints of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNCELMID      = 3
+  integer, parameter, public :: DISCFBC_NEEDFUNCELMID      = 3
 
   ! Calculate the function value in the face midpoints of elements in the object
-  integer, parameter :: DISCFBC_NEEDFUNCFACEMID    = 4
+  integer, parameter, public :: DISCFBC_NEEDFUNCFACEMID    = 4
   
   ! Calculate the integral mean value on the faces in the object
-  integer, parameter :: DISCFBC_NEEDFACEINTMEAN    = 5
+  integer, parameter, public :: DISCFBC_NEEDFACEINTMEAN    = 5
   
 
 !</constantblock>
@@ -117,6 +120,8 @@ module discretefbc
     
   end type
   
+  public :: t_discreteFBCDirichlet
+  
 !</typeblock>
   
 !<typeblock>
@@ -138,6 +143,8 @@ module discretefbc
     type(t_discreteFBCDirichlet)        :: rdirichletFBCs
     
   end type
+  
+  public :: t_discreteFBCEntry
   
 !</typeblock>
 
@@ -163,6 +170,8 @@ module discretefbc
     type(t_discreteFBCEntry), dimension(:), pointer :: p_RdiscFBCList => null()
   
   end type
+  
+  public :: t_discreteFBC
 
 !</typeblock>
 
@@ -275,6 +284,8 @@ module discretefbc
     integer, dimension(:), pointer :: p_Iinside
   
   end type
+  
+  public :: t_discreteFBCevaluation
 
 !</typeblock>
 

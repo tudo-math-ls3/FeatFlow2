@@ -51,22 +51,24 @@ module sort
   use storage
 
   implicit none
+  
+  private
 
 !<constants>
 
 ! <constantblock description="sort algorithms">
   
   ! heap sort (default); reliable allrounder
-  integer, parameter :: SORT_HEAP       = 0
+  integer, parameter, public :: SORT_HEAP       = 0
 
   ! quicksort, then insertsort
-  integer, parameter :: SORT_QUICK      = 1
+  integer, parameter, public :: SORT_QUICK      = 1
 
   ! insertsort; for small arrays (stable)
-  integer, parameter :: SORT_INSERT     = 2
+  integer, parameter, public :: SORT_INSERT     = 2
 
   ! bubblesort; for very small arrays
-  integer, parameter :: SORT_BUBBLE     = 3
+  integer, parameter, public :: SORT_BUBBLE     = 3
 
   ! mergesort; stable, n*log(n) complexity, log(n)*c stack memory consumption
   ! A modification of an algorithm by Jason Harrison, University of British Columbia.
@@ -74,11 +76,11 @@ module sort
   ! Further modified and turned into a stable algorithm by Jens F. Acker, University
   ! of Dortmund.
   ! For small field sizes, insertsort is used
-  integer, parameter :: SORT_MERGE      = 4
+  integer, parameter, public :: SORT_MERGE      = 4
   
   ! Stable sorting algorithm
   ! Defaults to mergesort, but this can change in the future
-  integer, parameter :: SORT_STABLE = 10
+  integer, parameter, public :: SORT_STABLE = 10
     
 !</constantblock>
 
@@ -87,11 +89,20 @@ module sort
   ! cutoff value for hybridized sorting
   ! insert best value for your computer here or
   ! leave the original guesstimated value
-  integer, parameter :: SORT_CUTOFF     = 35
+  integer, parameter, public :: SORT_CUTOFF     = 35
   
 ! </constantblock>
 
 !</constants>
+
+  public :: sort_int
+  public :: sort_i32
+  public :: sort_sp
+  public :: sort_dp
+  public :: arraySort_sortByIndex_int
+  public :: arraySort_sortByIndex_dp
+  public :: arraySort_sortByIndex_sp
+  public :: sort_randomSeedOnce
 
 contains
 
@@ -1865,7 +1876,7 @@ contains
             call mergeSort(1,nnode)
           else
             Isize = ubound(Ielem)
-            call storage_new2D ('arraySort_sortByIndex_int', &
+            call storage_new ('arraySort_sortByIndex_int', &
                 'Itemp', Isize, ST_INT, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_int2d (hhandle,p_Itemp)
@@ -2169,7 +2180,7 @@ contains
             call mergeSort(1,nnode)
           else
             Isize = ubound(Delem)
-            call storage_new2D ('arraySort_sortByIndex_dp', &
+            call storage_new ('arraySort_sortByIndex_dp', &
                 'Dtemp', Isize, ST_DOUBLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_double2d (hhandle,p_Dtemp)
@@ -2478,7 +2489,7 @@ contains
             call mergeSort(1,nnode)
           else
             Isize = ubound(Selem)
-            call storage_new2D ('arraySort_sortByIndex_sp', &
+            call storage_new ('arraySort_sortByIndex_sp', &
                 'Stemp', Isize, ST_SINGLE, hhandle, &
                 ST_NEWBLOCK_NOINIT)
             call storage_getbase_single2d (hhandle,p_Stemp)

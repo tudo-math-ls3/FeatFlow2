@@ -32,18 +32,25 @@
 module bilinearformevaluation
 
   use fsystem
+  use storage
   use genoutput
   use linearsystemscalar
   use spatialdiscretisation
   use scalarpde
   use derivatives
   use cubature
+  use dofmapping
+  use linearalgebra
+  use triangulation
   use domainintegration
   use element
   use elementpreprocessing
+  use transformation
   use collection, only: t_collection
   
   implicit none
+  
+  private
 
 !<types>
   
@@ -62,8 +69,6 @@ module bilinearformevaluation
   
 !</typeblock>
 
-  private :: t_matrixmem
-
 !</types>
   
 !<constants>
@@ -71,27 +76,32 @@ module bilinearformevaluation
 !<constantblock description="Method identifiers for construction of matrix structure.">
 
   ! Element-based matrix construction. This is the standard matrix construction method. 
-  integer, parameter :: BILF_MATC_ELEMENTBASED = 0
+  integer, parameter, public :: BILF_MATC_ELEMENTBASED = 0
   
   ! Edge-based matrix construction. The matrix stencil is extended in such a way,
   ! that the DOF's of one element may interact with the DOF's of all other elements
   ! that are adjacent via one of the edges.
-  integer, parameter :: BILF_MATC_EDGEBASED    = 1
+  integer, parameter, public :: BILF_MATC_EDGEBASED    = 1
 
   ! Vertex-based matrix construction. The matrix stencil is extended in such a way,
   ! that the DOF's of one element may interact with the DOF's of all other elements
   ! that are adjacent via one of the corner vertices.
-  integer, parameter :: BILF_MATC_VERTEXBASED  = 2
+  integer, parameter, public :: BILF_MATC_VERTEXBASED  = 2
 
 !</constantblock>
 
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
-  integer, parameter :: BILF_NELEMSIM   = 1000
+  integer, parameter, public :: BILF_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
+
+  public :: bilf_createMatrixStructure
+  public :: bilf_buildMatrixScalar
+  
+  public :: bilf_getLocalMatrixIndices
 
 contains
 
@@ -559,7 +569,7 @@ contains
   end if
   
   ! Allocate KLD...
-  call storage_new1D ('bilf_createMatStructure9_conf', 'KLD', &
+  call storage_new ('bilf_createMatStructure9_conf', 'KLD', &
                       NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -567,7 +577,7 @@ contains
   call storage_getbase_int(rmatrixScalar%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
-  call storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
+  call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
                       NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -604,13 +614,13 @@ contains
   ! imemblkSize = iallocated is necessary at the moment to simplify
   ! whether we leave a block or not.
 
-  call storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+  call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
                       p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
   ! the search routine below won't work!
-  call storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+  call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
   
@@ -928,14 +938,14 @@ contains
                     ! Allocate another imemblkSize elements for column numbers and
                     ! list pointers.
 
-                    call storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+                    call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
                                         p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
                                         ST_NEWBLOCK_NOINIT)
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
                     ! the search routine below won't work!
-                    call storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                    call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
                     call storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
@@ -1016,7 +1026,7 @@ contains
   !
   ! At first, as we now NA, we can allocate the real KCOL now!
   
-  call storage_new1D ('bilf_createMatStructure9_conf', 'KCOL', &
+  call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
                       NA, ST_INT, rmatrixScalar%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1305,7 +1315,7 @@ contains
   end if
   
   ! Allocate KLD...
-  call storage_new1D ('bilf_createMatStructure9_uni', 'KLD', &
+  call storage_new ('bilf_createMatStructure9_uni', 'KLD', &
                       NEQ+1, ST_INT, rmatrixScalar%h_KLD, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1313,7 +1323,7 @@ contains
   call storage_getbase_int (rmatrixScalar%h_Kld,p_KLD)
   
   ! Allocate h_Kdiagonal
-  call storage_new1D ('bilf_createMatStructure9_conf', 'Kdiagonal', &
+  call storage_new ('bilf_createMatStructure9_conf', 'Kdiagonal', &
                       NEQ, ST_INT, rmatrixScalar%h_Kdiagonal, &
                       ST_NEWBLOCK_NOINIT)
   ! This must be a storage_getbase, no lsyssc_getbase, since this is the
@@ -1350,13 +1360,13 @@ contains
   ! imemblkSize = iallocated is necessary at the moment to simplify
   ! whether we leave a block or not.
 
-  call storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+  call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
                       p_Isize(1), ST_INT, p_Ihcol(1), ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
   ! the search routine below won't work!
-  call storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+  call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
   
@@ -1720,14 +1730,14 @@ contains
                     ! Allocate another imemblkSize elements for column numbers and
                     ! list pointers.
 
-                    call storage_new1D ('bilf_createMatStructure9_conf', 'Ihicol', &
+                    call storage_new ('bilf_createMatStructure9_conf', 'Ihicol', &
                                         p_Isize (iblocks), ST_INT, p_Ihcol(iblocks), &
                                         ST_NEWBLOCK_NOINIT)
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
                     ! the search routine below won't work!
-                    call storage_new1D ('bilf_createMatStructure9_conf', 'p_Ihindx', &
+                    call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
                     call storage_getbase_int (p_Ihindx(iblocks),p_Iindx)
@@ -1813,7 +1823,7 @@ contains
   
   ! As we now NA, we can allocate the real KCOL now!
   
-  call storage_new1D ('bilf_createMatStructure9_conf', 'KCOL', &
+  call storage_new ('bilf_createMatStructure9_conf', 'KCOL', &
                       NA, ST_INT, rmatrixScalar%h_KCOL, &
                       ST_NEWBLOCK_NOINIT)
   call storage_getbase_int (rmatrixScalar%h_Kcol,p_KCOL)
@@ -2152,7 +2162,7 @@ contains
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
-!    CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
+!    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
 !                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
 !    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -2977,7 +2987,7 @@ contains
 !
 !    ! Clear the entries in the matrix - we need to start with zero
 !    ! when assembling a new matrix!
-!    CALL storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
+!    CALL storage_new ('bilf_buildMatrix9d_conf', 'DA', &
 !                        NA, ST_DOUBLE, rmatrixScalar%h_DA, &
 !                        ST_NEWBLOCK_ZERO)
 !    CALL lsyssc_getbase_double (rmatrixScalar,p_DA)
@@ -3876,7 +3886,7 @@ contains
 
     ! Clear the entries in the matrix - we need to start with zero
     ! when assembling a new matrix!
-    call storage_new1D ('bilf_buildMatrix9d_conf', 'DA', &
+    call storage_new ('bilf_buildMatrix9d_conf', 'DA', &
                         NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                         ST_NEWBLOCK_ZERO)
     call lsyssc_getbase_double (rmatrixScalar,p_DA)

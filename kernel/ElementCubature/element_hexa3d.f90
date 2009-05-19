@@ -12,13 +12,40 @@
 
 module element_hexa3d
 
+  use fsystem
+  use basicgeometry
   use elementbase
   use derivatives
   use mprimitives
+  use transformation
 
-implicit none
+  implicit none
 
-  private :: elh3d_calcFaceTrafo_Q1
+  private 
+  
+  public :: elem_Q0_3D
+  public :: elem_Q0_3D_mult 
+  public :: elem_Q0_3D_sim 
+  public :: elem_Q1_3D 
+  public :: elem_Q1_3D_mult 
+  public :: elem_Q1_3D_sim 
+  public :: elem_E030_3D 
+  public :: elem_E030_3D_mult 
+  public :: elem_E030_3D_sim 
+  public :: elem_E031_3D 
+  public :: elem_E031_3D_mult 
+  public :: elem_E031_3D_sim 
+  public :: elem_EM30_3D 
+  public :: elem_EM30_3D_mult 
+  public :: elem_EM30_3D_sim 
+  public :: elem_eval_Q1_3D
+  public :: elem_eval_Q2_3D
+  public :: elem_eval_QP1_3D 
+  public :: elem_eval_E030_3D 
+  public :: elem_eval_E031_3D 
+  public :: elem_eval_EM30_3D 
+  public :: elem_eval_E050_3D 
+  public :: elem_eval_EM50_3D 
 
 contains
 

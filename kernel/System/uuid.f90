@@ -135,6 +135,7 @@ module uuid
   
   implicit none
   
+  private
 
 !<types>
 
@@ -145,6 +146,8 @@ module uuid
     ! the UUID data
     integer, dimension(16) :: data
   end type t_uuid
+  
+  public :: t_uuid
 
 !</typeblock>
 
@@ -166,27 +169,48 @@ module uuid
   interface operator(.eq.)
     module procedure uuid_isEqual
   end interface
+  
+  public :: operator(.eq.)
 
   interface operator(.gt.)
     module procedure uuid_isGreater
   end interface
+  
+  public :: operator(.gt.)
 
   interface operator(.ge.)
     module procedure uuid_isGreaterEqual
   end interface
+  
+  public :: operator(.ge.)
 
   interface operator(.lt.)
     module procedure uuid_isSmaller
   end interface
   
+  public :: operator(.lt.)
+  
   interface operator(.le.)
     module procedure uuid_isSmallerEqual
   end interface
+  
+  public :: operator(.le.)
 
   interface operator(.ne.)
     module procedure uuid_isNotEqual
   end interface
+  
+  public :: operator(.ne.)
 
+  public :: uuid_createUUID, uuid_createUUID_directly,uuid_createUUID_indirectly
+  public :: uuid_isEqual
+  public :: uuid_isNil
+  public :: uuid_isGreater
+  public :: uuid_isGreaterEqual
+  public :: uuid_isSmaller
+  public :: uuid_isSmallerEqual
+  public :: uuid_conv2String
+  
 contains
 
 !************************************************************************

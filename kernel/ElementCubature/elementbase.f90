@@ -15,16 +15,14 @@ module elementbase
 
   use fsystem
   use basicgeometry
+  use triangulation
   use derivatives
   use transformation
 
-implicit none
+  implicit none
 
-  !private
+  private
   
-  public :: t_evalElement
-  public :: t_evalElementSet
-
 !<constants>
 
 !<constantblock description="Element evaluation tags. Defines the basis information that is \
@@ -110,6 +108,7 @@ implicit none
 
   end type
 
+  public :: t_evalElement
 !</typeblock>
 
 !<typeblock>
@@ -197,6 +196,8 @@ implicit none
     logical :: bforeignCoords = .false.
   
   end type
+
+  public :: t_evalElementSet
 
 !</typeblock>
 

@@ -70,6 +70,7 @@
 module nonlinearsolver
 
   use fsystem
+  use genoutput
   use storage
   use linearsolver
   use spatialdiscretisation
@@ -78,7 +79,18 @@ module nonlinearsolver
   use collection
   
   implicit none
+  
+  private
 
+  public :: nlsol_testConvergence
+  public :: nlsol_testDivergence
+  public :: nlsol_setPrecMatrix
+  public :: nlsol_setPrecMatrixSc
+  public :: nlsol_setPrecMass
+  public :: nlsol_setPrecLinsol
+  public :: nlsol_performSolve
+  public :: nlsol_performSolveSc
+  
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
@@ -88,16 +100,16 @@ module nonlinearsolver
 !<constantblock description="Identifiers for preconditioner type">
   
   ! User defined or no preconditioner (if callback routine is not given).
-  integer, parameter :: NLSOL_PREC_USERDEF  = 0
+  integer, parameter, public :: NLSOL_PREC_USERDEF  = 0
   
   ! Preconditioner = Multiplication with a matrix
-  integer, parameter :: NLSOL_PREC_MATRIX   = 1
+  integer, parameter, public :: NLSOL_PREC_MATRIX   = 1
 
   ! Preconditioner = Multiplication with inverse lumped mass matrix
-  integer, parameter :: NLSOL_PREC_LMASS    = 2
+  integer, parameter, public :: NLSOL_PREC_LMASS    = 2
   
   ! Preconditioner = Call to linear solver
-  integer, parameter :: NLSOL_PREC_LINSOL   = 3
+  integer, parameter, public :: NLSOL_PREC_LINSOL   = 3
 !</constantblock>
 
 !<constantblock description="Identifiers for stopping criterium istoppingCrterium.">
@@ -107,21 +119,21 @@ module nonlinearsolver
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use both, i.e. the iteration stops when both,
   !    the relative AND the absolute stopping criterium holds
-  integer, parameter :: NLSOL_STOP_STANDARD     = 0
+  integer, parameter, public :: NLSOL_STOP_STANDARD     = 0
 
   ! Use 'minimum' stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use one of them, i.e. the iteration stops when the
   !    either the relative OR the absolute stopping criterium holds
-  integer, parameter :: NLSOL_STOP_ONEOF        = 1
+  integer, parameter, public :: NLSOL_STOP_ONEOF        = 1
   
 !</constantblock>
 
 !<constantblock description="Other constants.">
   ! Maximum number of equations supported by the standard error control routine
   ! when checking convergence/divergence criteria.
-  integer, parameter :: NLSOL_MAXEQUATIONSERROR = 16
+  integer, parameter, public :: NLSOL_MAXEQUATIONSERROR = 16
 !</constantblock>
 
 !</constants>
@@ -290,6 +302,8 @@ module nonlinearsolver
     integer                     :: icurrentIteration
 
   end type
+  
+  public :: t_nlsolNode
   
 !</typeblock>
   

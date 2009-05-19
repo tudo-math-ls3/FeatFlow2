@@ -57,6 +57,7 @@
 module matrixfilters
 
   use fsystem
+  use storage
   use linearsystemscalar
   use linearsystemblock
   use discretebc
@@ -66,6 +67,16 @@ module matrixfilters
   use genoutput
   
   implicit none
+  
+  private
+
+  public :: matfil_discreteBC
+  public :: matfil_discreteFBC
+  public :: matfil_discreteNLSlipBC
+  public :: matfil_normaliseToL20
+  public :: matfil_imposeDirichletBC
+  public :: matfil_imposeNLSlipBC
+  public :: matfil_imposeDirichletFBC
 
 contains
 
@@ -540,7 +551,7 @@ contains
     irowLen = iend-istart+1
     
     ! Add another row to the matrix
-    call lsyssc_resizeMatrixDirect (rmatrix, rmatrix%NEQ+1, &
+    call lsyssc_resizeMatrix (rmatrix, rmatrix%NEQ+1, &
         rmatrix%NCOLS, rmatrix%NA+irowLen, .false.)
         
     rmatrix%NEQ = rmatrix%NEQ + 1

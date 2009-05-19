@@ -67,6 +67,8 @@ module coarsegridcorrection
   use filtersupport
   
   implicit none
+  
+  private
 
 !<constants>
 
@@ -78,16 +80,16 @@ module coarsegridcorrection
   ! Remark: This is the optimal setting for a scalar equation with conformal
   !  elements; however, using nonconformal elements or nonscalar equations
   !  might make it necessary to switch to another method.
-  integer, parameter :: CGCOR_STANDARD       = 0
+  integer, parameter, public :: CGCOR_STANDARD       = 0
   
   ! Damping by energy minimisation.
   ! Remark: This is the optimal setting for a scalar Laplace equation
   !  with nonconformal Rannacher-Turek element Ex30/Ex31.
-  integer, parameter :: CGCOR_SCALARENERGYMIN = 1
+  integer, parameter, public :: CGCOR_SCALARENERGYMIN = 1
   
   ! Damping by defect minimisation.
   ! Remark: Easy/cheap to calculate, but no functional analytic background.
-  integer, parameter :: CGCOR_SCALARDEFMIN    = 2
+  integer, parameter, public :: CGCOR_SCALARDEFMIN    = 2
   
 !</constantblock>
 
@@ -126,9 +128,15 @@ module coarsegridcorrection
     
   end type
   
+  public :: t_coarseGridCorrection
+  
 !</typeblock>
 
 !</types>
+
+  public :: cgcor_init
+  public :: cgcor_release
+  public :: cgcor_calcOptimalCorrection  
 
   ! ***************************************************************************
 

@@ -35,14 +35,16 @@ module spdiscprojection
   use fsystem
   use genoutput
   use storage
+  use basicgeometry
   use triangulation
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
   use derivatives
   use linearalgebra
   use element
   use elementpreprocessing
+  use dofmapping
+  use linearsystemscalar
+  use linearsystemblock
   
   implicit none
 

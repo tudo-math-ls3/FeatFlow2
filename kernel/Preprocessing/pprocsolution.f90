@@ -21,12 +21,15 @@
 module pprocsolution
 
   use fsystem
+  use genoutput
   use storage
   use io
   use linearsystemscalar
   use linearsystemblock
   
   implicit none
+  
+  private
 
 !<types>
 !<typeblock>
@@ -51,8 +54,14 @@ module pprocsolution
     integer :: h_Idata     = ST_NOHANDLE
   end type t_pgm
 
+  public :: t_pgm
+
 !</typeblock>
 !</types>
+  
+  public :: ppsol_readPGM
+  public :: ppsol_releasePGM
+  public :: ppsol_initArrayPGM_Dble
   
 contains
   

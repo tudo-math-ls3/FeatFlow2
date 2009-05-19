@@ -198,38 +198,40 @@ module paramlist
   use genoutput
   
   implicit none
+  
+  private
 
 !<constants>
 
   !<constantblock>
   
   ! Maximum length of a section name.
-  integer, parameter :: PARLST_MLSECTION = 64
+  integer, parameter, public :: PARLST_MLSECTION = 64
 
   ! Maximum length of parameter names: 32 characters
-  integer, parameter :: PARLST_MLNAME = 32
+  integer, parameter, public :: PARLST_MLNAME = 32
 
   ! Maximum length of parameter data: 256 characters
-  integer, parameter :: PARLST_MLDATA = 256
+  integer, parameter, public :: PARLST_MLDATA = 256
   
   ! Minimum number of free parameter 'slots' per parameter section.
   ! If there are too many parameters in a parameter section, the
   ! structure is dynamically extended in terms of PARLST_NPARSPERBLOCK
   ! entries.
-  integer, parameter :: PARLST_NPARSPERBLOCK = 32
+  integer, parameter, public :: PARLST_NPARSPERBLOCK = 32
 
   ! Minimum number of parameter sections.
   ! If there are too many parameter sections in a parameter block, the
   ! structure is dynamically extended in terms of PARLST_NSECTIONS
   ! entries.
-  integer, parameter :: PARLST_NSECTIONS = 8
+  integer, parameter, public :: PARLST_NSECTIONS = 8
 
   ! Maximum length of a line in a INI file. Lines longer than this
   ! are truncated.
-  integer, parameter :: PARLST_LENLINEBUF = 1024
+  integer, parameter, public :: PARLST_LENLINEBUF = 1024
   
   ! Comment character
-  character, parameter :: PARLST_COMMENT = "#"
+  character, parameter, public :: PARLST_COMMENT = "#"
 
   !</constantblock>
 
@@ -257,6 +259,8 @@ module paramlist
   
   end type
   
+  public :: t_parlstValue
+  
   !</typeblock>
   
   !<typeblock>
@@ -283,6 +287,8 @@ module paramlist
     
   end type
   
+  public :: t_parlstSection
+  
   !</typeblock>
   
   !<typeblock>
@@ -302,6 +308,8 @@ module paramlist
     type(t_parlstSection), dimension(:), pointer :: p_Rsections => null()
     
   end type
+  
+  public :: t_parlist
   
   !</typeblock>
 
@@ -354,6 +362,26 @@ module paramlist
     module procedure parlst_getvalue_double_indir
     module procedure parlst_getvalue_double_direct
   end interface
+
+  public :: parlst_init 
+  public :: parlst_readfromfile
+  public :: parlst_clear
+  public :: parlst_done
+  public :: parlst_querysection
+  public :: parlst_addsection
+  public :: parlst_queryvalue
+  public :: parlst_querysubstrings
+  public :: parlst_getvalue_string
+  public :: parlst_getvalue_int
+  public :: parlst_getvalue_single
+  public :: parlst_getvalue_double
+  public :: parlst_addvalue
+  public :: parlst_setvalue
+  public :: parlst_getStringRepresentation
+  public :: parlst_info 
+  public :: parlst_readfromsinglefile
+  public :: parlst_expandEnvVariables
+  public :: parlst_expandSubvars
 
 contains
   
@@ -484,39 +512,7 @@ contains
   rparlist%p_Rsections => p_Rsections
   
   end subroutine
-  
-  ! ***************************************************************************
-  
-  ! Internal subroutine: Convert a character to upper case.
-  
-  subroutine parlst_toupper (str) 
-  
-  ! The string that is to make uppercase
-  character(LEN=*), intent(INOUT) :: str
-  
-!  CHARACTER(LEN=26), PARAMETER :: lowc = 'abcdefghijklmnopqrstuvwxyz'
-!  CHARACTER(LEN=26), PARAMETER :: upc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-!  
-!  INTEGER :: i
-!  
-!  i = INDEX(lowc,c)
-!  IF (i .NE. 0) THEN
-!    c = upc(i:i)
-!  END IF
 
-  integer, parameter :: up2low = iachar("a") - iachar("A")
-  integer :: i
-  character    :: c
-  
-  do i=1,len(str)
-    c = str(i:i)
-    if ((c .ge. "a") .and. (c .le. "z")) then
-      str(i:i) = achar (iachar(c) - up2low)
-    end if
-  end do
-  
-  end subroutine
-  
   ! ***************************************************************************
   
   ! Internal subroutine: Search in a section for a parameter
@@ -698,7 +694,7 @@ contains
   
   ! Create the upper-case section name
   sectionname = adjustl(sname)
-  call parlst_toupper (sectionname)
+  call sys_toupper (sectionname)
 
   ! Loop through all sections to see if the section exists
   do i=1,rparlist%isectionCount
@@ -752,7 +748,7 @@ contains
   
   ! Create the upper-case section name
   sectionname = adjustl(sname)
-  call parlst_toupper (sectionname)
+  call sys_toupper (sectionname)
   
   ! Add a new section - reallocate the section list if necessary
   if (rparlist%isectionCount .eq. size(rparlist%p_Rsections)) then
@@ -806,7 +802,7 @@ contains
   
   ! Create the upper-case parameter name
   paramname = adjustl(sparameter)
-  call parlst_toupper (paramname)
+  call sys_toupper (paramname)
   
   ! Get the parameter index into 'exists', finish.
   call parlst_fetchparameter(rsection, paramname, exists)
@@ -909,7 +905,7 @@ contains
   
   ! Create the upper-case parameter name
   paramname = adjustl(sparameter)
-  call parlst_toupper (paramname)
+  call sys_toupper (paramname)
   
   ! Get the parameter index into 'idx', finish.
   call parlst_fetchparameter(rsection, paramname, idx)
@@ -1048,7 +1044,7 @@ contains
 
   ! Create the upper-case parameter name
   paramname = adjustl(sparameter)
-  call parlst_toupper (paramname)
+  call sys_toupper (paramname)
   
   ! Get the parameter index into 'exists', finish.
   call parlst_fetchparameter(rsection, paramname, i)
@@ -1911,7 +1907,7 @@ contains
     
     ! Create the upper-case parameter name
     paramname = adjustl(sparameter)
-    call parlst_toupper (paramname)
+    call sys_toupper (paramname)
 
     ! Get the parameter index into 'exists', finish.
     call parlst_fetchparameter(rsection, paramname, i)
@@ -2165,7 +2161,7 @@ contains
   
   ! Create the upper-case parameter name
   paramname = adjustl(sparameter)
-  call parlst_toupper (paramname)
+  call sys_toupper (paramname)
 
   ! Get the parameter position
   i = parlst_queryvalue_indir (rsection, paramname)

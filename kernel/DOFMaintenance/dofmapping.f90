@@ -39,11 +39,16 @@
 module dofmapping
 
   use fsystem
+  use storage
+  use genoutput
+  use basicgeometry
   use spatialdiscretisation
   use triangulation
   use element
   
   implicit none
+  
+  private
 
 !<constants>
 
@@ -51,11 +56,19 @@ module dofmapping
 
   ! kind value for indexing global DOF's
   ! !!! DEPRECATED: DO NOT USE THIS CONSTANT ANYMORE !!!
-  integer, parameter :: PREC_DOFIDX     = I32
+  integer, parameter, public :: PREC_DOFIDX     = I32
 
   !</constantblock>
 
 !</constants>
+
+  public :: dof_igetNDofGlob
+  public :: dof_igetNDofGlobBlock
+  public :: dof_locGlobMapping
+  public :: dof_locGlobMapping_mult
+  public :: dof_infoDiscr
+  public :: dof_infoDiscrBlock
+  public :: dof_precomputeDofMapping
 
 contains
 
@@ -2110,7 +2123,7 @@ contains
       ! Allocate a temp array accepting the local DOF's.
       !
       ! At first allocate an index array; this has to be build in advance.
-      call storage_new1D ('dof_precomputeDofMapping', 'h_IelementDofIdx', &
+      call storage_new ('dof_precomputeDofMapping', 'h_IelementDofIdx', &
           p_rtriangulation%NEL+1, ST_INT, rdiscretisation%h_IelementDofIdx,   &
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
@@ -2133,7 +2146,7 @@ contains
       end do
       
       ! Now get the actual DOF's.
-      call storage_new1D ('dof_precomputeDofMapping', 'h_IelementDofs', &
+      call storage_new ('dof_precomputeDofMapping', 'h_IelementDofs', &
           p_IelementDofIdx(p_rtriangulation%NEL+1)-1, ST_INT, rdiscretisation%h_IelementDofs,&
           ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rdiscretisation%h_IelementDofs,p_IelementDofs)

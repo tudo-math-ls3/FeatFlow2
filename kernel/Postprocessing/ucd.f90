@@ -127,172 +127,179 @@
 module ucd
 
   use fsystem
+  use storage
+  use genoutput
+  use basicgeometry
+  use linearalgebra
   use triangulation
   use paramlist
+  use io
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Output format types">
 
   ! No output format
-  integer, parameter :: UCD_FORMAT_NONE = 0
+  integer, parameter, public :: UCD_FORMAT_NONE = 0
   
   ! GMV file format (ASCII)
-  integer, parameter :: UCD_FORMAT_GMV  = 1
+  integer, parameter, public :: UCD_FORMAT_GMV  = 1
   
   ! AVS/Express file format (ASCII)
-  integer, parameter :: UCD_FORMAT_AVS  = 2
+  integer, parameter, public :: UCD_FORMAT_AVS  = 2
   
   ! Visualization Toolkit (VTK) file format (ASCII)
-  integer, parameter :: UCD_FORMAT_VTK  = 3
+  integer, parameter, public :: UCD_FORMAT_VTK  = 3
 
   ! GMV file format (binary)
-  integer, parameter :: UCD_FORMAT_BGMV = 4
+  integer, parameter, public :: UCD_FORMAT_BGMV = 4
   
 !</constantblock>
 
 !<constantblock description="Data type flags">
 
   ! Element-based data
-  integer, parameter :: UCD_BASE_ELEMENT = 0
+  integer, parameter, public :: UCD_BASE_ELEMENT = 0
   
   ! Vertex-based data
-  integer, parameter :: UCD_BASE_VERTEX  = 1
+  integer, parameter, public :: UCD_BASE_VERTEX  = 1
   
 !</constantblock>
 
 !<constantblock description="Parameter constants for the VTK exporter">
 
   ! Export vector components as scalars
-  integer, parameter :: UCD_PARAM_VTK_VECTOR_TO_SCALAR = 2**0
+  integer, parameter, public :: UCD_PARAM_VTK_VECTOR_TO_SCALAR = 2**0
   
   ! Use quadratic cell elements when possible
-  integer, parameter :: UCD_PARAM_VTK_USE_QUADRATIC    = 2**1
+  integer, parameter, public :: UCD_PARAM_VTK_USE_QUADRATIC    = 2**1
 
 !</constantblock>
 
 !<constantblock description="Constants for the cflags variable in ucd_startXXXX. Bitfield.">
 
   ! Standard flags. Write information in corner vertices only, linear interpolation.
-  integer(I32), parameter :: UCD_FLAG_STANDARD            = 0
+  integer(I32), parameter, public :: UCD_FLAG_STANDARD            = 0
   
   ! Construct edge midpoints and write them as vertices to the output file.
-  integer(I32), parameter :: UCD_FLAG_USEEDGEMIDPOINTS    = 2**0
+  integer(I32), parameter, public :: UCD_FLAG_USEEDGEMIDPOINTS    = 2**0
   
   ! Construct element midpoints and write them as vertices to the output file.
-  integer(I32), parameter :: UCD_FLAG_USEELEMENTMIDPOINTS = 2**1
+  integer(I32), parameter, public :: UCD_FLAG_USEELEMENTMIDPOINTS = 2**1
   
   ! Quadratic buld interpolation. Information is given in corner vertices and
   ! edge midpoints. Implies UCD_FLAG_USEEDGEMIDPOINTS.
-  integer(I32), parameter :: UCD_FLAG_BULBQUADRATIC       = 2**2
+  integer(I32), parameter, public :: UCD_FLAG_BULBQUADRATIC       = 2**2
   
   ! Output of a linear interpolated solution on a once refined mesh. 
   ! Implies UCD_FLAG_USEEDGEMIDPOINTS and UCD_FLAG_USEELEMENTMIDPOINTS. 
   ! Cannot be used with UCD_FLAG_BULBQUADRATIC.
-  integer(I32), parameter :: UCD_FLAG_ONCEREFINED         = 2**3
+  integer(I32), parameter, public :: UCD_FLAG_ONCEREFINED         = 2**3
 
 !</constantblock>
 
 !<constantblock description="Specification flags for variables. Bitfield.">
   ! Standard 'scalar' variable.
-  integer(I32), parameter :: UCD_VAR_STANDARD             = 0
+  integer(I32), parameter, public :: UCD_VAR_STANDARD             = 0
 
   ! The variable specifies the X velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_YVELOCITY or UCD_VAR_ZVELOCITY.
-  integer(I32), parameter :: UCD_VAR_XVELOCITY            = 2**0
+  integer(I32), parameter, public :: UCD_VAR_XVELOCITY            = 2**0
 
   ! The variable specifies the Y velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_ZVELOCITY.
-  integer(I32), parameter :: UCD_VAR_YVELOCITY            = 2**1
+  integer(I32), parameter, public :: UCD_VAR_YVELOCITY            = 2**1
 
   ! The variable specifies the Z velocity of a velocity field.
   ! Implies UCD_VAR_VERTEXBASED.
   ! Cannot be used together with UCD_VAR_XVELOCITY or UCD_VAR_YVELOCITY.
-  integer(I32), parameter :: UCD_VAR_ZVELOCITY            = 2**2
+  integer(I32), parameter, public :: UCD_VAR_ZVELOCITY            = 2**2
   
 !</constantblock>
 
 !<constantblock description="Constants for specifying alternative source files. Bitfield.">
 
   ! Whole triangulation is specified by a different source file.
-  integer(I32), parameter :: UCD_ASRC_ALL                 = not(0)
+  integer(I32), parameter, public :: UCD_ASRC_ALL                 = not(0)
 
   ! Coordinates of mesh points are specified in a different source file.
-  integer(I32), parameter :: UCD_ASRC_POINTS              = 2**0
+  integer(I32), parameter, public :: UCD_ASRC_POINTS              = 2**0
 
   ! Cell information is specified in a different source file.
-  integer(I32), parameter :: UCD_ASRC_CELLS               = 2**1
+  integer(I32), parameter, public :: UCD_ASRC_CELLS               = 2**1
 
   ! Material information is specified in a different source file.
-  integer(I32), parameter :: UCD_ASRC_MATERIALS           = 2**2
+  integer(I32), parameter, public :: UCD_ASRC_MATERIALS           = 2**2
 
   ! Polygons are specified in a difference source file.
-  integer(I32), parameter :: UCD_ASRC_POLYGONS            = 2**3
+  integer(I32), parameter, public :: UCD_ASRC_POLYGONS            = 2**3
 
 !</constantblock>
 
 !<constantblock description="Cell type constants for VTK exporter">
 
   ! A single vertex
-  integer, parameter :: VTK_VERTEX                         =  1
+  integer, parameter, public :: VTK_VERTEX                         =  1
   
   ! A set of vertices
-  integer, parameter :: VTK_POLY_VERTEX                    =  2
+  integer, parameter, public :: VTK_POLY_VERTEX                    =  2
   
   ! A line
-  integer, parameter :: VTK_LINE                           =  3
+  integer, parameter, public :: VTK_LINE                           =  3
   
   ! A line strip
-  integer, parameter :: VTK_POLY_LINE                      =  4
+  integer, parameter, public :: VTK_POLY_LINE                      =  4
   
   ! A triangle
-  integer, parameter :: VTK_TRIANGLE                       =  5
+  integer, parameter, public :: VTK_TRIANGLE                       =  5
   
   ! A triangle strip
-  integer, parameter :: VTK_TRIANGLE_STRIP                 =  6
+  integer, parameter, public :: VTK_TRIANGLE_STRIP                 =  6
   
   ! A polygon
-  integer, parameter :: VTK_POLYGON                        =  7
+  integer, parameter, public :: VTK_POLYGON                        =  7
   
   ! A pixel
-  integer, parameter :: VTK_PIXEL                          =  8
+  integer, parameter, public :: VTK_PIXEL                          =  8
   
   ! A quadrilateral
-  integer, parameter :: VTK_QUAD                           =  9
+  integer, parameter, public :: VTK_QUAD                           =  9
   
   ! A tetrahedron
-  integer, parameter :: VTK_TETRA                          = 10
+  integer, parameter, public :: VTK_TETRA                          = 10
   
   ! A voxel (cube)
-  integer, parameter :: VTK_VOXEL                          = 11
+  integer, parameter, public :: VTK_VOXEL                          = 11
   
   ! A hexahedron
-  integer, parameter :: VTK_HEXAHEDRON                     = 12
+  integer, parameter, public :: VTK_HEXAHEDRON                     = 12
   
   ! A wedge
-  integer, parameter :: VTK_WEDGE                          = 13
+  integer, parameter, public :: VTK_WEDGE                          = 13
   
   ! A pyramid
-  integer, parameter :: VTK_PYRAMID                        = 14
+  integer, parameter, public :: VTK_PYRAMID                        = 14
   
   ! A quadratic edge
-  integer, parameter :: VTK_QUADRATIC_EDGE                 = 21
+  integer, parameter, public :: VTK_QUADRATIC_EDGE                 = 21
   
   ! A quadratic triangle
-  integer, parameter :: VTK_QUADRATIC_TRIANGLE             = 22
+  integer, parameter, public :: VTK_QUADRATIC_TRIANGLE             = 22
   
   ! A quadratic quadrilateral
-  integer, parameter :: VTK_QUADRATIC_QUAD                 = 23
+  integer, parameter, public :: VTK_QUADRATIC_QUAD                 = 23
   
   ! A quadratic tetrahedron
-  integer, parameter :: VTK_QUADRATIC_TETRA                = 24
+  integer, parameter, public :: VTK_QUADRATIC_TETRA                = 24
   
   ! A quadratic hexahedron
-  integer, parameter :: VTK_QUADRATIC_HEXAHEDRON           = 25
+  integer, parameter, public :: VTK_QUADRATIC_HEXAHEDRON           = 25
 
 !</constantblock>
   
@@ -448,6 +455,8 @@ module ucd
     
   end type
   
+  public :: t_ucdExport
+  
 !</typeblock>
 
 !<typeblock>
@@ -471,13 +480,36 @@ module ucd
     integer :: h_IverticesAtElement = ST_NOHANDLE
 
   end type
+  
+  public :: t_ucdRefine
 
 !</typeblock>
 
 !</types>
 
-  private :: ucd_moreVariables, ucd_moreVectors, ucd_morePolygons, &
-      ucd_moreTracerVariables, ucd_refine
+  public :: ucd_startGMV
+  public :: ucd_startAVS
+  public :: ucd_startVTK
+  public :: ucd_setAlternativeSource
+  public :: ucd_addVariableVertexBased, ucd_addVariableElementBased
+  public :: ucd_addVarVertBasedVec, ucd_addVarElemBasedVec
+  public :: ucd_setVertexMaterial
+  public :: ucd_setCellMaterial
+  public :: ucd_setMaterials
+  public :: ucd_setTracers
+  public :: ucd_addTracerVariable
+  public :: ucd_removeTracers
+  public :: ucd_setSimulationTime
+  public :: ucd_addPolygon
+  public :: ucd_addCommentLine
+  public :: ucd_addParameterList
+  public :: ucd_setOutputNumberFormat
+  public :: ucd_write
+  public :: ucd_release
+  public :: ucd_setFilename
+  public :: ucd_readGMV
+  public :: ucd_getVariable
+  public :: ucd_infoVariables
 
 contains
 
@@ -554,7 +586,7 @@ contains
     end if
     I_dim(2) = rrefine%nvertices
     
-    call storage_new2D("ucd_refine", "p_Dvertices", I_dim, ST_DOUBLE, &
+    call storage_new("ucd_refine", "p_Dvertices", I_dim, ST_DOUBLE, &
         rrefine%h_DvertexCoords, ST_NEWBLOCK_ZERO)
 
     ! And get a pointer to them
@@ -625,7 +657,7 @@ contains
     ! Allocate elements
     I_dim(1) = 4
     I_dim(2) = numNewElem
-    call storage_new2D("ucd_refine", "p_DnewVertsAtElement", I_dim, &
+    call storage_new("ucd_refine", "p_DnewVertsAtElement", I_dim, &
         ST_INT, rrefine%h_IverticesAtElement, ST_NEWBLOCK_ZERO)
 
     ! And get a pointer to them
@@ -4743,7 +4775,7 @@ contains
     
     ! Allocate a new vector for the data
     Ilength = ubound(DpolygonCoords)
-    call storage_new2D ('ucd_addPolygon','hpolygon',&
+    call storage_new ('ucd_addPolygon','hpolygon',&
         Ilength,ST_DOUBLE,rexport%p_Hpolygons(rexport%npolygons),&
         ST_NEWBLOCK_NOINIT)
         
@@ -4809,7 +4841,7 @@ contains
 
     ! Allocate a new vector for the data
     Ilength = ubound(DtracerCoordinates)
-    call storage_new2D ('ucd_setTracers','htracers',&
+    call storage_new ('ucd_setTracers','htracers',&
         Ilength,ST_DOUBLE,rexport%htracers,ST_NEWBLOCK_NOINIT)
         
     ! Copy the coordinate data into that vector
@@ -5768,7 +5800,7 @@ contains
       
       ! Allocate memory for the coordinates with the storage-system
       Isize = (/rtriangulation%ndim,rtriangulation%NVT/)
-      call storage_new2D ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
+      call storage_new ('tria_read_tri2D', 'DCORVG', Isize, ST_DOUBLE, &
           rtriangulation%h_DvertexCoords, ST_NEWBLOCK_NOINIT)
       
       ! Get the pointers to the coordinate array
@@ -5845,7 +5877,7 @@ contains
       ! All elements read in. Create the actual IverticesAtElement.
 
       Isize = (/nmaxnve,rtriangulation%NEL/)
-      call storage_new2D ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
+      call storage_new ('tria_read_tri2D', 'KVERT', Isize, ST_INT, &
           rtriangulation%h_IverticesAtElement, ST_NEWBLOCK_NOINIT)
           
       ! Get the pointer to the IverticesAtElement array and read the array

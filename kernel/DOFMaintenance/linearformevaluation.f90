@@ -17,27 +17,36 @@
 module linearformevaluation
 
   use fsystem
-  use linearsystemscalar
-  use spatialdiscretisation
+  use storage
+  use genoutput
   use scalarpde
   use derivatives
   use cubature
   use domainintegration
   use element
   use elementpreprocessing
+  use linearalgebra
+  use dofmapping
+  use transformation
+  use triangulation
+  use linearsystemscalar
+  use spatialdiscretisation
   use collection, only: t_collection
-  use genoutput
   
   implicit none
+  
+  private
 
 !<constants>
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building vectors
-  integer :: LINF_NELEMSIM   = 1000
+  integer, public :: LINF_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
+
+  public :: linf_buildVectorScalar
 
 contains
 
@@ -285,7 +294,7 @@ contains
 
     ! Clear the entries in the vector - we need to start with zero
     ! when assembling a new vector.
-    call storage_new1D ('linf_buildVectorDble_conf', 'vector', &
+    call storage_new ('linf_buildVectorDble_conf', 'vector', &
                         NEQ, ST_DOUBLE, rvectorScalar%h_Ddata, &
                         ST_NEWBLOCK_ZERO)
     call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)

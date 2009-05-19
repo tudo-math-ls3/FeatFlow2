@@ -35,30 +35,38 @@ module io
   use error
 
   implicit none
+  
+  private
 
 !<constants>
 
   !<constantblock description="Input/output block type identifiers">
   
   ! defines the default value for files
-  integer, parameter :: IO_UNKNOWN = 0
+  integer, parameter, public :: IO_UNKNOWN = 0
 
   ! defines that a file must already exist
-  integer, parameter :: IO_OLD = 1
+  integer, parameter, public :: IO_OLD = 1
   
   ! defines that a file must not exist
-  integer, parameter :: IO_NEW = 2
+  integer, parameter, public :: IO_NEW = 2
 
   ! defines that an existing file should be replaced
-  integer, parameter :: IO_REPLACE = 3
+  integer, parameter, public :: IO_REPLACE = 3
 
   ! defines that a temporary file should be deleted when closed
-  integer, parameter :: IO_SCRATCH = 4
+  integer, parameter, public :: IO_SCRATCH = 4
     
   !</constantblock>
 
 !</constants>
 
+  public :: io_openFileForReading
+  public :: io_openFileForWriting
+  public :: io_readlinefromfile
+  public :: io_deleteFile
+  public :: io_pathExtract
+  public :: io_pathConcat
 
 contains
 

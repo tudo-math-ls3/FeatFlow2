@@ -16,7 +16,7 @@
 !#  1.) mprim_getParabolicProfile
 !#      -> Calculates the value of a parabolic profile along a line.
 !#
-!#  2.) mprim_invertMatrix
+!#  2.) mprim_invertMatrixDble
 !#      -> Invert a full matrix
 !#
 !#  3.) mprim_kronecker
@@ -74,6 +74,8 @@ module mprimitives
   
   implicit none
   
+  private
+  
   interface mprim_signum
     module procedure mprim_signum_dble
     module procedure mprim_signum_real
@@ -89,6 +91,40 @@ module mprimitives
   interface mprim_kronecker
     module procedure kronecker
   end interface
+
+  interface mprim_invertMatrix
+    module procedure mprim_invertMatrixDble
+  end interface
+
+  interface mprim_stdDeviation
+    module procedure mprim_stdDeviationDble
+  end interface
+  
+  interface mprim_meanDeviation
+    module procedure mprim_meanDeviationDble
+  end interface
+    
+  interface mprim_meanValue
+    module procedure mprim_meanValueDble
+  end interface
+
+  public :: mprim_getParabolicProfile
+  public :: mprim_invertMatrix,mprim_invertMatrixDble
+  public :: mprim_kronecker
+  public :: mprim_invert2x2MatrixDirectDble
+  public :: mprim_invert3x3MatrixDirectDble
+  public :: mprim_invert4x4MatrixDirectDble
+  public :: mprim_invert5x5MatrixDirectDble
+  public :: mprim_invert6x6MatrixDirectDble
+  public :: mprim_invertMatrixPivotDble
+  public :: mprim_signum
+  public :: mprim_linearRescale
+  public :: mprim_quadraticInterpolation
+  public :: mprim_SVD_factorise
+  public :: mprim_SVD_backsubst,mprim_SVD_backsubst1,mprim_SVD_backsubst2
+  public :: mprim_stdDeviation,mprim_stdDeviationDble
+  public :: mprim_meanDeviation,mprim_meanDeviationDble
+  public :: mprim_meanValue,mprim_meanValueDble
 
 contains
 

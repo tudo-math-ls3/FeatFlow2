@@ -220,6 +220,14 @@
 !# 63.) lsyssc_unshareVector
 !#      -> Renders a vector independent, resets the sharing state
 !#
+!# 64.) lsyssc_isExplicitMatrix1D
+!#      -> Checks whether a given matrix explicitly exists in memory as 
+!#         1D array
+!#
+!# 65.) lsyssc_checkDiscretisation
+!#      -> Checks whether a given discretisation structure rdiscretisation is
+!#         basically compatible to a given vector
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -258,28 +266,31 @@ module linearsystemscalar
   use dofmapping
   use genoutput
   use uuid
+  use linearalgebra
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Global constants for scalar vectors/matrices">
 
   ! Maximum number of tags that can be assigned to a scalar vector or matrix.
-  integer, parameter :: LSYSSC_MAXTAGS = 16
+  integer, parameter, public :: LSYSSC_MAXTAGS = 16
   
 !</constantblock>
 
 !<constantblock description="Global format flags for matrices">
 
   ! Unidentified matrix format
-  integer, parameter :: LSYSSC_MATRIXUNDEFINED = 0
+  integer, parameter, public :: LSYSSC_MATRIXUNDEFINED = 0
   
   ! Identifier for matrix format 1 - full matrix.
   ! Important matrix properties defining the matrix:
   ! NEQ = Number of rows, NCOLS = Number of columns, NA = Number of entries,
   ! h_Da = handle to matrix entries
-  integer, parameter :: LSYSSC_MATRIX1 = 1
+  integer, parameter, public :: LSYSSC_MATRIX1 = 1
   
   ! Identifier for matrix format 9 - CSR
   ! Important matrix properties defining the matrix:
@@ -288,7 +299,7 @@ module linearsystemscalar
   ! h_Kcol      = handle to column structure,
   ! h_Kld       = handle to row structure,
   ! h_Kdiagonal = handle to diagonal pointer
-  integer, parameter :: LSYSSC_MATRIX9 = 9
+  integer, parameter, public :: LSYSSC_MATRIX9 = 9
 
   ! Identifier for matrix format 7 - CSR with diagonal element in front
   ! Important matrix properties defining the matrix:
@@ -296,14 +307,14 @@ module linearsystemscalar
   ! h_Da        = handle to matrix entries,
   ! h_Kcol      = handle to column structure,
   ! h_Kld       = handle to row structure
-  integer, parameter :: LSYSSC_MATRIX7 = 7
+  integer, parameter, public :: LSYSSC_MATRIX7 = 7
 
   ! Identifier for matrix format D - Diagonal matrix, only entries on the
   ! main diagonal.
   ! Important matrix properties defining the matrix:
   ! NEQ = NCOLS = NA = Number of rows = Number of columns = Number of entries,
   ! h_Da        = handle to matrix entries
-  integer, parameter :: LSYSSC_MATRIXD = 20
+  integer, parameter, public :: LSYSSC_MATRIXD = 20
 
   ! Identifier for matrix format 7intl - CSR interleaved with diagonal element in front
   ! Important matrix properties defining the matrix:
@@ -312,7 +323,7 @@ module linearsystemscalar
   ! h_Da        = handle to matrix entries,
   ! h_Kcol      = handle to column structure,
   ! h_Kld       = handle to row structure
-  integer, parameter :: LSYSSC_MATRIX7INTL = 70
+  integer, parameter, public :: LSYSSC_MATRIX7INTL = 70
 
   ! Identifier for matrix format 9intl - CSR interleaved
   ! Important matrix properties defining the matrix:
@@ -322,26 +333,26 @@ module linearsystemscalar
   ! h_Kcol      = handle to column structure,
   ! h_Kld       = handle to row structure,
   ! h_Kdiagonal = handle to diagonal pointer
-  integer, parameter :: LSYSSC_MATRIX9INTL = 90
+  integer, parameter, public :: LSYSSC_MATRIX9INTL = 90
 
 !</constantblock>
 
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  integer(I32), parameter :: LSYSSC_MSPEC_STANDARD =        0
+  integer(I32), parameter, public :: LSYSSC_MSPEC_STANDARD =        0
   
   ! Matrix structure is a copy of another matrix, shared via the same
   ! handles. 
-  integer(I32), parameter :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
+  integer(I32), parameter, public :: LSYSSC_MSPEC_STRUCTUREISCOPY = 2**0
 
   ! Matrix content is a copy of another matrix, shared via the same
   ! handles. 
-  integer(I32), parameter :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
+  integer(I32), parameter, public :: LSYSSC_MSPEC_CONTENTISCOPY   = 2**1
   
   ! Complete matrix is duplicate of another matrix and shares structure
   ! and entries via the same pointers
-  integer(I32), parameter :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
+  integer(I32), parameter, public :: LSYSSC_MSPEC_ISCOPY = LSYSSC_MSPEC_STRUCTUREISCOPY +&
                                                    LSYSSC_MSPEC_CONTENTISCOPY
 
   ! Matrix is saved transposed.
@@ -349,23 +360,23 @@ module linearsystemscalar
   ! 1.) set this flag in the imatrixSpec bitfield
   ! 2.) exchange the values in t_matrixScalar\%NEQ and t_matrixScalar\%NCOLS 
   !     of the matrix structure.
-  integer(I32), parameter :: LSYSSC_MSPEC_TRANSPOSED =      2**2
+  integer(I32), parameter, public :: LSYSSC_MSPEC_TRANSPOSED =      2**2
 
   ! Matrix not present in memory
-  integer(I32), parameter :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
+  integer(I32), parameter, public :: LSYSSC_MSPEC_NOTINMEMORY =     2**3
   
 !</constantblock>
 
 !<constantblock description="KIND values for matrix/vector data">
   
   ! kind value for indices in matrices
-  integer, parameter :: PREC_MATIDX = I32
+  integer, parameter, public :: PREC_MATIDX = I32
 
   ! kind value for indices in vectors
-  integer, parameter :: PREC_VECIDX = I32
+  integer, parameter, public :: PREC_VECIDX = I32
 
   ! kind value for precision that should be used in matrices
-  integer, parameter :: PREC_MATRIX = DP
+  integer, parameter, public :: PREC_MATRIX = DP
 
 !</constantblock>
 
@@ -373,19 +384,19 @@ module linearsystemscalar
   
   ! Don't set up the content/structure of the destination matrix, ignore
   ! any previous structure/content
-  integer, parameter :: LSYSSC_DUP_IGNORE = 0
+  integer, parameter, public :: LSYSSC_DUP_IGNORE = 0
   
   ! Removes any existing matrix content/structure from the destination matrix.
   ! Releases memory if necessary.
-  integer, parameter :: LSYSSC_DUP_REMOVE = 1
+  integer, parameter, public :: LSYSSC_DUP_REMOVE = 1
   
   ! Removes any existing matrix content from the destination matrix.
   ! No memory is released, handles are simply dismissed.
-  integer, parameter :: LSYSSC_DUP_DISMISS = 2
+  integer, parameter, public :: LSYSSC_DUP_DISMISS = 2
   
   ! The destination matrix recveives the same handles for matrix content/structure
   ! as the source matrix  and therefore shares the same content/structure.
-  integer, parameter :: LSYSSC_DUP_SHARE = 3
+  integer, parameter, public :: LSYSSC_DUP_SHARE = 3
   
   ! The destination matrix gets a copy of the content of rsourceMatrix.
   ! If necessary, new memory is allocated.
@@ -394,7 +405,7 @@ module linearsystemscalar
   ! Note that this respects the ownership! I.e. if the destination matrix is not
   ! the owner of the content/structure data arrays, new memory is allocated to
   ! prevent the actual owner from getting destroyed!
-  integer, parameter :: LSYSSC_DUP_COPY = 4
+  integer, parameter, public :: LSYSSC_DUP_COPY = 4
   
   ! The destination matrix gets a copy of the content of rsourceMatrix.
   ! If necessary, new memory is allocated.
@@ -403,62 +414,62 @@ module linearsystemscalar
   ! The ownership of the content/data arrays is not respected, i.e. if the
   ! destination matrix is not the owner, the actual owner of the data arrays is
   ! modified, too!
-  integer, parameter :: LSYSSC_DUP_COPYOVERWRITE = 5
+  integer, parameter, public :: LSYSSC_DUP_COPYOVERWRITE = 5
   
   ! Duplicate by ownership. What belongs to the source matrix is copied 
   ! (the same as LSYSSC_DUP_COPY). What belongs even to another matrix than
   ! the source matrix is shared (the same as LSYSSC_DUP_SHARE, .
-  integer, parameter :: LSYSSC_DUP_ASIS = 6
+  integer, parameter, public :: LSYSSC_DUP_ASIS = 6
   
   ! New memory is allocated for the structure/content in the same size as 
   ! in the source matrix but no data is copied; the arrays are left uninitialised.
-  integer, parameter :: LSYSSC_DUP_EMPTY = 7 
+  integer, parameter, public :: LSYSSC_DUP_EMPTY = 7 
                                                
   ! Copy the basic matrix information but don't copy handles.
   ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
   ! 'looks like' the old but has no dynamic data associated.
-  integer, parameter :: LSYSSC_DUP_TEMPLATE   = 8
+  integer, parameter, public :: LSYSSC_DUP_TEMPLATE   = 8
                  
 !</constantblock>
 
 !<constantblock description="Constants for transposing a matrix">
   
   ! Transpose the full matrix
-  integer, parameter :: LSYSSC_TR_ALL       = 0
+  integer, parameter, public :: LSYSSC_TR_ALL       = 0
 
   ! Transpose only the matrix structure
-  integer, parameter :: LSYSSC_TR_STRUCTURE = 1   
+  integer, parameter, public :: LSYSSC_TR_STRUCTURE = 1   
 
   ! Don't transpose the matrix, simply mark the matrix as transposed
   ! by changing the flag in imatrixSpec
-  integer, parameter :: LSYSSC_TR_VIRTUAL    = 2
+  integer, parameter, public :: LSYSSC_TR_VIRTUAL    = 2
 
   ! Don't transpose the matrix. Copy the matrix in memory and mark the 
   ! matrix as transposed by changing the flag in imatrixSpec
-  integer, parameter :: LSYSSC_TR_VIRTUALCOPY = 3
+  integer, parameter, public :: LSYSSC_TR_VIRTUALCOPY = 3
 
 !</constantblock>
 
 !<constantblock description="Constants for initialising matrix entries when allocating">
   
   ! Let the entries of a matrix undefined
-  integer, parameter :: LSYSSC_SETM_UNDEFINED = -1
+  integer, parameter, public :: LSYSSC_SETM_UNDEFINED = -1
 
   ! Clear the entries of a matrix when allocating
-  integer, parameter :: LSYSSC_SETM_ZERO      = 0
+  integer, parameter, public :: LSYSSC_SETM_ZERO      = 0
 
   ! Set the entries of a matrix to 1 when allocating
-  integer, parameter :: LSYSSC_SETM_ONE       = 1
+  integer, parameter, public :: LSYSSC_SETM_ONE       = 1
 
 !</constantblock>
 
 !<constantblock description="Constants for lumping of matrices">
   
   ! Standard lumping; extract diagonal from a given matrix.
-  integer, parameter :: LSYSSC_LUMP_STD       = 0
+  integer, parameter, public :: LSYSSC_LUMP_STD       = 0
 
   ! Diagonal lumping; add all offdiagonal entries to the diagonal and take the diagonial
-  integer, parameter :: LSYSSC_LUMP_DIAG      = 1
+  integer, parameter, public :: LSYSSC_LUMP_DIAG      = 1
 
 !</constantblock>
 
@@ -551,6 +562,8 @@ module linearsystemscalar
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr => null()
     
   end type
+  
+  public :: t_vectorScalar
   
 !</typeblock>
 
@@ -688,6 +701,8 @@ module linearsystemscalar
     
   end type
   
+  public :: t_matrixScalar
+  
 !</typeblock>
 
 !</types>
@@ -732,6 +747,82 @@ module linearsystemscalar
     module procedure lsyssc_resizeMatrixDirect
     module procedure lsyssc_resizeMatrixIndirect
   end interface
+
+  public :: lsyssc_createVector
+  public :: lsyssc_createVecByDiscr
+  public :: lsyssc_createVecIndMat
+  public :: lsyssc_scalarProduct
+  public :: lsyssc_scalarMatVec
+  public :: lsyssc_releaseMatrix
+  public :: lsyssc_releaseVector
+  public :: lsyssc_duplicateMatrix
+  public :: lsyssc_duplicateVector
+  public :: lsyssc_sortVectorInSitu
+  public :: lsyssc_vectorActivateSorting
+  public :: lsyssc_synchroniseSortVecVec
+  public :: lsyssc_synchroniseSortMatVec
+  public :: lsyssc_sortMatrix
+  public :: lsyssc_unsortMatrix
+  public :: lsyssc_isVectorCompatible
+  public :: lsyssc_isMatrixCompatible
+  public :: lsyssc_isMatrixVectorCompatible 
+  public :: lsyssc_isMatrixMatrixCompatible
+  public :: lsyssc_getbase_double
+  public :: lsyssc_getbase_single
+  public :: lsyssc_getbase_int
+  public :: lsyssc_getbase_Kcol
+  public :: lsyssc_getbase_Kld
+  public :: lsyssc_getbase_Kdiagonal
+  public :: lsyssc_addIndex
+  public :: lsyssc_vectorNorm
+  public :: lsyssc_invertedDiagMatVec
+  public :: lsyssc_clearMatrix
+  public :: lsyssc_initialiseIdentityMatrix
+  public :: lsyssc_convertMatrix
+  public :: lsyssc_copyVector
+  public :: lsyssc_scaleVector
+  public :: lsyssc_clearVector
+  public :: lsyssc_vectorLinearComb
+  public :: lsyssc_copyMatrix
+  public :: lsyssc_transposeMatrix, lsyssc_transposeMatrixInSitu
+  public :: lsyssc_allocEmptyMatrix
+  public :: lsyssc_lumpMatrixScalar
+  public :: lsyssc_scaleMatrix
+  public :: lsyssc_multMatMat
+  public :: lsyssc_matrixLinearComb
+  public :: lsyssc_swapVectors
+  public :: lsyssc_isMatrixStructureShared
+  public :: lsyssc_isMatrixContentShared
+  public :: lsyssc_resizeVector
+  public :: lsyssc_resizeMatrix
+  public :: lsyssc_createDiagMatrixStruc
+  public :: lsyssc_clearOffdiags
+  public :: lsyssc_isMatrixSorted
+  public :: lsyssc_isVectorSorted
+  public :: lsyssc_hasMatrixStructure
+  public :: lsyssc_hasMatrixContent
+  public :: lsyssc_releaseMatrixContent
+  public :: lsyssc_spreadVector
+  public :: lsyssc_spreadMatrix
+  public :: lsyssc_packVector
+  public :: lsyssc_createFullMatrix
+  public :: lsyssc_assignDiscrDirectMat
+  public :: lsyssc_createFpdbObjectVec
+  public :: lsyssc_createFpdbObjectMat
+  public :: lsyssc_restoreFpdbObjectVec
+  public :: lsyssc_restoreFpdbObjectMat
+  public :: lsyssc_unshareMatrix
+  public :: lsyssc_unshareVector
+  public :: lsyssc_isExplicitMatrix1D
+  public :: lsyssc_checkdiscretisation
+
+  public :: lsyssc_rebuildKdiagonal 
+  public :: lsyssc_infoMatrix
+  public :: lsyssc_infoVector
+  public :: lsyssc_auxcopy_da
+  public :: lsyssc_auxcopy_Kcol
+  public :: lsyssc_auxcopy_Kld
+  public :: lsyssc_auxcopy_Kdiagonal
 
 contains
 
@@ -1600,10 +1691,10 @@ contains
     ! Handle - if NEQ > 0
     if (rvector%NEQ .gt. 0) then
       if (bclear) then
-        call storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
       else
-        call storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       end if
     end if
@@ -1676,10 +1767,10 @@ contains
     ! Handle - if NEQ > 0
     if (rvector%NEQ*rvector%NVAR .gt. 0) then
       if (bclear) then
-        call storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
       else
-        call storage_new1D ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
       end if
     end if
@@ -1894,7 +1985,7 @@ contains
     end if
     
     ! Allocate memory for vector
-    call storage_new1D ('lsyssc_createVecIndMat', 'Vector', &
+    call storage_new ('lsyssc_createVecIndMat', 'Vector', &
         NCOLS*rtemplateMat%NVAR, &
         cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
 
@@ -3148,7 +3239,7 @@ contains
     call lsyssc_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
+    res = lalg_scalarProduct(p_Ddata1dp,p_Ddata2dp)
     
   case (ST_SINGLE)
 
@@ -3157,7 +3248,7 @@ contains
     call lsyssc_getbase_single (ry,p_Fdata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
+    res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
     
   case DEFAULT
     print *,'lsyssc_scalarProduct: Not supported precision combination'
@@ -3235,7 +3326,7 @@ contains
     call lsyssc_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
+    res=lalg_scalarProduct(p_Ddata1dp,p_Ddata2dp)
     
   case (ST_SINGLE)
 
@@ -3244,7 +3335,7 @@ contains
     call lsyssc_getbase_single (ry,p_Fdata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
+    res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
     
   case DEFAULT
     print *,'lsyssc_scalarProduct: Not supported precision combination'
@@ -6539,7 +6630,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+      call storage_new ('lsyssc_sortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
       
@@ -6699,7 +6790,7 @@ contains
     if (present(nintl)) then
 
       ! Allocate memory for auxiliary vector
-      call storage_new1D ('lsyssc_sortCSRdouble', 'Daux', nintl, &
+      call storage_new ('lsyssc_sortCSRdouble', 'Daux', nintl, &
           ST_DOUBLE, h_Daux,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(h_Daux,Daux)
 
@@ -9574,12 +9665,12 @@ contains
   case (ST_DOUBLE)
     ! Get the array and calculate the norm
     call lsyssc_getbase_double (rx,p_Ddata)
-    lsyssc_vectorNorm = lalg_normDble (p_Ddata,cnorm,iposMax) 
+    lsyssc_vectorNorm = lalg_norm(p_Ddata,cnorm,iposMax) 
     
   case (ST_SINGLE)
     ! Get the array and calculate the norm
     call lsyssc_getbase_single (rx,p_Fdata)
-    lsyssc_vectorNorm = lalg_normSngl (p_Fdata,cnorm,iposMax) 
+    lsyssc_vectorNorm = lalg_norm(p_Fdata,cnorm,iposMax) 
     
   case DEFAULT
     print *,'lsyssc_vectorNorm: Unsupported data type!'
@@ -11519,11 +11610,11 @@ contains
     if (rmatrixScalar%h_DA .eq. ST_NOHANDLE) then
     
       if (iclear .ge. LSYSSC_SETM_ZERO) then
-        call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+        call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
                             NA, cdType, rmatrixScalar%h_DA, &
                             ST_NEWBLOCK_ZERO)
       else
-        call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+        call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
                             NA, cdType, rmatrixScalar%h_DA, &
                             ST_NEWBLOCK_NOINIT)
       end if
@@ -11552,10 +11643,10 @@ contains
       if (iclear .ge. LSYSSC_SETM_ZERO) then
         select case (rmatrixScalar%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-          call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+          call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         case (LSYSSC_MATRIXD)
-          call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+          call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         case DEFAULT
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
@@ -11566,10 +11657,10 @@ contains
       else
         select case (rmatrixScalar%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
-          call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+          call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         case (LSYSSC_MATRIXD)
-          call storage_new1D ('lsyssc_allocEmptyMatrix', 'DA', &
+          call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         case DEFAULT
           print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
@@ -11644,18 +11735,18 @@ contains
       
     case (LSYSSC_MATRIX9)
       ! Create KCOL, KLD, KDiagonal
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
+      call storage_new ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KDiagonal', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrix', 'KDiagonal', NEQ, &
           ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ORDERED)
           
     case (LSYSSC_MATRIX7)
       ! Create KCOL, KLD.
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
+      call storage_new ('lsyssc_createDiagMatrix', 'KCOL', NEQ, &
           ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ORDERED)
-      call storage_new1D ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
+      call storage_new ('lsyssc_createDiagMatrix', 'KLD', NEQ+1, &
           ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ORDERED)
           
     case DEFAULT
@@ -11709,10 +11800,10 @@ contains
     if (present(cdataType)) rmatrix%cdataType = cdataType
     
     if (bclear) then
-      call storage_new1D ('lsyssc_createFullMatrix', 'h_Da', &
+      call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
           rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_ZERO)
     else
-      call storage_new1D ('lsyssc_createFullMatrix', 'h_Da', &
+      call storage_new ('lsyssc_createFullMatrix', 'h_Da', &
           rmatrix%NA , rmatrix%cdataType, rmatrix%h_Da,ST_NEWBLOCK_NOINIT)
     end if
     

@@ -138,17 +138,20 @@
 
 module groupfemscalar
 
-  use afcstabilisation
   use fsystem
   use genoutput
   use linearalgebra
+  use storage
+  use basicgeometry
+  use triangulation
   use linearsystemblock
   use linearsystemscalar
-  use storage
+  use afcstabilisation
 
   implicit none
 
   private
+  
   public :: gfsc_initStabilisation
   public :: gfsc_isMatrixCompatible
   public :: gfsc_isVectorCompatible

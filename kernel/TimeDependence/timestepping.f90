@@ -97,15 +97,17 @@ module timestepping
 
   implicit none
   
+  private
+  
 !<constants>
 
 !<constantblock description="Identifiers for time step schemes">
 
   ! Identifier for one step scheme (e.g. Explicit Euler)
-  integer, parameter :: TSCHM_ONESTEP        = 0
+  integer, parameter, public :: TSCHM_ONESTEP        = 0
   
   ! Identifier for Fractional Step scheme
-  integer, parameter :: TSCHM_FRACTIONALSTEP = 1
+  integer, parameter, public :: TSCHM_FRACTIONALSTEP = 1
 
 !</constantblock>
 
@@ -225,11 +227,20 @@ module timestepping
     real(DP)                 :: dtstepFixed
     
   end type
+  
+  public :: t_explicitTimeStepping
 
 !</typeblock>
 
 !</types>
 
+  public :: timstp_init
+  public :: timstp_nextSubstep
+  public :: timstp_nextSubstepTime
+  public :: timstp_nextSubstepWeights
+  public :: timstp_getOrder
+  public :: timstp_setBaseSteplength
+  
 contains
 
   !****************************************************************************

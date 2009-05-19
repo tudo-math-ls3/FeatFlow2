@@ -33,11 +33,17 @@ module mapleio
   use basicgeometry
   
   implicit none
+  
+  private
 
   interface mapleio_writePointPlot
     module procedure mapleio_writePointPlotSingle
     module procedure mapleio_writePointPlotMult
   end interface
+
+  public :: mapleio_writePointArray
+  public :: mapleio_writePolygonPlot
+  public :: mapleio_writePointPlot
 
 contains
 

@@ -30,20 +30,28 @@ module pprocnavierstokes
 
   use fsystem
   use storage
+  use genoutput
   use boundary
   use cubature
   use triangulation
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
+  use dofmapping
   use spatialdiscretisation
   use derivatives
   use meshregion
   use collection
   use elementpreprocessing
   use domainintegration
+  use element
+  use basicgeometry
   use bcassembly
+  use transformation
 
   implicit none
+  
+  private
 
 !<constants>
 
@@ -55,21 +63,29 @@ module pprocnavierstokes
   !   Cd = 1/df1 int ( df2 * du_tx/dn - p n_x)
   !   Cl = 1/df1 int ( df2 * du_ty/dn - p n_y)
   ! In 3D, PPNAVST_GRADIENTTENSOR_SIMPLE coincides with PPNAVST_GRADIENTTENSOR.
-  integer, parameter :: PPNAVST_GRADIENTTENSOR_SIMPLE = 0
+  integer, parameter, public :: PPNAVST_GRADIENTTENSOR_SIMPLE = 0
 
   ! Use the gradient tensor formulation for computing the forces.
   ! This is the standard formulation
   !   C = 1/df1 int (df2 * sigma n - pI)
   ! with sigma = grad(u)) being the gradient tensor.
-  integer, parameter :: PPNAVST_GRADIENTTENSOR = 1
+  integer, parameter, public :: PPNAVST_GRADIENTTENSOR = 1
 
   ! Use the deformation tensor formulation for computing the forces.
   ! This is the standard formulation
   !   C = 1/df1 int (df2 * sigma n - pI)
   ! with sigma = 1/2 (grad(u) + grad(u)^T) being the deformation tensor.
-  integer, parameter :: PPNAVST_DEFORMATIONTENSOR = 2
+  integer, parameter, public :: PPNAVST_DEFORMATIONTENSOR = 2
   
 !</constantblock>
+
+!</constants>
+
+  public :: ppns2D_bdforces_uniform
+  public :: ppns3D_bdforces_uniform
+  public :: ppns2D_streamfct_uniform
+  public :: ppns2D_bdforces_line
+
 
 contains
 
@@ -2461,7 +2477,7 @@ contains
     call lsyssc_getbase_double (rdestVector,p_Dx)
     
     ! Auxiliary array
-    call storage_new1D ('ppns2D_streamfct_uniform', 'aux', &
+    call storage_new ('ppns2D_streamfct_uniform', 'aux', &
                         p_rtriangulation%NVT, ST_INT, haux,ST_NEWBLOCK_ZERO)
     call storage_getbase_int (haux,p_Iind)
     

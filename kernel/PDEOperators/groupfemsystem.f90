@@ -107,9 +107,11 @@ module groupfemsystem
   use afcstabilisation
   use fsystem
   use genoutput
+  use storage
+  use basicgeometry
+  use triangulation
   use linearsystemblock
   use linearsystemscalar
-  use storage
 
   implicit none
   

@@ -12,10 +12,23 @@
 
 module element_pyra3d
 
+  use fsystem
+  use basicgeometry
   use elementbase
   use derivatives
+  use transformation
 
-implicit none
+  implicit none
+  
+  private
+  
+  public :: elem_Y0_3D 
+  public :: elem_Y0_3D_mult 
+  public :: elem_Y0_3D_sim 
+  public :: elem_Y1_3D 
+  public :: elem_Y1_3D_mult 
+  public :: elem_Y1_3D_sim 
+  public :: elem_eval_Y1_3D
 
 contains
 

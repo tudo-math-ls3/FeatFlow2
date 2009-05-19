@@ -38,7 +38,7 @@
 !#  3.) storage_info
 !#      -> Prints statistics about the heap to the terminal
 !#
-!#  4.) storage_new  =  storage_new1D / storage_new2D
+!#  4.) storage_new
 !#      -> Allocates a new 1D or 2D array
 !#
 !#  5.) storage_free
@@ -50,7 +50,7 @@
 !#      storage_getbase_logical,
 !#      storage_getbase_char,
 !#      -> Determine pointer associated to a handle for singles, doubles,
-!#         32-Bit integers, logicals or chars
+!#         integers, logicals or chars
 !#
 !#  7.) storage_getbase_single2D,
 !#      storage_getbase_double2D,
@@ -58,7 +58,7 @@
 !#      storage_getbase_logical2D,
 !#      storage_getbase_char2D,
 !#      -> Determine pointer associated to a handle for singles, doubles,
-!#         32-Bit integers, logicals or chars, 2D array
+!#         integers, logicals or chars, 2D array
 !#
 !#  8.) storage_copy = storage_copy / storage_copy_explicit / storage_copy_explicit2D
 !#      -> Copies the content of one array to another.
@@ -105,93 +105,95 @@ module storage
   use uuid
 
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Storage block type identifiers">
 
   ! defines a non-allocated storage block handle
-  integer, parameter :: ST_NOHANDLE = 0
+  integer, parameter, public :: ST_NOHANDLE = 0
 
   ! storage block contains single precision floats
-  integer, parameter :: ST_SINGLE = 1
+  integer, parameter, public :: ST_SINGLE = 1
 
   ! storage block contains double precision floats
-  integer, parameter :: ST_DOUBLE = 2
+  integer, parameter, public :: ST_DOUBLE = 2
   
   ! storage block contains quad precision floats
-  integer, parameter :: ST_QUAD = 3
+  integer, parameter, public :: ST_QUAD = 3
 
   ! storage block contains integers (compiler-dependent size)
-  integer, parameter :: ST_INT = 4
+  integer, parameter, public :: ST_INT = 4
 
   ! storage block contains 8 bit integers
-  integer, parameter :: ST_INT8 = 5
+  integer, parameter, public :: ST_INT8 = 5
 
   ! storage block contains 16 bit integers
-  integer, parameter :: ST_INT16 = 6
+  integer, parameter, public :: ST_INT16 = 6
 
   ! storage block contains 32 bit integers
-  integer, parameter :: ST_INT32 = 7
+  integer, parameter, public :: ST_INT32 = 7
   
   ! storage block contains 64 bit integers
-  integer, parameter :: ST_INT64 = 8
+  integer, parameter, public :: ST_INT64 = 8
 
   ! storage block contains logicals
-  integer, parameter :: ST_LOGICAL = 9
+  integer, parameter, public :: ST_LOGICAL = 9
 
   ! storage block contains characters
-  integer, parameter :: ST_CHAR = 10
+  integer, parameter, public :: ST_CHAR = 10
 
 !</constantblock>
 
 !<constantblock description="Constants for initialisation of memory on allocation">
 
   ! init new storage block with zeros (or .FALSE. for logicals)
-  integer, parameter :: ST_NEWBLOCK_ZERO = 0
+  integer, parameter, public :: ST_NEWBLOCK_ZERO = 0
 
   ! no init new storage block
-  integer, parameter :: ST_NEWBLOCK_NOINIT = 1
+  integer, parameter, public :: ST_NEWBLOCK_NOINIT = 1
 
   ! init new storage block with 1,2,3,...,n
   ! Note: This initialization constant must NOT be used for initialisation of logicals
   !       or characters!!!
-  integer, parameter :: ST_NEWBLOCK_ORDERED = 2
+  integer, parameter, public :: ST_NEWBLOCK_ORDERED = 2
 
 !</constantblock>
 
 !<constantblock description="Constants for calculating memory">
 
   ! How many bytes has a single precision real?
-  integer(I64) :: ST_SINGLE_BYTES = int(SP,I64)
+  integer(I64), public :: ST_SINGLE_BYTES = int(SP,I64)
 
   ! How many bytes has a double precision real?
-  integer(I64) :: ST_DOUBLE_BYTES = int(DP,I64)
+  integer(I64), public :: ST_DOUBLE_BYTES = int(DP,I64)
   
   ! How many bytes has a quad precision real?
-  integer(I64) :: ST_QUAD_BYTES = int(QP,I64)
+  integer(I64), public :: ST_QUAD_BYTES = int(QP,I64)
 
   ! How many bytes has an integer?
-  integer(I64) :: ST_INT_BYTES = int((bit_size(1) / 8),I64)
+  integer(I64), public :: ST_INT_BYTES = int((bit_size(1) / 8),I64)
 
   ! How many bytes has a 8 bit integer? 1, of course
-  integer(I64) :: ST_INT8_BYTES = int(I8,I64)
+  integer(I64), public :: ST_INT8_BYTES = int(I8,I64)
 
   ! How many bytes has a 16 bit integer? 2, of course
-  integer(I64) :: ST_INT16_BYTES = int(I16,I64)
+  integer(I64), public :: ST_INT16_BYTES = int(I16,I64)
 
   ! How many bytes has a 32 bit integer? 4, of course
-  integer(I64) :: ST_INT32_BYTES = int(I32,I64)
+  integer(I64), public :: ST_INT32_BYTES = int(I32,I64)
   
   ! How many bytes has a 64 bit integer? 8, of course
-  integer(I64) :: ST_INT64_BYTES = int(I64,I64)
+  integer(I64), public :: ST_INT64_BYTES = int(I64,I64)
 
   ! How many bytes has a logical?
-  integer(I64) :: ST_LOGICAL_BYTES = int(I32,I64)
+  integer(I64), public :: ST_LOGICAL_BYTES = int(I32,I64)
 
   ! How many bytes has a character?
   ! Note: We are not 100% sure, but this may differ on other architectures... O_o
-  integer(I64) :: ST_CHAR_BYTES = 1_I64
+  integer(I64), public :: ST_CHAR_BYTES = 1_I64
   
 !</constantblock>
 
@@ -205,8 +207,6 @@ module storage
   ! handle, the storage amount associated to it, the pointer to the memory
   ! location etc.
   type t_storageNode
-
-    private
 
     ! Type of data associated to the handle (ST_NOHANDLE, ST_SINGLE,
     ! ST_DOUBLE, ST_INT, ST_LOGICAL, ST_CHAR)
@@ -282,7 +282,7 @@ module storage
     character, dimension(:,:), pointer    :: p_Schar2D      => null()
 
   end type t_storageNode
-
+  
 !</typeblock>
 
 !<typeblock>
@@ -336,6 +336,8 @@ module storage
     integer(I64) :: itotalMemMax = 0_I64
 
   end type t_storageBlock
+  
+  public :: t_storageBlock
 
 !</typeblock>
 
@@ -355,10 +357,14 @@ module storage
     module procedure storage_new2DFixed
   end interface
 
+  public :: storage_new
+
   interface storage_realloc
     module procedure storage_realloc
     module procedure storage_reallocFixed
   end interface
+  
+  public :: storage_realloc
   
   interface storage_getbase_int
     module procedure storage_getbase_int
@@ -366,11 +372,15 @@ module storage
     module procedure storage_getbase_intLUBnd
   end interface
   
+  public :: storage_getbase_int
+  
   interface storage_getbase_int8
     module procedure storage_getbase_int8
     module procedure storage_getbase_int8UBnd
     module procedure storage_getbase_int8LUBnd
   end interface
+
+  public :: storage_getbase_int8
   
   interface storage_getbase_int16
     module procedure storage_getbase_int16
@@ -378,23 +388,31 @@ module storage
     module procedure storage_getbase_int16LUBnd
   end interface
   
+  public :: storage_getbase_int16
+  
   interface storage_getbase_int32
     module procedure storage_getbase_int32
     module procedure storage_getbase_int32UBnd
     module procedure storage_getbase_int32LUBnd
   end interface
   
+  public :: storage_getbase_int32
+
   interface storage_getbase_int64
     module procedure storage_getbase_int64
     module procedure storage_getbase_int64UBnd
     module procedure storage_getbase_int64LUBnd
   end interface
 
+  public :: storage_getbase_int64
+
   interface storage_getbase_single
     module procedure storage_getbase_single
     module procedure storage_getbase_singleUBnd
     module procedure storage_getbase_singleLUBnd
   end interface
+  
+  public :: storage_getbase_single
 
   interface storage_getbase_double
     module procedure storage_getbase_double
@@ -402,11 +420,15 @@ module storage
     module procedure storage_getbase_doubleLUBnd
   end interface
 
+  public :: storage_getbase_double
+
   interface storage_getbase_quad
     module procedure storage_getbase_quad
     module procedure storage_getbase_quadUBnd
     module procedure storage_getbase_quadLUBnd
   end interface
+  
+  public :: storage_getbase_quad
 
   interface storage_getbase_logical
     module procedure storage_getbase_logical
@@ -414,17 +436,23 @@ module storage
     module procedure storage_getbase_logicalLUBnd
   end interface
 
+  public :: storage_getbase_logical
+
   interface storage_getbase_char
     module procedure storage_getbase_char
     module procedure storage_getbase_charUBnd
     module procedure storage_getbase_charLUBnd
   end interface
 
+  public :: storage_getbase_char
+
   interface storage_getbase_int2D
     module procedure storage_getbase_int2D
     module procedure storage_getbase_int2DUBnd
     module procedure storage_getbase_int2DLUBnd
   end interface
+
+  public :: storage_getbase_int2D
   
   interface storage_getbase_int8_2D
     module procedure storage_getbase_int8_2D
@@ -432,11 +460,15 @@ module storage
     module procedure storage_getbase_int8_2DLUBnd
   end interface
   
+  public :: storage_getbase_int8_2D
+  
   interface storage_getbase_int16_2D
     module procedure storage_getbase_int16_2D
     module procedure storage_getbase_int16_2DUBnd
     module procedure storage_getbase_int16_2DLUBnd
   end interface
+  
+  public :: storage_getbase_int16_2D
   
   interface storage_getbase_int32_2D
     module procedure storage_getbase_int32_2D
@@ -444,11 +476,15 @@ module storage
     module procedure storage_getbase_int32_2DLUBnd
   end interface
   
+  public :: storage_getbase_int32_2D
+  
   interface storage_getbase_int64_2D
     module procedure storage_getbase_int64_2D
     module procedure storage_getbase_int64_2DUBnd
     module procedure storage_getbase_int64_2DLUBnd
   end interface
+  
+  public :: storage_getbase_int64_2D
 
   interface storage_getbase_single2D
     module procedure storage_getbase_single2D
@@ -456,11 +492,15 @@ module storage
     module procedure storage_getbase_single2DLUBnd
   end interface
 
+  public :: storage_getbase_single2D
+
   interface storage_getbase_double2D
     module procedure storage_getbase_double2D
     module procedure storage_getbase_double2DUBnd
     module procedure storage_getbase_double2DLUBnd
   end interface
+
+  public :: storage_getbase_double2D
 
   interface storage_getbase_quad2D
     module procedure storage_getbase_quad2D
@@ -468,11 +508,15 @@ module storage
     module procedure storage_getbase_quad2DLUBnd
   end interface
 
+  public :: storage_getbase_quad2D
+
   interface storage_getbase_logical2D
     module procedure storage_getbase_logical2D
     module procedure storage_getbase_logical2DUBnd
     module procedure storage_getbase_logical2DLUBnd
   end interface
+
+  public :: storage_getbase_logical2D
 
   interface storage_getbase_char2D
     module procedure storage_getbase_char2D
@@ -480,16 +524,35 @@ module storage
     module procedure storage_getbase_char2DLUBnd
   end interface
 
+  public :: storage_getbase_char2D
+
   interface storage_getsize
     module procedure storage_getsize1D
     module procedure storage_getsize2D
   end interface
+  
+  public :: storage_getsize
 
   interface storage_copy
     module procedure storage_copy
     module procedure storage_copy_explicit
     module procedure storage_copy_explicit2D
   end interface
+
+  public :: storage_copy
+
+  public :: storage_init
+  public :: storage_done
+  public :: storage_free
+  public :: storage_info
+  public :: storage_clear
+  public :: storage_getdatatype
+  public :: storage_getdimension
+  public :: storage_initialiseBlock
+  public :: storage_isEqual
+  public :: storage_createFpdbObject
+  public :: storage_restoreFpdbObject
+  public :: storage_setdatatype
 
 contains
 
@@ -6150,7 +6213,7 @@ contains
   ! Pointer to the heap
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
-  integer :: i,j,isizeSource,isizeDest
+  integer :: isizeSource,isizeDest
   integer, dimension(2) :: Ilbound, Iubound
   integer, dimension(2) :: Isize2DSource,Isize2DDest
 
@@ -6707,7 +6770,6 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
   integer :: i
-  character(LEN=SYS_NAMELEN) :: sname = ''
 
 !!$    ! Check if the start address is positive
 !!$    if (istart_source .le. 0 .or. istart_dest .le. 0) then
@@ -10500,7 +10562,7 @@ contains
     type(t_fpdbDataItem), pointer :: p_fpdbDataItem
     type(t_fpdbObjectItem), pointer :: p_fpdbObjectItem
 
-    integer :: i,ihandle
+    integer :: i
 
     if(present(rheap)) then
       p_rheap => rheap

@@ -63,54 +63,56 @@ module boundary
   use genoutput
 
   implicit none
+  
+  private
 
 !<constants>
 !<constantblock>
   !maximal degree of NURBS
-  integer, parameter :: PAR_MAXNURBSDEGREE=35
+  integer, parameter, public :: PAR_MAXNURBSDEGREE=35
 !</constantblock>
 
 !<constantblock description="types of boundary segments">
   ! boundary segment type line
-  integer, parameter :: BOUNDARY_TYPE_LINE = 1
+  integer, parameter, public :: BOUNDARY_TYPE_LINE = 1
 
   ! boundary segment type circle
-  integer, parameter :: BOUNDARY_TYPE_CIRCLE = 2
+  integer, parameter, public :: BOUNDARY_TYPE_CIRCLE = 2
 
   ! boundary segment type open nurbs
-  integer, parameter :: BOUNDARY_TYPE_OPENNURBS = 3
+  integer, parameter, public :: BOUNDARY_TYPE_OPENNURBS = 3
 
   ! boundary segment type closed nurbs
-  integer, parameter :: BOUNDARY_TYPE_CLOSEDNURBS = 4
+  integer, parameter, public :: BOUNDARY_TYPE_CLOSEDNURBS = 4
 
   ! boundary segment analytic
-  integer, parameter :: BOUNDARY_TYPE_ANALYTIC = 5
+  integer, parameter, public :: BOUNDARY_TYPE_ANALYTIC = 5
 !</constantblock>
 
 !<constantblock description="kinds of boundary segments">
   ! boundary kind fictitious
-  integer, parameter :: BOUNDARY_KIND_FICTITIOUS = 0
+  integer, parameter, public :: BOUNDARY_KIND_FICTITIOUS = 0
 
   ! boundary kind geometric
-  integer, parameter :: BOUNDARY_KIND_GEOMETRIC = 1
+  integer, parameter, public :: BOUNDARY_KIND_GEOMETRIC = 1
 !</constantblock>
 
 !<constantblock description="boundary segment header definition">
 
   ! boundary segment header offset for type
-  integer, parameter :: BOUNDARY_SEGHEADER_TYPE = 1
+  integer, parameter, public :: BOUNDARY_SEGHEADER_TYPE = 1
 
   ! boundary segment header offset for offset in the data vector
-  integer, parameter :: BOUNDARY_SEGHEADER_OFFSET = 2
+  integer, parameter, public :: BOUNDARY_SEGHEADER_OFFSET = 2
 
   ! boundary segment header offset for nurbs degree
-  integer, parameter :: BOUNDARY_SEGHEADER_NURBSDEGREE = 3
+  integer, parameter, public :: BOUNDARY_SEGHEADER_NURBSDEGREE = 3
 
   ! boundary segment header offset for number of control points
-  integer, parameter :: BOUNDARY_SEGHEADER_NCNTRLPNTS = 4
+  integer, parameter, public :: BOUNDARY_SEGHEADER_NCNTRLPNTS = 4
 
   ! boundary segment header length
-  integer, parameter :: BOUNDARY_SEGHEADER_LENGTH = 4
+  integer, parameter, public :: BOUNDARY_SEGHEADER_LENGTH = 4
 
 !</constantblock>
 
@@ -118,11 +120,11 @@ module boundary
 
   ! The boundary region is a usual curved region specified
   ! by min/max. parameter value
-  integer, parameter :: BDR_TP_CURVE = 0
+  integer, parameter, public :: BDR_TP_CURVE = 0
 
   ! The boundary region is a point region, i.e. consisting of
   ! only one point. Min/Max. parameter values are identical.
-  integer, parameter :: BDR_TP_POINT = 1
+  integer, parameter, public :: BDR_TP_POINT = 1
 
 !</constantblock>
 
@@ -131,37 +133,37 @@ module boundary
   ! The startpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! min. parameter value does not belong to the boundary segment.
-  integer, parameter :: BDR_PROP_WITHSTART = 2**0
+  integer, parameter, public :: BDR_PROP_WITHSTART = 2**0
 
   ! The endpoint (point with min. parameter value) belongs
   ! to the boundary segment. If not set, the point with the
   ! max. parameter value does not belong to the boundary segment.
-  integer, parameter :: BDR_PROP_WITHEND = 2**1
+  integer, parameter, public :: BDR_PROP_WITHEND = 2**1
 
 !</constantblock>
 
 !<constantblock description="Type constants for type of parametrisation to use.">
 
   ! Use 0-1 parametrisation
-  integer, parameter :: BDR_PAR_01       = 0
+  integer, parameter, public :: BDR_PAR_01       = 0
 
   ! Use parametrisation for the arc length
-  integer, parameter :: BDR_PAR_LENGTH   = 1
+  integer, parameter, public :: BDR_PAR_LENGTH   = 1
 
 !</constantblock>
 
 !<constantblock description="Type constants for cnormalMean in the calculation of normal vectors.">
 
   ! Calculate the mean of the left and right normal.
-  integer, parameter :: BDR_NORMAL_MEAN         = 0
+  integer, parameter, public :: BDR_NORMAL_MEAN         = 0
 
   ! Calculate the right normal (i.e. from the point to the interval with
   ! increasing parameter value).
-  integer, parameter :: BDR_NORMAL_RIGHT        = 1
+  integer, parameter, public :: BDR_NORMAL_RIGHT        = 1
 
   ! Calculate the left normal (i.e. from the point to the interval with
   ! decreasing parameter value).
-  integer, parameter :: BDR_NORMAL_LEFT         = 2
+  integer, parameter, public :: BDR_NORMAL_LEFT         = 2
 
 !</constantblock>
 
@@ -207,6 +209,8 @@ module boundary
   
   end type t_boundaryRegion
   
+  public :: t_boundaryRegion
+  
 !</typeblock>
 
 !<typeblock>
@@ -237,12 +241,25 @@ module boundary
 
   end type t_boundary
   
+  public :: t_boundary
+  
 !</typeblock>
 ! </types>
 
-  private :: boundary_getSegmentInfo2D
+  public :: boundary_read_prm
+  public :: boundary_release
+  public :: boundary_igetNBoundComp
+  public :: boundary_igetNsegments
+  public :: boundary_dgetMaxParVal
+  public :: boundary_getCoords
+  public :: boundary_createRegion
+  public :: boundary_isInRegion
+  public :: boundary_convertParameter
+  public :: boundary_convertParameterList
+  public :: boundary_getRegionLength
+  public :: boundary_getNormalVec2D
 
-  contains
+contains
 
 !************************************************************************
 
@@ -536,7 +553,7 @@ module boundary
     
     ! Allocate an array containing handles. Each handle refers
     ! to integer data for a boundary component.
-    call storage_new1D("boundary_read_prm", "h_Idbldatavec_handles", &
+    call storage_new("boundary_read_prm", "h_Idbldatavec_handles", &
                        rboundary%iboundarycount, ST_INT, &
                        rboundary%h_Idbldatavec_handles, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rboundary%h_Idbldatavec_handles, p_IdbleSegInfo_handles)

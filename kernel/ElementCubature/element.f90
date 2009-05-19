@@ -239,6 +239,7 @@
 module element
 
   use fsystem
+  use genoutput
   use basicgeometry
   use derivatives
   use transformation

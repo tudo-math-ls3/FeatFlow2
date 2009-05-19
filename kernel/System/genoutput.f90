@@ -175,6 +175,8 @@ module genoutput
   use fsystem
 
   implicit none
+  
+  private
 
 !<constants>
 
@@ -182,16 +184,16 @@ module genoutput
 
   ! Output mode: Write to main log file / error log file (depending on whether
   ! a message is considered as an error or not by OU_CLASS_ERROR/OU_CLASS_WARNING)
-  integer(I32), parameter :: OU_MODE_LOG      = 2**0
+  integer(I32), parameter, public :: OU_MODE_LOG      = 2**0
   
   ! Output mode: Write to terminal
-  integer(I32), parameter :: OU_MODE_TERM     = 2**1
+  integer(I32), parameter, public :: OU_MODE_TERM     = 2**1
   
   ! Output mode: Write to benchmark log file
-  integer(I32), parameter :: OU_MODE_BENCHLOG = 2**2
+  integer(I32), parameter, public :: OU_MODE_BENCHLOG = 2**2
 
   ! Output mode: Write to both, log file and terminal
-  integer(I32), parameter :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
+  integer(I32), parameter, public :: OU_MODE_STD      = OU_MODE_LOG+OU_MODE_TERM
   
 !</constantblock>
   
@@ -199,59 +201,59 @@ module genoutput
 !                            when writing a string to a log file / terminal">
 
   ! Output classification: Standard message
-  integer, parameter :: OU_CLASS_MSG      = 0
+  integer, parameter, public :: OU_CLASS_MSG      = 0
   
   ! Output classification: Trace information, level 1
-  integer, parameter :: OU_CLASS_TRACE1   = 1
+  integer, parameter, public :: OU_CLASS_TRACE1   = 1
 
   ! Output classification: Trace information, level 2
-  integer, parameter :: OU_CLASS_TRACE2   = 2
+  integer, parameter, public :: OU_CLASS_TRACE2   = 2
 
   ! Output classification: Trace information, level 3
-  integer, parameter :: OU_CLASS_TRACE3   = 3
+  integer, parameter, public :: OU_CLASS_TRACE3   = 3
 
   ! Output classification: System/Timer message
-  integer, parameter :: OU_CLASS_SYSTEM   = 4
+  integer, parameter, public :: OU_CLASS_SYSTEM   = 4
   
   ! Output classification: Error message.
-  integer, parameter :: OU_CLASS_ERROR    = 5
+  integer, parameter, public :: OU_CLASS_ERROR    = 5
 
   ! Output classification: Warning message.
-  integer, parameter :: OU_CLASS_WARNING  = 6
+  integer, parameter, public :: OU_CLASS_WARNING  = 6
 
 !</constantblock>
 
 !<constantblock description="Type of separator line">
 
   ! Separator line: MINUS character
-  integer, parameter :: OU_SEP_MINUS  = 0
+  integer, parameter, public :: OU_SEP_MINUS  = 0
 
   ! Separator line: STAR character 
-  integer, parameter :: OU_SEP_STAR   = 1
+  integer, parameter, public :: OU_SEP_STAR   = 1
 
   ! Separator line: EQUAL character
-  integer, parameter :: OU_SEP_EQUAL  = 2
+  integer, parameter, public :: OU_SEP_EQUAL  = 2
 
   ! Separator line: DOLLAR character
-  integer, parameter :: OU_SEP_DOLLAR = 3
+  integer, parameter, public :: OU_SEP_DOLLAR = 3
 
   ! Separator line: @ character
-  integer, parameter :: OU_SEP_AT     = 4
+  integer, parameter, public :: OU_SEP_AT     = 4
 
   ! Separator line: + character
-  integer, parameter :: OU_SEP_PLUS   = 5
+  integer, parameter, public :: OU_SEP_PLUS   = 5
 
   ! Separator line: ~ character
-  integer, parameter :: OU_SEP_TILDE  = 6
+  integer, parameter, public :: OU_SEP_TILDE  = 6
 
   ! Separator line: & character
-  integer, parameter :: OU_SEP_AMPAND = 7
+  integer, parameter, public :: OU_SEP_AMPAND = 7
 
   ! Separator line: % character
-  integer, parameter :: OU_SEP_PERC   = 8
+  integer, parameter, public :: OU_SEP_PERC   = 8
 
   ! Separator line: # character
-  integer, parameter :: OU_SEP_HASH   = 9
+  integer, parameter, public :: OU_SEP_HASH   = 9
   
 !</constantblock>
 
@@ -259,30 +261,30 @@ module genoutput
 
   ! Length of a line on the terminal / in the log file.
   ! Standard value = 80 characters
-  integer :: OU_LINE_LENGTH         = 80
+  integer, public :: OU_LINE_LENGTH         = 80
 
   ! Global device number for terminal output
-  integer :: OU_TERMINAL            = 6
+  integer, public :: OU_TERMINAL            = 6
 
   ! Global device number for terminal input
-  integer :: IN_TERMINAL            = 5
+  integer, public :: IN_TERMINAL            = 5
 
   ! Global device number for errors on terminal
-  integer :: OU_ERROR               = 6
+  integer, public :: OU_ERROR               = 6
   
   ! Global device number for log file. The log file is opened in output_init.
   ! <=0: no log file output.
-  integer :: OU_LOG                 = 0
+  integer, public :: OU_LOG                 = 0
   
   ! Global device number for error log file. The error log file is opened 
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
-  integer :: OU_ERRORLOG            = 0
+  integer, public :: OU_ERRORLOG            = 0
 
   ! Global device number for benchmark log file. The error log file is opened 
   ! in output_init and usually coincides with OU_LOG.
   ! <=0: write error messages to standard log file.
-  integer :: OU_BENCHLOG            = 0
+  integer, public :: OU_BENCHLOG            = 0
 
 !</constantblock>
 
@@ -298,6 +300,14 @@ module genoutput
     module procedure output_init_logfile
     module procedure output_init_standard
   end interface
+
+  public :: output_init
+  public :: output_line
+  public :: output_separator
+  public :: output_lbrk
+  public :: output_simple
+  public :: output_simple_sep
+  public :: output_done
 
 contains
 

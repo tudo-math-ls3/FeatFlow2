@@ -212,6 +212,15 @@
 !# 62.) lsysbl_getVectorMagnitude
 !#      -> Compute the vector magnitude.
 !#
+!# 63.) lsysbl_synchroniseSortVecVec
+!#      -> Synchronises the sorting between a vector and another vector
+!#
+!# 64.) lsysbl_synchroniseSortMatVec
+!#      -> Synchrionises the sorting of a vector according to the sorting
+!#         of a matrix
+!#
+!# 65.) lsysbl_createscalarfromvec
+!#      -> Create a scalar vector from a block vector
 !# </purpose>
 !##############################################################################
 
@@ -219,7 +228,9 @@ module linearsystemblock
 
   use fpersistence
   use fsystem
+  use genoutput
   use storage
+  use basicgeometry
   use spatialdiscretisation
   use linearsystemscalar
   use linearalgebra
@@ -229,38 +240,40 @@ module linearsystemblock
   use uuid
   
   implicit none
+  
+  private
 
 !<constants>
 
 !<constantblock description="Flags for the matrix specification bitfield">
 
   ! Standard matrix
-  integer(I32), parameter :: LSYSBS_MSPEC_GENERAL           =        0
+  integer(I32), parameter, public :: LSYSBS_MSPEC_GENERAL           =        0
   
   ! Block matrix is a scalar (i.e. 1x1) matrix.
-  integer(I32), parameter :: LSYSBS_MSPEC_SCALAR            =        1
+  integer(I32), parameter, public :: LSYSBS_MSPEC_SCALAR            =        1
 
   ! Block matrix is of saddle-point type:
   !  (A  B1)
   !  (B2 0 )
-  integer(I32), parameter :: LSYSBS_MSPEC_SADDLEPOINT       =        2
+  integer(I32), parameter, public :: LSYSBS_MSPEC_SADDLEPOINT       =        2
 
   ! Block matrix is nearly of saddle-point type 
   !  (A  B1)
   !  (B2 C )
   ! with C~0 being a stabilisation matrix
-  integer(I32), parameter :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
+  integer(I32), parameter, public :: LSYSBS_MSPEC_NEARLYSADDLEPOINT =        3
 
   ! The block matrix is a submatrix of another block matrix and not
   ! located at the diagonal of its parent. 
   ! This e.g. modifies the way, boundary conditions are implemented
   ! into a matrix; see in the boundary condition implementation
   ! routines for details.
-  integer(I32), parameter :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
+  integer(I32), parameter, public :: LSYSBS_MSPEC_OFFDIAGSUBMATRIX  =        4
 
   ! The submatrices in the block matrix all share the same structure.
   ! Submatrices are allowed to be empty. 
-  integer(I32), parameter :: LSYSBS_MSPEC_GROUPMATRIX       =        5
+  integer(I32), parameter, public :: LSYSBS_MSPEC_GROUPMATRIX       =        5
 
 !</constantblock>
 
@@ -330,6 +343,8 @@ module linearsystemblock
     type(t_vectorScalar), dimension(:), pointer :: RvectorBlock => null()
     
   end type
+  
+  public :: t_vectorBlock
   
 !</typeblock>
 
@@ -402,6 +417,8 @@ module linearsystemblock
     
   end type
   
+  public :: t_matrixBlock
+  
 !</typeblock>
 
 !</types>
@@ -413,11 +430,82 @@ module linearsystemblock
     module procedure lsysbl_createVecBlockByDiscr
   end interface
 
+  public :: lsysbl_createVectorBlock
+  public :: lsysbl_createVecBlockDirect
+  public :: lsysbl_createVecBlockIndirect
+  public :: lsysbl_createVecBlockByDiscr
+
   interface lsysbl_resizeVectorBlock
     module procedure lsysbl_resizeVecBlockDirect
     module procedure lsysbl_resizeVecBlockDirectDims
     module procedure lsysbl_resizeVecBlockIndirect
   end interface
+
+  public :: lsysbl_resizeVectorBlock
+  public :: lsysbl_resizeVecBlockIndMat
+  public :: lsysbl_resizeVecBlockDirectDims
+  public :: lsysbl_resizeVecBlockIndirect
+  
+  public :: lsysbl_createVecBlockIndMat
+  public :: lsysbl_createMatFromScalar
+  public :: lsysbl_createVecFromScalar
+  public :: lsysbl_createMatBlockByDiscr
+  public :: lsysbl_createEmptyMatrix
+  public :: lsysbl_duplicateMatrix
+  public :: lsysbl_duplicateVector
+  public :: lsysbl_enforceStructure
+  public :: lsysbl_enforceStructureDirect
+  public :: lsysbl_enforceStructureDiscr
+  public :: lsysbl_assignDiscrIndirect
+  public :: lsysbl_assignDiscrIndirectMat
+  public :: lsysbl_updateMatStrucInfo
+  public :: lsysbl_releaseVector
+  public :: lsysbl_releaseMatrix
+  public :: lsysbl_releaseMatrixRow
+  public :: lsysbl_releaseMatrixColumn
+  public :: lsysbl_blockMatVec
+  public :: lsysbl_copyVector
+  public :: lsysbl_copyMatrix
+  public :: lsysbl_scaleVector
+  public :: lsysbl_clearVector
+  public :: lsysbl_vectorLinearComb
+  public :: lsysbl_scalarProduct
+  public :: lsysbl_setSortStrategy
+  public :: lsysbl_sortVectorInSitu
+  public :: lsysbl_isVectorCompatible
+  public :: lsysbl_isMatrixCompatible
+  public :: lsysbl_isMatrixSorted
+  public :: lsysbl_isVectorSorted
+  public :: lsysbl_getbase_double
+  public :: lsysbl_getbase_single
+  public :: lsysbl_vectorNorm
+  public :: lsysbl_vectorNormBlock
+  public :: lsysbl_invertedDiagMatVec
+  public :: lsysbl_swapVectors
+  public :: lsysbl_deriveSubvector
+  public :: lsysbl_deriveSubmatrix
+  public :: lsysbl_isSubmatrixPresent
+  public :: lsysbl_infoVector
+  public :: lsysbl_infoMatrix
+  public :: lsysbl_clearMatrix
+  public :: lsysbl_convertVecFromScalar
+  public :: lsysbl_convertMatFromScalar
+  public :: lsysbl_insertSubmatrix
+  public :: lsysbl_assignDiscrDirectMat
+  public :: lsysbl_assignDiscrDirectVec
+  public :: lsysbl_createFpdbObjectVec
+  public :: lsysbl_createFpdbObjectMat
+  public :: lsysbl_restoreFpdbObjectVec
+  public :: lsysbl_restoreFpdbObjectMat
+  public :: lsyssc_unshareMatrix
+  public :: lsyssc_unshareVector
+  public :: lsysbl_moveToSubmatrix
+  public :: lsysbl_allocEmptyMatrix
+  public :: lsysbl_reintegrateSubmatrix
+  public :: lsysbl_getVectorMagnitude
+  public :: lsysbl_synchroniseSortVecVec
+  public :: lsysbl_synchroniseSortMatVec
+  public :: lsysbl_createscalarfromvec
   
 contains
 
@@ -900,7 +988,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', sum(Isize), cdata, &
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', sum(Isize), cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -994,7 +1082,7 @@ contains
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
-  call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
                       isize*iblocks, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
@@ -1092,7 +1180,7 @@ contains
   rx%RvectorBlock = rtemplate%RvectorBlock
   
   ! Allocate one large new vector holding all data.
-  call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, cdata, &
+  call storage_new ('lsysbl_createVecBlockDirect', 'Vector', rtemplate%NEQ, cdata, &
                       rx%h_Ddata, ST_NEWBLOCK_NOINIT)
   rx%cdataType = cdata
   
@@ -1432,7 +1520,7 @@ contains
     rx%NEQ = NCOLS
 
     ! Allocate one large vector holding all data.
-    call storage_new1D ('lsysbl_createVecBlockIndMat', 'Vector', &
+    call storage_new ('lsysbl_createVecBlockIndMat', 'Vector', &
                         NCOLS, cdata, rx%h_Ddata, ST_NEWBLOCK_NOINIT)
     
     ! Check if number of bocks is nonzero, otherwise exit
@@ -2241,7 +2329,7 @@ contains
     call lsysbl_createVecBlockIndirect (rx,ry,.false.)
   end if
   
-  call storage_getsize1D (ry%h_Ddata, isize)
+  call storage_getsize (ry%h_Ddata, isize)
   NEQ = rx%NEQ
   if (isize .lt. NEQ) then
     print *,'lsysbl_copyVector: Destination vector too small!'
@@ -2659,7 +2747,7 @@ contains
     call lsysbl_getbase_double (ry,p_Ddata2dp)
     
     ! Perform the scalar product
-    res=lalg_scalarProductDble(p_Ddata1dp,p_Ddata2dp)
+    res=lalg_scalarProduct(p_Ddata1dp,p_Ddata2dp)
 !!$      res = 0.0_DP
 !!$      DO i=1,rx%NEQ
 !!$        res = res + p_Ddata1dp(i)*p_Ddata2dp(i)
@@ -2672,7 +2760,7 @@ contains
     call lsysbl_getbase_single (ry,p_Fdata2dp)
 
     ! Perform the scalar product
-    res=lalg_scalarProductSngl(p_Fdata1dp,p_Fdata2dp)
+    res=lalg_scalarProduct(p_Fdata1dp,p_Fdata2dp)
 
   case default
     print *,'lsysbl_scalarProduct: Not supported precision combination'
@@ -2731,12 +2819,12 @@ contains
   case (ST_DOUBLE)
     ! Get the array and calculate the norm
     call lsysbl_getbase_double (rx,p_Ddata)
-    lsysbl_vectorNorm = lalg_normDble (p_Ddata,cnorm,iposMax) 
+    lsysbl_vectorNorm = lalg_norm (p_Ddata,cnorm,iposMax) 
     
   case (ST_SINGLE)
     ! Get the array and calculate the norm
     call lsysbl_getbase_single (rx,p_Fdata)
-    lsysbl_vectorNorm = lalg_normSngl (p_Fdata,cnorm,iposMax) 
+    lsysbl_vectorNorm = lalg_norm (p_Fdata,cnorm,iposMax) 
     
   case DEFAULT
     print *,'lsysbl_vectorNorm: Unsupported data type!'
@@ -3746,7 +3834,7 @@ contains
       end if
       
       if (ry%h_Ddata .ne. ST_NOHANDLE) then    
-        call storage_getsize1D (ry%h_Ddata, isize)
+        call storage_getsize (ry%h_Ddata, isize)
         if (isize .lt. rx%NEQ) then
           ! Reallocate by first releasing the data
           call storage_free (ry%h_Ddata)
@@ -3764,7 +3852,7 @@ contains
     
       ! Some basic checks
       if (ry%h_Ddata .ne. ST_NOHANDLE) then    
-        call storage_getsize1D (ry%h_Ddata, isize)
+        call storage_getsize (ry%h_Ddata, isize)
         if (isize .lt. rx%NEQ) then
           ! Reallocate by first releasing the data
           call storage_free (ry%h_Ddata)
@@ -3811,7 +3899,7 @@ contains
         end if
         
         if (ry%h_Ddata .ne. ST_NOHANDLE) then    
-          call storage_getsize1D (ry%h_Ddata, isize)
+          call storage_getsize (ry%h_Ddata, isize)
           if (isize .lt. rx%NEQ) then
             ! Reallocate by first releasing the data
             call storage_free (ry%h_Ddata)
@@ -4367,7 +4455,7 @@ contains
     ! Next question: should we share the vector content or not?
     if (.not. bshareContent) then
       ! Allocate a new large vector holding all data.
-      call storage_new1D ('lsysbl_createVecBlockDirect', 'Vector', &
+      call storage_new ('lsysbl_createVecBlockDirect', 'Vector', &
                           rvectorDest%NEQ, rvectorDest%cdataType, &
                           rvectorDest%h_Ddata, ST_NEWBLOCK_NOINIT)
       rvectorDest%RvectorBlock(1:ncount)%h_Ddata = rvectorDest%h_Ddata

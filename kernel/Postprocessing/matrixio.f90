@@ -44,6 +44,7 @@
 module matrixio
 
   use fsystem
+  use genoutput
   use storage
   use io
   use linearsystemscalar
@@ -51,8 +52,19 @@ module matrixio
   use globalsystem
   
   implicit none
-
-  contains
+  
+  private
+  
+  public :: matio_writeMatrixHR
+  public :: matio_writeBlockMatrixHR
+  public :: matio_spyMatrix
+  public :: matio_spyBlockMatrix
+  public :: matio_writeMatrixMaple
+  public :: matio_writeBlockMatrixMaple
+  public :: matio_writeMatrix1_Dble
+  public :: matio_writeMatrix79_Dble
+  
+contains
 
   ! ***************************************************************************
 

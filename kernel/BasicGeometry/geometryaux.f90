@@ -50,6 +50,20 @@ module geometryaux
   use fsystem
   
   implicit none
+  
+  private
+
+  public :: gaux_getAspectRatio_quad2D
+  public :: gaux_getArea_tria2D
+  public :: gaux_getArea_quad2D
+  public :: gaux_getVolume_tetra3D
+  public :: gaux_getVolume_hexa3D
+  public :: gaux_isIntersection_line2D
+  public :: gaux_getIntersection_ray2D
+  public :: gaux_isInElement_quad2D
+  public :: gaux_isInElement_tri2D
+  public :: gaux_getBarycentricCoords_tri2D
+  public :: gaux_isFlipped_hexa3D
 
 contains
 

@@ -12,10 +12,21 @@
 
 module element_prism3d
 
+  use fsystem
   use elementbase
   use derivatives
+  use basicgeometry
 
-implicit none
+  implicit none
+  
+  private
+  
+  public :: elem_R0_3D 
+  public :: elem_R0_3D_mult 
+  public :: elem_R0_3D_sim 
+  public :: elem_R1_3D 
+  public :: elem_R1_3D_mult 
+  public :: elem_R1_3D_sim 
 
 contains
 
