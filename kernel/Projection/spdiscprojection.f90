@@ -45,7 +45,6 @@ module spdiscprojection
   use dofmapping
   use linearsystemscalar
   use linearsystemblock
-  use feevaluation
   
   implicit none
 
