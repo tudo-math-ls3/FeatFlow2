@@ -759,6 +759,11 @@ contains
                  rvector%p_rblockDiscr%RspatialDiscr(2), &
                  EL_Q1, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(2))
+
+    call spdiscr_deriveSimpleDiscrSc (&
+                 rvector%p_rblockDiscr%RspatialDiscr(3), &
+                 EL_Q0, CUB_G2X2, &
+                 rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
     !

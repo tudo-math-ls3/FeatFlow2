@@ -128,6 +128,8 @@ iBoundary          = 2
 #  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
+# 20 = Q1        / Q1        / Q1
+
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (QP1  = Quadrilateral discontinuous P1 element)
 

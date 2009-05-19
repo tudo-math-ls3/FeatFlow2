@@ -287,15 +287,17 @@ contains
 
 !<input>
   ! Element combination identifier to use. The following identifiers are supported:
-  ! 0 = Q1~(E031) / Q1~(E031) / Q0
-  ! 1 = Q1~(E030) / Q1~(E030) / Q0
-  ! 2 = Q1~(EM31) / Q1~(EM31) / Q0
-  ! 3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
-  ! 4 = Q2 (E013) / Q2 (E013) / QP1
-  ! 5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
-  ! 6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
-  ! 7 = Q2~(EB50) / Q2~(EB50) / QP1
-  ! 8 = Q2~(EM50) / Q2~(EM50) / QP1
+  !  0 = Q1~(E031) / Q1~(E031) / Q0
+  !  1 = Q1~(E030) / Q1~(E030) / Q0
+  !  2 = Q1~(EM31) / Q1~(EM31) / Q0
+  !  3 = Q1~(EM30) / Q1~(EM30) / Q0 = standard
+  !  4 = Q2 (E013) / Q2 (E013) / QP1
+  !  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
+  !  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
+  !  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+  ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
+  ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
+  ! 20 = Q1        / Q1        / Q1
   integer, intent(in) :: ielementType
   
   ! Boundary structure for the discretisation
@@ -369,6 +371,10 @@ contains
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
+
+    case (20)
+      ieltypeUV = EL_Q1
+      ieltypeP = EL_Q1
 
     case default
       call output_line (&
