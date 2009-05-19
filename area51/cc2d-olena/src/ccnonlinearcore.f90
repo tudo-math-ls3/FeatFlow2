@@ -1449,6 +1449,7 @@ contains
             call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
             call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
             call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,4),Irows)
             
           end if
           
@@ -1465,6 +1466,7 @@ contains
               call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
               call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
               call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
+              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,4),Irows)
               
             end if
             

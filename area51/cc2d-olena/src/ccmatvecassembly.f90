@@ -405,6 +405,8 @@ contains
       !
       CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,-1.0_DP)
       
+      call matio_writeMatrixHR (rmatrix%RmatrixBlock(4,4), 'bl44',&
+                                  .true., 0, 'mat44.txt', '(E20.5)')
       ! Assemble the gradient submatrices
       !          
       !    ( .    .    B1  ) 
@@ -1180,19 +1182,19 @@ contains
     TYPE(t_convStreamlineDiffusion) :: rstreamlineDiffusion
     TYPE(T_jumpStabilisation) :: rjumpStabil
     REAL(DP) :: dvecWeight
-    !REAL(DP), DIMENSION(:), POINTER :: p_h_Da
+    REAL(DP), DIMENSION(:), POINTER :: p_h_Da
    
     IF  (.NOT. lsyssc_hasMatrixContent (rmatrix%rmatrixBlock(4,4))) THEN 
       CALL lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)     
     END IF
     
-    CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
+    !CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
     
-!     CALL storage_new1D('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
-!          1, ST_DOUBLE, rmatrix%rmatrixBlock(4,4)%h_DA, ST_NEWBLOCK_ZERO)
-!          
-!      CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)
-!     p_h_Da(:) = 1.0_dp
+    CALL storage_new1D('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
+          1, ST_DOUBLE, rmatrix%rmatrixBlock(4,4)%h_DA, ST_NEWBLOCK_ZERO)
+          
+      CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)
+     p_h_Da(:) = 1.0_dp
     
     END SUBROUTINE  
     

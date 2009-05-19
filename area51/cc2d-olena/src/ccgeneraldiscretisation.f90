@@ -848,8 +848,7 @@ contains
     ! Get a pointer to the (scalar) Stokes matrix:
     p_rmatrixStokes => rlevelInfo%rmatrixStokes
     
-    ! Get a pointer to the (scalar) concentration matrix:
-    p_rmatrixTemplateQ1=> rlevelInfo%rmatrixTemplateQ1
+    
     ! The global system looks as follows:
     !
     !    ( A         B1 )   ( A         B1 )
@@ -896,7 +895,11 @@ contains
     ! If it's necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
     call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
-
+    
+    
+    ! Get a pointer to the (scalar) concentration matrix:
+    p_rmatrixTemplateQ1=> rlevelInfo%rmatrixTemplateQ1
+    
     call stdop_assembleLaplaceMatrix (p_rmatrixTemplateQ1,.true.,-0.0001_DP)
     
     ! In the global system, there are two coupling matrices B1 and B2.

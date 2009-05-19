@@ -1130,9 +1130,12 @@ contains
       dtime = 0.0_DP
       dtimeMax = 0.0_DP
     end if
-
-    Dvalues(:,:) = 0.0_DP
     
+    IF (cderivative .EQ. DER_FUNC) THEN
+        Dvalues(:,:) = Dpoints(1,:,:)
+        else
+        Dvalues(:,:) = 0.0_DP
+    END IF
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
     !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(Dpoints(1,:,:))
@@ -1227,7 +1230,8 @@ contains
       dtime = 0.0_DP
       dtimeMax = 0.0_DP
     end if
-
+    
+   
     Dvalues(:,:) = 0.0_DP
     
     ! Example:
@@ -1325,7 +1329,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 1.0_DP
 
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1428,10 +1432,10 @@ contains
 
    
      IF (cderivative .EQ. DER_FUNC) THEN
-       Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(1./(Dpoints(1,:,:)+1.)) 
+      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(1./(Dpoints(1,:,:)+1.)) 
      ELSE   
-       Dvalues(:,:) = 0.0_DP
-     END IF
+       Dvalues(:,:) = 1.0_DP
+    END IF
 
   end subroutine
 
