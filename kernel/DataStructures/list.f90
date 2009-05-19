@@ -38,7 +38,7 @@
 !#
 !#  8.) list_getLastInList
 !#      -> Get the position of the last item in list
-!#
+!# 
 !#  9.) list_getNextInList
 !#      -> Get the position of the next item in list
 !#
@@ -172,6 +172,8 @@ module list
 !<typeblock>
 
   type t_list
+    private
+
     ! Format-Tag: Double, Single, Integer
     integer :: clistFormat = ST_NOHANDLE
     
@@ -2676,6 +2678,13 @@ contains
       call sys_halt()
     end if
 
+    ! Check if position is valid
+    if (ipos > rlist%na) then
+      call output_line('Invalid position!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionDble')
+      call sys_halt()
+    end if
+
     ! Double key
     dkey = rlist%Dkey(ipos)
     
@@ -2731,6 +2740,13 @@ contains
       call sys_halt()
     end if
 
+    ! Check if position is valid
+    if (ipos > rlist%na) then
+      call output_line('Invalid position!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionSngl')
+      call sys_halt()
+    end if
+
     ! Double key
     skey = rlist%Skey(ipos)
     
@@ -2782,6 +2798,13 @@ contains
     ! Check if list format is ok
     if (rlist%clistFormat .ne. ST_INT) then
       call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionInt')
+      call sys_halt()
+    end if
+
+    ! Check if position is valid
+    if (ipos > rlist%na) then
+      call output_line('Invalid position!',&
           OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionInt')
       call sys_halt()
     end if

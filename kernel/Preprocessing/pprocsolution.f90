@@ -24,6 +24,7 @@ module pprocsolution
   use genoutput
   use storage
   use io
+  use linearalgebra
   use linearsystemscalar
   use linearsystemblock
   

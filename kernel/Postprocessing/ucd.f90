@@ -488,6 +488,7 @@ module ucd
 !</types>
 
   public :: ucd_startGMV
+  public :: ucd_startBGMV
   public :: ucd_startAVS
   public :: ucd_startVTK
   public :: ucd_setAlternativeSource

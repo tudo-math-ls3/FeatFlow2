@@ -15,14 +15,15 @@
 
 module pprocindicator
 
-  use fsystem
-  use genoutput
-  use storage
-  use triangulation
   use basicgeometry
   use element
-  use spatialdiscretisation
+  use fsystem
+  use genoutput
+  use linearalgebra
   use linearsystemscalar
+  use spatialdiscretisation
+  use storage
+  use triangulation
 
   implicit none
   
