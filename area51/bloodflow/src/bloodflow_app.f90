@@ -36,11 +36,8 @@ program bloodflow_app
     ! Evaluate the object location at simulation time
     call bloodflow_evalObject(rbloodflow, dtime)
     
-    ! Evaluate the bloodflow structure
-    call bloodflow_evalIndicator(rbloodflow)
-
-    ! Redistribute the mesh points
-    call bloodflow_redistMeshPoints(rbloodflow)
+    ! Adapt the grid to the thin object
+    call bloodflow_adaptObject(rbloodflow)
     
     ! Write the content of the bloodflow structure to GMV file
     call bloodflow_outputStructure(rbloodflow)
