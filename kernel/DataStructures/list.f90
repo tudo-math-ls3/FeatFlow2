@@ -73,6 +73,10 @@
 !# 16.) list_clearList
 !#      -> Remove all content from list
 !#
+!# 17.) list_getByPosition = list_getByPositionDble /
+!#                           list_getByPositionSngl / 
+!#                           list_getByPositionInt
+!#
 !# </purpose>
 !##############################################################################
 
@@ -103,6 +107,7 @@ module list
   public :: list_searchInList
   public :: list_printList
   public :: list_clearList
+  public :: list_getByPosition
 
 !<constants>
 
@@ -308,7 +313,13 @@ module list
     module procedure list_searchInListSngl
     module procedure list_searchInListInt
   end interface
-      
+
+  interface list_getByPosition
+    module procedure list_getByPositionDble
+    module procedure list_getByPositionSngl
+    module procedure list_getByPositionInt
+  end interface
+    
   ! ***************************************************************************
   ! ***************************************************************************
   ! ***************************************************************************
@@ -2624,5 +2635,170 @@ contains
     rlist%Knext(LTAIL) = LNULL
     
   end subroutine list_clearList
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine list_getByPositionDble(rlist, ipos, dkey, DData, SData, IData)
+
+!<description>
+    ! This subroutine returns the key and data stored at the given position
+!</description>
+
+!<input>
+    ! List
+    type(t_list), intent(IN) :: rlist
+
+    ! Position of the data
+    integer, intent(IN) :: ipos
+!</input>
+
+!<output>
+    ! Double key
+    real(DP), intent(OUT) :: dkey
+
+    ! OPTIONAL: Double data
+    real(DP), dimension(:), intent(OUT), optional :: DData
+
+    ! OPTIONAL: Single data
+    real(SP), dimension(:), intent(OUT), optional :: SData
+
+    ! OPTIONAL: Integer data
+    integer, dimension(:), intent(OUT), optional :: IData
+!</output>
+!</subroutine>
+
+    ! Check if list format is ok
+    if (rlist%clistFormat .ne. ST_DOUBLE) then
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionDble')
+      call sys_halt()
+    end if
+
+    ! Double key
+    dkey = rlist%Dkey(ipos)
+    
+    ! Optional data
+    if ((rlist%isizeInt > 0) .and. &
+        present(IData)) IData = rlist%IData(:,ipos)
+    
+    if ((rlist%isizeDble > 0) .and. &
+        present(DData)) DData = rlist%DData(:,ipos)
+    
+    if ((rlist%isizeSngl > 0) .and. &
+        present(SData)) SData = rlist%SData(:,ipos)
+
+  end subroutine list_getByPositionDble
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine list_getByPositionSngl(rlist, ipos, skey, DData, SData, IData)
+
+!<description>
+    ! This subroutine returns the key and data stored at the given position
+!</description>
+
+!<input>
+    ! List
+    type(t_list), intent(IN) :: rlist
+
+    ! Position of the data
+    integer, intent(IN) :: ipos
+!</input>
+
+!<output>
+    ! Single key
+    real(SP), intent(OUT) :: skey
+
+    ! OPTIONAL: Double data
+    real(DP), dimension(:), intent(OUT), optional :: DData
+
+    ! OPTIONAL: Single data
+    real(SP), dimension(:), intent(OUT), optional :: SData
+
+    ! OPTIONAL: Integer data
+    integer, dimension(:), intent(OUT), optional :: IData
+!</output>
+!</subroutine>
+
+    ! Check if list format is ok
+    if (rlist%clistFormat .ne. ST_SINGLE) then
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionSngl')
+      call sys_halt()
+    end if
+
+    ! Double key
+    skey = rlist%Skey(ipos)
+    
+    ! Optional data
+    if ((rlist%isizeInt > 0) .and. &
+        present(IData)) IData = rlist%IData(:,ipos)
+    
+    if ((rlist%isizeDble > 0) .and. &
+        present(DData)) DData = rlist%DData(:,ipos)
+    
+    if ((rlist%isizeSngl > 0) .and. &
+        present(SData)) SData = rlist%SData(:,ipos)
+
+  end subroutine list_getByPositionSngl
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine list_getByPositionInt(rlist, ipos, ikey, DData, SData, IData)
+
+!<description>
+    ! This subroutine returns the key and data stored at the given position
+!</description>
+
+!<input>
+    ! List
+    type(t_list), intent(IN) :: rlist
+
+    ! Position of the data
+    integer, intent(IN) :: ipos
+!</input>
+
+!<output>
+    ! Integer key
+    integer, intent(OUT) :: ikey
+
+    ! OPTIONAL: Double data
+    real(DP), dimension(:), intent(OUT), optional :: DData
+
+    ! OPTIONAL: Single data
+    real(SP), dimension(:), intent(OUT), optional :: SData
+
+    ! OPTIONAL: Integer data
+    integer, dimension(:), intent(OUT), optional :: IData
+!</output>
+!</subroutine>
+
+    ! Check if list format is ok
+    if (rlist%clistFormat .ne. ST_INT) then
+      call output_line('Unsupported data format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'list_getByPositionInt')
+      call sys_halt()
+    end if
+
+    ! Double key
+    ikey = rlist%Ikey(ipos)
+    
+    ! Optional data
+    if ((rlist%isizeInt > 0) .and. &
+        present(IData)) IData = rlist%IData(:,ipos)
+    
+    if ((rlist%isizeDble > 0) .and. &
+        present(DData)) DData = rlist%DData(:,ipos)
+    
+    if ((rlist%isizeSngl > 0) .and. &
+        present(SData)) SData = rlist%SData(:,ipos)
+
+  end subroutine list_getByPositionInt
 
 end module list
