@@ -10,13 +10,13 @@
 ################################################################################
 
 # Filename which contains the triangulation
-trifilename = grids/blood1.tri
+trifilename = grids/blood2.tri
 
 # Filename which contains the boundary parametrization
-prmfilename = grids/blood1.prm
+prmfilename = grids/blood2.prm
 
 # Number of global refinement levels
-iglobRefLevel = 5
+iglobRefLevel = 1
 
 ################################################################################
 [Output]
@@ -24,15 +24,6 @@ iglobRefLevel = 5
 
 # Name of UCD output file
 ucdfilename = out/blood1.gmv
-
-################################################################################
-[BoundingBox]
-################################################################################
-
-xorigin = 1.0
-yorigin = 0.0
-xlength = 1.8
-ylength = 2.0
 
 ################################################################################
 [Object]
@@ -48,3 +39,11 @@ c       = 1.0
 dtimeStart = 0.5
 dtimeStop  = 0.51 #6.283185307179586477
 dtimestep  = 0.01
+
+################################################################################
+[Adaptation]
+################################################################################
+nsubdividemax        = 10
+iadaptationstrategy  = 1
+drefinementtolerance = 1.0
+dcoarseningtolerance = 0.0
