@@ -4921,7 +4921,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that's all
-      call lalg_clearVectorSngl (Farray)
+      call lalg_clearVectorSngl2D (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
@@ -5533,7 +5533,7 @@ contains
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
       ! Fill the destination array with zero, that's all
-      call lalg_clearVectorDble (Darray)
+      call lalg_clearVectorDble2D (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
       call output_line ('Ordering not available for multidimensional array!', &
