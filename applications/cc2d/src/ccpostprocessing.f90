@@ -873,6 +873,19 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, &
         p_Ddata(1:p_rtriangulation%NEL))
+
+    ! If we have a simple Q1 discretisation in the pressure, write it out as it is
+    if (rvector%p_rblockDiscr%RspatialDiscr(3)% &
+        ccomplexity .eq. SPDISC_UNIFORM) then
+      ieltype = rvector%p_rblockDiscr%RspatialDiscr(3)% &
+                RelementDistr(1)%celement
+                
+      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1) then
+        call lsyssc_getbase_double (rvector%RvectorBlock(3),p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, &
+            p_Ddata(1:p_rtriangulation%NEL))
+      end if
+    end if
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
