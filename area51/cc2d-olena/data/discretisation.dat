@@ -22,6 +22,7 @@
 #     coeff_AnalyticSolution_Y, coeff_AnalyticSolution_P,coeff_AnalyticSolution_C
 #     in cccallback.f90.
 
+
 ctypeInitialSolution = 3
 
 # If ctypeInitialSolution=1: Level of the initial solution in the file
@@ -63,7 +64,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              =4
+NLMAX              =2
 
 
 # ------------------------------------------------------------------------
@@ -78,7 +79,7 @@ isubEquation = 0
 
 # Viscosity parmeter 1/NU
 
-RE                 = 5000
+RE                 = 500
 
 # Type of right hand side. 
 # 0=zero
