@@ -40,6 +40,7 @@ module transport_callback2d
   use fsystem
   use genoutput
   use hadaptaux
+  use linearsystemscalar
   use linearsystemblock
   use storage
 

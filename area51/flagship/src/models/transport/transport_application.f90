@@ -144,6 +144,8 @@ module transport_application
   use bilinearformevaluation
   use boundaryfilter
   use collection
+  use derivatives
+  use element
   use flagship_basic
   use fparser
   use fsystem
@@ -161,6 +163,7 @@ module transport_application
   use pprocindicator
   use pprocsolution
   use problem
+  use scalarpde
   use solveraux
   use spatialdiscretisation
   use statistics

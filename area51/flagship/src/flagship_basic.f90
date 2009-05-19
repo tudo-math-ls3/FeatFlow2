@@ -23,6 +23,7 @@ module flagship_basic
 
   use fsystem
   use fparser
+  use genoutput
   use io
   use problem
   use solveraux

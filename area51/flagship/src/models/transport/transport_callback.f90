@@ -53,13 +53,16 @@
 module transport_callback
 
   use afcstabilisation
+  use basicgeometry
   use boundaryfilter
   use collection
+  use derivatives
   use flagship_basic
   use fparser
   use fsystem
   use genoutput
   use groupfemscalar
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use problem

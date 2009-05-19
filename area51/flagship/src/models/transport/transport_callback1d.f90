@@ -36,6 +36,7 @@ module transport_callback1d
   use fsystem
   use genoutput
   use hadaptaux
+  use linearsystemscalar
   use linearsystemblock
   use storage
 

@@ -98,6 +98,8 @@ module euler_application
   use bilinearformevaluation
   use boundaryfilter
   use collection
+  use derivatives
+  use element
   use euler_basic
   use euler_callback
   use euler_callback1d

@@ -39,6 +39,7 @@
 module euler_callback
 
   use afcstabilisation
+  use basicgeometry
   use boundaryfilter
   use collection
   use euler_basic
@@ -49,6 +50,7 @@ module euler_callback
   use fsystem
   use genoutput
   use groupfemsystem
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
   use problem

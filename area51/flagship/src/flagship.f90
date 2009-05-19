@@ -12,6 +12,7 @@ program flagship
 
   use euler_application
   use fparser
+  use fsystem
   use genoutput
   use paramlist
   use signal

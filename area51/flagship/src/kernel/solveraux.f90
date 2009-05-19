@@ -113,14 +113,15 @@
 
 module solveraux
 
+  use boundaryfilter
   use fsystem
-  use storage
   use genoutput
-  use paramlist
+  use linearalgebra
   use linearsystemblock
   use linearsystemscalar
-
-  use boundaryfilter
+  use paramlist
+  use storage
+  use triangulation
   
   implicit none
 
