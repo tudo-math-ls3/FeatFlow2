@@ -28,6 +28,7 @@ module poisson2d_method0_simple
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use spdiscprojection
   use scalarpde
   use ucd
   use pprocerror
