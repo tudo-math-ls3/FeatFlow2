@@ -45,6 +45,7 @@ module spdiscprojection
   use dofmapping
   use linearsystemscalar
   use linearsystemblock
+  use feevaluation
   
   implicit none
 
@@ -171,6 +172,27 @@ contains
     ! Remark: Currently only 2D / 3D Q1 supported...
     select case (elem_getPrimaryElement(p_rdestDiscr%RelementDistr(1)%&
                                         celement))
+    case (EL_Q0)
+      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
+                                          celement))
+      case (EL_Q1)
+        ! Get geometric information from the triangulation.
+        p_rtriangulation => p_rsourceDiscr%p_rtriangulation
+        call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+                                                     p_IverticesAtElement)
+                                                     
+        ! Get the vector data
+        call lsyssc_getbase_double (rsourceVector,p_Dsource)
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        
+        ! Call the conversion routine
+        call spdp_Q1toQ0_dble (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
+                               p_IverticesAtElement)
+      case default
+        print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
+        call sys_halt()
+        
+      end select
     case (EL_Q1)
       ! So we should convert the source vector into a Q1 destination vector.
       ! Which element is used in the trial space?
@@ -362,6 +384,54 @@ contains
       ! in the interpolated solution.
       nadj = IelementsAtVertexIdx(iv+1) - IelementsAtVertexIdx(iv)
       Ddest(iv) = Ddest(iv) / real(nadj,DP)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  subroutine spdp_Q1toQ0_dble (Dsource, Ddest, NEL, IverticesAtElement)
+  
+!<description>
+  ! AUXILIARY ROUTINE.
+  ! Convert a solution vector based on a uniform discretisation with Q1
+  ! to a solution vector based on the Q0 element.
+!</description>
+
+!<input>
+  ! Source vector to be converted
+  real(DP), dimension(:), intent(IN) :: Dsource
+  
+  ! Number of elements in the triangulation
+  integer, intent(IN) :: NEL
+  
+  ! IverticesAtElement array of the triangulation
+  integer, dimension(:,:), intent(IN) :: IverticesAtElement 
+!</input>
+  
+!<output>
+  ! Destination vector of size NVT; receives the interpolated solution
+  real(DP), dimension(:), intent(OUT) :: Ddest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: iel,iv
+
+    ! Loop through the elements   
+    do iel=1,NEL
+    
+      ! On each element, loop through the vertices to get the mean value on 
+      ! the element
+      Ddest(iel) = 0.0_DP
+      do iv = 1,ubound(IverticesAtElement,1)
+        Ddest(iel) = Ddest(iel) + Dsource(IverticesAtElement(iv,iel))
+      end do
+
+      ! Divide by the number of vertices
+      Ddest(iel) = Ddest(iel) / real(ubound(IverticesAtElement,1),DP)
     end do
 
   end subroutine
