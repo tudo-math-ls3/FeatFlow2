@@ -594,6 +594,28 @@ contains
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)        
+
+      case (4)
+        ! BiCGSTab with general VANKA preconditioning.
+        !
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+        
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
+           'spreconditionerSection', sstring, '')
+        read (sstring,*) spreconditionerSection
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANKA as preconditioner.
+        call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rnonlinearIteration%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)        
       end select
       
       ! Put the coarse grid solver node to the preconditioner structure.
@@ -1065,7 +1087,8 @@ contains
             ! UMFPACK chosen as coarse grid solver.
             if (i .eq. NLMIN) then
             
-              if (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) then
+              if ((rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) .or. &
+                  (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 4)) then
                 btranspose = .true.
                 
                 if (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) then
