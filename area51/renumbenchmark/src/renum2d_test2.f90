@@ -109,6 +109,8 @@ CONTAINS
   character(len=*), intent(in) :: ssection
   type(t_solverConfig), intent(out) :: rsolverConfig
   
+  character(len=SYS_STRLEN) :: selement
+  
     ! Read the parameters
     call parlst_getvalue_int (rparlist,ssection,'isortStrategy',rsolverConfig%isortStrategy,0)
     call parlst_getvalue_int (rparlist,ssection,'isolver',rsolverConfig%isolver,0)
@@ -165,10 +167,13 @@ CONTAINS
     call parlst_getvalue_int (rparlist,ssection,'iwriteGMV',&
         rsolverConfig%iwriteGMV,rsolverConfig%iwriteGMV)
 
-    call parlst_getvalue_int (rparlist, 'PERFORMANCETESTS', 'ielementType', &
-        rsolverConfig%ielementType, 0)
-    call parlst_getvalue_int (rparlist,ssection,'ielementType',&
-        rsolverConfig%ielementType,rsolverConfig%ielementType)
+    call parlst_getvalue_string (rparlist, 'PERFORMANCETESTS', 'selement', &
+        selement,'EL_Q1')
+    call parlst_getvalue_string (rparlist,ssection,'selement',&
+        selement,selement)
+    
+    ! Get the correct element id
+    rsolverConfig%ielementType = elem_igetID(selement)
 
   end subroutine
 
@@ -245,7 +250,6 @@ CONTAINS
     ! Some temporary variables
     INTEGER :: i
     
-    
     ! Sorting strategy counter
     INTEGER, DIMENSION(:), POINTER :: p_Ipermutation
     TYPE(t_spatialDiscretisation), DIMENSION(:), ALLOCATABLE :: Rdiscretisation
@@ -258,7 +262,6 @@ CONTAINS
     character(len=SYS_STRLEN) :: sconfig
     type(t_solverConfig) :: rsolverConfig
     integer :: ilevel, iperform
-    logical :: bexists
     character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile
 
     ! Ok, let's start. Get the data from the DAT file.
@@ -269,7 +272,7 @@ CONTAINS
     call parlst_readfromfile (rparlist, sdatafile)
     
     ! Start the tests?
-    call parlst_getvalue_int (rparlist, 'PERFORMANCETESTS', 'iperform', iperform)
+    call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'iperform', iperform)
     
     if (iperform .ne. 0) then
     
@@ -305,12 +308,12 @@ CONTAINS
           
           ! Now read in the basic triangulation into our coarse level.
           CALL tria_readTriFile2D (Rlevels(rsolverConfig%NLCOARSE)%rtriangulation, &
-                                  strifile, rboundary)
+                                   strifile, rboundary)
           !CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
           !                        './pre/QUAD.tri', rboundary)
           
           ! In case we have a triangular element, form a tri mesh
-          if (rsolverConfig%ielementType .eq. 1) then
+          if (elem_igetNVE(rsolverConfig%ielementType) .eq. 3) then
             call tria_rawGridToTri (Rlevels(rsolverConfig%NLCOARSE)%rtriangulation)
           end if
           
@@ -344,28 +347,20 @@ CONTAINS
           ! Do this for all levels
           DO i = rsolverConfig%NLCOARSE, ilevel
             CALL spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
-                                          Rlevels(i)%rtriangulation, rboundary)
+                                         Rlevels(i)%rtriangulation, rboundary)
           END DO
           
           ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
           ! structures for every component of the solution vector.
           ! Initialise the first element of the list to specify the element
           ! and cubature rule for this solution component:
-          if (rsolverConfig%ielementType .eq. 1) then
-            ! P1
-            DO i = rsolverConfig%NLCOARSE, ilevel
-              CALL spdiscr_initDiscr_simple (&
-                  Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-                  EL_E001,CUB_G3_T,Rlevels(i)%rtriangulation, rboundary)
-            END DO
-          else
-            ! Q1
-            DO i = rsolverConfig%NLCOARSE, ilevel
-              CALL spdiscr_initDiscr_simple (&
-                  Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-                  EL_E011,CUB_G2X2,Rlevels(i)%rtriangulation, rboundary)
-            END DO
-          end if
+          DO i = rsolverConfig%NLCOARSE, ilevel
+            CALL spdiscr_initDiscr_simple (&
+                Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
+                rsolverConfig%ielementType,&
+                spdiscr_getStdCubature(rsolverConfig%ielementType),&
+                Rlevels(i)%rtriangulation, rboundary)
+          END DO
                         
           CALL stat_clearTimer (rtimerMatGen)
           CALL stat_startTimer (rtimerMatGen)

@@ -114,7 +114,7 @@ CONTAINS
     INTEGER :: NLMAX,ilevmax
     
     ! Some temporary variables
-    INTEGER :: i
+    INTEGER :: i,celementtype
     REAL(DP) :: dmflops
     
     ! Sorting strategy counter
@@ -125,7 +125,7 @@ CONTAINS
     
     TYPE(t_timer) :: rtimerSolver
     
-    character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile
+    character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile,selement
     logical :: bexists
     TYPE(t_triangulation) :: rtriangulation
 
@@ -141,6 +141,12 @@ CONTAINS
     
     ! Start the tests?
     call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'iperform', iperform)
+    
+    call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'selement', &
+        selement,'EL_Q1')
+
+    ! Get the correct element id
+    celementtype = elem_igetID(selement)
     
     if (iperform .ne. 0) then
 
@@ -180,6 +186,11 @@ CONTAINS
               ! Now read in the basic triangulation into our coarse level.
               CALL tria_readTriFile2D (rtriangulation, strifile, rboundary)
                                       
+              ! In case we have a triangular element, form a tri mesh
+              if (elem_igetNVE(celementtype) .eq. 3) then
+                call tria_rawGridToTri (rtriangulation)
+              end if
+
               ! Only macro 1
               CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
               
@@ -232,7 +243,8 @@ CONTAINS
             DO i = NLMIN, NLMAX
               CALL spdiscr_initDiscr_simple (&
                   Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-                  EL_E011,CUB_G2X2,Rlevels(i)%rtriangulation, rboundary)
+                  celementtype,spdiscr_getStdCubature(celementType),&
+                  Rlevels(i)%rtriangulation, rboundary)
             END DO
                           
             ! Now as the discretisation is set up, we can start to generate
@@ -479,7 +491,11 @@ CONTAINS
             dmflops = 2.0_DP * REAL(i-1,DP) * REAL(p_rmatrix%NA,DP)
             
             ! MFLOPs:
-            dmflops = dmflops / (rtimerSolver%delapsedReal * 1000000.0_DP)
+            if (rtimerSolver%delapsedReal .eq. 0.0_DP) then
+              dmflops = 0.0
+            else          
+              dmflops = dmflops / (rtimerSolver%delapsedReal * 1000000.0_DP)
+            end if
             
             ! Release the block matrix/vectors
             CALL lsysbl_releaseVector (rtempBlock)

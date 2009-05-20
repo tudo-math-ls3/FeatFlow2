@@ -1,8 +1,11 @@
 [MFLOPTESTS]
 
 # Whether to perform MFLOP-Tests or not
-
 iperform = 1
+
+# Element to use for creating the matrices.
+# EL_Q1=Q1, EL_Q2=Q2, EL_Q1T=Q1~
+selement = EL_Q1
 
 # Minimum level of the test
 NLMIN = 4
@@ -83,8 +86,9 @@ NLCOARSE = 1
 # Output-level of the solver. 
 ioutputLevel = 2
 
-# Element type for the discretisation. =11: Q1, =1: P1
-ielementType = 11
+# Element to use for creating the matrices.
+# EL_Q1=Q1, EL_Q2=Q2, EL_Q1T=Q1~
+selement = EL_Q1
 
 # Maximum number of iterations
 nmaxIterations = 10000
