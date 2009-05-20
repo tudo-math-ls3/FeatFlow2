@@ -89,7 +89,7 @@ MODULE renum2d_test2
     real(dp) :: domega
     real(dp) :: depsRel
     integer :: iwriteGMV
-    integer :: ielementType
+    integer(I32) :: ielementType
   
   end type
   
