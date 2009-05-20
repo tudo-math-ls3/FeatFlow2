@@ -114,7 +114,8 @@ CONTAINS
     INTEGER :: NLMAX,ilevmax
     
     ! Some temporary variables
-    INTEGER :: i,celementtype
+    INTEGER :: i
+    integer(I32) :: celementtype
     REAL(DP) :: dmflops
     
     ! Sorting strategy counter
