@@ -2586,23 +2586,20 @@ contains
     
     select case (rlist%clistFormat)
     case (ST_DOUBLE)
-      do
+      do while (ipos .ne. rlist%Knext(LTAIL))
         write(*,*) rlist%DKey(ipos)
-        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
 
     case (ST_SINGLE)
-      do
+      do while (ipos .ne. rlist%Knext(LTAIL))
         write(*,*) rlist%SKey(ipos)
-        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
     case (ST_INT)
-      do
+      do while (ipos .ne. rlist%Knext(LTAIL))
         write(*,*) rlist%IKey(ipos)
-        if (ipos .eq. rlist%Knext(LTAIL)) exit
         ipos = rlist%Knext(ipos)
       end do
       
