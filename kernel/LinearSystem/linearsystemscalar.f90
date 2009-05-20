@@ -228,6 +228,12 @@
 !#      -> Checks whether a given discretisation structure rdiscretisation is
 !#         basically compatible to a given vector
 !#
+!# 66.) lsyssc_setDataTypeMatrix
+!#      -> Converts the data type of a scalar matrix
+!#
+!# 67.) lsyssc_setDataTypeVector
+!#      -> Converts the data type of a scalar vector
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -814,7 +820,9 @@ module linearsystemscalar
   public :: lsyssc_unshareMatrix
   public :: lsyssc_unshareVector
   public :: lsyssc_isExplicitMatrix1D
-  public :: lsyssc_checkdiscretisation
+  public :: lsyssc_checkDiscretisation
+  public :: lsyssc_setDataTypeMatrix
+  public :: lsyssc_setDataTypeVector
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -1154,6 +1162,72 @@ contains
     end if
     
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_setDataTypeMatrix (rmatrix, cdataType)
+
+!<description>
+  ! Converts the matrix to another data type.
+!</description>
+
+!<input>
+  ! Target datatype of the matrix
+  integer, intent(IN) :: cdataType
+!</input>
+
+!<inputoutput>
+  ! Matrix that should be converted
+  type(t_matrixScalar), intent(INOUT) :: rmatrix
+!</inputoutput>
+!</subroutine>
+
+    ! Check if matrix needs conversion
+  if (rmatrix%cdataType .eq. cdataType) return
+  
+    ! Set data type
+    rmatrix%cdataType = cdataType
+    
+    ! Check if matrix has data
+    if (rmatrix%h_DA .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rmatrix%h_DA, cdataType)
+
+  end subroutine lsyssc_setDataTypeMatrix
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_setDataTypeVector (rvector, cdataType)
+
+!<description>
+  ! Converts the vector to another data type.
+!</description>
+
+!<input>
+  ! Target datatype of the vector
+  integer, intent(IN) :: cdataType
+!</input>
+
+!<inputoutput>
+  ! Vector that should be converted
+  type(t_vectorScalar), intent(INOUT) :: rvector
+!</inputoutput>
+!</subroutine>
+
+    ! Check if vector needs conversion
+    if (rvector%cdataType .eq. cdataType) return
+  
+    ! Set data type
+    rvector%cdataType = cdataType
+    
+    ! Check if matrix has data
+    if (rvector%h_Ddata .ne. ST_NOHANDLE)&
+        call storage_setdatatype (rvector%h_Ddata, cdataType)
+
+  end subroutine lsyssc_setDataTypeVector
 
   ! ***************************************************************************
   
@@ -1653,38 +1727,41 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer, intent(IN)                  :: NEQ
+  integer, intent(IN) :: NEQ
 
   ! Whether to fill the vector with zero initially
-  logical, intent(IN)                               :: bclear
+  logical, intent(IN) :: bclear
 
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
-  integer, intent(IN), optional                     :: cdataType  
+  integer, intent(IN), optional :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional        :: NEQMAX
+  integer, intent(IN), optional :: NEQMAX
   
 !</input>
 
 !<output>
   ! Scalar vector structure
-  type(t_vectorScalar), intent(OUT)                 :: rvector
+  type(t_vectorScalar), intent(OUT) :: rvector
 !</output>
 
 !</subroutine>
 
-  integer ::cdata
+  integer :: cdata
   integer :: isize
 
     cdata = ST_DOUBLE
-    if (present(cdataType)) cdata=cdataType
+    if (present(cdataType)) cdata = cdataType
     isize = max(0,NEQ)
     if (present(NEQMAX)) isize=max(isize,NEQMAX)
 
     ! The INTENT(OUT) already initialises rvector with the most important
     ! information. The rest comes now:
-    !
+    
+    ! Datatype
+    rvector%cdataType = cdata
+
     ! Size:
     rvector%NEQ = max(0,NEQ)
     
@@ -1692,10 +1769,10 @@ contains
     if (rvector%NEQ .gt. 0) then
       if (bclear) then
         call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
-                            cdata, rvector%h_Ddata,ST_NEWBLOCK_ZERO)
+                            cdata, rvector%h_Ddata, ST_NEWBLOCK_ZERO)
       else
         call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
-                            cdata, rvector%h_Ddata,ST_NEWBLOCK_NOINIT)
+                            cdata, rvector%h_Ddata, ST_NEWBLOCK_NOINIT)
       end if
     end if
   
@@ -1724,42 +1801,45 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer, intent(IN)                  :: NEQ
+  integer, intent(IN) :: NEQ
 
   ! Desired number of local variables
-  integer, intent(IN)                               :: NVAR
+  integer, intent(IN) :: NVAR
 
   ! Whether to fill the vector with zero initially
-  logical, intent(IN)                               :: bclear
+  logical, intent(IN) :: bclear
 
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
-  integer, intent(IN), optional                     :: cdataType  
+  integer, intent(IN), optional :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional        :: NEQMAX
+  integer, intent(IN), optional :: NEQMAX
   
 !</input>
 
 !<output>
   ! Scalar vector structure
-  type(t_vectorScalar), intent(OUT)                 :: rvector
+  type(t_vectorScalar), intent(OUT) :: rvector
 !</output>
 
 !</subroutine>
 
-  integer ::cdata
+  integer :: cdata
   integer :: isize
 
     cdata = ST_DOUBLE
-    if (present(cdataType)) cdata=cdataType
+    if (present(cdataType)) cdata = cdataType
     isize = max(0,NEQ)
     if (present(NEQMAX)) isize=max(isize,NEQMAX)
     isize = isize*max(0,NVAR)
 
     ! The INTENT(OUT) already initialises rvector with the most important
     ! information. The rest comes now:
-    !
+    
+    ! Datatype
+    rvector%cdataType = cdata
+
     ! Size:
     rvector%NEQ = max(0,NEQ)
     rvector%NVAR= max(0,NVAR)
@@ -1807,30 +1887,26 @@ contains
 
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional                    :: bclear
+  logical, intent(IN), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(IN),optional                     :: cdataType
+  integer, intent(IN),optional :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional       :: NEQMAX
+  integer, intent(IN), optional :: NEQMAX
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated appropriately.
   ! A pointer to rdiscretisation is saved to r.
-  type(t_vectorScalar),intent(OUT)                 :: rx
+  type(t_vectorScalar),intent(OUT) :: rx
 !</output>
   
 !</subroutine>
 
-  integer :: cdata
   integer :: NEQ
   logical :: bcl
-  
-  cdata = ST_DOUBLE
-  if (present(cdataType)) cdata = cdataType
   
   bcl = .false.
   if (present(bclear)) bcl = bclear
@@ -1875,34 +1951,30 @@ contains
   type(t_spatialDiscretisation),intent(IN), target :: rdiscretisation
   
   ! Desired number of local variables
-  integer, intent(IN)                              :: NVAR
+  integer, intent(IN) :: NVAR
 
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional                    :: bclear
+  logical, intent(IN), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(IN),optional                     :: cdataType
+  integer, intent(IN),optional :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional       :: NEQMAX
+  integer, intent(IN), optional :: NEQMAX
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated appropriately.
   ! A pointer to rdiscretisation is saved to r.
-  type(t_vectorScalar),intent(OUT)                 :: rx
+  type(t_vectorScalar),intent(OUT) :: rx
 !</output>
   
 !</subroutine>
 
-  integer :: cdata
   integer :: NEQ
   logical :: bcl
-  
-  cdata = ST_DOUBLE
-  if (present(cdataType)) cdata = cdataType
   
   bcl = .false.
   if (present(bclear)) bcl = bclear
@@ -1941,7 +2013,7 @@ contains
 
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
-    logical, intent(IN), optional   :: bclear
+    logical, intent(IN), optional :: bclear
     
     ! OPTIONAL: If not specified or set to FALSE, the vector will be
     ! created as 'right' vector of the matrix (so matrix vector multiplication
@@ -1952,7 +2024,7 @@ contains
     
     ! OPTIONAL: Data type identifier for the entries in the vector. 
     ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-    integer, intent(IN),optional              :: cdataType
+    integer, intent(IN),optional :: cdataType
 !</input>
     
 !<output>
