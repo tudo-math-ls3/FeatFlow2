@@ -402,14 +402,24 @@ fb_customise() {
 	    modules="$modules goto-blas torque maui subversion"
 
     	    # Make 'module' command and modulefiles available
-	    # But Modules Environment is dreadfully implemented, especially 
+	    # and remove any modulefiles directory unavailable on the compute nodes.
+	    . /cvos/local/apps/environment-modules/*/init/sh > $AUXILIARYLOG 2>&1
+	    module use /cvos/shared/modulefiles $EXTRAMODULEFILESDIRECTORY > $AUXILIARYLOG 2>&1
+	    module unuse /cvos/local/modulefiles             > $AUXILIARYLOG 2>&1
+	    module unuse /cvos/local/apps/environment-modules/version/3.2.5 > $AUXILIARYLOG 2>&1
+	    module unload gcc/3.4.6                          > $AUXILIARYLOG 2>&1
+	    # MODULEPATH contains still a reference to
+	    # /cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles
+	    # which - for unknown reasons - can not be removed with help
+	    # of the usual 'module unuse' command. Remove it the hard
+	    # way.
+	    MODULEPATH=`echo $MODULEPATH | sed -e 's^/cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles:^^;'` > $AUXILIARYLOG 2>&1
+	    export MODULEPATH
+	    # Modules Environment is dreadfully implemented, especially 
 	    # the versions 3.2.x randomly crash (typically with a 
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
 	    # when trying to load/unload several modules at once. 
 	    # Workaround: Load them one by one.
-	    . /cvos/local/apps/environment-modules/*/init/sh && \
-	    module use /cvos/shared/modulefiles $EXTRAMODULEFILESDIRECTORY && \
-	    module unload gcc/3.4.6  > $AUXILIARYLOG 2>&1;
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
 	    # Different version of Modules Environment do or do not issue
