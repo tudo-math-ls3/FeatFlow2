@@ -272,12 +272,12 @@ CONTAINS
     call parlst_readfromfile (rparlist, sdatafile)
     
     ! Start the tests?
-    call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'iperform', iperform)
+    call parlst_getvalue_int (rparlist, 'PERFORMANCETESTS', 'iperform', iperform)
     
     if (iperform .ne. 0) then
     
-      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'PRMFILE', sprmfile,'./pre/heat_v77.prm')
-      call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'TRIFILE', strifile,'./pre/heat_v77.tri')
+      call parlst_getvalue_string (rparlist, 'PERFORMANCETESTS', 'PRMFILE', sprmfile,'./pre/heat_v77.prm')
+      call parlst_getvalue_string (rparlist, 'PERFORMANCETESTS', 'TRIFILE', strifile,'./pre/heat_v77.tri')
     
       ! Read in the parametrisation of the boundary and save
       ! it to rboundary.
