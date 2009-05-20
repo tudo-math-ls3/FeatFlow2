@@ -10,13 +10,13 @@
 ################################################################################
 
 # Filename which contains the triangulation
-trifilename = grids/blood2.tri
+trifilename = grids/blood1.tri
 
 # Filename which contains the boundary parametrization
-prmfilename = grids/blood2.prm
+prmfilename = grids/blood1.prm
 
 # Number of global refinement levels
-iglobRefLevel = 1
+iglobRefLevel = 6
 
 ################################################################################
 [Output]
