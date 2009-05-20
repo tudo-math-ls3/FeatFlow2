@@ -1102,7 +1102,7 @@ contains
         
         ! Sort for the midpoint coordinates
         call sortCoords (p_Dcoords, &
-            Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), idir)
+            Ipermutation(1:rdiscretisation%p_rtriangulation%NMT), idir)
         
         ! Release temp array, finish
         call storage_free (hhandle)

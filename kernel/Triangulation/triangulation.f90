@@ -7841,6 +7841,11 @@ p_InodalPropertyDest = -4711
         call sys_halt()
       end if
       Dparameters(:) = DparValue(1:npointsPerEdge)
+    else
+      ! Equal distributiuon of points
+      do ipoint1=1,npointsPerEdge
+        Dparameters(ipoint1) = real(ipoint1,DP)/real(npointsPerEdge+1,DP)
+      end do
     end if
     
     ! Get the triangulation stuff
@@ -7860,10 +7865,10 @@ p_InodalPropertyDest = -4711
     call storage_getbase_int2d(rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
   
     ! Loop through all edges
-    do iedge = 0,rtriangulation%NMT-1
+    do iedge = 1,rtriangulation%NMT
     
       ! Where do the set of points start in Dcoords?
-      ipointpos = iedge*npointsPerEdge
+      ipointpos = (iedge-1)*npointsPerEdge
       
       ! Endpoints of that edge?
       ipoint1 = p_IverticesAtEdge(1,iedge)
