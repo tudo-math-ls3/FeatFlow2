@@ -1121,8 +1121,7 @@ contains
   
     ! Calculate the inverse permutation, that's it.
     call sstrat_calcInversePermutation (&
-        Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
-        Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
+        Ipermutation(1:size(Ipermutation)/2), Ipermutation(size(Ipermutation)/2+1:) )
     
   contains
   
