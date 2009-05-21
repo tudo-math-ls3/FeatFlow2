@@ -521,7 +521,7 @@ contains
       DtriaCoords(:,3) = p_DvertexCoords(:,i3)
       
       ! Check if the point is 'inside' or on the boundary of the element
-      call PointInTriangleTest(DtriaCoords, Dpoint0Coords, 0.0_DP, istatus)
+      call PointInTriangleTest(DtriaCoords, Dpoint0Coords, SYS_EPSREAL, istatus)
       if (istatus .ge. 0) exit findElementOfFirstVertex
       
     end do findElementOfFirstVertex
@@ -569,13 +569,13 @@ contains
       ! Check status of previous point
       select case(istatus)       
       case (1:3)
-        ! Previous point was one of the corner vertices, thus, mark
-        ! all elements meeting at that corner and create local patch
+        ! Previous point was one of the corner vertices
         i = p_IverticesAtElement(istatus, iel); ipatch = 0
 
+        ! Create local patch surrounding this point
         do idx = p_IelementsAtVertexIdx(i),&
                  p_IelementsAtVertexIdx(i+1)-1
-         
+          
           jel = p_IelementsAtVertex(idx)
           if (p_Iindicator(jel) .eq. 0)&
               call list_appendToList(relementList, jel, ipos)
@@ -583,6 +583,7 @@ contains
           ipatch = ipatch+1
           IelementPatch(ipatch) = jel
 
+          ! Mark surrounding element for potential refinement
           do ive = 1, 3
             if (p_IverticesAtElement(ive, jel) .eq. i) then
               p_Iindicator(jel) = ibset(p_Iindicator(jel), ive)
@@ -594,18 +595,18 @@ contains
         npatch = ipatch
         
       case (4:6)               
-        ! Previous point was located on the edge of the element, thus,
-        ! mark adjacent element and create two element patch
+        ! Previous point was located on the edge of the element
         jel = p_IneighboursAtElement(istatus-3, iel)
-        
-        if (jel .ne. 0) then
 
+        ! Create two element patch       
+        if (jel .ne. 0) then
           if (p_Iindicator(jel) .eq. 0)&
               call list_appendToList(relementList, jel, ipos)
 
           npatch = 2
           IelementPatch(2) = jel
-          
+
+          ! Mark adjacent element for potential refinement
           do ive = 1, 3
             if (p_IneighboursAtElement(ive, jel) .eq. iel) then
               p_Iindicator(jel) = ibset(p_Iindicator(jel), ive+3)
@@ -637,7 +638,7 @@ contains
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
         ! Check if the endpoint is 'inside' or on the boundary of the current element
-        call PointInTriangleTest(DtriaCoords, Dpoint1Coords, 0.0_DP, istatus)
+        call PointInTriangleTest(DtriaCoords, Dpoint1Coords, SYS_EPSREAL, istatus)
         if (istatus .ge. 0) then
           
           ! If so, use the current point as new starting point of the segment
@@ -680,7 +681,8 @@ contains
           call LinesIntersectionTest(Dpoint0Coords, Dpoint1Coords,&
                                      DtriaCoords(:,ive), DtriaCoords(:,mod(ive,3)+1),&
                                      istatus, DintersectionCoords)
-          if (istatus .eq. 0) then
+          select case(istatus)
+          case (0) ! Intersection point exists
             
             ! Get global element number of adjacent element
             iel = p_IneighboursAtElement(ive, iel)
@@ -696,7 +698,7 @@ contains
             DtriaCoords(:,3) = p_DvertexCoords(:,i3)
             
             ! Check if the endpoint is 'inside' or on the boundary of the adjacent element
-            call PointInTriangleTest(DtriaCoords, Dpoint1Coords, 0.0_DP, istatus)
+            call PointInTriangleTest(DtriaCoords, Dpoint1Coords, SYS_EPSREAL, istatus)
             
             if (istatus .eq. -1) then
               
@@ -704,10 +706,10 @@ contains
               ! segment just passes through the element, whereby no
               ! point falls into it. In this case, the intersection
               ! point serves as new starting point of the segment
-              Dpoint0Coords = DintersectionCoords
+              Dpoint0Coords = Dpoint0Coords + (1.001)*(DintersectionCoords-Dpoint0Coords)
 
               ! Perform point-in-triangle test for intersection point.
-              call PointInTriangleTest(DtriaCoords, Dpoint0Coords, 0.0_DP, istatus)
+              call PointInTriangleTest(DtriaCoords, Dpoint0Coords, SYS_EPSREAL, istatus)
               
             else
               
@@ -722,7 +724,18 @@ contains
             
             ! In any case, we have found a new element
             cycle findElementsOfOtherVertices
-          end if
+          
+          case (1) ! Lines are coincident
+            
+            if (sqrt(sum((DtriaCoords(:,ive)-DtriaCoords(:,mod(ive,3)+1))**2)) .gt.&
+                sqrt(sum((DtriaCoords(:,ive)-Dpoint1Coords)**2)) ) then
+            else
+              
+            end if
+            print *, "Lines are coincident"
+            stop
+
+          end select
           
         end do findIntersectionEdge
 
@@ -1088,16 +1101,17 @@ contains
       ! Check if lines are parallel
       if (abs(denom) .le. SYS_EPSREAL) then
 
-        ! The two lines are parallel
-        
+        ! The two lines are parallel, hence there is no intersection point
+        S = SYS_INFINITY
+
+        ! Check of both lines coincide are not
         if ( (abs(nom1) .le. SYS_EPSREAL) .or.&
              (abs(nom2) .le. SYS_EPSREAL) ) then
           istatus =  1
         else
           istatus = -1
         end if
-        S = SYS_INFINITY
-        
+                
       else
         
         ! The two lines are not parallel, hence they must intersect each other
@@ -1107,8 +1121,8 @@ contains
         v = nom2 / denom
         
         ! Check if the intersection point is located within the line segments
-        if ((u .le. sqrt(SYS_EPSREAL)) .or. (u .gt. 1)&
-            .or. (v .lt. 0) .or. (v .gt. 1)) then
+        if ((u .lt. 0) .or. (u .gt. 1) .or.&
+            (v .lt. 0) .or. (v .gt. 1)) then
           
           ! Intersection point does not belong to both line segments
           istatus = -1          
