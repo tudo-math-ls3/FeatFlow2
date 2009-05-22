@@ -96,6 +96,7 @@ module euler_application
 
   use afcstabilisation
   use bilinearformevaluation
+  use boundary
   use boundaryfilter
   use collection
   use derivatives

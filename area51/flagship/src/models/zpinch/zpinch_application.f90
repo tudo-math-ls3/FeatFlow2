@@ -62,11 +62,10 @@ module zpinch_application
   use hadaptivity
   use linearsystemblock
   use linearsystemscalar
-  use zpinch_basic
-  use zpinch_callback
   use paramlist
   use problem
   use solveraux
+  use spatialdiscretisation
   use statistics
   use storage
   use timestep
@@ -78,6 +77,8 @@ module zpinch_application
   use transport_callback2d
   use transport_callback3d
   use ucd
+  use zpinch_basic
+  use zpinch_callback
 
   implicit none
 
