@@ -45,11 +45,17 @@ module bloodflow
 !<constantblock description="Global constants for mesh spacing tolerances">
 
   ! Tolerance for considering two points as equivalent
-  real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0_DP/3.0_DP
+  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-3_DP
+
+  ! Tolerance for considering two points as equivalent
+  real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/3.0
   
 !</constantblock>
 
 !<constantblock description="Bitfield patterns for element states">
+
+  ! Bitfield to identify an interior vertex
+  integer, parameter :: BITFIELD_INNER = ibset(0,0)
 
   ! Bitfield to identify the corners
   integer, parameter :: BITFIELD_POINT1 = ibset(0,1)
@@ -61,12 +67,15 @@ module bloodflow
   integer, parameter :: BITFIELD_EDGE2 = ibset(0,5)
   integer, parameter :: BITFIELD_EDGE3 = ibset(0,6)
 
+  ! Bitfield to identify elements in list
+  integer, parameter :: BITFIELD_INLIST = ibset(0,7)
+
   ! Bitfield used to check point intersection
   integer, parameter :: BITFIELD_POINT_INTERSECTION = BITFIELD_POINT1 +&
                                                       BITFIELD_POINT2 +&
                                                       BITFIELD_POINT3
 
-  ! Bitfield used to cehck edge intersection
+  ! Bitfield used to check edge intersection
   integer, parameter :: BITFIELD_EDGE_INTERSECTION = BITFIELD_EDGE1 +&
                                                      BITFIELD_EDGE2 +&
                                                      BITFIELD_EDGE3
@@ -458,8 +467,10 @@ contains
     integer, dimension(2) :: Isize
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(TRIA_NVETRI2D) :: DbarycCoords
-    real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,DIntersectionCoords
+    real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
+    real(DP) :: dscale, dscaleMax
     integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos
+    logical :: bfound1, bfound2
   
     
     ! Release the indicator vector and create new one
@@ -521,10 +532,13 @@ contains
       DtriaCoords(:,3) = p_DvertexCoords(:,i3)
       
       ! Check if the point is 'inside' or on the boundary of the element
-      call PointInTriangleTest(DtriaCoords, Dpoint0Coords, SYS_EPSREAL, istatus)
+      call PointInTriangleTest(DtriaCoords, Dpoint0Coords, POINT_EQUAL_TOLERANCE, istatus)
       if (istatus .ge. 0) exit findElementOfFirstVertex
       
     end do findElementOfFirstVertex
+
+    ! Mark first element for potential refinement
+    p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
 
     ! Update point number
     ipoint = ipoint+1
@@ -555,18 +569,20 @@ contains
     ! Loop over all remaining points
     findElementsOfOtherVertices: do while (ipoint .le. size(p_DobjectCoords, 2))
       
+      ! Get global coordinates of the endpoint
+      Dpoint1Coords =  p_DobjectCoords(:,ipoint)
+
       ! Create single element patch
       npatch = 1
       IelementPatch(1) = iel
 
       ! Append element to the list of elements adjacent to the object
-      if (p_Iindicator(iel) .eq. 0)&
-          call list_appendToList(relementList, iel, ipos)
+      if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+        p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
+        call list_appendToList(relementList, iel, ipos)
+      end if
       
-      ! Mark element for potential refinement
-      p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
-      
-      ! Check status of previous point
+      ! Check status of starting point, aka, previous point
       select case(istatus)       
       case (1:3)
         ! Previous point was one of the corner vertices
@@ -576,20 +592,17 @@ contains
         do idx = p_IelementsAtVertexIdx(i),&
                  p_IelementsAtVertexIdx(i+1)-1
           
+          ! Get global element number
           jel = p_IelementsAtVertex(idx)
-          if (p_Iindicator(jel) .eq. 0)&
-              call list_appendToList(relementList, jel, ipos)
+          
+          ! Append element to the list of elements adjacent to the object
+          if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+            p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+            call list_appendToList(relementList, jel, ipos)
+          end if
           
           ipatch = ipatch+1
           IelementPatch(ipatch) = jel
-
-          ! Mark surrounding element for potential refinement
-          do ive = 1, 3
-            if (p_IverticesAtElement(ive, jel) .eq. i) then
-              p_Iindicator(jel) = ibset(p_Iindicator(jel), ive)
-              exit
-            end if
-          end do
 
         end do
         npatch = ipatch
@@ -600,28 +613,23 @@ contains
 
         ! Create two element patch       
         if (jel .ne. 0) then
-          if (p_Iindicator(jel) .eq. 0)&
-              call list_appendToList(relementList, jel, ipos)
-
+          
+          ! Append element to the list of elements adjacent to the object
+          if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+            p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+            call list_appendToList(relementList, jel, ipos)
+          end if
+          
           npatch = 2
           IelementPatch(2) = jel
-
-          ! Mark adjacent element for potential refinement
-          do ive = 1, 3
-            if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-              p_Iindicator(jel) = ibset(p_Iindicator(jel), ive+3)
-              exit
-            end if
-          end do
 
         end if
         
       end select
       
-      ! Get global coordinates of the endpoint
-      Dpoint1Coords =  p_DobjectCoords(:,ipoint)
       
-      ! Loop over all elements in patch
+      ! Loop over all elements in patch and try to find 
+      ! element which contains the endpoint
       findInPatchDirect: do ipatch = 1, npatch
         
         ! Get element number
@@ -638,31 +646,39 @@ contains
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
         ! Check if the endpoint is 'inside' or on the boundary of the current element
-        call PointInTriangleTest(DtriaCoords, Dpoint1Coords, SYS_EPSREAL, istatus)
+        call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
         if (istatus .ge. 0) then
           
+          ! Mark element for potential refinement
+          p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INNER)
+
           ! If so, use the current point as new starting point of the segment
           Dpoint0Coords = Dpoint1Coords
           
           ! Update point number
           ipoint = ipoint+1
-          
+
           ! That's it, we can forget about the current patch of elements
           cycle findElementsOfOtherVertices
-          
         end if
+
       end do findInPatchDirect
       
+
       ! Ok, the endpoint was not in one of the elements belonging to
       ! the current patch. Hence, the segment connecting the start and
       ! endpoint must cross some boundary edge of the patch
 
-      ! Loop over all elements in patch
+      ! Initialize scaling parameter
+      dscaleMax = 0.0_DP
+
+      ! Loop over all elements in patch and find the intersection
+      ! point of the current line segment with the patch
       findInPatchIndirect: do ipatch = 1, npatch
         
         ! Get element number
         iel = IelementPatch(ipatch)
-
+        
         ! Get vertices at element
         i1 = p_IverticesAtElement(1, iel)
         i2 = p_IverticesAtElement(2, iel)
@@ -672,81 +688,86 @@ contains
         DtriaCoords(:,1) = p_DvertexCoords(:,i1)
         DtriaCoords(:,2) = p_DvertexCoords(:,i2)
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-        
+
         ! Loop over all edges of the element
         findIntersectionEdge: do ive = 1, 3
-
+          
           ! Check if the edge intersects with the line between start
           ! and endpoint and compute coordinates of intersection point
-          call LinesIntersectionTest(Dpoint0Coords, Dpoint1Coords,&
-                                     DtriaCoords(:,ive), DtriaCoords(:,mod(ive,3)+1),&
-                                     istatus, DintersectionCoords)
-          select case(istatus)
-          case (0) ! Intersection point exists
+          call LinesIntersectionTest(Dpoint0Coords, Dpoint1Coords, DtriaCoords(:,ive),&
+                                     DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
+          if (istatus .eq. 0) then
             
-            ! Get global element number of adjacent element
-            iel = p_IneighboursAtElement(ive, iel)
+            ! Mark element for potential refinement
+            p_Iindicator(iel) = ibset(p_Iindicator(iel), ive+3)
             
-            ! Get vertices at element
-            i1 = p_IverticesAtElement(1, iel)
-            i2 = p_IverticesAtElement(2, iel)
-            i3 = p_IverticesAtElement(3, iel)
-            
-            ! Get global coordinates of corner vertices
-            DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-            DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-            DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-            
-            ! Check if the endpoint is 'inside' or on the boundary of the adjacent element
-            call PointInTriangleTest(DtriaCoords, Dpoint1Coords, SYS_EPSREAL, istatus)
-            
-            if (istatus .eq. -1) then
+            ! Check if the distance between the starting point and the
+            ! intersection point exceeds that of an intersection point
+            ! which may have been found previously for a different edge
+            if (dscale .gt. dscaleMax) then
+              ! Store parameter for new intersection point
+              dscaleMax = dscale
               
-              ! If the point is 'outside' the element, then the
-              ! segment just passes through the element, whereby no
-              ! point falls into it. In this case, the intersection
-              ! point serves as new starting point of the segment
-              Dpoint0Coords = Dpoint0Coords + (1.001)*(DintersectionCoords-Dpoint0Coords)
-
-              ! Perform point-in-triangle test for intersection point.
-              call PointInTriangleTest(DtriaCoords, Dpoint0Coords, SYS_EPSREAL, istatus)
-              
-            else
-              
-              ! If the endpoint is 'inside' the adjacent element, then
-              ! we can use it as new starting point of the next segment
-              Dpoint0Coords = Dpoint1Coords
-
-              ! Update point number
-              ipoint = ipoint+1
-
+              ! Get global element number of adjacent element
+              jel = p_IneighboursAtElement(ive, iel)
             end if
-            
-            ! In any case, we have found a new element
-            cycle findElementsOfOtherVertices
-          
-          case (1) ! Lines are coincident
-            
-            if (sqrt(sum((DtriaCoords(:,ive)-DtriaCoords(:,mod(ive,3)+1))**2)) .gt.&
-                sqrt(sum((DtriaCoords(:,ive)-Dpoint1Coords)**2)) ) then
-            else
-              
-            end if
-            print *, "Lines are coincident"
-            stop
 
-          end select
+          end if
           
         end do findIntersectionEdge
-
       end do findInPatchIndirect
+
+      ! If we end up here, the scaling parameter for the "best"
+      ! intersection point has been determined and we can proceed
+      iel = jel
+      
+      ! Get vertices at element
+      i1 = p_IverticesAtElement(1, iel)
+      i2 = p_IverticesAtElement(2, iel)
+      i3 = p_IverticesAtElement(3, iel)
+      
+      ! Get global coordinates of corner vertices
+      DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+      DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+      DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+      
+      ! Check if the segment endpoint is 'inside' or on the
+      ! boundary of the element which has been dtermined as new one
+      call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
+      
+      if (istatus .eq. -1) then
+        
+        ! If the point is 'outside' the element, then the segment just
+        ! passes through the element, whereby no point falls into
+        ! it. In this case, the intersection point may serve as new
+        ! starting point of the segment. In order to reduce round-off
+        ! errors, we evaluate the status of the intersection point but
+        ! still keep the old start point of the segment.
+        Daux = Dpoint0Coords + dscaleMax * (Dpoint1Coords-Dpoint0Coords)
+        
+        ! Perform point-in-triangle test for intersection point
+        call PointInTriangleTest(DtriaCoords, Daux, POINT_EQUAL_TOLERANCE, istatus)
+        
+      else
+        
+        ! If the endpoint is 'inside' the adjacent element, then
+        ! we can use it as new starting point of the next segment
+        Dpoint0Coords = Dpoint1Coords
+        
+        ! Update point number
+        ipoint = ipoint+1
+        
+      end if
       
     end do findElementsOfOtherVertices
     
+
     ! Append element to the list of elements adjacent to the object
-    if (p_Iindicator(iel) .eq. 0)&
-        call list_appendToList(relementList, iel, ipos)
-    
+    if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+      p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
+      call list_appendToList(relementList, iel, ipos)
+    end if
+        
     ! Mark last element for potential refinement
     p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
     
@@ -761,15 +782,12 @@ contains
                p_IelementsAtVertexIdx(i+1)-1
         
         jel = p_IelementsAtVertex(idx)
-        if (p_Iindicator(jel) .eq. 0)&
-            call list_appendToList(relementList, jel, ipos)
 
-        do ive = 1, 3
-          if (p_IverticesAtElement(ive, jel) .eq. i) then
-            p_Iindicator(jel) = ibset(p_Iindicator(jel), ive)
-            exit
-          end if
-        end do
+        ! Append element to the list of elements adjacent to the object
+        if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+          p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+          call list_appendToList(relementList, jel, ipos)
+        end if
 
       end do
       
@@ -778,23 +796,18 @@ contains
       ! mark adjacent element and create two element patch
       jel = p_IneighboursAtElement(istatus-3, iel)
       
-      if (p_Iindicator(jel) .eq. 0)&
-          call list_appendToList(relementList, jel, ipos)
-      
-      do ive = 1, 3
-        if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-          p_Iindicator(jel) = ibset(p_Iindicator(jel), ive+3)
-          exit
-        end if
-      end do
+      ! Append element to the list of elements adjacent to the object
+      if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+        p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+        call list_appendToList(relementList, jel, ipos)
+      end if
 
     end select
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
-    
-    goto 999
 
+    
     !---------------------------------------------------------------------------
     ! (3) Loop over all segments/elements and decide whether to refine or
     !     to reposition mesh points so that elements get aligned to the object
@@ -802,187 +815,163 @@ contains
 
     ! Loop over all elements adjacent to the object
     ipos = list_getNextInList(relementList, .true.)
-    do while(ipos .ne. LNULL)
+    list: do while(ipos .ne. LNULL)
       
       ! Get element number and proceed to next position
       call list_getByPosition(relementList, ipos, iel)
       ipos = list_getNextInList(relementList, .false.)
-
-      ! Check status of elements
-      select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
-        
-        case(BITFIELD_EDGE1)
-          
-          ! Get vertices at element
-          i1 = p_IverticesAtElement(1, iel)
-          i2 = p_IverticesAtElement(2, iel)
-          i3 = p_IverticesAtElement(3, iel)
-
-          ! Get global coordinates of corner vertices
-          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-
-          ! Loop over all segments and check intersection point
-          edge1: do ipoint = 1, size(p_DobjectCoords,2)-1
-
-            ! Perform line intersection test
-            call LinesIntersectionTest(p_DobjectCoords(:,ipoint),&
-                                       p_DobjectCoords(:,ipoint+1),&
-                                       DtriaCoords(:,1), DtriaCoords(:,2),&
-                                       istatus, DintersectionCoords)
-            if (istatus .eq. 1) then
-              ! Remove the refinement indicator
-              p_Iindicator(iel) = 0
-
-              ! That's it
-              exit edge1
-            elseif (istatus .eq. 0) then
-
-              ! Perform point in triangle test
-              call PointInTriangleTest(DtriaCoords, DintersectionCoords,&
-                                       POINT_COLLAPSE_TOLERANCE, istatus)
-              select case(istatus)
-              case(1)
-                p_DvertexCoords(:, i1) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(2)
-                p_DvertexCoords(:, i2) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(3)
-                p_DvertexCoords(:, i3) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case default
-                p_Iindicator(iel)      = 1
-              end select
-
-              ! That's it
-              exit edge1
-            end if
-          end do edge1
-
-        case(BITFIELD_EDGE2)
-          
-          ! Get vertices at element
-          i1 = p_IverticesAtElement(1, iel)
-          i2 = p_IverticesAtElement(2, iel)
-          i3 = p_IverticesAtElement(3, iel)
-
-          ! Get global coordinates of corner vertices
-          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-
-          ! Loop over all segments and check intersection point
-          edge2: do ipoint = 1, size(p_DobjectCoords,2)-1
-
-            ! Perform line intersection test
-            call LinesIntersectionTest(p_DobjectCoords(:,ipoint),&
-                                       p_DobjectCoords(:,ipoint+1),&
-                                       DtriaCoords(:,2), DtriaCoords(:,3),&
-                                       istatus, DintersectionCoords)
-            if (istatus .eq. 1) then
-              ! Remove the refinement indicator
-              p_Iindicator(iel) = 0
-
-              ! That's it
-              exit edge2
-            elseif (istatus .eq. 0) then
-
-              ! Perform point in triangle test
-              call PointInTriangleTest(DtriaCoords, DintersectionCoords,&
-                                       POINT_COLLAPSE_TOLERANCE, istatus)
-              select case(istatus)
-              case(1)
-                p_DvertexCoords(:, i1) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(2)
-                p_DvertexCoords(:, i2) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(3)
-                p_DvertexCoords(:, i3) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case default
-                p_Iindicator(iel)      = 1
-              end select
-             
-              ! That's it
-              exit edge2
-            end if
-          end do edge2
-
-        case(BITFIELD_EDGE3)
-
-          ! Get vertices at element
-          i1 = p_IverticesAtElement(1, iel)
-          i2 = p_IverticesAtElement(2, iel)
-          i3 = p_IverticesAtElement(3, iel)
-
-          ! Get global coordinates of corner vertices
-          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-
-          ! Loop over all segments and check intersection point
-          edge3: do ipoint = 1, size(p_DobjectCoords,2)-1
-
-            ! Perform line intersection test
-            call LinesIntersectionTest(p_DobjectCoords(:,ipoint),&
-                                       p_DobjectCoords(:,ipoint+1),&
-                                        DtriaCoords(:,1), DtriaCoords(:,3),&
-                                       istatus, DintersectionCoords)
-            if (istatus .eq. 1) then
-              ! Remove the refinement indicator
-              p_Iindicator(iel) = 0
-
-              ! That's it
-              exit edge3
-            elseif (istatus .eq. 0) then
-
-              ! Perform point in triangle test
-              call PointInTriangleTest(DtriaCoords, DintersectionCoords,&
-                                       POINT_COLLAPSE_TOLERANCE, istatus)
-              select case(istatus)
-              case(1)
-                p_DvertexCoords(:, i1) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(2)
-                p_DvertexCoords(:, i2) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case(3)
-                p_DvertexCoords(:, i3) = DintersectionCoords
-                p_Iindicator(iel)      = 0
-              case default
-                p_Iindicator(iel)      = 1
-              end select
-
-              ! That's it
-              exit edge3
-            end if
-          end do edge3
-                    
-        case(BITFIELD_EDGE1 + BITFIELD_EDGE2,&
-             BITFIELD_EDGE2 + BITFIELD_EDGE3,&
-             BITFIELD_EDGE1 + BITFIELD_EDGE3)
-          print *, "Two edges"
-
-        case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
-          ! Set the refinement indicator to unity
-          p_Iindicator(iel) = 1
-
-        case default
-          ! Remove the refinement indicator
-          p_Iindicator(iel) = 0
-        end select
       
-      end do
+      ! Remove "in list" flag from indicator
+      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
+      
+      ! Remove "corner vertices" flags from indicator.
+      ! This may be used in future versions of this code.
+      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_POINT_INTERSECTION))
+      
+      ! Remove "interior vertex" flag from indicator.
+      ! This may be used in future versions of this code.
+      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
 
+      ! Check status of intersected element edges
+      select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
+      case (0)
+        ! Do nothing
+        
+      case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
+        ! Set the refinement indicator to unity
+        p_Iindicator(iel) = 10000
+        
+      case default
+
+        cycle
+
+        ! Get vertices at element
+        i1 = p_IverticesAtElement(1, iel)
+        i2 = p_IverticesAtElement(2, iel)
+        i3 = p_IverticesAtElement(3, iel)
+        
+        ! Get global coordinates of corner vertices
+        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+
+        ! Process each edge individually
+        edge: do ive = 1, 3
+
+          ! Check if ive-th edge is intersected  
+          if (btest(p_Iindicator(iel), ive+3)) then
+            
+            ! Loop over all segments and check intersection point
+            do ipoint = 1, size(p_DobjectCoords,2)-1
+              
+              ! Perform line intersection test
+              call LinesIntersectionTest(p_DobjectCoords(:,ipoint), p_DobjectCoords(:,ipoint+1),&
+                                         DtriaCoords(:,ive), DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
+              if (istatus .eq. 1) then
+                
+                ! Remove the refinement indicator for current edge
+                p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+                
+              elseif (istatus .eq. 0) then
+                
+                ! Compute coordinates of intersection point
+                Daux = p_DobjectCoords(:,ipoint) + dscale *&
+                      (p_DobjectCoords(:,ipoint+1)-p_DobjectCoords(:,ipoint))
+                
+                ! Perform point in triangle test
+                call PointInTriangleTest(DtriaCoords, Daux, POINT_COLLAPSE_TOLERANCE, istatus)
+                select case(istatus)
+                case(1)
+                  ! Adjust first vertex
+                  p_DvertexCoords(:, i1) = Daux
+                  
+!!$                  ! Remove the refinement indicator for current edge
+!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+!!$
+!!$                  ! Remove the refinement indicator in first adjacent elements
+!!$                  jel = p_IneighboursAtElement(1, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+                  
+!!$                  ! Remove the refinement indicator in third adjacent elements
+!!$                  jel = p_IneighboursAtElement(3, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+                  
+                case(2)
+                  ! Adjust second vertex
+                  p_DvertexCoords(:, i2) = Daux
+                  
+!!$                  ! Remove the refinement indicator for current edge
+!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+!!$                  
+!!$                  ! Remove the refinement indicator in first adjacent elements
+!!$                  jel = p_IneighboursAtElement(1, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+                  
+!!$                  ! Remove the refinement indicator in second adjacent elements
+!!$                  jel = p_IneighboursAtElement(2, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+
+                case(3)
+                  ! Adjust third vertex
+                  p_DvertexCoords(:, i3) = Daux
+                  
+!!$                  ! Remove the refinement indicator for current edge
+!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+!!$
+!!$                  ! Remove the refinement indicator in second adjacent elements
+!!$                  jel = p_IneighboursAtElement(2, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+!!$                  
+!!$                  ! Remove the refinement indicator in second adjacent elements
+!!$                  jel = p_IneighboursAtElement(2, iel)
+!!$                  do jve = 1, 3
+!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
+!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
+!!$                      exit
+!!$                    end if
+!!$                  end do
+                end select
+             
+              end if
+              
+            end do
+          end if
+        end do edge
+
+      end select
+    end do list
+    
     ! Release list of elements
-999   call list_releaseList(relementList)
+999 call list_releaseList(relementList)
 
     ! Change the data type of the indicator
     do i = 1, size(p_Dindicator)
-      p_Dindicator(i) = min(p_Iindicator(i), 1)
+      p_Dindicator(i) = p_Iindicator(i)
     end do
     call lsyssc_releaseVector(rindicator)
 
@@ -1028,7 +1017,7 @@ contains
       w = area3/area
 
       ! Determine status
-      if ((u .lt. 0) .or. (v .lt. 0) .or. (w .lt. 0) .or. (u+v+w .gt. 1)) then
+      if ((u .lt. -dtolerance) .or. (v .lt. -dtolerance) .or. (w .lt. -dtolerance) .or. (u+v+w .gt. 1+dtolerance)) then
         ! If the barycentric coordinates are negative of larger than
         ! one then the point is located outside of the triangle
         istatus = -1
@@ -1065,7 +1054,7 @@ contains
 
     !***************************************************************************
 
-    subroutine LinesIntersectionTest(P1, P2, P3, P4, istatus, S)
+    subroutine LinesIntersectionTest(P1, P2, P3, P4, istatus, u)
 
       ! This subroutine checks if the two line segments P1-P2 and
       ! P3-P4 intersect each other and returns the intersection point.
@@ -1083,14 +1072,17 @@ contains
       !  = -1 : the two line segments do not intersect
       !  =  0 : the two line segments intersect each other
       !  =  1 : the two line segments partially coincide
+      !
+      ! u: is the parameter so that 
+      !    S = P1 + u*(P2-P1) is the intersection point
             
       real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3,P4
 
-      real(DP), dimension(NDIM2D), intent(OUT) :: S
+      real(DP), intent(OUT) :: u
       integer, intent(OUT) :: istatus
 
       ! local variables
-      real(DP) :: denom,nom1,nom2,u,v
+      real(DP) :: denom,nom1,nom2,v
 
 
       ! Compute (de-)nominators
@@ -1102,8 +1094,8 @@ contains
       if (abs(denom) .le. SYS_EPSREAL) then
 
         ! The two lines are parallel, hence there is no intersection point
-        S = SYS_INFINITY
-
+        u = SYS_INFINITY
+        
         ! Check of both lines coincide are not
         if ( (abs(nom1) .le. SYS_EPSREAL) .or.&
              (abs(nom2) .le. SYS_EPSREAL) ) then
@@ -1111,7 +1103,7 @@ contains
         else
           istatus = -1
         end if
-                
+        
       else
         
         ! The two lines are not parallel, hence they must intersect each other
@@ -1123,19 +1115,15 @@ contains
         ! Check if the intersection point is located within the line segments
         if ((u .lt. 0) .or. (u .gt. 1) .or.&
             (v .lt. 0) .or. (v .gt. 1)) then
-          
+
           ! Intersection point does not belong to both line segments
           istatus = -1          
-          S = SYS_INFINITY
           
         else
           
           ! Intersection point belongs to both line segments
           istatus = 0
-          
-          ! Compute coordinates of intersection point
-          S(1) = P1(1) + u*(P2(1)-P1(1))
-          S(2) = P1(2) + u*(P2(2)-P1(2))
+         
         end if
 
       end if
