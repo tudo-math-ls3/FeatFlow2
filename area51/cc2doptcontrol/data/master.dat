@@ -5,3 +5,141 @@ simportdatafiles(6) =
   "paramtriang.dat"
   "bdconditions.dat"
   "timediscr.dat"
+
+#######################################
+# DC configuration
+#######################################
+
+#[PARAMTRIANG]
+## Filename of the parametrisation of the domain
+#sParametrisation = './pre/QUAD.prm'
+#
+## Filename of the coarse grid mesh
+#sMesh = './pre/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 0
+#ssolutionStart     = './ns/drivencav_stat/stokes5re0025'
+#
+#iequation          = 0
+#RE                 = 400
+#NLMAX              = 5
+#
+#[BDCONDITIONS]
+#bdComponent1(3)=
+#  2.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+#  3.0  3  1  'Dirichlet1'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 20
+#TIMENLMIN = 1
+#TIMENLMAX = 1
+#
+#[OPTIMALCONTROL]
+#stargetFlow = './ns/lv7re0.025steps80/solution'
+#itypeTargetFlow = 4
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-DISCRETISATION]
+#TIMENLMAX = 1
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nmaxIterations     = 100
+#depsRel            = 1E-8
+#ctypePreconditioner = 3
+#dinexactNewtonExponent = 2.0
+##nmaxIterations     = 1
+#domega             = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+
+####################################################
+# benchmark configuration, RE=20 Nav.St. like Stokes
+####################################################
+
+#[PARAMTRIANG]
+#sParametrisation = './pre/bench1.prm'
+#sMesh = './pre/bench1.tri'
+#
+#[BDCONDITIONS]
+#bdComponent1(4)=
+#  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+#  2.0  0  0                             # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  3.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  3  1  'ParProfile'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#
+#bdComponent2(1)=
+#  4.0  3  1  'Dirichlet0'  'Dirichlet0'  # Complete boundary component Dirichlet-0 boundary
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 0
+#ssolutionStart     = ''
+#iequation          = 0
+#RE                 = 1000
+#NLMIN              = 1
+#NLMAX              = 3
+#
+#[OPTIMALCONTROL]
+#smeshTargetFlow = './pre/bench1.tri'
+#stargetFlow = './ns/benchstokesre1000ref4seklv5/benchstokesre1000ref4seklv5'
+#itypeTargetFlow = 4
+#ilevelTargetFlow = 5
+#itargetFlowTimesteps = 80
+#
+#dalphaC = 0.01
+#dgammaC = 0.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-DISCRETISATION]
+#niterations = 5
+#dtimeMax = 1.0
+#TIMENLMIN = 1
+#TIMENLMAX = 3
+#dtimeStepTheta = 0.5
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2bench1.gmv' 
+#
+#[TIME-SOLVER]
+#ctypePreconditioner = 1
+#depsDiff            = 1E-7
+#nmaxIterations      = 100
+#depsRel             = 1E-8
+#ctypePreconditioner = 3
+#dinexactNewtonExponent = 2.0
+##nmaxIterations         = 1
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 2
+#domega = 0.8
+#
+#[CC-LINEARSOLVER]
+#ismootherType = 7
+#icoarseGridSolverType = 0
