@@ -45,7 +45,7 @@ module bloodflow
 !<constantblock description="Global constants for mesh spacing tolerances">
 
   ! Tolerance for considering two points as equivalent
-  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-3_DP
+  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-1_DP
 
   ! Tolerance for considering two points as equivalent
   real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/3.0
@@ -411,20 +411,23 @@ contains
       call hadapt_refreshAdaptation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
     end if
 
-!!$    do iadapt = 1, 100
-!!$
-!!$      ! Evaluate the indicator
+    do iadapt = 1, 5
+      
+      ! Evaluate the indicator
+      call bloodflow_evalIndicator(rbloodflow)
+      
+      ! Check if there are still unresolved object points
+!      if (rbloodflow%nunresolvedObjectPoints .eq. 0) return
+      
+      ! If so, then adapt the computational mesh
+      call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
+      
+      ! Generate raw mesh from adaptation structure
+      call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
+    end do
+
+    ! Evaluate the indicator
     call bloodflow_evalIndicator(rbloodflow)
-!!$      
-!!$      ! Check if there are still unresolved object points
-!!$      if (rbloodflow%nunresolvedObjectPoints .eq. 0) return
-!!$      
-!!$      ! If so, then adapt the computational mesh
-!!$      call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
-!!$      
-!!$      ! Generate raw mesh from adaptation structure
-!!$      call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
-!!$    end do
 
 !!$    ! If we end up here, then the maximum admissible refinement level
 !!$    ! does not suffice to resolve all object points
@@ -470,7 +473,6 @@ contains
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
     real(DP) :: dscale, dscaleMax
     integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos
-    logical :: bfound1, bfound2
   
     
     ! Release the indicator vector and create new one
@@ -574,7 +576,7 @@ contains
 
       ! Create single element patch
       npatch = 1
-      IelementPatch(1) = iel
+      IelementPatch(npatch) = iel
 
       ! Append element to the list of elements adjacent to the object
       if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
@@ -600,6 +602,14 @@ contains
             p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
             call list_appendToList(relementList, jel, ipos)
           end if
+
+          ! Mark element for potential refinement
+          do jve = 1, 3
+            if (p_IverticesAtElement(jve, jel) .eq. i) then
+              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+              exit
+            end if
+          end do
           
           ipatch = ipatch+1
           IelementPatch(ipatch) = jel
@@ -620,8 +630,16 @@ contains
             call list_appendToList(relementList, jel, ipos)
           end if
           
+          ! Mark element for potential refinement
+          do jve = 1, 3
+            if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
+              exit
+            end if
+          end do
+
           npatch = 2
-          IelementPatch(2) = jel
+          IelementPatch(npatch) = jel
 
         end if
         
@@ -650,7 +668,7 @@ contains
         if (istatus .ge. 0) then
           
           ! Mark element for potential refinement
-          p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INNER)
+          p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
 
           ! If so, use the current point as new starting point of the segment
           Dpoint0Coords = Dpoint1Coords
@@ -698,9 +716,6 @@ contains
                                      DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
           if (istatus .eq. 0) then
             
-            ! Mark element for potential refinement
-            p_Iindicator(iel) = ibset(p_Iindicator(iel), ive+3)
-            
             ! Check if the distance between the starting point and the
             ! intersection point exceeds that of an intersection point
             ! which may have been found previously for a different edge
@@ -708,8 +723,8 @@ contains
               ! Store parameter for new intersection point
               dscaleMax = dscale
               
-              ! Get global element number of adjacent element
-              jel = p_IneighboursAtElement(ive, iel)
+              ! Store element number and edge position
+              jel = iel; ipos = ive
             end if
 
           end if
@@ -720,6 +735,9 @@ contains
       ! If we end up here, the scaling parameter for the "best"
       ! intersection point has been determined and we can proceed
       iel = jel
+
+      ! Mark element for potential refinement
+      p_Iindicator(iel) = ibset(p_Iindicator(iel), ipos+3)
       
       ! Get vertices at element
       i1 = p_IverticesAtElement(1, iel)
@@ -731,33 +749,11 @@ contains
       DtriaCoords(:,2) = p_DvertexCoords(:,i2)
       DtriaCoords(:,3) = p_DvertexCoords(:,i3)
       
-      ! Check if the segment endpoint is 'inside' or on the
-      ! boundary of the element which has been dtermined as new one
-      call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
-      
-      if (istatus .eq. -1) then
+      ! Compute intersection point
+      Daux = Dpoint0Coords + dscaleMax * (Dpoint1Coords-Dpoint0Coords)
         
-        ! If the point is 'outside' the element, then the segment just
-        ! passes through the element, whereby no point falls into
-        ! it. In this case, the intersection point may serve as new
-        ! starting point of the segment. In order to reduce round-off
-        ! errors, we evaluate the status of the intersection point but
-        ! still keep the old start point of the segment.
-        Daux = Dpoint0Coords + dscaleMax * (Dpoint1Coords-Dpoint0Coords)
-        
-        ! Perform point-in-triangle test for intersection point
-        call PointInTriangleTest(DtriaCoords, Daux, POINT_EQUAL_TOLERANCE, istatus)
-        
-      else
-        
-        ! If the endpoint is 'inside' the adjacent element, then
-        ! we can use it as new starting point of the next segment
-        Dpoint0Coords = Dpoint1Coords
-        
-        ! Update point number
-        ipoint = ipoint+1
-        
-      end if
+      ! Perform point-in-triangle test for intersection point
+      call PointInTriangleTest(DtriaCoords, Daux, POINT_EQUAL_TOLERANCE, istatus)
       
     end do findElementsOfOtherVertices
     
@@ -767,9 +763,6 @@ contains
       p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
       call list_appendToList(relementList, iel, ipos)
     end if
-        
-    ! Mark last element for potential refinement
-    p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
     
     ! Check status of previous point
     select case(istatus)
@@ -789,6 +782,14 @@ contains
           call list_appendToList(relementList, jel, ipos)
         end if
 
+        ! Mark element for potential refinement
+        do jve = 1, 3
+          if (p_IverticesAtElement(jve, jel) .eq. i) then
+            p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+            exit
+          end if
+        end do
+
       end do
       
     case (4:6)
@@ -802,6 +803,14 @@ contains
         call list_appendToList(relementList, jel, ipos)
       end if
 
+      ! Mark element for potential refinement
+      do jve = 1, 3
+        if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+          p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
+          exit
+        end if
+      end do
+      
     end select
 
     ! Deallocate temporal memory
@@ -832,6 +841,7 @@ contains
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
 
+
       ! Check status of intersected element edges
       select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
       case (0)
@@ -842,9 +852,7 @@ contains
         p_Iindicator(iel) = 10000
         
       case default
-
-        cycle
-
+        
         ! Get vertices at element
         i1 = p_IverticesAtElement(1, iel)
         i2 = p_IverticesAtElement(2, iel)
@@ -860,9 +868,9 @@ contains
 
           ! Check if ive-th edge is intersected  
           if (btest(p_Iindicator(iel), ive+3)) then
-            
+
             ! Loop over all segments and check intersection point
-            do ipoint = 1, size(p_DobjectCoords,2)-1
+            point: do ipoint = 1, size(p_DobjectCoords,2)-1
               
               ! Perform line intersection test
               call LinesIntersectionTest(p_DobjectCoords(:,ipoint), p_DobjectCoords(:,ipoint+1),&
@@ -885,81 +893,37 @@ contains
                   ! Adjust first vertex
                   p_DvertexCoords(:, i1) = Daux
                   
-!!$                  ! Remove the refinement indicator for current edge
-!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
-!!$
-!!$                  ! Remove the refinement indicator in first adjacent elements
-!!$                  jel = p_IneighboursAtElement(1, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
-                  
-!!$                  ! Remove the refinement indicator in third adjacent elements
-!!$                  jel = p_IneighboursAtElement(3, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
+                  ! Remove the refinement indicator for current edge
+                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+
                   
                 case(2)
                   ! Adjust second vertex
                   p_DvertexCoords(:, i2) = Daux
                   
-!!$                  ! Remove the refinement indicator for current edge
-!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
-!!$                  
-!!$                  ! Remove the refinement indicator in first adjacent elements
-!!$                  jel = p_IneighboursAtElement(1, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
-                  
-!!$                  ! Remove the refinement indicator in second adjacent elements
-!!$                  jel = p_IneighboursAtElement(2, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
+                  ! Remove the refinement indicator for current edge
+                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+
 
                 case(3)
                   ! Adjust third vertex
                   p_DvertexCoords(:, i3) = Daux
                   
-!!$                  ! Remove the refinement indicator for current edge
-!!$                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
-!!$
-!!$                  ! Remove the refinement indicator in second adjacent elements
-!!$                  jel = p_IneighboursAtElement(2, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
-!!$                  
-!!$                  ! Remove the refinement indicator in second adjacent elements
-!!$                  jel = p_IneighboursAtElement(2, iel)
-!!$                  do jve = 1, 3
-!!$                    if (p_IneighboursAtElement(ive, jel) .eq. iel) then
-!!$                      p_Iindicator(jel) = ibclr(p_Iindicator(jel), jve+3)
-!!$                      exit
-!!$                    end if
-!!$                  end do
+                  ! Remove the refinement indicator for current edge
+                  p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+
+                case default
+                  ! Keep this edge
+                  cycle edge
                 end select
              
               end if
               
-            end do
+            end do point
+
+            ! Marker for this edge can be removed
+            p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
+
           end if
         end do edge
 
@@ -967,7 +931,7 @@ contains
     end do list
     
     ! Release list of elements
-999 call list_releaseList(relementList)
+    call list_releaseList(relementList)
 
     ! Change the data type of the indicator
     do i = 1, size(p_Dindicator)

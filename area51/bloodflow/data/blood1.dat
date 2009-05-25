@@ -1,4 +1,4 @@
-# -*- mode: any-ini; -*-
+#-*- mode: any-ini; -*-
 ################################################################################
 #
 # Input file for bloodflow application
@@ -29,7 +29,7 @@ ucdfilename = out/blood1.gmv
 [Object]
 ################################################################################
 
-npoints = 10
+npoints = 50
 L       = 1.0
 c       = 1.0
 
@@ -43,7 +43,7 @@ dtimestep  = 0.01
 ################################################################################
 [Adaptation]
 ################################################################################
-nsubdividemax        = 10
+nsubdividemax        = 5
 iadaptationstrategy  = 1
 drefinementtolerance = 1.0
 dcoarseningtolerance = 0.0
