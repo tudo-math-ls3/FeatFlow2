@@ -338,16 +338,15 @@ contains
 
         !CALL generateRHS (rproblem,isubstep+1,rspaceTimeDiscr%niterations,&
         !    rtempVector3, .TRUE., .FALSE.)
-
         call lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
         call lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
         call lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
 
         ! Multiply the last RHS of the dual equation -z by 1+gamma/dtstep, that's it.
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
-            1.0_DP+rspaceTimeDiscr%dgammaC/dtstep)
+            dtheta+rspaceTimeDiscr%dgammaC/dtstep)
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
-            1.0_DP+rspaceTimeDiscr%dgammaC/dtstep)
+            dtheta+rspaceTimeDiscr%dgammaC/dtstep)
 
       end if
 

@@ -427,7 +427,7 @@ contains
         rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
         rmatrixComponents%dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%Dtheta(1,1) = dtheta
+        rmatrixComponents%Dtheta(1,1) = 1.0_DP
         rmatrixComponents%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
@@ -485,13 +485,20 @@ contains
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
         !
+        
+        !wirklich? unten nochmal!
+
+        rmatrixComponents%iprimalSol = 2
+        rmatrixComponents%idualSol = 2
+        
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
         ! to quadratic convergence in the Newton. Taking xi+1 does!?!
         ! So we take xi+1, although the theory tells us to take xi!
-
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 3
+        ! ...
+        ! No, that does not to be right. Commented out since the above works
+        ! as well and should be correct due to the theory.
+        ! rmatrixComponents%idualSol = 3
         
         ! Switch off any stabilisation
         rmatrixComponents%dupsam1 = 0.0_DP
@@ -661,13 +668,17 @@ contains
         !
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        !
+        rmatrixComponents%iprimalSol = 2
+        rmatrixComponents%idualSol = 2
+        
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
         ! to quadratic convergence in the Newton. Taking xi+1 does!?!
         ! So we take xi+1, although the theory tells us to take xi!
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 3
+        ! ...
+        ! No, that does not to be right. Commented out since the above works
+        ! as well and should be correct due to the theory.
+        ! rmatrixComponents%idualSol = 3
 
         ! Switch off any stabilisation
         rmatrixComponents%dupsam1 = 0.0_DP
@@ -801,7 +812,7 @@ contains
         rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
         rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
-            (-dequationType) * dtheta * (1.0_DP + p_rspaceTimeDiscr%dgammaC / dtstep)
+            (-dequationType) * (dtheta + p_rspaceTimeDiscr%dgammaC / dtstep)
             
         if (.not. bconvectionExplicit) then
         
