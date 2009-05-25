@@ -319,7 +319,7 @@ slinearSolver        = 'CC-LINEARSOLVER'
 # =2: Iterative Defect correction with Block Forward-Backward Gauss-Seidel precond.
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
-# =5: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
+# =5: Iterative BiCGStab with Block Forward-Backward SOR
 # =6: Defect correction with UMFPACK preconditioning
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-COARSEPRECOND] below!
