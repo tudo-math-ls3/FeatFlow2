@@ -64,9 +64,21 @@ isubEquation = 0
 RE                 = 400 #1000 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
 
 # Type of right hand side. 
-# 0=zero, 1=steady inhomog., 2=nonsteady force
+# 0=zero, 1=steady inhomog., 2=nonsteady force, 
+# =3: given as analytical expression srhsExpressionX,srhsExpressionY.
 
 iRHS               = 0
+
+# Analytical expression that defines the target flow for the X/Y coordinate
+# in case itypeTargetFlow = 5. Valid variables/constants:
+#    X / Y  = coordinate of the point where to evaluate the expressio
+#    TIME   = current time
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+
+srhsExpressionX = ''
+srhsExpressionY = ''
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
@@ -217,7 +229,7 @@ dgammaC = 0.0  # 1.0
 
 # Type of target flow.
 # =-1: zero target flow
-# =0: analytically given
+# =0: analytically given as callback function
 # =1: stationary flow as prescribed by a solution vector read in from a file.
 #     The filename is stargetFlow below.
 # =2: nonstationary flow as prescribed by a sequence of files on the 
@@ -228,8 +240,20 @@ dgammaC = 0.0  # 1.0
 #     time discretisation!
 # =3: like =1, but in ilevelTargetFlow an arbitrary level may be specified.
 # =4: like =4, but in ilevelTargetFlow an arbitrary level may be specified.
+# =5: analytically given in expression stargetFlowExpressionX/stargetFlowExpressionY
 
 itypeTargetFlow = 4
+
+# Analytical expression that defines the target flow for the X/Y coordinate
+# in case itypeTargetFlow = 5. Valid variables/constants:
+#    X / Y  = coordinate of the point where to evaluate the expressio
+#    TIME   = current time
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+
+stargetFlowExpressionX = ''
+stargetFlowExpressionY = ''
 
 # Refinement level of the coarse mesh corresponding to the target flow vector.
 # This may exceed the level bound specified by NLMAX, so it's allowed to specify

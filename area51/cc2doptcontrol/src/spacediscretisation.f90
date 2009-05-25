@@ -1387,6 +1387,12 @@ contains
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itypeTargetFlow',rproblem%roptcontrol%itypeTargetFlow,0)
 
+    call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
+        'stargetFlowExpressionX',rproblem%roptcontrol%stargetFlowExpressionX,'''''')
+
+    call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
+        'stargetFlowExpressionY',rproblem%roptcontrol%stargetFlowExpressionY,'''''')
+
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ilevelTargetFlow',rproblem%roptcontrol%ilevelTargetFlow,0)
 
@@ -1491,6 +1497,10 @@ contains
     character(SYS_STRLEN) :: sarray
     integer :: iref
     integer :: nactTimesteps
+    
+    ! Constants for expressions
+    character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
+      (/'X    ','Y    ','TIME '/)
     
     ! At first, what is with the triangulation and discretisation?
     ! Are we using the same mesh / discretisation as we use for the
@@ -1614,6 +1624,20 @@ contains
           0,nacttimesteps,&
           rproblem%roptcontrol%itargetFlowDelta,.true.,.true.)
 
+    case (5)
+      
+      ! Create a parser object for the target flow expressions
+      call fparser_create (rproblem%roptcontrol%rparserTargetFlowExpression, NDIM2D)
+      
+      ! Compile the two expressions
+      read (rproblem%roptcontrol%stargetFlowExpressionX,*) sarray
+      call fparser_parseFunction (rproblem%roptcontrol%rparserTargetFlowExpression,&
+          1, sarray, EXPR_VARIABLES)
+
+      read (rproblem%roptcontrol%stargetFlowExpressionX,*) sarray
+      call fparser_parseFunction (rproblem%roptcontrol%rparserTargetFlowExpression,&
+          2, sarray, EXPR_VARIABLES)
+
     end select
 
   end subroutine
@@ -1643,6 +1667,9 @@ contains
     case (2,4)
       call lsysbl_releaseVector (rproblem%roptcontrol%rtargetFlow)
       call sptivec_releaseVector (rproblem%roptcontrol%rtargetFlowNonstat)
+    case (5)
+      ! Release the parser object
+      call fparser_release(rproblem%roptcontrol%rparserTargetFlowExpression)
     end select
 
     if ((rproblem%roptcontrol%smeshTargetFlow .eq. '') .and. &

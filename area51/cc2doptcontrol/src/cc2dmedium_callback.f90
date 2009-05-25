@@ -105,6 +105,7 @@ module cc2dmedium_callback
   use bilinearformevaluation
   use linearformevaluation
   use linearsolver
+  use fparser
   
   use timeevaluation
   
@@ -164,6 +165,9 @@ contains
     rcollection%Iquickaccess(2) = rproblem%roptcontrol%itypeTargetFlow
     call collct_setvalue_vec (rcollection, 'TARGETFLOW', &
         rproblem%roptcontrol%rtargetFlow, .true.) 
+
+    call collct_setvalue_pars (rcollection, 'TARGETFLOWPARSER', &
+        rproblem%roptcontrol%rparserTargetFlowExpression, .true.) 
     
     ! In case the target vector changes in time, load the current target
     ! from the space-time vector.    
@@ -875,6 +879,9 @@ contains
     
     type(t_evalElementSet) :: revalElementSet
     integer :: cevaluationTag
+
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
@@ -1011,6 +1018,35 @@ contains
         deallocate(DpointsAct)
         deallocate(DvaluesAct)
         
+      case (5)
+        ! Get the parser object with the RHS expressions from the collection
+        p_rparser => collct_getvalue_pars (rcollection, 'TARGETFLOWPARSER') 
+        
+        ! Prepare the array with the values for the function.
+        ! X-coordinate, Y-coordinate, time.
+        allocate(p_Dval(3,npointsPerElement*nelements))
+        do i=1,nelements
+          do j=1,npointsPerElement
+            p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+            p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+            p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+          end do
+        end do
+        
+        ! Evaluate the 1st expression for the X-rhs
+        allocate(DvaluesAct(npointsPerElement*nelements))
+        call fparser_evalFunction (p_rparser, 1, 2, p_Dval, DvaluesAct)
+
+        ! Reshape the data, that's it.
+        do i=0,nelements-1
+          do j=1,npointsPerElement
+            Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+          end do
+        end do
+        
+        deallocate(DvaluesAct)
+        deallocate(p_Dval)
+        
       case DEFAULT
         Dvalues(:,:) = Dpoints(1,:,:)
       end select
@@ -1094,6 +1130,9 @@ contains
     real(DP) :: dtime,dtimeMax
     integer :: itimedependence,itypeTargetFlow,ieltype,i,j
     type(t_vectorBlock), pointer :: p_rvector
+
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
 
     integer :: iel,NEL
     real(DP), dimension(:), allocatable :: DvaluesAct
@@ -1226,6 +1265,35 @@ contains
         deallocate(DpointsAct)
         deallocate(DvaluesAct)
         
+      case (5)
+        ! Get the parser object with the RHS expressions from the collection
+        p_rparser => collct_getvalue_pars (rcollection, 'TARGETFLOWPARSER') 
+        
+        ! Prepare the array with the values for the function.
+        ! X-coordinate, Y-coordinate, time.
+        allocate(p_Dval(3,npointsPerElement*nelements))
+        do i=1,nelements
+          do j=1,npointsPerElement
+            p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+            p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+            p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+          end do
+        end do
+        
+        ! Evaluate the 2nd expression for the Y-rhs
+        allocate(DvaluesAct(npointsPerElement*nelements))
+        call fparser_evalFunction (p_rparser, 2, 2, p_Dval, DvaluesAct)
+
+        ! Reshape the data, that's it.
+        do i=0,nelements-1
+          do j=1,npointsPerElement
+            Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+          end do
+        end do
+        
+        deallocate(DvaluesAct)
+        deallocate(p_Dval)
+
       case DEFAULT
         Dvalues(:,:) = -Dpoints(2,:,:)
       end select

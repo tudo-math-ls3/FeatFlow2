@@ -164,7 +164,16 @@ module cc2dmediumm2basic
     ! =2: nonstationary solution, read from a sequence of files.
     ! =3: stationary solution, read from file. Arbitrary level.
     ! =4: nonstationary solution, read from a sequence of files. Arbitrary level.
+    ! =5: analytically given in stargetFlowExpressionX/stargetFlowExpressionY
     integer :: itypeTargetFlow = 0
+    
+    ! Analytical expression that defines the target flow for the X/Y coordinate
+    ! in case itypeTargetFlow = 5. 
+    character(SYS_STRLEN) :: stargetFlowExpressionX = ''
+    character(SYS_STRLEN) :: stargetFlowExpressionY = ''
+    
+    ! Parser object for the target flow expressions.
+    type(t_fparser) :: rparserTargetFlowExpression
     
     ! Formulation of the Space-time problem.
     ! =0: usual formulation as specified in the DFG applicance
