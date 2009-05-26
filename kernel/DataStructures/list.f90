@@ -400,7 +400,7 @@ contains
     end if
     
     ! Allocate memory and associate pointers
-    call storage_new('list_createList','Knext',-2,nna,ST_INT,&
+    call storage_new('list_createList','Knext',LHEAD,nna,ST_INT,&
         rlist%h_Knext,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
     
@@ -524,7 +524,7 @@ contains
     rlist%nna=nna
 
     ! Reallocate structures
-    call storage_realloc('list_resizeList',-2,nna,rlist%h_Knext,&
+    call storage_realloc('list_resizeList',LHEAD,nna,rlist%h_Knext,&
         ST_NEWBLOCK_NOINIT,.true.)
     call storage_getbase_int(rlist%h_Knext,rlist%Knext)
 
