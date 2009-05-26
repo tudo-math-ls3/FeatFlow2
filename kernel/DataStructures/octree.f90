@@ -103,41 +103,38 @@ module octree
 
 !<constantblock description="Constants for octree structure">
   
-  ! Position of the status information
-  integer, parameter :: OTREE_STATUS = 11
-  
-  ! Position of the parent information
-  integer, parameter :: OTREE_PARENT = 10
-
-  ! Position of the "position" of the parent information
-  integer, parameter :: OTREE_PARPOS = 9
-
-  ! Number of free positions in cube
-  integer, parameter :: OTREE_FREE   = 9
-
-  ! Item in "North-East-Back" position
-  integer, parameter :: OTREE_NEB    = 8
-
-  ! Item in "South-East-Back" position
-  integer, parameter :: OTREE_SEB    = 7
-
-  ! Item in "South-West-Back" position
-  integer, parameter :: OTREE_SWB    = 6
-
-  ! Item in "North-West-Back" position
-  integer, parameter :: OTREE_NWB    = 5
-
-  ! Item in "North-East-Front" position
-  integer, parameter :: OTREE_NEF    = 4
-
-  ! Item in "South-East-Front" position
-  integer, parameter :: OTREE_SEF    = 3
+  ! Item in "North-West-Front" position
+  integer, parameter :: OTREE_NWF    = 1
 
   ! Item in "South-West-Front" position
   integer, parameter :: OTREE_SWF    = 2
 
-  ! Item in "North-West-Front" position
-  integer, parameter :: OTREE_NWF    = 1
+  ! Item in "South-East-Front" position
+  integer, parameter :: OTREE_SEF    = 3
+
+  ! Item in "North-East-Front" position
+  integer, parameter :: OTREE_NEF    = 4
+
+  ! Item in "North-West-Back" position
+  integer, parameter :: OTREE_NWB    = 5
+
+  ! Item in "South-West-Back" position
+  integer, parameter :: OTREE_SWB    = 6
+
+  ! Item in "South-East-Back" position
+  integer, parameter :: OTREE_SEB    = 7
+
+  ! Item in "North-East-Back" position
+  integer, parameter :: OTREE_NEB    = 8
+  
+  ! Position of the status information
+  integer, parameter :: OTREE_STATUS = 0
+  
+  ! Position of the parent information
+  integer, parameter :: OTREE_PARENT = -1
+
+  ! Position of the "position" of the parent information
+  integer, parameter :: OTREE_PARPOS = -2
 
   ! Identifier: Cube is empty
   integer, parameter :: OTREE_EMPTY  = 0
@@ -145,7 +142,7 @@ module octree
   ! Identifier: Status is subdivided
   integer, parameter :: OTREE_SUBDIV = -1
   
-  ! Maximum number of items for each quad
+  ! Maximum number of items for each node
   integer, parameter :: OTREE_MAX    = 8
 
 !</constantblock> 
@@ -203,16 +200,14 @@ module octree
     integer :: h_Dbbox = ST_NOHANDLE
 
     ! Handle to octree structure
-    !   KNODE(1:11,1:NNODE)
-    !   KNODE( 11,INODE)    : < 0, the node has been subdivided
-    !                         = 0, the node is empty
-    !                         > 0, the number of points stored in the node
-    !   KNODE( 10,INODE)    : > 0, the node the present node came from
-    !   KNODE(  9,INODE)    : > 0, the position in the node the present 
-    !                              node came from
-    !   KNODE(1:8,INODE)    : for KNODE(11,INODE) > 0 : the points stored in the node
-    !                         for KNODE(11,INODE) < 0 : the nodes into which the present 
-    !                                                   node was subdivided
+    !   KNODE(OTREE_STATUS,INODE) : < 0, the node has been subdivided
+    !                               = 0, the node is empty
+    !                               > 0, the number of points stored in the node
+    !   KNODE(OTREE_PARENT,INODE) : > 0, the node the present node came from
+    !                               < 0, position of the next free node which has been deleted
+    !   KNODE(OTREE_PARPOS,INODE) : > 0, the position in the node the present node came from
+    !   KNODE(1:NDATA,INODE)      : for KNODE(OTREE_STATUS,INODE) > 0 : the points stored in the node
+    !                               for KNODE(OTREE_STATUS,INODE) < 0 : the nodes into which the present node was subdivided
     integer :: h_Knode = ST_NOHANDLE
 
     ! Data vectors
@@ -229,6 +224,13 @@ module octree
     ! Octree structure
     ! NOTE: This array is introduced to increase performance (see above).
     integer, dimension(:,:), pointer :: p_Knode
+
+    ! Number of next free node
+    integer :: NFREE = 0
+
+    ! Number of data items stored per node
+    ! Default value: OTREE_MAX
+    integer :: NDATA = OTREE_MAX
 
     ! Number of vertices currently stored in the octree
     integer :: NVT = 0
@@ -274,7 +276,7 @@ contains
 !<subroutine>
 
   subroutine otree_createOctree(roctree, nnvt, nnnode,&
-                                xmin, ymin, zmin, xmax, ymax, zmax, dfactor)
+                                xmin, ymin, zmin, xmax, ymax, zmax, dfactor, ndata)
   
 !<description>
     ! This subroutine creates a new octree.
@@ -293,6 +295,9 @@ contains
     ! OPTIONAL: Factor by which the octree should be enlarged if
     ! new storage has to be allocated
     real(DP), intent(IN), optional :: dfactor
+
+    ! OPTIONAL: Number of data items stored per node
+    integer, optional :: ndata
 !</input>
 
 !<output>
@@ -301,34 +306,48 @@ contains
 !</output>
 !</subroutine>
     
+    ! local variables
+    integer, dimension(2) :: Isize,Ilbound,Iubound
+
     ! Set factor
     if (present(dfactor)) then
       if (dfactor > 1_DP) roctree%dfactor=dfactor
     end if
     
+    ! Set number of data items
+    if (present(ndata)) then
+      if (ndata .gt. OTREE_MAX) roctree%NDATA = ndata
+    end if
+
     ! Set values
     roctree%NNNODE  = nnnode
     roctree%NNVT    = nnvt
     roctree%NNODE   = 0
     roctree%NVT     = 0
     roctree%NRESIZE = 0
+    roctree%NFREE   = 0
     
     ! Allocate memory and associate pointers
-    call storage_new('otree_createOctree', 'p_Ddata', (/3,nnvt/),&
-                     ST_DOUBLE, roctree%h_Ddata, ST_NEWBLOCK_ZERO)
-    call storage_new('otree_createOctree', 'p_Dbbox', (/6,nnnode/),&
-                     ST_DOUBLE, roctree%h_Dbbox, ST_NEWBLOCK_ZERO)
-    call storage_new('otree_createOctree', 'p_Knode', (/11,nnnode/),&
-                     ST_INT, roctree%h_Knode, ST_NEWBLOCK_ZERO)
+    Isize = (/3,nnvt/)
+    call storage_new('otree_createOctree', 'p_Ddata',&
+                     Isize, ST_DOUBLE, roctree%h_Ddata, ST_NEWBLOCK_ZERO)
+
+    Isize = (/6,nnnode/)
+    call storage_new('otree_createOctree', 'p_Dbbox',&
+                     Isize, ST_DOUBLE, roctree%h_Dbbox, ST_NEWBLOCK_ZERO)
+
+    Ilbound = (/OTREE_PARPOS,1/); Iubound = (/roctree%NDATA,nnnode/)
+    call storage_new('otree_createOctree', 'p_Knode', Ilbound,&
+                     Iubound, ST_INT, roctree%h_Knode, ST_NEWBLOCK_ZERO)
     call storage_getbase_double2D(roctree%h_Ddata, roctree%p_Ddata)
     call storage_getbase_double2D(roctree%h_Dbbox, roctree%p_Dbbox)
     call storage_getbase_int2D(roctree%h_Knode,    roctree%p_Knode)
 
-    ! Initialize first quad
+    ! Initialize first node
     roctree%nnode                   = 1
     roctree%p_Knode(OTREE_STATUS,1) = OTREE_EMPTY
     roctree%p_Knode(OTREE_PARENT,1) = OTREE_EMPTY
-    roctree%p_Knode(OTREE_FREE,1)   = 1
+    roctree%p_Knode(OTREE_PARPOS,1) = 1
     
     ! Set co-ordinates of the bounding box
     roctree%p_Dbbox(OTREE_XMIN,1) = xmin
@@ -337,6 +356,7 @@ contains
     roctree%p_Dbbox(OTREE_XMAX,1) = xmax
     roctree%p_Dbbox(OTREE_YMAX,1) = ymax
     roctree%p_Dbbox(OTREE_ZMAX,1) = zmax
+
   end subroutine otree_createOctree
 
   !************************************************************************
@@ -350,7 +370,7 @@ contains
 !</description>
 
 !<inputoutput>
-    ! quadtree
+    ! octree
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 !</subroutine>
@@ -367,6 +387,8 @@ contains
     roctree%NNODE   = 0
     roctree%NVT     = 0
     roctree%NRESIZE = 0
+    roctree%NFREE   = 0
+    
   end subroutine otree_releaseOctree
 
   !************************************************************************
@@ -394,7 +416,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_Ddata,p_DdataTmp
+    real(DP), dimension(:,:), pointer :: p_Ddata
     integer, dimension(2) :: Isize
     
     ! Check if handle is associated
@@ -412,10 +434,10 @@ contains
     
     ! Set pointers
     call storage_getbase_double2D(h_Ddata, p_Ddata)
-    call storage_getbase_double2D(roctree%h_Ddata, p_DdataTmp)
 
-    ! Copy data
-    call DCOPY(3*roctree%NVT, p_DdataTmp, 1, p_Ddata, 1)
+    ! Call copy routine
+    call otree_copyFromOctree(roctree, p_Ddata)
+
   end subroutine otree_copyFromOctree_handle
 
   !************************************************************************
@@ -457,6 +479,7 @@ contains
 
     ! Copy data
     call DCOPY(3*roctree%NVT, p_DdataTmp, 1, p_Ddata, 1)
+
   end subroutine otree_copyFromOctree_array
 
   !************************************************************************
@@ -482,21 +505,13 @@ contains
     
     ! local variables
     real(DP), dimension(:,:), pointer :: p_Ddata
-    integer :: ivt,jvt,inode,ipos
     
-    ! Set pointer and check its shape
+    ! Set pointer
     call storage_getbase_double2D(h_Ddata, p_Ddata)
-    if (size(p_Ddata, 1) .ne. 3) then
-      call output_line('First dimension of array must be 3!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'otree_copyToOctree_handle')
-      call sys_halt()
-    end if
+
+    ! Call copy routine
+    call otree_copyToOctree(p_Ddata, roctree)
     
-    do ivt = 1, size(p_Ddata, 2)
-      if (otree_searchInOctree(roctree, p_Ddata(:,ivt),&
-                               inode, ipos,jvt) .eq. OTREE_NOT_FOUND)&
-          call otree_insertIntoOctree(roctree, ivt, p_Ddata(:,ivt), inode)
-    end do
   end subroutine otree_copyToOctree_handle
 
   !************************************************************************
@@ -587,7 +602,7 @@ contains
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
       integer :: i,jnode,knode,nnode,isize
       
-      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_MAX) then
+      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. roctree%ndata) then
         
         if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
           isize = max(roctree%nnode+OTREE_MAX, ceiling(roctree%dfactor*roctree%NNNODE))
@@ -657,20 +672,20 @@ contains
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEB) = OTREE_NEB
         roctree%p_Dbbox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
 
-        ! Add the eight values from INODE to the eight new nodes
+        ! Add the data values from INODE to the eight new nodes
         ! NNODE+1:NNODE+8 recursively
-        do i = 1, OTREE_MAX
+        do i = 1, roctree%ndata
           knode = roctree%p_Knode(i,inode)
           jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,knode),inode)
           call insert(knode, jnode)
         end do
         
         ! Mark the current nodes as subdivided and set pointers to its eight children 
-        roctree%p_Knode(OTREE_STATUS,inode) = OTREE_SUBDIV
-        roctree%p_Knode(1:OTREE_MAX, inode) = (/nnode+OTREE_NWF, nnode+OTREE_SWF,&
-                                                nnode+OTREE_SEF, nnode+OTREE_NEF,&
-                                                nnode+OTREE_NWB, nnode+OTREE_SWB,&
-                                                nnode+OTREE_SEB, nnode+OTREE_NEB/)
+        roctree%p_Knode(OTREE_STATUS,inode) =    OTREE_SUBDIV
+        roctree%p_Knode(1:OTREE_MAX, inode) = -(/nnode+OTREE_NWF, nnode+OTREE_SWF,&
+                                                 nnode+OTREE_SEF, nnode+OTREE_NEF,&
+                                                 nnode+OTREE_NWB, nnode+OTREE_SWB,&
+                                                 nnode+OTREE_SEB, nnode+OTREE_NEB/)
         
         ! Add the new entry to the next position recursively
         jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,ivt),inode)
@@ -681,6 +696,7 @@ contains
         ! Node is not full, so new items can be stored
         roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)+1
         roctree%p_Knode(roctree%p_Knode(OTREE_STATUS, inode), inode) = ivt
+
       end if
     end subroutine insert
   end subroutine otree_insertIntoOctree
@@ -831,7 +847,9 @@ contains
     inode = 1
     ipos  = 1
     ivt   = 1
-    f     = search(inode, ipos, ivt)
+
+    ! Search for item
+    f = search(inode, ipos, ivt)
     
   contains
     
@@ -839,23 +857,32 @@ contains
     ! Here, the recursive searching routine follows
 
     recursive function search(inode, ipos, ivt) result(f)
+      
       integer, intent(INOUT) :: inode,ipos,ivt
       integer :: f
       
-      f = OTREE_NOT_FOUND
       if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
         
         ! Node is subdivided. Compute child INODE which to look recursively.
-        inode = roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
-        f     = search(inode,ipos, ivt)
+        inode = -roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
+        f     =  search(inode, ipos, ivt)
         
       else
         
+        ! Initialize flag
+        f = OTREE_NOT_FOUND
+
         ! Node is not subdivided. Search for (x,y,z) in current node
         do ipos = 1, roctree%p_Knode(OTREE_STATUS, inode)
+
+          ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
-          if (sqrt(sum((roctree%p_Ddata(:, ivt)-Ddata)**2)) .le. SYS_EPSREAL) then
+
+          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+
+            ! We have found the item IVT in node INODE
             f = OTREE_FOUND; return
+            
           end if
         end do
         
@@ -981,10 +1008,10 @@ contains
       real(DP), intent(IN) :: xmin,ymin,zmin,xmax,ymax,zmax
       integer, intent(IN) :: inode
       real(DP) :: xmid,ymid,zmid
-      integer :: i
+      integer :: i,j
 
       write(UNIT=iunit,FMT=*) 'hex'
-      write(UNIT=iunit,FMT=10) xmin, ymin, zmin, xmax, ymax, zmax
+      write(UNIT=iunit,FMT=10) xmin, ymin, zmin, xmax, ymax, zmax, inode
       
       if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
         
@@ -993,34 +1020,36 @@ contains
         zmid = 0.5*(zmin+zmax)
         
         call print(xmin, ymid, zmin, xmid, ymax, zmid,&
-                   roctree%p_Knode(OTREE_NWF, inode))
+                   -roctree%p_Knode(OTREE_NWF, inode))
         call print(xmin, ymin, zmin, xmid, ymid, zmid,&
-                   roctree%p_Knode(OTREE_SWF, inode))
+                   -roctree%p_Knode(OTREE_SWF, inode))
         call print(xmid, ymin, zmin, xmax, ymid, zmid,&
-                   roctree%p_Knode(OTREE_SEF, inode))
+                   -roctree%p_Knode(OTREE_SEF, inode))
         call print(xmid, ymid, zmin, xmax, ymax, zmid,&
-                   roctree%p_Knode(OTREE_NEF, inode))
+                   -roctree%p_Knode(OTREE_NEF, inode))
 
         call print(xmin, ymid, zmid, xmid, ymax, zmax,&
-                   roctree%p_Knode(OTREE_NWB, inode))
+                   -roctree%p_Knode(OTREE_NWB, inode))
         call print(xmin, ymin, zmid, xmid, ymid, zmax,&
-                   roctree%p_Knode(OTREE_SWB, inode))
+                   -roctree%p_Knode(OTREE_SWB, inode))
         call print(xmid, ymin, zmid, xmax, ymid, zmax,&
-                   roctree%p_Knode(OTREE_SEB, inode))
+                   -roctree%p_Knode(OTREE_SEB, inode))
         call print(xmid, ymid, zmid, xmax, ymax, zmax,&
-                   roctree%p_Knode(OTREE_NEB, inode))
+                   -roctree%p_Knode(OTREE_NEB, inode))
 
       elseif (roctree%p_Knode(OTREE_STATUS, inode) > OTREE_EMPTY) then
         
         do i = 1, roctree%p_Knode(OTREE_STATUS, inode)
+          j = roctree%p_Knode(i, inode)
           write(UNIT=iunit, FMT=*) 'node'
-          write(UNIT=iunit, FMT=20) roctree%p_Ddata(:, roctree%p_Knode(i, inode))
+          write(UNIT=iunit, FMT=20) roctree%p_Ddata(1, j), roctree%p_Ddata(2, j),&
+                                    roctree%p_Ddata(3, j), j
         end do
         
       end if
       
-10    format(6E15.6E3)
-20    format(3E15.6E3)
+10    format(6(E15.6E3,1X),I10)
+20    format(3(E15.6E3,1X),I10)
     end subroutine print
   end subroutine otree_printOctree
 
@@ -1046,6 +1075,7 @@ contains
     call output_line('NNVT:    '//trim(sys_siL(roctree%NNVT,15)))
     call output_line('NNODE:   '//trim(sys_siL(roctree%NNODE,15)))
     call output_line('NNNODE:  '//trim(sys_siL(roctree%NNNODE,15)))
+    call output_line('NDATA:   '//trim(sys_siL(roctree%NDATA,15)))
     call output_line('NRESIZE: '//trim(sys_siL(roctree%NRESIZE,5)))
     call output_line('dfactor: '//trim(sys_sdL(roctree%dfactor,2)))
     call output_line('h_Ddata: '//trim(sys_siL(roctree%h_Ddata,15)))
@@ -1332,7 +1362,7 @@ contains
 
     call storage_realloc('resizeNNODE', nnnode, roctree%h_Dbbox,&
                          ST_NEWBLOCK_ZERO, .true.)
-    call storage_realloc('resizeNNODE', nnnode, roctree%h_Knode,&
+    call storage_realloc('resizeNNODE', 1, nnnode, roctree%h_Knode,&
                          ST_NEWBLOCK_ZERO, .true.)
     call storage_getbase_double2D(roctree%h_Dbbox, roctree%p_Dbbox)
     call storage_getbase_int2D(roctree%h_Knode,    roctree%p_Knode)
