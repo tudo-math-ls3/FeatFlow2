@@ -637,21 +637,6 @@ contains
     call storage_getbase_double2D(rhadapt%h_DvertexCoords1D,&
                                   rhadapt%p_DvertexCoords1D)
 
-!!$    ! Check if quadtree is already generated, then remove old quadtree/octree first
-!!$    if (iand(rhadapt%iSpec, HADAPT_HAS_COORDS) .eq. HADAPT_HAS_COORDS) then
-!!$      call qtree_releaseQuadtree(rhadapt%rVertexCoordinates2D)
-!!$    end if
-!!$    
-!!$    ! Set pointer
-!!$    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords, nvt)
-!!$    
-!!$    ! Create quadtree for vertices
-!!$    call btree_createTree(rhadapt%rVertexCoordinates1D, 2*nvt,&
-!!$                          ST_DOUBLE, 0, 0, 0, 1.5_DP)
-!!$    
-!!$    ! Copy vertex coordinates to quadtree
-!!$    call btree_copyToTree(p_DvertexCoords(1,:), rhadapt%rVertexCoordinates1D)
-
     ! Set specifier for quadtree
     rhadapt%iSpec = ior(rhadapt%iSpec, HADAPT_HAS_COORDS)
 
@@ -738,26 +723,6 @@ contains
 
     ! Copy data
     call lalg_copyVectorDble2D(p_Ddata, p_DvertexCoords, 1, rhadapt%NVT)
-
-!!$    ! Copy binary tree to temporal handle 
-!!$    h_Ddata = ST_NOHANDLE
-!!$    call btree_copyFromTreeKey(rhadapt%rVertexCoordinates1D, h_Ddata)
-!!$    call storage_getbase_double(h_Ddata, p_Ddata, rhadapt%NVT)
-!!$    call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords)
-!!$
-!!$    ! Check if vectors are compatible and reallocate
-!!$    ! the coordinate vector if required
-!!$    if (size(p_Ddata) .gt. size(p_DvertexCoords,2)) then
-!!$      call storage_realloc('hadapt_getVertexCoords1D', size(p_Ddata),&
-!!$                           h_DvertexCoords, ST_NEWBLOCK_NOINIT, .false.)
-!!$      call storage_getbase_double2D(h_DvertexCoords, p_DvertexCoords)
-!!$    end if
-!!$    
-!!$    ! Copy data to coordinate vector
-!!$    call lalg_copyVectorDble(p_Ddata, p_DvertexCoords(1,:), rhadapt%NVT)
-!!$
-!!$    ! Release temporal memory
-!!$    call storage_free(h_Ddata)
 
     ! Set dimension
     if (present(ndim)) ndim = rhadapt%ndim
