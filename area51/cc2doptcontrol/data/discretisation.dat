@@ -10,18 +10,35 @@
 ###################
 
 # Creation of start vector of the (stationary and nonstationary) simulation.
-# |.|=0: ZERO, <>0: read from CSTART; 
-# |.|=1: read start vector from sStart vector on level NLMAX,
-# |.|=2: read start vector from sStart  on level NLMAX-1.
-# etc...
-# <0: sStart is unformatted file 
+# =0: zero
+# =1: read from ssolutionStart; the file defines y_0. Formatted file format.
+# =2: read from ssolutionStart; the file defines y_0. Unformatted file format.
 #     (smaller, but processor dependent and not human readable)
+# =3: initial solution given as analytical 
+#     expression ssolutionExpressionX/ssolutionExpressionY
 
 isolutionStart     = 0
 
-# Name of file with the initial solution
+# Level of the solution file when isolutionstart=1,2.
+# =1,2,3: directly defines the level.
+# =0,-1,-2,-3,...: Solution is given at level NLMAX-|isolutionlevel|
+
+isolutionLevel     = 0
+
+# Name of file with the initial solution if isolutionStart=1,2.
 
 ssolutionStart     = 'ns/DX4'
+
+# Analytical expression that defines the initial solution for the X/Y 
+# coordinate in case isolutionStart = 3.
+#    X / Y  = coordinate of the point where to evaluate the expressio
+#    TIME   = current time
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+
+ssolutionExpressionX = ''
+ssolutionExpressionY = ''
 
 # Write final solution vector to a file. After a stationary simulation,
 # the stationary solution is written out. After a nonstationary simulation,

@@ -738,15 +738,11 @@ contains
         deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
 
         ! Also release B1^T and B2^T everywhere where they exist.
-        if (associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)) then
-          call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-          deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-        end if
+        call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
+        deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
 
-        if (associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)) then
-          call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-          deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-        end if
+        call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
+        deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
       end do
       
       ! Release the temporary vector(s)
@@ -938,7 +934,7 @@ contains
     ! local variables
     integer :: NLMIN,NLMAX
     integer :: i
-    logical :: btranspose
+    logical :: bphystranspose
     character(LEN=PARLST_MLDATA) :: sstring,snewton
 
     ! Error indicator during initialisation of the solver
@@ -1143,14 +1139,14 @@ contains
         ! It's probably needed for the preconditioner to make the pressure definite.
         if (binit .or. bstructuralUpdate) then
         
-          btranspose = .false.
+          bphystranspose = .false.
           select case (rpreconditioner%rprecSpecials%isolverType)
           case (0)
             ! UMFPACK solver.
             if (i .eq. NLMAX) then
               ! UMFPACK solver. Tweak the matrix on the max. level.
               ! Ignore the other levels.
-              btranspose = .true.
+              bphystranspose = .true.
               
               if (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) then
                 ! Activate the 3,3-block, UMFPACK needs it in case the pressure
@@ -1165,7 +1161,7 @@ contains
             if (i .eq. NLMIN) then
             
               if (rpreconditioner%rprecSpecials%icoarseGridSolverType .eq. 0) then
-                btranspose = .true.
+                bphystranspose = .true.
                 
                 if (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) then
                   ! Activate the 3,3-block, UMFPACK needs it in case the pressure
@@ -1188,39 +1184,55 @@ contains
               ! chosen as smoother; it needs transposed matrices.
               if ((rpreconditioner%rprecSpecials%ismootherType .eq. 0) .or. &
                   (rpreconditioner%rprecSpecials%ismootherType .eq. 1)) then
-                btranspose = .true.
+                bphystranspose = .true.
               end if              
               
             end if
 
           end select
           
-          if (btranspose) then
-            ! Allocate memory for B1^T and B2^T and transpose B1 and B2.
-            if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)) then
-              allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-            else
-              call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-            end if
+          ! Allocate memory for B1^T and B2^T and transpose B1 and B2.
+          if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)) then
+            allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
+          else
+            call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
+          end if
+          
+          if (bphystranspose) then
+            ! Physical transpose
             call lsyssc_transposeMatrix (&
                 rpreconditioner%RcoreEquation(i)%p_rmatrixB1,&
                 rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_ALL)
+          else
+            ! Virtual transpose
+            call lsyssc_transposeMatrix (&
+                rpreconditioner%RcoreEquation(i)%p_rmatrixB1,&
+                rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_VIRTUAL)
+          end if
 
-            if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)) then
-              allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-            else
-              call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-            end if
+          if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)) then
+            allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
+          else
+            call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
+          end if
+          
+          if (bphystranspose) then
+            ! Physical transpose
             call lsyssc_transposeMatrix (&
                 rpreconditioner%RcoreEquation(i)%p_rmatrixB2,&
                 rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_ALL)
-                
-            ! B1^T and B2^T have the same structure, release unnecessary memory.
-            call lsyssc_duplicateMatrix (&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,&
-                LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
+          else
+            ! Virtual transpose
+            call lsyssc_transposeMatrix (&
+                rpreconditioner%RcoreEquation(i)%p_rmatrixB2,&
+                rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_VIRTUAL)
           end if
+                        
+          ! B1^T and B2^T have the same structure, release unnecessary memory.
+          call lsyssc_duplicateMatrix (&
+              rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,&
+              rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
 
         end if
       

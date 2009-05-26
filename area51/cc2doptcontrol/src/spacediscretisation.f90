@@ -66,6 +66,7 @@ module spacediscretisation
   
   use collection
   use convection
+  use analyticprojection
     
   use cc2dmediumm2basic
   use cc2dmedium_callback
@@ -1076,6 +1077,118 @@ contains
   end subroutine
 
   ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ffunction_initSol (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! Callback routine for the calculation of the initial solution vector
+  ! from an analytical expression.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  integer, dimension(:,:), intent(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    real(DP) :: dtime
+    integer :: i,j,icomponent
+    
+    real(DP), dimension(:), allocatable :: DvaluesAct
+
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
+    
+    ! Get the parser object with the RHS expressions from the collection
+    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER') 
+    
+    ! Current time
+    dtime = rcollection%DquickAccess(1)
+    
+    ! X/Y component
+    icomponent = rcollection%IquickAccess(1)
+    
+    ! Prepare the array with the values for the function.
+    ! X-coordinate, Y-coordinate, time.
+    allocate(p_Dval(3,npointsPerElement*nelements))
+    do i=1,nelements
+      do j=1,npointsPerElement
+        p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+        p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+        p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+      end do
+    end do
+    
+    ! Evaluate the 1st expression for the X-rhs
+    allocate(DvaluesAct(npointsPerElement*nelements))
+    call fparser_evalFunction (p_rparser, icomponent, 2, p_Dval, DvaluesAct)
+
+    ! Reshape the data, that's it.
+    do i=0,nelements-1
+      do j=1,npointsPerElement
+        Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+      end do
+    end do
+    
+    deallocate(DvaluesAct)
+    deallocate(p_Dval)
+      
+  end subroutine
+
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -1100,33 +1213,40 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: istart,nblock,iblock
+    integer(I32) :: isolutionStart,nblock,iblock
     type(t_vectorBlock) :: rvector1,rvector2,rtempVector
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
+    type(t_fparser) :: rsolParser
+    character(LEN=SYS_STRLEN) :: sstring,ssolutionExpressionX,ssolutionExpressionY
+    character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
+      (/'X    ','Y    ','TIME '/)
+    type(t_collection) :: rcollection
 
     ! Get the parameter what to do with rvector
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'isolutionStart',istart,0)
+                              'isolutionStart',isolutionStart,0)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isolutionLevel',ilev,0)
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'ssolutionStart',sfileString,'')
 
-    ! Create a temp vector at level NLMAX-istart+1.
-    ilev = rproblem%NLMAX-abs(istart)+1
+    if (ilev .le. 0) then
+      ! Level is specified relatively to NLMAX.
+      ilev = rproblem%NLMAX-abs(ilev)
+    end if
     
+    ! Create a temp vector at level NLMAX-isolutionStart+1.
     if (ilev .lt. rproblem%NLMIN) then
       print *,'Warning: Level of start vector is < NLMIN! Initialising with zero!'
-      istart = 0
+      isolutionStart = 0
     end if
     
     ! Inít with zero? Read from file?
-    if (istart .eq. 0) then
-      ! Init with zero
-      call lsysbl_clearVector (rvector)
-    else
+    if ((isolutionStart .eq. 1) .or. (isolutionStart .eq. 2)) then
       ! Remove possible ''-characters
       read(sfileString,*) sfile
 
@@ -1135,7 +1255,7 @@ contains
       
       ! Read in the vector, create a new block vector.
       call vecio_readBlockVectorHR (&
-          rtempVector, sarray, .true., 0, sfile, istart .gt. 0)
+          rtempVector, sarray, .true., 0, sfile, (isolutionStart .eq. 1))
       
       ! Copy velocity/pressure vectors from the temp to the actual
       ! vector. If the temp vector provides dual solutions, copy
@@ -1191,6 +1311,57 @@ contains
       ! Release the temp vectors
       call lsysbl_releaseVector (rvector1)
       call lsysbl_releaseVector (rtempVector)
+      
+    else if (isolutionStart .eq. 3) then
+    
+      ! Create a parser and to evaluate the expression.
+      call fparser_create (rsolParser,NDIM2D)
+
+      ! Get the expressions defining the solution      
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionX',sstring,'''''')
+      read(sstring,*) ssolutionExpressionX
+
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionY',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY
+      
+      ! Compile the two expressions
+      call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
+      call fparser_parseFunction (rsolParser,2, ssolutionExpressionX, EXPR_VARIABLES)
+      
+      ! Put the parser to the problem collection to be usable in a callback
+      ! routine.
+      call collct_init(rcollection)
+      call collct_setvalue_pars (rcollection, 'SOLPARSER', &
+          rsolParser, .true.) 
+          
+      ! Current time
+      rcollection%DquickAccess(1) = 0.0_DP
+      
+      ! Call the analytic projection method and calculate the FE representation
+      ! of the analytic expression. 
+      call lsysbl_clearVector (rvector)
+      
+      rcollection%IquickAccess(1) = 1  ! discretise X-component
+      call anprj_discrDirect (rvector%RvectorBlock(1),&
+          ffunction_initSol,rcollection)
+
+      rcollection%IquickAccess(1) = 2  ! discretise Y-component
+      call anprj_discrDirect (rvector%RvectorBlock(2),&
+          ffunction_initSol,rcollection)
+      
+      ! Clean up
+      call collct_deletevalue (rcollection, 'SOLPARSER') 
+      call collct_done(rcollection)
+      
+      ! Release the parser
+      call fparser_release(rsolParser)
+    
+    else 
+    
+      ! Init with zero
+      call lsysbl_clearVector (rvector)
       
     end if
 

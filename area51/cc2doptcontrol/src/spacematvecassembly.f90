@@ -1170,23 +1170,23 @@ contains
         if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then                              
           ! Furthermore, put B1^T and B2^T to the block matrix.
           ! These matrices are always 'shared'.
-          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
                                         rmatrix%RmatrixBlock(3,1),&
-                                        LSYSSC_TR_VIRTUAL)
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
                                         rmatrix%RmatrixBlock(3,2),&
-                                        LSYSSC_TR_VIRTUAL)
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         end if
                                         
         if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
-          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
                                         rmatrix%RmatrixBlock(6,4),&
-                                        LSYSSC_TR_VIRTUAL)
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
                                         rmatrix%RmatrixBlock(6,5),&
-                                        LSYSSC_TR_VIRTUAL)
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         end if
 
         rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%Deta(1,1)
@@ -1450,17 +1450,15 @@ contains
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
                                         rsubmatrix%RmatrixBlock(3,1),&
                                         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        else
-          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
-                                        rsubmatrix%RmatrixBlock(3,1),&
-                                        LSYSSC_TR_VIRTUAL)
-        end if
 
-        if (associated(rmatrixComponents%p_rmatrixB2T)) then
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
                                         rsubmatrix%RmatrixBlock(3,2),&
                                         LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         else
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                        rsubmatrix%RmatrixBlock(3,1),&
+                                        LSYSSC_TR_VIRTUAL)
+
           call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
                                         rsubmatrix%RmatrixBlock(3,2),&
                                         LSYSSC_TR_VIRTUAL)
@@ -1631,13 +1629,13 @@ contains
       if (dtau .ne. 0.0_DP) then                              
         ! Furthermore, put B1^T and B2^T to the block matrix.
         ! These matrices are always 'shared'.
-        call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+        call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
                                       rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_TR_VIRTUAL)
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+        call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
                                       rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_TR_VIRTUAL)
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
 
       rmatrix%RmatrixBlock(1,3)%dscaleFactor = deta
