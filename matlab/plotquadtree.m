@@ -29,9 +29,10 @@ while 1,
 
   switch lower(key)
       case{'rect'}
-          rect=fscanf(fid,'%g',4);
+          rect=fscanf(fid,'%g',5);
           rectangle('Position',[rect(1) rect(2) rect(3)-rect(1) rect(4)-rect(2)]);
-          
+          text(0.5*(rect(1)+rect(3)), 0.5*(rect(2)+rect(4)), int2str(rect(5)));
+                    
       case{'node'}
           node=fscanf(fid,'%g',2);
           plot(node(1),node(2),'.r');
