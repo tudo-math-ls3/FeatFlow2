@@ -34,8 +34,9 @@ while 1,
           text(0.5*(rect(1)+rect(3)), 0.5*(rect(2)+rect(4)), int2str(rect(5)));
                     
       case{'node'}
-          node=fscanf(fid,'%g',2);
+          node=fscanf(fid,'%g',3);
           plot(node(1),node(2),'.r');
+	  text(node(1),node(2),int2str(node(3)));
   end
   
 end
