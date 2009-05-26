@@ -5,5 +5,5 @@
 #
 
 ../../bin/configure \
-	--appname=poisson_control_nmm \
+	--appname=poisson_control_shafqat \
 	$@
