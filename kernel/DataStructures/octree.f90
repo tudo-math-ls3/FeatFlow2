@@ -62,6 +62,9 @@
 !# 18.) otree_restoreOctree
 !#      -> Restore an octree from a previous backup
 !#
+!# 19.) otree_rebuildOctree
+!#      -> Rebuilds the structure of an octree
+!#
 !# For the internal use the following routines are available:
 !#
 !# 1.) resizeNVT
@@ -98,6 +101,7 @@ module octree
   public :: otree_getZ
   public :: otree_duplicateOctree
   public :: otree_restoreOctree
+  public :: otree_rebuildOctree
 
 !<constants>
 
@@ -463,7 +467,6 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DdataTmp
     integer, dimension(2) :: Isize
 
     ! Check size of array
@@ -474,11 +477,8 @@ contains
       call sys_halt()
     end if
 
-    ! Set pointers
-    call storage_getbase_double2D(roctree%h_Ddata, p_DdataTmp)
-
     ! Copy data
-    call DCOPY(3*roctree%NVT, p_DdataTmp, 1, p_Ddata, 1)
+    call DCOPY(3*roctree%NVT, roctree%p_Ddata, 1, p_Ddata, 1)
 
   end subroutine otree_copyFromOctree_array
 
@@ -534,9 +534,7 @@ contains
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 !</subroutine>
-    
-    ! local variables
-    integer :: ivt,jvt,inode,ipos
+
     
     if (size(p_Ddata,1) .ne. 3) then
       call output_line('First dimension of array must be 3!',&
@@ -544,11 +542,18 @@ contains
       call sys_halt()
     end if
 
-    do ivt = 1, size(p_Ddata,2)
-      if (otree_searchInOctree(roctree, p_Ddata(:,ivt),&
-                               inode, ipos, jvt) .eq. OTREE_NOT_FOUND)&
-          call otree_insertIntoOctree(roctree, ivt, p_Ddata(:,ivt), inode)
-    end do
+    ! Adjust dimension of data array
+    roctree%NVT = size(p_Ddata,2)
+    if (roctree%NNVT .lt. roctree%NVT) then
+      call resizeNVT(roctree, roctree%NVT)
+    end if
+    
+    ! Copy data array
+    call DCOPY(3*roctree%NVT, p_Ddata, 1, roctree%p_Ddata, 1)
+
+    ! Rebuild structure
+    call otree_rebuildOctree(roctree) 
+
   end subroutine otree_copyToOctree_array
 
   !************************************************************************
@@ -699,6 +704,7 @@ contains
 
       end if
     end subroutine insert
+
   end subroutine otree_insertIntoOctree
   
   ! ***************************************************************************
@@ -761,6 +767,7 @@ contains
       end if
       roctree%NVT = roctree%NVT-1
     end if
+
   end function otree_deleteFromOctree
 
   ! ***************************************************************************
@@ -806,6 +813,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctreeByNumber')
       call sys_halt()
     end if
+
   end function otree_deleteFromOctreeByNumber
 
   ! ***************************************************************************
@@ -888,6 +896,7 @@ contains
         
       end if
     end function search
+
   end function otree_searchInOctree
 
   !************************************************************************
@@ -962,6 +971,7 @@ contains
       end if
 
     end if
+
   end function otree_getDirection
 
   !************************************************************************
@@ -1051,6 +1061,7 @@ contains
 10    format(6(E15.6E3,1X),I10)
 20    format(3(E15.6E3,1X),I10)
     end subroutine print
+
   end subroutine otree_printOctree
 
   !************************************************************************
@@ -1086,6 +1097,7 @@ contains
         trim(sys_sdL(100*roctree%NVT/real(roctree%NNVT,DP),2))//'%')
     call output_line('Current node memory usage: '//&
         trim(sys_sdL(100*roctree%NNODE/real(roctree%NNNODE,DP),2))//'%')
+
   end subroutine otree_infoOctree
 
   !************************************************************************
@@ -1110,6 +1122,7 @@ contains
 !</function>
 
     nvt = roctree%NVT
+
   end function otree_getSize
 
   !************************************************************************
@@ -1147,6 +1160,7 @@ contains
     else
       bbox = roctree%p_Dbbox(OTREE_XMIN:OTREE_ZMAX, 1)
     end if
+
   end function otree_getBoundingBox
 
   !************************************************************************
@@ -1173,6 +1187,7 @@ contains
 !</function>
 
     x = roctree%p_Ddata(1,ivt)
+
   end function otree_getX
 
   !************************************************************************
@@ -1199,6 +1214,7 @@ contains
 !</function>
 
     y = roctree%p_Ddata(2,ivt)
+
   end function otree_getY
 
   !************************************************************************
@@ -1225,6 +1241,7 @@ contains
 !</function>
 
     z = roctree%p_Ddata(3,ivt)
+
   end function otree_getZ
 
   !************************************************************************
@@ -1280,6 +1297,7 @@ contains
       call storage_getbase_int2D(roctreeBackup%h_Knode,&
                                  roctreeBackup%p_Knode)
     end if
+
   end subroutine otree_duplicateOctree
 
   !************************************************************************
@@ -1308,7 +1326,298 @@ contains
 
     ! Duplicate the backup
     call otree_duplicateOctree(roctreeBackup, roctree)
+
   end subroutine otree_restoreOctree
+
+  !************************************************************************
+
+!<subroutine>
+
+  subroutine otree_rebuildOctree(roctree)
+
+!<description>
+    ! This subroutine rebuilds the structure of an octree
+!</description>
+
+!<inputoutput>
+    ! octree
+    type(t_octree), intent(INOUT) :: roctree
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Inodes
+    integer, dimension(2) :: Isize
+    integer :: h_Inodes
+
+    ! Initialization
+    roctree%NNODE = 1
+    roctree%NFREE = 0
+
+    call storage_getsize(roctree%h_Knode, Isize); roctree%NNNODE = Isize(2)
+    call storage_getsize(roctree%h_Ddata, Isize); roctree%NNVT   = Isize(2)
+
+    ! Check if quadtree contains data
+    if (roctree%NVT .eq. 0) then
+
+      ! Initialize first quad
+      roctree%nnode = 1
+      roctree%p_Knode(OTREE_STATUS,1) = OTREE_EMPTY
+      roctree%p_Knode(OTREE_PARENT,1) = OTREE_EMPTY
+      roctree%p_Knode(OTREE_PARPOS,1) = 1
+      
+    else
+      
+      ! Create temporary storage
+      h_Inodes = ST_NOHANDLE
+      call storage_new('otree_rebuildOctree', 'Inodes', roctree%NVT,&
+                       ST_INT, h_Inodes, ST_NEWBLOCK_ORDERED)
+      call storage_getbase_int(h_Inodes, p_Inodes)
+      
+      ! Create quadtree top-down
+      call rebuild(1, 1, roctree%NVT)
+      
+      ! Release temporary storage
+      call storage_free(h_Inodes)
+
+    end if
+
+  contains
+    
+    !**************************************************************
+    ! Here, the recursive top-down rebuild routine follows
+    
+    recursive subroutine rebuild(inode,istart,iend)
+
+      integer, intent(IN) :: inode,istart, iend
+      
+      ! local variables
+      real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
+      integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3
+
+      ! Check if istart > iend then the quad is empty
+      if (istart .gt. iend) return
+
+      ! Check if current partition can be stored in a leave
+      if (iend-istart+1 .le. roctree%NDATA) then
+
+        ! Store vertex numbers
+        do i = istart, iend
+          roctree%p_Knode(i-istart+1,inode) = p_Inodes(i)
+        end do
+
+        ! Store number of vertices
+        roctree%p_Knode(OTREE_STATUS, inode) = iend-istart+1
+
+      else
+
+        ! Otherwise, the current partition is subdivided into four subpartitions
+        
+        if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
+          isize = max(roctree%nnode+OTREE_MAX, ceiling(roctree%dfactor*roctree%NNNODE))
+          call resizeNNODE(roctree, isize)
+        end if
+
+        ! Store the number of quads
+        nnode           = roctree%NNODE
+        roctree%NNODE = nnode+OTREE_MAX
+
+        ! Mark the current quad as subdivided and set pointers to its four children 
+        roctree%p_Knode(OTREE_STATUS,inode) =    OTREE_SUBDIV
+        roctree%p_Knode(1:OTREE_MAX,inode)  = -(/nnode+OTREE_NWF, nnode+OTREE_SWF,&
+                                                 nnode+OTREE_SEF, nnode+OTREE_NEF,&
+                                                 nnode+OTREE_NWB, nnode+OTREE_SWB,&
+                                                 nnode+OTREE_SEB, nnode+OTREE_NEB/)
+        
+        ! Determine coordinates for bounding boxes
+        xmin = roctree%p_Dbbox(OTREE_XMIN,inode)
+        ymin = roctree%p_Dbbox(OTREE_YMIN,inode)
+        zmin = roctree%p_Dbbox(OTREE_ZMIN,inode)
+        xmax = roctree%p_Dbbox(OTREE_XMAX,inode)
+        ymax = roctree%p_Dbbox(OTREE_YMAX,inode)
+        zmax = roctree%p_Dbbox(OTREE_ZMAX,inode)
+        xmid = 0.5*(xmin+xmax)
+        ymid = 0.5*(ymin+ymax)
+        zmid = 0.5*(zmin+zmax)
+        
+        ! NWF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWF) = OTREE_NWF
+        roctree%p_Dbbox(:,nnode+OTREE_NWF)            = (/xmin,ymid,zmin,xmid,ymax,zmid/)
+        
+        ! SWF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWF) = OTREE_SWF
+        roctree%p_Dbbox(:,nnode+OTREE_SWF)            = (/xmin,ymin,zmin,xmid,ymid,zmid/)
+        
+        ! SEF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEF) = OTREE_SEF
+        roctree%p_Dbbox(:,nnode+OTREE_SEF)            = (/xmid,ymin,zmin,xmax,ymid,zmid/)
+        
+        ! NEF-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEF) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEF) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEF) = OTREE_NEF
+        roctree%p_Dbbox(:,nnode+OTREE_NEF)            = (/xmid,ymid,zmin,xmax,ymax,zmid/)
+        
+        ! NWB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWB) = OTREE_NWB
+        roctree%p_Dbbox(:,nnode+OTREE_NWB)            = (/xmin,ymid,zmid,xmid,ymax,zmax/)
+        
+        ! SWB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWB) = OTREE_SWB
+        roctree%p_Dbbox(:,nnode+OTREE_SWB)            = (/xmin,ymin,zmid,xmid,ymid,zmax/)
+        
+        ! SEB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEB) = OTREE_SEB
+        roctree%p_Dbbox(:,nnode+OTREE_SEB)            = (/xmid,ymin,zmid,xmax,ymid,zmax/)
+        
+        ! NEB-node
+        roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEB) = OTREE_EMPTY
+        roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEB) = inode
+        roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEB) = OTREE_NEB
+        roctree%p_Dbbox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
+        
+        
+!!$        ! Determine longest axis
+!!$        if (xmax-xmin .gt. ymax-ymin) then
+!!$
+!!$          ! Swap nodes with respect to x-axis
+!!$          imid1 = swap(istart, iend, 1, xmid)
+!!$          
+!!$          ! Swap nodes with respect to y-axis
+!!$          imid2 = swap(istart, imid1, 2, ymid)
+!!$          imid3 = swap(imid1+1, iend, 2, ymid)
+!!$
+!!$          if (imid2+1 .le. imid1) then
+!!$            jnode = -roctree%p_Knode(OTREE_NW, inode)
+!!$            call rebuild(jnode, imid2+1, imid1)
+!!$          end if
+!!$          
+!!$          if (imid3+1 .le. iend) then
+!!$            jnode = -roctree%p_Knode(OTREE_NE, inode)
+!!$            call rebuild(jnode, imid3+1, iend)
+!!$          end if
+!!$          
+!!$          if (imid1+1 .le. imid3) then
+!!$            jnode = -roctree%p_Knode(OTREE_SE, inode)
+!!$            call rebuild(jnode, imid1+1, imid3)
+!!$          end if
+!!$
+!!$          if (istart .le. imid2) then
+!!$            jnode = -roctree%p_Knode(OTREE_SW, inode)
+!!$            call rebuild(jnode, istart, imid2)
+!!$          end if
+!!$          
+!!$        else
+!!$          
+!!$          ! Swap nodes with respect to y-axis
+!!$          imid1 = swap(istart, iend, 2, ymid)
+!!$          
+!!$          ! Swap nodes with respect to x-axis
+!!$          imid2 = swap(istart, imid1, 1, xmid)
+!!$          imid3 = swap(imid1+1, iend, 1, xmid)
+!!$
+!!$          if (imid1+1 .le. imid3) then
+!!$            jnode = -roctree%p_Knode(OTREE_NW, inode)
+!!$            call rebuild(jnode, imid1+1, imid3)
+!!$          end if
+!!$
+!!$          if (imid3+1 .le. iend) then
+!!$            jnode = -roctree%p_Knode(OTREE_NE, inode)
+!!$            call rebuild(jnode, imid3+1, iend)
+!!$          end if
+!!$
+!!$          if (imid2+1 .le. imid1) then
+!!$            jnode = -roctree%p_Knode(OTREE_SE, inode)
+!!$            call rebuild(jnode, imid2+1, imid1)
+!!$          end if
+!!$
+!!$          if (istart .le. imid2) then
+!!$            jnode = -roctree%p_Knode(OTREE_SW, inode)
+!!$            call rebuild(jnode, istart, imid2)
+!!$          end if
+!!$
+!!$        end if
+
+      end if
+
+    end subroutine rebuild
+
+    
+    !**************************************************************
+    ! Here, the swapping routine follows
+
+    function swap(istart, iend, idim, dmid) result(imid)
+
+      real(DP), intent(IN) :: dmid
+      integer, intent(IN) :: istart, iend, idim
+      integer :: imid
+
+      ! local variables
+      real(DP), dimension(2) :: Daux
+      integer :: i,j,ivt,jvt
+
+      i = istart; j = iend
+      do while (i .le. j)
+        
+        ivt = p_Inodes(i); jvt = p_Inodes(j)
+        
+        if (roctree%p_Ddata(idim, ivt) .gt. dmid) then
+          if (roctree%p_Ddata(idim, jvt) .le. dmid) then
+            
+            ! Swap nodes
+            Daux = roctree%p_Ddata(:, ivt)
+            roctree%p_Ddata(:, ivt) = roctree%p_Ddata(:, jvt)
+            roctree%p_Ddata(:, jvt) = Daux
+            i=i+1; j=j-1
+
+          else
+
+            ! Decrease j
+            j=j-1
+
+          end if
+        else
+          if (roctree%p_Ddata(idim, jvt) .le. dmid) then
+
+            ! Increase i
+            i=i+1
+
+          else
+
+            ! Proceed to next pair
+            i=i+1; j=j-1
+
+          end if
+        end if
+      end do          
+
+      ! Adjust index
+      i = max(min(i,iend),istart); ivt = p_Inodes(i)
+      
+      ! Check if node IVT belongs to lower or upper partition
+      if (roctree%p_Ddata(idim, ivt) .gt. dmid) then
+        imid = i-1
+      elseif (roctree%p_Ddata(idim, ivt) .le. dmid) then
+        imid = i+1
+      else
+        imid = i
+      end if
+
+    end function swap
+
+  end subroutine otree_rebuildOctree
 
   !************************************************************************
   
@@ -1337,6 +1646,7 @@ contains
     
     roctree%NNVT    = nnvt
     roctree%NRESIZE = roctree%NRESIZE+1
+
   end subroutine resizeNVT
   
   !************************************************************************
@@ -1369,6 +1679,8 @@ contains
     
     roctree%NNNODE  = nnnode
     roctree%NRESIZE =roctree%NRESIZE+1
+
   end subroutine resizeNNODE
+
 end module octree
 
