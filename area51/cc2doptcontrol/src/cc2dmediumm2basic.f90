@@ -302,6 +302,19 @@ module cc2dmediumm2basic
     ! =0: (Navier-)Stokes with gradient tensor
     ! =1: (Navier-)Stokes with deformation tensor
     integer :: isubEquation
+    
+    ! Type of right hand side in the primal equation.
+    ! =-1: given as analytical expression srhsExpressionX,srhsExpressionY.
+    ! >=0: analytically given by callback function
+    integer :: irhs
+    
+    ! Analytical expression that defines the RHS for the X/Y coordinate
+    ! in case irhs = -1.
+    character(len=SYS_STRLEN) :: srhsExpressionX
+    character(len=SYS_STRLEN) :: srhsExpressionY
+    
+    ! Parser object for the RHS expressions.
+    type(t_fparser) :: rrhsParser
         
     ! An object for saving the domain:
     type(t_boundary) :: rboundary

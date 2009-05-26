@@ -102,6 +102,9 @@ contains
 
     real(DP) :: dnu,d1
     integer :: ilvmin,ilvmax,i1
+    character(LEN=SYS_STRLEN) :: sstring
+    character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
+      (/'X    ','Y    ','TIME '/)
 
     ! Get the output level for the whole application -- during the
     ! initialisation phase and during the rest of the program.
@@ -154,6 +157,33 @@ contains
                               'isubEquation',i1,0)
     rproblem%isubEquation = i1
 
+    ! Specification of the RHS
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iRHS',i1,0)
+    rproblem%irhs = i1
+
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'srhsExpressionX',sstring,'''''')
+    read(sstring,*) rproblem%srhsExpressionX
+
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'srhsExpressionY',sstring,'''''')
+    read(sstring,*) rproblem%srhsExpressionY
+    
+    ! If the RHS is given as expression, create a parser object for the 
+    ! expression.
+    if (rproblem%irhs .eq. -1) then
+      
+      ! Create a parser object for the rhs expressions
+      call fparser_create (rproblem%rrhsParser,NDIM2D)
+      
+      ! Compile the two expressions
+      call fparser_parseFunction (rproblem%rrhsParser,&
+          1, rproblem%srhsExpressionX, EXPR_VARIABLES)
+      call fparser_parseFunction (rproblem%rrhsParser,&
+          2, rproblem%srhsExpressionY, EXPR_VARIABLES)
+    end if
+
     ! Type of boundary conditions
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iBoundary',i1,0)
@@ -201,6 +231,11 @@ contains
 
     ! Remove the viscosity parameter
     call collct_deletevalue(rproblem%rcollection,'NU')
+    
+    ! Probably release the parser object for the RHS
+    if (rproblem%irhs .eq. -1) then
+      call fparser_release(rproblem%rrhsParser)
+    end if
     
   end subroutine
 

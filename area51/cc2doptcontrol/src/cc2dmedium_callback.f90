@@ -198,6 +198,11 @@ contains
       ! Otherwise, there is no vector.
     end if
 
+    ! Assembly data for the RHS.
+    rcollection%Iquickaccess(2) = rproblem%irhs
+    call collct_setvalue_pars (rcollection, 'RHSPARSER', &
+        rproblem%rrhsParser, .true.) 
+
   end subroutine
   
 ! ***************************************************************************
@@ -233,6 +238,8 @@ contains
     ! This might change in future...
 
     call collct_deletevalue (rcollection, 'TARGETFLOW') 
+    call collct_deletevalue (rcollection, 'TARGETFLOWPARSER') 
+    call collct_deletevalue (rcollection, 'RHSPARSER') 
 
   end subroutine
   
@@ -480,6 +487,10 @@ contains
   !</subroutine>
   
     real(DP) :: dtime
+    integer :: irhs,i,j
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
+    real(DP), dimension(:), allocatable :: DvaluesAct
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -488,17 +499,58 @@ contains
     else
       dtime = 0.0_DP
     end if
+
+    ! Type of RHS.
+    irhs = rcollection%IquickAccess(2)
     
-    Dcoefficients(:,:,:) = 0.0_DP
-    !Dcoefficients(1,:,:) = Dpoints(1,:,:)
-    !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-    !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
-    !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
-    !Dcoefficients (1,:,:) = -(1./10.0_DP)*(-Dpoints(1,:,:))
-    
-    ! Without coupling:
-    !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
-    !Dcoefficients (1,:,:) = Dpoints(1,:,:)
+    ! Depending on the irhs identifier, choose the RHS to evaluate
+    select case (irhs)
+    case (-1)
+      ! Given as analytical expression. Evaluate the expression.
+      !
+      ! Get the parser object with the RHS expressions from the collection
+      p_rparser => collct_getvalue_pars (rcollection, 'RHSPARSER') 
+      
+      ! Prepare the array with the values for the function.
+      ! X-coordinate, Y-coordinate, time.
+      allocate(p_Dval(3,npointsPerElement*nelements))
+      do i=1,nelements
+        do j=1,npointsPerElement
+          p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+          p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+          p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+        end do
+      end do
+      
+      ! Evaluate the 1st expression for the X-rhs
+      allocate(DvaluesAct(npointsPerElement*nelements))
+      call fparser_evalFunction (p_rparser, 1, 2, p_Dval, DvaluesAct)
+
+      ! Reshape the data, that's it.
+      do i=0,nelements-1
+        do j=1,npointsPerElement
+          Dcoefficients(1,j,i+1) = DvaluesAct(i*npointsPerElement+j)
+        end do
+      end do
+      
+      deallocate(DvaluesAct)
+      deallocate(p_Dval)
+      
+    case (0)
+      ! Analytically given. =0.
+      Dcoefficients(:,:,:) = 0.0_DP
+      
+    ! Other cases may be defined here.
+      !Dcoefficients(1,:,:) = Dpoints(1,:,:)
+      !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+      !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
+      !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
+      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(-Dpoints(1,:,:))
+      
+      ! Without coupling:
+      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
+      !Dcoefficients (1,:,:) = Dpoints(1,:,:)
+    end select
     
   end subroutine
 
@@ -576,6 +628,10 @@ contains
   !</subroutine>
 
     real(DP) :: dtime
+    integer :: irhs,i,j
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
+    real(DP), dimension(:), allocatable :: DvaluesAct
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -585,16 +641,56 @@ contains
       dtime = 0.0_DP
     end if
     
-    Dcoefficients(:,:,:) = 0.0_DP
-    !Dcoefficients(1,:,:) = -Dpoints(2,:,:)
-    !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-    !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
-    !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
-    !Dcoefficients (1,:,:) = -(1./10.0_DP)*(Dpoints(2,:,:))
+    ! Type of RHS.
+    irhs = rcollection%IquickAccess(2)
+
+    ! Depending on the irhs identifier, choose the RHS to evaluate
+    select case (irhs)
+    case (-1)
+      ! Given as analytical expression. Evaluate the expression.
+      !
+      ! Get the parser object with the RHS expressions from the collection
+      p_rparser => collct_getvalue_pars (rcollection, 'RHSPARSER') 
+      
+      ! Prepare the array with the values for the function.
+      ! X-coordinate, Y-coordinate, time.
+      allocate(p_Dval(3,npointsPerElement*nelements))
+      do i=1,nelements
+        do j=1,npointsPerElement
+          p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+          p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+          p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+        end do
+      end do
+      
+      ! Evaluate the 2nd expression for the Y-rhs
+      allocate(DvaluesAct(npointsPerElement*nelements))
+      call fparser_evalFunction (p_rparser, 2, 2, p_Dval, DvaluesAct)
+
+      ! Reshape the data, that's it.
+      do i=0,nelements-1
+        do j=1,npointsPerElement
+          Dcoefficients(1,j,i+1) = DvaluesAct(i*npointsPerElement+j)
+        end do
+      end do
+      
+      deallocate(DvaluesAct)
+      deallocate(p_Dval)
     
-    ! Without coupling:
-    !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
-    !Dcoefficients (1,:,:) = -Dpoints(2,:,:)
+    case (0)
+      Dcoefficients(:,:,:) = 0.0_DP
+      
+    ! Other cases may be defined here.
+      !Dcoefficients(1,:,:) = -Dpoints(2,:,:)
+      !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+      !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
+      !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
+      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(Dpoints(2,:,:))
+      
+      ! Without coupling:
+      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
+      !Dcoefficients (1,:,:) = -Dpoints(2,:,:)
+    end select
 
   end subroutine
 

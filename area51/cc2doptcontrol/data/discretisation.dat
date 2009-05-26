@@ -63,14 +63,15 @@ isubEquation = 0
 
 RE                 = 400 #1000 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
 
-# Type of right hand side. 
-# 0=zero, 1=steady inhomog., 2=nonsteady force, 
-# =3: given as analytical expression srhsExpressionX,srhsExpressionY.
+# Type of right hand side in the primal equation.
+# =-1: given as analytical expression srhsExpressionX,srhsExpressionY.
+# =0: zero
+# =1,2,3,...: analytically given as callback function
 
 iRHS               = 0
 
-# Analytical expression that defines the target flow for the X/Y coordinate
-# in case itypeTargetFlow = 5. Valid variables/constants:
+# Analytical expression that defines the RHS for the X/Y coordinate
+# in case irhs = 1.
 #    X / Y  = coordinate of the point where to evaluate the expressio
 #    TIME   = current time
 #    _PI    = The number Pi
