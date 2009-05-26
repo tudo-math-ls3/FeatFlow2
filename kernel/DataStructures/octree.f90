@@ -686,11 +686,11 @@ contains
         end do
         
         ! Mark the current nodes as subdivided and set pointers to its eight children 
-        roctree%p_Knode(OTREE_STATUS,inode) =    OTREE_SUBDIV
-        roctree%p_Knode(1:OTREE_MAX, inode) = -(/nnode+OTREE_NWF, nnode+OTREE_SWF,&
-                                                 nnode+OTREE_SEF, nnode+OTREE_NEF,&
-                                                 nnode+OTREE_NWB, nnode+OTREE_SWB,&
-                                                 nnode+OTREE_SEB, nnode+OTREE_NEB/)
+        roctree%p_Knode(OTREE_STATUS,inode) =     OTREE_SUBDIV
+        roctree%p_Knode(1:OTREE_MAX, inode) = - (/nnode+OTREE_NWF, nnode+OTREE_SWF,&
+                                                  nnode+OTREE_SEF, nnode+OTREE_NEF,&
+                                                  nnode+OTREE_NWB, nnode+OTREE_SWB,&
+                                                  nnode+OTREE_SEB, nnode+OTREE_NEB/)
         
         ! Add the new entry to the next position recursively
         jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,ivt),inode)
@@ -738,35 +738,126 @@ contains
 !</result>
 !</function>
     
-    ! local variables
-    integer :: inode,ipos,jpos,jvt
-    real(DP), dimension(3) :: DdataTmp
-    
-    ! Search for the given coordinates
-    f = otree_searchInOctree(roctree, Ddata, inode, ipos, ivt)
-    
-    ! What can we do from the searching
-    if (f .eq. OTREE_FOUND) then
+    ! Delete item startin at root
+    f = delete(1, ivt)
+
+  contains
+
+    !**************************************************************
+    ! Here, the recursive deletion routine follows
+
+    recursive function delete(inode, ivt) result(f)
       
-      ! Remove item IVT from node INODE
-      do jpos = ipos+1, roctree%p_Knode(OTREE_STATUS, inode)
-        roctree%p_Knode(jpos-1, inode) = roctree%p_Knode(jpos, inode)
-      end do
-      roctree%p_Knode(roctree%p_Knode(OTREE_STATUS, inode), inode) = 0
-      roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)-1
+      integer, intent(IN) :: inode
+      integer, intent(OUT) :: ivt
+      integer :: f
       
-      ! If IVT is not last item move last item NVT to position IVT
-      if (ivt .ne. roctree%NVT) then
-        DdataTmp(1:3) = roctree%p_Ddata(1:3, roctree%NVT)
-        if (otree_searchInOctree(roctree, DdataTmp(:),&
-                                 inode, ipos, jvt) .eq. OTREE_FOUND) then
-          roctree%p_Ddata(:, ivt) = roctree%p_Ddata(:, roctree%NVT)
-          roctree%p_Knode(ipos, inode) = ivt
+      ! local variables
+      real(DP), dimension(3) :: DdataTmp
+      integer, dimension(OTREE_MAX) :: Knode
+      integer :: jvt,i,jnode,ipos,jpos,nemptyChildren
+      
+
+      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
+        
+        ! Quad is subdivided. Compute child INODE which to look recursively.
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
+        f     =  delete(jnode, ivt)
+
+        ! Check if three or more children are empty
+        nemptyChildren = 0
+        do i = 1, OTREE_MAX
+          jnode = -roctree%p_Knode(i, inode)
+          if (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_EMPTY) then
+            nemptyChildren = nemptyChildren+1
+          elseif (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_SUBDIV) then
+            return
+          end if
+        end do
+        
+        if (nemptyChildren .ge. OTREE_MAX-1) then
+          
+          ! Save values from current quad
+          Knode = roctree%p_Knode(1:OTREE_MAX, inode)
+
+          ! Mark quad as empty
+          roctree%p_Knode(OTREE_STATUS, inode) = OTREE_EMPTY
+
+          ! Copy data from non-empty child (if any)
+          if (nemptyChildren .eq. OTREE_MAX-1) then
+            do i = 1, OTREE_MAX
+              jnode = -Knode(i)
+              if (roctree%p_Knode(OTREE_STATUS, jnode) .ne. OTREE_EMPTY) then
+                
+                ! Copy status of quad
+                roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, jnode)
+                
+                ! Copy data
+                roctree%p_Knode(1:, inode) = roctree%p_Knode(1:, jnode)
+                
+                ! That's it
+                exit
+              end if
+            end do
+          end if
+          
+          ! Mark children as deleted
+          do i = 1, OTREE_MAX
+            jnode = -Knode(i)
+            roctree%p_Knode(:, jnode) = -99
+          end do
+
+          ! Reduce number of quads
+          roctree%NNODE = roctree%NNODE-OTREE_MAX
+          
         end if
-        ivt = roctree%NVT
+                  
+      else
+        
+        ! Initialize flag
+        f = OTREE_NOT_FOUND
+
+        ! Quad is not subdivided. Search for (x,y,z) in current quad
+        do ipos = 1, roctree%p_Knode(OTREE_STATUS, inode)
+
+          ! Get vertex number
+          ivt = roctree%p_Knode(ipos, inode)
+
+          if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
+            
+            ! We have found the item IVT in node INODE
+            f = OTREE_FOUND
+
+            ! Physically remove the item IVT from node INODE
+            do jpos = ipos+1, roctree%p_Knode(OTREE_STATUS, inode)
+              roctree%p_Knode(jpos-1, inode) = roctree%p_Knode(jpos, inode)
+            end do
+            roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)-1
+            
+            ! If IVT is not last item move last item to position IVT
+            if (ivt .ne. roctree%NVT) then
+              DdataTmp(:) = roctree%p_Ddata(:,roctree%NVT)
+              if (otree_searchInOctree(roctree, DdataTmp(:),&
+                                         jnode, jpos, jvt) .eq. OTREE_FOUND) then
+                roctree%p_Ddata(:, ivt)      = roctree%p_Ddata(:, roctree%NVT)
+                roctree%p_Knode(jpos, jnode) = ivt
+              end if
+              
+              ! Set number of removed vertex
+              ivt = roctree%NVT
+            end if
+      
+            ! Decrease number of vertices
+            roctree%NVT = roctree%NVT-1
+            
+            ! That's it
+            exit
+          end if
+        end do
+
       end if
-      roctree%NVT = roctree%NVT-1
-    end if
+      
+    end function delete
 
   end function otree_deleteFromOctree
 
@@ -1357,7 +1448,7 @@ contains
     call storage_getsize(roctree%h_Knode, Isize); roctree%NNNODE = Isize(2)
     call storage_getsize(roctree%h_Ddata, Isize); roctree%NNVT   = Isize(2)
 
-    ! Check if quadtree contains data
+    ! Check if octree contains data
     if (roctree%NVT .eq. 0) then
 
       ! Initialize first quad
@@ -1374,7 +1465,7 @@ contains
                        ST_INT, h_Inodes, ST_NEWBLOCK_ORDERED)
       call storage_getbase_int(h_Inodes, p_Inodes)
       
-      ! Create quadtree top-down
+      ! Create octree top-down
       call rebuild(1, 1, roctree%NVT)
       
       ! Release temporary storage
@@ -1393,7 +1484,9 @@ contains
       
       ! local variables
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
-      integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3
+      integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3,imid4,imid5,imid6,imid7
+
+      print *, inode,istart,iend
 
       ! Check if istart > iend then the quad is empty
       if (istart .gt. iend) return
@@ -1488,67 +1581,58 @@ contains
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEB) = OTREE_NEB
         roctree%p_Dbbox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
         
-        
-!!$        ! Determine longest axis
-!!$        if (xmax-xmin .gt. ymax-ymin) then
-!!$
-!!$          ! Swap nodes with respect to x-axis
-!!$          imid1 = swap(istart, iend, 1, xmid)
-!!$          
-!!$          ! Swap nodes with respect to y-axis
-!!$          imid2 = swap(istart, imid1, 2, ymid)
-!!$          imid3 = swap(imid1+1, iend, 2, ymid)
-!!$
-!!$          if (imid2+1 .le. imid1) then
-!!$            jnode = -roctree%p_Knode(OTREE_NW, inode)
-!!$            call rebuild(jnode, imid2+1, imid1)
-!!$          end if
-!!$          
-!!$          if (imid3+1 .le. iend) then
-!!$            jnode = -roctree%p_Knode(OTREE_NE, inode)
-!!$            call rebuild(jnode, imid3+1, iend)
-!!$          end if
-!!$          
-!!$          if (imid1+1 .le. imid3) then
-!!$            jnode = -roctree%p_Knode(OTREE_SE, inode)
-!!$            call rebuild(jnode, imid1+1, imid3)
-!!$          end if
-!!$
-!!$          if (istart .le. imid2) then
-!!$            jnode = -roctree%p_Knode(OTREE_SW, inode)
-!!$            call rebuild(jnode, istart, imid2)
-!!$          end if
-!!$          
-!!$        else
-!!$          
-!!$          ! Swap nodes with respect to y-axis
-!!$          imid1 = swap(istart, iend, 2, ymid)
-!!$          
-!!$          ! Swap nodes with respect to x-axis
-!!$          imid2 = swap(istart, imid1, 1, xmid)
-!!$          imid3 = swap(imid1+1, iend, 1, xmid)
-!!$
-!!$          if (imid1+1 .le. imid3) then
-!!$            jnode = -roctree%p_Knode(OTREE_NW, inode)
-!!$            call rebuild(jnode, imid1+1, imid3)
-!!$          end if
-!!$
-!!$          if (imid3+1 .le. iend) then
-!!$            jnode = -roctree%p_Knode(OTREE_NE, inode)
-!!$            call rebuild(jnode, imid3+1, iend)
-!!$          end if
-!!$
-!!$          if (imid2+1 .le. imid1) then
-!!$            jnode = -roctree%p_Knode(OTREE_SE, inode)
-!!$            call rebuild(jnode, imid2+1, imid1)
-!!$          end if
-!!$
-!!$          if (istart .le. imid2) then
-!!$            jnode = -roctree%p_Knode(OTREE_SW, inode)
-!!$            call rebuild(jnode, istart, imid2)
-!!$          end if
-!!$
-!!$        end if
+        ! Swap nodes with respect to x-axis
+        imid1 = swap(istart, iend, 1, xmid)
+
+        ! Swap nodes with respect to y-axis
+        imid2 = swap(istart, imid1, 2, ymid)
+        imid3 = swap(imid1+1, iend, 2, ymid)
+
+        ! Swap nodes with respect to z-axis
+        imid4 = swap(istart,  imid2, 3, zmid)
+        imid5 = swap(imid2+1, imid1, 3, zmid)
+        imid6 = swap(imid1+1, imid3, 3, zmid)
+        imid7 = swap(imid3+1, iend,  3, zmid)
+
+        if (istart .le. imid4) then
+          jnode = -roctree%p_Knode(OTREE_SWF, inode)
+          call rebuild(jnode, istart, imid4)
+        end if
+
+        if (imid4+1 .le. imid2) then
+          jnode = -roctree%p_Knode(OTREE_SWB, inode)
+          call rebuild(jnode, imid4+1, imid2)
+        end if
+
+        if (imid2+1 .le. imid5) then
+          jnode = -roctree%p_Knode(OTREE_NWF, inode)
+          call rebuild(jnode, imid2+1, imid5)
+        end if
+
+        if (imid5+1 .le. imid1) then
+          jnode = -roctree%p_Knode(OTREE_NWB, inode)
+          call rebuild(jnode, imid5+1, imid1)
+        end if
+
+        if (imid1+1 .le. imid6) then
+          jnode = -roctree%p_Knode(OTREE_SEF, inode)
+          call rebuild(jnode, imid1+1, imid6)
+        end if
+
+        if (imid6+1 .le. imid3) then
+          jnode = -roctree%p_Knode(OTREE_SEB, inode)
+          call rebuild(jnode, imid6+1, imid3)
+        end if
+
+        if (imid3+1 .le. imid7) then
+          jnode = -roctree%p_Knode(OTREE_NEF, inode)
+          call rebuild(jnode, imid3+1, imid7)
+        end if
+
+        if (imid7+1 .le. iend) then
+          jnode = -roctree%p_Knode(OTREE_NEB, inode)
+          call rebuild(jnode, imid7+1, iend)
+        end if
 
       end if
 
