@@ -510,12 +510,8 @@ contains
     type(t_quadtree), intent(INOUT) :: rquadtree
 !</inputoutput>
 !</subroutine>
-    
-    ! local variables
-    integer, dimension(:), pointer :: p_Inodes
-    integer :: h_Inodes
-    integer :: ivt,jvt,inode,ipos
-    
+        
+	
     if (size(p_Ddata,1) .ne. 2) then
       call output_line('First dimension of array must be 2!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'qtree_copyToQuadtree_handle')
@@ -655,6 +651,7 @@ contains
 
       end if
     end subroutine insert
+
   end subroutine qtree_insertIntoQuadtree
   
   ! ***************************************************************************
@@ -811,6 +808,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQtreeByNumber')
       call sys_halt()
     end if
+
   end function qtree_deleteFromQtreeByNumber
  
   ! ***************************************************************************
@@ -894,6 +892,7 @@ contains
 
       end if
     end function search
+
   end function qtree_searchInQuadtree
 
   !************************************************************************
@@ -945,6 +944,7 @@ contains
         d = QTREE_SW; return
       end if
     end if
+
   end function qtree_getDirection
 
   !************************************************************************
@@ -1017,6 +1017,7 @@ contains
 10    format(4(E15.6E3,1X),I10)
 20    format(2(E15.6E3,1X),I10)
     end subroutine print
+
   end subroutine qtree_printQuadtree
 
   !************************************************************************
@@ -1052,6 +1053,7 @@ contains
         trim(sys_sdL(100*rquadtree%NVT/real(rquadtree%NNVT,DP),2))//'%')
     call output_line('Current node memory usage: '//&
         trim(sys_sdL(100*rquadtree%NNODE/real(rquadtree%NNNODE,DP),2))//'%')
+
   end subroutine qtree_infoQuadtree
 
   !************************************************************************
@@ -1076,6 +1078,7 @@ contains
 !</function>
 
     nvt = rquadtree%NVT
+
   end function qtree_getSize
 
   !************************************************************************
@@ -1115,6 +1118,7 @@ contains
     else
       bbox = rquadtree%p_Dbbox(QTREE_XMIN:QTREE_YMAX, 1)
     end if
+
   end function qtree_getBoundingBox
 
   !************************************************************************
@@ -1141,6 +1145,7 @@ contains
 !</function>
 
     x = rquadtree%p_Ddata(1, ivt)
+
   end function qtree_getX
 
   !************************************************************************
@@ -1167,6 +1172,7 @@ contains
 !</function>
 
     y = rquadtree%p_Ddata(2, ivt)
+
   end function qtree_getY
 
   !************************************************************************
@@ -1222,6 +1228,7 @@ contains
       call storage_getbase_int2D(rquadtreeBackup%h_Knode,&
                                  rquadtreeBackup%p_Knode)
     end if
+
   end subroutine qtree_duplicateQuadtree
 
   !************************************************************************
@@ -1250,6 +1257,7 @@ contains
 
     ! Duplicate the backup
     call qtree_duplicateQuadtree(rquadtreeBackup, rquadtree)
+
   end subroutine qtree_restoreQuadtree
 
   !************************************************************************
@@ -1293,7 +1301,7 @@ contains
       
       ! Create temporary storage
       h_Inodes = ST_NOHANDLE
-      call storage_new('rebuildKNODE', 'Inodes', rquadtree%NVT,&
+      call storage_new('qtree_rebuildQuadtree', 'Inodes', rquadtree%NVT,&
                        ST_INT, h_Inodes, ST_NEWBLOCK_ORDERED)
       call storage_getbase_int(h_Inodes, p_Inodes)
       
@@ -1382,66 +1390,31 @@ contains
         rquadtree%p_Knode(QTREE_PARPOS,nnode+QTREE_NE) = QTREE_NE
         rquadtree%p_Dbbox(:,nnode+QTREE_NE)            = (/xmid,ymid,xmax,ymax/)
         
+        ! Swap nodes with respect to x-axis
+        imid1 = swap(istart, iend, 1, xmid)
+          
+        ! Swap nodes with respect to y-axis
+        imid2 = swap(istart, imid1, 2, ymid)
+        imid3 = swap(imid1+1, iend, 2, ymid)
         
-        ! Determine longest axis
-        if (xmax-xmin .gt. ymax-ymin) then
-
-          ! Swap nodes with respect to x-axis
-          imid1 = swap(istart, iend, 1, xmid)
-          
-          ! Swap nodes with respect to y-axis
-          imid2 = swap(istart, imid1, 2, ymid)
-          imid3 = swap(imid1+1, iend, 2, ymid)
-
-          if (imid2+1 .le. imid1) then
-            jnode = -rquadtree%p_Knode(QTREE_NW, inode)
-            call rebuild(jnode, imid2+1, imid1)
-          end if
-          
-          if (imid3+1 .le. iend) then
-            jnode = -rquadtree%p_Knode(QTREE_NE, inode)
-            call rebuild(jnode, imid3+1, iend)
-          end if
-          
-          if (imid1+1 .le. imid3) then
-            jnode = -rquadtree%p_Knode(QTREE_SE, inode)
-            call rebuild(jnode, imid1+1, imid3)
-          end if
-
-          if (istart .le. imid2) then
-            jnode = -rquadtree%p_Knode(QTREE_SW, inode)
-            call rebuild(jnode, istart, imid2)
-          end if
-          
-        else
-          
-          ! Swap nodes with respect to y-axis
-          imid1 = swap(istart, iend, 2, ymid)
-          
-          ! Swap nodes with respect to x-axis
-          imid2 = swap(istart, imid1, 1, xmid)
-          imid3 = swap(imid1+1, iend, 1, xmid)
-
-          if (imid1+1 .le. imid3) then
-            jnode = -rquadtree%p_Knode(QTREE_NW, inode)
-            call rebuild(jnode, imid1+1, imid3)
-          end if
-
-          if (imid3+1 .le. iend) then
-            jnode = -rquadtree%p_Knode(QTREE_NE, inode)
-            call rebuild(jnode, imid3+1, iend)
-          end if
-
-          if (imid2+1 .le. imid1) then
-            jnode = -rquadtree%p_Knode(QTREE_SE, inode)
-            call rebuild(jnode, imid2+1, imid1)
-          end if
-
-          if (istart .le. imid2) then
-            jnode = -rquadtree%p_Knode(QTREE_SW, inode)
-            call rebuild(jnode, istart, imid2)
-          end if
-
+        if (imid2+1 .le. imid1) then
+          jnode = -rquadtree%p_Knode(QTREE_NW, inode)
+          call rebuild(jnode, imid2+1, imid1)
+        end if
+        
+        if (imid3+1 .le. iend) then
+          jnode = -rquadtree%p_Knode(QTREE_NE, inode)
+          call rebuild(jnode, imid3+1, iend)
+        end if
+        
+        if (imid1+1 .le. imid3) then
+          jnode = -rquadtree%p_Knode(QTREE_SE, inode)
+          call rebuild(jnode, imid1+1, imid3)
+        end if
+        
+        if (istart .le. imid2) then
+          jnode = -rquadtree%p_Knode(QTREE_SW, inode)
+          call rebuild(jnode, istart, imid2)
         end if
 
       end if
@@ -1539,6 +1512,7 @@ contains
     
     rquadtree%NNVT    = nnvt
     rquadtree%NRESIZE = rquadtree%NRESIZE+1
+
   end subroutine resizeNVT
 
   !************************************************************************
@@ -1571,6 +1545,7 @@ contains
     
     rquadtree%NNNODE  = nnnode
     rquadtree%NRESIZE = rquadtree%NRESIZE+1
+
   end subroutine resizeNNODE
 
 end module quadtree
