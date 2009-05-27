@@ -4191,7 +4191,12 @@ contains
     end if
     
     ! Add new entry to vertex coordinates
-    call qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D, i12, Dcoord, inode)
+    if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
+                                 i12, Dcoord, inode) .ne. QTREE_FOUND) then
+      call output_line('An error occured while inserting coordinate to quadtree!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
+      call sys_halt()
+    end if
     
     ! Are we at the boundary?
     if (e1 .eq. 0) then
@@ -4311,8 +4316,12 @@ contains
       rhadapt%p_InodalProperty(i5) = 0
       
       ! Add new entry to vertex coordinates
-      call qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
-                                    i5, Dcoord, inode)
+      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
+                                   i5, Dcoord, inode) .ne. QTREE_FOUND) then
+        call output_line('An error occured while inserting coordinate to quadtree!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atElementCenter2D')
+        call sys_halt()
+      end if
     end if
     
     ! Optionally, invoke callback function
