@@ -45,7 +45,7 @@ module bloodflow
 !<constantblock description="Global constants for mesh spacing tolerances">
 
   ! Tolerance for considering two points as equivalent
-  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-1_DP
+  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-6_DP
 
   ! Tolerance for considering two points as equivalent
   real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/3.0
@@ -69,6 +69,9 @@ module bloodflow
 
   ! Bitfield to identify elements in list
   integer, parameter :: BITFIELD_INLIST = ibset(0,7)
+
+  ! Bitfield to identify multi-intersected edges
+  integer, parameter :: BITFIELD_MULTI_INTERSECTION = ibset(0,8)
 
   ! Bitfield used to check point intersection
   integer, parameter :: BITFIELD_POINT_INTERSECTION = BITFIELD_POINT1 +&
@@ -402,6 +405,13 @@ contains
     ! local variables
     integer :: iadapt
 
+
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:), pointer :: p_Inumber
+    logical, dimension(:), pointer :: p_BisPresent
+    real(DP) :: drand
+    integer :: i,j,ivt,jvt,inode,ipos,irun,f
+
     ! Check if adaptation structure has been prepared
     if (rbloodflow%rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
       ! Initialize adaptation structure from triangulation
@@ -411,7 +421,113 @@ contains
       call hadapt_refreshAdaptation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
     end if
 
-    do iadapt = 1, 5
+    call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
+
+    pause
+
+    call storage_getbase_double2D(rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    allocate(p_BisPresent(size(p_DvertexCoords,2)))
+    allocate(p_Inumber(size(p_DvertexCoords,2)))
+
+    p_BisPresent = .true.
+
+    do i = 1, size(p_DvertexCoords,2)
+      f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                 p_DvertexCoords(:,i), inode, ipos, ivt)
+      p_Inumber(i) = ivt
+      if (ivt .ne. i) print *, "foof",f
+      p_BisPresent(ivt) = .true.
+    end do
+    
+    do irun = 1, 100
+
+      print *, "IRUN=",irun, rbloodflow%rhadapt%rVertexCoordinates2D%NNODE
+      call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
+
+      ! Loop over all vertices
+      do i = 1, size(p_DvertexCoords,2)
+
+        ivt = p_Inumber(i)
+        call random_number(drand)
+        
+        if (drand .ge. 0.5) then
+
+          if (p_BisPresent(ivt)) then
+
+            ! Remove item
+            f = qtree_deleteFromQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                         p_DvertexCoords(:,i), jvt)
+            if (f .ne. 0) then
+              print *, "ERROR: Unable to find item",ivt
+              stop
+            end if
+            
+            p_BisPresent(ivt) = .false.
+
+            ! Check status
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if (f .eq. 0) then
+              print *, "ERROR: Item is still present after removal", ivt
+              stop
+            end if
+            
+          else
+            
+            ! Search and insert item
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+            
+            if (f .eq. 0) then
+              print *, "ERROR: Quadtree must not contain item",ivt
+              stop
+            end if
+
+            f = qtree_insertIntoQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                         ivt, p_DvertexCoords(:,i), inode)
+
+            ! Check status
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if (f .ne. 0) then
+              print *, "ERROR: Item is still not present after insertion",ivt
+              stop
+            end if
+
+            p_BisPresent(ivt) = .true.
+            
+          end if
+
+        else
+
+          ! Search for item
+          if (p_BisPresent(ivt)) then
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if ((f .ne. 0) .or. (jvt .ne. ivt)) then
+              print *, "ERROR: Unable to find item",ivt,"or ivt /= jvt",jvt
+              stop
+            end if
+            
+          end if
+
+        end if
+      end do
+    
+    end do
+
+    deallocate(p_BisPresent, p_Inumber)
+
+    print *, "PERFECT"
+    stop
+
+
+
+    do iadapt = 1, 1
       
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
@@ -472,7 +588,7 @@ contains
     real(DP), dimension(TRIA_NVETRI2D) :: DbarycCoords
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
     real(DP) :: dscale, dscaleMax
-    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos
+    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos,f
   
     
     ! Release the indicator vector and create new one
@@ -561,9 +677,11 @@ contains
     !     inside the same element, then the above procedure applies to
     !     the endpoint. Otherwise, the segment must either intersect
     !     one edge of the current element or run through a corner
-    !     vertex. In any case, we proceed to the adjacent element(s)
-    !     and check if the end point is located inside that element or
-    !     coincides with one of its edges/corners. This process
+    !     vertex. In any case, we compute the coordinates of the
+    !     intersection point which serves as new starting point of the
+    !     segment. In practice, the original starting point is still
+    !     used but the decision how to proceed is based on the
+    !     coordinates of the intersection point. This process
     !     continues until the endpoint of the last segment is reached.
     !
     !---------------------------------------------------------------------------
@@ -633,6 +751,12 @@ contains
           ! Mark element for potential refinement
           do jve = 1, 3
             if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+
+              ! Check if edge has been intersected previously
+              if (btest(p_Iindicator(jel), jve+3))&
+                  p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
+
+              ! Mark edge as intersected
               p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
               exit
             end if
@@ -667,6 +791,10 @@ contains
         call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
         if (istatus .ge. 0) then
           
+          ! Check if edge has been intersected previously
+          if ((istatus .ge. 4) .and. btest(p_Iindicator(iel), istatus))&
+              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
+
           ! Mark element for potential refinement
           p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
 
@@ -735,6 +863,10 @@ contains
       ! If we end up here, the scaling parameter for the "best"
       ! intersection point has been determined and we can proceed
       iel = jel
+
+      ! Check if edge has been intersected previously
+      if (btest(p_Iindicator(iel), ipos+3))&
+          p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION)
 
       ! Mark element for potential refinement
       p_Iindicator(iel) = ibset(p_Iindicator(iel), ipos+3)
@@ -806,6 +938,12 @@ contains
       ! Mark element for potential refinement
       do jve = 1, 3
         if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+
+          ! Check if edge has been intersected previously
+          if (btest(p_Iindicator(jel), jve+3))&
+              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
+          
+          ! Mark edge as intersected
           p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
           exit
         end if
@@ -815,7 +953,7 @@ contains
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
-
+    
     
     !---------------------------------------------------------------------------
     ! (3) Loop over all segments/elements and decide whether to refine or
@@ -829,7 +967,17 @@ contains
       ! Get element number and proceed to next position
       call list_getByPosition(relementList, ipos, iel)
       ipos = list_getNextInList(relementList, .false.)
-      
+    
+      ! Check if multi-intersections are present
+      if (iand(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION) .eq. BITFIELD_MULTI_INTERSECTION) then
+
+        ! Set the refinement indicator to unity
+        p_Iindicator(iel) = 1
+
+        ! That's it
+        cycle list
+      end if
+  
       ! Remove "in list" flag from indicator
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
       
@@ -845,11 +993,12 @@ contains
       ! Check status of intersected element edges
       select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
       case (0)
-        ! Do nothing
+        ! No edge is intersected, hence, do nothing
         
       case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
+        ! All three edges are intersected!
         ! Set the refinement indicator to unity
-        p_Iindicator(iel) = 10000
+        p_Iindicator(iel) = 1
         
       case default
         
@@ -862,6 +1011,8 @@ contains
         DtriaCoords(:,1) = p_DvertexCoords(:,i1)
         DtriaCoords(:,2) = p_DvertexCoords(:,i2)
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+        
+        print *, "Dealing with element",iel
 
         ! Process each edge individually
         edge: do ive = 1, 3
@@ -890,6 +1041,14 @@ contains
                 call PointInTriangleTest(DtriaCoords, Daux, POINT_COLLAPSE_TOLERANCE, istatus)
                 select case(istatus)
                 case(1)
+                  print *, Daux
+                  print *, p_DvertexCoords(:, i1)
+                  print *, "----------"
+
+!!$                  ! Update coordinate of first vertex in quadtree
+!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+!!$                                           p_DvertexCoords(:, i1), Daux)
+                  
                   ! Adjust first vertex
                   p_DvertexCoords(:, i1) = Daux
                   
@@ -898,6 +1057,14 @@ contains
 
                   
                 case(2)
+                  print *, Daux
+                  print *, p_DvertexCoords(:, i2)
+                  print *, "----------"
+                  
+!!$                  ! Update coordinate of second vertex in quadtree
+!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+!!$                                           p_DvertexCoords(:, i2), Daux)
+
                   ! Adjust second vertex
                   p_DvertexCoords(:, i2) = Daux
                   
@@ -906,6 +1073,14 @@ contains
 
 
                 case(3)
+                  print *, Daux
+                  print *, p_DvertexCoords(:, i3)
+                  print *, "----------"
+
+!!$                  ! Update coordinate of third vertex in quadtree
+!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+!!$                                           p_DvertexCoords(:, i3), Daux)
+
                   ! Adjust third vertex
                   p_DvertexCoords(:, i3) = Daux
                   
