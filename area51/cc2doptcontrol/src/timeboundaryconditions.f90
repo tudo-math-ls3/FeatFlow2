@@ -559,6 +559,7 @@ contains
     call sptivec_getTimestepData(rb, 1+0, rtempVectorD)
     call lsyssc_copyVector (rinitCondRHS%RvectorBlock(1),rtempVectorD%RvectorBlock(1))
     call lsyssc_copyVector (rinitCondRHS%RvectorBlock(2),rtempVectorD%RvectorBlock(2))
+    call lsyssc_copyVector (rinitCondRHS%RvectorBlock(3),rtempVectorD%RvectorBlock(3))
     call sptivec_setTimestepData(rb, 1+0, rtempVectorD)
 
   end subroutine

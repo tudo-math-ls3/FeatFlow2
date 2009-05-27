@@ -1328,7 +1328,7 @@ contains
       
       ! Compile the two expressions
       call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
-      call fparser_parseFunction (rsolParser,2, ssolutionExpressionX, EXPR_VARIABLES)
+      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
       
       ! Put the parser to the problem collection to be usable in a callback
       ! routine.

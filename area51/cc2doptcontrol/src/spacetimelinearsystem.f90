@@ -1310,7 +1310,8 @@ contains
     type(t_ccmatrixComponents) :: rmatrixComponents
     type(t_problem_lvl), pointer :: p_rlevelInfo
     logical :: bconvectionExplicit
-    real(DP) :: dtstep, dtheta,dequationType
+    real(DP) :: dtstep, dequationType
+    real(dp), dimension(:), pointer :: p_Ddata
     
     ! If the following constant is set from 1.0 to 0.0, the primal system is
     ! decoupled from the dual system!
@@ -1378,18 +1379,16 @@ contains
     bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .ne. 0
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
-    dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     dequationType = 1.0_DP
     if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
       
     rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-    rmatrixComponents%Dtheta(1,1) = dtheta
+    rmatrixComponents%Dtheta(1,1) = 1.0_DP
     
     if (.not. bconvectionExplicit) then
-      rmatrixComponents%Dgamma(1,1) = &
-          dtheta * real(1-rproblem%iequation,DP)
+      rmatrixComponents%Dgamma(1,1) = real(1-rproblem%iequation,DP)
     end if
 
     rmatrixComponents%Deta(1,1) = 1.0_DP
@@ -1398,6 +1397,7 @@ contains
     ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1
     call lsysbl_clearVector (rb)
     call cc_assembleDefect (rmatrixComponents,rx,rb,-1.0_DP,rx,rx,rx)
+    call lsysbl_getbase_double (rb,p_Ddata)
 
   end subroutine
 

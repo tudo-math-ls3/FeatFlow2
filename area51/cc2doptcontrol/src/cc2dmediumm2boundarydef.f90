@@ -899,8 +899,9 @@ contains
       ! Note: The information about the BC's can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
       select case (rcollection%IquickAccess(1))
-      case (1)
-        ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
+      case (1,4)
+        ! Simple Dirichlet BC's for either primal or primal/dual equation.
+        ! Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
