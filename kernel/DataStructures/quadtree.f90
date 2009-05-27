@@ -524,9 +524,7 @@ contains
     type(t_quadtree), intent(INOUT) :: rquadtree
 !</inputoutput>
 !</subroutine>
-        
-    integer :: i,f,inode,ipos,ivt
-    
+
 
     if (size(p_Ddata,1) .ne. 2) then
       call output_line('First dimension of array must be 2!',&
@@ -540,12 +538,6 @@ contains
       call resizeNVT(rquadtree, rquadtree%NVT)
     end if
 
-!!$    do i = 1, size(p_Ddata,2)
-!!$      f = qtree_searchInQuadtree(rquadtree, p_Ddata(:,i), inode, ipos, ivt)
-!!$      if (f .eq. QTREE_NOT_FOUND)&
-!!$          f = qtree_insertIntoQuadtree(rquadtree, i, p_Ddata(:,i), inode)
-!!$    end do
-!!$
     ! Copy data array
     call DCOPY(2*rquadtree%NVT, p_Ddata, 1, rquadtree%p_Ddata, 1)
 
@@ -792,7 +784,7 @@ contains
       ! local variables
       real(DP), dimension(2) :: DdataTmp
       integer, dimension(QTREE_MAX) :: Knode
-      integer :: i,jvt,jnode,ipos,iposLast,nemptyChildren
+      integer :: i,jvt,jnode,ipos,jpos,nemptyChildren
       
       
       ! Check status of current quad
@@ -851,7 +843,7 @@ contains
             end if
 
             if (inode .eq. jnode) then
-              print *, "inode cannot be equal to jnode"
+              write(*,*) "inode cannot be equal to jnode"
               stop
             end if
 
@@ -871,7 +863,7 @@ contains
           rquadtree%NFREE = -Knode(1)
           
           ! Reduce number of quads
-!!!!!!!!          rquadtree%NNODE = rquadtree%NNODE-QTREE_MAX
+          rquadtree%NNODE = rquadtree%NNODE-QTREE_MAX
           
         end if
                 
@@ -900,28 +892,28 @@ contains
           if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
             
             
-            print *, "***********************************************"
-            print *, "Deleting item",ivt,"in node",inode
-            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
+!!$            write(*,*) "***********************************************"
+!!$            write(*,*) "Deleting item",ivt,"in node",inode
+!!$            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
 
             ! Physically remove the item IVT from node INODE
-            iposLast = rquadtree%p_Knode(QTREE_STATUS, inode)
-            rquadtree%p_Knode(ipos, inode)         = rquadtree%p_Knode(iposLast, inode)
-            rquadtree%p_Knode(iposLast, inode)     = 0
+            jpos = rquadtree%p_Knode(QTREE_STATUS, inode)
+            rquadtree%p_Knode(ipos, inode)         = rquadtree%p_Knode(jpos, inode)
+            rquadtree%p_Knode(jpos, inode)     = 0
             rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, inode)-1
             
-!!$            ! If IVT is not last item move last item to position IVT
-!!$            if (ivt .ne. rquadtree%NVT) then
-!!$              DdataTmp(:) = rquadtree%p_Ddata(:,rquadtree%NVT)
-!!$              if (qtree_searchInQuadtree(rquadtree, DdataTmp(:),&
-!!$                                         jnode, jpos, jvt) .eq. QTREE_FOUND) then
-!!$                rquadtree%p_Ddata(:, ivt)      = rquadtree%p_Ddata(:, rquadtree%NVT)
-!!$                rquadtree%p_Knode(jpos, jnode) = ivt
-!!$              end if
-!!$              
-!!$              ! Set number of removed vertex
-!!$              ivt = rquadtree%NVT
-!!$            end if
+            ! If IVT is not last item move last item to position IVT
+            if (ivt .ne. rquadtree%NVT) then
+              DdataTmp(:) = rquadtree%p_Ddata(:,rquadtree%NVT)
+              if (qtree_searchInQuadtree(rquadtree, DdataTmp(:),&
+                                         jnode, jpos, jvt) .eq. QTREE_FOUND) then
+                rquadtree%p_Ddata(:, ivt)      = rquadtree%p_Ddata(:, rquadtree%NVT)
+                rquadtree%p_Knode(jpos, jnode) = ivt
+              end if
+              
+              ! Set number of removed vertex
+              ivt = rquadtree%NVT
+            end if
       
             ! Decrease number of vertices
             rquadtree%NVT = rquadtree%NVT-1
@@ -929,8 +921,8 @@ contains
             ! We have found the item IVT in node INODE
             f = QTREE_FOUND
 
-            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
-            print *, "***********************************************"
+!!$            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
+!!$            write(*,*) "***********************************************"
 
             ! That's it
             return
@@ -1528,6 +1520,7 @@ contains
       real(DP) :: xmin,ymin,xmax,ymax,xmid,ymid
       integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3
 
+      
       ! Check if istart > iend then the quad is empty
       if (istart .gt. iend) return
 
@@ -1638,88 +1631,83 @@ contains
       integer :: imid
 
       ! local variables
-      real(DP), dimension(2) :: Daux
-      integer :: i,j,ivt,jvt
+      integer :: i
 
+      ! Sort array
+      call quicksort(istart, iend, idim)
       
- 
-!!$      while (lo < hi) {
-!!$        while (lo<hi && a[lo] < mid) {
-!!$            lo++;
-!!$        }
-!!$        while (lo<hi && a[hi] >= mid) {
-!!$            hi--;
-!!$        }
-!!$        if (lo < hi) {
-!!$            int T = a[lo];
-!!$            a[lo] = a[hi];
-!!$            a[hi] = T;
-!!$        }
-!!$    }
-!!$    if (hi < lo) {
-!!$        int T = hi;
-!!$        hi = lo;
-!!$        lo = T;
-!!$    }
-!!$    sort(a, lo0, lo);
-!!$    sort(a, lo == lo0 ? lo+1 : lo, hi0);
-
-
-
-      i = istart-1; j = iend+1
-      
-      do while (i .lt. j)
-        do while((i .lt. j) .and. 
-        
-      end do
-
-      do while (i .le. j)
-        
-        ivt = p_Inodes(i); jvt = p_Inodes(j)
-        
-        if (rquadtree%p_Ddata(idim, ivt) .gt. dmid) then
-          if (rquadtree%p_Ddata(idim, jvt) .le. dmid) then
-            
-            ! Swap nodes
-            Daux = rquadtree%p_Ddata(:, ivt)
-            rquadtree%p_Ddata(:, ivt) = rquadtree%p_Ddata(:, jvt)
-            rquadtree%p_Ddata(:, jvt) = Daux
-            i=i+1; j=j-1
-
-          else
-
-            ! Decrease j
-            j=j-1
-
-          end if
-        else
-          if (rquadtree%p_Ddata(idim, jvt) .le. dmid) then
-
-            ! Increase i
-            i=i+1
-
-          else
-
-            ! Proceed to next pair
-            i=i+1; j=j-1
-
-          end if
+      ! Find partition point
+      do i = istart, iend
+        if (rquadtree%p_Ddata(idim, p_Inodes(i)) .gt. dmid) then
+          imid = i-1
+          return
         end if
-      end do          
-
-      ! Adjust index
-      i = max(min(i,iend),istart); ivt = p_Inodes(i)
+      end do
       
-      ! Check if node IVT belongs to lower or upper partition
-      if (rquadtree%p_Ddata(idim, ivt) .gt. dmid) then
-        imid = i-1
-      elseif (rquadtree%p_Ddata(idim, ivt) .le. dmid) then
-        imid = i+1
-      else
-        imid = i
+    end function partition
+
+    !**************************************************************
+    ! Here, the quicksort routine follows
+
+    recursive subroutine quicksort(istart, iend, idim)
+
+      integer, intent(IN) :: istart, iend, idim
+
+      ! local variables
+      integer :: isplit
+      
+      if (istart .lt. iend) then
+        isplit = split(istart, iend, idim)
+        call quicksort(istart, isplit-1, idim)
+        call quicksort(isplit+1, iend, idim)
       end if
 
-    end function swap
+    end subroutine quicksort
+
+    !**************************************************************
+    ! Here, the splitting routine follows
+
+    function split(istart, iend, idim) result(isplit)
+
+      integer, intent(IN) :: istart, iend, idim
+      integer :: isplit
+
+      ! local variables
+      real(DP), dimension(2) :: Daux
+      real(DP) :: dpivot
+      integer :: i, j, iaux
+      
+      ! Initialization
+      i = istart
+      j = iend-1
+      dpivot = rquadtree%p_Ddata(idim, p_Inodes(iend))
+
+      do
+        do while((i .lt. iend) .and. (rquadtree%p_Ddata(idim, p_Inodes(i)) .le. dpivot))
+          i = i+1
+        end do
+        
+        do while((j .gt. istart) .and. (rquadtree%p_Ddata(idim, p_Inodes(j)) .ge. dpivot))
+          j = j-1
+        end do
+
+        ! Swap entries if needed
+        if (i .lt. j) then
+          iaux        = p_Inodes(i)
+          p_Inodes(i) = p_Inodes(j)
+          p_Inodes(j) = iaux
+        end if
+        if (i .ge. j) exit
+      end do
+
+      ! Swap entry i with last entry
+      iaux           = p_Inodes(i)
+      p_Inodes(i)    = p_Inodes(iend)
+      p_Inodes(iend) = iaux
+      
+      isplit = i
+      
+    end function split
 
   end subroutine qtree_rebuildQuadtree
 
