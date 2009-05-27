@@ -1041,14 +1041,15 @@ contains
     
     ! Release all memory
     
-    if (associated(rexport%p_Scomments)) deallocate(rexport%p_Scomments)
-
     if (associated(rexport%p_SvariableNames)) deallocate(rexport%p_SvariableNames)
+    if (associated(rexport%p_SvarVecNames)) deallocate(rexport%p_SvarVecNames)
     if (associated(rexport%p_IvariableSpec)) deallocate(rexport%p_IvariableSpec)
     if (associated(rexport%p_IvariableBase)) deallocate(rexport%p_IvariableBase)
-    
-    if (associated(rexport%p_SvarVecNames)) deallocate(rexport%p_SvarVecNames)
     if (associated(rexport%p_Ivectors)) deallocate(rexport%p_Ivectors)
+    if (associated(rexport%p_StracerVariableNames)) deallocate(rexport%p_StracerVariableNames)
+    if (associated(rexport%p_SvertexMaterials)) deallocate(rexport%p_SvertexMaterials)
+    if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
+    if (associated(rexport%p_Scomments))      deallocate(rexport%p_Scomments)
     
     if (associated(rexport%p_Hvariables)) then
       do i=1,rexport%nvariables
@@ -4936,7 +4937,7 @@ contains
 
     ! Create a new variable. If necessary, increase the size of the buffer.
     if (.not. associated(rexport%p_HtracerVariables)) then
-      call ucd_moreVariables(rexport)
+      call ucd_moreTracerVariables(rexport)
     end if
 
     if (rexport%ntracerVariables .ge. size(rexport%p_HtracerVariables)) then
