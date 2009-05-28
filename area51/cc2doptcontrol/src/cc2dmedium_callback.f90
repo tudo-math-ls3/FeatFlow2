@@ -106,6 +106,7 @@ module cc2dmedium_callback
   use linearformevaluation
   use linearsolver
   use fparser
+  use elementpreprocessing
   
   use timeevaluation
   
@@ -199,7 +200,7 @@ contains
     end if
 
     ! Assembly data for the RHS.
-    rcollection%Iquickaccess(2) = rproblem%irhs
+    rcollection%Iquickaccess(3) = rproblem%irhs
     call collct_setvalue_pars (rcollection, 'RHSPARSER', &
         rproblem%rrhsParser, .true.) 
 
@@ -501,7 +502,7 @@ contains
     end if
 
     ! Type of RHS.
-    irhs = rcollection%IquickAccess(2)
+    irhs = rcollection%IquickAccess(3)
     
     ! Depending on the irhs identifier, choose the RHS to evaluate
     select case (irhs)
@@ -642,7 +643,7 @@ contains
     end if
     
     ! Type of RHS.
-    irhs = rcollection%IquickAccess(2)
+    irhs = rcollection%IquickAccess(3)
 
     ! Depending on the irhs identifier, choose the RHS to evaluate
     select case (irhs)
