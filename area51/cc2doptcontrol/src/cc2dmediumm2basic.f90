@@ -31,6 +31,8 @@ module cc2dmediumm2basic
   use timestepping
   use timediscretisation
   use spacetimevectors
+  use discretebc
+  use discretefbc
   
   use collection
   
@@ -141,6 +143,10 @@ module cc2dmediumm2basic
     ! Parameter for one step scheme (THETA) if ctimeStepScheme=0;
     ! =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
     real(DP) :: dtimeStepTheta     = 1.0_DP
+    
+    ! Parameter for the one-step theta scheme in the pressure.
+    ! usually = 1.0, independent of dtimeStepTheta.
+    real(dp) :: dtimeStepThetaPressure = 1.0_DP
     
   end type
 
