@@ -1486,7 +1486,6 @@ contains
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
       integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3,imid4,imid5,imid6,imid7
 
-      print *, inode,istart,iend
 
       ! Check if istart > iend then the quad is empty
       if (istart .gt. iend) return
@@ -1504,7 +1503,7 @@ contains
 
       else
 
-        ! Otherwise, the current partition is subdivided into four subpartitions
+        ! Otherwise, the current partition is subdivided into eight subpartitions
         
         if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
           isize = max(roctree%nnode+OTREE_MAX, ceiling(roctree%dfactor*roctree%NNNODE))
@@ -1515,7 +1514,7 @@ contains
         nnode           = roctree%NNODE
         roctree%NNODE = nnode+OTREE_MAX
 
-        ! Mark the current quad as subdivided and set pointers to its four children 
+        ! Mark the current node as subdivided and set pointers to its eight children 
         roctree%p_Knode(OTREE_STATUS,inode) =    OTREE_SUBDIV
         roctree%p_Knode(1:OTREE_MAX,inode)  = -(/nnode+OTREE_NWF, nnode+OTREE_SWF,&
                                                  nnode+OTREE_SEF, nnode+OTREE_NEF,&
@@ -1538,61 +1537,69 @@ contains
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWF) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWF) = OTREE_NWF
         roctree%p_Dbbox(:,nnode+OTREE_NWF)            = (/xmin,ymid,zmin,xmid,ymax,zmid/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_NWF) = 0
         
         ! SWF-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWF) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWF) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWF) = OTREE_SWF
         roctree%p_Dbbox(:,nnode+OTREE_SWF)            = (/xmin,ymin,zmin,xmid,ymid,zmid/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_SWF) = 0
         
         ! SEF-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEF) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEF) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEF) = OTREE_SEF
         roctree%p_Dbbox(:,nnode+OTREE_SEF)            = (/xmid,ymin,zmin,xmax,ymid,zmid/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_SEF) = 0
         
         ! NEF-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEF) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEF) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEF) = OTREE_NEF
         roctree%p_Dbbox(:,nnode+OTREE_NEF)            = (/xmid,ymid,zmin,xmax,ymax,zmid/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_NEF) = 0
         
         ! NWB-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWB) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NWB) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NWB) = OTREE_NWB
         roctree%p_Dbbox(:,nnode+OTREE_NWB)            = (/xmin,ymid,zmid,xmid,ymax,zmax/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_NWB) = 0
         
         ! SWB-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SWB) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SWB) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SWB) = OTREE_SWB
         roctree%p_Dbbox(:,nnode+OTREE_SWB)            = (/xmin,ymin,zmid,xmid,ymid,zmax/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_SWB) = 0
         
         ! SEB-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_SEB) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_SEB) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_SEB) = OTREE_SEB
         roctree%p_Dbbox(:,nnode+OTREE_SEB)            = (/xmid,ymin,zmid,xmax,ymid,zmax/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_SEB) = 0
         
         ! NEB-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NEB) = OTREE_EMPTY
         roctree%p_Knode(OTREE_PARENT,nnode+OTREE_NEB) = inode
         roctree%p_Knode(OTREE_PARPOS,nnode+OTREE_NEB) = OTREE_NEB
         roctree%p_Dbbox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
+        roctree%p_Knode(1:roctree%NDATA,nnode+OTREE_NEB) = 0
         
         ! Swap nodes with respect to x-axis
-        imid1 = swap(istart, iend, 1, xmid)
+        imid1 = partition(istart, iend, 1, xmid)
 
         ! Swap nodes with respect to y-axis
-        imid2 = swap(istart, imid1, 2, ymid)
-        imid3 = swap(imid1+1, iend, 2, ymid)
+        imid2 = partition(istart, imid1, 2, ymid)
+        imid3 = partition(imid1+1, iend, 2, ymid)
 
         ! Swap nodes with respect to z-axis
-        imid4 = swap(istart,  imid2, 3, zmid)
-        imid5 = swap(imid2+1, imid1, 3, zmid)
-        imid6 = swap(imid1+1, imid3, 3, zmid)
-        imid7 = swap(imid3+1, iend,  3, zmid)
+        imid4 = partition(istart,  imid2, 3, zmid)
+        imid5 = partition(imid2+1, imid1, 3, zmid)
+        imid6 = partition(imid1+1, imid3, 3, zmid)
+        imid7 = partition(imid3+1, iend,  3, zmid)
 
         if (istart .le. imid4) then
           jnode = -roctree%p_Knode(OTREE_SWF, inode)
@@ -1638,68 +1645,96 @@ contains
 
     end subroutine rebuild
 
-    
     !**************************************************************
-    ! Here, the swapping routine follows
+    ! Here, the partitioning routine follows
 
-    function swap(istart, iend, idim, dmid) result(imid)
+    function partition(istart, iend, idim, dmid) result(imid)
 
       real(DP), intent(IN) :: dmid
       integer, intent(IN) :: istart, iend, idim
       integer :: imid
 
       ! local variables
-      real(DP), dimension(2) :: Daux
-      integer :: i,j,ivt,jvt
+      integer :: i
 
-      i = istart; j = iend
-      do while (i .le. j)
-        
-        ivt = p_Inodes(i); jvt = p_Inodes(j)
-        
-        if (roctree%p_Ddata(idim, ivt) .gt. dmid) then
-          if (roctree%p_Ddata(idim, jvt) .le. dmid) then
-            
-            ! Swap nodes
-            Daux = roctree%p_Ddata(:, ivt)
-            roctree%p_Ddata(:, ivt) = roctree%p_Ddata(:, jvt)
-            roctree%p_Ddata(:, jvt) = Daux
-            i=i+1; j=j-1
-
-          else
-
-            ! Decrease j
-            j=j-1
-
-          end if
-        else
-          if (roctree%p_Ddata(idim, jvt) .le. dmid) then
-
-            ! Increase i
-            i=i+1
-
-          else
-
-            ! Proceed to next pair
-            i=i+1; j=j-1
-
-          end if
-        end if
-      end do          
-
-      ! Adjust index
-      i = max(min(i,iend),istart); ivt = p_Inodes(i)
+      ! Sort array
+      call quicksort(istart, iend, idim)
       
-      ! Check if node IVT belongs to lower or upper partition
-      if (roctree%p_Ddata(idim, ivt) .gt. dmid) then
-        imid = i-1
-      elseif (roctree%p_Ddata(idim, ivt) .le. dmid) then
-        imid = i+1
-      else
-        imid = i
+      ! Find partition point
+      do i = istart, iend
+        if (roctree%p_Ddata(idim, p_Inodes(i)) .gt. dmid) then
+          imid = i-1
+          return
+        end if
+      end do
+
+      ! If we end up here, then istart > iend
+      imid = istart-1
+      
+    end function partition
+
+    !**************************************************************
+    ! Here, the quicksort routine follows
+
+    recursive subroutine quicksort(istart, iend, idim)
+
+      integer, intent(IN) :: istart, iend, idim
+
+      ! local variables
+      integer :: isplit
+      
+      if (istart .lt. iend) then
+        isplit = split(istart, iend, idim)
+        call quicksort(istart, isplit-1, idim)
+        call quicksort(isplit+1, iend, idim)
       end if
 
-    end function swap
+    end subroutine quicksort
+
+    !**************************************************************
+    ! Here, the splitting routine follows
+
+    function split(istart, iend, idim) result(isplit)
+
+      integer, intent(IN) :: istart, iend, idim
+      integer :: isplit
+
+      ! local variables
+      real(DP), dimension(2) :: Daux
+      real(DP) :: dpivot
+      integer :: i, j, iaux
+      
+      ! Initialization
+      i = istart
+      j = iend-1
+      dpivot = roctree%p_Ddata(idim, p_Inodes(iend))
+
+      do
+        do while((i .lt. iend) .and. (roctree%p_Ddata(idim, p_Inodes(i)) .le. dpivot))
+          i = i+1
+        end do
+        
+        do while((j .gt. istart) .and. (roctree%p_Ddata(idim, p_Inodes(j)) .ge. dpivot))
+          j = j-1
+        end do
+
+        ! Swap entries if needed
+        if (i .lt. j) then
+          iaux        = p_Inodes(i)
+          p_Inodes(i) = p_Inodes(j)
+          p_Inodes(j) = iaux
+        end if
+        if (i .ge. j) exit
+      end do
+
+      ! Swap entry i with last entry
+      iaux           = p_Inodes(i)
+      p_Inodes(i)    = p_Inodes(iend)
+      p_Inodes(iend) = iaux
+      
+      isplit = i
+      
+    end function split
 
   end subroutine otree_rebuildOctree
 
