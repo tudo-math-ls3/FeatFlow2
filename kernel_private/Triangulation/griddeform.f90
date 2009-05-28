@@ -2322,7 +2322,7 @@ contains
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
-  ! BILF_NELEMSIM. This is only used for allocating some arrays.
+  ! LINF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
@@ -2687,15 +2687,15 @@ contains
 !      i = i +1
 !    enddo
     ! write back coordinates
-!    do i=1,rgriddefInfo%p_rtriangulation%NVT
-!      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
-!      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
-!    end do
-!
-!    ! write back coordinates
-!    do i=1,rgriddefInfo%p_rtriangulation%NVBD
-!      p_DvertexParametersReal(i) = p_DvertexParameters(i)
-!    end do
+    do i=1,rgriddefInfo%p_rtriangulation%NVT
+      p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
+      p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
+    end do
+
+    ! write back coordinates
+    do i=1,rgriddefInfo%p_rtriangulation%NVBD
+      p_DvertexParametersReal(i) = p_DvertexParameters(i)
+    end do
 
   
   end subroutine ! end griddef_moveMesh
@@ -2882,6 +2882,10 @@ contains
         ivbd = 0
         ! time interval exhausted, calculation finished and exit
         if (dtime .ge. 1.0_DP - deps) then
+        
+              if(dx .gt. 1.0_dp)then
+                print *,ive
+              end if
               p_DvertexCoords(1,ive) = dx
               p_DvertexCoords(2,ive) = dy
             exit calculationloopEE_inner
@@ -2891,6 +2895,9 @@ contains
       ! in case time interval exhausted in the first time step  
       else
         ! write the coordinates
+              if(dx .gt. 1.0_dp)then
+                print *,ive
+              end if
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
       endif ! dtime
@@ -4017,10 +4024,11 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   
   ! Use raytracing search to find the element
   ! containing the point.
-  call tsrch_getElem_raytrace2D (&
-    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
-    iresult,ilastElement,ilastEdge,100)
-    
+!  call tsrch_getElem_raytrace2D (&
+!    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
+!    iresult,ilastElement,ilastEdge,100)
+  ! Fehler, wenn die Iterationen ausgehen wird
+  ! das letzte Element zurückgegeben... verkehrt...
   ! Ok, not found... Brute force search
   if((iel .eq. 0) .or. (iel .eq. -1))then
     call tsrch_getElem_BruteForce (Dpoint(:), &
