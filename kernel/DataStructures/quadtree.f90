@@ -796,7 +796,7 @@ contains
         jnode = -rquadtree%p_Knode(qtree_getDirection(rquadtree, Ddata, inode), inode)
         f     =  delete(jnode, ivt)
 
-        return
+!        return
         
         ! Save values from current quad
         Knode = rquadtree%p_Knode(1:QTREE_MAX, inode)
@@ -892,9 +892,9 @@ contains
           if (maxval(abs(rquadtree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
             
             
-!!$            write(*,*) "***********************************************"
-!!$            write(*,*) "Deleting item",ivt,"in node",inode
-!!$            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
+            write(*,*) "***********************************************"
+            write(*,*) "Deleting item",ivt,"in node",inode
+            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
 
             ! Physically remove the item IVT from node INODE
             jpos = rquadtree%p_Knode(QTREE_STATUS, inode)
@@ -902,18 +902,18 @@ contains
             rquadtree%p_Knode(jpos, inode)     = 0
             rquadtree%p_Knode(QTREE_STATUS, inode) = rquadtree%p_Knode(QTREE_STATUS, inode)-1
             
-            ! If IVT is not last item move last item to position IVT
-            if (ivt .ne. rquadtree%NVT) then
-              DdataTmp(:) = rquadtree%p_Ddata(:,rquadtree%NVT)
-              if (qtree_searchInQuadtree(rquadtree, DdataTmp(:),&
-                                         jnode, jpos, jvt) .eq. QTREE_FOUND) then
-                rquadtree%p_Ddata(:, ivt)      = rquadtree%p_Ddata(:, rquadtree%NVT)
-                rquadtree%p_Knode(jpos, jnode) = ivt
-              end if
-              
-              ! Set number of removed vertex
-              ivt = rquadtree%NVT
-            end if
+!!$            ! If IVT is not last item move last item to position IVT
+!!$            if (ivt .ne. rquadtree%NVT) then
+!!$              DdataTmp(:) = rquadtree%p_Ddata(:,rquadtree%NVT)
+!!$              if (qtree_searchInQuadtree(rquadtree, DdataTmp(:),&
+!!$                                         jnode, jpos, jvt) .eq. QTREE_FOUND) then
+!!$                rquadtree%p_Ddata(:, ivt)      = rquadtree%p_Ddata(:, rquadtree%NVT)
+!!$                rquadtree%p_Knode(jpos, jnode) = ivt
+!!$              end if
+!!$              
+!!$              ! Set number of removed vertex
+!!$              ivt = rquadtree%NVT
+!!$            end if
       
             ! Decrease number of vertices
             rquadtree%NVT = rquadtree%NVT-1
@@ -921,8 +921,8 @@ contains
             ! We have found the item IVT in node INODE
             f = QTREE_FOUND
 
-!!$            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
-!!$            write(*,*) "***********************************************"
+            write(*,fmt='(7(I6,1X),I6)') rquadtree%p_Knode(:, inode),inode
+            write(*,*) "***********************************************"
 
             ! That's it
             return
@@ -1643,6 +1643,9 @@ contains
           return
         end if
       end do
+
+      ! If we end up here, then istart > iend
+      imid = istart-1
       
     end function partition
 
