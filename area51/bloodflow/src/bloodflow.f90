@@ -421,119 +421,119 @@ contains
       call hadapt_refreshAdaptation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
     end if
 
-!!$    print *, "Checking consistency"
-!!$    call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
-!!$    print *, "DONE!"
-!!$
-!!$    pause
-!!$
-!!$    call storage_getbase_double2D(rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-!!$
-!!$    allocate(p_BisPresent(size(p_DvertexCoords,2)))
-!!$    allocate(p_Inumber(size(p_DvertexCoords,2)))
-!!$
-!!$    p_BisPresent = .true.
-!!$
-!!$    do i = 1, size(p_DvertexCoords,2)
-!!$      f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                 p_DvertexCoords(:,i), inode, ipos, ivt)
-!!$      if (f .eq. QTREE_NOT_FOUND) then
-!!$        print *, "Not found",f
-!!$        stop
-!!$      else
-!!$        p_Inumber(i) = ivt
-!!$        p_BisPresent(ivt) = .true.
-!!$      end if
-!!$    end do
-!!$    
-!!$    pause
-!!$
-!!$    do irun = 1, 100
-!!$
-!!$      print *, "IRUN=",irun, rbloodflow%rhadapt%rVertexCoordinates2D%NNODE
-!!$      print *, "Checking consistency"
-!!$      call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
-!!$      print *, "DONE!"
-!!$
-!!$      ! Loop over all vertices
-!!$      do i = 1, size(p_DvertexCoords,2)
-!!$
-!!$        ivt = p_Inumber(i)
-!!$        call random_number(drand)
-!!$        
-!!$        if (drand .ge. 0.5) then
-!!$
-!!$          if (p_BisPresent(ivt)) then
-!!$
-!!$            ! Remove item
-!!$            f = qtree_deleteFromQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                         p_DvertexCoords(:,i), jvt)
-!!$            if (f .ne. 0) then
-!!$              print *, "ERROR: Unable to find item",ivt
-!!$              stop
-!!$            end if
-!!$            
-!!$            p_BisPresent(ivt) = .false.
-!!$
-!!$            ! Check status
-!!$            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-!!$
-!!$            if (f .eq. 0) then
-!!$              print *, "ERROR: Item is still present after removal", ivt
-!!$              stop
-!!$            end if
-!!$            
-!!$          else
-!!$            
-!!$            ! Search and insert item
-!!$            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-!!$            
-!!$            if (f .eq. 0) then
-!!$              print *, "ERROR: Quadtree must not contain item",ivt
-!!$              stop
-!!$            end if
-!!$
-!!$            f = qtree_insertIntoQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                         ivt, p_DvertexCoords(:,i), inode)
-!!$
-!!$            ! Check status
-!!$            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-!!$
-!!$            if (f .ne. 0) then
-!!$              print *, "ERROR: Item is still not present after insertion",ivt
-!!$              stop
-!!$            end if
-!!$
-!!$            p_BisPresent(ivt) = .true.
-!!$            
-!!$          end if
-!!$
-!!$        else
-!!$
-!!$          ! Search for item
-!!$          if (p_BisPresent(ivt)) then
-!!$            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-!!$
-!!$            if ((f .ne. 0) .or. (jvt .ne. ivt)) then
-!!$              print *, "ERROR: Unable to find item",ivt,"or ivt /= jvt",jvt
-!!$              stop
-!!$            end if
-!!$            
-!!$          end if
-!!$
-!!$        end if
-!!$      end do
-!!$    
-!!$    end do
-!!$
-!!$    deallocate(p_BisPresent, p_Inumber)
-!!$
-!!$    print *, "PERFECT"
-!!$    stop
+    print *, "Checking consistency"
+    call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
+    print *, "DONE!"
+
+!    pause
+
+    call storage_getbase_double2D(rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    allocate(p_BisPresent(size(p_DvertexCoords,2)))
+    allocate(p_Inumber(size(p_DvertexCoords,2)))
+
+    p_BisPresent = .true.
+
+    do i = 1, size(p_DvertexCoords,2)
+      f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                 p_DvertexCoords(:,i), inode, ipos, ivt)
+      if (f .eq. QTREE_NOT_FOUND) then
+        print *, "Not found",f
+        stop
+      else
+        p_Inumber(i) = ivt
+        p_BisPresent(ivt) = .true.
+      end if
+    end do
+    
+!    pause
+
+    do irun = 1, 100
+
+      print *, "IRUN=",irun, rbloodflow%rhadapt%rVertexCoordinates2D%NNODE
+      print *, "Checking consistency"
+      call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
+      print *, "DONE!"
+
+      ! Loop over all vertices
+      do i = 1, size(p_DvertexCoords,2)
+
+        ivt = p_Inumber(i)
+        call random_number(drand)
+        
+        if (drand .ge. 0.5) then
+
+          if (p_BisPresent(ivt)) then
+
+            ! Remove item
+            f = qtree_deleteFromQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                         p_DvertexCoords(:,i), jvt)
+            if (f .ne. 0) then
+              print *, "ERROR: Unable to find item",ivt
+              stop
+            end if
+            
+            p_BisPresent(ivt) = .false.
+
+            ! Check status
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if (f .eq. 0) then
+              print *, "ERROR: Item is still present after removal", ivt
+              stop
+            end if
+            
+          else
+            
+            ! Search and insert item
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+            
+            if (f .eq. 0) then
+              print *, "ERROR: Quadtree must not contain item",ivt
+              stop
+            end if
+
+            f = qtree_insertIntoQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                         ivt, p_DvertexCoords(:,i), inode)
+
+            ! Check status
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if (f .ne. 0) then
+              print *, "ERROR: Item is still not present after insertion",ivt
+              stop
+            end if
+
+            p_BisPresent(ivt) = .true.
+            
+          end if
+
+        else
+
+          ! Search for item
+          if (p_BisPresent(ivt)) then
+            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                       p_DvertexCoords(:,i), inode, ipos, jvt)
+
+            if ((f .ne. 0) .or. (jvt .ne. ivt)) then
+              print *, "ERROR: Unable to find item",ivt,"or ivt /= jvt",jvt
+              stop
+            end if
+            
+          end if
+
+        end if
+      end do
+    
+    end do
+
+    deallocate(p_BisPresent, p_Inumber)
+
+    print *, "PERFECT"
+    stop
     
     do iadapt = 1, 3
       
