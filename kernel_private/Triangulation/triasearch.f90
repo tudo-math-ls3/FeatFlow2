@@ -344,6 +344,7 @@ contains
   ! =1 : The element was found successfully.
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
+  ! =-2: The maximum number of iterations was exceeded
   integer, intent(OUT), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
@@ -352,6 +353,7 @@ contains
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
+  ! If iresult=-2: Number of the last element in the raytracing search
   integer, intent(OUT), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
@@ -359,6 +361,7 @@ contains
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
+  ! If iresult=-2: Number of the last edge 
   integer, intent(OUT), optional :: ilastEdge
 !</output>
   
@@ -473,17 +476,18 @@ contains
         
       end do 
     
-      ! No face was found through which we could left the element.
-      ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
-      ! and so indeed the point (dx,dy)! That's it.
-      ! iel already has the element number, we only have to set the optional
-      ! argiments.
-      if (present(iresult)) iresult = 0
-      if (present(ilastElement)) ilastElement = ielold
-      if (present(ilastEdge)) ilastEdge = 0
-      return
     
     end do ieliteration
+    
+    ! No face was found through which we could left the element.
+    ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
+    ! and so indeed the point (dx,dy)! That's it.
+    ! iel already has the element number, we only have to set the optional
+    ! argiments.
+    iel = 0
+    if (present(iresult)) iresult = -2
+    if (present(ilastElement)) ilastElement = ielold
+    if (present(ilastEdge)) ilastEdge = 0
   
   end subroutine
 
