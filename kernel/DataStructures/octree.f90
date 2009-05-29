@@ -4,7 +4,12 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module implements a (linear) octree.
+!#
+!# This module implements a (linear) octree. The implementation is
+!# based on the description of octrees by
+!#
+!# R. Lohner, Applied CFD Techniques. An Introduction based on
+!#            Finite Element Methods, Wiley, 2008
 !#
 !# The following routines are available:
 !#
@@ -18,7 +23,7 @@
 !#     -> Resize an existing octree
 !#
 !# 4.) otree_copyToOctree
-!#     -> Copy data to an octree
+!#     -> Copy data to the octree
 !#
 !# 5.) otree_copyFromOctree
 !#     -> Copy data from the octree
@@ -107,6 +112,9 @@ module octree
 
 !<constantblock description="Constants for octree structure">
   
+  ! Maximum number of items for each node
+  integer, parameter :: OTREE_MAX    = 8
+
   ! Item in "North-West-Front" position
   integer, parameter :: OTREE_NWF    = 1
 
@@ -140,14 +148,14 @@ module octree
   ! Position of the "position" of the parent information
   integer, parameter :: OTREE_PARPOS = -2
 
-  ! Identifier: Cube is empty
-  integer, parameter :: OTREE_EMPTY  = 0
+  ! Identifier: Node is empty
+  integer, parameter :: OTREE_EMPTY  =  0
 
-  ! Identifier: Status is subdivided
+  ! Identifier: Node is subdivided
   integer, parameter :: OTREE_SUBDIV = -1
-  
-  ! Maximum number of items for each node
-  integer, parameter :: OTREE_MAX    = 8
+
+  ! Identifier: Node is deleted
+  integer, parameter :: OTREE_DEL    = -2  
 
 !</constantblock> 
 
@@ -173,17 +181,30 @@ module octree
 
 !</constantblock>   
   
-!<constantblock description="Constants for octreetree operations">
+!<constantblock description="Constants for octree operations">
+
+  ! Operation on octree failed
+  integer, parameter, public :: OTREE_FAILED    = -2
 
   ! Item could not be found in the octree
   integer, parameter, public :: OTREE_NOT_FOUND = -1
 
   ! Item could be found in the octree
   integer, parameter, public :: OTREE_FOUND     =  0
+
+  ! Item was inserted into the octree
+  integer, parameter, public :: OTREE_INSERTED  =  1
+
+  ! Item was deleted from the octree
+  integer, parameter, public :: OTREE_DELETED   =  2
+  
 !</constantblock>
+
 !</constants>
 
+
 !<types>
+
 !<typeblock>
 
   ! A linear octree implemented as array
@@ -253,10 +274,13 @@ module octree
 
     ! Factor by which the octree is enlarged if new storage is allocate
     real(DP) :: dfactor = 1.5_DP
+
   end type t_octree
   
 !</typeblock>
+
 !</types>
+
   
   interface otree_copyToOctree
     module procedure otree_copyToOctree_handle
@@ -311,7 +335,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer, dimension(2) :: Isize,Ilbound,Iubound
+    integer, dimension(2) :: Isize, Ilbound, Iubound
 
     ! Set factor
     if (present(dfactor)) then
@@ -332,11 +356,11 @@ contains
     roctree%NFREE   = 0
     
     ! Allocate memory and associate pointers
-    Isize = (/3,nnvt/)
+    Isize = (/3, nnvt/)
     call storage_new('otree_createOctree', 'p_Ddata',&
                      Isize, ST_DOUBLE, roctree%h_Ddata, ST_NEWBLOCK_ZERO)
 
-    Isize = (/6,nnnode/)
+    Isize = (/6, nnnode/)
     call storage_new('otree_createOctree', 'p_Dbbox',&
                      Isize, ST_DOUBLE, roctree%h_Dbbox, ST_NEWBLOCK_ZERO)
 
@@ -348,10 +372,11 @@ contains
     call storage_getbase_int2D(roctree%h_Knode,    roctree%p_Knode)
 
     ! Initialize first node
-    roctree%nnode                   = 1
+    roctree%nnode = 1
     roctree%p_Knode(OTREE_STATUS,1) = OTREE_EMPTY
     roctree%p_Knode(OTREE_PARENT,1) = OTREE_EMPTY
     roctree%p_Knode(OTREE_PARPOS,1) = 1
+    roctree%p_Knode(1:roctree%ndata, 1) = 0
     
     ! Set co-ordinates of the bounding box
     roctree%p_Dbbox(OTREE_XMIN,1) = xmin
@@ -374,7 +399,7 @@ contains
 !</description>
 
 !<inputoutput>
-    ! octree
+    ! Octree
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 !</subroutine>
@@ -425,7 +450,7 @@ contains
     
     ! Check if handle is associated
     if (h_Ddata .eq. ST_NOHANDLE) then
-      Isize = (/3,roctree%NVT/)
+      Isize = (/3, roctree%NVT/)
       call storage_new('otree_copyFromOctree_handle','p_Ddata',&
                        Isize, ST_DOUBLE, h_Ddata, ST_NEWBLOCK_NOINIT)
     else
@@ -558,33 +583,62 @@ contains
 
   !************************************************************************
   
-!<subroutine>
+!<function>
   
-  subroutine otree_insertIntoOctree(roctree, ivt, Ddata, inode)
+  function otree_insertIntoOctree(roctree, Ddata, ivt, inode) result(iresult)
 
 !<description>
-    ! This subroutine inserts a new coordinate item into the octree
+    ! This function inserts a new coordinate item to the octree. The
+    ! new position IVT is returned. The optional value INODE serves
+    ! as starting node in the octree.  If there is no space left in
+    ! this node, then it is subdivided into eight leaves and the
+    ! insertion procedure continues recursively. If this optional
+    ! value is not present, then the starting node in the octree is
+    ! searched for internally.
 !</description>
 
 !<input>
-    ! Number of the inserted vertex
-    integer, intent(IN) :: ivt
-
-    ! Number of the node into which vertex is inserted
-    integer, intent(IN) :: inode
-    
     ! Coordinates of the new vertex
     real(DP), dimension(3), intent(IN) :: Ddata
+
+    ! OPTIONAL: Number of the node to which vertex should be inserted.
+    ! If there is no space left, then the next free position will be used
+    integer, intent(IN), optional :: inode
 !</input>
 
 !<inputoutput>
     ! Octree
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
-!</subroutine>
+
+!<output>
+    ! Number of the inserted vertex
+    integer, intent(OUT) :: ivt
+!</output>
+
+!<result>
+    ! Result of the insertion:
+    !   QTREE_FAILED
+    !   QTREE_FOUND
+    !   QTREE_INSERTED
+    integer :: iresult
+!</result>
+!</function>
     
     ! local variables
-    integer :: isize
+    integer :: isize,jnode,jpos,jvt
+
+    
+    if (present(inode)) then
+      jnode = inode
+    else
+      ! Search potential candidate for insertion
+      iresult = otree_searchInOctree(roctree, Ddata, jnode, jpos, jvt)
+      if (iresult .eq. OTREE_FOUND) then
+        ivt = jvt
+        return
+      end if
+    end if
 
     ! Check if there is enough space left in the vertex component of the octree
     if (roctree%NVT .eq. roctree%NNVT) then
@@ -592,28 +646,70 @@ contains
       call resizeNVT(roctree, isize)
     end if
     
-    ! Update values and add new entry recursively
-    roctree%NVT            = roctree%NVT+1
+    ! Update values
+    roctree%NVT = roctree%NVT+1
+    ivt = roctree%NVT
     roctree%p_Ddata(:,ivt) = Ddata
-    call insert(ivt, inode)
+
+    ! Insert entry recursively
+    iresult = insert(ivt, jnode)
+
+    ! Check success
+    if (iresult .eq. OTREE_FAILED) then
+      roctree%NVT = roctree%NVT-1
+      roctree%p_Ddata(:,ivt) = 0.0_DP
+      ivt = 0
+    end if
     
   contains  
     
     !**************************************************************
     ! Here, the recursive insertion routine follows
     
-    recursive subroutine insert(ivt, inode)
+    recursive function insert(ivt, inode) result(iresult)
+
       integer, intent(IN) :: ivt,inode
+      integer :: iresult
+
+      ! local variables
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
-      integer :: i,jnode,knode,nnode,isize
+      integer :: i,jvt,jnode,nnode,isize,jresult
       
+
+      ! Check status of current node
       if (roctree%p_Knode(OTREE_STATUS, inode) .eq. roctree%ndata) then
+
+        ! Node is full
         
-        if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
-          isize = max(roctree%nnode+OTREE_MAX, ceiling(roctree%dfactor*roctree%NNNODE))
-          call resizeNNODE(roctree, isize)
+        ! Check if there are deleted nodes
+        if (roctree%NFREE .ne. OTREE_EMPTY) then
+
+          ! Reuse memory of the eight nodes which have been deleted lately
+          nnode = roctree%NFREE
+
+          ! Update pointer to next free nodes
+          roctree%NFREE = -roctree%p_Knode(OTREE_PARENT, nnode)
+
+          ! Decrease starting position of first nodes by one
+          nnode = nnode-1
+
+        else
+
+          ! Otherwise, create new memory if required
+          if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
+            isize = max(roctree%nnode+OTREE_MAX,&
+                        ceiling(roctree%dfactor*roctree%NNNODE))
+            call resizeNNODE(roctree, isize)
+          end if
+
+          ! New nodes are stored after all existing nodes
+          nnode = roctree%NNODE
+
         end if
         
+        ! Increase number of nodes
+        roctree%NNODE = nnode+OTREE_MAX
+
         ! Node is full and needs to be refined into eight new nodes
         xmin = roctree%p_Dbbox(OTREE_XMIN,inode)
         ymin = roctree%p_Dbbox(OTREE_YMIN,inode)
@@ -624,10 +720,6 @@ contains
         xmid = 0.5*(xmin+xmax)
         ymid = 0.5*(ymin+ymax)
         zmid = 0.5*(zmin+zmax)
-        
-        ! Store the number of nodes
-        nnode         = roctree%NNODE
-        roctree%NNODE = nnode+OTREE_MAX
         
         ! NWF-node
         roctree%p_Knode(OTREE_STATUS,nnode+OTREE_NWF) = OTREE_EMPTY
@@ -678,11 +770,16 @@ contains
         roctree%p_Dbbox(:,nnode+OTREE_NEB)            = (/xmid,ymid,zmid,xmax,ymax,zmax/)
 
         ! Add the data values from INODE to the eight new nodes
-        ! NNODE+1:NNODE+8 recursively
         do i = 1, roctree%ndata
-          knode = roctree%p_Knode(i,inode)
-          jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,knode),inode)
-          call insert(knode, jnode)
+          jvt = roctree%p_Knode(i, inode)
+          jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,jvt), inode)
+          jresult = insert(jvt, jnode)
+
+          if (jresult .eq. OTREE_FAILED) then
+            call output_line('Internal error in insertion!',&
+                             OU_CLASS_ERROR,OU_MODE_STD,'otree_insertIntoOctree')
+            call sys_halt()
+          end if
         end do
         
         ! Mark the current nodes as subdivided and set pointers to its eight children 
@@ -694,27 +791,45 @@ contains
         
         ! Add the new entry to the next position recursively
         jnode = nnode+otree_getDirection(roctree, roctree%p_Ddata(:,ivt),inode)
-        call insert(ivt, jnode)
+        iresult = insert(ivt, jnode)
         
-      else
-        
-        ! Node is not full, so new items can be stored
+      elseif (roctree%p_Knode(OTREE_STATUS, inode) .ge. OTREE_EMPTY) then
+
+        ! There is still some space in the node
         roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)+1
         roctree%p_Knode(roctree%p_Knode(OTREE_STATUS, inode), inode) = ivt
 
-      end if
-    end subroutine insert
+        ! Set success flag
+        iresult = OTREE_INSERTED
 
-  end subroutine otree_insertIntoOctree
+      elseif (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
+
+        ! Proceed to correcponding sub-tree
+        jnode = -roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
+        iresult = insert(ivt, jnode)
+
+      else
+        
+        ! Set failure flag
+        iresult = OTREE_FAILED
+
+      end if
+
+    end function insert
+
+  end function otree_insertIntoOctree
   
   ! ***************************************************************************
   
 !<function>
   
-  function otree_deleteFromOctree(roctree, Ddata, ivt) result(f)
+  function otree_deleteFromOctree(roctree, Ddata, ivt) result(iresult)
 
 !<description>
-    ! This function deletes an item from the octree
+    ! This function deletes an item from the octree.
+    ! The value IVT returns the number of the item which is
+    ! moved to the position of the deleted item. If the deleted
+    ! item was the last one, then IVT=NVT is returned.
 !</description>
 
 !<input>
@@ -733,130 +848,158 @@ contains
 !</output>
 
 !<result>
-    ! Result of the deletion: OTREE_NOT_FOUND / OTREE_FOUND
-    integer :: f
+    ! Result of the deletion:
+    !   QTREE_FAILED
+    !   QTREE_DELETED
+    integer :: iresult
 !</result>
 !</function>
     
     ! Delete item startin at root
-    f = delete(1, ivt)
+    iresult = delete(1, ivt)
 
   contains
 
     !**************************************************************
     ! Here, the recursive deletion routine follows
 
-    recursive function delete(inode, ivt) result(f)
+    recursive function delete(inode, ivt) result(iresult)
       
       integer, intent(IN) :: inode
       integer, intent(OUT) :: ivt
-      integer :: f
+      integer :: iresult
       
       ! local variables
       real(DP), dimension(3) :: DdataTmp
       integer, dimension(OTREE_MAX) :: Knode
       integer :: jvt,i,jnode,ipos,jpos,nemptyChildren
       
+      
+      ! Check status of current node
+      select case(roctree%p_Knode(OTREE_STATUS, inode))
 
-      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
+      case (OTREE_SUBDIV)   ! Node is subdivided
         
-        ! Quad is subdivided. Compute child INODE which to look recursively.
+        ! Compute child INODE which to look recursively.
         jnode = -roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
-        f     =  delete(jnode, ivt)
+        iresult = delete(jnode, ivt)
 
+        ! Save values from current node
+        Knode = roctree%p_Knode(1:OTREE_MAX, inode)
+        
         ! Check if three or more children are empty
         nemptyChildren = 0
+        
         do i = 1, OTREE_MAX
-          jnode = -roctree%p_Knode(i, inode)
+          jnode = -Knode(i)
           if (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_EMPTY) then
             nemptyChildren = nemptyChildren+1
           elseif (roctree%p_Knode(OTREE_STATUS, jnode) .eq. OTREE_SUBDIV) then
+            ! If the child is not a leaf, then do not compress this sub-tree
             return
           end if
         end do
         
         if (nemptyChildren .ge. OTREE_MAX-1) then
           
-          ! Save values from current quad
-          Knode = roctree%p_Knode(1:OTREE_MAX, inode)
-
-          ! Mark quad as empty
+          ! Mark node as empty
           roctree%p_Knode(OTREE_STATUS, inode) = OTREE_EMPTY
 
-          ! Copy data from non-empty child (if any)
-          if (nemptyChildren .eq. OTREE_MAX-1) then
-            do i = 1, OTREE_MAX
-              jnode = -Knode(i)
-              if (roctree%p_Knode(OTREE_STATUS, jnode) .ne. OTREE_EMPTY) then
-                
-                ! Copy status of quad
-                roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, jnode)
-                
-                ! Copy data
-                roctree%p_Knode(1:, inode) = roctree%p_Knode(1:, jnode)
-                
-                ! That's it
-                exit
-              end if
-            end do
-          end if
-          
-          ! Mark children as deleted
+          ! Copy data from non-empty child (if any) and mark nodes as deleted
           do i = 1, OTREE_MAX
             jnode = -Knode(i)
-            roctree%p_Knode(:, jnode) = -99
+            if (roctree%p_Knode(OTREE_STATUS, jnode) .gt. OTREE_EMPTY) then
+              ! Copy status of node
+              roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, jnode)
+              
+              ! Copy data
+              roctree%p_Knode(1:roctree%NDATA, inode) = roctree%p_Knode(1:roctree%NDATA, jnode)
+            end if
+
+            ! Mark node as deleted
+            roctree%p_Knode(OTREE_STATUS, jnode) = OTREE_DEL
+
+            ! Set pointer to next free position
+            roctree%p_Knode(OTREE_PARENT, jnode) = -roctree%NFREE
+
           end do
 
-          ! Reduce number of quads
-          roctree%NNODE = roctree%NNODE-OTREE_MAX
+          ! Update pointer to next free position
+          roctree%NFREE = -Knode(1)
           
+          ! Reduce number of nodes
+          roctree%NNODE = roctree%NNODE-OTREE_MAX
+
         end if
-                  
-      else
-        
-        ! Initialize flag
-        f = OTREE_NOT_FOUND
 
-        ! Quad is not subdivided. Search for (x,y,z) in current quad
+
+      case (OTREE_EMPTY)   ! Node is empty so it cannot contain the item
+
+        iresult = OTREE_FAILED
+        ivt = 0
+
+
+      case (OTREE_DEL)   ! Node is deleted -> serious error
+
+        call output_line('Internal error in deletion!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctree')
+        call sys_halt()
+
+
+      case default   ! Node is a non-empty leaf
+
+        ! Search for (x,y,z) in current node
         do ipos = 1, roctree%p_Knode(OTREE_STATUS, inode)
-
+          
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
-
+          
           if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
-            
-            ! We have found the item IVT in node INODE
-            f = OTREE_FOUND
-
+          
             ! Physically remove the item IVT from node INODE
-            do jpos = ipos+1, roctree%p_Knode(OTREE_STATUS, inode)
-              roctree%p_Knode(jpos-1, inode) = roctree%p_Knode(jpos, inode)
-            end do
+            jpos = roctree%p_Knode(OTREE_STATUS, inode)
+            
+            roctree%p_Knode(ipos, inode) = roctree%p_Knode(jpos, inode)
+            roctree%p_Knode(jpos, inode) = 0
             roctree%p_Knode(OTREE_STATUS, inode) = roctree%p_Knode(OTREE_STATUS, inode)-1
             
-            ! If IVT is not last item move last item to position IVT
+            ! If IVT is not last item then find item with largest number JVT
             if (ivt .ne. roctree%NVT) then
               DdataTmp(:) = roctree%p_Ddata(:,roctree%NVT)
               if (otree_searchInOctree(roctree, DdataTmp(:),&
-                                         jnode, jpos, jvt) .eq. OTREE_FOUND) then
-                roctree%p_Ddata(:, ivt)      = roctree%p_Ddata(:, roctree%NVT)
+                                       jnode, jpos, jvt) .eq. OTREE_FOUND) then
+                
+                ! Move last item JVT to position IVT
+                roctree%p_Ddata(:, ivt) = roctree%p_Ddata(:, roctree%NVT)
                 roctree%p_Knode(jpos, jnode) = ivt
+              else
+                call output_line('Internal error in deletion!',&
+                                 OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctree')
+                call sys_halt()
               end if
               
               ! Set number of removed vertex
               ivt = roctree%NVT
+
             end if
       
             ! Decrease number of vertices
             roctree%NVT = roctree%NVT-1
             
+            ! We have found the item IVT in node INODE
+            iresult = OTREE_DELETED
+            
             ! That's it
-            exit
+            return
           end if
         end do
 
-      end if
-      
+        ! We have not found the item
+        iresult = OTREE_FAILED
+        ivt = 0
+
+      end select
+
     end function delete
 
   end function otree_deleteFromOctree
@@ -865,10 +1008,10 @@ contains
 
 !<function>
 
-  function otree_deleteFromOctreeByNumber(roctree, ivt, ivtReplace) result(f)
+  function otree_deleteFromOctreeByNumber(roctree, ivt, ivtReplace) result(iresult)
 
 !<description>
-    ! This function deletes vertex with number IVT from the octree
+    ! This function deletes vertex with number IVT from the octree.
 !</description>
 
 !<input>
@@ -877,7 +1020,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! octree
+    ! Octree
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 
@@ -887,8 +1030,10 @@ contains
 !</output>
 
 !<result>
-    ! Result of the deletion: OTREE_NOT_FOUND / OTREE_FOUND
-    integer :: f
+    ! Result of the deletion:
+    !   QTREE_FAILED
+    !   QTREE_DELETED
+    integer :: iresult
 !</result>
 !</function>
 
@@ -897,12 +1042,10 @@ contains
     
     if (ivt .le. roctree%NVT) then
       ! Get coordinates and invoke deletion routine
-      Ddata = roctree%p_Ddata(:,ivt)
-      f     = otree_deleteFromOctree(roctree, Ddata, ivtReplace)
+      Ddata   = roctree%p_Ddata(:,ivt)
+      iresult = otree_deleteFromOctree(roctree, Ddata, ivtReplace)
     else
-      call output_line('Invalid vertex number!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'otree_deleteFromOctreeByNumber')
-      call sys_halt()
+      iresult = OTREE_FAILED
     end if
 
   end function otree_deleteFromOctreeByNumber
@@ -911,10 +1054,15 @@ contains
 
 !<function>
   
-  function otree_searchInOctree(roctree, Ddata, inode, ipos, ivt) result(f)
+  function otree_searchInOctree(roctree, Ddata, inode, ipos, ivt) result(iresult)
 
 !<description>
-    ! This subroutine searches for given coordinates in the octree
+    ! This subroutine searches for given coordinates in the octree.
+    ! The result of the search operation is returned by the value IRESULT.
+    ! If the item was found than INODE is the number of the node, IPOS
+    ! is the position of the item in the node and IVT is number of the
+    ! item in the data array. Otherwise, INODE is the number of the leaf,
+    ! where the item would be placed in case of insertion.
 !</description>
 
 !<input>
@@ -937,55 +1085,75 @@ contains
 !</output>
 
 !<result>
-    ! Result of the searching: OTREE_NOT_FOUND / OTREE_FOUND
-    integer :: f
+    ! Result of the searching:
+    !   QTREE_NOT_FOUND 
+    !   QTREE_FOUND
+    integer :: iresult
 !</result>
 !</function>
     
     ! Initialize
-    inode = 1
-    ipos  = 1
-    ivt   = 1
+    inode = 1; ipos = 1; ivt = 1
 
     ! Search for item
-    f = search(inode, ipos, ivt)
+    iresult = search(inode, ipos, ivt)
     
   contains
     
     !**************************************************************
     ! Here, the recursive searching routine follows
 
-    recursive function search(inode, ipos, ivt) result(f)
+    recursive function search(inode, ipos, ivt) result(iresult)
       
       integer, intent(INOUT) :: inode,ipos,ivt
-      integer :: f
+      integer :: iresult
       
-      if (roctree%p_Knode(OTREE_STATUS, inode) .eq. OTREE_SUBDIV) then
+      
+      ! Check status of current node
+      select case(roctree%p_Knode(OTREE_STATUS, inode))
+
+      case (OTREE_SUBDIV)   ! Node is subdivided
         
-        ! Node is subdivided. Compute child INODE which to look recursively.
+        ! Compute child INODE which to look recursively.
         inode = -roctree%p_Knode(otree_getDirection(roctree, Ddata, inode), inode)
-        f     =  search(inode, ipos, ivt)
-        
-      else
-        
-        ! Initialize flag
-        f = OTREE_NOT_FOUND
+        iresult =  search(inode, ipos, ivt)
 
-        ! Node is not subdivided. Search for (x,y,z) in current node
+        
+      case (OTREE_EMPTY)   ! Node is empty so it cannot contain the item
+        
+        iresult = OTREE_NOT_FOUND
+
+        
+      case (OTREE_DEL)   ! Node is deleted -> serious error
+        
+        call output_line('Internal error in deletion!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'otree_searchInOctree')
+        call sys_halt()
+
+
+      case default   ! Node is a non-empty leaf
+        
+        ! Search for (x,y,z) in current node
         do ipos = 1, roctree%p_Knode(OTREE_STATUS, inode)
-
+          
           ! Get vertex number
           ivt = roctree%p_Knode(ipos, inode)
-
+          
           if (maxval(abs(roctree%p_Ddata(:, ivt)-Ddata)) .le. SYS_EPSREAL) then
-
-            ! We have found the item IVT in node INODE
-            f = OTREE_FOUND; return
             
+            ! We have found the item IVT in node INODE
+            iresult = OTREE_FOUND
+
+            ! That's it
+            return
           end if
         end do
-        
-      end if
+            
+        ! We have not found the item
+        iresult = OTREE_NOT_FOUND
+
+      end select
+
     end function search
 
   end function otree_searchInOctree
@@ -994,10 +1162,10 @@ contains
   
 !<function>
   
-  pure function otree_getDirection(roctree, Ddata, inode) result(d)
+  pure function otree_getDirection(roctree, Ddata, inode) result(idirection)
 
 !<description>
-    ! This subroutine determines the direction to preceed w.r.t. Ddata
+    ! This subroutine determines the direction to preceed w.r.t. Ddata.
 !</description>
 
 !<input>
@@ -1013,7 +1181,7 @@ contains
 
 !<result>
     ! Further search direction
-    integer :: d
+    integer :: idirection
 !</result>
 !</function>
     
@@ -1033,15 +1201,15 @@ contains
       
       if (Ddata(1) > xmid) then
         if (Ddata(2) > ymid) then
-          d = OTREE_NEF; return
+          idirection = OTREE_NEF
         else
-          d = OTREE_SEF; return
+          idirection = OTREE_SEF
         end if
       else
         if (Ddata(2) > ymid) then
-          d = OTREE_NWF; return
+          idirection = OTREE_NWF
         else
-          d = OTREE_SWF; return
+          idirection = OTREE_SWF
         end if
       end if
 
@@ -1049,15 +1217,15 @@ contains
 
       if (Ddata(1) > xmid) then
         if (Ddata(2) > ymid) then
-          d = OTREE_NEB; return
+          idirection = OTREE_NEB
         else
-          d = OTREE_SEB; return
+          idirection = OTREE_SEB
         end if
       else
         if (Ddata(2) > ymid) then
-          d = OTREE_NWB; return
+          idirection = OTREE_NWB
         else
-          d = OTREE_SWB; return
+          idirection = OTREE_SWB
         end if
       end if
 
@@ -1151,6 +1319,7 @@ contains
       
 10    format(6(E15.6E3,1X),I10)
 20    format(3(E15.6E3,1X),I10)
+
     end subroutine print
 
   end subroutine otree_printOctree
@@ -1431,7 +1600,7 @@ contains
 !</description>
 
 !<inputoutput>
-    ! octree
+    ! Octree
     type(t_octree), intent(INOUT) :: roctree
 !</inputoutput>
 !</subroutine>
@@ -1451,11 +1620,12 @@ contains
     ! Check if octree contains data
     if (roctree%NVT .eq. 0) then
 
-      ! Initialize first quad
+      ! Initialize first node
       roctree%nnode = 1
       roctree%p_Knode(OTREE_STATUS,1) = OTREE_EMPTY
       roctree%p_Knode(OTREE_PARENT,1) = OTREE_EMPTY
-      roctree%p_Knode(OTREE_PARPOS,1) = 1
+      roctree%p_Knode(OTREE_PARPOS,1) = OTREE_EMPTY
+      roctree%p_Knode(1:roctree%NDATA, 1) = 0
       
     else
       
@@ -1478,7 +1648,7 @@ contains
     !**************************************************************
     ! Here, the recursive top-down rebuild routine follows
     
-    recursive subroutine rebuild(inode,istart,iend)
+    recursive subroutine rebuild(inode, istart, iend)
 
       integer, intent(IN) :: inode,istart, iend
       
@@ -1486,8 +1656,8 @@ contains
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
       integer :: i,isize,jnode,nnode,ivt,imid1,imid2,imid3,imid4,imid5,imid6,imid7
 
-
-      ! Check if istart > iend then the quad is empty
+      
+      ! Check if istart > iend then the node is empty
       if (istart .gt. iend) return
 
       ! Check if current partition can be stored in a leave
@@ -1500,18 +1670,19 @@ contains
 
         ! Store number of vertices
         roctree%p_Knode(OTREE_STATUS, inode) = iend-istart+1
-
+        
       else
 
         ! Otherwise, the current partition is subdivided into eight subpartitions
         
         if (roctree%nnode+OTREE_MAX > roctree%nnnode) then
-          isize = max(roctree%nnode+OTREE_MAX, ceiling(roctree%dfactor*roctree%NNNODE))
+          isize = max(roctree%nnode+OTREE_MAX,&
+                      ceiling(roctree%dfactor*roctree%NNNODE))
           call resizeNNODE(roctree, isize)
         end if
 
-        ! Store the number of quads
-        nnode           = roctree%NNODE
+        ! Store the number of nodes
+        nnode = roctree%NNODE
         roctree%NNODE = nnode+OTREE_MAX
 
         ! Mark the current node as subdivided and set pointers to its eight children 
@@ -1601,44 +1772,44 @@ contains
         imid6 = partition(imid1+1, imid3, 3, zmid)
         imid7 = partition(imid3+1, iend,  3, zmid)
 
-        if (istart .le. imid4) then
+        if (istart .lt. imid4) then
           jnode = -roctree%p_Knode(OTREE_SWF, inode)
-          call rebuild(jnode, istart, imid4)
+          call rebuild(jnode, istart, imid4-1)
         end if
 
-        if (imid4+1 .le. imid2) then
+        if (imid4 .lt. imid2) then
           jnode = -roctree%p_Knode(OTREE_SWB, inode)
-          call rebuild(jnode, imid4+1, imid2)
+          call rebuild(jnode, imid4, imid2-1)
         end if
 
-        if (imid2+1 .le. imid5) then
+        if (imid2 .lt. imid5) then
           jnode = -roctree%p_Knode(OTREE_NWF, inode)
-          call rebuild(jnode, imid2+1, imid5)
+          call rebuild(jnode, imid2, imid5-1)
         end if
 
-        if (imid5+1 .le. imid1) then
+        if (imid5 .lt. imid1) then
           jnode = -roctree%p_Knode(OTREE_NWB, inode)
-          call rebuild(jnode, imid5+1, imid1)
+          call rebuild(jnode, imid5, imid1-1)
         end if
 
-        if (imid1+1 .le. imid6) then
+        if (imid1 .lt. imid6) then
           jnode = -roctree%p_Knode(OTREE_SEF, inode)
-          call rebuild(jnode, imid1+1, imid6)
+          call rebuild(jnode, imid1, imid6-1)
         end if
 
-        if (imid6+1 .le. imid3) then
+        if (imid6 .lt. imid3) then
           jnode = -roctree%p_Knode(OTREE_SEB, inode)
-          call rebuild(jnode, imid6+1, imid3)
+          call rebuild(jnode, imid6, imid3-1)
         end if
 
-        if (imid3+1 .le. imid7) then
+        if (imid3 .lt. imid7) then
           jnode = -roctree%p_Knode(OTREE_NEF, inode)
-          call rebuild(jnode, imid3+1, imid7)
+          call rebuild(jnode, imid3, imid7-1)
         end if
 
-        if (imid7+1 .le. iend) then
+        if (imid7 .le. iend) then
           jnode = -roctree%p_Knode(OTREE_NEB, inode)
-          call rebuild(jnode, imid7+1, iend)
+          call rebuild(jnode, imid7, iend)
         end if
 
       end if
@@ -1657,19 +1828,34 @@ contains
       ! local variables
       integer :: i
 
-      ! Sort array
-      call quicksort(istart, iend, idim)
       
-      ! Find partition point
-      do i = istart, iend
-        if (roctree%p_Ddata(idim, p_Inodes(i)) .gt. dmid) then
-          imid = i-1
-          return
-        end if
-      end do
+      if (istart .gt. iend) then
+        
+        ! If istart > iend then there are no items in this partition
+        imid = iend+1
+        
+      else if (istart .eq. iend) then
+        
+        ! If istart = iend then there is one item in this partition
+        imid = merge(iend, iend+1, roctree%p_Ddata(idim, p_Inodes(iend)) .gt. dmid)
 
-      ! If we end up here, then istart > iend
-      imid = istart-1
+      else
+        
+        ! Otherwise, sort items in partition
+        call quicksort(istart, iend, idim)
+        
+        ! Find location of first item belonging to "IS GREATER" partition
+        do i = istart, iend
+          if (roctree%p_Ddata(idim, p_Inodes(i)) .gt. dmid) then
+            imid = i
+            return
+          end if
+        end do
+        
+        ! If we end up here, then all items belong to "NOT GREATER" partition
+        imid = iend+1
+        
+      end if
       
     end function partition
 
