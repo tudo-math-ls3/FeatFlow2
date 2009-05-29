@@ -662,8 +662,9 @@ contains
     
       ! Take the predefined coordinates -- if specified.
       if (present(DpointReal)) then
-        ! Save a pointer to DpointReal
-        revalElement%DpointReal = DpointReal
+        ! Save the coordinates
+        revalElement%DpointReal(1:min(NDIM3D,size(DpointReal))) = &
+            DpointReal(1:min(NDIM3D,size(DpointReal)))
       end if 
 
     end if
