@@ -3739,7 +3739,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,i1,k,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
+  integer :: i,i1,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB
   logical :: bIdenticalTrialAndTest
   integer :: IEL, IELmax, IELset, IDOFE, JDOFE
   integer :: JCOL0,JCOL
