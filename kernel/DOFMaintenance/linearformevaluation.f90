@@ -41,7 +41,7 @@ module linearformevaluation
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building vectors
-  integer, public :: LINF_NELEMSIM   = 1000
+  integer,public :: LINF_NELEMSIM   = 1000
   
 !</constantblock>
 !</constants>
