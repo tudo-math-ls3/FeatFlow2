@@ -1633,7 +1633,7 @@ contains
 
       ! Currently, we support only uniform triangulations.
       if ((p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
-          (p_rdiscrCoarse%ccomplexity .ne. SPDISC_UNIFORM)) then
+          (p_rdiscrFine%ccomplexity .ne. SPDISC_UNIFORM)) then
         call output_line ('Intergrid transfer supports currently only uniform discretisations!', &
             OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performRestriction')
         call sys_halt()
