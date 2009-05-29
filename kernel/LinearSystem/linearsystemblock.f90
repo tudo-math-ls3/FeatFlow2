@@ -142,7 +142,7 @@
 !# 40.) lsysbl_deriveSubvector
 !#      -> Derives a blockvector as a subset of another blockvector
 !#
-!# 41.) lsysbl_deriveSubmatrix
+!# 41.) lsysbl_deriveSubmatrix / lsysbl_extractSubmatrix
 !#      -> Extracts a submatrix from a block matrix
 !#
 !# 42.) lsysbl_isSubmatrixPresent
@@ -484,6 +484,7 @@ module linearsystemblock
   public :: lsysbl_swapVectors
   public :: lsysbl_deriveSubvector
   public :: lsysbl_deriveSubmatrix
+  public :: lsysbl_extractSubmatrix
   public :: lsysbl_isSubmatrixPresent
   public :: lsysbl_infoVector
   public :: lsysbl_infoMatrix
@@ -4742,6 +4743,190 @@ contains
     
   end subroutine
     
+!****************************************************************************
+  
+!<subroutine>
+  
+  subroutine lsysbl_extractSubmatrix (rsourceMatrix,rdestMatrix,&
+                                      ifirstBlock,ilastBlock,&
+                                      ifirstBlockCol,ilastBlockCol,&
+                                      bignoreScaleFactors)
+  
+!<description>
+  ! This routine extracts a submatrix from another source matrix.
+  !
+  ! ifirstBlock is the number of the first diagonal block in rsourceMatrix
+  ! which should be put to position (1,1) in rdestMatrix.
+  ! ilastBlock is the index the last diagonal block in rdestMatrix
+  ! which should be put to rdestMatrix.
+  !
+  ! The newly created block matrix will not have any block discretisation 
+  ! structure attached!
+  ! The caller may therefore want to use lsysbl_assignDiscrDirectMat
+  ! to specify the correct discretisation structure after
+  ! creating the matrix.
+  !
+  ! In contrast to lsysbl_deriveSubmatrix, the newly created submatrix receives
+  ! all ownership information from the source matrix, leaving the source matrix
+  ! as 'shared copy'. This allows to extract a submatrix, do some local modifications
+  ! to it and move it back to the original matrix with lsysbl_moveToSubmatrix
+  ! when finished:
+  !
+  ! a) Extract a submatrix:
+  !      lsysbl_extractSubmatrix (rsource,rdest,a,b,a,b)
+  ! b) Do some local modifications, e.g.
+  !      rdest%RmatrixBlock(1,1)%dscaleFactor = 5
+  !      ...
+  ! c) Move the matrix back to its original position
+  !      lsysbl_moveToSubmatrix (rdest,rsource,a,a)
+  !
+  ! During step b), the original matrix rsource is 'delayed', nothing should be done
+  ! with it until reintegration with lsysbl_moveToSubmatrix.
+  !
+  ! Remark: There is never memory allocated on the heap for the sorting
+  !  permutation. A matrix is never the 'owner' of a permutation, i.e.
+  !  does not maintain it. Therefore, copying a permutation in one of
+  !  the submatrices means copying the corresponding handle. 
+  !  The application must keep track of the permutations.
+  !
+  ! Remark 2: When ifirstBlockCol,ilastBlockCol is not specified, the routine
+  !  creates a matrix oriented at the diagonal:
+  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlock:ilastBlock)
+  !  If ifirstBlockCol,ilastBlockCol is specified, the routine creates
+  !  a submatrix based on X/Y block coordinates. ifirstBlock,ilastBlock in this
+  !  case specify the Y-coordinates in the block matrix while 
+  !  ifirstBlockCol,ilastBlockCol specify the X-coordinates:
+  !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockCol:ilastBlockCol)
+!</description>
+  
+!<input>
+  ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
+  ! position (1,1) into rdestMatrix. Default value is =1.
+  ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
+  ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
+  ! to (1,1) of rdestMatrix.
+  integer, intent(IN), optional :: ifirstBlock
+
+  ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
+  ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
+  ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
+  ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
+  ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
+  integer, intent(IN), optional :: ilastBlock
+
+  ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
+  ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
+  integer, intent(IN), optional :: ifirstBlockCol
+
+  ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
+  ! rdestMatrix. Default value is ilastBlock.
+  integer, intent(IN), optional :: ilastBlockCol
+
+  ! OPTIONAL: Ignore the scaling factors in the source matrix.
+  ! TRUE: Submatrices of the source matrix will be copied regardless of
+  !   whether dscaleFactor=0.0 or not. Standard.
+  ! FALSE: Submatrices of the source matrix will only be copied if
+  !   dscaleFacor <> 0.0.
+  logical, intent(in), optional                  :: bignoreScaleFactors
+
+!</input>
+
+!<inputoutput>
+  ! Source matrix.
+  type(t_matrixBlock), intent(inout)            :: rsourceMatrix
+
+  ! Destination matrix. 
+  ! If necessary, this matrix is regenerated based on the size of the matrix
+  ! part to be extracted from rsourceMatrix
+  type(t_matrixBlock), intent(inout)            :: rdestMatrix
+!</inputoutput>  
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j
+    integer :: ifirstX, ilastX, ifirstY, ilastY
+    logical :: bignoreScale
+    
+    bignoreScale = .true.
+    if (present(bignoreScaleFactors)) bignoreScale = bignoreScaleFactors
+    
+    ! Evaluate the optional parameters
+    ifirstX = 1
+    ilastX = rsourceMatrix%nblocksPerRow
+
+    ifirstY = 1
+    ilastY = rsourceMatrix%nblocksPerCol
+    
+    if (present(ifirstBlock)) then
+      ifirstY = min(max(ifirstY,ifirstBlock),ilastX)
+    end if
+    
+    if (present(ilastBlock)) then
+      ilastY = max(min(ilastY,ilastBlock),ifirstX)
+    end if
+    
+    if (present(ifirstBlockCol)) then
+      ifirstX = min(max(ifirstX,ifirstBlockCol),ilastX)
+    else
+      ifirstX = ifirstY
+    end if
+    
+    if (present(ilastBlockCol)) then
+      ilastX = max(min(ilastX,ilastBlockCol),ifirstX)
+    else
+      ilastX = ilastY
+    end if
+    
+    ! If the destination matrix has the correct size, leave it.
+    ! if not, release it and create a new one.
+    if ((rdestMatrix%NEQ .ne. 0) .and. &
+        ((rdestMatrix%nblocksPerRow .ne. ilastX-ifirstX+1) .or. &
+         (rdestMatrix%nblocksPerCol .ne. ilastY-ifirstY+1))) then
+      call lsysbl_releaseMatrix (rdestMatrix)
+    end if
+    
+    ! For every submatrix in the source matrix, call the 'scalar' variant
+    ! of duplicateMatrix. 
+    if (rdestMatrix%NEQ .eq. 0) &
+      call lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1),(ilastX-ifirstX+1))
+    
+    ! Move the source matrix to the destination matrix.
+    !    
+    ! loop over all columns and rows in the source matrix
+    do j=ifirstX,ilastX
+      do i=ifirstY,ilastY
+        ! Copy the submatrix from the source matrix to the destination
+        ! matrix.
+        if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScale)) then
+        
+          call lsyssc_moveMatrix(rsourceMatrix%RmatrixBlock(i,j),&
+              rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
+               
+        else if (lsysbl_isSubmatrixPresent(rdestMatrix,&
+            i-ifirstY+1,j-ifirstX+1,.true.)) then
+        
+          ! Release the submatrix in the destination matrix if present.
+          ! This is independent of the scale factor (we ignore it!) as
+          ! we want to produce a destination matrix that looks like
+          ! the source matrix without any skeletons in the cupboard
+          ! that may be activated by switching the scaling factors...
+          
+          call lsyssc_releaseMatrix (&
+              rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
+        
+        end if
+            
+      end do
+    end do
+    
+    ! Update the structural information of the block matrix for completeness.
+    nullify(rdestMatrix%p_rblockDiscrTrial)
+    nullify(rdestMatrix%p_rblockDiscrTest)
+    call lsysbl_updateMatStrucInfo(rdestMatrix)
+    
+  end subroutine
+
   !****************************************************************************
   
 !<function>
@@ -6618,7 +6803,7 @@ contains
   
 !<subroutine>
  
-  subroutine lsysbl_moveToSubmatrix (rsourceMatrix,rdestMatrix,iy,ix)
+  subroutine lsysbl_moveToSubmatrix (rsourceMatrix,rdestMatrix,itop,ileft)
   
 !<description>
   ! Inserts the block matrix as submatrix into another block matrix.
@@ -6633,8 +6818,8 @@ contains
 
 !<input>
   ! X- and Y-position in the destination matrix where rsourceMatrix
-  ! should be put to.
-  integer, intent(IN)                            :: iy,ix
+  ! should be put to. If not specified, 1 is assumed.
+  integer, intent(IN), optional :: itop,ileft
 !</input>
 
 !<inputoutput>
@@ -6650,8 +6835,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j
+    integer :: i,j,ix,iy
     integer(I32) :: cflags1,cflags2
+    
+    ix = 1
+    iy = 1
+    if (present(itop)) iy=itop
+    if (present(ileft)) ix=ileft
     
     ! loop over all columns and rows in the source matrix
     do j=1,rsourceMatrix%nblocksPerRow

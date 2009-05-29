@@ -234,6 +234,9 @@
 !# 67.) lsyssc_setDataTypeVector
 !#      -> Converts the data type of a scalar vector
 !#
+!# 68.) lsyssc_moveMatrix
+!#      -> Moves a matrix to another matrix.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -823,6 +826,7 @@ module linearsystemscalar
   public :: lsyssc_checkDiscretisation
   public :: lsyssc_setDataTypeMatrix
   public :: lsyssc_setDataTypeVector
+  public :: lsyssc_moveMatrix
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -19452,6 +19456,48 @@ contains
       ! structure to another...
       rvector = rvector2
     end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_moveMatrix (rsourceMatrix,rdestMatrix)
+  
+!<description>
+  ! Moves a matrix from a source matrix to a destination matrix.
+  ! The source matrix will remain as 'shared copy' of the destination matrix
+  ! and can safely be released.
+!</description>
+  
+!<inputoutput>
+  ! Source matrix
+  type(t_matrixScalar),intent(inout) :: rsourceMatrix
+
+  ! Destination matrix
+  type(t_matrixScalar),intent(inout) :: rdestMatrix
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    integer(I32) :: cflags1,cflags2
+
+    ! Duplicate the matrix, share the data.
+    call lsyssc_duplicateMatrix (rsourceMatrix, rdestMatrix,&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+          
+    ! Change the ownership from the source to the destination matrix
+    cflags1 = iand (rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+    cflags2 = iand (rdestMatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+    rsourceMatrix%imatrixSpec = &
+      ior(iand(rsourceMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),cflags2)
+    rdestMatrix%imatrixSpec = &
+      ior(iand(rdestMatrix%imatrixSpec,not(LSYSSC_MSPEC_ISCOPY)),cflags1)
+    
+    ! Now, the destination matrix is the owner and the source matrix
+    ! the copy...  
     
   end subroutine
 

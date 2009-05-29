@@ -290,6 +290,18 @@ module genoutput
 
 !</constants>  
 
+!<globals>
+
+  ! Current benchmark file logging policy.
+  ! =0: None. Don't log anything to the benchmark log file.
+  ! =1: Standard. Write data to benchmark log file if OU_BENCHLOG is specified
+  !     in coutputMode.
+  ! =2: Full. Write everything into the benchmark log file independent on whether
+  !     OU_BENCHLOG is specified in coutputMode or not.
+  integer, public, save :: cbenchLogPolicy = 1
+
+!</globals>
+
   interface output_line
     module procedure output_line_std
     module procedure output_line_feast
@@ -703,11 +715,14 @@ contains
       end if
 
       ! Output to the benchmark log file?
-      if ((iand(coMode,OU_MODE_BENCHLOG) .ne. 0) .and. (OU_BENCHLOG .gt. 0)) then
-        if (bnnewline) then
-          write (OU_BENCHLOG,'(A)',ADVANCE='NO') smessage
-        else
-          write (OU_BENCHLOG,'(A)') smessage
+      if (OU_BENCHLOG .gt. 0) then
+        if ((cbenchLogPolicy .eq. 2) .or. &
+            (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+          if (bnnewline) then
+            write (OU_BENCHLOG,'(A)',ADVANCE='NO') smessage
+          else
+            write (OU_BENCHLOG,'(A)') smessage
+          end if
         end if
       end if
       
@@ -735,11 +750,14 @@ contains
       end if
 
       ! Output to benchmark log file?
-      if ((iand(coMode,OU_MODE_BENCHLOG) .ne. 0) .and. (OU_BENCHLOG .gt. 0)) then
-        if (bnnewline) then
-          write (OU_BENCHLOG,'(A)',ADVANCE='NO') trim(smsg)
-        else
-          write (OU_BENCHLOG,'(A)') trim(smsg)
+      if (OU_BENCHLOG .gt. 0) then
+        if ((cbenchLogPolicy .eq. 2) .or. &
+            (cbenchLogPolicy .eq. 1) .and. (iand(coMode,OU_MODE_BENCHLOG) .ne. 0)) then
+          if (bnnewline) then
+            write (OU_BENCHLOG,'(A)',ADVANCE='NO') trim(smsg)
+          else
+            write (OU_BENCHLOG,'(A)') trim(smsg)
+          end if
         end if
       end if
     end if
