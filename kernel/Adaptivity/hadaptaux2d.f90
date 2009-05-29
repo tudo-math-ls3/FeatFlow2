@@ -4167,79 +4167,85 @@ contains
     ! Compute coordinates of new vertex 
     Dcoord = 0.5_DP * (/x1+x2, y1+y2/)
 
-    ! Search for vertex coordinates in quadtree: 
-    ! If the vertex already exists, e.g., it was added when the 
-    ! adjacent element was refined, then nothing needs to be done
-    ! for this vertex
-    if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D, Dcoord,&
-                               inode, ipos,i12) .eq. QTREE_FOUND) return
-    
-    ! Otherwise, update number of vertices
-    rhadapt%NVT = rhadapt%NVT+1
-    i12         = rhadapt%NVT
+    ! Search for vertex coordinates in quadtree: If the vertex already
+    ! exists, e.g., it was added when the adjacent element was
+    ! refined, then nothing needs to be done for this vertex
 
-    ! Set age of vertex
-    rhadapt%p_IvertexAge(i12) = &
-        1+max(abs(rhadapt%p_IvertexAge(i1)),&
-              abs(rhadapt%p_IvertexAge(i2)))
-    
-    ! Set nodal property
-    if (e1 .eq. 0) then
-      rhadapt%p_InodalProperty(i12) = rhadapt%p_InodalProperty(i1)
-    else
-      rhadapt%p_InodalProperty(i12) = 0
-    end if
-    
-    ! Add new entry to vertex coordinates
-    if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
-                                 i12, Dcoord, inode) .ne. QTREE_FOUND) then
-      call output_line('An error occured while inserting coordinate to quadtree!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
-      call sys_halt()
-    end if
-    
-    ! Are we at the boundary?
-    if (e1 .eq. 0) then
-      ! Increment number of boundary nodes
-      rhadapt%NVBD = rhadapt%NVBD+1
+    if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D,&
+                               Dcoord, inode, ipos, i12) .eq. QTREE_NOT_FOUND) then
       
-      ! Get number of boundary component
-      ibct = rhadapt%p_InodalProperty(i1)
-      
-      ! Get parameter values of the boundary nodes
-      if (btree_searchInTree(rhadapt%rBoundary(ibct), i1, ipred) .eq. BTREE_NOT_FOUND) then
-        call output_line('Unable to find first vertex in boundary data structure!',&
+      ! Add new entry to vertex coordinates
+      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
+                                   Dcoord, i12, inode) .ne. QTREE_INSERTED) then
+        call output_line('An error occured while inserting coordinate to quadtree!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if
-      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
-      dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
-      
-      if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
-        call output_line('Unable to find second vertex in boundary data structure!',&
+
+      ! Update number of vertices
+      rhadapt%NVT = rhadapt%NVT+1
+
+      if (i12 .ne. rhadapt%NVT) then
+        call output_line('Inconsistent vertex number due to insertion!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
         call sys_halt()
       end if
-      ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
-      dvbdp2 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
       
-      ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
-      if (dvbdp2 .le. dvbdp1) dvbdp2 = ceiling(dvbdp1)
+      ! Set age of vertex
+      rhadapt%p_IvertexAge(i12) = 1+max(abs(rhadapt%p_IvertexAge(i1)),&
+                                        abs(rhadapt%p_IvertexAge(i2)))
       
-      ! Add new entry to boundary structure
-      Idata = (/i1, i2/)
-      Ddata = (/0.5_DP*(dvbdp1+dvbdp2)/)
-      call btree_insertIntoTree(rhadapt%rBoundary(ibct), i12,&
-                                Idata=Idata, Ddata=Ddata)
+      ! Are we at the boundary?
+      if (e1 .eq. 0) then
+        ! Set nodal property
+        rhadapt%p_InodalProperty(i12) = rhadapt%p_InodalProperty(i1)
+
+        ! Increment number of boundary nodes
+        rhadapt%NVBD = rhadapt%NVBD+1
+        
+        ! Get number of boundary component
+        ibct = rhadapt%p_InodalProperty(i1)
+        
+        ! Get parameter values of the boundary nodes
+        if (btree_searchInTree(rhadapt%rBoundary(ibct), i1, ipred) .eq. BTREE_NOT_FOUND) then
+          call output_line('Unable to find first vertex in boundary data structure!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
+          call sys_halt()
+        end if
+        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
+        dvbdp1 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
+        
+        if (btree_searchInTree(rhadapt%rBoundary(ibct), i2, ipred) .eq. BTREE_NOT_FOUND) then
+          call output_line('Unable to find second vertex in boundary data structure!',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atEdgeMidpoint2D')
+          call sys_halt()
+        end if
+        ipos   = rhadapt%rBoundary(ibct)%p_Kchild(merge(TLEFT, TRIGHT, ipred .lt. 0), abs(ipred))
+        dvbdp2 = rhadapt%rBoundary(ibct)%p_DData(BdrValue, ipos)
+        
+        ! If I2 is last(=first) node on boundary component IBCT round DVBDP2 to next integer
+        if (dvbdp2 .le. dvbdp1) dvbdp2 = ceiling(dvbdp1)
+        
+        ! Add new entry to boundary structure
+        Idata = (/i1, i2/)
+        Ddata = (/0.5_DP*(dvbdp1+dvbdp2)/)
+        call btree_insertIntoTree(rhadapt%rBoundary(ibct), i12,&
+                                 Idata=Idata, Ddata=Ddata)
+      else
+        ! Set nodal property
+        rhadapt%p_InodalProperty(i12) = 0
+      end if
+
+      ! Optionally, invoke callback function
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        Ivertices = (/i12, i1, i2/)
+        Ielements = (/0/)
+        call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXEDGE,&
+                                Ivertices, Ielements)
+      end if
+
     end if
-      
-    ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-      Ivertices = (/i12, i1, i2/)
-      Ielements = (/0/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXEDGE,&
-                              Ivertices, Ielements)
-    end if
+
   end subroutine add_vertex_atEdgeMidpoint2D
 
   ! ***************************************************************************
@@ -4301,36 +4307,42 @@ contains
     if (qtree_searchInQuadtree(rhadapt%rVertexCoordinates2D, Dcoord,&
                                inode, ipos, i5) .eq. QTREE_NOT_FOUND) then
       
+      ! Add new entry to vertex coordinates
+      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
+                                   Dcoord, i5, inode) .ne. QTREE_INSERTED) then
+        call output_line('An error occured while inserting coordinate to quadtree!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atElementCenter2D')
+        call sys_halt()
+      end if
+
       ! Update number of vertices
       rhadapt%NVT = rhadapt%NVT+1
-      i5          = rhadapt%NVT
+
+      if (i5 .ne. rhadapt%NVT) then
+        call output_line('Inconsistent vertex number during insertion!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atElementCenter2D')
+        call sys_halt()
+      end if
       
       ! Set age of vertex
-      rhadapt%p_IvertexAge(I5) = &
-          1+max(abs(rhadapt%p_IvertexAge(i1)),&
-                abs(rhadapt%p_IvertexAge(i2)),&
-                abs(rhadapt%p_IvertexAge(i3)),&
-                abs(rhadapt%p_IvertexAge(i4)))
-
+      rhadapt%p_IvertexAge(I5) = 1+max(abs(rhadapt%p_IvertexAge(i1)),&
+                                       abs(rhadapt%p_IvertexAge(i2)),&
+                                       abs(rhadapt%p_IvertexAge(i3)),&
+                                       abs(rhadapt%p_IvertexAge(i4)))
+      
       ! Set nodal property
       rhadapt%p_InodalProperty(i5) = 0
       
-      ! Add new entry to vertex coordinates
-      if (qtree_insertIntoQuadtree(rhadapt%rVertexCoordinates2D,&
-                                   i5, Dcoord, inode) .ne. QTREE_FOUND) then
-        call output_line('An error occured while inserting coordinate to quadtree!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'add_vertex_atElementCenter2D')
-        call sys_halt()
+      ! Optionally, invoke callback function
+      if (present(fcb_hadaptCallback).and.present(rcollection)) then
+        Ivertices = (/i5, i1, i2, i3, i4/)
+        Ielements = (/0/)
+        call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXCENTR,&
+                                Ivertices, Ielements)
       end if
+
     end if
-    
-    ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i5, i1, i2, i3, i4/)
-      Ielements = (/0/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXCENTR,&
-                              Ivertices, Ielements)
-    end if
+
   end subroutine add_vertex_atElementCenter2D
 
   ! ***************************************************************************
@@ -4371,7 +4383,7 @@ contains
 
     ! Remove vertex from coordinates and get number of replacement vertex
     if (qtree_deleteFromQuadtree(rhadapt%rVertexCoordinates2D,&
-                                 ivt, ivtReplace) .eq. QTREE_NOT_FOUND) then
+                                 ivt, ivtReplace) .ne. QTREE_DELETED) then
       call output_line('Unable to delete vertex coordinates!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'remove_vertex2D')
       call sys_halt()
