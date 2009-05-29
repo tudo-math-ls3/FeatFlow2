@@ -6,6 +6,41 @@
 !# <purpose>
 !# This is the main bloodflow module
 !# </purpose>
+!#
+!# The following routines are available:
+!#
+!# 1.) bloodflow_init
+!#     -> Initializes the bloodflow structure
+!#
+!# 2.) bloodflow_done
+!#     -> Releases the bloodflow structure
+!#
+!# 3.) bloodflow_outputStructure
+!#     -> Exports the content of the bloodflow structure to UCD file
+!#
+!# 4.) bloodflow_evalObject
+!#     -> Evaluates the object at a given time step
+!#
+!# 5.) bloodflow_adaptObject
+!#     -> Adaps the computational mesh to the object
+!#
+!# 6.) bloodflow_evalIndicator
+!#     -> Evaluates the indicator vector based on the object
+!#
+!# The following auxiliary routines are available:
+!#
+!# 1.) PointInTriangleTest
+!#     -> Tests if a point is located inside a triangle
+!#
+!# 2.) LinesIntersectionTest
+!#     -> Tests if two line segments intersect each other
+!#
+!# 3.) getBarycentricCoords
+!#     -> Calculates the barycentric coordinates of a point w.r.t. triangle
+!#
+!# 4.) signedArea
+!#     -> Calculates the signed area of a triangle
+!#
 !##############################################################################
 
 module bloodflow
@@ -36,7 +71,8 @@ module bloodflow
   public :: bloodflow_done
   public :: bloodflow_outputStructure
   public :: bloodflow_evalObject
-  public :: bloodflow_adaptObject 
+  public :: bloodflow_adaptObject
+  public :: bloodflow_evalIndicator
 
   !*****************************************************************************
 
@@ -115,8 +151,12 @@ module bloodflow
     ! Indicator vector
     type(t_vectorScalar) :: rindicator    
 
+    ! List of elements intersected by object
+    type(t_list) :: relementList
+
     ! Number of object points which have no corresponding mesh point
     integer :: nunresolvedObjectPoints = 0
+
   end type t_bloodflow
 
 !</typeblock>
@@ -163,7 +203,6 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(NDIM2D) :: Dorigin, Dlength
     character(len=SYS_STRLEN) :: strifilename, sprmfilename
     character(LEN=10) :: stime
     character(LEN=8)  :: sdate
@@ -254,6 +293,9 @@ contains
       ! Release adaptation structure
       call hadapt_releaseAdaptation(rbloodflow%rhadapt)
 
+      ! Release list of elements
+      call list_releaseList(rbloodflow%relementList)
+
     end if
 
     ! Release storage
@@ -342,6 +384,7 @@ contains
 !</input>
 
 !<inputoutput>
+
     ! Bloodflow structure
     type(t_bloodflow), intent(INOUT) :: rbloodflow
 
@@ -403,15 +446,8 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iadapt
-
-
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    integer, dimension(:), pointer :: p_Inumber
-    logical, dimension(:), pointer :: p_BisPresent
-    real(DP) :: drand
-    integer :: i,j,ivt,jvt,inode,ipos,irun,f
-
+    integer :: iadapt,nadapt
+    
     ! Check if adaptation structure has been prepared
     if (rbloodflow%rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
       ! Initialize adaptation structure from triangulation
@@ -421,130 +457,17 @@ contains
       call hadapt_refreshAdaptation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
     end if
 
-    print *, "Checking consistency"
-    call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
-    print *, "DONE!"
-
-!    pause
-
-    call storage_getbase_double2D(rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-    allocate(p_BisPresent(size(p_DvertexCoords,2)))
-    allocate(p_Inumber(size(p_DvertexCoords,2)))
-
-    p_BisPresent = .true.
-
-    do i = 1, size(p_DvertexCoords,2)
-      f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                 p_DvertexCoords(:,i), inode, ipos, ivt)
-      if (f .eq. QTREE_NOT_FOUND) then
-        print *, "Not found",f
-        stop
-      else
-        p_Inumber(i) = ivt
-        p_BisPresent(ivt) = .true.
-      end if
-    end do
-    
-!    pause
-
-    do irun = 1, 100
-
-      print *, "IRUN=",irun, rbloodflow%rhadapt%rVertexCoordinates2D%NNODE
-      print *, "Checking consistency"
-      call qtree_checkConsistency(rbloodflow%rhadapt%rVertexCoordinates2D)
-      print *, "DONE!"
-
-      ! Loop over all vertices
-      do i = 1, size(p_DvertexCoords,2)
-
-        ivt = p_Inumber(i)
-        call random_number(drand)
-        
-        if (drand .ge. 0.5) then
-
-          if (p_BisPresent(ivt)) then
-
-            ! Remove item
-            f = qtree_deleteFromQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                         p_DvertexCoords(:,i), jvt)
-            if (f .ne. 0) then
-              print *, "ERROR: Unable to find item",ivt
-              stop
-            end if
-            
-            p_BisPresent(ivt) = .false.
-
-            ! Check status
-            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-
-            if (f .eq. 0) then
-              print *, "ERROR: Item is still present after removal", ivt
-              stop
-            end if
-            
-          else
-            
-            ! Search and insert item
-            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-            
-            if (f .eq. 0) then
-              print *, "ERROR: Quadtree must not contain item",ivt
-              stop
-            end if
-
-            f = qtree_insertIntoQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                         ivt, p_DvertexCoords(:,i), inode)
-
-            ! Check status
-            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-
-            if (f .ne. 0) then
-              print *, "ERROR: Item is still not present after insertion",ivt
-              stop
-            end if
-
-            p_BisPresent(ivt) = .true.
-            
-          end if
-
-        else
-
-          ! Search for item
-          if (p_BisPresent(ivt)) then
-            f = qtree_searchInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-                                       p_DvertexCoords(:,i), inode, ipos, jvt)
-
-            if ((f .ne. 0) .or. (jvt .ne. ivt)) then
-              print *, "ERROR: Unable to find item",ivt,"or ivt /= jvt",jvt
-              stop
-            end if
-            
-          end if
-
-        end if
-      end do
-    
-    end do
-
-    deallocate(p_BisPresent, p_Inumber)
-
-    print *, "PERFECT"
-    stop
-    
-    do iadapt = 1, 3
+    ! Perform prescribed number of h-adaptation steps
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'nadapt', nadapt)    
+    do iadapt = 1, nadapt
       
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
+
+      ! Convert it to h-adaptation indicator
+      call bloodflow_convertRefIndicator(rbloodflow)
       
-      ! Check if there are still unresolved object points
-!      if (rbloodflow%nunresolvedObjectPoints .eq. 0) return
-      
-      ! If so, then adapt the computational mesh
-      call qtree_rebuildQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D)
+      ! Adapt the computational mesh
       call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
       
       ! Generate raw mesh from adaptation structure
@@ -553,14 +476,21 @@ contains
 
     ! Evaluate the indicator
     call bloodflow_evalIndicator(rbloodflow)
-
-!!$    ! If we end up here, then the maximum admissible refinement level
-!!$    ! does not suffice to resolve all object points
-!!$    call output_line('Some objects points could not be resolved!',&
-!!$        OU_CLASS_ERROR,OU_MODE_STD,'bloodflow_adaptObject')
-!!$    call output_line('Increase the maximum admissible refinement level!',&
-!!$        OU_CLASS_ERROR,OU_MODE_STD,'bloodflow_adaptObject')
-!!$    call sys_halt()
+    
+    ! Convert it to rh-adaptation indicator
+    call bloodflow_convertMoveRefIndicator(rbloodflow)
+!!$
+!!$    ! Temporarily, increase the maximum number of refinement steps
+!!$    rbloodflow%rhadapt%nsubdividemax = rbloodflow%rhadapt%nsubdividemax+1
+!!$
+!!$    ! Adapt the computational mesh
+!!$    call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
+!!$    
+!!$    ! Reset the maximum number of refinement steps
+!!$    rbloodflow%rhadapt%nsubdividemax = rbloodflow%rhadapt%nsubdividemax-1
+!!$
+!!$    ! Generate raw mesh from adaptation structure
+!!$    call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
 
   end subroutine bloodflow_adaptObject
 
@@ -585,36 +515,33 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_list) :: relementList
-    type(t_vectorScalar) :: rindicator
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Dindicator
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex, p_Iindicator
     integer, dimension(:), pointer :: IelementPatch
-    integer, dimension(2) :: Isize
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
-    real(DP), dimension(TRIA_NVETRI2D) :: DbarycCoords
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
     real(DP) :: dscale, dscaleMax
-    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos,f
+    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos
   
     
-    ! Release the indicator vector and create new one
+    ! Release the indicator vector (if any)
     call lsyssc_releaseVector(rbloodflow%rindicator)
-    call lsyssc_createVector(rbloodflow%rindicator,&
-        rbloodflow%rtriangulation%NEL, .true.)
-    call lsyssc_getbase_double(rbloodflow%rindicator, p_Dindicator)
+
+    ! Release the list of elements (if any)
+    call list_releaseList(rbloodflow%relementList)
     
     ! Create new indicator vector as integer array
-    call lsyssc_createVector(rindicator, rbloodflow%rtriangulation%NEL, .true., ST_INT)
-    call lsyssc_getbase_int(rindicator, p_Iindicator)
-
+    call lsyssc_createVector(rbloodflow%rindicator,&
+        rbloodflow%rtriangulation%NEL, .true., ST_INT)
+    call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+    
     ! Allocate temporal memory for local element patch
     allocate(IelementPatch(rbloodflow%rtriangulation%NNelAtVertex))
 
     ! Create linked list for storing the elements adjacent to the object
-    call list_createList(relementList, ceiling(0.1*rbloodflow%rtriangulation%NEL), ST_INT, 0, 0, 0)
+    call list_createList(rbloodflow%relementList,&
+        ceiling(0.1*rbloodflow%rtriangulation%NEL), ST_INT, 0, 0, 0)
 
     ! Set pointers
     call storage_getbase_int2d(&
@@ -708,7 +635,7 @@ contains
       ! Append element to the list of elements adjacent to the object
       if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
         p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
-        call list_appendToList(relementList, iel, ipos)
+        call list_appendToList(rbloodflow%relementList, iel, ipos)
       end if
       
       ! Check status of starting point, aka, previous point
@@ -727,7 +654,7 @@ contains
           ! Append element to the list of elements adjacent to the object
           if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
             p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-            call list_appendToList(relementList, jel, ipos)
+            call list_appendToList(rbloodflow%relementList, jel, ipos)
           end if
 
           ! Mark element for potential refinement
@@ -754,7 +681,7 @@ contains
           ! Append element to the list of elements adjacent to the object
           if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
             p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-            call list_appendToList(relementList, jel, ipos)
+            call list_appendToList(rbloodflow%relementList, jel, ipos)
           end if
           
           ! Mark element for potential refinement
@@ -902,7 +829,7 @@ contains
     ! Append element to the list of elements adjacent to the object
     if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
       p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
-      call list_appendToList(relementList, iel, ipos)
+      call list_appendToList(rbloodflow%relementList, iel, ipos)
     end if
     
     ! Check status of previous point
@@ -920,7 +847,7 @@ contains
         ! Append element to the list of elements adjacent to the object
         if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
           p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-          call list_appendToList(relementList, jel, ipos)
+          call list_appendToList(rbloodflow%relementList, jel, ipos)
         end if
 
         ! Mark element for potential refinement
@@ -941,7 +868,7 @@ contains
       ! Append element to the list of elements adjacent to the object
       if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
         p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-        call list_appendToList(relementList, jel, ipos)
+        call list_appendToList(rbloodflow%relementList, jel, ipos)
       end if
 
       ! Mark element for potential refinement
@@ -962,23 +889,118 @@ contains
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
-    
+
+  end subroutine bloodflow_evalIndicator
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine bloodflow_convertRefIndicator(rbloodflow)
+
+!<description>
+
+    ! This subroutine converts the indicator function into a pure
+    ! refinement indicator used in the h-adaptation procedure
+
+!</description>
+
+!<inputoutput>
+
+    ! Bloodflow structure
+    type(t_bloodflow), intent(INOUT) :: rbloodflow
+
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Dindicator
+    integer :: ipos, iel
+
+    ! Release the indicator vector (if any)
+    call lsyssc_releaseVector(rbloodflow%rindicator)
+
+    ! Create new indicator vector as double
+    call lsyssc_createVector(rbloodflow%rindicator,&
+        rbloodflow%rtriangulation%NEL, .true.)
+    call lsyssc_getbase_double(rbloodflow%rindicator, p_Dindicator)
     
     !---------------------------------------------------------------------------
-    ! (3) Loop over all segments/elements and decide whether to refine or
-    !     to reposition mesh points so that elements get aligned to the object
+    ! Loop over all segments/elements and decide if the element needs refinement
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
-    ipos = list_getNextInList(relementList, .true.)
+    ipos = list_getNextInList(rbloodflow%relementList, .true.)
     list: do while(ipos .ne. LNULL)
       
       ! Get element number and proceed to next position
-      call list_getByPosition(relementList, ipos, iel)
-      ipos = list_getNextInList(relementList, .false.)
+      call list_getByPosition(rbloodflow%relementList, ipos, iel)
+      ipos = list_getNextInList(rbloodflow%relementList, .false.)
+    
+      ! Set indicator for element
+      p_Dindicator(iel) = 1.0
+    end do list
+
+  end subroutine bloodflow_convertRefIndicator
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine bloodflow_convertMoveRefIndicator(rbloodflow)
+
+!<description>
+
+    ! This subroutine converts the indicator function into a pure
+    ! refinement indicator used in the h-adaptation procedure
+
+!</description>
+
+!<inputoutput>
+
+    ! Bloodflow structure
+    type(t_bloodflow), intent(INOUT) :: rbloodflow
+
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorScalar) :: rindicator
+    real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_Dindicator
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:), pointer :: p_Iindicator
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
+    real(DP), dimension(NDIM2D) :: Daux
+    real(DP) :: dscale
+    integer :: i,ive,iel,i1,i2,i3,istatus,ipoint,ipos,iresult
+
+
+    ! Set pointers
+    call storage_getbase_int2d(&
+        rbloodflow%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_double2d(&
+        rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
+    call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+    
+
+    !---------------------------------------------------------------------------
+    ! Loop over all segments/elements and decide whether to refine or
+    ! to reposition mesh points so that elements get aligned to the object
+    !---------------------------------------------------------------------------
+
+    ! Loop over all elements adjacent to the object
+    ipos = list_getNextInList(rbloodflow%relementList, .true.)
+    list: do while(ipos .ne. LNULL)
+      
+      ! Get element number and proceed to next position
+      call list_getByPosition(rbloodflow%relementList, ipos, iel)
+      ipos = list_getNextInList(rbloodflow%relementList, .false.)
     
       ! Check if multi-intersections are present
-      if (iand(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION) .eq. BITFIELD_MULTI_INTERSECTION) then
+      if (iand(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION) .eq.&
+                                  BITFIELD_MULTI_INTERSECTION) then
 
         ! Set the refinement indicator to unity
         p_Iindicator(iel) = 1
@@ -1021,8 +1043,6 @@ contains
         DtriaCoords(:,2) = p_DvertexCoords(:,i2)
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
-        print *, "Dealing with element",iel
-
         ! Process each edge individually
         edge: do ive = 1, 3
 
@@ -1050,13 +1070,9 @@ contains
                 call PointInTriangleTest(DtriaCoords, Daux, POINT_COLLAPSE_TOLERANCE, istatus)
                 select case(istatus)
                 case(1)
-                  print *, Daux
-                  print *, p_DvertexCoords(:, i1)
-                  print *, "----------"
-
-!!$                  ! Update coordinate of first vertex in quadtree
-!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                           p_DvertexCoords(:, i1), Daux)
+                  ! Update coordinate of first vertex in quadtree
+                  iresult = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                                 p_DvertexCoords(:, i1), Daux)
                   
                   ! Adjust first vertex
                   p_DvertexCoords(:, i1) = Daux
@@ -1066,13 +1082,9 @@ contains
 
                   
                 case(2)
-                  print *, Daux
-                  print *, p_DvertexCoords(:, i2)
-                  print *, "----------"
-                  
-!!$                  ! Update coordinate of second vertex in quadtree
-!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                           p_DvertexCoords(:, i2), Daux)
+                  ! Update coordinate of second vertex in quadtree
+                  iresult = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                                 p_DvertexCoords(:, i2), Daux)
 
                   ! Adjust second vertex
                   p_DvertexCoords(:, i2) = Daux
@@ -1082,13 +1094,9 @@ contains
 
 
                 case(3)
-                  print *, Daux
-                  print *, p_DvertexCoords(:, i3)
-                  print *, "----------"
-
-!!$                  ! Update coordinate of third vertex in quadtree
-!!$                  f = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
-!!$                                           p_DvertexCoords(:, i3), Daux)
+                  ! Update coordinate of third vertex in quadtree
+                  iresult = qtree_moveInQuadtree(rbloodflow%rhadapt%rVertexCoordinates2D,&
+                                                 p_DvertexCoords(:, i3), Daux)
 
                   ! Adjust third vertex
                   p_DvertexCoords(:, i3) = Daux
@@ -1114,214 +1122,295 @@ contains
       end select
     end do list
     
-    ! Release list of elements
-    call list_releaseList(relementList)
-
     ! Change the data type of the indicator
+    call lsyssc_createVector(rindicator, rbloodflow%rindicator%NEQ, .false.)
+    call lsyssc_getbase_double(rindicator, p_Dindicator)
+    
     do i = 1, size(p_Dindicator)
       p_Dindicator(i) = p_Iindicator(i)
     end do
+    
+    call lsyssc_releaseVector(rbloodflow%rindicator)
+    call lsyssc_copyVector(rindicator, rbloodflow%rindicator)
     call lsyssc_releaseVector(rindicator)
 
-  contains
-    
-    !***************************************************************************
-    
-    pure subroutine PointInTriangleTest(TriaCoords, P, dtolerance, istatus)
+  end subroutine bloodflow_convertMoveRefIndicator
+  
+  !*****************************************************************************
 
-      ! This subroutine calculates the relation of the given point P
-      ! compare to the triangle which is defined by its three corners
-      ! The meaning of the resulting istatus is as follows:
-      !
-      ! istatus:
-      !  = -1 : point P is outside of the triangle
-      !  =  0 : point P is located inside the triangle
-      !  =  1 : point P is equivalent to point A of the triangle
-      !  =  2 : point P is equivalent to point B of the triangle
-      !  =  3 : point P is equivalent to point C of the triangle
-      !  =  4 : point P is located in the edge between points A and B
-      !  =  5 : point P is located in the edge between points B and C
-      !  =  6 : point P is located in the edge between points C and A
+!<subroutine>
+  
+  pure subroutine PointInTriangleTest(TriaCoords, P, dtolerance, istatus)
+
+!<description>
+    
+    ! This subroutine calculates the relation of the given point P
+    ! compare to the triangle which is defined by its three corners
+    ! The meaning of the resulting istatus is as follows:
+    !
+    ! istatus:
+    !  = -1 : point P is outside of the triangle
+    !  =  0 : point P is located inside the triangle
+    !  =  1 : point P is equivalent to point A of the triangle
+    !  =  2 : point P is equivalent to point B of the triangle
+    !  =  3 : point P is equivalent to point C of the triangle
+    !  =  4 : point P is located in the edge between points A and B
+    !  =  5 : point P is located in the edge between points B and C
+    !  =  6 : point P is located in the edge between points C and A
+
+!</description>
+    
+!<input>
+    
+    ! Coordinates of the triangle
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
+
+    ! Coordinates of the point
+    real(DP), dimension(NDIM2D), intent(IN) :: P
+
+    ! Tolerance for point collapse
+    real(DP), intent(IN) :: dtolerance
+
+!</input>
+
+!<output>
+
+    ! Status of the test
+    integer, intent(OUT) :: istatus
+
+!</output>
+
+!</subroutine>
+        
+    ! local variables
+    real(DP) :: area,area1,area2,area3,u,v,w
+    
+    ! Compute area of global and sub-triangles
+    area  = signedArea(TriaCoords(:,1), TriaCoords(:,2), TriaCoords(:,3))
+    area1 = signedArea(P,               TriaCoords(:,2), TriaCoords(:,3))
+    area2 = signedArea(P,               TriaCoords(:,3), TriaCoords(:,1))
+    area3 = signedArea(P,               TriaCoords(:,1), TriaCoords(:,2))
+    
+    ! Compute barycentric coordinates
+    u = area1/area                             
+    v = area2/area
+    w = area3/area
+    
+    ! Determine status
+    if ((u .lt. -dtolerance) .or. (v .lt. -dtolerance) .or.&
+        (w .lt. -dtolerance) .or. (u+v+w .gt. 1+dtolerance)) then
+      ! If the barycentric coordinates are negative of larger than
+      ! one then the point is located outside of the triangle
+      istatus = -1
       
-      real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
-      real(DP), dimension(NDIM2D), intent(IN) :: P
-      real(DP), intent(IN) :: dtolerance
+    else
+      ! Otherwise, the point is located inside the triangle. We have
+      ! to considere several cases, e.g., the point is close to an
+      ! edge or it is close to a vertex and collapses
+      if (u .ge. 1-dtolerance) then
+        ! Point P collapses with point A
+        istatus = 1
+      elseif (v .ge. 1-dtolerance) then
+        ! Point P collapses with point B
+        istatus = 2
+      elseif (w .ge. 1-dtolerance) then
+        ! Point P collapses with point C
+        istatus = 3
+      elseif (w .le. 0.5*dtolerance) then
+        ! Point P collapses with edge AB
+        istatus = 4
+      elseif (u .le. 0.5*dtolerance) then
+        ! Point P collapses with edge BC
+        istatus = 5
+      elseif (v .le. 0.5*dtolerance) then
+        ! Point P collapses with edge AC
+        istatus = 6
+      else
+        ! Point P is in the interior
+        istatus = 0
+      end if
+    end if
+    
+  end subroutine PointInTriangleTest
+  
+  !*****************************************************************************
 
-      integer, intent(OUT) :: istatus
+!<subroutine>
+  
+  subroutine LinesIntersectionTest(P1, P2, P3, P4, istatus, u)
 
+!<description>
+    
+    ! This subroutine checks if the two line segments P1-P2 and
+    ! P3-P4 intersect each other and returns the intersection point.
+    ! Note that the start point is excluded from the
+    ! segment. Otherwise, the starting point would by considered as
+    ! intersection point if it was located on the edge.
+    !
+    ! The algorithm is taken from:
+    ! Paul Bourke, Intersection Point of Two Lines (2 Dimensions)
+    ! http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
+    !
+    ! The meaning of the resulting istatus is as follows:
+    !
+    ! istatus:
+    !  = -1 : the two line segments do not intersect
+    !  =  0 : the two line segments intersect each other
+    !  =  1 : the two line segments partially coincide
+    !
+    ! u: is the parameter so that 
+    !    S = P1 + u*(P2-P1) is the intersection point
 
-      ! local variables
-      real(DP) :: area,area1,area2,area3,u,v,w
+!</description>
+    
+!<input>
 
-      ! Compute area of global and sub-triangles
-      area  = signedArea(TriaCoords(:,1), TriaCoords(:,2), TriaCoords(:,3))
-      area1 = signedArea(P,               TriaCoords(:,2), TriaCoords(:,3))
-      area2 = signedArea(P,               TriaCoords(:,3), TriaCoords(:,1))
-      area3 = signedArea(P,               TriaCoords(:,1), TriaCoords(:,2))
+    ! Coordinates of the four points
+    real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3,P4
 
-      ! Compute barycentric coordinates
-      u = area1/area                             
-      v = area2/area
-      w = area3/area
+!</input>
 
-      ! Determine status
-      if ((u .lt. -dtolerance) .or. (v .lt. -dtolerance) .or. (w .lt. -dtolerance) .or. (u+v+w .gt. 1+dtolerance)) then
-        ! If the barycentric coordinates are negative of larger than
-        ! one then the point is located outside of the triangle
+!<output>
+    
+    ! Parameter of the intersection point w.r.t. the first line
+    real(DP), intent(OUT) :: u
+
+    ! Status of the test
+    integer, intent(OUT) :: istatus
+
+!</output>
+
+!</subroutine>
+    
+    ! local variables
+    real(DP) :: denom,nom1,nom2,v
+    
+    
+    ! Compute (de-)nominators
+    denom = (P4(2)-P3(2)) * (P2(1)-P1(1)) - (P4(1)-P3(1)) * (P2(2)-P1(2))
+    nom1  = (P4(1)-P3(1)) * (P1(2)-P3(2)) - (P4(2)-P3(2)) * (P1(1)-P3(1))
+    nom2  = (P2(1)-P1(1)) * (P1(2)-P3(2)) - (P2(2)-P1(2)) * (P1(1)-P3(1))
+    
+    ! Check if lines are parallel
+    if (abs(denom) .le. SYS_EPSREAL) then
+      
+      ! The two lines are parallel, hence there is no intersection point
+      u = SYS_INFINITY
+      
+      ! Check of both lines coincide are not
+      if ( (abs(nom1) .le. SYS_EPSREAL) .or.&
+           (abs(nom2) .le. SYS_EPSREAL) ) then
+        istatus =  1
+      else
         istatus = -1
-
-      else
-        ! Otherwise, the point is located inside the triangle. We have
-        ! to considere several cases, e.g., the point is close to an
-        ! edge or it is close to a vertex and collapses
-        if (u .ge. 1-dtolerance) then
-          ! Point P collapses with point A
-          istatus = 1
-        elseif (v .ge. 1-dtolerance) then
-          ! Point P collapses with point B
-          istatus = 2
-        elseif (w .ge. 1-dtolerance) then
-          ! Point P collapses with point C
-          istatus = 3
-        elseif (w .le. 0.5*dtolerance) then
-          ! Point P collapses with edge AB
-          istatus = 4
-        elseif (u .le. 0.5*dtolerance) then
-          ! Point P collapses with edge BC
-          istatus = 5
-        elseif (v .le. 0.5*dtolerance) then
-          ! Point P collapses with edge AC
-          istatus = 6
-        else
-          ! Point P is in the interior
-          istatus = 0
-        end if
       end if
       
-    end subroutine PointInTriangleTest
-
-    !***************************************************************************
-
-    subroutine LinesIntersectionTest(P1, P2, P3, P4, istatus, u)
-
-      ! This subroutine checks if the two line segments P1-P2 and
-      ! P3-P4 intersect each other and returns the intersection point.
-      ! Note that the start point is excluded from the
-      ! segment. Otherwise, the starting point would by considered as
-      ! intersection point if it was located on the edge.
-      !
-      ! The algorithm is taken from:
-      ! Paul Bourke, Intersection Point of Two Lines (2 Dimensions)
-      ! http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline2d/
-      !
-      ! The meaning of the resulting istatus is as follows:
-      !
-      ! istatus:
-      !  = -1 : the two line segments do not intersect
-      !  =  0 : the two line segments intersect each other
-      !  =  1 : the two line segments partially coincide
-      !
-      ! u: is the parameter so that 
-      !    S = P1 + u*(P2-P1) is the intersection point
-            
-      real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3,P4
-
-      real(DP), intent(OUT) :: u
-      integer, intent(OUT) :: istatus
-
-      ! local variables
-      real(DP) :: denom,nom1,nom2,v
-
-
-      ! Compute (de-)nominators
-      denom = (P4(2)-P3(2)) * (P2(1)-P1(1)) - (P4(1)-P3(1)) * (P2(2)-P1(2))
-      nom1  = (P4(1)-P3(1)) * (P1(2)-P3(2)) - (P4(2)-P3(2)) * (P1(1)-P3(1))
-      nom2  = (P2(1)-P1(1)) * (P1(2)-P3(2)) - (P2(2)-P1(2)) * (P1(1)-P3(1))
-
-      ! Check if lines are parallel
-      if (abs(denom) .le. SYS_EPSREAL) then
-
-        ! The two lines are parallel, hence there is no intersection point
-        u = SYS_INFINITY
+    else
+      
+      ! The two lines are not parallel, hence they must intersect each other
+      
+      ! Compute parameter values
+      u = nom1 / denom
+      v = nom2 / denom
+      
+      ! Check if the intersection point is located within the line segments
+      if ((u .lt. 0) .or. (u .gt. 1) .or.&
+          (v .lt. 0) .or. (v .gt. 1)) then
         
-        ! Check of both lines coincide are not
-        if ( (abs(nom1) .le. SYS_EPSREAL) .or.&
-             (abs(nom2) .le. SYS_EPSREAL) ) then
-          istatus =  1
-        else
-          istatus = -1
-        end if
+        ! Intersection point does not belong to both line segments
+        istatus = -1          
         
       else
         
-        ! The two lines are not parallel, hence they must intersect each other
-
-        ! Compute parameter values
-        u = nom1 / denom
-        v = nom2 / denom
+        ! Intersection point belongs to both line segments
+        istatus = 0
         
-        ! Check if the intersection point is located within the line segments
-        if ((u .lt. 0) .or. (u .gt. 1) .or.&
-            (v .lt. 0) .or. (v .gt. 1)) then
-
-          ! Intersection point does not belong to both line segments
-          istatus = -1          
-          
-        else
-          
-          ! Intersection point belongs to both line segments
-          istatus = 0
-         
-        end if
-
       end if
-
-    end subroutine LinesIntersectionTest
-
-    !***************************************************************************
+      
+    end if
     
-    pure subroutine getBarycentricCoords(TriaCoords, P, BarycentricCoords)
+  end subroutine LinesIntersectionTest
+  
+  !*****************************************************************************
 
-      ! This subroutine calculates the barycentric coordinates of the
-      ! given point P using the given reference triangle.
+!<subroutine>
+  
+  pure subroutine getBarycentricCoords(TriaCoords, P, BarycentricCoords)
 
-      real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
-      real(DP), dimension(NDIM2D), intent(IN) :: P
-
-      real(DP), dimension(TRIA_NVETRI2D), intent(OUT) :: BarycentricCoords
-
-      
-      ! local variables
-      real(DP) :: area,area1,area2,area3
-      
-      
-      ! Compute area of global and sub-triangles
-      area  = signedArea(TriaCoords(:,1), TriaCoords(:,2), TriaCoords(:,3))
-      area1 = signedArea(P,               TriaCoords(:,2), TriaCoords(:,3))
-      area2 = signedArea(P,               TriaCoords(:,3), TriaCoords(:,1))
-      area3 = signedArea(P,               TriaCoords(:,1), TriaCoords(:,2))
-
-      ! Compute barycentric coordinates
-      BarycentricCoords(1) = area1/area                             
-      BarycentricCoords(2) = area2/area
-      BarycentricCoords(3) = area3/area
-
-    end subroutine getBarycentricCoords
-
-    !***************************************************************************
+!<description>
     
-    pure function signedArea(P1,P2,P3) result(area)
+    ! This subroutine calculates the barycentric coordinates of the
+    ! given point P using the given reference triangle.
 
-      ! This subroutine computes the signed area of the triangle
-      
-      real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3
-      real(DP) :: area
+!</description>
+   
+!<input>
 
-      area = 0.5 * ( (P2(1)-P1(1))*(P3(2)-P1(2)) -&
-                     (P3(1)-P1(1))*(P2(2)-P1(2)) )
+    ! Coordinates of the triangle
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
 
-    end function signedArea
+    ! Coordinates of the point
+    real(DP), dimension(NDIM2D), intent(IN) :: P
 
-  end subroutine bloodflow_evalIndicator
+!</input>
+
+!<output>
+    
+    ! Barycentric coordinates of the point
+    real(DP), dimension(TRIA_NVETRI2D), intent(OUT) :: BarycentricCoords
+
+!</output>
+
+!</subroutine>
+        
+    ! local variables
+    real(DP) :: area,area1,area2,area3
+    
+    
+    ! Compute area of global and sub-triangles
+    area  = signedArea(TriaCoords(:,1), TriaCoords(:,2), TriaCoords(:,3))
+    area1 = signedArea(P,               TriaCoords(:,2), TriaCoords(:,3))
+    area2 = signedArea(P,               TriaCoords(:,3), TriaCoords(:,1))
+    area3 = signedArea(P,               TriaCoords(:,1), TriaCoords(:,2))
+    
+    ! Compute barycentric coordinates
+    BarycentricCoords(1) = area1/area                             
+    BarycentricCoords(2) = area2/area
+    BarycentricCoords(3) = area3/area
+    
+  end subroutine getBarycentricCoords
+  
+  !*****************************************************************************
+
+!<function>
+  
+  pure function signedArea(P1,P2,P3) result(area)
+    
+!<description>
+
+    ! This function computes the signed area of the triangle
+
+!</description>
+   
+!<input>
+
+    ! Coordinates of the triangle
+    real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3
+
+!</input>
+
+!<result>
+    
+    ! Area of the triangle
+    real(DP) :: area
+
+!</result>
+
+!</function>
+    
+    area = 0.5 * ( (P2(1)-P1(1))*(P3(2)-P1(2)) -&
+        (P3(1)-P1(1))*(P2(2)-P1(2)) )
+    
+  end function signedArea
 
 end module bloodflow
