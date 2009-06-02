@@ -137,6 +137,7 @@ contains
 
     ! Initialize data
     rhadapt%iSpec = HADAPT_HAS_PARAMETERS
+
   end subroutine hadapt_initFromParameterlist
 
   ! ***************************************************************************
@@ -216,6 +217,7 @@ contains
     call storage_new('hadapt_initFromTriangulation','p_IvertexAge',&
                      rhadapt%NVT, ST_INT, rhadapt%h_IvertexAge, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rhadapt%h_IvertexAge, rhadapt%p_IvertexAge)
+
   end subroutine hadapt_initFromTriangulation
 
   ! ***************************************************************************
@@ -390,6 +392,11 @@ contains
   contains
     
     subroutine checkAndRelease (idupFlag, ibitfield, ihandle)
+
+      ! Checks if idupFlag has all bits ibitfield set.
+      ! If yes, the handle ihandle is set removed
+      ! Otherwise, the the memory behind ihandle is freed.
+
       integer(I32), intent(IN) :: ibitfield
       integer(I32), intent(IN) :: idupFlag
       integer, intent(INOUT) :: ihandle
@@ -401,6 +408,7 @@ contains
       end if
       
     end subroutine checkAndRelease
+
   end subroutine hadapt_releaseAdaptation
 
   ! ***************************************************************************
@@ -625,6 +633,7 @@ contains
       end if
       
     end subroutine checkAndCopy
+
   end subroutine hadapt_duplicateAdaptation
 
   ! ***************************************************************************
@@ -787,6 +796,7 @@ contains
       end if
       
     end subroutine checkAndCopy
+
   end subroutine hadapt_restoreAdaptation
 
   ! ***************************************************************************
@@ -890,8 +900,8 @@ contains
 
 !<subroutine>
 
-  subroutine hadapt_performAdaptation(rhadapt, rindicator,&
-                                      rcollection, fcb_hadaptCallback)
+  subroutine hadapt_performAdaptation(rhadapt, rindicator, rcollection,&
+                                      fcb_hadaptCallback)
 
 !<description>
     ! This subroutine performs the complete adaptation process.
@@ -1191,6 +1201,7 @@ contains
     call output_line('Element at vertex structure:')
     call output_line('----------------------------')
     call arrlst_infoArraylist(rhadapt%relementsAtVertex)
+
   end subroutine hadapt_infoStatistics
 
   ! ***************************************************************************
@@ -1372,6 +1383,7 @@ contains
 20  format(3(1X,I8))
 30  format(4(1X,I8))
 40  format(I8)
+
   end subroutine hadapt_writeGridGMV
 
   ! ***************************************************************************
@@ -1658,6 +1670,7 @@ contains
       call output_line('Test #5: Checking consistency of element-meeting-at-vertex list '//&
                        merge('PASSED','FAILED',btest))
     end if
+
   end subroutine hadapt_checkConsistency
     
 end module hadaptivity
