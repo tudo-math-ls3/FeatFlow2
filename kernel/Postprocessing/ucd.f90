@@ -1516,7 +1516,7 @@ contains
       if (rexport%saltFilePoints .ne. "") then
       
         ! Write only a reference to the alternative source file
-        ! to the GMV. Saves disc space!
+        ! to the GMV. Saves disk space!
         
         write(mfile,'(A)')'nodes fromfile "'//trim(rexport%saltFilePoints)//'"'
       
@@ -5024,7 +5024,7 @@ contains
   subroutine ucd_setOutputNumberFormat (rexport,sformat)
 
 !<description>
-  ! Specifies the number format of numbers in the outpuot file.
+  ! Specifies the number format of numbers in the output file.
 !</description>
 
 !<inputoutput>
