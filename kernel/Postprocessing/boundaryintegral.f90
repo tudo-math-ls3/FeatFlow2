@@ -109,7 +109,7 @@ contains
     if (present(rcollection)) then
       p_rcollection => rcollection
     else
-      p_rcollection => NULL()
+      p_rcollection => null()
     end if
     
     if (rtriangulation%ndim .ne. NDIM2D) then
