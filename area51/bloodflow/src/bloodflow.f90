@@ -49,6 +49,7 @@ module bloodflow
   use boundary
   use genoutput
   use hadaptaux
+  use hadaptaux2d
   use hadaptivity
   use linearsystemscalar
   use linearsystemblock
@@ -138,6 +139,9 @@ module bloodflow
 
     ! Triangulation structure
     type(t_triangulation) :: rtriangulation
+
+    ! Triangulation structure of base mesh
+    type(t_triangulation) :: rtriangulationBase
 
     ! Boundary parametrization
     type(t_boundary) :: rboundary
@@ -233,22 +237,19 @@ contains
 
     ! Read the triangulation
     call parlst_getvalue_string(rbloodflow%rparlist, 'Input', 'trifilename', strifilename)
-    call tria_readTriFile2D(rbloodflow%rtriangulation,&
+    call tria_readTriFile2D(rbloodflow%rtriangulationBase,&
         trim(adjustl(strifilename)), rbloodflow%rboundary)
 
     ! Perform global refinement
     call parlst_getvalue_int(rbloodflow%rparlist, 'Input', 'iglobRefLevel', iglobRefLevel, 1)
     if (iglobRefLevel .gt. 1) then
       call tria_quickRefine2LevelOrdering(iglobRefLevel-1,&
-          rbloodflow%rtriangulation, rbloodflow%rboundary)
+          rbloodflow%rtriangulationBase, rbloodflow%rboundary)
     end if
 
     ! Generate standard mesh from raw mesh
-    call tria_initStandardMeshFromRaw(rbloodflow%rtriangulation,&
+    call tria_initStandardMeshFromRaw(rbloodflow%rtriangulationBase,&
         rbloodflow%rboundary)
-
-    ! Initialize adaptation structure
-    call hadapt_initFromParameterlist(rbloodflow%rhadapt, rbloodflow%rparlist, 'Adaptation')
     
   end subroutine bloodflow_init
 
@@ -281,7 +282,8 @@ contains
       ! Release the boundary parametrization
       call boundary_release(rbloodflow%rboundary)
       
-      ! Release the triangulation structure
+      ! Release the triangulation structures
+      call tria_done(rbloodflow%rtriangulationBase)
       call tria_done(rbloodflow%rtriangulation)
 
       ! Release the object coordinates
@@ -289,9 +291,6 @@ contains
 
       ! Release indicator vector
       call lsyssc_releaseVector(rbloodflow%rindicator)
-
-      ! Release adaptation structure
-      call hadapt_releaseAdaptation(rbloodflow%rhadapt)
 
       ! Release list of elements
       call list_releaseList(rbloodflow%relementList)
@@ -331,7 +330,7 @@ contains
     ! UCD export structure
     type(t_ucdExport) :: rexport
     real(DP), dimension(:,:), pointer :: p_Ddata2d
-    real(DP), dimension(:), pointer :: p_Ddata, Dtracer
+    real(DP), dimension(:), pointer :: Dtracer
     character(len=SYS_STRLEN) :: sucdfilename
 
     ! persistent variable
@@ -341,10 +340,6 @@ contains
     call parlst_getvalue_string(rbloodflow%rparlist, 'Output', 'ucdfilename', sucdfilename)
     call ucd_startGMV(rexport, UCD_FLAG_STANDARD, rbloodflow%rtriangulation,&
         trim(sucdfilename)//'.'//trim(sys_si0(ifilenumber,5)))
-
-    ! Attach the indicator vector
-    call lsyssc_getbase_double(rbloodflow%rindicator, p_Ddata)
-    call ucd_addVariableElementBased(rexport, 'Indicator', UCD_VAR_STANDARD, p_Ddata)
 
     ! Attach the thin object as tracer
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_Ddata2d)
@@ -448,23 +443,20 @@ contains
     ! local variables
     integer :: iadapt,nadapt
     
-    ! Check if adaptation structure has been prepared
-    if (rbloodflow%rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
-      ! Initialize adaptation structure from triangulation
-      call hadapt_initFromTriangulation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
-    else
-      ! Refresh adaptation structure
-      call hadapt_refreshAdaptation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
-    end if
+    
 
-    ! Perform prescribed number of h-adaptation steps
+    ! Initialize adaptation structure from triangulation
+    call hadapt_initFromParameterlist(rbloodflow%rhadapt, rbloodflow%rparlist, 'Adaptation')
+    call hadapt_initFromTriangulation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
+    
+    ! Perform prescribed number of standard h-adaptation steps
     call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'nadapt', nadapt)    
     do iadapt = 1, nadapt
       
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
-
-      ! Convert it to h-adaptation indicator
+      
+      ! Convert it to standard h-adaptation indicator
       call bloodflow_convertRefIndicator(rbloodflow)
       
       ! Adapt the computational mesh
@@ -474,23 +466,21 @@ contains
       call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
     end do
 
-    ! Evaluate the indicator
-    call bloodflow_evalIndicator(rbloodflow)
+
+    do iadapt = 1, 3
+      ! Evaluate the indicator
+      call bloodflow_evalIndicator(rbloodflow)
+      
+      ! Perform rh-adaptation
+      call bloodflow_performAdaptation(rbloodflow)
+      
+      ! Generate raw mesh from adaptation structure
+      call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
+    end do
+
     
-    ! Convert it to rh-adaptation indicator
-    call bloodflow_convertMoveRefIndicator(rbloodflow)
-!!$
-!!$    ! Temporarily, increase the maximum number of refinement steps
-!!$    rbloodflow%rhadapt%nsubdividemax = rbloodflow%rhadapt%nsubdividemax+1
-!!$
-!!$    ! Adapt the computational mesh
-!!$    call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
-!!$    
-!!$    ! Reset the maximum number of refinement steps
-!!$    rbloodflow%rhadapt%nsubdividemax = rbloodflow%rhadapt%nsubdividemax-1
-!!$
-!!$    ! Generate raw mesh from adaptation structure
-!!$    call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
+    ! Release adaptation structure
+    call hadapt_releaseAdaptation(rbloodflow%rhadapt)
 
   end subroutine bloodflow_adaptObject
 
@@ -658,7 +648,7 @@ contains
           end if
 
           ! Mark element for potential refinement
-          do jve = 1, 3
+          do jve = 1, TRIA_NVETRI2D
             if (p_IverticesAtElement(jve, jel) .eq. i) then
               p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
               exit
@@ -685,7 +675,7 @@ contains
           end if
           
           ! Mark element for potential refinement
-          do jve = 1, 3
+          do jve = 1, TRIA_NVETRI2D
             if (p_IneighboursAtElement(jve, jel) .eq. iel) then
 
               ! Check if edge has been intersected previously
@@ -772,7 +762,7 @@ contains
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
 
         ! Loop over all edges of the element
-        findIntersectionEdge: do ive = 1, 3
+        findIntersectionEdge: do ive = 1, TRIA_NVETRI2D
           
           ! Check if the edge intersects with the line between start
           ! and endpoint and compute coordinates of intersection point
@@ -851,7 +841,7 @@ contains
         end if
 
         ! Mark element for potential refinement
-        do jve = 1, 3
+        do jve = 1, TRIA_NVETRI2D
           if (p_IverticesAtElement(jve, jel) .eq. i) then
             p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
             exit
@@ -872,7 +862,7 @@ contains
       end if
 
       ! Mark element for potential refinement
-      do jve = 1, 3
+      do jve = 1, TRIA_NVETRI2D
         if (p_IneighboursAtElement(jve, jel) .eq. iel) then
 
           ! Check if edge has been intersected previously
@@ -926,7 +916,9 @@ contains
     call lsyssc_getbase_double(rbloodflow%rindicator, p_Dindicator)
     
     !---------------------------------------------------------------------------
-    ! Loop over all segments/elements and decide if the element needs refinement
+    ! Loop over all segments/elements and decide if the element needs
+    ! refinement. This decision is simply based on the fact whether
+    ! the element is intersected by the object or not.
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
@@ -947,12 +939,11 @@ contains
 
 !<subroutine>
 
-  subroutine bloodflow_convertMoveRefIndicator(rbloodflow)
+  subroutine bloodflow_performAdaptation(rbloodflow)
 
 !<description>
 
-    ! This subroutine converts the indicator function into a pure
-    ! refinement indicator used in the h-adaptation procedure
+    ! This subroutine performs rh-adaptation based on the indicator
 
 !</description>
 
@@ -965,29 +956,50 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorScalar) :: rindicator
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_Dindicator
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:), pointer :: p_Iindicator
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
+    integer, dimension(:), pointer :: p_Iindicator, p_Imarker
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Daux
     real(DP) :: dscale
-    integer :: i,ive,iel,i1,i2,i3,istatus,ipoint,ipos,iresult
+    integer, dimension(2) :: Isize
+    integer :: ive,jve,iel,i1,i2,i3,istatus,ipoint,ipos,iresult,nvt,nel
 
+
+    ! Initialize marker structure
+    if (rbloodflow%rhadapt%h_Imarker .ne. ST_NOHANDLE)&
+        call storage_free(rbloodflow%rhadapt%h_Imarker)
+    call storage_new('bloodflow_convertMoveRefIndicator', 'Imarker',&
+        rbloodflow%rindicator%NEQ, ST_INT, rbloodflow%rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
+    call storage_getbase_int(rbloodflow%rhadapt%h_Imarker, p_Imarker)
 
     ! Set pointers
     call storage_getbase_int2d(&
         rbloodflow%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2d(&
+        rbloodflow%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     call storage_getbase_double2d(&
         rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
     call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+
+
+    ! Initialize initial dimensions
+    call storage_getsize(rbloodflow%rhadapt%h_IverticesAtElement, Isize)
+    rbloodflow%rhadapt%NELMAX = Isize(2)
+    call storage_getsize(rbloodflow%rhadapt%h_IneighboursAtElement, Isize)
+    rbloodflow%rhadapt%NELMAX = min(rbloodflow%rhadapt%NELMAX, Isize(2))
+
+    rbloodflow%rhadapt%InelOfType0 = rbloodflow%rhadapt%InelOfType
+    rbloodflow%rhadapt%NVT0        = rbloodflow%rhadapt%NVT
+    rbloodflow%rhadapt%NEL0        = rbloodflow%rhadapt%NEL
+    rbloodflow%rhadapt%NVBD0       = rbloodflow%rhadapt%NVBD
+    rbloodflow%rhadapt%increaseNVT = 0
     
 
     !---------------------------------------------------------------------------
-    ! Loop over all segments/elements and decide whether to refine or
-    ! to reposition mesh points so that elements get aligned to the object
+    ! (1) Loop over all segments/elements and decide whether to refine or to
+    !     reposition mesh points so that elements get aligned to the object
     !---------------------------------------------------------------------------
 
     ! Loop over all elements adjacent to the object
@@ -1003,8 +1015,24 @@ contains
                                   BITFIELD_MULTI_INTERSECTION) then
 
         ! Set the refinement indicator to unity
-        p_Iindicator(iel) = 1
+        p_Imarker(iel) = 14
+        print *, "Multiple intersection"
 
+        ! Compute number of new vertices
+        do ive = 1, TRIA_NVETRI2D
+          if (p_IneighboursAtElement(ive, iel) .eq. 0) then
+            
+            ! Edge is adjacent to boundary
+            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+
+          elseif(p_Imarker(p_IneighboursAtElement(ive, iel)) .eq. 0) then
+
+            ! Edge has not been marked in previous steps
+            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+
+          end if
+        end do
+        
         ! That's it
         cycle list
       end if
@@ -1029,7 +1057,23 @@ contains
       case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
         ! All three edges are intersected!
         ! Set the refinement indicator to unity
-        p_Iindicator(iel) = 1
+        p_Imarker(iel) = 14
+        print *, "All three edges intersected"
+
+        ! Compute number of new vertices
+        do ive = 1, TRIA_NVETRI2D
+          if (p_IneighboursAtElement(ive, iel) .eq. 0) then
+            
+            ! Edge is adjacent to boundary
+            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+
+          elseif(p_Imarker(p_IneighboursAtElement(ive, iel)) .eq. 0) then
+
+            ! Edge has not been marked in previous steps
+            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+
+          end if
+        end do
         
       case default
         
@@ -1044,7 +1088,7 @@ contains
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
         ! Process each edge individually
-        edge: do ive = 1, 3
+        edge: do ive = 1, TRIA_NVETRI2D
 
           ! Check if ive-th edge is intersected  
           if (btest(p_Iindicator(iel), ive+3)) then
@@ -1105,6 +1149,23 @@ contains
                   p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
 
                 case default
+                  p_Imarker(iel) = ibset(p_Imarker(iel), ive)
+
+                  ! Compute number of new vertices
+                  do jve = 1, TRIA_NVETRI2D
+                    if (p_IneighboursAtElement(jve, iel) .eq. 0) then
+                      
+                      ! Edge is adjacent to boundary
+                      rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+                      
+                    elseif(p_Imarker(p_IneighboursAtElement(jve, iel)) .eq. 0) then
+                      
+                      ! Edge has not been marked in previous steps
+                      rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+                      
+                    end if
+                  end do
+
                   ! Keep this edge
                   cycle edge
                 end select
@@ -1122,19 +1183,73 @@ contains
       end select
     end do list
     
-    ! Change the data type of the indicator
-    call lsyssc_createVector(rindicator, rbloodflow%rindicator%NEQ, .false.)
-    call lsyssc_getbase_double(rindicator, p_Dindicator)
-    
-    do i = 1, size(p_Dindicator)
-      p_Dindicator(i) = p_Iindicator(i)
-    end do
-    
-    call lsyssc_releaseVector(rbloodflow%rindicator)
-    call lsyssc_copyVector(rindicator, rbloodflow%rindicator)
-    call lsyssc_releaseVector(rindicator)
+    !---------------------------------------------------------------------------
+    ! (2) Perform h-adaptation based on the generated marker array
+    !---------------------------------------------------------------------------
 
-  end subroutine bloodflow_convertMoveRefIndicator
+    ! Set specifier to "marked for refinement"
+    rbloodflow%rhadapt%iSpec = ior(rbloodflow%rhadapt%iSpec, HADAPT_MARKEDREFINE)
+
+    ! Mark additional elements to restore conformity
+    call hadapt_markRedgreenRefinement2D(rbloodflow%rhadapt)
+
+    ! Since no coarsening is performed also
+    ! set specifier to "marked for coarsening"
+    rbloodflow%rhadapt%iSpec = ior(rbloodflow%rhadapt%iSpec, HADAPT_MARKEDCOARSEN)
+
+    
+    ! Compute new dimensions
+    nvt = rbloodflow%rhadapt%NVT+rbloodflow%rhadapt%increaseNVT
+    nel = hadapt_CalcNumberOfElements2D(rbloodflow%rhadapt)
+
+    ! Adjust array IvertexAge
+    call storage_realloc('hadapt_performAdaptation', nvt,&
+                         rbloodflow%rhadapt%h_IvertexAge, ST_NEWBLOCK_NOINIT, .true.)
+    call storage_getbase_int(rbloodflow%rhadapt%h_IvertexAge, rbloodflow%rhadapt%p_IvertexAge)
+
+    ! Adjust array InodalProperty
+    if (iand(rbloodflow%rhadapt%iSpec, HADAPT_HAS_NODALPROP) .eq.&
+                                       HADAPT_HAS_NODALPROP) then
+      call storage_realloc('hadapt_performAdaptation', nvt,&
+                           rbloodflow%rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int(rbloodflow%rhadapt%h_InodalProperty, rbloodflow%rhadapt%p_InodalProperty)
+    end if
+    
+    ! Adjust array IverticesAtElement
+    if (iand(rbloodflow%rhadapt%iSpec, HADAPT_HAS_VERTATELEM) .eq.&
+                                       HADAPT_HAS_VERTATELEM) then
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rbloodflow%rhadapt%h_IverticesAtElement, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int2D(rbloodflow%rhadapt%h_IverticesAtElement,&
+                                 rbloodflow%rhadapt%p_IverticesAtElement)
+    end if
+
+    ! Adjust array IneighboursAtElement
+    if (iand(rbloodflow%rhadapt%iSpec, HADAPT_HAS_NEIGHATELEM) .eq.&
+                                       HADAPT_HAS_NEIGHATELEM) then
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rbloodflow%rhadapt%h_IneighboursAtElement, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int2D(rbloodflow%rhadapt%h_IneighboursAtElement,&
+                                 rbloodflow%rhadapt%p_IneighboursAtElement)
+    end if
+
+    ! Adjust array ImidneighboursAtElement
+    if (iand(rbloodflow%rhadapt%iSpec, HADAPT_HAS_MIDNEIGH) .eq.&
+                                       HADAPT_HAS_MIDNEIGH) then
+      call storage_realloc('hadapt_performAdaptation', nel,&
+                           rbloodflow%rhadapt%h_ImidneighboursAtElement, ST_NEWBLOCK_NOINIT, .true.)
+      call storage_getbase_int2D(rbloodflow%rhadapt%h_ImidneighboursAtElement,&
+                                 rbloodflow%rhadapt%p_ImidneighboursAtElement)
+    end if
+
+    ! Perform element refinement in 2D
+    call hadapt_refine2D(rbloodflow%rhadapt)
+    
+    ! Adjust nodal property array
+    call storage_realloc('hadapt_performAdaptation', rbloodflow%rhadapt%NVT,&
+                         rbloodflow%rhadapt%h_InodalProperty, ST_NEWBLOCK_NOINIT, .true.)
+
+  end subroutine bloodflow_performAdaptation
   
   !*****************************************************************************
 

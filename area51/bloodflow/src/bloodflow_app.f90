@@ -13,6 +13,7 @@ program bloodflow_app
   use bloodflow
   use fsystem
   use paramlist
+  use triangulation
   
   implicit none 
 
@@ -36,6 +37,9 @@ program bloodflow_app
     ! Evaluate the object location at simulation time
     call bloodflow_evalObject(rbloodflow, dtime)
     
+    ! Duplicate triangulation of base mesh
+    call tria_duplicate(rbloodflow%rtriangulationBase, rbloodflow%rtriangulation, 0, .false.)
+
     ! Adapt the grid to the thin object
     call bloodflow_adaptObject(rbloodflow)
     
