@@ -201,7 +201,8 @@ contains
 
   ! Ok, let's start. 
   !
-
+  print *,"---------NumberOfElements---------"
+  print *,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation%NEL
   ! griddeformation setup
   call griddef_deformationInit(rgriddefInfo,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
                                rproblem%NLMIN,&
@@ -244,7 +245,7 @@ contains
      integer :: ive,i1,ipoints
      integer :: iMethod
      real(DP) :: Dist,t,dt,dmin
-     iMethod = 4
+     iMethod = 1
       
      ipoints = ubound(Dentries,1) 
       
