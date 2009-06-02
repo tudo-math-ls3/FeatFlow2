@@ -77,7 +77,7 @@ module domainintegration
     
     ! An element evaluation set structure that contains all information
     ! needed to evaluate the finite element on all elements in p_Ielements.
-    type(t_evalElementSet), POINTER :: p_revalElementSet => null()
+    type(t_evalElementSet), pointer :: p_revalElementSet => null()
 
     !<!--
     ! Information which may be shared with the element evaluation set
