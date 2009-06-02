@@ -1693,24 +1693,28 @@ contains
       call tria_done (rbackupTriangulation)
       
       rbackupTriangulation%ndim                   = rtriangulation%ndim
-      rbackupTriangulation%NVT                    = rtriangulation%NVT 
-      rbackupTriangulation%NMT                    = rtriangulation%NMT 
-      rbackupTriangulation%NEL                    = rtriangulation%NEL 
+      rbackupTriangulation%NVT                    = rtriangulation%NVT
+      rbackupTriangulation%NMT                    = rtriangulation%NMT
       rbackupTriangulation%NAT                    = rtriangulation%NAT
+      rbackupTriangulation%NEL                    = rtriangulation%NEL
       rbackupTriangulation%NBCT                   = rtriangulation%NBCT
       rbackupTriangulation%NblindBCT              = rtriangulation%NblindBCT
       rbackupTriangulation%NVBD                   = rtriangulation%NVBD
+      rbackupTriangulation%NABD                   = rtriangulation%NABD
       rbackupTriangulation%NMBD                   = rtriangulation%NMBD
       rbackupTriangulation%NNVE                   = rtriangulation%NNVE
       rbackupTriangulation%NNEE                   = rtriangulation%NNEE
       rbackupTriangulation%NNAE                   = rtriangulation%NNAE
       rbackupTriangulation%NNVA                   = rtriangulation%NNVA
-      rbackupTriangulation%nverticesPerEdge       = rtriangulation%nverticesPerEdge      
-      rbackupTriangulation%nVerticesOnAllEdges    = rtriangulation%nVerticesOnAllEdges   
+      rbackupTriangulation%NNelAtVertex           = rtriangulation%NNelAtVertex
+      rbackupTriangulation%NNelAtEdge             = rtriangulation%NNelAtEdge
+      rbackupTriangulation%InelOfType(:)          = rtriangulation%InelOfType(:)
+      rbackupTriangulation%nverticesPerEdge       = rtriangulation%nverticesPerEdge
+      rbackupTriangulation%nVerticesOnAllEdges    = rtriangulation%nVerticesOnAllEdges
       rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
       rbackupTriangulation%nverticesInAllElements = rtriangulation%nverticesInAllElements
       rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices   
-      rbackupTriangulation%InelOfType(:)          = rtriangulation%InelOfType(:)
+      
       
       ! Decide on IDPFLG which arrays to copy
       rbackupTriangulation%iduplicationFlag = iduplicationFlag
