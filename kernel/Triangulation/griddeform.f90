@@ -2969,7 +2969,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   real(dp), dimension(2) :: Dpoint
   
   ! make all the regions
-  type(t_boundaryRegion), dimension(:), allocatable :: rregion
+  type(t_boundaryRegion), dimension(:),pointer :: p_rregion
   
   integer(i32), dimension(:), allocatable :: rElements
   
@@ -3024,7 +3024,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! allocate the regions
   iupper = ubound(p_IedgesAtBoundary,1)
   ! ALLOCATE(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-  allocate(rregion(boundary_igetNsegments &
+  allocate(p_rregion(boundary_igetNsegments &
   (rgriddefInfo%p_rboundary,p_InodalProperty(ive)))) 
 
   allocate(rElements(iupper))
@@ -3063,7 +3063,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
     call boundary_createRegion(rgriddefInfo%p_rboundary, p_InodalProperty(ive),&
-                             iregions,rregion(iregions))
+                             iregions,p_rregion(iregions))
   end do
 
   ! with this information we can assign the
@@ -3082,7 +3082,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   ! we want to stay in this boundary region
   do iregions=1,iend
   ! Idea: create the regions, check in which region the parameter is
-    if(boundary_isInRegion (rregion(iregions),p_InodalProperty(ive),dalpha_start))then
+    if(boundary_isInRegion (p_rregion(iregions),p_InodalProperty(ive),dalpha_start))then
       exit
     end if
   end do   
@@ -3183,7 +3183,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
       end do      
       dparam = p_DvertexParameterValue(ivbd)
       
-      if(.not.(boundary_isInRegion(rregion(iregions),p_InodalProperty(ive),dparam)))then
+      if(.not.(boundary_isInRegion(p_rregion(iregions),p_InodalProperty(ive),dparam)))then
         !add the element add the edge
         cycle        
       end if
@@ -3297,8 +3297,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
                                      BDR_PAR_LENGTH,BDR_PAR_01)
     
     ! if the point is outside the domain, stop moving it
-    if ((dalpha_01 .lt. rregion(iregions)%dminParam) .or. & 
-        (dalpha_01 .gt. rregion(iregions)%dmaxParam)) then
+    if ((dalpha_01 .lt. p_rregion(iregions)%dminParam) .or. & 
+        (dalpha_01 .gt. p_rregion(iregions)%dmaxParam)) then
         
         ! convert and write
         dalpha_old = boundary_convertParameter(rgriddefInfo%p_rboundary, &
@@ -3344,6 +3344,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     p_DvertexCoords(1,ive) = dx
     p_DvertexCoords(2,ive) = dy     
   endif ! dtime
+
+  deallocate(p_rregion)
 
   end subroutine
 
