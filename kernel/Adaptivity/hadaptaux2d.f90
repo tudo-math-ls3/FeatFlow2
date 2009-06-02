@@ -644,7 +644,7 @@ contains
           p_Imarker(iel) = MARK_REF_TRIA4TRIA
 
           
-          ! "Lock" all vertices connected to element IEL since the cannot be removed.
+          ! "Lock" all vertices connected to element IEL since they cannot be removed.
           do ive = 1, TRIA_NVETRI2D
             ivt = IverticesAtElement(ive)
             rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt))
@@ -1834,7 +1834,9 @@ contains
           
         end select
       end if
+
     end function lockElement
+
   end subroutine hadapt_markRedgreenCoarsening2D
 
   ! ***************************************************************************
@@ -3049,6 +3051,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'mark_edge')
         call sys_halt()
       end select
+
     end subroutine mark_edge
 
     !**************************************************************
@@ -3084,7 +3087,9 @@ contains
       call output_line('Unable to find common egde!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'ismarked_edge')
       call sys_halt()
+
     end function ismarked_edge
+
   end subroutine hadapt_markRedgreenRefinement2D
 
   ! ***************************************************************************
@@ -3276,6 +3281,7 @@ contains
     
     ! The markers are no longer valid
     rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDREFINE))
+
   end subroutine hadapt_refine2D
 
   ! ***************************************************************************
@@ -3483,6 +3489,7 @@ contains
 
     ! The markers are no longer valid
     rhadapt%iSpec = iand(rhadapt%iSpec, not(HADAPT_MARKEDCOARSEN))
+
   end subroutine hadapt_coarsen2D
 
   ! ***************************************************************************
@@ -4101,6 +4108,7 @@ contains
     ! Close XML-file
     write(iunit,FMT='(A)') '</svg>'
     close(iunit)
+
   end subroutine hadapt_writeGridSVG2D
 
   ! ***************************************************************************
@@ -4519,6 +4527,7 @@ contains
       rhadapt%p_IvertexAge(ivt)     = 0
       
     end if
+
   end subroutine remove_vertex2D
 
   ! ***************************************************************************
@@ -4557,6 +4566,7 @@ contains
     rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,0/)
     rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,0/)
     rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e4,e5,e6,0/)    
+
   end subroutine replace_elementTria
 
   ! ***************************************************************************
@@ -4595,6 +4605,7 @@ contains
     rhadapt%p_IverticesAtElement(:,ipos)      = (/i1,i2,i3,i4/)
     rhadapt%p_IneighboursAtElement(:,ipos)    = (/e1,e2,e3,e4/)
     rhadapt%p_ImidneighboursAtElement(:,ipos) = (/e5,e6,e7,e8/)
+
   end subroutine replace_elementQuad
 
   ! ***************************************************************************
@@ -4632,6 +4643,7 @@ contains
     rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,0/)
     rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,0/)
     rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e4,e5,e6,0/)
+
   end subroutine add_elementTria
 
   ! ***************************************************************************
@@ -4670,6 +4682,7 @@ contains
     rhadapt%p_IverticesAtElement(:,rhadapt%NEL)      = (/i1,i2,i3,i4/)
     rhadapt%p_IneighboursAtElement(:,rhadapt%NEL)    = (/e1,e2,e3,e4/)
     rhadapt%p_ImidneighboursAtElement(:,rhadapt%NEL) = (/e5,e6,e7,e8/)
+
   end subroutine add_elementQuad
 
   ! ***************************************************************************
@@ -4860,6 +4873,7 @@ contains
 
     ! Decrease number of elements
     rhadapt%NEL = rhadapt%NEL-1
+
   end subroutine remove_element2D
 
   ! ***************************************************************************
@@ -5012,6 +5026,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_1to2')
       call sys_halt()
     end if
+
   end subroutine update_ElemNeighb2D_1to2
 
   ! ***************************************************************************
@@ -5157,6 +5172,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'update_ElemNeighb2D_2to2')
       call sys_halt()
     end if
+
   end subroutine update_ElemNeighb2D_2to2
 
   ! ***************************************************************************
@@ -5229,6 +5245,7 @@ contains
         call sys_halt()
       end if
     end do adjacent
+
   end subroutine update_AllElementNeighbors2D
 
   ! ***************************************************************************
@@ -5366,6 +5383,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA2TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Tria2Tria
 
   ! ***************************************************************************
@@ -5571,6 +5589,7 @@ contains
                                 Ivertices, Ielements)
       end if
     end if
+
   end subroutine refine_Tria3Tria
 
   ! ***************************************************************************
@@ -5712,6 +5731,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA4TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Tria4Tria
 
   ! ***************************************************************************
@@ -5860,6 +5880,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD2QUAD,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Quad2Quad
 
   ! ***************************************************************************
@@ -6022,6 +6043,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD3TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Quad3Tria
   
   ! ***************************************************************************
@@ -6190,6 +6212,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD4TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Quad4Tria
     
   ! ***************************************************************************
@@ -6346,6 +6369,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD4QUAD,&
                               Ivertices, Ielements)
     end if
+
   end subroutine refine_Quad4Quad
   
   ! ***************************************************************************
@@ -6481,6 +6505,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_TRIA2TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine convert_Tria2Tria
 
   ! ***************************************************************************
@@ -6643,6 +6668,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD2QUAD,&
                               Ivertices, Ielements)
     end if
+
   end subroutine convert_Quad2Quad
 
   ! ***************************************************************************
@@ -6809,6 +6835,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD3TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine convert_Quad3Tria
 
   ! ***************************************************************************
@@ -6974,6 +7001,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD4TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine convert_Quad4Tria
 
   ! ***************************************************************************
@@ -7167,6 +7195,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_2TRIA1TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine coarsen_2Tria1Tria
 
   ! ***************************************************************************
@@ -7361,6 +7390,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4TRIA1TRIA,&
                               Ivertices, Ielements)
     end if
+
   end subroutine coarsen_4Tria1Tria
 
   ! ***************************************************************************
@@ -7746,6 +7776,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria2Tria')
       call sys_halt()
     end select
+
   end subroutine coarsen_4Tria2Tria
 
   ! ***************************************************************************
@@ -7960,6 +7991,7 @@ contains
       call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4QUAD1QUAD,&
                               Ivertices, Ielements)
     end if
+
   end subroutine coarsen_4Quad1Quad
 
   ! ***************************************************************************
@@ -8157,8 +8189,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD2QUAD,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_4Quad2Quad
 
   ! ***************************************************************************
@@ -8343,8 +8376,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD3TRIA,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_4Quad3Tria
 
   ! ***************************************************************************
@@ -8464,8 +8498,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD4TRIA,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_4Quad4Tria
     
   ! ***************************************************************************
@@ -8696,8 +8731,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD1QUAD,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_2Quad1Quad
 
   ! ***************************************************************************
@@ -8811,8 +8847,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD3TRIA,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_2Quad3Tria
 
   ! ***************************************************************************
@@ -9014,8 +9051,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,i5/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_3TRIA1QUAD,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_3Tria1Quad
 
   ! ***************************************************************************
@@ -9233,8 +9271,9 @@ contains
       Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
       Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
       call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1QUAD,&
-          Ivertices,Ielements)
+                              Ivertices,Ielements)
     end if
+
   end subroutine coarsen_4Tria1Quad
 
   ! ***************************************************************************
@@ -9540,6 +9579,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'coarsen_4Tria3Tria')
       call sys_halt()
     end select
+
   end subroutine coarsen_4Tria3Tria
 
   ! ***************************************************************************
