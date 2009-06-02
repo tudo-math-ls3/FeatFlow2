@@ -60,7 +60,7 @@ sSolutionWrite     = 'ns/DX4'
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 2
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
