@@ -11,58 +11,43 @@
 #                                                                              #
 ################################################################################
 
+# Definition of user-defined constants
 defconst: eps = 0.1
 defconst: x0  = 1.0
 defconst: y0  = 0.5
 defconst: C   = 1
 
+# Definition of user-defined expressions
 defexpr:  sqr1 = SQRT((x-1)^2+y^2)
 defexpr:  sqr2 = SQRT((x-_x0)^2+(y-_y0)^2)
 defexpr:  abs  =      (x-_x0)^2+(y-_y0)^2
 
+deffunc: fp_null = 0; x,y,z,t
 
 # Specify the initial solution
-[initial_solution]
-NCOMP
-1
-if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
-
+deffunc: fp_initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
 
 # Specify the exact solution
-[exact_solution]
-NCOMP
-3
-if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
-0
-0
+deffunc: fp_exactsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
+
+#[exact_solution]
+#NCOMP
+#3
+#if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
+#0
+#0
 
 
 # Specify the velocity field
-[velocityfield]
-NCOMP
-2
-y
-1-x
-#if (x < 1,     y/sqrt(y^2+(1-x)^2), (2-y)/sqrt((2-y)^2+(x-1)^2))
-#if (x < 1, (1-x)/sqrt(y^2+(1-x)^2), (x-1)/sqrt((2-y)^2+(x-1)^2))
+deffunc: fp_velocity_x = y ; x,y,z,t
+deffunc: fp_velocity_y = 1-x ; x,y,z,t
 
 
 # Specify the quantity of interest
-[targetfunctional]
-NCOMP
-1
-if(x >= 0.75 & x <= 1.25, 1, 0)
-
-
-# Specify the exact quantity of interest
-[exacttargetfunctional]
-NCOMP
-1
-0.15810064270171
-if(x >= 0.75 & x <= 1.25, 1, 0)
-if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0)
-#
-#0.06044974016448
+deffunc: fp_targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.4 & y <= 0.6, 1, 0) ; x,y,z,t
+#deffunc: fp_targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
+#deffunc: fp_targetFuncBdrInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
+deffunc: fp_TargetFuncAnalytic = 0.06044974016448 ; t
 
 
 # Specify the boundary conditions for the primal problem
@@ -101,3 +86,13 @@ PARAMETERS
 2.5  T 0
 3.0  T 1   0.0
 4.0  F 0
+
+0.5  F 0
+0.55 T 1  1.0
+2.0  T 1  0.0
+2.5  F 0
+2.55 T 1  1.0
+3.0  T 1  0.0
+4.0  F 0
+
+
