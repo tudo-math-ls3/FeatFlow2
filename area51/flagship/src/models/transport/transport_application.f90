@@ -475,12 +475,7 @@ contains
 
     ! section names
     character(LEN=SYS_STRLEN) :: sindatfileName
-    character(LEN=SYS_STRLEN) :: svelocityName
-    character(LEN=SYS_STRLEN) :: sdiffusionName
-    character(LEN=SYS_STRLEN) :: sreactionName
-    character(LEN=SYS_STRLEN) :: srhsName
-    character(LEN=SYS_STRLEN) :: stargetfuncName
-
+    
     ! symbolic variable names
     character(LEN=*), dimension(4), parameter ::&
                       cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
@@ -489,9 +484,16 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
+    ! Create function parser
+    call fparser_create(rappDescriptor%rfparser, 100)
+    
     ! Read in all constants and predefined expressions from the parameter file
     call fparser_parseFileForKeyword(sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
+
+    ! Read in all functions from the parameter file
+    call fparser_parseFileForKeyword(rappDescriptor%rfparser, sindatfileName, 'deffunc', FPAR_FUNCTION)
+
 
     ! Get application specifig parameters from the parameterlist
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -517,54 +519,6 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'ijacobianformat', rappDescriptor%ijacobianformat)
 
-    
-    ! Initialize the function parser for the velocity field if required
-    if (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_ZERO) then
-      
-      call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname', svelocityName, '')
-      if (trim(svelocityName) .ne. '') then
-        call flagship_readParserFromFile(sindatfileName, '['//trim(svelocityName)//']',&
-                                         cvariables, rappDescriptor%rfparserVelocityField)
-      end if
-      
-    end if
-
-    ! Initialize the function parser for the diffusion tensor if required
-    if (rappDescriptor%idiffusiontype .ne. DIFFUSION_ZERO) then
-      
-      call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname', sdiffusionName)
-      call flagship_readParserFromFile(sindatfileName, '['//trim(sdiffusionName)//']',&
-                                       cvariables, rappDescriptor%rfparserDiffusionTensor)
-
-    end if
-
-    ! Initialize the function parser for the reactive term if required
-    if (rappDescriptor%ireactiontype .ne. REACTION_ZERO) then
-
-      call parlst_getvalue_string(rparlist, ssectionName, 'sreactionname', sreactionName)
-      call flagship_readParserFromFile(sindatfileName, '['//trim(sreactionName)//']',&
-                                       cvariables, rappDescriptor%rfparserReaction)
-
-    end if
-
-    ! Initialize the function parser for the right-hand side if required
-    if (rappDescriptor%irhstype .ne. RHS_ZERO) then
-
-      call parlst_getvalue_string(rparlist, ssectionName, 'srhsname', srhsName)
-      call flagship_readParserFromFile(sindatfileName, '['//trim(srhsName)//']',&
-                                       cvariables, rappDescriptor%rfparserRHS)
-
-    end if
-
-    ! Initialize the function parser for the target functional if required
-    if (rappDescriptor%itargetfunctype .ne. TFUNC_ZERO) then
-
-      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncName)
-      call flagship_readParserFromFile(sindatfileName, '['//trim(stargetfuncName)//']',&
-                                       cvariables, rappDescriptor%rfparserTargetFunc)
-
-    end if
-
   end subroutine transp_initApplication
 
   !*****************************************************************************
@@ -583,25 +537,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
-    if (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_ZERO) then
-      call fparser_release(rappDescriptor%rfparserVelocityField)
-    end if
-
-    if (rappDescriptor%idiffusiontype .ne. DIFFUSION_ZERO) then
-      call fparser_release(rappDescriptor%rfparserDiffusionTensor)
-    end if
-
-    if (rappDescriptor%ireactiontype .ne. REACTION_ZERO) then
-      call fparser_release(rappDescriptor%rfparserReaction)
-    end if
-
-    if (rappDescriptor%irhstype .ne. RHS_ZERO) then
-      call fparser_release(rappDescriptor%rfparserRHS)
-    end if
-
-    if (rappDescriptor%itargetfunctype .ne. TFUNC_ZERO) then
-      call fparser_release(rappDescriptor%rfparserTargetFunc)
-    end if
+    ! Release function parser
+    call fparser_release(rappDescriptor%rfparser)
 
   end subroutine transp_doneApplication
 
@@ -1202,15 +1139,15 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call initDiffusionMatrix1D(rappDescriptor%rfparserDiffusionTensor,&
+        call initDiffusionMatrix1D(rappDescriptor%rfparser,&
                                    rappDescriptor%idiffusiontype,&
                                    rproblemLevel%Rmatrix(coeffMatrix_S))
       case (NDIM2D)
-        call initDiffusionMatrix2D(rappDescriptor%rfparserDiffusionTensor,&
+        call initDiffusionMatrix2D(rappDescriptor%rfparser,&
                                    rappDescriptor%idiffusiontype,&
                                    rproblemLevel%Rmatrix(coeffMatrix_S))
       case (NDIM3D)
-        call initDiffusionMatrix3D(rappDescriptor%rfparserDiffusionTensor,&
+        call initDiffusionMatrix3D(rappDescriptor%rfparser,&
                                    rappDescriptor%idiffusiontype,&
                                    rproblemLevel%Rmatrix(coeffMatrix_S))
       case DEFAULT
@@ -1319,12 +1256,15 @@ contains
       ! local variables
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
+      integer :: icomp
       
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC,&
             DIFFUSION_ANISOTROPIC)
+
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, 1, Dunity, dalpha)
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
+        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
@@ -1347,6 +1287,7 @@ contains
       type(t_bilinearform) :: rform
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
+      integer :: icomp
       
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC)
@@ -1359,10 +1300,14 @@ contains
         
       case (DIFFUSION_ANISOTROPIC)
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, 1, Dunity, rform%Dcoefficients(1))
-        call fparser_evalFunction(rfparser, 2, Dunity, rform%Dcoefficients(2))
-        call fparser_evalFunction(rfparser, 3, Dunity, rform%Dcoefficients(3))
-        call fparser_evalFunction(rfparser, 4, Dunity, rform%Dcoefficients(4))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(1))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_12')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(2))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_21')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(3))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_22')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(4))
         
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
@@ -1403,6 +1348,7 @@ contains
       type(t_bilinearform) :: rform
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
+      integer :: icomp
       
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC)
@@ -1415,15 +1361,24 @@ contains
         
       case (DIFFUSION_ANISOTROPIC)
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, 1, Dunity, rform%Dcoefficients(1))
-        call fparser_evalFunction(rfparser, 2, Dunity, rform%Dcoefficients(2))
-        call fparser_evalFunction(rfparser, 3, Dunity, rform%Dcoefficients(3))
-        call fparser_evalFunction(rfparser, 4, Dunity, rform%Dcoefficients(4))
-        call fparser_evalFunction(rfparser, 5, Dunity, rform%Dcoefficients(5))
-        call fparser_evalFunction(rfparser, 6, Dunity, rform%Dcoefficients(6))
-        call fparser_evalFunction(rfparser, 7, Dunity, rform%Dcoefficients(7))
-        call fparser_evalFunction(rfparser, 8, Dunity, rform%Dcoefficients(8))
-        call fparser_evalFunction(rfparser, 9, Dunity, rform%Dcoefficients(9))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(1))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_12')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(2))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_13')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(3))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_21')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(4))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_22')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(5))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_23')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(6))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_31')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(7))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_32')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(8))
+        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_33')
+        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(9))
         
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
@@ -1518,13 +1473,17 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initSolution(rparlist, ssectionName, rproblemLevel, dtime, rvector)
+  subroutine transp_initSolution(rappDescriptor, rparlist, ssectionName,&
+                                 rproblemLevel, dtime, rvector)
 
 !<description>
     ! This subroutine initializes the solution vector
 !</description>
 
 !<input>
+    ! application descriptor
+    type(t_transport), intent(IN) :: rappDescriptor
+
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
 
@@ -1549,17 +1508,12 @@ contains
     character(LEN=SYS_STRLEN) :: ssolutionName
 
     ! local variables
-    type(t_fparser) :: rfparser
     type(t_pgm) :: rpgm
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     integer :: isolutiontype
-    integer :: iblock, ieq, neq, ndim
-
-    ! symbolic variable names
-    character(LEN=*), dimension(4), parameter ::&
-                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
+    integer :: ieq, neq, ndim, icomp
     
     
     ! Get global configuration from parameter list
@@ -1575,9 +1529,6 @@ contains
 
 
     case (1)
-      ! Initialize solution from analytic profile
-      call flagship_readParserFromFile(sindatfileName, '['//trim(ssolutionName)//']',&
-                                       cvariables, rfparser)
       
       ! Set pointers
       call storage_getbase_double2D(&
@@ -1588,23 +1539,20 @@ contains
       ! Initialize variable values
       Dvalue = 0.0_DP
 
-      ! Loop over all blocks of the solution vector
-      do iblock = 1, rvector%nblocks
-        
-        ! Get number of equations of scalar subvector
-        neq = rvector%RvectorBlock(iblock)%NEQ
-        call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
-        
-        ! Loop over all equations of scalar subvector
-        do ieq = 1, neq
-          Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
-          Dvalue(NDIM3D+1) = dtime
-          call fparser_evalFunction(rfparser, iblock, Dvalue, p_Ddata(ieq))
-        end do
+      ! Get number of equations of scalar subvector
+      neq = rvector%RvectorBlock(1)%NEQ
+      call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
+      
+      ! Get function number
+      icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_initsol')
+
+      ! Loop over all equations of scalar subvector
+      do ieq = 1, neq
+        Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
+        Dvalue(NDIM3D+1) = dtime
+        call fparser_evalFunction(rappDescriptor%rfparser, icomp, Dvalue, p_Ddata(ieq))
       end do
-      
-      call fparser_release(rfparser)
-      
+            
 
     case (2)
       ! Initialize solution from portable graymap image
@@ -1671,9 +1619,11 @@ contains
     case (RHS_ANALYTIC)
       ! Create a collection and attach the function parser
       call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'rhsParser',&
-                                rappDescriptor%rfparserRHS, .true.)
-      rcollection%SquickAccess(1) = 'rhsParser'
+      call collct_setvalue_pars(rcollection, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+                                      rappDescriptor%rfparser, 'fp_rhs')
+      rcollection%SquickAccess(1) = 'FunctionParser'
       rcollection%DquickAccess(1) = dtime
       
       ! Set up the corresponding linear form
@@ -1745,9 +1695,11 @@ contains
     case (TFUNC_VOLINTG)
       ! Create a collection and attach the function parser
       call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'targetFuncParser',&
-                                rappDescriptor%rfparserTargetFunc, .true.)
-      rcollection%SquickAccess(1) = 'targetFuncParser'
+      call collct_setvalue_pars(rcollection, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+                                      rappDescriptor%rfparser, 'fp_targetFuncInt')
+      rcollection%SquickAccess(1) = 'FunctionParser'
       rcollection%DquickAccess(1) = dtime
       
       ! Set up the corresponding linear form
@@ -1758,6 +1710,56 @@ contains
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
                                   transp_coeffVectorAnalytic, rcollection)
+
+      ! Release collection structure
+      call collct_done(rcollection)
+
+
+    case (TFUNC_SURFINTG)
+      ! Create a collection and attach the function parser
+      call collct_init(rcollection)
+      call collct_setvalue_pars(rcollection, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+                                      rappDescriptor%rfparser, 'fp_targetFuncBdrInt')
+      rcollection%SquickAccess(1) = 'FunctionParser'
+      rcollection%DquickAccess(1) = dtime
+
+      ! Build the boundary part of the discretized target function
+      call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+                                       .true., rvector%RvectorBlock(1),&
+                                       rcollection=rcollection)
+
+      ! Release collection structure
+      call collct_done(rcollection)
+
+      
+    case (TFUNC_MIXINTG)
+      ! Create a collection and attach the function parser
+      call collct_init(rcollection)
+      call collct_setvalue_pars(rcollection, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+                                      rappDescriptor%rfparser, 'fp_targetFuncInt')
+      rcollection%SquickAccess(1) = 'FunctionParser'
+      rcollection%DquickAccess(1) = dtime
+      
+      ! Set up the corresponding linear form
+      rform%itermCount      = 1
+      rform%Idescriptors(1) = DER_FUNC
+
+      ! Build the discretized target functional
+      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+                                  rform, .true., rvector%RvectorBlock(1),&
+                                  transp_coeffVectorAnalytic, rcollection)
+
+      ! Prepare collection for callback function
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_targetFuncBdrInt')
+
+      ! Build the boundary part of the discretized target function
+      call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+                                       .false., rvector%RvectorBlock(1),&
+                                       rcollection=rcollection)
 
       ! Release collection structure
       call collct_done(rcollection)
@@ -1916,16 +1918,19 @@ contains
 
 !<subroutine>
 
-  subroutine transp_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
-                                            rtimestep, rsolver, rsolutionPrimal,&
-                                            rsolutionDual, rcollection, rerror,&
-                                            derror, rrhs)
+  subroutine transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName,&
+                                            rproblemLevel, rtimestep, rsolver,&
+                                            rsolutionPrimal, rsolutionDual,&
+                                            rcollection, rtargetError, dtargetError, rrhs)
 
 !<description>
     ! This subroutine estimates the error in the quantity of interest
 !</description>
 
 !<input>
+    ! application descriptor
+    type(t_transport), intent(IN) :: rappDescriptor
+
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
 
@@ -1958,10 +1963,10 @@ contains
 
 !<output>
     ! element-wise error distribution
-    type(t_vectorScalar), intent(OUT) :: rerror
+    type(t_vectorScalar), intent(OUT) :: rtargetError
 
-    ! global error
-    real(DP), intent(OUT) :: derror
+    ! global error in target qunatity
+    real(DP), intent(OUT) :: dtargetError
 !</output>
 !</subroutine>
     
@@ -1972,43 +1977,46 @@ contains
     character(LEN=SYS_STRLEN) :: sexacttargetfuncName
 
     ! local variables
-    type(t_fparser) :: rfparser
     type(t_collection) :: rcollectionTmp
     type(t_vectorBlock) :: rvector
     type(t_matrixScalar) :: rmatrix
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_DnodalError
-    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_Ddata
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
+    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dexacterror, dexacttargetfunc, dtargetfunc, dprotectLayerTolerance
-    integer :: i, convectionAFC, diffusionAFC
+    real(DP) :: dexactTargetError, dexactTargetFunction, dtargetFunction, dprotectLayerTolerance
+    integer :: i, icomp, convectionAFC, diffusionAFC
     integer :: lumpedMassMatrix, templateMatrix
     integer :: itargetfunctype, iexacttargetfunctype, igridindicator
     integer :: iprotectLayer, nprotectLayers
     integer :: h_BisactiveElement
 
-    ! symbolic variable names
-    character(LEN=*), dimension(4), parameter ::&
-                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
-    character(LEN=*), dimension(1), parameter ::&
-                      cvartime   = (/ (/'t'/) /)
-
-
+    
     !---------------------------------------------------------------------------
-    ! Perform goal-orianted error estimation
+    ! Perform goal-oriented error estimation
     !---------------------------------------------------------------------------
 
     ! Create vector for nodal errors
     call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true., ST_DOUBLE)
 
-    ! Ok, this is a little bit tricky. We compute the standard residual vector
-    ! for the zeroth iteration and switch off all types of stabilization.
+    ! Ok, this is a little bit tricky. We need to compute the residual
+    ! vector for the standard Galerkin scheme vector for the zeroth
+    ! iteration. To this end, we switch off all types of
+    ! stabilization, force the velocity field, and hence, the
+    ! preconditioner to be updated and evaluate the residual vector.
+    
     convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
     diffusionAFC  = collct_getvalue_int(rcollection, 'diffusionAFC')
 
     call collct_setvalue_int(rcollection, 'convectionAFC', -abs(convectionAFC), .false.)
-    call collct_setvalue_int(rcollection, 'diffusionAFC',  -abs(diffusionAFC), .false.)
+    call collct_setvalue_int(rcollection, 'diffusionAFC',  -abs(diffusionAFC),  .false.)
+
+    ! Set update notification for velocity field/preconditioner
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
+
+    ! Calculate the standard Galerkin preconditioner
+    call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
+                                   rsolutionPrimal, rcollection)
 
     ! Calculate the standard Galerkin residual
     call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
@@ -2017,22 +2025,20 @@ contains
         
     ! Ok, now we have to switch on all types of stabilization
     call collct_setvalue_int(rcollection, 'convectionAFC', convectionAFC, .false.)
-    call collct_setvalue_int(rcollection, 'diffusionAFC',  diffusionAFC, .false.)
-    
-    ! Set pointers
-    call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
-    call lsysbl_getbase_double(rvector, p_DnodalError)
+    call collct_setvalue_int(rcollection, 'diffusionAFC',  diffusionAFC,  .false.)
 
-    ! We need the lumped mass matrix
+    ! Again, set update notification for velocity field/preconditioner
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
+    
+    
+    ! We need the lumped mass matrix for scaling
     lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
     if (lumpedMassMatrix > 0) then
 
       ! Set pointer to the lumped mass matrix
       call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                  p_DlumpedMassMatrix)
-
     else
-
       ! Compute the lumped mass matrix explicitly
       templateMatrix = collct_getvalue_int(rcollection, 'templatematrix')
       call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
@@ -2042,26 +2048,30 @@ contains
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
 
     end if   ! lumpedMassMatrix > 0
+
+    ! Set pointers
+    call lsysbl_getbase_double(rvector, p_DnodalError)
+    call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
     
     ! Now we compute the nodal error contributions
-    do i = 1, size(p_DsolutionDual,1)
-      p_DnodalError(i) = abs(p_DnodalError(i)*p_DsolutionDual(i))/p_DlumpedMassMatrix(i)
+    do i = 1, rmatrix%NEQ
+      p_DnodalError(i) = abs(p_DnodalError(i) * p_DsolutionDual(i)) / p_DlumpedMassMatrix(i)
     end do
 
     ! Compute the element-wise and the global error.  We create a
     ! scalar vector and compute the global and local L1-norms of nodal
     ! error vector which yields the global and local values of the a
     ! posteriori error estimator.
-    call lsyssc_createVector(rerror, rproblemLevel%rtriangulation%NEL, .false.)
+    call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
     call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR,&
-                      derror, relementError=rerror)   
+                      dtargetError, relementError=rtargetError)   
 
     ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
 
-    ! Clean temporal matrix if required
+    ! Release temporal mass matrix if required
     if (lumpedMassMatrix .le. 0) call lsyssc_releaseMatrix(rmatrix)
-
+    
 
     !---------------------------------------------------------------------------
     ! Compute the effectivity index
@@ -2076,90 +2086,126 @@ contains
     select case(iexacttargetfunctype)
     
     case(TFUNC_VOLINTG)
-      ! Initialize exact target functionals from analytic profile
-      call flagship_readParserFromFile(sindatfileName, '['//trim(sexacttargetfuncName)//']',&
-                                       cvariables, rfparser)
-
-      ! Create a collection and attach the function parser
+      ! Create a temporal collection and attach the function parser
       call collct_init(rcollectionTmp)
-      call collct_setvalue_pars(rcollectionTmp, 'refTargetFuncParser', rfparser, .true.)
-      rcollectionTmp%SquickAccess(1) = 'refTargetFuncParser'
+      call collct_setvalue_pars(rcollectionTmp, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_exactSol')
+      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
+      rcollectionTmp%SquickAccess(1) = 'FunctionParser'
       rcollectionTmp%DquickAccess(1) = rtimestep%dTime
 
-      ! Compute the error of the quantity of interest
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexacterror,&
+      ! Compute the exact error of the quantity of interest
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
+                                  transp_refFuncAnalytic, rcollectionTmp)
+      
+      ! Compute the exact value of the quantity of interest.
+      ! Create an empty vector initialized by zeros and compute the
+      ! 'error' between this vector and the analytic quantity of interest.
+      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
+      call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexactTargetFunction,&
+                                  transp_refFuncAnalytic, rcollectionTmp)
+      
+      ! Inverse the sign of the exact target functional since we computed $J(0-u)$
+      dexactTargetFunction = -dexactTargetFunction
+
+      ! Compute the value of the quantity of interest.
+      ! Use the same trick as above but use the analytical function 'null'
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_null')
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
                                   transp_refFuncAnalytic, rcollectionTmp)
 
-      ! Compute the value of the quantity of interest. Create an empty
-      ! vector which is initialized by zeros and compute the 'error'
-      ! between this vector and the analytic quantity of interest.
-      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
-      call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexacttargetfunc,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
+      ! Release temporal vector
       call lsysbl_releaseVector(rvector)
 
-      ! Inverse the sign of the exact target functional since we computed $J(0-u)$
-      dexacttargetfunc = -dexacttargetfunc
-
-      ! Release collection structure
+      ! Release temporal collection structure
       call collct_done(rcollectionTmp)
-
-      ! Release function parsers
-      call fparser_release(rfparser)
-
+      
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
-      call output_line('exact target functional value:           '//trim(sys_sdEP(dexacttargetfunc,15,6)))
-      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
-      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexacterror),15,6)))
-      call output_line('effectivity index:                       '//trim(sys_sdEP(derror/abs(dexacterror),15,6)))
-      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs((derror-abs(dexacterror))/&
-                                                                                  dexacttargetfunc),15,6)))
+      call output_line('exact target functional value:           '//trim(sys_sdEP(dexactTargetFunction,15,6)))
+      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetFunction,15,6)))
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
+                                                                                        dexactTargetFunction ),15,6)))
       call output_lbrk()
-
+      
 
     case (TFUNC_SURFINTG)
       call output_line('Target functionals in terms of surface integrals are not implemented',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
       call sys_halt()
+
+
+    case (TFUNC_MIXINTG)
+      call output_line('Target functionals in terms of mixed volume and surface integrals are not implemented',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+      call sys_halt()
       
 
     case (TFUNC_ANALYTIC)
-      ! Initialize exact target functionals from analytic profile
-      call flagship_readParserFromFile(sindatfileName, '['//trim(sexacttargetfuncName)//']',&
-                                       cvartime, rfparser)
+      ! Get function number
+      icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_TargetFuncAnalytic')
 
       ! Evaluate exact target functional
-      call fparser_evalFunction(rfparser, 1, (/rtimestep%dTime/), dexacttargetfunc)
+      call fparser_evalFunction(rappDescriptor%rfparser, icomp,&
+                                (/rtimestep%dTime/), dexactTargetFunction)
 
-      ! Release function parsers
-      call fparser_release(rfparser)
-
-      ! Compute the value of the quantity of interest of the discrete solution
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetfunc)
+      ! Create a temporal collection and attach the function parser
+      call collct_init(rcollectionTmp)
+      call collct_setvalue_pars(rcollectionTmp, 'FunctionParser',&
+                                rappDescriptor%rfparser, .true.)
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_exactSol')
+      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
+      rcollectionTmp%SquickAccess(1) = 'FunctionParser'
+      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
 
       ! Compute the exact error of the quantity of interest
-      dexacterror = dexacttargetfunc-dtargetfunc
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
+                                  transp_refFuncAnalytic, rcollectionTmp)
+
+      ! Compute the value of the quantity of interest.
+      ! Create an empty vector initialized by zeros and compute the
+      ! 'error' between this vector and the analytic quantity of interest.
+      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
+
+      ! Use the analytical function 'null'
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
+                                         rappDescriptor%rfparser, 'fp_null')
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
+                                  transp_refFuncAnalytic, rcollectionTmp)
+
+      ! Release temporal vector
+      call lsysbl_releaseVector(rvector)
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
 
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
-      call output_line('exact target functional value:           '//trim(sys_sdEP(dexacttargetfunc,15,6)))
-      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetfunc,15,6)))
-      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
-      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexacterror),15,6)))
-      call output_line('effectivity index:                       '//trim(sys_sdEP(derror/abs(dexacterror),15,6)))
-      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs((derror-abs(dexacterror))/&
-                                                                                  dexacttargetfunc),15,6)))
+      call output_line('exact target functional value:           '//trim(sys_sdEP(dexactTargetFunction,15,6)))
+      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetFunction,15,6)))
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
+                                                                                        dexactTargetFunction ),15,6)))
       call output_lbrk()
       
-
     case DEFAULT
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
-      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(derror,15,6)))
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
       call output_lbrk()
     end select
 
@@ -2207,7 +2253,7 @@ contains
           rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
       call storage_getbase_int2D(&
           rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-      call lsyssc_getbase_double(rerror, p_Ddata)
+      call lsyssc_getbase_double(rtargetError, p_DtargetError)
 
       ! Compute protection layers
       do iprotectLayer = 1, nprotectLayers
@@ -2218,7 +2264,7 @@ contains
         ! Compute a single-width protection layer
         call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
                                       rproblemLevel%rtriangulation%NEL,&
-                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
+                                      dprotectLayerTolerance, p_DtargetError, p_BisActiveElement)
       end do
 
       ! Release memory
@@ -2227,8 +2273,6 @@ contains
     end if
 
   contains
-    
-    ! Here, the real working routines follow.
     
     !**************************************************************
     ! Compute one uniformly distributed protection layer
@@ -2421,8 +2465,10 @@ contains
       
       ! Create a collection and attach the function parser
       call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'refSolParser', rfparser, .true.)
-      rcollection%SquickAccess(1) = 'refSolParser'
+      call collct_setvalue_pars(rcollection, 'FunctionParser', rfparser, .true.)
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+                                      rfparser, 'fp_exactSolution')
+      rcollection%SquickAccess(1) = 'FunctionParser'
       rcollection%DquickAccess(1) = dtime
       
       ! Calculate the H1-error of the reference solution
@@ -2851,7 +2897,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
                              rtimestep%dinitialTime, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                    rsolution, rtimestep%dinitialTime)
@@ -2924,7 +2970,7 @@ contains
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
+            call transp_initSolution(rappDescriptor, rparlist, ssectionname, p_rproblemLevel,&
                                      rtimestep%dinitialTime, rsolution)
             call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                            rsolution, rtimestep%dinitialTime)
@@ -3267,7 +3313,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
@@ -3542,7 +3588,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
+    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)    
 
     !---------------------------------------------------------------------------
@@ -3825,7 +3871,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal, .false., ST_DOUBLE)
-    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
                              0.0_DP, rsolutionPrimal)
     call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation,&
                                    rsolutionPrimal, 0.0_DP)
@@ -3992,7 +4038,7 @@ contains
         call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror, rrhs)
 
@@ -4002,7 +4048,7 @@ contains
       else
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror)
 
