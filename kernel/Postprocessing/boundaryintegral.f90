@@ -305,17 +305,14 @@ contains
     do iel = 1,NEL
     
       ! How many vertices are on the current element?
-      nve = ubound(p_IverticesAtElement,1)
-      do while (p_IverticesAtElement(nve,iel) .eq. 0) 
-        nve = nve-1
-      end do
-      
+      nve = tria_getNVE(p_IverticesAtElement, iel)
+           
       select case (nve)
-      case (3)
+      case (TRIA_NVETRI2D)
         ! Coordinates of cubature points on triangles are given in
         ! barycentric coordinates.
         icoordSystem = TRAFO_CS_BARY2DTRI
-      case (4)
+      case (TRIA_NVEQUAD2D)
         ! Coordinates of cubature points on triangles are given in
         ! standard coordinates on the reference element
         icoordSystem = TRAFO_CS_REF2DQUAD
@@ -353,17 +350,14 @@ contains
       do ipoint = 1,ncubp
 
         ! How many vertices are on the current element?
-        nve = ubound(p_IverticesAtElement,1)
-        do while (p_IverticesAtElement(nve,iel) .eq. 0) 
-          nve = nve-1
-        end do
-        
+        nve = tria_getNVE(p_IverticesAtElement, iel)
+
         select case (nve)
-        case (3)
+        case (TRIA_NVETRI2D)
           ! Coordinates of cubature points on triangles are given in
           ! barycentric coordinates, 2D.
           ctrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
-        case (4)
+        case (TRIA_NVEQUAD2D)
           ! Coordinates of cubature points on triangles are given in
           ! standard coordinates on the reference element, 2D.
           ctrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
