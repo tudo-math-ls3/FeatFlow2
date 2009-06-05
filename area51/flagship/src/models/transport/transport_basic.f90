@@ -117,8 +117,11 @@ module transport_basic
   ! surface integral target functional
   integer, parameter, public :: TFUNC_SURFINTG = 2
 
+  ! mixed volume + surface integral target functional
+  integer, parameter, public :: TFUNC_MIXINTG  = 3
+
   ! analytical value for target functional
-  integer, parameter, public :: TFUNC_ANALYTIC = 3
+  integer, parameter, public :: TFUNC_ANALYTIC = 4
 
 !</constantblock>
 
@@ -218,20 +221,8 @@ module transport_basic
     ! Jacobian format
     integer :: ijacobianFormat
 
-    ! Function parser for the velocity field
-    type(t_fparser) :: rfparserVelocityField
-
-    ! Function parser for the diffusion tensor
-    type(t_fparser) :: rfparserDiffusionTensor
-
-    ! Function parser for the reaction term
-    type(t_fparser) :: rfparserReaction
-
-    ! Function parser for the right-hand side vector
-    type(t_fparser) :: rfparserRHS
-
-    ! Function parser for target functional
-    type(t_fparser) :: rfparserTargetFunc
+    ! Function parser
+    type(t_fparser) :: rfparser
 
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution
