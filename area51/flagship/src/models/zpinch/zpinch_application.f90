@@ -941,7 +941,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionTransport, .false., ST_DOUBLE)
-    call transp_initSolution(rparlist, ssectionNameTransport, p_rproblemLevel,&
+    call transp_initSolution(rappDescrTransport, rparlist, ssectionNameTransport, p_rproblemLevel,&
                              rtimestepTransport%dinitialTime, rsolutionTransport)
     call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
                                    rsolutionTransport, rtimestepTransport%dinitialTime)
@@ -1051,7 +1051,7 @@ contains
             ! Re-generate the initial solution vectors
             call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel,&
                                     rtimestepEuler%dinitialTime, rsolutionEuler)
-            call transp_initSolution(rparlist, ssectionnameTransport, p_rproblemLevel,&
+            call transp_initSolution(rappDescrTransport, rparlist, ssectionnameTransport, p_rproblemLevel,&
                                      rtimestepTransport%dinitialTime, rsolutionTransport)
             
             
