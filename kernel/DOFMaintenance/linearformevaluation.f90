@@ -424,7 +424,7 @@ contains
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our LINF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                  IdofsTest)
+                                   IdofsTest)
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -481,7 +481,7 @@ contains
                 IdofsTest,rintSubset, &
                 Dcoefficients(:,:,1:IELmax-IELset+1),rcollection)
       
-      ! Release the domain integratino subset again
+      ! Release the domain integration subset again
       call domint_doneIntegration(rintSubset)
       
       ! Calculate the values of the basis functions.
