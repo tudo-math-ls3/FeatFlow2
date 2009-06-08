@@ -205,21 +205,17 @@
 !# 60.) lsysbl_allocEmptyMatrix
 !#      -> Allocates memory for the entries of a matrix.
 !#
-!# 61.) lsysbl_reintegrateSubmatrix
-!#      -> Reintegrates a submatrix into a larger block matrix which was
-!#         extracted from that matrix by lsysbl_deriveSubmatrix.
-!#
-!# 62.) lsysbl_getVectorMagnitude
+!# 61.) lsysbl_getVectorMagnitude
 !#      -> Compute the vector magnitude.
 !#
-!# 63.) lsysbl_synchroniseSortVecVec
+!# 62.) lsysbl_synchroniseSortVecVec
 !#      -> Synchronises the sorting between a vector and another vector
 !#
-!# 64.) lsysbl_synchroniseSortMatVec
+!# 63.) lsysbl_synchroniseSortMatVec
 !#      -> Synchrionises the sorting of a vector according to the sorting
 !#         of a matrix
 !#
-!# 65.) lsysbl_createscalarfromvec
+!# 64.) lsysbl_createscalarfromvec
 !#      -> Create a scalar vector from a block vector
 !# </purpose>
 !##############################################################################
@@ -502,7 +498,6 @@ module linearsystemblock
   public :: lsyssc_unshareVector
   public :: lsysbl_moveToSubmatrix
   public :: lsysbl_allocEmptyMatrix
-  public :: lsysbl_reintegrateSubmatrix
   public :: lsysbl_getVectorMagnitude
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
@@ -6901,11 +6896,16 @@ contains
               LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
               
           ! Change the ownership from the source to the destination matrix
-          cflags1 = iand (rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
-          cflags2 = iand (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+          cflags1 = iand (rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,&
+              LSYSSC_MSPEC_ISCOPY)
+              
+          cflags2 = iand (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,&
+              LSYSSC_MSPEC_ISCOPY)
+              
           rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec = &
             ior(iand(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,&
                     not(LSYSSC_MSPEC_ISCOPY)),cflags2)
+                    
           rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec = &
             ior(iand(rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,&
                     not(LSYSSC_MSPEC_ISCOPY)),cflags1)
@@ -7004,104 +7004,6 @@ contains
           call lsyssc_allocEmptyMatrix (rmatrix%RmatrixBlock(i,j),iclear,&
               bignoreExisting,cdataType)
         end if
-      end do
-    end do
-
-  end subroutine
-
-  ! ***************************************************************************
-  
-!<subroutine>
- 
-  subroutine lsysbl_reintegrateSubmatrix (rsourceMatrix,rdestMatrix,iy,ix,&
-      bignoreScaleFactors)
-  
-!<description>
-  ! Reintegrates a submatrix to a larger block matrix.
-  !
-  ! When a matrix rsourceMatrix is derived from a larger matrix by using
-  ! lsysbl_deriveSubmatrix, the matrix is a standalone matrix.
-  ! lsysbl_reintegrateSubmatrix allows now to 'reintegrate' such a submatrix
-  ! into the previous position in the larger matrix, taking care of
-  ! all scaling factors, ownership stati and so on.
-  !
-  ! (iy,ix) is the upper left position in the destination matrix 
-  ! rdestMatrix where rsourceMatrix should be reintegrated.
-  !
-  ! The matrix information of the source matrix is moved to the destination
-  ! matrix. The source matrix remains as 'shared copy' of the destination
-  ! matrix and can (and should) be removed.
-!</description>
-
-!<input>
-  ! X- and Y-position in the destination matrix where rsourceMatrix
-  ! should be put to.
-  integer, intent(IN)                            :: iy,ix
-
-  ! OPTIONAL: Ignore the scaling factors in the source matrix.
-  ! TRUE: Submatrices of the source matrix will be copied regardless of
-  !   whether dscaleFactor=0.0 or not. Standard.
-  ! FALSE: Submatrices of the source matrix will only be copied if
-  !   dscaleFacor <> 0.0.
-  logical, intent(in), optional                  :: bignoreScaleFactors
-!</input>
-
-!<inputoutput>
-  ! The source matrix to put into the destination matrix.
-  ! All ownership flags change to the destination matrix, the source
-  ! matrix remains as 'shared copy' of the destination.
-  type(t_matrixBlock), intent(INOUT) :: rsourceMatrix
-
-  ! Destination matrix where the source matrix should be put into. 
-  type(t_matrixBlock), intent(INOUT) :: rdestMatrix
-!</inputoutput>  
-  
-!</subroutine>
-
-    ! local variables
-    integer :: i,j
-    integer :: idupflag1,idupflag2
-    logical :: bignoreScale
-    
-    bignoreScale = .true.
-    if (present(bignoreScaleFactors)) bignoreScale = bignoreScaleFactors
-    
-    ! loop over all columns and rows in the source matrix
-    do j=1,rsourceMatrix%nblocksPerRow
-      do i=1,rsourceMatrix%nblocksPerCol
-        if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScale)) then
-          ! By default, we don't have to do anything. Just if the data of the
-          ! source and destination matrix do not coincide, we copy the data
-          ! to the destination.
-          idupflag1 = LSYSSC_DUP_IGNORE
-          idupflag2 = LSYSSC_DUP_IGNORE
-          
-          if (.not. lsyssc_isMatrixStructureShared(&
-              rsourceMatrix%RmatrixBlock(i,j),&
-              rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1))) then
-            idupflag1 = LSYSSC_DUP_COPYOVERWRITE
-          end if
-
-          if (.not. lsyssc_isMatrixContentShared(&
-              rsourceMatrix%RmatrixBlock(i,j),&
-              rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1))) then
-            idupflag2 = LSYSSC_DUP_COPYOVERWRITE
-          end if
-          
-          ! Copy -- or do nothing. 
-          call lsyssc_duplicateMatrix (rsourceMatrix%RmatrixBlock(i,j),&
-              rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1),idupflag1,idupflag2)
-          
-          ! Ensure that we copy the scale factor, that's important!
-          rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%dscaleFactor = &
-              rsourceMatrix%RmatrixBlock(i,j)%dscaleFactor
-        else if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,.true.) .and. &
-                 .not. lsysbl_isSubmatrixPresent(rdestMatrix,i+iy-1,j+ix-1,.true.)) then
-          ! The matrix in the source matrix is not present anymore. Mirror that
-          ! by releasing the corresponding matrix in the destination.
-          call lsyssc_releaseMatrix (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1))
-        end if
-            
       end do
     end do
 
