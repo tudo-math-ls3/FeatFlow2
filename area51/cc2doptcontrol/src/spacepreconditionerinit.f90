@@ -479,9 +479,10 @@ contains
           p_rlevelInfo%p_rpresmoother => p_rsmoother
           p_rlevelInfo%p_rpostsmoother => p_rsmoother
           
-          ! Set up the interlevel projection structure on all levels
+          ! Set up the interlevel projection structure for the projection from/to
+          ! the lower level.
           call linsol_initProjMultigrid2Level(p_rlevelInfo,&
-              rpreconditioner%p_rprojection)
+              rpreconditioner%p_Rprojection(rpreconditioner%NLMIN-1+ilev))
           
         case DEFAULT
         
@@ -750,8 +751,10 @@ contains
       deallocate(rpreconditioner%p_rtempVectorSc)
       
       ! Clean up data about the projection etc.
-      call mlprj_doneProjection(rpreconditioner%p_rprojection)
-      deallocate(rpreconditioner%p_rprojection)
+      do i=rpreconditioner%NLMAX,rpreconditioner%NLMIN+1,-1
+        call mlprj_doneProjection(rpreconditioner%p_Rprojection(i))
+      end do
+      deallocate(rpreconditioner%p_Rprojection)
 
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
@@ -842,17 +845,17 @@ contains
       ! configuring the linear solver.
       ssolverName = ssection
       
-      ! Initialise a standard interlevel projection structure. We
-      ! can use the same structure for all levels. Therefore it's enough
-      ! to initialise one structure using the RHS vector on the finest
-      ! level to specify the shape of the PDE-discretisation.
-      allocate(rpreconditioner%p_rprojection)
-      call mlprj_initProjectionDiscr (rpreconditioner%p_rprojection,p_rdiscretisation)
+      ! Initialise a standard interlevel projection structure for every level
+      allocate(rpreconditioner%p_rprojection(NLMIN+1:NLMAX))
+      do i=NLMIN+1,NLMAX
+        call mlprj_initProjectionDiscr (rpreconditioner%p_Rprojection(i),&
+            rproblem%RlevelInfo(i)%rdiscretisation)
       
-      ! Initialise the projection structure with data from the INI/DAT
-      ! files. This allows to configure prolongation/restriction.
-      call cc_getProlRest (rpreconditioner%p_rprojection, &
-          rproblem%rparamList,  'CC-PROLREST')
+        ! Initialise the projection structure with data from the INI/DAT
+        ! files. This allows to configure prolongation/restriction.
+        call cc_getProlRest (rpreconditioner%p_Rprojection(i), &
+            rproblem%rparamList,  'CC-PROLREST')
+      end do
       
       ! Initialise the linear solver as configured in the DAT file.
       call cc_initLinearSolver (rproblem,rpreconditioner,ssolverName)
@@ -868,7 +871,7 @@ contains
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
-            rpreconditioner%p_rprojection,&
+            rpreconditioner%p_Rprojection(i),&
             rproblem%RlevelInfo(i-1)% &
               rdiscretisation%RspatialDiscr(1:p_rdiscretisation%ncomponents),&
             rproblem%RlevelInfo(i)% &

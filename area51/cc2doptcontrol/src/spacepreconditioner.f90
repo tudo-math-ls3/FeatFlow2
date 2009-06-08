@@ -300,7 +300,7 @@ module spacepreconditioner
     type(t_linsolNode), pointer :: p_rsolverNode
     
     ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection
+    type(t_interlevelProjectionBlock), dimension(:), pointer :: p_Rprojection
     
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
@@ -625,7 +625,6 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rprojection => rpreconditioner%p_rprojection
         p_rvectorTemp => rpreconditioner%p_rtempVectorSc
 
         ! Get the filter chain. We need that later to filter the matrices.        
@@ -664,6 +663,10 @@ contains
             
           else
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
+
+            ! Get the mujltilevel projection structure that describes the
+            ! projection from the finer level to the current one.
+            p_rprojection => rpreconditioner%p_Rprojection(ilev+1)
             
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 

@@ -428,18 +428,18 @@ contains
         rmatrixComponents%dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
         rmatrixComponents%Dtheta(1,1) = 1.0_DP
-        rmatrixComponents%Dtheta(2,2) = dtheta
+        rmatrixComponents%Dtheta(2,2) = 1.0_DP
         
         if (.not. bconvectionExplicit) then
 
           rmatrixComponents%Dgamma(1,1) = &
-              dtheta * real(1-rproblem%iequation,DP)
+              real(1-rproblem%iequation,DP)
           rmatrixComponents%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%iequation,DP)
+              - real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
+          rmatrixComponents%Dnewton(1,1) = dnewton
           rmatrixComponents%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%iequation,DP)
+                real(1-rproblem%iequation,DP)
                 
         end if
 
@@ -452,28 +452,28 @@ contains
         ! Only difference to the usual diagonal: No coupling mass matrix
         ! from dual to the primal velocity.
         rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
-            (-dequationType) * dtheta 
+            (-dequationType)
         
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
             rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
+                ( dequationType)
             !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType) * dtheta 
+            !    ( dequationType)
             rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
+                (-dequationType)
           end if
           
         else
         
           if (dnewton .ne. 0.0_DP) then
             rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType) * dtheta 
+                ( dequationType)
             !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType) * dtheta 
+            !    ( dequationType)
             rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType) * dtheta 
+                (-dequationType)
           end if
         
         end if
@@ -509,7 +509,7 @@ contains
 
         rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta) 
+        rmatrixComponents%Dtheta(2,2) = 0.0_DP
         
         if (.not. bconvectionExplicit) then
         
