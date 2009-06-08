@@ -4760,12 +4760,6 @@ contains
   ! ilastBlock is the index the last diagonal block in rdestMatrix
   ! which should be put to rdestMatrix.
   !
-  ! The newly created block matrix will not have any block discretisation 
-  ! structure attached!
-  ! The caller may therefore want to use lsysbl_assignDiscrDirectMat
-  ! to specify the correct discretisation structure after
-  ! creating the matrix.
-  !
   ! In contrast to lsysbl_deriveSubmatrix, the newly created submatrix receives
   ! all ownership information from the source matrix, leaving the source matrix
   ! as 'shared copy'. This allows to extract a submatrix, do some local modifications
@@ -4797,6 +4791,13 @@ contains
   !  case specify the Y-coordinates in the block matrix while 
   !  ifirstBlockCol,ilastBlockCol specify the X-coordinates:
   !     rdestmatrix = rsourceMatrix (ifirstBlock:ilastBlock, ifirstBlockCol:ilastBlockCol)
+  !
+  ! Remark 3: If the destination matrix is completely empty, a block matrix
+  !  with no discretisation structure is created. The 'local' discretisation
+  !  structures in the scalar matrices will remain.
+  !  If the destination matrix is based on a discretisation structure, the
+  !  discretisation structures of the scalar matrices in the source matrix 
+  !  is changed according to this 'guiding' block discretisation structure.
 !</description>
   
 !<input>
@@ -4903,6 +4904,33 @@ contains
           call lsyssc_moveMatrix(rsourceMatrix%RmatrixBlock(i,j),&
               rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
                
+          ! Reassign the discretisation structures and change the spatial
+          ! discretisation structures of the submatrices according to the
+          ! block discretisation if there is one.
+          if (associated(rdestMatrix%p_rblockDiscrTrial) .and. &
+              associated(rdestMatrix%p_rblockDiscrTest)) then
+            call lsyssc_assignDiscrDirectMat (&
+                rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1),&
+                rdestMatrix%p_rblockDiscrTrial%RspatialDiscr(j-ifirstX+1),&
+                rdestMatrix%p_rblockDiscrTest%RspatialDiscr(i-ifirstY+1))
+                
+            if (rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1)%NCOLS .ne.&
+                dof_igetNDofGlob(rdestMatrix%p_rblockDiscrTrial%&
+                RspatialDiscr(j-ifirstX+1))) then
+              call output_line('Matrix not compatible with discretisation (NCOLS)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_extractSubmatrix')
+              call sys_halt()
+            end if
+
+            if (rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1)%NEQ .ne.&
+                dof_igetNDofGlob(rdestMatrix%p_rblockDiscrTest%&
+                RspatialDiscr(i-ifirstY+1))) then
+              call output_line('Matrix not compatible with discretisation (NEQ)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_extractSubmatrix')
+              call sys_halt()
+            end if
+          end if
+
         else if (lsysbl_isSubmatrixPresent(rdestMatrix,&
             i-ifirstY+1,j-ifirstX+1,.true.)) then
         
@@ -6803,7 +6831,8 @@ contains
   
 !<subroutine>
  
-  subroutine lsysbl_moveToSubmatrix (rsourceMatrix,rdestMatrix,itop,ileft)
+  subroutine lsysbl_moveToSubmatrix (rsourceMatrix,rdestMatrix,itop,ileft,&
+      bignoreScaleFactors)
   
 !<description>
   ! Inserts the block matrix as submatrix into another block matrix.
@@ -6814,12 +6843,26 @@ contains
   ! The matrix information of the source matrix is moved to the destination
   ! matrix. The source matrix remains as 'shared copy' of the destination
   ! matrix and can (and should) be removed.
+  !
+  ! Remark: If no block discretisation is assigned to the destination matrix, 
+  !  the 'local' discretisation structures in the source matrices will
+  !  be transferred to the destination matrix.
+  !  If a block discretisation is assigned to the destination matrix, the
+  !  discretisation structures of the scalar matrices in the source matrix 
+  !  is changed according to this 'guiding' block discretisation structure.
 !</description>
 
 !<input>
   ! X- and Y-position in the destination matrix where rsourceMatrix
   ! should be put to. If not specified, 1 is assumed.
   integer, intent(IN), optional :: itop,ileft
+
+  ! OPTIONAL: Ignore the scaling factors in the source matrix.
+  ! TRUE: Submatrices of the source matrix will be copied regardless of
+  !   whether dscaleFactor=0.0 or not. Standard.
+  ! FALSE: Submatrices of the source matrix will only be copied if
+  !   dscaleFacor <> 0.0.
+  logical, intent(in), optional                  :: bignoreScaleFactors
 !</input>
 
 !<inputoutput>
@@ -6837,7 +6880,11 @@ contains
     ! local variables
     integer :: i,j,ix,iy
     integer(I32) :: cflags1,cflags2
+    logical :: bignoreScale
     
+    bignoreScale = .true.
+    if (present(bignoreScaleFactors)) bignoreScale = bignoreScaleFactors
+
     ix = 1
     iy = 1
     if (present(itop)) iy=itop
@@ -6848,22 +6895,60 @@ contains
       do i=1,rsourceMatrix%nblocksPerCol
         ! Copy the submatrix from the source matrix to the destination
         ! matrix.
-        call lsyssc_duplicateMatrix (rsourceMatrix%RmatrixBlock(i,j),&
-            rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-            
-        ! Change the ownership from the source to the destination matrix
-        cflags1 = iand (rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
-        cflags2 = iand (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
-        rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec = &
-          ior(iand(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,&
-                   not(LSYSSC_MSPEC_ISCOPY)),cflags2)
-        rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec = &
-          ior(iand(rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,&
-                   not(LSYSSC_MSPEC_ISCOPY)),cflags1)
-        
-        ! Now, the destination matrix is the owner and the source matrix
-        ! the copy...
+        if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScale)) then
+          call lsyssc_duplicateMatrix (rsourceMatrix%RmatrixBlock(i,j),&
+              rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1),&
+              LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+              
+          ! Change the ownership from the source to the destination matrix
+          cflags1 = iand (rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+          cflags2 = iand (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,LSYSSC_MSPEC_ISCOPY)
+          rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec = &
+            ior(iand(rsourceMatrix%RmatrixBlock(i,j)%imatrixSpec,&
+                    not(LSYSSC_MSPEC_ISCOPY)),cflags2)
+          rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec = &
+            ior(iand(rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%imatrixSpec,&
+                    not(LSYSSC_MSPEC_ISCOPY)),cflags1)
+          
+          ! Reassign the discretisation structures and change the spatial
+          ! discretisation structures of the submatrices according to the
+          ! block discretisation if there is one.
+          if (associated(rdestMatrix%p_rblockDiscrTrial) .and. &
+              associated(rdestMatrix%p_rblockDiscrTest)) then
+            call lsyssc_assignDiscrDirectMat (&
+                rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1),&
+                rdestMatrix%p_rblockDiscrTrial%RspatialDiscr(j+ix-1),&
+                rdestMatrix%p_rblockDiscrTest%RspatialDiscr(i+iy-1))
+                
+            if (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%NCOLS .ne.&
+                dof_igetNDofGlob(rdestMatrix%p_rblockDiscrTrial%&
+                RspatialDiscr(j+ix-1))) then
+              call output_line('Matrix not compatible with discretisation (NCOLS)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_moveToSubmatrix')
+              call sys_halt()
+            end if
+
+            if (rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1)%NEQ .ne.&
+                dof_igetNDofGlob(rdestMatrix%p_rblockDiscrTest%&
+                RspatialDiscr(i+iy-1))) then
+              call output_line('Matrix not compatible with discretisation (NEQ)!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_moveToSubmatrix')
+              call sys_halt()
+            end if
+          end if
+
+          ! Now, the destination matrix is the owner and the source matrix
+          ! the copy...
+        else
+          ! Release the submatrix in the destination matrix if present.
+          ! This is independent of the scale factor (we ignore it!) as
+          ! we want to produce a destination matrix that looks like
+          ! the source matrix without any skeletons in the cupboard
+          ! that may be activated by switching the scaling factors...
+          
+          call lsyssc_releaseMatrix (&
+              rdestMatrix%RmatrixBlock(i+iy-1,j+ix-1))
+        end if
       end do
     end do
 
