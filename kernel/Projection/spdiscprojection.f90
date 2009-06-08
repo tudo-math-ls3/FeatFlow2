@@ -110,12 +110,16 @@ contains
     p_rdestDiscr => rdestVector%p_rspatialDiscr
     
     if (.not. associated(p_rsourceDiscr)) then
-      print *,'spdp_projectSolutionScalar: No source discretisation!'
+      call output_line ('No source discretisation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
 
     if (.not. associated(p_rdestDiscr)) then
-      print *,'spdp_projectSolutionScalar: No destination discretisation!'
+      call output_line ('No destination discretisation!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
     
@@ -127,19 +131,25 @@ contains
     
     if (.not. associated(p_rsourceDiscr%p_rtriangulation,&
                          p_rdestDiscr%p_rtriangulation)) then
-      print *,'spdp_projectSolutionScalar: Different triangulations'
+      call output_line ('Different triangulations!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
     
     if ((p_rsourceDiscr%ccomplexity .ne. SPDISC_UNIFORM) .or. &
         (p_rdestDiscr%ccomplexity .ne. SPDISC_UNIFORM)) then
-      print *,'spdp_projectSolutionScalar: Only uniform discretisations supported!'
+      call output_line ('Only uniform discretisations supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
     
     if ((rsourceVector%isortStrategy .gt. 0) .or. &
         (rdestVector%isortStrategy .gt. 0)) then
-      print *,'spdp_projectSolutionScalar: Vectors must be unsorted for projection!'
+      call output_line ('Vectors must be unsorted for projection!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
     
@@ -160,7 +170,9 @@ contains
     
     if ((rsourceVector%cdataType .ne. ST_DOUBLE) .or. &
         (rdestVector%cdataType .ne. ST_DOUBLE)) then
-      print *,'spdp_projectSolutionScalar: Only double precision vectors supported!'
+      call output_line ('Only double precision vectors supported!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end if
     
@@ -188,8 +200,9 @@ contains
         call spdp_Q1toQ0_dble (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
                                p_IverticesAtElement)
       case default
-        print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
-        call sys_halt()
+        ! Fallback to projection into the cells.
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        call spdp_projectToCells (rsourceVector, p_Ddest)
         
       end select
     case (EL_Q1)
@@ -268,8 +281,10 @@ contains
                                  p_IelementsAtVertexIdx)
      
       case default
-        print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
-        call sys_halt()
+        ! Fallback to projection into the vertices.
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        call spdp_projectToVertices (rsourceVector, p_Ddest)
+
       end select
     
     case (EL_Q1_3D)
@@ -321,12 +336,16 @@ contains
                                     p_IelementsAtVertexIdx)
                           
         case default
-        print *,'spdp_projectSolutionScalar: Unsupported element in source space!'
-        call sys_halt()
+          call output_line ('Unsupported element in source space!', &
+                            OU_CLASS_ERROR,OU_MODE_STD,&
+                            'spdp_projectSolutionScalar')  
+          call sys_halt()
       end select
 
     case default
-      print *,'spdp_projectSolutionScalar: Unsupported element in destination space!'
+      call output_line ('Unsupported element in destination space!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolutionScalar')  
       call sys_halt()
     end select
     
@@ -816,7 +835,9 @@ contains
     integer :: i
     
     if (rsourceVector%nblocks .ne. rdestVector%nblocks) then
-      print *,'spdp_projectSolution: Different block structure!'
+      call output_line ('Different block structure!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,&
+                        'spdp_projectSolution')  
       call sys_halt()
     end if
     
