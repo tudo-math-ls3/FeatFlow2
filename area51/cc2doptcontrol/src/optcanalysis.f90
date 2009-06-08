@@ -260,4 +260,230 @@ contains
     
   end subroutine
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ffunction_analyticalRef (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! Analytical reference solution given by an expression.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  integer, dimension(:,:), intent(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    real(DP) :: dtime
+    integer :: i,j,icomponent
+    
+    real(DP), dimension(:), allocatable :: DvaluesAct
+
+    type(t_fparser), pointer :: p_rparser
+    real(dp), dimension(:,:), allocatable :: p_Dval
+    
+    ! Get the parser object with the RHS expressions from the collection
+    p_rparser => collct_getvalue_pars (rcollection, 'SOLPARSER') 
+    
+    ! Current time
+    dtime = rcollection%DquickAccess(1)
+    
+    ! X/Y component
+    icomponent = rcollection%IquickAccess(1)
+    
+    ! Prepare the array with the values for the function.
+    ! X-coordinate, Y-coordinate, time.
+    allocate(p_Dval(3,npointsPerElement*nelements))
+    do i=1,nelements
+      do j=1,npointsPerElement
+        p_Dval (1,(i-1)*npointsPerElement+j) = Dpoints(1,j,i)
+        p_Dval (2,(i-1)*npointsPerElement+j) = Dpoints(2,j,i)
+        p_Dval (3,(i-1)*npointsPerElement+j) = dtime
+      end do
+    end do
+    
+    ! Evaluate the 1st expression for the X-rhs
+    allocate(DvaluesAct(npointsPerElement*nelements))
+    call fparser_evalFunction (p_rparser, icomponent, 2, p_Dval, DvaluesAct)
+
+    ! Reshape the data, that's it.
+    do i=0,nelements-1
+      do j=1,npointsPerElement
+        Dvalues(j,i+1) = DvaluesAct(i*npointsPerElement+j)
+      end do
+    end do
+    
+    deallocate(DvaluesAct)
+    deallocate(p_Dval)
+
+  end subroutine
+
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine cc_optc_analyticalError (rproblem,rsolution,rtempVector,&
+      dalpha,dgamma,ssolutionExpressionX,ssolutionExpressionY,derror)
+
+!<description>
+  ! Computes the L2-error $||y-y0||_2$ of the given solution y to a reference
+  ! solution y0 given as expression.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  type(t_spacetimeVector), intent(IN) :: rsolution
+  
+  ! Regularisation parameter $\alpha$.
+  real(DP), intent(IN) :: dalpha
+
+  ! Regularisation parameter $\gamma$.
+  real(DP), intent(IN) :: dgamma
+  
+  ! Expression specifying the analytical solution y0.
+  character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY
+!</input>
+
+!<inputoutput>
+  ! Problem structure defining z and the time discretisation.
+  type(t_problem), intent(INOUT) :: rproblem
+
+  ! A block temp vector with size and structure of the subvectors in rsolution.
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
+!</inputoutput>
+
+!<output>
+  ! Returns information about the error. ||y-z||_{L^2}.
+  real(DP), intent(OUT) :: derror
+!</output>
+  
+!</subroutine>
+    
+    ! local variables
+    integer :: isubstep
+    real(DP) :: dtstep
+    real(DP),dimension(4) :: Derr
+    character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
+      (/'X    ','Y    ','TIME '/)
+    type(t_collection) :: rcollection
+    type(t_fparser) :: rsolParser
+    
+    derror = 0.0_DP
+    dtstep = rsolution%p_rtimeDiscretisation%dtstep
+    
+    ! Create a parser and to evaluate the expression.
+    call fparser_create (rsolParser,NDIM2D)
+    
+    ! Compile the two expressions
+    call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
+    call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
+    
+    ! Put the parser to the problem collection to be usable in a callback
+    ! routine.
+    call collct_init(rcollection)
+    call collct_setvalue_pars (rcollection, 'SOLPARSER', &
+        rsolParser, .true.) 
+          
+    do isubstep = 0,rsolution%NEQtime-1
+      ! Current point in time
+      rproblem%rtimedependence%dtime = &
+          rproblem%rtimedependence%dtimeInit + &
+          isubstep*dtstep
+      rproblem%rtimedependence%itimestep = isubstep
+
+      rcollection%DquickAccess(1) = rproblem%rtimedependence%dtime
+
+      ! Get the solution.
+      ! Evaluate the space time function in rvector in the point
+      ! in time dtime. Independent of the discretisation in time,
+      ! this will give us a vector in space.
+      !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
+      call tmevl_evaluate(rsolution,rproblem%rtimedependence%dtime,rtempVector)
+
+      ! Compute:
+      ! Derror(1) = ||y-z||^2_{L^2}.
+      
+      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
+      rcollection%IquickAccess(1) = 1
+      call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+                        ffunction_analyticalRef,rcollection)
+
+      rcollection%IquickAccess(1) = 2
+      call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+                        ffunction_analyticalRef,rcollection)
+
+      ! We use the summed trapezoidal rule.
+      if ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) then
+        derror = derror + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+      else
+        derror = derror + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+      end if
+      print *,Derr(1),Derr(2)
+
+    end do
+    
+    derror = sqrt(derror)
+    
+    ! Clean up
+    call collct_deletevalue (rcollection, 'SOLPARSER') 
+    call collct_done(rcollection)
+    
+    ! Release the parser
+    call fparser_release(rsolParser)
+    
+  end subroutine
+
 end module

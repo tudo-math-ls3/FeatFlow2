@@ -2495,6 +2495,8 @@ contains
     integer :: isubstep,iglobIter,ierror,ilev,ispacelev,nsmSteps,cspaceTimeSmoother
     integer :: ilowerSpaceLevel,itemp,ctypeCoarseGridSolver,i,nlmax
     logical :: bneumann
+    integer :: isolutionStart
+    character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY
     real(DP), dimension(4) :: Derror
     integer(I32) :: nminIterations,nmaxIterations
     real(DP) :: depsRel,depsAbs,domega,domegaPrecond,depsDiff
@@ -3049,6 +3051,29 @@ contains
     call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
     call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
     call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
+    
+    ! If the solution is given as analytical expression, we can calculate
+    ! the real error.
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isolutionStart',isolutionStart,0)
+    if (isolutionStart .eq. 3) then
+      ! Get the expressions defining the solution      
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionX',sstring,'''''')
+      read(sstring,*) ssolutionExpressionX
+
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionY',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY
+
+      call cc_optc_analyticalError (rproblem,&
+          RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
+          RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
+          RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
+          ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+      call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+    end if
+    
     call output_separator (OU_SEP_EQUAL)        
 
     ! Get configuration parameters from the DAT file
@@ -3197,6 +3222,18 @@ contains
         call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
         call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
         call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
+
+        ! If the solution is given as analytical expression, we can calculate
+        ! the real error.
+        if (isolutionStart .eq. 3) then
+          call cc_optc_analyticalError (rproblem,&
+              RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
+              RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
+              RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
+              ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+          call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+        end if
+
         if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
           call output_lbrk ()
           call output_line ('Inexact Newton: Stopping criterion = '//&
@@ -3367,6 +3404,18 @@ contains
     call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
     call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
     call output_line ('J(y,u)        = '//trim(sys_sdEL(Derror(4),10)))
+
+    ! If the solution is given as analytical expression, we can calculate
+    ! the real error.
+    if (isolutionStart .eq. 3) then
+      call cc_optc_analyticalError (rproblem,&
+          RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
+          RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
+          RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
+          ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+      call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+    end if
+
     call output_separator (OU_SEP_EQUAL)
     call output_line ('Total computation time             = '// &
         trim(sys_sdL(rtimerNonlinear%delapsedReal,10)))
