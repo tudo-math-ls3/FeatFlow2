@@ -126,11 +126,13 @@ iBoundary          = 2
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 #  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
 #  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+#  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
 
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
 iElementType       = 3
