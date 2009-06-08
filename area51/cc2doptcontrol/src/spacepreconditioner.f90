@@ -243,21 +243,11 @@ module spacepreconditioner
     ! used for preconditioning.
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
     
-    ! Pointer to a B1^T-matrix.
-    ! This pointer may point to NULL(). In this case, B1^T is created
-    ! by 'virtually transposing' the B1 matrix.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar), pointer :: p_rmatrixB1T => null()
+    ! Pointer to a D1-matrix.
+    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
 
-    ! Pointer to a B2-matrix.
-    ! This pointer may point to NULL(). In this case, B2^T is created
-    ! by 'virtually transposing' the B2 matrix.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar), pointer :: p_rmatrixB2T => null()
+    ! Pointer to a D2-matrix.
+    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
 
   end type
 
@@ -383,6 +373,58 @@ contains
 
   ! ***************************************************************************
 
+!<function>
+
+  integer(I32) function cc_getMatrixFlag (rpreconditioner,ilevel)
+  
+!<description>
+  ! Determines the matrix flag for creating submatrices of the global matrix.
+  ! The matrix flag is provided to cc_assembleMatrix in order to specify
+  ! crucial properties that the matrix must have in order to be compatible
+  ! to the preconditioner.
+!</description>
+
+!<input>
+  ! The spatial preconditioner structure.
+  type(t_ccspatialPreconditioner), intent(in) :: rpreconditioner
+  
+  ! The current spatial level.
+  integer, intent(in) :: ilevel
+!</input>
+
+!<returns>
+  ! Matrix flag for cc_assembleMatrix.
+!</returns>
+
+!</function>
+
+    cc_getMatrixFlag = 0
+    
+    ! Is that the coarse mesh?
+    if (ilevel .eq. rpreconditioner%NLMIN) then
+      ! Coarse grid solver is some kind of VANKA which needs virtually
+      ! transposed matrices?
+      if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
+        select case (rpreconditioner%rprecSpecials%icoarseGridSolverType)
+        case (1,2)
+          cc_getMatrixFlag = CCMASM_FLAG_VTBMAT
+        end select
+      end if
+    else
+      ! Smoother is some kind of VANKA which needs virtually
+      ! transposed matrices?
+      if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
+        select case (rpreconditioner%rprecSpecials%ismootherType)
+        case (2,3,4,5,6,7)
+          cc_getMatrixFlag = CCMASM_FLAG_VTBMAT
+        end select
+      end if
+    end if
+
+  end function
+
+  ! ***************************************************************************
+
   !<subroutine>
 
     subroutine cc_precondDefect (rpreconditioner,rmatrixComponents,&
@@ -445,8 +487,6 @@ contains
     logical :: bassembleNewton
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-    type(t_linsol_alterSolverConfig) :: ralterSolver
-    type(t_vectorBlock) :: rsubvectorD
 
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
@@ -716,10 +756,10 @@ contains
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixB1              
           rmatrixAssembly%p_rmatrixB2             => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixB2              
-          rmatrixAssembly%p_rmatrixB1T            => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB1T
-          rmatrixAssembly%p_rmatrixB2T            => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB2T
+          rmatrixAssembly%p_rmatrixD1             => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixD1
+          rmatrixAssembly%p_rmatrixD2             => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixD2
           rmatrixAssembly%p_rmatrixMass           => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixMass            
           rmatrixAssembly%p_rmatrixIdentityPressure => &
@@ -729,11 +769,11 @@ contains
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           if (ilev .eq. rpreconditioner%NLMAX) then
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,&
+                cc_getMatrixFlag(rpreconditioner,ilev),p_rmatrix,rmatrixAssembly,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
           else
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rmatrixAssembly,&
+                cc_getMatrixFlag(rpreconditioner,ilev),p_rmatrix,rmatrixAssembly,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
                 p_rmatrixFine)
           end if

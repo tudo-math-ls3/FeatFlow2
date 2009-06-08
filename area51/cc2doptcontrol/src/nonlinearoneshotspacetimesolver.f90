@@ -768,7 +768,7 @@ contains
           
         ! Assemble the matrix. No 'previous' solution vector.
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
           
         ! Assemble the system matrix on level p_rspaceTimeDiscr%ilevel.
@@ -792,7 +792,7 @@ contains
       
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -832,7 +832,7 @@ contains
 
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -867,7 +867,7 @@ contains
             
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
@@ -886,7 +886,7 @@ contains
 
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -924,7 +924,7 @@ contains
       
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -956,7 +956,7 @@ contains
         
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            rmatrix,rmatrixComponents,&
+            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.

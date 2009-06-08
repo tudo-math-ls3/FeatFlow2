@@ -1103,8 +1103,9 @@ contains
             ichunk-1,-1,rmatrixComponents)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-              RsystemMatrix(-1,ichunkrel),rmatrixComponents,rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
+          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
+              RsystemMatrix(-1,ichunkrel),rmatrixComponents,&
+              rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
           ! Include the boundary conditions into that matrix.
           RsystemMatrix(-1,ichunkrel)%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
@@ -1137,7 +1138,7 @@ contains
           ichunk-1,0,rmatrixComponents)
         
         ! Set up the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
             RsystemMatrix(0,ichunkrel),rmatrixComponents,&
             rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
@@ -1263,7 +1264,7 @@ contains
             ichunk-1,1,rmatrixComponents)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
               RsystemMatrix(1,ichunkrel),rmatrixComponents,&
               rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         

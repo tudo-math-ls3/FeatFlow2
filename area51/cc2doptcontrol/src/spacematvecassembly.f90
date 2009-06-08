@@ -174,6 +174,17 @@ module spacematvecassembly
 
 !</constantblock>
 
+!<constantblock description="Matrix specification flag defining some properties of the matrix to generate.">
+  
+  ! No flags
+  integer(I32), parameter :: CCMASM_FLAG_NONE        = 0
+
+
+  ! Generate a matrix with D1/D2=virtually transposed B1/B2 matrices.
+  integer(I32), parameter :: CCMASM_FLAG_VTBMAT      = 2**0
+  
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -394,6 +405,12 @@ module spacematvecassembly
     ! Note: This information is automatically created when the preconditioner
     ! is initialised! The main application does not have to initialise it!
     type(t_matrixScalar), pointer :: p_rmatrixB2T => null()
+
+    ! Pointer to a D1-matrix.
+    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
+
+    ! Pointer to a D2-matrix.
+    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
 
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
@@ -716,7 +733,8 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleMatrix (coperation,cmatrixType,rmatrix,rmatrixComponents,&
+  subroutine cc_assembleMatrix (coperation,cmatrixType,cmatrixFlag,&
+      rmatrix,rmatrixComponents,&
       rvector1,rvector2,rvector3,rfineMatrix)
 
 !<description>
@@ -772,6 +790,10 @@ contains
   ! If the matrix already exists and only its entries are to be computed,
   ! CCMASM_MTP_AUTOMATIC should be specified here.
   integer, intent(IN) :: cmatrixType
+
+  ! Matrix flag bitfield that specifies additional properties of the matrix
+  ! to generate. A combination of CCMASM_FLAG_xxxx constants.
+  integer(I32), intent(in) :: cmatrixFlag
 
   ! A t_ccmatrixComponents structure providing all necessary 'source' information
   ! about how to set up the matrix. 
@@ -850,7 +872,7 @@ contains
       do j=1,2
         do i=1,2
           call lsysbl_createEmptyMatrix (rtempMatrix,NDIM2D+1,NDIM2D+1)
-          call allocSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+          call allocSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,rtempMatrix,&
               rmatrixComponents%Diota(i,j),rmatrixComponents%Dalpha(i,j),&
               rmatrixComponents%Dtheta(i,j),rmatrixComponents%Dgamma(i,j),&
               rmatrixComponents%Dnewton(i,j),rmatrixComponents%DgammaT(i,j),&
@@ -896,19 +918,18 @@ contains
         rmatrix%RmatrixBlock(:,:)%dscaleFactor = 0.0_DP
         
         ! Derive a discretisation structure for either primal or
-        ! dual variables.
+        ! dual variables. Create a temporary matrix based on that.
         call spdiscr_deriveBlockDiscr (rmatrixComponents%p_rdiscretisation, rvelDiscr, &
                                        1, 3)
+        call lsysbl_createMatBlockByDiscr (rvelDiscr,rtempMatrix)
         
         ! Primal equation
         ! ---------------
         ! In the first step, assemble the linear parts
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
-        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3)
-        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
-        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
-            rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
+        call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,1,3)
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,&
+            rtempMatrix,rmatrixComponents%Diota(1,1),rmatrixComponents%Dalpha(1,1),&
             rmatrixComponents%Dtheta(1,1),&
             rmatrixComponents%Deta(1,1),rmatrixComponents%Dtau(1,1),.false.)
 
@@ -940,7 +961,7 @@ contains
         end select
 
         ! Reintegrate the computed matrix
-        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,1)
+        call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,1,1)
 
         ! Include the mass matrix blocks
         !
@@ -948,9 +969,7 @@ contains
         !    (  .    .    .    .    R1   . ) 
         !    (  .    .    .    .    .    . )
         
-        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,1,3,4,6)
-        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
+        call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,1,3,4,6)
         select case (rmatrixComponents%idualSol)
         case (1)
           call assembleProjectedMassBlocks (rmatrixComponents,rtempMatrix, rvector1, &
@@ -964,16 +983,14 @@ contains
         end select
 
         ! Reintegrate the computed matrix
-        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,1,4)
+        call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,1,4)
 
         ! Dual equation
         ! -------------
         ! In the first step, assemble the linear parts
         ! (Laplace, Mass, B/B^T) on the main diagonal of the primal equation.
-        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6)
-        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
-        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+        call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,4,6)
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,rtempMatrix,&
             rmatrixComponents%Diota(2,2),rmatrixComponents%Dalpha(2,2),&
             rmatrixComponents%Dtheta(2,2),&
             rmatrixComponents%Deta(2,2),rmatrixComponents%Dtau(2,2),.true.)
@@ -1005,7 +1022,7 @@ contains
         end select
 
         ! Reintegrate the computed matrix
-        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,4)
+        call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,4)
 
         ! Include the mass matrix blocks
         !
@@ -1016,12 +1033,10 @@ contains
         ! Remember that they are nonlinear if we have a preconditioner with
         ! Newton activated!
         
-        call lsysbl_deriveSubmatrix (rmatrix,rtempMatrix,&
-            LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE,4,6,1,3)
-        call lsysbl_assignDiscrDirectMat(rtempMatrix,rvelDiscr)
+        call lsysbl_extractSubmatrix (rmatrix,rtempMatrix,4,6,1,3)
         
         ! Assemble linear parts.
-        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rtempMatrix,&
+        call assembleLinearSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,rtempMatrix,&
             rmatrixComponents%Diota(2,1),rmatrixComponents%Dalpha(2,1),&
             rmatrixComponents%Dtheta(2,1),&
             rmatrixComponents%Deta(2,1),rmatrixComponents%Dtau(2,1),.false.)
@@ -1047,7 +1062,7 @@ contains
             rstabilisation)      
 
         ! Reintegrate the computed matrix
-        call lsysbl_reintegrateSubmatrix (rtempMatrix,rmatrix,4,1)
+        call lsysbl_moveToSubmatrix (rtempMatrix,rmatrix,4,1)
 
         ! Switch the I-matrix in the continuity equation on/off.
         ! The matrix always exists -- but is usually filled with zeroes
@@ -1170,23 +1185,41 @@ contains
         if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then                              
           ! Furthermore, put B1^T and B2^T to the block matrix.
           ! These matrices are always 'shared'.
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
-                                        rmatrix%RmatrixBlock(3,1),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          if (iand(cmatrixFlag,CCMASM_FLAG_VTBMAT) .ne. 0) then
+            call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                          rmatrix%RmatrixBlock(3,1),&
+                                          LSYSSC_TR_VIRTUAL)
+            call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                          rmatrix%RmatrixBlock(3,2),&
+                                          LSYSSC_TR_VIRTUAL)
+          else
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD1, &
+                                          rmatrix%RmatrixBlock(3,1),&
+                                          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
-                                        rmatrix%RmatrixBlock(3,2),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD2, &
+                                          rmatrix%RmatrixBlock(3,2),&
+                                          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          end if
         end if
                                         
         if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
-                                        rmatrix%RmatrixBlock(6,4),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          if (iand(cmatrixFlag,CCMASM_FLAG_VTBMAT) .ne. 0) then
+            call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                          rmatrix%RmatrixBlock(6,4),&
+                                          LSYSSC_TR_VIRTUAL)
+            call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                          rmatrix%RmatrixBlock(6,5),&
+                                          LSYSSC_TR_VIRTUAL)
+          else
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD1, &
+                                          rmatrix%RmatrixBlock(6,4),&
+                                          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
-                                        rmatrix%RmatrixBlock(6,5),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+            call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD2, &
+                                          rmatrix%RmatrixBlock(6,5),&
+                                          LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          end if
         end if
 
         rmatrix%RmatrixBlock(1,3)%dscaleFactor = rmatrixComponents%Deta(1,1)
@@ -1285,7 +1318,7 @@ contains
   
     ! -----------------------------------------------------
     
-    subroutine allocSubmatrix (rmatrixComponents,cmatrixType,rsubmatrix,&
+    subroutine allocSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,rsubmatrix,&
         diota,dalpha,dtheta,dgamma,dnewton,dgammaT,dnewtonT,deta,dtau,dkappa,&
         bignoreEta)
         
@@ -1299,6 +1332,10 @@ contains
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
     ! constants.
     integer, intent(IN) :: cmatrixType
+
+    ! Matrix flag bitfield that specifies additional properties of the matrix
+    ! to generate. A combination of CCMASM_FLAG_xxxx constants.
+    integer(I32), intent(in) :: cmatrixFlag
 
     ! A block matrix that receives the basic system matrix.
     type(t_matrixBlock), intent(INOUT) :: rsubmatrix
@@ -1445,16 +1482,8 @@ contains
       ! 'virtually transposing' B1 and B2 (i.e. they share the same
       ! data as B1 and B2 but hate the 'transpose'-flag set).
 
-      if (dtau .ne. 0.0_DP) then      
-        if (associated(rmatrixComponents%p_rmatrixB1T)) then
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
-                                        rsubmatrix%RmatrixBlock(3,1),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-
-          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
-                                        rsubmatrix%RmatrixBlock(3,2),&
-                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-        else
+      if (dtau .ne. 0.0_DP) then    
+        if (iand(cmatrixFlag,CCMASM_FLAG_VTBMAT) .ne. 0) then
           call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
                                         rsubmatrix%RmatrixBlock(3,1),&
                                         LSYSSC_TR_VIRTUAL)
@@ -1462,6 +1491,14 @@ contains
           call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
                                         rsubmatrix%RmatrixBlock(3,2),&
                                         LSYSSC_TR_VIRTUAL)
+        else  
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD1, &
+                                        rsubmatrix%RmatrixBlock(3,1),&
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD2, &
+                                        rsubmatrix%RmatrixBlock(3,2),&
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         end if
       end if
 
@@ -1469,8 +1506,8 @@ contains
 
     ! -----------------------------------------------------
     
-    subroutine assembleLinearSubmatrix (rmatrixComponents,cmatrixType,rmatrix,&
-        diota,dalpha,dtheta,deta,dtau,bignoreEta)
+    subroutine assembleLinearSubmatrix (rmatrixComponents,cmatrixType,cmatrixFlag,&
+        rmatrix,diota,dalpha,dtheta,deta,dtau,bignoreEta)
         
     ! Assembles a matrix containing only linear terms. The matrix is a
     ! submatrix of a larger system matrix and can then be inserted 
@@ -1483,6 +1520,10 @@ contains
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
     ! constants.
     integer, intent(IN) :: cmatrixType
+
+    ! Matrix flag bitfield that specifies additional properties of the matrix
+    ! to generate. A combination of CCMASM_FLAG_xxxx constants.
+    integer(I32), intent(in) :: cmatrixFlag
 
     ! A block matrix that receives the matrix.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
@@ -1626,16 +1667,25 @@ contains
                                       LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
       end if
       
-      if (dtau .ne. 0.0_DP) then                              
+      if (dtau .ne. 0.0_DP) then                 
         ! Furthermore, put B1^T and B2^T to the block matrix.
         ! These matrices are always 'shared'.
-        call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB1T, &
-                                      rmatrix%RmatrixBlock(3,1),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        if (iand(cmatrixFlag,CCMASM_FLAG_VTBMAT) .ne. 0) then
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB1, &
+                                        rmatrix%RmatrixBlock(3,1),&
+                                        LSYSSC_TR_VIRTUAL)
+          call lsyssc_transposeMatrix (rmatrixComponents%p_rmatrixB2, &
+                                        rmatrix%RmatrixBlock(3,2),&
+                                        LSYSSC_TR_VIRTUAL)
+        else
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD1, &
+                                        rmatrix%RmatrixBlock(3,1),&
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixB2T, &
-                                      rmatrix%RmatrixBlock(3,2),&
-                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+          call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixD2, &
+                                        rmatrix%RmatrixBlock(3,2),&
+                                        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        end if
       end if
 
       rmatrix%RmatrixBlock(1,3)%dscaleFactor = deta
@@ -3852,47 +3902,23 @@ contains
       !    (              B1^T B2^T     ) 
       
       if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then
-        if (associated(rmatrixComponents%p_rmatrixB1T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-              rx%RvectorBlock(1), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-              rx%RvectorBlock(1), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD1, &
+            rx%RvectorBlock(1), rd%RvectorBlock(3), &
+            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
 
-        if (associated(rmatrixComponents%p_rmatrixB2T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-              rx%RvectorBlock(2), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-              rx%RvectorBlock(2), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD2, &
+            rx%RvectorBlock(2), rd%RvectorBlock(3), &
+            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
       end if
       
       if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
-        if (associated(rmatrixComponents%p_rmatrixB1T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-              rx%RvectorBlock(4), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-              rx%RvectorBlock(4), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD1, &
+            rx%RvectorBlock(4), rd%RvectorBlock(6), &
+            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
 
-        if (associated(rmatrixComponents%p_rmatrixB2T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-              rx%RvectorBlock(5), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-              rx%RvectorBlock(5), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD2, &
+            rx%RvectorBlock(5), rd%RvectorBlock(6), &
+            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -4120,47 +4146,21 @@ contains
       !    (              B1^T B2^T     ) 
       
       if (rmatrixComponents%Dtau(1,1) .ne. 0.0_DP) then
-        if (associated(rmatrixComponents%p_rmatrixB1T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-              rx%RvectorBlock(1), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-              rx%RvectorBlock(1), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
-        end if
-
-        if (associated(rmatrixComponents%p_rmatrixB2T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-              rx%RvectorBlock(2), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-              rx%RvectorBlock(2), rd%RvectorBlock(3), &
-              -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD1, &
+            rx%RvectorBlock(1), rd%RvectorBlock(3), &
+            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD2, &
+            rx%RvectorBlock(2), rd%RvectorBlock(3), &
+            -rmatrixComponents%Dtau(1,1)*dcx, 1.0_DP)
       end if
       
       if (rmatrixComponents%Dtau(2,2) .ne. 0.0_DP) then
-        if (associated(rmatrixComponents%p_rmatrixB1T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1T, &
-              rx%RvectorBlock(4), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB1, &
-              rx%RvectorBlock(4), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
-        end if
-
-        if (associated(rmatrixComponents%p_rmatrixB2T)) then
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2T, &
-              rx%RvectorBlock(5), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
-        else
-          call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixB2, &
-              rx%RvectorBlock(5), rd%RvectorBlock(6), &
-              -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP,.true.)
-        end if
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD1, &
+            rx%RvectorBlock(4), rd%RvectorBlock(6), &
+            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
+        call lsyssc_scalarMatVec (rmatrixComponents%p_rmatrixD2, &
+            rx%RvectorBlock(5), rd%RvectorBlock(6), &
+            -rmatrixComponents%Dtau(2,2)*dcx, 1.0_DP)
       end if
       
       ! ---------------------------------------------------

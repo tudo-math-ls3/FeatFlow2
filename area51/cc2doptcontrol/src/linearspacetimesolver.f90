@@ -5188,7 +5188,7 @@ contains
         ! Assemble the matrix in rblockTemp.
         ! Note that the weights of the matrices must be set before, otherwise
         ! the assembly routines would complain about missing matrices :-)
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
             rblockTemp,rmatrixComponents,rvector1,rvector2,rvector3) 
 
         ! Switch of matrices that aren't needed.

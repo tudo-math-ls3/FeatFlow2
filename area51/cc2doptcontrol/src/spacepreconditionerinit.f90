@@ -202,11 +202,15 @@ contains
     rmatrixAssembly%p_rmatrixStokes => rlevelInfo%rmatrixStokes
     rmatrixAssembly%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rmatrixAssembly%p_rmatrixB2 => rlevelInfo%rmatrixB2
+    rmatrixAssembly%p_rmatrixD1 => rlevelInfo%rmatrixD1
+    rmatrixAssembly%p_rmatrixD2 => rlevelInfo%rmatrixD2
     rmatrixAssembly%p_rmatrixMass => rlevelInfo%rmatrixMass
     rmatrixAssembly%p_rmatrixIdentityPressure => rlevelInfo%rmatrixIdentityPressure
 
+    ! As matrix flag we specify 0 here. This allocates a basic matrix which is
+    ! modified later for our needs.
     call cc_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
-      rmatrix,rmatrixAssembly)
+        CCMASM_FLAG_NONE,rmatrix,rmatrixAssembly)
                                   
     ! That's it, all submatrices are set up.
       
@@ -655,6 +659,12 @@ contains
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixB2 => &
         rproblem%RlevelInfo(ilevel)%rmatrixB2
 
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixD1 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixD1
+        
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixD2 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixD2
+
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
 
@@ -737,13 +747,6 @@ contains
         call lsysbl_releaseMatrix ( &
           rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
         deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
-
-        ! Also release B1^T and B2^T everywhere where they exist.
-        call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-        deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-
-        call lsyssc_releaseMatrix (rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-        deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
       end do
       
       ! Release the temporary vector(s)
@@ -1194,49 +1197,6 @@ contains
 
           end select
           
-          ! Allocate memory for B1^T and B2^T and transpose B1 and B2.
-          if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)) then
-            allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-          else
-            call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB1T)
-          end if
-          
-          if (bphystranspose) then
-            ! Physical transpose
-            call lsyssc_transposeMatrix (&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB1,&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_ALL)
-          else
-            ! Virtual transpose
-            call lsyssc_transposeMatrix (&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB1,&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,LSYSSC_TR_VIRTUAL)
-          end if
-
-          if (.not. associated(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)) then
-            allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-          else
-            call lsyssc_releaseMatrix(rpreconditioner%RcoreEquation(i)%p_rmatrixB2T)
-          end if
-          
-          if (bphystranspose) then
-            ! Physical transpose
-            call lsyssc_transposeMatrix (&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB2,&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_ALL)
-          else
-            ! Virtual transpose
-            call lsyssc_transposeMatrix (&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB2,&
-                rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,LSYSSC_TR_VIRTUAL)
-          end if
-                        
-          ! B1^T and B2^T have the same structure, release unnecessary memory.
-          call lsyssc_duplicateMatrix (&
-              rpreconditioner%RcoreEquation(i)%p_rmatrixB1T,&
-              rpreconditioner%RcoreEquation(i)%p_rmatrixB2T,&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-
         end if
       
       end do
@@ -1433,5 +1393,11 @@ contains
       .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 
   end subroutine
+
+!Die Projektionsstrukturen sind wohl um ein Level verschoben.
+!Das Programm stürzt zur Zeit komplett ab -- entweder ein Kompilerbug,
+!oder Stack-Fehler oder sonst was. Sieht man daran, dass die Diskretisierungsstruktur
+!auf dem niedrigsten Level kaputt geht, wenn für den linearen Löser
+!das Rmatrices-Array alloziert und sofort wieder dealloziert wird.
 
 end module

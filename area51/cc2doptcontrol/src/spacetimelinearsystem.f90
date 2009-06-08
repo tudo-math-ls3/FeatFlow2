@@ -367,6 +367,8 @@ contains
     rmatrixComponents%p_rmatrixStokes   => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
     rmatrixComponents%p_rmatrixB2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
+    rmatrixComponents%p_rmatrixD1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD1
+    rmatrixComponents%p_rmatrixD2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD2
     rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass
     rmatrixComponents%p_rmatrixIdentityPressure => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
@@ -1340,6 +1342,8 @@ contains
     rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%rmatrixStokes          
     rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%rmatrixB1              
     rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%rmatrixB2              
+    rmatrixComponents%p_rmatrixD1               => p_rlevelInfo%rmatrixD1
+    rmatrixComponents%p_rmatrixD2               => p_rlevelInfo%rmatrixD2
     rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
     rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1
@@ -1398,99 +1402,6 @@ contains
     call lsysbl_clearVector (rb)
     call cc_assembleDefect (rmatrixComponents,rx,rb,-1.0_DP,rx,rx,rx)
     call lsysbl_getbase_double (rb,p_Ddata)
-
-  end subroutine
-
-  ! ***************************************************************************
-!<subroutine>
-  
-  subroutine cc_assembleSubMatrix (rproblem,rspaceTimeMatrix,rmatrix,dtheta,&
-      isubstep,irelpos,rvector1,rvector2,rvector3,rfineMatrix)
-
-!<description>
-  ! Assembles the submatrix at row isubstep, column isubstep+irelpos
-  ! of the global space-time matrix.
-!</description>
-
-!<input>
-  ! Problem structure
-  type(t_problem), intent(INOUT) :: rproblem
-  
-  ! A t_ccoptSpaceTimeMatrix structure defining the discretisation of the
-  ! coupled space-time matrix.
-  type(t_ccoptSpaceTimeMatrix), intent(IN), target :: rspaceTimeMatrix
-
-  ! Theta scheme identifier.
-  ! = 0.5: Crank-Nicolson.
-  ! = 1.0: Explicit Euler
-  real(DP), intent(IN) :: dtheta
-  
-  ! Substep in the time-dependent simulation = row in the supermatrix.
-  ! Range 0..nsubsteps
-  integer, intent(IN) :: isubstep
-  
-  ! Specifies the column in the supermatrix relative to the diagonal.
-  ! =0: set matrix weights for the diagonal.
-  integer, intent(IN) :: irelpos
-
-  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
-  ! It specifies where to evaluate the nonlinearity and must contain the data
-  ! for the 'previous' timestep. If there is no previous timestep (e.g.
-  ! like in the 0th timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), target, optional :: rvector1
-
-  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
-  ! It specifies where to evaluate the nonlinearity and must contain the data
-  ! for the 'current' timestep. 
-  type(t_vectorBlock), intent(IN), target, optional :: rvector2
-
-  ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
-  ! It specifies where to evaluate the nonlinearity and must contain the data
-  ! for the 'next' timestep. If there is no next timestep (e.g.
-  ! like in the last timestep), the vector can be undefined.
-  type(t_vectorBlock), intent(IN), target, optional :: rvector3
-
-  ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
-  ! usually done when assembling matrices on multiple levels. If specified, the
-  ! routine will (if possible) try to include a level-dependent stabilisation
-  ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
-  ! Rannacher-Turek element if cells are too anisotropic).
-  type(t_matrixBlock), intent(IN), optional :: rfineMatrix
-  
-!</input>
-
-!<inputoutput>
-
-  ! The destination matrix which should be set up.
-  ! If not initialised, a new matrix is created (as if CCMASM_ALLOCxxxx 
-  ! was specified).
-  ! If initialised, the existing matrix is updated or recreated, depending on
-  ! coperation.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
-  
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    type(t_ccmatrixComponents) :: rmatrixComponents
-    logical, parameter :: bnewMethod = .false.
-
-    if ((.not. bnewmethod) .or. (rspaceTimeMatrix%cmatrixType .eq. 0)) then
-      ! Standard implementation: Set up the weights and assemble.
-      call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-        isubstep,irelpos,rmatrixComponents)
-    
-      call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-          rmatrix,rmatrixComponents,rvector1,rvector2,rvector3,rfineMatrix) 
-    else
-      ! Extended implementation: General computation of the Newton matrix.
-      call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-        isubstep,irelpos,rmatrixComponents)
-    
-      call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-          rmatrix,rmatrixComponents,rvector1,rvector2,rvector3,rfineMatrix) 
-    end if
 
   end subroutine
 
@@ -1799,5 +1710,8 @@ contains
 !    END SUBROUTINE
 !    
 !  END SUBROUTINE
+
+!betrachte die GMV's. Entkoppelt gibt's 2. Ordnung in der Geschwindigkeit
+!(Druck=0), Gekoppelt nicht :(
   
 end module
