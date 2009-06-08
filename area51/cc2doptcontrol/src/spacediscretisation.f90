@@ -1805,7 +1805,7 @@ contains
       call fparser_parseFunction (rproblem%roptcontrol%rparserTargetFlowExpression,&
           1, sarray, EXPR_VARIABLES)
 
-      read (rproblem%roptcontrol%stargetFlowExpressionX,*) sarray
+      read (rproblem%roptcontrol%stargetFlowExpressionY,*) sarray
       call fparser_parseFunction (rproblem%roptcontrol%rparserTargetFlowExpression,&
           2, sarray, EXPR_VARIABLES)
 
