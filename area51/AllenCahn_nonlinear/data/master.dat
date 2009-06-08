@@ -1,0 +1,43 @@
+# -------------------------------------------------------------------
+# This optional master file is the entry point for all data
+# which is processed by the software. The simportdatafiles(.) parameter
+# below defines a list of 'child' data files which are read during
+# the initialisation. All parameters and sections following
+# this parameter overwrite data from the DAT files; this allows
+# to centrally define crucial parameters in numeric tests while
+# the data files specify the general setting.
+#
+# If simportdatafiles(.) is not present as first parameter in this
+# file, all parameters of the software must be defined here. This
+# allows to collect all parameters in one file.
+#
+# If this file is missing, the software will search for parameters in
+# a standard set of data files.
+# -------------------------------------------------------------------
+
+# This defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the ./data subdirectory of the application.
+
+simportdatafiles(8) = 
+  "discretisation.dat"
+  "linsol_cc2d.dat"
+  "nonlinsol_cc2d.dat"
+  "output.dat"
+  "paramtriang.dat"
+  "bdconditions.dat"
+  "timediscr.dat"
+  "postprocessing.dat"
+
+# From this point on, it's possible to additionally define 'alternative'
+# parameter settings that overwrite settings in the DAT files. The
+# parameters here must be introduced by the corresponding section
+# to be overwritten. You can for example define:
+#
+# [CC-DISCRETISATION]
+# NLMIN = 1
+# NLMAX = 3
+# RE = 1000
+#
+# which will overwrite the three parameters NLMIN, NLMAX and RE
+# from the original set of DAT files read in simportdatafiles.

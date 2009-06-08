@@ -1,0 +1,495 @@
+!***********************************************************************************
+! This subroutine is a modification of pperr_scalar2d_conf, the purpose is to 
+! calculate the integral of u in a domain. u is specified by ffunctionReference
+! to call this subroutine, we need specify rvectorScalar to be 0, and use the 
+! following modules.
+
+  use fsystem
+  use storage
+  use boundary
+  use cubature
+  use triangulation
+  use linearalgebra
+  use linearsystemscalar
+  use linearsystemblock
+  use scalarpde
+  use spatialdiscretisation
+  use domainintegration
+  use elementpreprocessing
+  use feevaluation
+  use collection
+
+  implicit none
+!<constants>
+
+!<constantblock description = "Identifiers for the type of error to be computed.">
+
+  ! $L_2$-error/norm
+  integer, parameter :: PPERR_L2ERROR = 1
+  
+  ! $H_1$-error/norm
+  integer, parameter :: PPERR_H1ERROR = 2
+
+  ! $L_1$-error/norm
+  integer, parameter :: PPERR_L1ERROR = 3
+  
+  
+!</constantblock>
+
+!<constantblock description="Constants defining the blocking of the error calculation.">
+
+  ! Number of elements to handle simultaneously when building vectors
+  integer :: PPERR_NELEMSIM   = 1000
+  
+!</constantblock>
+
+!</constants>
+!<subroutine>
+
+  subroutine fun_integral2d_conf (rvectorScalar,cerrortype,derror,&
+                                  rdiscretisation,ffunctionReference,rcollection)
+
+!<description>
+  ! This routine calculates the error of a given finite element function
+  ! in rvector to a given analytical callback function ffunctionReference.
+  ! 2D version for double-precision vectors.
+!</description>
+
+!<input>
+  ! The FE solution vector. Represents a scalar FE function.
+  type(t_vectorScalar), intent(IN), target :: rvectorScalar
+  
+  ! Type of error to compute. Bitfield. This is a combination of the
+  ! PPERR_xxxx-constants, which specifies what to compute.
+  ! Example: PPERR_L2ERROR computes the $L_2$-error.
+  integer, intent(IN)                      :: cerrortype
+  
+  ! A discretisation structure specifying how to compute the error.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  
+  ! Optional: A collection structure to provide additional 
+  ! information for callback routines.
+  type(t_collection), intent(INOUT), optional      :: rcollection
+
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
+  include 'intf_refFunctionSc.inc'
+  optional :: ffunctionReference
+!</input>
+
+!<output>
+  ! Array receiving the calculated error.
+  real(DP), intent(OUT) :: derror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,k,icurrentElementDistr, ICUBP, NVE
+    integer(I32) :: IEL, IELmax, IELset
+    real(DP) :: OM
+    
+    ! Array to tell the element which derivatives to calculate
+    logical, dimension(EL_MAXNDER) :: Bder
+    
+    ! Cubature point coordinates on the reference element
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
+
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    real(DP), dimension(CUB_MAXCUBP) :: Domega
+    
+    ! number of cubature points on the reference element
+    integer :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    integer :: indofTrial
+    
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    integer(I32), dimension(:), pointer :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
+
+    ! Arrays for saving Jacobian determinants and matrices
+    real(DP), dimension(:,:), pointer :: p_Ddetj
+    
+    ! Current element distribution
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    
+    ! Number of elements in the current element distribution
+    integer(PREC_ELEMENTIDX) :: NEL
+
+    ! Pointer to the values of the function that are computed by the callback routine.
+    real(DP), dimension(:,:,:), allocatable :: Dcoefficients
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    integer :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    type(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
+    
+    ! An allocateable array accepting the DOF's of a set of elements.
+    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+  
+    ! Type of transformation from the reference to the real element 
+    integer :: ctrafoType
+    
+    ! Element evaluation tag; collects some information necessary for evaluating
+    ! the elements.
+    integer(I32) :: cevaluationTag
+
+    ! Which derivatives of basis functions are needed?
+    ! Check the descriptors of the bilinear form and set BDER
+    ! according to these.
+
+    Bder = .false.
+    select case (cerrortype)
+    case (PPERR_L1ERROR, PPERR_L2ERROR) 
+      Bder(DER_FUNC) = .true.
+    case (PPERR_H1ERROR) 
+      Bder(DER_DERIV_X) = .true.
+      Bder(DER_DERIV_Y) = .true.
+    case DEFAULT
+      call output_line('Unknown error type identifier!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
+      call sys_halt()
+    end select
+    
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => rdiscretisation%p_rtriangulation
+    
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    
+    ! Set the current error to 0 and add the error contributions of each element
+    ! to that.
+    derror = 0.0_DP
+
+    ! Now loop over the different element distributions (=combinations
+    ! of trial and test functions) in the discretisation.
+
+    do icurrentElementDistr = 1,rdiscretisation%inumFESpaces
+    
+      ! Activate the current element distribution
+      p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+    
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+
+      ! Get the number of local DOF's for trial functions
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_relementDistribution%celement)
+      
+      ! Initialise the cubature formula,
+      ! Get cubature weights and point coordinates on the reference element
+      call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
+      
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+
+      ! Allocate some memory to hold the cubature points on the reference element
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+
+      ! Reformat the cubature points; they are in the wrong shape!
+      do i=1,ncubp
+        do k=1,ubound(p_DcubPtsRef,1)
+          p_DcubPtsRef(k,i) = Dxi(i,k)
+        end do
+      end do
+      
+      ! Allocate memory for the DOF's of all the elements.
+      allocate(IdofsTrial(indofTrial,nelementsPerBlock))
+
+      ! Allocate memory for the coefficients
+      allocate(Dcoefficients(ncubp,nelementsPerBlock,4))
+    
+      ! Initialisation of the element set.
+      call elprep_init(revalElementSet)
+
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+                      
+      if (present(ffunctionReference)) then
+        ! Evaluate real coordinates if not necessary.
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
+      end if
+                      
+      ! Make sure that we have determinants.
+      cevaluationTag = ior(cevaluationTag,EL_EVLTAG_DETJ)
+
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call storage_getbase_int (p_relementDistribution%h_IelementList, &
+                                p_IelementList)
+                     
+      ! Get the number of elements there.
+      NEL = p_relementDistribution%NEL
+    
+      ! Loop over the elements - blockwise.
+      do IELset = 1, NEL, PPERR_NELEMSIM
+      
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
+        
+        IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
+      
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
+                                     
+        ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+        rintSubset%ielementDistribution = icurrentElementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
+    
+        ! Calculate all information that is necessary to evaluate the finite element
+        ! on all cells of our subset. This includes the coordinates of the points
+        ! on the cells.
+        call elprep_prepareSetForEvaluation (revalElementSet,&
+            cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
+            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+        p_Ddetj => revalElementSet%p_Ddetj
+
+        ! In the next loop, we don't have to evaluate the coordinates
+        ! on the reference elements anymore.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+
+        ! At this point, we must select the correct domain integration and coefficient
+        ! calculation routine, depending which type of error we should compute!
+        
+        select case (cerrortype)
+        
+        case (PPERR_L1ERROR)
+          
+          ! L1-error uses only the values of the function.
+          
+          if (present(ffunctionReference)) then
+            ! It's time to call our coefficient function to calculate the
+            ! function values in the cubature points:  u(x,y)
+            ! The result is saved in Dcoefficients(:,:,1)
+            call ffunctionReference (DER_FUNC,rdiscretisation, &
+                        int(IELmax-IELset+1),ncubp,&
+                        revalElementSet%p_DpointsReal,&
+                        IdofsTrial,rintSubset,&
+                        Dcoefficients(:,1:IELmax-IELset+1_I32,1),rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1_I32,1) = 0.0_DP
+          end if
+
+          ! Calculate the values of the FE function in the
+          ! cubature points: u_h(x,y).
+          ! Save the result to Dcoefficients(:,:,2)
+          
+          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                  Dcoefficients(:,1:IELmax-IELset+1_I32,2))
+          
+          ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
+          ! the error "u-u_h(cubature pt.)"!
+          !        
+          ! Loop through elements in the set and for each element,
+          ! loop through the DOF's and cubature points to calculate the
+          ! integral: int_Omega abs(u-u_h) dx
+          
+          do IEL=1,IELmax-IELset+1
+          
+            ! Loop over all cubature points on the current element
+            do icubp = 1, ncubp
+            
+              ! calculate the current weighting factor in the cubature formula
+              ! in that cubature point.
+
+              OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+              
+              ! L1-error is:   int_... abs(u-u_h) dx
+              
+              derror = derror + &
+                       OM * (Dcoefficients(icubp,IEL,2)-Dcoefficients(icubp,IEL,1))
+
+            end do ! ICUBP 
+
+          end do ! IEL
+
+        case DEFAULT
+          call output_line('Unknown error type identifier!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar2d_conf')
+          call sys_halt()
+        end select
+        
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
+    
+      end do ! IELset
+      
+      ! Release memory
+      call elprep_releaseElementSet(revalElementSet)
+
+      deallocate(p_DcubPtsRef)
+      deallocate(Dcoefficients)
+      deallocate(IdofsTrial)
+
+    end do ! icurrentElementDistr
+
+    ! derror is ||error||^2, so take the square root at last.
+    if ((cerrortype .eq. PPERR_L2ERROR) .or.&
+        (cerrortype .eq. PPERR_H1ERROR)) then
+      derror = sqrt(derror)
+    end if
+
+  end subroutine
+!***********************************************************************************************
+
+! An example to call the above subroutine
+!
+!
+call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
+                         ffunction_TargetX,rproblem%rcollection)
+
+! where ffunction_TargetX is defined as follows, we also give some modifications.
+! ffunction_TargetX -------> fun2d_Target
+
+! Actually, we call 
+call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
+                         fun2d_Target, rproblem%rcollection)
+
+
+! We need use rcollection to get rACvector, and use rACvector to evaluate
+! the function value of \\phi^3-\\phi at any given (x,y), but the problem here is
+! that Dpoints may only conrresponds to quadrature points. 
+  
+! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine  fun2d_Target(cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the postprocessing. 
+  ! It should return values of the analytical solution (if it is known).
+  ! These are compared with the calculated solution to calculate the
+  ! error in the X-velocity.
+  !
+  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\\#local DOF's in trial space,Number of elements)
+  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    real(DP) :: dtime,dtimeMax
+    integer :: itimedependence
+! MCai
+    type(t_vectorBlock), pointer :: rInnervector
+
+   
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
+    else
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    end if
+
+    Dvalues(:,:) = 0.0_DP
+   
+
+! MCai,  
+    rInnervector=>rcollection%Dquickaccess1
+    if (cderivative .EQ. DER_FUNC) then
+       write(*,*)'we need to specify Dvalues(npointsPerElement,nelements), & 
+       where it corresponds to the values of the (analytical) function &
+       in all the points specified in Dpoints, '
+    end if 
+
+ 
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(Dpoints(1,:,:))
+    ! END IF
+
+  end subroutine
+
+  ! ***************************************************************************
+  

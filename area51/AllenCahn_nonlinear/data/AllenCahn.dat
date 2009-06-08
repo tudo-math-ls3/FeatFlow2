@@ -1,0 +1,35 @@
+# This is the data file for the scalar heat equation
+# equation of the problem AllenCahn
+#
+#------------------------------------------------------------------------------
+# The 'equation' section configures the different constants in the equation.
+#
+# The equation reads as follows:
+#
+#   d/dt u  - div ( alpha*grad(u) )  +  beta*grad(u)  +  gamma*u  =  f
+#
+# with
+#
+#  u = u(x,t)
+#
+#  f = f(x,t) as defined in heatcond_callback.f90
+#
+#  alpha = ( alpha11 alpha12 )
+#          ( alpha21 alpha22 )
+#
+#  beta  = ( beta1 )
+#          ( beta2 )
+#
+#  and the scalar parameter gamma.
+
+[EQUATION]
+
+alpha11 = 0.01
+alpha12 = 0.0
+alpha21 = 0.0
+alpha22 = 0.01
+
+beta1 = 0.0
+beta2 = 0.0
+
+gamma = 0.0
