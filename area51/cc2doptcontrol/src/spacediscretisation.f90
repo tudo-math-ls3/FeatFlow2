@@ -828,6 +828,15 @@ contains
     ! Build the second pressure matrix B2.
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
         DER_FUNC,DER_DERIV_Y,-1.0_DP)
+        
+    ! Transpose the B1 and B2 matrices to get D1 and D2.
+    call lsyssc_transposeMatrix (rlevelInfo%rmatrixB1,rlevelInfo%rmatrixD1,LSYSSC_TR_ALL)
+    call lsyssc_transposeMatrix (rlevelInfo%rmatrixB2,rlevelInfo%rmatrixD2,LSYSSC_TR_ALL)
+    
+    ! The structure of D1 and D2 is the same, save memory by releasing that
+    ! of D2.
+    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixD1,rlevelInfo%rmatrixD2,&
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
                                 
     ! -----------------------------------------------------------------------
     ! Mass matrices
@@ -1497,7 +1506,9 @@ contains
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ2)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ1)
 
-      ! Release Stokes, B1 and B2 matrix
+      ! Release Stokes, B1, B2, D1, D2 matrix
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixD2)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixD1)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)

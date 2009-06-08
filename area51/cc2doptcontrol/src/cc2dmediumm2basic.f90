@@ -74,6 +74,12 @@ module cc2dmediumm2basic
 
     ! B2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB2
+
+    ! D1(=B1^T)-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixD1
+
+    ! D2(=B2^T)-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixD2
     
     ! Matrix with a precomputed EOJ stabilisation operator -- if EOJ is active.
     type(t_matrixScalar) :: rmatrixEOJ1
