@@ -369,6 +369,8 @@ contains
     rmatrixComponents%p_rmatrixB2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
     rmatrixComponents%p_rmatrixD1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD1
     rmatrixComponents%p_rmatrixD2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD2
+    rmatrixComponents%p_rmatrixEOJ1     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ1
+    rmatrixComponents%p_rmatrixEOJ2     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ2
     rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass
     rmatrixComponents%p_rmatrixIdentityPressure => &
         p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
@@ -1344,6 +1346,8 @@ contains
     rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%rmatrixB2              
     rmatrixComponents%p_rmatrixD1               => p_rlevelInfo%rmatrixD1
     rmatrixComponents%p_rmatrixD2               => p_rlevelInfo%rmatrixD2
+    rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1
+    rmatrixComponents%p_rmatrixEOJ2             => p_rlevelInfo%rmatrixEOJ2
     rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%rmatrixMass            
     rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
     rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1

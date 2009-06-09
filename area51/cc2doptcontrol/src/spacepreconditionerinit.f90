@@ -204,6 +204,8 @@ contains
     rmatrixAssembly%p_rmatrixB2 => rlevelInfo%rmatrixB2
     rmatrixAssembly%p_rmatrixD1 => rlevelInfo%rmatrixD1
     rmatrixAssembly%p_rmatrixD2 => rlevelInfo%rmatrixD2
+    rmatrixAssembly%p_rmatrixEOJ1 => rlevelInfo%rmatrixEOJ1
+    rmatrixAssembly%p_rmatrixEOJ2 => rlevelInfo%rmatrixEOJ2
     rmatrixAssembly%p_rmatrixMass => rlevelInfo%rmatrixMass
     rmatrixAssembly%p_rmatrixIdentityPressure => rlevelInfo%rmatrixIdentityPressure
 
@@ -664,6 +666,12 @@ contains
         
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixD2 => &
         rproblem%RlevelInfo(ilevel)%rmatrixD2
+
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixEOJ1 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixEOJ1
+        
+      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixEOJ2 => &
+        rproblem%RlevelInfo(ilevel)%rmatrixEOJ2
 
       rpreconditioner%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass

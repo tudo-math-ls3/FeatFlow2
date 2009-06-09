@@ -249,6 +249,11 @@ module spacepreconditioner
     ! Pointer to a D2-matrix.
     type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
 
+    ! Pointer to a matrix for the EOJ-stabilisation for the X-velocity.
+    type(t_matrixScalar), pointer :: p_rmatrixEOJ1 => null()
+
+    ! Pointer to a matrix for the EOJ-stabilisation for the Y-velocity.
+    type(t_matrixScalar), pointer :: p_rmatrixEOJ2 => null()
   end type
 
 !</typeblock>
@@ -760,6 +765,10 @@ contains
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixD1
           rmatrixAssembly%p_rmatrixD2             => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixD2
+          rmatrixAssembly%p_rmatrixEOJ1           => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixEOJ1
+          rmatrixAssembly%p_rmatrixEOJ2           => &
+              rpreconditioner%RcoreEquation(ilev)%p_rmatrixEOJ2
           rmatrixAssembly%p_rmatrixMass           => &
               rpreconditioner%RcoreEquation(ilev)%p_rmatrixMass            
           rmatrixAssembly%p_rmatrixIdentityPressure => &
