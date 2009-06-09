@@ -237,10 +237,6 @@ contains
         call lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
         call lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
-        call lsyssc_clearVector (rtempVector1%RvectorBlock(4))
-        call lsyssc_clearVector (rtempVector1%RvectorBlock(5))
-        call lsyssc_clearVector (rtempVector1%RvectorBlock(6))
-
         call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
             dtheta,(1.0_DP-dtheta),&

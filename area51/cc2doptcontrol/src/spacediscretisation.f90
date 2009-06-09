@@ -1230,7 +1230,7 @@ contains
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_fparser) :: rsolParser
-    character(LEN=SYS_STRLEN) :: sstring,ssolutionExpressionX,ssolutionExpressionY
+    character(LEN=SYS_STRLEN) :: sstring,ssolutionExpressionY1,ssolutionExpressionY2
     character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
       (/'X    ','Y    ','TIME '/)
     type(t_collection) :: rcollection
@@ -1328,16 +1328,18 @@ contains
 
       ! Get the expressions defining the solution      
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'ssolutionExpressionX',sstring,'''''')
-      read(sstring,*) ssolutionExpressionX
+                                  'ssolutionExpressionY1',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY1
+      if (ssolutionExpressionY1 .eq. "") ssolutionExpressionY1 = "0"
 
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'ssolutionExpressionY',sstring,'''''')
-      read(sstring,*) ssolutionExpressionY
+                                  'ssolutionExpressionY2',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY2
+      if (ssolutionExpressionY2 .eq. "") ssolutionExpressionY2 = "0"
       
       ! Compile the two expressions
-      call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
-      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
+      call fparser_parseFunction (rsolParser,1, ssolutionExpressionY1, EXPR_VARIABLES)
+      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY2, EXPR_VARIABLES)
       
       ! Put the parser to the problem collection to be usable in a callback
       ! routine.

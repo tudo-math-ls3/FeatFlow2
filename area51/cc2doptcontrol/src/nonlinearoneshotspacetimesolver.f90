@@ -2496,8 +2496,10 @@ contains
     integer :: ilowerSpaceLevel,itemp,ctypeCoarseGridSolver,i,nlmax
     logical :: bneumann
     integer :: isolutionStart
-    character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY
+    character(LEN=SYS_STRLEN) :: ssolutionExpressionY1,ssolutionExpressionY2
     character(LEN=SYS_STRLEN) :: ssolutionExpressionP
+    character(LEN=SYS_STRLEN) :: ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2
+    character(LEN=SYS_STRLEN) :: ssolutionExpressionXI
     real(DP), dimension(4) :: Derror
     integer(I32) :: nminIterations,nmaxIterations
     real(DP) :: depsRel,depsAbs,domega,domegaPrecond,depsDiff
@@ -3060,25 +3062,40 @@ contains
     if (isolutionStart .eq. 3) then
       ! Get the expressions defining the solution      
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'ssolutionExpressionX',sstring,'''''')
-      read(sstring,*) ssolutionExpressionX
+                                  'ssolutionExpressionY1',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY1
 
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'ssolutionExpressionY',sstring,'''''')
-      read(sstring,*) ssolutionExpressionY
+                                  'ssolutionExpressionY2',sstring,'''''')
+      read(sstring,*) ssolutionExpressionY2
 
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'ssolutionExpressionP',sstring,'''''')
       read(sstring,*) ssolutionExpressionP
 
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionLAMBDA1',sstring,'''''')
+      read(sstring,*) ssolutionExpressionLAMBDA1
+
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionLAMBDA2',sstring,'''''')
+      read(sstring,*) ssolutionExpressionLAMBDA2
+
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionXi',sstring,'''''')
+      read(sstring,*) ssolutionExpressionXi
+
       call cc_optc_analyticalError (rproblem,&
           RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
           RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
           RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-          ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
-          Derror(1),Derror(2))
-      call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
-      call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
+          ssolutionExpressionY1,ssolutionExpressionY2,ssolutionExpressionP,&
+          ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2,ssolutionExpressionXI,&
+          Derror(1),Derror(2),Derror(3),Derror(4))
+      call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
+      call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
+      call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
+      call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
     end if
     
     call output_separator (OU_SEP_EQUAL)        
@@ -3237,10 +3254,13 @@ contains
               RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
               RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
               RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-              ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
-              Derror(1),Derror(2))
-          call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
-          call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
+              ssolutionExpressionY1,ssolutionExpressionY2,ssolutionExpressionP,&
+              ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2,ssolutionExpressionXI,&
+              Derror(1),Derror(2),Derror(3),Derror(4))
+          call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
+          call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
+          call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
+          call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
         end if
 
         if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
@@ -3421,10 +3441,13 @@ contains
           RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
           RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
           RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-          ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
-          Derror(1),Derror(2))
-      call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
-      call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
+          ssolutionExpressionY1,ssolutionExpressionY2,ssolutionExpressionP,&
+          ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2,ssolutionExpressionXI,&
+          Derror(1),Derror(2),Derror(3),Derror(4))
+      call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
+      call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
+      call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
+      call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
     end if
 
     call output_separator (OU_SEP_EQUAL)

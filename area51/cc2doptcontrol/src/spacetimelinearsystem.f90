@@ -291,23 +291,26 @@ contains
 
 !</subroutine>
 
-    ! If the following constant is set from 1.0 to 0.0, the primal system is
-    ! decoupled from the dual system!
-    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
-    
-    ! If the following constant is set from 1.0 to 0.0, the dual system is
-    ! decoupled from the primal system!
-    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the terminal
-    ! condition between the primal and dual equation is decoupled, i.e.
-    ! the dual equation gets independent from the primal one.
-    real(DP), parameter :: dterminalCondDecoupled = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the time coupling
-    ! is disabled, resulting in a stationary simulation in every timestep.
-    real(DP), parameter :: dtimeCoupling = 1.0_DP
-    
+!    ! If the following constant is set from 1.0 to 0.0, the primal system is
+!    ! decoupled from the dual system!
+!    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
+!    
+!    ! If the following constant is set from 1.0 to 0.0, the dual system is
+!    ! decoupled from the primal system!
+!    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
+!    
+!    ! If the following parameter is set from 1.0 to 0.0, the terminal
+!    ! condition between the primal and dual equation is decoupled, i.e.
+!    ! the dual equation gets independent from the primal one.
+!    real(DP), parameter :: dterminalCondDecoupled = 1.0_DP
+!    
+!    ! If the following parameter is set from 1.0 to 0.0, the time coupling
+!    ! is disabled, resulting in a stationary simulation in every timestep.
+!    real(DP), parameter :: dtimeCoupling = 1.0_DP
+
+    real(DP) :: dprimalDualCoupling,ddualPrimalCoupling
+    real(DP) :: dterminalCondDecoupled,dtimeCoupling
+
     ! This constant defines the type of equation. There are two equivalent
     ! formulations of the dual equation which only differs in the sign
     ! of the dual velocity.
@@ -324,12 +327,24 @@ contains
     real(DP) :: dtstep
     logical :: bconvectionExplicit
     
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'dprimalDualCoupling',dprimalDualCoupling,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'ddualPrimalCoupling',ddualPrimalCoupling,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'dterminalCondDecoupled',dterminalCondDecoupled,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'dtimeCoupling',dtimeCoupling,1.0_DP)
+
     p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
     
     dequationType = 1.0_DP
     if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
-
+      
     ! Treat the convection explicitely?
     bconvectionExplicit = rproblem%roptcontrol%iconvectionExplicit .ne. 0
 
@@ -1317,18 +1332,29 @@ contains
     real(DP) :: dtstep, dequationType
     real(dp), dimension(:), pointer :: p_Ddata
     
-    ! If the following constant is set from 1.0 to 0.0, the primal system is
-    ! decoupled from the dual system!
-    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
+!    ! If the following constant is set from 1.0 to 0.0, the primal system is
+!    ! decoupled from the dual system!
+!    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
+!    
+!    ! If the following constant is set from 1.0 to 0.0, the dual system is
+!    ! decoupled from the primal system!
+!    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
+!    
+!    ! If the following parameter is set from 1.0 to 0.0, the time coupling
+!    ! is disabled, resulting in a stationary simulation in every timestep.
+!    real(DP), parameter :: dtimeCoupling = 1.0_DP
+
+    real(DP) :: dprimalDualCoupling,ddualPrimalCoupling,dtimeCoupling
     
-    ! If the following constant is set from 1.0 to 0.0, the dual system is
-    ! decoupled from the primal system!
-    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-    
-    ! If the following parameter is set from 1.0 to 0.0, the time coupling
-    ! is disabled, resulting in a stationary simulation in every timestep.
-    real(DP), parameter :: dtimeCoupling = 1.0_DP
-    
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'dprimalDualCoupling',dprimalDualCoupling,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'ddualPrimalCoupling',ddualPrimalCoupling,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
+        'dtimeCoupling',dtimeCoupling,1.0_DP)
+
     ! The initial condition is implemented as:
     !
     !   (M/dt + A) y_0  =  b_0 := (M/dt + A) y^0

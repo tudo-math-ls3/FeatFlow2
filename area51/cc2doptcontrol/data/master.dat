@@ -70,10 +70,10 @@ simportdatafiles(6) =
 #[TIME-SMOOTHER]
 #nsmSteps = 1
 
-####################################################
-# benchmark configuration, RE=20 Nav.St. like Stokes
-####################################################
-
+#####################################################
+## benchmark configuration, RE=20 Nav.St. like Stokes
+#####################################################
+#
 #[PARAMTRIANG]
 #sParametrisation = './pre/bench1.prm'
 #sMesh = './pre/bench1.tri'
@@ -94,12 +94,13 @@ simportdatafiles(6) =
 #iequation          = 0
 #RE                 = 1000
 #NLMIN              = 1
-#NLMAX              = 3
+#NLMAX              = 2
 #
 #[OPTIMALCONTROL]
 #smeshTargetFlow = './pre/bench1.tri'
 #stargetFlow = './ns/benchstokesre1000ref4seklv5/benchstokesre1000ref4seklv5'
-#itypeTargetFlow = 4
+##stargetFlow = '../cc2d_paper17/ns/benchstokesre1000ref4seklv5'
+#itypeTargetFlow = 0 #4
 #ilevelTargetFlow = 5
 #itargetFlowTimesteps = 80
 #
@@ -116,8 +117,8 @@ simportdatafiles(6) =
 #niterations = 5
 #dtimeMax = 1.0
 #TIMENLMIN = 1
-#TIMENLMAX = 3
-#dtimeStepTheta = 0.5
+#TIMENLMAX = 1
+#dtimeStepTheta = 1.0
 #
 #[TIME-POSTPROCESSING]
 #sgmvFileName = 'gmv/utest2bench1.gmv' 
@@ -143,3 +144,342 @@ simportdatafiles(6) =
 #[CC-LINEARSOLVER]
 #ismootherType = 7
 #icoarseGridSolverType = 0
+
+######################################################################
+## reference configuration without coupling
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = './pre/QUAD.prm'
+#sMesh = './pre/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 5
+#iRHS               = -1
+#srhsExpressionX    = '2*TIME*(-X)'
+#srhsExpressionY    = '2*TIME*(Y)'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#stargetFlow = './ns/lv7re0.025steps80/solution'
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)'
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 0.0
+#ddualPrimalCoupling = 0.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with partial coupling (lambda=lambda(y))
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = './pre/QUAD.prm'
+#sMesh = './pre/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '2*TIME*(-X)'
+#srhsExpressionY    = '2*TIME*(Y)'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#stargetFlow = './ns/lv7re0.025steps80/solution'
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)+TIME^2*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)+TIME^2*(Y)'
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 0.0
+#ddualPrimalCoupling = 1.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with partial coupling (y=y(lambda))
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = './pre/QUAD.prm'
+#sMesh = './pre/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)'
+#srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#dalphaC = 0.01
+#
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*Y'
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 1.0
+#ddualPrimalCoupling = 0.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with full coupling
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = './pre/QUAD.prm'
+#sMesh = './pre/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)'
+#srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)+TIME^2*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)+TIME^2*(Y)'
+#
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0

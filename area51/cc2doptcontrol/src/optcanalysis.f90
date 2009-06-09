@@ -376,8 +376,10 @@ contains
 !<subroutine>
 
   subroutine cc_optc_analyticalError (rproblem,rsolution,rtempVector,&
-      dalpha,dgamma,ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
-      derrorU,derrorP)
+      dalpha,dgamma,&
+      ssolutionExpressionY1,ssolutionExpressionY2,ssolutionExpressionP,&
+      ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2,ssolutionExpressionXI,&
+      derrorU,derrorP,derrorLambda,derrorXi)
 
 !<description>
   ! Computes the L2-error $||y-y0||_2$ of the given solution y to a reference
@@ -394,8 +396,10 @@ contains
   ! Regularisation parameter $\gamma$.
   real(DP), intent(IN) :: dgamma
   
-  ! Expression specifying the analytical solution y0 / p0.
-  character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP
+  ! Expression specifying the analytical solution y0 / p0, primal/dual.
+  character(LEN=SYS_STRLEN) :: ssolutionExpressionY1,ssolutionExpressionY2,ssolutionExpressionP
+  character(LEN=SYS_STRLEN) :: ssolutionExpressionLAMBDA1,ssolutionExpressionLAMBDA2
+  character(LEN=SYS_STRLEN) :: ssolutionExpressionXI
 !</input>
 
 !<inputoutput>
@@ -407,19 +411,25 @@ contains
 !</inputoutput>
 
 !<output>
-  ! Returns information about the error. ||y-z||_{L^2}.
+  ! Returns information about the error. ||y-y0||_{L^2}.
   real(DP), intent(OUT) :: derrorU
 
   ! Returns information about the error in the pressure. ||p-p0||_{L^2}.
   real(DP), intent(OUT) :: derrorP
+
+  ! Returns information about the error. ||lambda-lambda0||_{L^2}.
+  real(DP), intent(OUT) :: derrorLambda
+
+  ! Returns information about the error in the pressure. ||xi-xi0||_{L^2}.
+  real(DP), intent(OUT) :: derrorXi
 !</output>
   
 !</subroutine>
     
     ! local variables
-    integer :: isubstep
+    integer :: isubstep,i
     real(DP) :: dtstep
-    real(DP),dimension(4) :: Derr
+    real(DP),dimension(6) :: Derr
     character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
       (/'X    ','Y    ','TIME '/)
     type(t_collection) :: rcollection
@@ -427,19 +437,21 @@ contains
     
     derrorU = 0.0_DP
     derrorP = 0.0_DP
+    derrorLambda = 0.0_DP
+    derrorXi = 0.0_DP
     dtstep = rsolution%p_rtimeDiscretisation%dtstep
     
     ! Create a parser and to evaluate the expression.
-    call fparser_create (rsolParser,NDIM2D+1)
+    call fparser_create (rsolParser,6)
     
     ! Compile the two expressions+
-    if (ssolutionExpressionX .ne. "") then
-      call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
+    if (ssolutionExpressionY1 .ne. "") then
+      call fparser_parseFunction (rsolParser,1, ssolutionExpressionY1, EXPR_VARIABLES)
     else
       call fparser_parseFunction (rsolParser,1, "0", EXPR_VARIABLES)
     end if
-    if (ssolutionExpressionY .ne. "") then
-      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
+    if (ssolutionExpressionY2 .ne. "") then
+      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY2, EXPR_VARIABLES)
     else
       call fparser_parseFunction (rsolParser,2, "0", EXPR_VARIABLES)
     end if
@@ -449,6 +461,22 @@ contains
       call fparser_parseFunction (rsolParser,3, "0", EXPR_VARIABLES)
     end if
     
+    if (ssolutionExpressionLAMBDA1 .ne. "") then
+      call fparser_parseFunction (rsolParser,4, ssolutionExpressionLAMBDA1, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,4, "0", EXPR_VARIABLES)
+    end if
+    if (ssolutionExpressionLAMBDA2 .ne. "") then
+      call fparser_parseFunction (rsolParser,5, ssolutionExpressionLAMBDA2, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,5, "0", EXPR_VARIABLES)
+    end if
+    if (ssolutionExpressionXi .ne. "") then
+      call fparser_parseFunction (rsolParser,6, ssolutionExpressionXi, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,6, "0", EXPR_VARIABLES)
+    end if
+
     ! Put the parser to the problem collection to be usable in a callback
     ! routine.
     call collct_init(rcollection)
@@ -474,35 +502,41 @@ contains
       ! Compute:
       ! Derror(1) = ||y-z||^2_{L^2}.
       
-      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
-      rcollection%IquickAccess(1) = 1
-      call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-                        ffunction_analyticalRef,rcollection)
-
-      rcollection%IquickAccess(1) = 2
-      call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-                        ffunction_analyticalRef,rcollection)
-
-      rcollection%IquickAccess(1) = 3
-      call pperr_scalar (rtempVector%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
-                        ffunction_analyticalRef,rcollection)
+      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2},...
+      do i=1,6
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+                          ffunction_analyticalRef,rcollection)
+      end do
 
       ! We use the summed trapezoidal rule.
       if ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) then
         derrorU = derrorU + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
         derrorP = derrorP + 0.5_DP*Derr(3)**2 * dtstep
+
+        derrorLambda = derrorLambda + 0.5_DP*0.5_DP*(Derr(4)**2 + Derr(5)**2) * dtstep
+        derrorXi = derrorXi + 0.5_DP*Derr(6)**2 * dtstep
       else
         derrorU = derrorU + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
         derrorP = derrorP + Derr(3)**2 * dtstep
+
+        derrorLambda = derrorLambda + 0.5_DP*(Derr(4)**2 + Derr(5)**2) * dtstep
+        derrorXi = derrorXi + Derr(6)**2 * dtstep
       end if
       call output_line("error("//trim(sys_siL(isubstep+1,10))//") = "// &
-        trim(sys_sdEL(Derr(1),10))//" / "//trim(sys_sdEL(Derr(2),10))// &
-        " / "//trim(sys_sdEL(Derr(3),10)))
+        trim(sys_sdEL(Derr(1),10))//" / "//&
+        trim(sys_sdEL(Derr(2),10))//" / "// &
+        trim(sys_sdEL(Derr(3),10))//" / "// &
+        trim(sys_sdEL(Derr(4),10))//" / "//&
+        trim(sys_sdEL(Derr(5),10))//" / "// &
+        trim(sys_sdEL(Derr(6),10)))
 
     end do
     
     derrorU = sqrt(derrorU)
     derrorP = sqrt(derrorP)
+    derrorLambda = sqrt(derrorLambda)
+    derrorXi = sqrt(derrorXi)
     
     ! Clean up
     call collct_deletevalue (rcollection, 'SOLPARSER') 
