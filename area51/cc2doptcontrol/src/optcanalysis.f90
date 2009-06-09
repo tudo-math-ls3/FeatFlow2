@@ -471,7 +471,8 @@ contains
       else
         derror = derror + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
       end if
-      print *,Derr(1),Derr(2)
+      call output_line("error("//trim(sys_siL(isubstep+1,10))//") = "// &
+        trim(sys_sdEL(Derr(1),10))//" / "//trim(sys_sdEL(Derr(1),10)))
 
     end do
     

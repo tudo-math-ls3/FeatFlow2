@@ -411,7 +411,7 @@ contains
       ! transposed matrices?
       if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
         select case (rpreconditioner%rprecSpecials%icoarseGridSolverType)
-        case (1,2)
+        case (1,2,3,4)
           cc_getMatrixFlag = CCMASM_FLAG_VTBMAT
         end select
       end if
