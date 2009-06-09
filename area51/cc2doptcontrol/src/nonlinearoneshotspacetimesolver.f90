@@ -2497,6 +2497,7 @@ contains
     logical :: bneumann
     integer :: isolutionStart
     character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY
+    character(LEN=SYS_STRLEN) :: ssolutionExpressionP
     real(DP), dimension(4) :: Derror
     integer(I32) :: nminIterations,nmaxIterations
     real(DP) :: depsRel,depsAbs,domega,domegaPrecond,depsDiff
@@ -3066,12 +3067,18 @@ contains
                                   'ssolutionExpressionY',sstring,'''''')
       read(sstring,*) ssolutionExpressionY
 
+      call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'ssolutionExpressionP',sstring,'''''')
+      read(sstring,*) ssolutionExpressionP
+
       call cc_optc_analyticalError (rproblem,&
           RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
           RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
           RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-          ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+          ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
+          Derror(1),Derror(2))
       call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+      call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
     end if
     
     call output_separator (OU_SEP_EQUAL)        
@@ -3230,8 +3237,10 @@ contains
               RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
               RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
               RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-              ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+              ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
+              Derror(1),Derror(2))
           call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+          call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
         end if
 
         if (ctypePreconditioner .eq. CCPREC_INEXACTNEWTON) then
@@ -3412,8 +3421,10 @@ contains
           RspaceTimePrecondMatrix(size(RspatialPrecond))%p_rsolution,rtempVector,&
           RspaceTimeDiscr(size(RspatialPrecond))%dalphaC,&
           RspaceTimeDiscr(size(RspatialPrecond))%dgammaC,&
-          ssolutionExpressionX,ssolutionExpressionY,Derror(1))   
+          ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
+          Derror(1),Derror(2))
       call output_line ('||y-y0||      = '//trim(sys_sdEL(Derror(1),10)))   
+      call output_line ('||p-p0||      = '//trim(sys_sdEL(Derror(2),10)))   
     end if
 
     call output_separator (OU_SEP_EQUAL)

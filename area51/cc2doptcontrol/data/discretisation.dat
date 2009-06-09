@@ -30,7 +30,7 @@ isolutionLevel     = 0
 ssolutionStart     = 'ns/DX4'
 
 # Analytical expression that defines the initial solution for the X/Y 
-# coordinate in case isolutionStart = 3.
+# coordinate and the pressure in case isolutionStart = 3.
 #    X / Y  = coordinate of the point where to evaluate the expressio
 #    TIME   = current time
 #    _PI    = The number Pi
@@ -39,6 +39,7 @@ ssolutionStart     = 'ns/DX4'
 
 ssolutionExpressionX = ''
 ssolutionExpressionY = ''
+ssolutionExpressionP = ''
 
 # Write final solution vector to a file. After a stationary simulation,
 # the stationary solution is written out. After a nonstationary simulation,

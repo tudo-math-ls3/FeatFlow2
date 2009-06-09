@@ -376,7 +376,8 @@ contains
 !<subroutine>
 
   subroutine cc_optc_analyticalError (rproblem,rsolution,rtempVector,&
-      dalpha,dgamma,ssolutionExpressionX,ssolutionExpressionY,derror)
+      dalpha,dgamma,ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP,&
+      derrorU,derrorP)
 
 !<description>
   ! Computes the L2-error $||y-y0||_2$ of the given solution y to a reference
@@ -393,8 +394,8 @@ contains
   ! Regularisation parameter $\gamma$.
   real(DP), intent(IN) :: dgamma
   
-  ! Expression specifying the analytical solution y0.
-  character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY
+  ! Expression specifying the analytical solution y0 / p0.
+  character(LEN=SYS_STRLEN) :: ssolutionExpressionX,ssolutionExpressionY,ssolutionExpressionP
 !</input>
 
 !<inputoutput>
@@ -407,7 +408,10 @@ contains
 
 !<output>
   ! Returns information about the error. ||y-z||_{L^2}.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(OUT) :: derrorU
+
+  ! Returns information about the error in the pressure. ||p-p0||_{L^2}.
+  real(DP), intent(OUT) :: derrorP
 !</output>
   
 !</subroutine>
@@ -421,15 +425,29 @@ contains
     type(t_collection) :: rcollection
     type(t_fparser) :: rsolParser
     
-    derror = 0.0_DP
+    derrorU = 0.0_DP
+    derrorP = 0.0_DP
     dtstep = rsolution%p_rtimeDiscretisation%dtstep
     
     ! Create a parser and to evaluate the expression.
-    call fparser_create (rsolParser,NDIM2D)
+    call fparser_create (rsolParser,NDIM2D+1)
     
-    ! Compile the two expressions
-    call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
-    call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
+    ! Compile the two expressions+
+    if (ssolutionExpressionX .ne. "") then
+      call fparser_parseFunction (rsolParser,1, ssolutionExpressionX, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,1, "0", EXPR_VARIABLES)
+    end if
+    if (ssolutionExpressionY .ne. "") then
+      call fparser_parseFunction (rsolParser,2, ssolutionExpressionY, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,2, "0", EXPR_VARIABLES)
+    end if
+    if (ssolutionExpressionP .ne. "") then
+      call fparser_parseFunction (rsolParser,3, ssolutionExpressionP, EXPR_VARIABLES)
+    else
+      call fparser_parseFunction (rsolParser,3, "0", EXPR_VARIABLES)
+    end if
     
     ! Put the parser to the problem collection to be usable in a callback
     ! routine.
@@ -465,18 +483,26 @@ contains
       call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
                         ffunction_analyticalRef,rcollection)
 
+      rcollection%IquickAccess(1) = 3
+      call pperr_scalar (rtempVector%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
+                        ffunction_analyticalRef,rcollection)
+
       ! We use the summed trapezoidal rule.
       if ((isubstep .eq. 0) .or. (isubstep .eq. rsolution%NEQtime-1)) then
-        derror = derror + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorU = derrorU + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorP = derrorP + 0.5_DP*Derr(3)**2 * dtstep
       else
-        derror = derror + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorU = derrorU + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorP = derrorP + Derr(3)**2 * dtstep
       end if
       call output_line("error("//trim(sys_siL(isubstep+1,10))//") = "// &
-        trim(sys_sdEL(Derr(1),10))//" / "//trim(sys_sdEL(Derr(1),10)))
+        trim(sys_sdEL(Derr(1),10))//" / "//trim(sys_sdEL(Derr(2),10))// &
+        " / "//trim(sys_sdEL(Derr(3),10)))
 
     end do
     
-    derror = sqrt(derror)
+    derrorU = sqrt(derrorU)
+    derrorP = sqrt(derrorP)
     
     ! Clean up
     call collct_deletevalue (rcollection, 'SOLPARSER') 
