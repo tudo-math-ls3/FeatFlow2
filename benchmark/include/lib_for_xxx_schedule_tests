@@ -143,7 +143,7 @@ fb_setMailSender() {
 	    ;;
 
 	buijssen|xamsbuij)
-	    EMAILADDRESS=sven.buijssen@tu-dortmund.de
+	    EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
 	    DOSENDMAIL=1
 	    ;;
 
@@ -154,11 +154,6 @@ fb_setMailSender() {
 
 	wobker)
 	    EMAILADDRESS=hilmar.wobker@math.tu-dortmund.de
-	    DOSENDMAIL=1
-	    ;;
-
-	grabo)
-	    EMAILADDRESS=matthias.grajewski@math.tu-dortmund.de
 	    DOSENDMAIL=1
 	    ;;
 
@@ -254,6 +249,7 @@ fb_createRuntestsScript() {
     #  by mktemp (the one without the suffix), create a new one and repeat 
     #  the test.)
     tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+    trap "rm -f ${tmpfile}; exit 1" 2 3 9
     while test -e ${tmpfile}.fbconf; do
 	rm -f ${tmpfile}
 	tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
@@ -295,12 +291,13 @@ EOF
     # We set a return code, though, to prevent that incomplete or empty
     # jobfiles are submitted to the PBS scheduler.
     if [ $? -ne 0 ]; then
-	rm $tmpfile
-	return 1
+	returncode=1
     else
-	rm $tmpfile
-	return 0
+	returncode=0
     fi
+    rm $tmpfile
+    trap - 2 3 9;
+    return $returncode;
 }
 
 
@@ -339,7 +336,8 @@ fb_submitJobfile() {
     iteration=1
     while test $success -eq 0 -a $iteration -le $maxwaitcycles; do
 	output="`qsub $jobfile 2>&1`"
-	if [ $? -eq 0 ]; then
+	returncode=$?
+	if [ $returncode -eq 0 ]; then
 	    echo $output
 	    success=1
 	    # Catch case "Maximum number of jobs already in queue".
@@ -358,7 +356,7 @@ fb_submitJobfile() {
 	    echo $output
 	    cat <<EOF 1>&2
 $0: Error while submitting jobfile <$jobfile>:
-$0: qsub returned error code $?.
+$0: qsub returned error code $returncode.
 EOF
 	    exit 1010
 	fi
