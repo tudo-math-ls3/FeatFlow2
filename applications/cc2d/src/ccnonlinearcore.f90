@@ -256,9 +256,6 @@ module ccnonlinearcore
     ! to the coarse grid solver. Otherwise, the pointer is not associated.
     type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
     
-    ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
-    
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
@@ -396,6 +393,9 @@ module ccnonlinearcore
     ! Pointer to the Jump stabilisation matrix. 
     ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
     type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
 
   end type
 
@@ -1287,7 +1287,6 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
 
         ! Get the filter chain. We need tghat later to filter the matrices.        
@@ -1316,6 +1315,9 @@ contains
           else
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
             
+            ! Get the projection structure for this level.
+            p_rprojection => rnonlinearIteration%RcoreEquation(ilev+1)%p_rprojection
+
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
             p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector

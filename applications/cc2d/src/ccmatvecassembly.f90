@@ -353,7 +353,7 @@ contains
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(out), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
   
 !</input>
 
@@ -361,7 +361,7 @@ contains
     ! This array has to receive the values of the coefficients
     ! in all the points specified in Dpoints.
     ! cterm specifies what to evaluate.
-    real(DP), dimension(:,:), intent(out) :: Dcoefficients
+    real(DP), dimension(:,:), intent(OUT) :: Dcoefficients
 !</output>
   
 !</subroutine>

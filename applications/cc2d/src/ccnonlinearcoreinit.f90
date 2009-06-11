@@ -690,7 +690,7 @@ contains
           
           ! Set up the interlevel projection structure on all levels
           call linsol_initProjMultigrid2Level(p_rlevelInfo,&
-              rnonlinearIteration%rpreconditioner%p_rprojection)
+              rnonlinearIteration%RcoreEquation(ilev)%p_rprojection)
           
         end select
       
@@ -807,19 +807,24 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
         call sys_halt()
       end if
-                                    
-      ! Initialise a standard interlevel projection structure. We
-      ! can use the same structure for all levels. Therefore it's enough
-      ! to initialise one structure using the RHS vector on the finest
-      ! level to specify the shape of the PDE-discretisation.
-      allocate(rnonlinearIteration%rpreconditioner%p_rprojection)
-      call mlprj_initProjectionVec (&
-          rnonlinearIteration%rpreconditioner%p_rprojection,rrhs)
       
-      ! Initialise the projection structure with data from the INI/DAT
-      ! files. This allows to configure prolongation/restriction.
-      call cc_getProlRest (rnonlinearIteration%rpreconditioner%p_rprojection, &
-          rproblem%rparamList,  'CC-PROLREST')
+      ! Initialise a standard interlevel projection structures.
+      do i = NLMIN+1, NLMAX
+      
+        ! Allocate the projection structure
+        allocate(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+        
+        ! Initialise the projection based on the discretisation.
+        call mlprj_initProjectionDiscr (&
+            rnonlinearIteration%RcoreEquation(i)%p_rprojection,&
+            rnonlinearIteration%RcoreEquation(i)%p_rdiscretisation)
+      
+        ! Initialise the projection structure with data from the INI/DAT
+        ! files. This allows to configure prolongation/restriction.
+        call cc_getProlRest (rnonlinearIteration%RcoreEquation(i)%p_rprojection, &
+            rproblem%RlevelInfo(i), rproblem%rparamList,  'CC-PROLREST')
+      
+      end do
       
       ! Initialise the linear solver as configured in the DAT file.
       call cc_initLinearSolver (rproblem,rnonlinearIteration,ssolverName)
@@ -835,7 +840,7 @@ contains
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
-            rnonlinearIteration%rpreconditioner%p_rprojection,&
+            rnonlinearIteration%RcoreEquation(i)%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
               rdiscretisation%RspatialDiscr(1:rrhs%nblocks),&
             rproblem%RlevelInfo(i)% &
@@ -1269,8 +1274,10 @@ contains
       deallocate(rnonlinearIteration%rpreconditioner%p_rtempVectorSc2)
       
       ! Clean up data about the projection etc.
-      call mlprj_doneProjection(rnonlinearIteration%rpreconditioner%p_rprojection)
-      deallocate(rnonlinearIteration%rpreconditioner%p_rprojection)
+      do i = rnonlinearIteration%NLMIN+1, rnonlinearIteration%NLMAX
+        call mlprj_doneProjection(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+        deallocate(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+      end do
 
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
@@ -1292,7 +1299,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_getProlRest (rprojection, rparamList, sname)
+  subroutine cc_getProlRest (rprojection, rlevelInfo, rparamList, sname)
   
 !<description>
   ! Initialises an existing interlevel projection structure rprojection
@@ -1301,6 +1308,9 @@ contains
 !</description>
 
 !<input>
+  ! The level info structure of the current level.
+  type(t_problem_lvl), intent(IN) :: rlevelInfo
+  
   ! Parameter list that contains the parameters from the INI/DAT file(s).
   type(t_parlist), intent(IN) :: rparamList
   
@@ -1335,6 +1345,29 @@ contains
     
     ! Now take a look which parameters appear in that section.
 
+    ! Do we use matrix based projection for velocity?
+    call parlst_getvalue_int (p_rsection,'iprojTypeVelocity',i1,0)
+    if(i1 .eq. 1) then
+      
+      ! Yes, so link the prolongation matrix to the projection structure,
+      ! for both X- and Y-velocity.
+      call mlprj_initMatrixProjection(&
+          rprojection%RscalarProjection(1,1),rlevelInfo%rmatrixProlVelocity)
+      call mlprj_initMatrixProjection(&
+          rprojection%RscalarProjection(1,2),rlevelInfo%rmatrixProlVelocity)
+          
+    end if
+
+    ! Do we use matrix based projection for pressure?
+    call parlst_getvalue_int (p_rsection,'iprojTypePressure',i1,0)
+    if(i1 .eq. 1) then
+      
+      ! Yes, so link the prolongation matrix to the projection structure.
+      call mlprj_initMatrixProjection(&
+          rprojection%RscalarProjection(1,3),rlevelInfo%rmatrixProlPressure)
+          
+    end if
+    
     ! Prolongation/restriction order for velocity components
     call parlst_getvalue_int (p_rsection,'iinterpolationOrderVel',i1,-1)
     

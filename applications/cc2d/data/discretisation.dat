@@ -234,12 +234,18 @@ dAdMatThreshold    = 20.0
 [CC-PROLREST]
 #############
 
+# Projection type for velocity and pressure.
+# 0 = hard-coded projection (default)
+# 1 = matrix-based projection
+iprojTypeVelocity = 0
+iprojTypePressure = 0
+
 # Order of the prolongation/restriction to use for velocity components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
 
 iinterpolationOrderVel   = -1
 
-# Order of the prolongation/restriction to use for pressurte components.
+# Order of the prolongation/restriction to use for pressure components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
 
 iinterpolationOrderPress = -1
