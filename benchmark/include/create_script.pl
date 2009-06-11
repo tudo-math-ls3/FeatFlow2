@@ -970,7 +970,7 @@ sub get_version {
     open(FILE, "<", $0);
     if (! eof(FILE)) {
         while (<FILE>) {
-            if (m/^# \$Id: create_script.pl,v ([\d\.]+) /) {
+            if (m/^# \$Id: create_script.pl ([\d\.]+) /) {
                 $version = $1;
                 last;
             }
@@ -987,7 +987,7 @@ sub get_version {
 
 # Function which shows this script's version
 sub show_version {
-    print $progname . " v" . &get_version() . "\n";
+    print $progname . " revision " . &get_version() . "\n";
     print "Written by Sven H.M. Buijssen.\n";
 
     exit 0;
