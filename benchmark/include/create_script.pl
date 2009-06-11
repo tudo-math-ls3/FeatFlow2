@@ -1,24 +1,25 @@
 #!/usr/bin/env perl
 #
-# A Perl script used by the Makefile in FEAT2 Benchmark & Regression 
-# directory to create the benchmark control script (intuitively called runtests). 
+# A Perl script used by the Makefile in FEAT2 Benchmark & Regression
+# directory to create the benchmark control script (intuitively called runtests).
 #
-# This script parses an fbconf file (or more generally a given ASCII file 
-# containing a list of test IDs), looks up the settings associated with 
-# these test IDs (stored in one of the fbdef files in subdirectory 'tests') 
-# and creates instruction blocks (environment variable declarations in 
-# uppercase in sh syntax) for all the tests requested. These instructions
-# are integrated into 'runtests'. If a test ID is found for which there
-# is no definition in any of the fbdef files, it will report a warning
-# and ignore the test ID.
+# This script parses an fbconf file (or more generally a given ASCII
+# file containing a list of test IDs, one or multiple per line), looks
+# up the settings associated with these test IDs (stored in one of the
+# fbdef files in subdirectory 'tests') and creates instruction blocks
+# (environment variable declarations in uppercase in sh syntax) for
+# all the tests requested. These instructions are integrated into
+# 'runtests'. If a test ID is found for which there is no definition
+# in any of the fbdef files, it will report a warning and ignore the
+# test ID.
 #
 # A number of special keywords in *.fbdef files are supported that are not
-# stored in the 'runtests' script, but instead influence whether and how 
+# stored in the 'runtests' script, but instead influence whether and how
 # test IDs are included in 'runtests'. These keywords are:
 #   allowhosts:
-#      comma-separated list of names of hosts a benchmark test should 
-#      be run on. 
-#      To run a test on any host, specify 'all' or 'any' (without the 
+#      comma-separated list of names of hosts a benchmark test should
+#      be run on.
+#      To run a test on any host, specify 'all' or 'any' (without the
 #      single ticks). To disable execution in general, specify 'none'.
 #
 #      Examples:
@@ -28,10 +29,10 @@
 #
 #   allowbuildIDs:
 #      comma-separated list of build IDs (standard FEAT2 five dash-separated tokens
-#      to identify architecture, cpu, operating system, mpi implementation, compiler
-#      suite and BLAS implementation) a benchmark test should be run on. 
-#      The mechanism works exactly like 'allowhosts' and supports the same special 
-#      values 'all', 'any' and 'none'. The remark on the complementary nature of 
+#      to identify architecture, cpu, operating system, compiler suite and BLAS 
+#      implementation) a benchmark test should be run on.
+#      The mechanism works exactly like 'allowhosts' and supports the same special
+#      values 'all', 'any' and 'none'. The remark on the complementary nature of
 #      'allowhosts'/'denyhosts' holds for 'allowbuildIDs'/'denybuildIDs', too.
 #
 #      Examples:
@@ -39,10 +40,10 @@
 #
 #
 #   denyhosts:
-#      comma-separated list of names of hosts a benchmark test should 
+#      comma-separated list of names of hosts a benchmark test should
 #      never be run on. Complementary to 'allowhosts' keyword, see below.
 #      Special values: 'all', 'any', 'none'
-#      
+#
 #      Examples:
 #         denyhosts   = none
 #         denyhosts   = oldman,nightwish
@@ -58,10 +59,10 @@
 #
 #   denybuildIDs:
 #      comma-separated list of build IDs (standard FEAT2 five dash-separated tokens
-#      to identify architecture, cpu, operating system, mpi implementation, compiler
-#      suite and BLAS implementation) a benchmark test should never be run on. 
-#      The mechanism works exactly like 'denyhosts' and supports the same special 
-#      values 'all', 'any' and 'none'. The remark on the complementary nature of 
+#      to identify architecture, cpu, operating system, compiler suite, BLAS
+#      implementation) a benchmark test should never be run on.
+#      The mechanism works exactly like 'denyhosts' and supports the same special
+#      values 'all', 'any' and 'none'. The remark on the complementary nature of
 #      'allowhosts'/'denyhosts' holds for 'allowbuildIDs'/'denybuildIDs', too.
 #
 #      Examples:
@@ -72,6 +73,8 @@
 #      comma-separated list of execution modes. Valid values are 'parallel' and
 #      'serial'.
 #
+# Current version:
+# $Id$
 
 
 
@@ -81,7 +84,10 @@ use strict;
 use warnings;
 
 # Try to import execmode from environment (set by calling Makefile)
-use Env qw(MODE);
+use Env qw(MODE ID);
+
+# handling of command line options
+use Getopt::Long 2.33 qw(:config prefix_pattern=--);
 
 # Portably try every conceivable way to determine
 # the current hostname
@@ -106,11 +112,38 @@ my $testfileext = "fbdef";
 use IO::Handle;
 STDOUT->autoflush(1);
 
-# At least one file has to be given on command line.
+use constant VERSION => 2.12;
+
+
+
+# Parse command line
+#
+# If GetOptions() returns false, the function detected one or
+# more errors during option parsing. So, this script should die.
+#
+# Pass the variables by reference (syntax: prefix them with a backslash),
+# when passing an array explicitly
+my $unknownoption=0;
+# variables for command line options
+my %cl = ();
+GetOptions (
+            "append-to-files=s"             => \$cl{'append-to-files'},
+            "help"                          => \$cl{'help'},
+            "version"                       => \$cl{'version'},
+            ) || ($unknownoption=1);
+
+# Show version if requested
+&show_version() if ($cl{'version'});
+
+# Show help if requested
+&show_help() if ($cl{'help'});
+
+# At least one file has to be given on the command line.
 # (Note: perl starts to count from zero!)
-die "\nUsage: $progname <file>\n\n" .
-    "where <file> is an ASCII file containing a list of test IDs.\n" .
-    "Every ID has to match one listed in the *.$testfileext files in <$testsdir/>.\n\n" if ($#ARGV < 0);
+if ($#ARGV < 0) {
+    &show_help();
+    die "\n";
+}
 
 
 # Set default execution mode
@@ -118,6 +151,7 @@ $ENV{"MODE"} = "PARALLEL" unless ($ENV{"MODE"});
 
 # Set build ID
 my $buildID = $ENV{"ID"} || "";
+$buildID =~ s/^(\w+-\w+-\w+-\w+-\w+)(-\w+|)$/$1/;
 
 
 # Step 1:
@@ -149,7 +183,7 @@ foreach my $testfile (@defaultSettingsFiles) {
 	open(TESTFILE, $testfile)
 	    or warn "$progname: WARNING: Cannot read defaults from file <$testfile>: $!\n";
 	my $lineno = 0;
-        LINE: while (<TESTFILE>) {
+	LINE: while (<TESTFILE>) {
 	    $lineno++;
 	    # Ignore comments (i.e. lines starting with a '#')
 	    next LINE if ($_ =~ m/^\#/);
@@ -164,7 +198,7 @@ foreach my $testfile (@defaultSettingsFiles) {
 
 	    # Match a line of format
 	    # keyword  =  entry
-	    m%^\s*(\S+)\s*=\s*(.+)$%;
+	    m%^\s*(\S+)\s*=\s*(.*)$%;
 
 	    # Catch case where a line in a FEAT2 benchmark test definition file
 	    # is invalidly formatted.
@@ -183,19 +217,33 @@ foreach my $testfile (@defaultSettingsFiles) {
 	    #     APPL     = sbblas
 	    #     MATCONST = NO
 	    #     AUX1     = MV
-	    # otherwise we can overwrite discrete settings later on, e.g. overwrite
+	    # otherwise we can override discrete settings later on, e.g. override
 	    # only the value of AUX1.
 	    my %hash = &splitup($1, $2);
 	    foreach my $keyword (keys %hash) {
 		my $value = $hash{$keyword};
-		# Store it (keyword in uppercase).
-		printf STDERR
-		    "Storing as new default value: '" .
-		    uc($keyword) . "' => '" .
-		    $value. "'\n" if ($debugScript);
-		$default{uc($keyword)} = $value;
+		# Remove leading white space 
+		# (any trailing white space has been remove on the complete line already)
+		$value =~ s/^\s*//;
 
-		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are 
+		# Store it (keyword in uppercase).
+		if ($value ne "") {
+		    printf STDERR
+			"Storing as new default value: '" .
+			uc($keyword) . "' => '" .
+			$value. "'\n" if ($debugScript);
+		    $default{uc($keyword)} = $value;
+		} else {
+		    if (exists($default{uc($keyword)})) {
+			# Unset keyword
+			printf STDERR
+			    "Unsetting default value for: '" .
+			    uc($keyword) . "'\n" if ($debugScript);
+			delete $default{uc($keyword)};
+		    }
+		}
+
+		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
 		# complimentary. Take additional measures to ensure consistency
 		# of settings.
 		&update_allowdeny_settings($keyword, $value, \%default);
@@ -262,7 +310,7 @@ foreach my $testfile (@testfiles) {
 	} else {
 	    # Match a line of format
 	    # keyword  =  entry
-	    m%^\s*(\S+)\s*=\s*(.+)$%;
+	    m%^\s*(\S+)\s*=\s*(.*)$%;
 
 	    # Catch case where a line in a FEAT2 benchmark test definition file
 	    # is invalidly formatted.
@@ -281,28 +329,47 @@ foreach my $testfile (@testfiles) {
 	    #     APPL     = sbblas
 	    #     MATCONST = NO
 	    #     AUX1     = MV
-	    # otherwise we can overwrite discrete settings later on, e.g. overwrite
+	    # otherwise we can override discrete settings later on, e.g. override
 	    # only the value of AUX1.
 	    my %hash = &splitup($1, $2);
 	    foreach my $keyword (keys %hash) {
 		my $value = $hash{$keyword};
+		# Remove leading white space 
+		# (any trailing white space has been remove on the complete line already)
+		$value =~ s/^\s*//;
 
 		if ($testid ne "") {
-		    # Store it for current ID (keyword in uppercase).
-		    print STDERR "Storing in test{$testid}{$keyword}: $value\n" if ($debugScript);
-		    $test{$testid}{uc($keyword)} = $value;
+		    if ($value ne "") {
+			# Store it for current ID (keyword in uppercase).
+			print STDERR "Storing in test{$testid}{$keyword}: $value\n" if ($debugScript);
+			$test{$testid}{uc($keyword)} = $value;
+		    } else {
+			if (exists($test{$testid}{uc($keyword)})) {
+			    # Unset keyword
+			    printf STDERR
+				"Unsetting test{$testid}{$keyword}\n" if ($debugScript);
+			    delete $test{$testid}{uc($keyword)};
+			}
+		    }
 
-		    # 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are 
+		    # 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
 		    # complimentary. Take additional measures to ensure consistency
 		    # of settings.
 		    &update_allowdeny_settings($keyword, $value, \%{ $test{$testid} });
 		}
 
-		# Store new settings as defaults for next entry
-		printf STDERR "Storing as new inherited value: '$keyword' => $value\n" if ($debugScript);
-		$inherited{uc($keyword)} = $value;
+		if ($value ne "") {
+		    # Store new settings as defaults for next entry
+		    printf STDERR "Storing as new inherited value: '$keyword' => $value\n" if ($debugScript);
+		    $inherited{uc($keyword)} = $value;
+		} else {
+		    if (exists($inherited{uc($keyword)})) {
+			# Unset keyword
+			delete $inherited{uc($keyword)};
+		    }
+		}
 
-		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are 
+		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
 		# complimentary. Take additional measures to ensure consistency
 		# of settings.
 		&update_allowdeny_settings($keyword, $value, \%inherited);
@@ -355,11 +422,11 @@ foreach my $file (@ARGV) {
 	# Remove any inlined comments
 	$_ =~ s/\#.+$//;
 
-        # Remove white spaces (trim)
+	# Remove white spaces (trim)
 	$_ =~ s/^\s*(\S+)\s*$/$1/;
 
 	print STDERR "Found ID <" . $_ . ">.\n" if ($debugScript);
-	push @idsToCode, $_;
+	push @idsToCode, split('\s+', $_);
     }
     close(FILE);
     print STDERR "Finished parsing file <$file>.\n" if ($debugScript);
@@ -397,7 +464,7 @@ ID: foreach my $testid (@idsToCode) {
 	# Continue only in case
 	# * all hosts are on whitelist
 	# * current host is on whitelist
-	# and 
+	# and
 	# * no host is blacklisted or
 	# * current host is not on the blacklist.
 	unless (($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i) &&
@@ -431,7 +498,7 @@ ID: foreach my $testid (@idsToCode) {
 	# Continue only in case
 	# * all build IDs are on whitelist
 	# * current build IDs is on whitelist
-	# and 
+	# and
 	# * no build IDs is blacklisted or
 	# * current build IDs is not on the blacklist.
 	unless (($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i) &&
@@ -467,21 +534,29 @@ ID: foreach my $testid (@idsToCode) {
 	next ID;
     } else {
 	# A single runtests script can only do either parallel or serial tests
-	# So, if multiple execmodes are given, overwrite value with the currently active one.
+	# So, if multiple execmodes are given, override value with the currently active one.
 	$test{$testid}{EXECMODE} = $ENV{"MODE"};
+    }
+
+
+    # Write to screen or append to file?
+    if ($cl{'append-to-files'}) {
+	my $filename = $cl{'append-to-files'} . $testid;
+	open(STDOUT, '>>', $filename)
+	    or warn "$progname: WARNING: Cannot append to file <$filename>: $!\n";
     }
 
     $testidsFound++;
     # Re-initialise array that stores all environment variables set
     @vars2export = ();
 
-    print "# ================================================================\n\n";
+    print STDOUT "# ================================================================\n\n";
 
     # Description of individual test case
-    print "echo '# ====================='\n";
-    print "echo '# Test description:'\n";
-    print "echo '# " . $test{$testid}{DESCR} . "'\n";
-    print "echo\n";
+    print STDOUT "echo '# ====================='\n";
+    print STDOUT "echo '# Test description:'\n";
+    print STDOUT "echo '# " . $test{$testid}{DESCR} . "'\n";
+    print STDOUT "echo\n";
 
     # Set log directory if not already set
     $test{$testid}{LOGDIR} ||= "logs/" . $testid;
@@ -497,7 +572,7 @@ ID: foreach my $testid (@idsToCode) {
 		"  But there exists already such a file system object and it is no directory. Please check.\n\n";
 	} else {
 	    mkdir "logs";
-	    mkdir $test{$testid}{LOGDIR} || 
+	    mkdir $test{$testid}{LOGDIR} ||
 		die "\n$progname: ERROR:\n" .
 		    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
 		    "  but an error occured: $?\n\n";
@@ -513,7 +588,7 @@ ID: foreach my $testid (@idsToCode) {
     &formatted_print_env_variable("TESTID", $testid, $fieldlength);
     push @vars2export, "TESTID";
 
-    
+
     # Export all remaining items but the special keywords
     # ('allowbuildids', 'allowhosts', 'denybuildids' 'denyhosts', 'execmode')
     foreach my $entry (sort keys %{ $test{$testid} }) {
@@ -525,11 +600,11 @@ ID: foreach my $testid (@idsToCode) {
     }
 
     # Finally, export execmode. This has to be done at the end as it might be necessary
-    # to overwrite previously set variables because of the execmode.
+    # to override previously set variables because of the execmode.
 
     # WARNING:
     # The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
-    # use 'sed' regular expression substitutions to dynamically set/overwrite the 
+    # use 'sed' regular expression substitutions to dynamically set/override the
     # EXECMODE value when creating the batch script.
     # Whenever changing the syntax here, do not forget to adapt them!
     if ($test{$testid}{EXECMODE} =~ m/\bparallel\b/i) {
@@ -538,7 +613,7 @@ ID: foreach my $testid (@idsToCode) {
     } elsif ($test{$testid}{EXECMODE} =~ m/\bserial\b/i) {
 	# serial case
 	&formatted_print_env_variable("EXECMODE", $test{$testid}{EXECMODE}, $fieldlength);
-	&formatted_print_env_variable("AUTOPART", "YES", $fieldlength);
+
     } else {
 	# unknown case
 	&formatted_print_env_variable("EXECMODE", $test{$testid}{EXECMODE}, $fieldlength);
@@ -548,53 +623,58 @@ ID: foreach my $testid (@idsToCode) {
     }
 
     my $length = length("export");
-    print "export";
+    print STDOUT "export";
     foreach my $entry (sort keys %{ $test{$testid} }) {
 	unless ($entry =~ m/\b((ALLOW|DENY)(HOSTS|BUILDIDS))\b/i) {
 	    $length += length($entry) + 1;
-	    
+
 	    if ($length < 80) {
-		print " $entry";
+		print STDOUT " $entry";
 	    } else {
-		print "\nexport $entry";
+		print STDOUT "\nexport $entry";
 		$length = length("export");
 	    }
 	}
     }
-    print "\nexport TESTID\n";
+    print STDOUT "\n";
+    print STDOUT "export TESTID\n";
 
     # All non-interactive MPI jobs need to have the environment variables
     # FEAT2 uses in its master.dat's explicitly set with the 'mpirun' command.
-    print qq{\nvars2export="\$vars2exportAlways } . join(" ", @vars2export) . qq{"\n};
+    print STDOUT qq{\nvars2export="\$vars2exportAlways } . join(" ", @vars2export) . qq{"\n};
 
     # Applications are named according the scheme:
     #   <basename>-<application>
     # where <application> is both found in src_<application> and as value of the
     # keyword 'appl' in a *.$testfileext file in subdirectory 'tests'.
-    print "\nappname=\${APPL_BASENAME}-\${APPL}\n";
+    print STDOUT "\nappname=\${APPL_BASENAME}-\${APPL}\n";
 
     # Include the file that actually starts and evaluate a test
-    print "\nfb_runAndEvalBenchmarkTest\n\n";
+    print STDOUT "\nfb_runAndEvalBenchmarkTest\n\n";
 
     # Now, explicitly unset all previously set environment variables to
     # provide a clean environment for subsequent tests.
-    print "# Now, explicitly unset all previously set environment variables to\n" .
-	  "# provide a clean environment for subsequent tests.\n";
+    print STDOUT "# Now, explicitly unset all previously set environment variables to\n" .
+	         "# provide a clean environment for subsequent tests.\n";
     $length = length("unset");
-    print "unset";
+    print STDOUT "unset";
     foreach my $entry (sort keys %{ $test{$testid} }) {
 	unless ($entry =~ m/\b((ALLOW|DENY)(HOSTS|BUILDIDS))\b/i) {
 	    $length += length($entry) + 1;
-	    
+
 	    if ($length < 80) {
-		print " $entry";
+		print STDOUT " $entry";
 	    } else {
-		print "\nunset $entry";
+		print STDOUT "\nunset $entry";
 		$length = length("unset");
 	    }
 	}
     }
-    print "\nunset TESTID\n\n";
+    print STDOUT "\nunset TESTID\n\n";
+
+    if ($cl{'append-to-files'}) {
+	close(STDOUT);
+    }
 }
 
 if ($testidsFound == 0) {
@@ -604,7 +684,7 @@ if ($testidsFound == 0) {
 	"  of the following files:\n  * " .
 	join("\n  * ", sort @testfiles) . "\n" .
 	"  could be found or the current hostname is not listed as valid host\n" .
-        "  for any of the test IDs.\n\n";
+	"  for any of the test IDs.\n\n";
 }
 
 
@@ -613,13 +693,13 @@ if ($testidsFound == 0) {
 # Formatted print of an environment variable and its value
 # WARNING:
 # The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
-# use 'sed' regular expression substitutions to dynamically set/overwrite 
+# use 'sed' regular expression substitutions to dynamically set/override
 # the EXECMODE exported to runtests with this function.
 # Whenever changing the syntax here, do not forget to adapt them!
 sub formatted_print_env_variable {
     my ($variablename, $value, $fieldlength) = (@_);
 
-    print
+    print STDOUT
 	# Print environment variable definition: keyword=value
 	$variablename . "=" . $value . "\n";
     return;
@@ -643,7 +723,7 @@ sub get_max_col_length {
 sub max {
     my $max = shift(@_);
     foreach my $foo (@_) {
-        $max = $foo if $max < $foo;
+	$max = $foo if $max < $foo;
     }
     return $max;
 }
@@ -876,4 +956,69 @@ sub update_allowdeny_settings {
     }
 
     return;
+}
+
+
+# Determine version of this script
+# (from the CVS ID in the header of this script or
+#  from the hard-coded VERSION constant)
+sub get_version {
+    my $version = "";
+    my $additional = "";
+
+    # Open this script for reading
+    open(FILE, "<", $0);
+    if (! eof(FILE)) {
+        while (<FILE>) {
+            if (m/^# \$Id: create_script.pl,v ([\d\.]+) /) {
+                $version = $1;
+                last;
+            }
+        }
+    }
+    close(FILE);
+
+    # Fall back to hard-coded version number if version number unset
+    $version = VERSION if ($version eq "");
+
+    return $version;
+}
+
+
+# Function which shows this script's version
+sub show_version {
+    print $progname . " v" . &get_version() . "\n";
+    print "Written by Sven H.M. Buijssen.\n";
+
+    exit 0;
+}
+
+
+# Function which shows valid options and IDs to this script
+sub show_help {
+    print
+        "Usage: $progname [options] <file>\n" .
+	"\n" .
+	"where <file> is an ASCII file containing a list of test IDs.\n" .
+	"\n" .
+	"This script parses an fbconf file (or more generally a given ASCII\n" .
+	"file containing a list of test IDs, one or multiple per line), looks\n" .
+	"up the settings associated with these test IDs (stored in one of the\n" .
+	"fbdef files in subdirectory 'tests') and creates instruction blocks\n" .
+	"(environment variable declarations in uppercase in sh syntax) for\n" .
+	"all the tests requested. These instructions are integrated into\n" .
+	"'runtests'. If a test ID is found for which there is no definition\n" .
+	"in any of the fbdef files, it will report a warning and ignore the\n" .
+	"test ID\n" .
+	"\n" .
+        "Command line options:\n" .
+        "---------------------\n" .
+        "--append-to-files <string>\n" .
+        "                    Instead of writing to screen, append output to a\n" .
+	"                    file, one per test ID. File names are constructed\n" .
+	"                    according to\n" .
+	"                        <string>.<test ID>\n" .
+        "--help              Print this message\n" .
+        "--version           Show version information\n" .
+    exit 0;
 }
