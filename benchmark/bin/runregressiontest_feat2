@@ -144,8 +144,8 @@ FLAGBENCHMARKFINISHED=/tmp/FEAT2_BENCHMARK_FINISHED
 #
 # recipient of email error and report messages
 #RECIPIENT=feat2users@math.tu-dortmund.de
-RECIPIENT=michael.koester@math.tu-dortmund.de,sven.buijssen@math.tu-dortmund.de,matthias.moeller@math.tu-dortmund.de
-#RECIPIENT=buijssen@math.tu-dortmund.de
+#RECIPIENT=michael.koester@math.tu-dortmund.de,sven.buijssen@math.tu-dortmund.de,matthias.moeller@math.tu-dortmund.de
+RECIPIENT=buijssen@math.tu-dortmund.de
 
 
 
@@ -325,6 +325,110 @@ fb_readargs() {
 #             all over the script.
 fb_customise() {
     case "$HOSTNAME" in
+	# LiDO-2
+	lido1|lido2)
+	    # set various parameters
+	    ARCH=LiDO
+	    COMPILEWITHPROCS=2
+	    CREATEDOCU="no"
+	    # the script requires that an ssh tunnel is always open, bound to port 13690
+	    # (the default SVN port 3690 is not necessarily free and available)
+	    SVNURL=svn://localhost:13690/Featflow2
+	    MAILX="mailx"
+	    FROMADDRESS="LS3 (Turek) Benchmark User <featflow@lido1.hrz.tu-dortmund.de>"
+	    USEMODULES="yes"
+	    EXTRAMODULEFILESDIRECTORY=""
+
+	    # As all benchmark tests are run in parallel on LiDO
+	    # via a queueing system, i.e. independent shells,
+	    # the appropriate modules need to be loaded within the
+	    # jobfile. Exactly those modules loaded here are hardcoded
+	    # into the jobfile by bin/lid_schedule_tests later on.
+	    case "$FORCEBUILDID" in
+		# G95 compiler suite
+		pc64-penryn-linux-g95-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules g95/32bit-default-integers/0.91"
+#		    modules="$modules g95/64bit-default-integers/0.91"
+		    LIDOJOBNAMEPREFIX=fb-g95
+#		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
+#		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
+		    COMPILERNAME="G95 0.91"
+		    ;;
+
+		# GNU compiler suite
+		pc64-penryn-linux-gcc-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules gcc/4.4.0"
+		    LIDOJOBNAMEPREFIX=fb-gcc
+		    COMPILERNAME="GCC 4.4.0"
+		    ;;
+
+		# Pathscale compiler suite
+		pc64-penryn-linux-psc-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules pathscale"
+		    LIDOJOBNAMEPREFIX=fb-psc
+		    COMPILERNAME="Pathscale"
+		    ;;
+
+		# PGI compiler suite
+		pc64-penryn-linux-pgi-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules pgi"
+		    LIDOJOBNAMEPREFIX=fb-pgi
+		    COMPILERNAME="PGI"
+		    ;;
+
+		# Sun Studio compiler suite
+		pc64-penryn-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules sunstudio"
+		    LIDOJOBNAMEPREFIX=fb-sun
+		    COMPILERNAME="SunStudio"
+		    ;;
+
+		# default build ID (Intel compiler suite)
+		pc64-penryn-linux-intel-*|*)
+		    modules=""
+		    modules="$modules gotoblas/shared/64"
+		    modules="$modules intel/mkl"
+#		    modules="$modules intel/cce/10.1.022 intel/fce/10.1.022"
+		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
+#		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
+		    LIDOJOBNAMEPREFIX=fb-intel
+#		    COMPILERNAME="Intel 10.1"
+		    COMPILERNAME="Intel 11.0"
+		    ;;
+	    esac
+
+	    # On LIDOng we need to cross-compile as the compute nodes are superior
+	    # to the gateway cpus.
+	    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --id=$FORCEBUILDID --force-id"
+
+	    modules="$modules torque maui binutils/64/2.19.1 subversion"
+
+    	    # Make 'module' command and modulefiles available
+	    # But Modules Environment is dreadfully implemented, especially 
+	    # the versions 3.2.x randomly crash (typically with a 
+            #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
+	    # when trying to load/unload several modules at once. 
+	    # Workaround: Load them one by one.
+	    . /sysdata/shared/sfw/Modules/default/init/sh > $AUXILIARYLOG 2>&1;
+	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
+
+	    if [ -s $AUXILIARYLOG ]; then
+		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
+		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
+		fb_exit 1
+	    fi
+	    ;;
+
 	# LiDO
 	lido-gw1|lido-gw2)
 	    # set various parameters
