@@ -2736,7 +2736,7 @@ contains
 
       ! Clear the entries in the matrix - we need to start with zero
       ! when assembling a new matrix!
-      call storage_new1D ('mlop_build2LvlInterp9_conf', 'DA', &
+      call storage_new ('mlop_build2LvlInterp9_conf', 'DA', &
                           NA, ST_DOUBLE, rmatrixScalar%h_DA, &
                           ST_NEWBLOCK_ZERO)
       call lsyssc_getbase_double (rmatrixScalar,p_DA)
