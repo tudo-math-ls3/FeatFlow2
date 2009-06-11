@@ -1,24 +1,24 @@
 # -*- mode: makefile -*-
 
 ##############################################################################
-# AMD Core Math Library (ACML) for PGI compiler suite
+# Intel Math Kernel Library (MKL) for Intel compiler suite
 #
 # providing both an implementation of the BLAS and LAPACK libraries
 ##############################################################################
 
-ifneq ($(strip $(ACMLHOME)),)
+ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
-LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(ACMLHOME))
+LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(INTEL_MKL_LIB))
 endif
 
-LIBS     := $(LIBS) -lacml
+LIBS     := $(LIBS) -lmkl -lguide -lpthread
 
 
 
 ##############################################################################
 # BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_LIBS     := $(SBB_LIBS) -lacml
+SBB_LIBS     := $(SBB_LIBS) -lmkl -lguide -lpthread
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

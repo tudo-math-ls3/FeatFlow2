@@ -1884,6 +1884,62 @@ endif
 
 
 ######################### Penryn 64 bit (Xeon E5450) #########################
+######################### Penryn 64 bit (LiDO 2)     #########################
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+# g95 is based on gcc 4.0.3. So, it supports less processors
+# than gcc 4.3 and 4.4. For all available options see
+# http://gcc.gnu.org/onlinedocs/gcc-4.0.3/gcc.pdf, page 145.
+ifeq ($(strip $(optimise)), YES)
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+CFLAGSCOPROC  := -march=nocona $(CFLAGSCOPROC)
+LDFLAGS       := -march=nocona $(LDFLAGS)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-gcc-.*),yes)
+# invokes the GNU Compiler suite, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+gcc43or44=NO
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifeq ($(strip $(gcc43or44)), YES)
+ifeq ($(strip $(optimise)), YES)
+# Options choosen based on 
+# * the article at http://www.outsourcingi.com/articles_content.php?id=454
+# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
+# * and the options gcc itself passes when '-march=native --verbose' is 
+#   invoked on the LiDO-2 eth/ib compute nodes.
+# Note: It is absolutely mandatory to use a recent binutils package!
+#       Otherwise SSE4.1 is not available and the compiler will bail out.
+LIDO2COMPUTENODESOPTFLAGS = \
+         -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
+         --param l1-cache-line-size=64 --param l2-cache-size=6144 \
+         -ftree-vectorize
+CFLAGSF77LIBS := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF77LIBS)
+CFLAGSF77     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF77)
+CFLAGSF90     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSF90)
+CFLAGSC       := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSC)
+CFLAGSCXX     := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSCXX)
+CFLAGSCOPROC  := $(LIDO2COMPUTENODESOPTFLAGS) $(CFLAGSCOPROC)
+LDFLAGS       := $(LIDO2COMPUTENODESOPTFLAGS) $(LDFLAGS)
+endif
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc64-penryn-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack
@@ -1910,13 +1966,37 @@ endif
 endif
 
 
+ifeq ($(call match,$(ID),pc64-penryn-linux-psc-.*),yes)
+# invokes the PathScale Fortran 77/90 compiler, local umfpack, local metis
+MESSAGE  := $(MESSAGE) \
+	    echo; \
+	    echo '*** Warning: SB wants to state: Not yet sure whether optimisation flags are already optimal!'; \
+	    echo;
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/pathscale-generic.mk
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) -m64 -march=auto
+CFLAGSF77     := $(CFLAGSF77) -m64 -march=auto
+CFLAGSF90     := $(CFLAGSF90) -m64 -march=auto
+CFLAGSC       := $(CFLAGSC) -m64 -march=auto
+CFLAGSCXX     := $(CFLAGSCXX) -m64 -march=auto
+CFLAGSCOPROC  := $(CFLAGSCOPROC) -m64 -march=auto
+LDFLAGS       := $(LDFLAGS) -m64 -march=auto
+# default is -march=auto
+ifeq ($(strip $(optimise)), YES)
+# -msse4a
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc64-penryn-linux-pgi-.*),yes)
 # invokes the Portland Group Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/pgi-generic.mk
 ifeq ($(call optimise), YES)
 MESSAGE  := $(MESSAGE) \
-	    echo '*** Warning: Not yet sure whether optimisation flags are optimal!';
+	    echo; \
+	    echo '*** Warning: SB wants to state: Not yet sure whether optimisation flags are already optimal!'; \
+	    echo;
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -tp penryn-64
 CFLAGSF77     := $(CFLAGSF77) -tp=penryn-64
 CFLAGSF90     := $(CFLAGSF90) -tp=penryn-64
@@ -1931,15 +2011,49 @@ endif
 endif
 
 
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
+ifeq ($(call match,$(ID),pc64-penryn-linux-sunstudio-.*),yes)
+# invokes the Sun Studio Compiler suite, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/sunstudio-generic.mk
+ifeq ($(strip $(optimise)), YES)
+# Options choosen based on 
+# * the options the sun compiler themselves pass when '-fast -dryrun' is 
+#   invoked on the LiDO-2 eth/ib compute nodes.
+LIDO2COMPUTENODESOPTFLAGS = \
+          -xO5 -xarch=sse4_1 -xcache=32/64/8:6144/64/24 -xchip=penryn \
+          -fsimple=2 -fns=yes -ftrap=common -xlibmil -nofstore -xregs=frameptr
+CFLAGSF77LIBS := $(CFLAGSF77LIBS) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
+CFLAGSF77     := $(CFLAGSF77) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
+CFLAGSF90     := $(CFLAGSF90) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
+CFLAGSC       := $(CFLAGSC) $(LIDO2COMPUTENODESOPTFLAGS)
+CFLAGSCXX     := $(CFLAGSCXX) $(LIDO2COMPUTENODESOPTFLAGS)
+CFLAGSCOPROC  := $(CFLAGSCOPROC) $(LIDO2COMPUTENODESOPTFLAGS)
+LDFLAGS       := $(LDFLAGS) $(LIDO2COMPUTENODESOPTFLAGS) -dalign
+endif
 endif
 
 
 ifeq ($(call match,$(ID),pc64-penryn-linux-.*-acml.*),yes)
 # Use AMD Core Math Library
 include $(TEMPLATESDIR)/acml-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-mkl.*),yes)
+# Use Intel Math Kernel Library
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
