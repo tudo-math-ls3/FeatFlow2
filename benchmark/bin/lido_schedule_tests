@@ -424,7 +424,7 @@ EOF
 	    *)
 		# No MPI module loaded
 		echo "$0: MPI not required for any job file."
-		sedMPIEnv=not-needed-as-no-mpi-module-loaded
+		sedMPIEnv=not-needed-as-feat2-is-serial-only
 		;;
 	esac
 
