@@ -375,10 +375,10 @@ EOF
 fb_fastCreateAndSubmitJobfilesLiDO() {
     jobfileprefix="$1"   # IN
 
-    # Check whether Makefile is available (i.e. whether configure has been run)
-    if [ ! -s Makefile ]; then
+    # Check whether GNUmakefile is available (i.e. whether configure has been run)
+    if [ ! -s GNUmakefile ]; then
 	cat <<EOF 1>&2
-$0: Error: No Makefile found. Please run './configure' first.
+$0: Error: No GNUmakefile found. Please run './configure' first.
 EOF
 	exit 9
     fi
@@ -499,7 +499,7 @@ EOF
     ID=`$GNUMAKE .idonly`
     #
     # Call the script that includes the appropriate environment variables for
-    # a given test, but unlike in the Makefile call it with additional command
+    # a given test, but unlike in the GNUmakefile call it with additional command
     # line parameters instructing it to not write to screen, but to append
     # directly to the temporary files just created.
     export MODE ID;
