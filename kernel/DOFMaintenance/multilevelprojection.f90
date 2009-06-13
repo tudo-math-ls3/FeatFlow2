@@ -343,6 +343,9 @@ module multilevelprojection
     ! The prolongation matrix that is to be used
     type(t_matrixScalar)        :: rmatrixProl
     
+    ! The interpolation matrix that is to be used.
+    type(t_matrixScalar)        :: rmatrixInterp
+    
   end type
   
 !</typeblock>
@@ -629,6 +632,8 @@ contains
           case (MLP_PROJ_TYPE_MATRIX)
             ! Release the prolongation matrix
             call lsyssc_releaseMatrix(p_rprj%rmatrixProl)
+            if(lsyssc_hasMatrixStructure(p_rprj%rmatrixInterp)) &
+              call lsyssc_releaseMatrix(p_rprj%rmatrixInterp)
           
           end select
         
@@ -2080,6 +2085,28 @@ contains
     
       ! Skip this block if it is empty
       if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
+      
+      ! What type of interpolation do we use here?
+      select case(rprojection%RscalarProjection(1,i)%iprojType)
+      case(MLP_PROJ_TYPE_L2_PROJ)
+        ! NOT SUPPORTED!
+        call output_line ('L2-projection not supported for interpolation!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'mlprj_performInterpolation')
+        call sys_halt()
+      
+      case(MLP_PROJ_TYPE_MATRIX)
+      
+        ! Matrix-based interpolation
+        ! Remember that the interpolation matrix is stored transposed!
+        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixInterp,&
+          rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
+          1.0_DP, 0.0_DP, .true.)
+        
+        ! Continue with next block
+        cycle
+      
+      end select
+      
       
       p_rdiscrCoarse => rcoarseVector%RvectorBlock(i)%p_rspatialDiscr
       p_rdiscrFine => rfineVector%RvectorBlock(i)%p_rspatialDiscr
@@ -9753,15 +9780,20 @@ contains
   
 !<subroutine>
 
-  subroutine mlprj_initMatrixProjection (rprojection,rmatrixProl)
+  subroutine mlprj_initMatrixProjection (rprojection,rmatrixProl,rmatrixInterp)
 
 !<description>
-  ! Sets the prolongation matrix which is needed for matrix-based projection.
+  ! Sets the prolongation and (optionally) the interpolation matrices which
+  ! are needed for matrix-based projection.
 !</description>
   
 !<input>
   ! The prolongation matrix
   type(t_matrixScalar), intent(IN) :: rmatrixProl
+  
+  ! OPTIONAL: The interpolation matrix. If given, the interpolation matrix
+  ! is assumed to be stored transposed!
+  type(t_matrixScalar), optional, intent(IN) :: rmatrixInterp
 !</input>
 
 !<inputoutput>
@@ -9777,6 +9809,11 @@ contains
     ! Create a shared copy of the prolongation matrix
     call lsyssc_duplicateMatrix(rmatrixProl, rprojection%rmatrixProl, &
                                 LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+    
+    ! Do we have an interpolation matrix?
+    if(present(rmatrixInterp)) &
+      call lsyssc_duplicateMatrix(rmatrixInterp, rprojection%rmatrixInterp, &
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
     
     ! That's it
   
