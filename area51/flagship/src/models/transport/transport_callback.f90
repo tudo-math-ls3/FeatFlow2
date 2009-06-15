@@ -2794,6 +2794,7 @@ contains
 
     use dofmapping
     use boundary
+    use triangulation
 
 !<description>
 
