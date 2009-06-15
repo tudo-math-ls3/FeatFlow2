@@ -581,7 +581,6 @@ module fparser
   ! Global pointer to stack memory
   real(DP), dimension(:), pointer, save :: p_Stack => null()
 
-
   ! Global number of predefined/user-defined constants
   integer, save :: nConsts = 0 
 
@@ -1216,10 +1215,6 @@ contains
 
     rparser%nmaxComp = 0
     rparser%nComp    = 0
-
-    ! Release stack memory
-    if (h_Stack .ne. ST_NOHANDLE) call storage_free(h_Stack)
-    nullify(p_Stack)
 
   end subroutine fparser_release
 
