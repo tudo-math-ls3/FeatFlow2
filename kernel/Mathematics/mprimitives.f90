@@ -64,6 +64,12 @@
 !#
 !# 17.) mprim_meanValue
 !#      -> Calculates the mean value of a vector
+!#
+!# 18.) mprim_degToRad
+!#      -> Converts DEG to RAD
+!#
+!# 19.) mprim_radToDeg
+!#      -> Converts RAD to DEG
 !# </purpose>
 !##############################################################################
 
@@ -125,6 +131,7 @@ module mprimitives
   public :: mprim_stdDeviation,mprim_stdDeviationDble
   public :: mprim_meanDeviation,mprim_meanDeviationDble
   public :: mprim_meanValue,mprim_meanValueDble
+  public :: mprim_degToRad,mprim_radToDeg
 
 contains
 
@@ -2607,5 +2614,54 @@ contains
     
     meanVal = meanVal/size(Ival)
   end function mprim_meanValueInt
+
+  ! *****************************************************************************
+
+!<function>
+  
+  elemental function mprim_degToRad(d) result(r)
+
+!<description>
+    ! This function converts DEG to RAD
+!</description>
+
+!<input>
+    ! DEG
+    real(DP), intent(IN) :: d
+!</input>
+
+!<result>
+    ! RAD
+    real(DP) :: r
+!</result>
+!</function>
+      
+    r = d * (SYS_PI / 180._DP)
+  end function mprim_degToRad
+
+  ! *****************************************************************************
+
+!<function>
+
+  elemental function mprim_radToDeg(r) result(d)
+    
+!<description>
+    ! This function converts RAD to DEG
+!</description>
+
+!<input>
+    ! RAD
+    real(DP), intent(IN) :: r
+!</input>
+
+!<result>
+    ! DEG
+    real(DP) :: d
+!</result>
+!</function>
+    
+    d = r * (180._DP / SYS_PI)
+
+  end function mprim_radToDeg
 
 end module mprimitives
