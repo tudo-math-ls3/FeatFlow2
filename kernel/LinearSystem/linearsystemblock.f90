@@ -4761,15 +4761,19 @@ contains
   ! to it and move it back to the original matrix with lsysbl_moveToSubmatrix
   ! when finished:
   !
-  ! a) Extract a submatrix:
-  !      lsysbl_extractSubmatrix (rsource,rdest,a,b,a,b)
-  ! b) Do some local modifications, e.g.
-  !      rdest%RmatrixBlock(1,1)%dscaleFactor = 5
+  ! a) Create a new submatrix based on a discretisation structure for the subblocks:
+  !      lsysbl_createMatBlockByDiscr(rdiscr,rdest)
+  ! b) Extract a submatrix:
+  !      lsysbl_extractSubmatrix (rsource,rdest,a,b,c,d)
+  ! c) Do some local modifications, e.g.
+  !      rdest%RmatrixBlock(1,1)%dscaleFactor = 5.0
   !      ...
-  ! c) Move the matrix back to its original position
-  !      lsysbl_moveToSubmatrix (rdest,rsource,a,a)
+  ! d) Move the matrix back to its original position:
+  !      lsysbl_moveToSubmatrix (rdest,rsource,a,c)
+  ! e) Release the temporary matrix:
+  !      lsysbl_releaseMatrix (rdest)
   !
-  ! During step b), the original matrix rsource is 'delayed', nothing should be done
+  ! During step c), the original matrix rsource is 'delayed', nothing should be done
   ! with it until reintegration with lsysbl_moveToSubmatrix.
   !
   ! Remark: There is never memory allocated on the heap for the sorting
@@ -4879,13 +4883,10 @@ contains
     if ((rdestMatrix%NEQ .ne. 0) .and. &
         ((rdestMatrix%nblocksPerRow .ne. ilastX-ifirstX+1) .or. &
          (rdestMatrix%nblocksPerCol .ne. ilastY-ifirstY+1))) then
-      call lsysbl_releaseMatrix (rdestMatrix)
+      call output_line('Matrix not compatible with discretisation (incorrect size)!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_extractSubmatrix')
+      call sys_halt()
     end if
-    
-    ! For every submatrix in the source matrix, call the 'scalar' variant
-    ! of duplicateMatrix. 
-    if (rdestMatrix%NEQ .eq. 0) &
-      call lsysbl_createEmptyMatrix(rdestMatrix,(ilastY-ifirstY+1),(ilastX-ifirstX+1))
     
     ! Move the source matrix to the destination matrix.
     !    
@@ -4896,6 +4897,8 @@ contains
         ! matrix.
         if (lsysbl_isSubmatrixPresent(rsourceMatrix,i,j,bignoreScale)) then
         
+          ! For every submatrix in the source matrix, call the 'scalar' variant
+          ! of moveMatrix. 
           call lsyssc_moveMatrix(rsourceMatrix%RmatrixBlock(i,j),&
               rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1))
                
@@ -4904,6 +4907,7 @@ contains
           ! block discretisation if there is one.
           if (associated(rdestMatrix%p_rblockDiscrTrial) .and. &
               associated(rdestMatrix%p_rblockDiscrTest)) then
+
             call lsyssc_assignDiscrDirectMat (&
                 rdestMatrix%RmatrixBlock(i-ifirstY+1,j-ifirstX+1),&
                 rdestMatrix%p_rblockDiscrTrial%RspatialDiscr(j-ifirstX+1),&
@@ -4944,8 +4948,6 @@ contains
     end do
     
     ! Update the structural information of the block matrix for completeness.
-    nullify(rdestMatrix%p_rblockDiscrTrial)
-    nullify(rdestMatrix%p_rblockDiscrTest)
     call lsysbl_updateMatStrucInfo(rdestMatrix)
     
   end subroutine
