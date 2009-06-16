@@ -2494,6 +2494,7 @@ contains
     ! The nonlinear solver configuration
     integer :: isubstep,iglobIter,ierror,ilev,ispacelev,nsmSteps,cspaceTimeSmoother
     integer :: ilowerSpaceLevel,itemp,ctypeCoarseGridSolver,i,nlmax
+    integer :: iorderTimeProlRest
     logical :: bneumann
     integer :: isolutionStart
     character(LEN=SYS_STRLEN) :: ssolutionExpressionY1,ssolutionExpressionY2
@@ -2616,19 +2617,33 @@ contains
     ! Create as many time levels as specified by the length of RspatialPrecond.
     call sptils_initMultigrid (rproblem,1,size(RspatialPrecond),p_rmgSolver)
     
+    ! Type of smoother to use?
+    call parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+        'cspaceTimeSmoother', cspaceTimeSmoother, 0)
+        
+    ! Type of coarse grid solver?
+    call parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                              'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
+
+    ! Type of prolongation/restriction in time
+    call parlst_getvalue_int (rproblem%rparamList, 'TIME-MULTIGRID', &
+        'iorderTimeProlRest', iorderTimeProlRest, -1)
+        
+    if (iorderTimeProlRest .eq. -1) then
+      ! Automatic mode. Check the time stepping theta to determine
+      ! if we have 1st or 2nd order in time.
+      iorderTimeProlRest = 1
+      if (rproblem%rtimedependence%dtimeStepTheta .eq. 0.5_DP) then
+        ! 2nd order Crank Nicolson
+        iorderTimeProlRest = 2
+      end if
+    end if
+
     ! Loop over the time levels.
     do ilev=1,size(RspatialPrecond)
 
       call output_line ('NLST-Solver: Initialising MG solver on level '//sys_siL(ilev,10))
     
-      ! Type of smoother to use?
-      call parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
-          'cspaceTimeSmoother', cspaceTimeSmoother, 0)
-          
-      ! Type of coarse grid solver?
-      call parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
-                                'ctypeCoarseGridSolver', ctypeCoarseGridSolver, 0)
-
       ! Get the refinement level in space that belongs to this space-time level.    
       ispacelev = RspaceTimeDiscr(ilev)%ilevel
       
@@ -2681,7 +2696,7 @@ contains
       end if
       call sptipr_initProjection (rinterlevelProjection(ilev),&
           RspaceTimeDiscr(ilev)%p_rlevelInfo%rdiscretisation,&
-          ilowerSpaceLevel .ne. ispacelev)
+          ilowerSpaceLevel .ne. ispacelev,iorderTimeProlRest)
          
       if (ilev .eq. 1) then
         ! ..., on the minimum level, create a coarse grid solver, ...

@@ -231,6 +231,14 @@ depsDiff           = 1E-5
 
 istoppingCriterion = 0
 
+# Order of the prolongation/restriction in time.
+# =-1: automatic, depending on the time step scheme.
+# =0: constant prolongation/restriction
+# =1: 1st order (bilinear)
+# =2: 2nd order
+
+iorderTimeProlRest = -1
+
 # Output level of the solver
 
 ioutputLevel       = 2 # 3
@@ -414,3 +422,4 @@ ioutputLevel = 0 # 2 3
 # =1: Relative OR absolute stopping criterion must hold.
 
 istoppingCriterion = 0
+
