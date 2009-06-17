@@ -369,9 +369,16 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
 
+    ! Create function parser
+    call fparser_create(rappDescriptor%rfparser, 100)
+
     ! Read in all constants and predefined expressions from the parameter file
-    call fparser_parseFileForKeyword(sindatfileName, 'defconst', FPAR_CONSTANT)
-    call fparser_parseFileForKeyword(sindatfileName, 'defexpr',  FPAR_EXPRESSION)
+    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
+                                     sindatfileName, 'defconst', FPAR_CONSTANT)
+    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
+                                     sindatfileName, 'defexpr',  FPAR_EXPRESSION)
+    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
+                                     sindatfileName, 'deffunc', FPAR_FUNCTION)
 
     ! Get application specifig parameters from the parameterlist
     call parlst_getvalue_int(rparlist, ssectionName,&

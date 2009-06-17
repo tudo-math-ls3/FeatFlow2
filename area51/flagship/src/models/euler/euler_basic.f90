@@ -216,6 +216,9 @@ module euler_basic
     ! System format
     integer :: isystemFormat
     
+    ! Function parser
+    type(t_fparser) :: rfparser
+
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution
 
