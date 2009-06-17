@@ -2653,7 +2653,7 @@ contains
   integer :: NEQ, NCOLS
   
   ! Type of transformation from the reference to the real element 
-  integer :: ctrafoCoarse, ctrafoFine
+  integer(I32) :: ctrafoCoarse, ctrafoFine
   
   ! Element evaluation tag; collects some information necessary for evaluating
   ! the elements.
