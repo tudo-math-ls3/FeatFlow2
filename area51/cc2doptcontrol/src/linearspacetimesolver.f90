@@ -6023,7 +6023,7 @@ end subroutine
 
   ! local variables
   real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
-  real(DP) :: drho1,drho0,dfr,dresscale
+  real(DP) :: drho1,drho0,dfr,dresscale,dresunprec
   integer :: ite,i
 
   ! The system matrix
@@ -6132,10 +6132,11 @@ end subroutine
       ! between the preconditioned and unpreconditioned defect --
       ! to encounter the difference in the residuals.
       ! This is of course an approximation to 
-      dresscale = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
-      if (.not.((dresscale .ge. 1E-99_DP) .and. &
-                (dresscale .le. 1E99_DP))) dresscale = 1.0_DP
-      dresscale = dres / dresscale
+      dresunprec = dres
+      dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+      if (.not.((dres .ge. 1E-99_DP) .and. &
+                (dres .le. 1E99_DP))) dres = 1.0_DP
+      dresscale = dresunprec / dres
     else
       dresscale = 1.0_DP
     end if

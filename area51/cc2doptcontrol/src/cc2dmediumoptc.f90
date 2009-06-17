@@ -35,50 +35,6 @@ program cc2dmediumoptc
   
   implicit none
   
-  type(t_parlist) :: rparlist
-  character(LEN=SYS_STRLEN) :: slogfile,serrorfile,sstring
-  
-  ! The very first thing in every application: 
-  ! Initialise system-wide settings:
-  call system_init()
-  
-  ! Get command line parameters.
-  call cc2dmedium2_evalParameters()
-  
-  ! Read the name of the message and error log file.
-  call cc2dmedium2_getLogFiles (slogfile,serrorfile)
-  
-  ! Release output stuff
-  call output_done()
-  
-  ! Initialise log file for output.
-  call output_init (slogfile,serrorfile)
-  
-  ! Now we can really start!
-  !
-  ! Initialise the storage management: 
-  call storage_init(999, 100)
-  
-  ! Initialise the parser
-  call fparser_init ()
-  
-  ! Call the problem to solve. 
-  call output_lbrk ()
-  call output_line ('Calculating cc2dmediumoptc-Problem')
-  call output_separator (OU_SEP_MINUS)
-  
-  call cc2dmedium2optc ()
+  call cc2doptcmain()
 
-  ! Release the parser
-  call fparser_done ()
-
-  ! Print out heap statistics - just to check if everything
-  ! is cleaned up.
-  ! This should display 'Handles in use=0' and 'Memory in use=0'!
-  call output_lbrk ()
-  call storage_info(.true.)
-  
-  ! Clean up the storage management, finish
-  call storage_done()
-  
 end program
