@@ -687,8 +687,10 @@ contains
     integer :: iconst
 
     ! Initialize predefined constants
-    do iconst = lbound(PredefinedConsts, 1), ubound(PredefinedConsts, 1)
-      call fparser_defineConstant(PredefinedConsts(iconst), PredefinedConstvals(iconst))
+    do iconst = lbound(PredefinedConsts, 1),&
+                ubound(PredefinedConsts, 1)
+      call fparser_defineConstant(PredefinedConsts(iconst),&
+                                  PredefinedConstvals(iconst))
     end do
     
   end subroutine fparser_init
@@ -1098,9 +1100,6 @@ contains
     ! Release stack memory
     if (rfparser%h_Stack .ne. ST_NOHANDLE) call storage_free(rfparser%h_Stack)
     
-    rfparser%nncomp = 0
-    rfparser%ncomp  = 0
-
     ! Check that pointer is associated and return otherwise
     if (.not.associated(rfparser%Rcomp)) return
 
@@ -1113,6 +1112,10 @@ contains
     ! Deallocate memory
     deallocate(rfparser%Rcomp)
     deallocate(rfparser%ScompName)
+    
+    ! Reset scalar data
+    rfparser%nncomp = 0
+    rfparser%ncomp  = 0
 
   end subroutine fparser_release
 
@@ -1475,7 +1478,7 @@ contains
     
     ! local variables
     real(DP), dimension(:), pointer :: p_Dstack
-    real(DP), dimension(:), allocatable :: DvalueTemp
+    real(DP), dimension(:), pointer :: DvalueTemp
     integer :: ivalue,jValue,nvalue,isize,iblockSize,iblock,isizeValueBlock,isizeValueScalar
     integer :: EvalErrType
 
