@@ -18,9 +18,7 @@ module transport_basic
 
   implicit none
 
-  private
-  public :: t_transport
-  
+  private 
 
 !<constants>
 
@@ -105,6 +103,19 @@ module transport_basic
 
 !</constantblock>
 
+!<constantblock description="Global type of initial solution">
+
+  ! zero initial solution
+  integer, parameter, public :: SOLUTION_ZERO     = 0
+
+  ! analytical initial solution
+  integer, parameter, public :: SOLUTION_ANALYTIC = 1
+
+  ! graymap profile for initial solution
+  integer, parameter, public :: SOLUTION_GRAYMAP  = 2
+
+!</constantblock>
+
 
 !<constantblock description="Global type of target functional">
 
@@ -177,81 +188,5 @@ module transport_basic
 !</constantblock>
   
 !</constants>
-
-  !*****************************************************************************
-
-!<types>
-  
-!<typeblock>
-
-  ! This structure contains all required data to describe an instance
-  ! of the convection-diffusion-reaction benchmark application
-  type t_transport
-
-    ! Dimension of the problem
-    integer :: ndimension
-
-    ! Type of the mass matrix
-    integer :: imasstype
-
-    ! Type of mass antidiffusion
-    integer :: imassantidiffusiontype
-
-    ! Type of the velocity
-    integer :: ivelocitytype
-
-    ! Type of the diffusion
-    integer :: idiffusiontype
-
-    ! Type of the reaction
-    integer :: ireactiontype
-
-    ! Type of the right-hand side
-    integer :: irhstype
-
-    ! Type of the target functional
-    integer :: itargetfunctype
-
-    ! Type of the element(s)
-    integer :: celement
-
-    ! Matrix format
-    integer :: imatrixFormat
-
-    ! Jacobian format
-    integer :: ijacobianFormat
-
-    ! Function parser
-    type(t_fparser) :: rfparser
-
-    ! Timer for the solution process
-    type(t_timer) :: rtimerSolution
-
-    ! Timer for the adaptation process
-    type(t_timer) :: rtimerAdaptation
-
-    ! Timer for the error estimation process
-    type(t_timer) :: rtimerErrorEstimation
-
-    ! Timer for the triangulation process
-    type(t_timer) :: rtimerTriangulation
-
-    ! Timer for the assembly of constant coefficient matrices
-    type(t_timer) :: rtimerAssemblyCoeff
-    
-    ! Timer for the assembly of system matrices
-    type(t_timer) :: rtimerAssemblyMatrix
-
-    ! Timer for the assembly of residual/right-hand side vectors
-    type(t_timer) :: rtimerAssemblyVector
-
-    ! Timer for pre- and post-processing
-    type(t_timer) :: rtimerPrePostprocess
-    
-  end type t_transport
-
-!</typeblock>
-
-!</type>
 
 end module transport_basic

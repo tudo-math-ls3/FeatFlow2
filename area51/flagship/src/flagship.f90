@@ -41,7 +41,7 @@ program flagship
   call system_init()
   
   ! Set system halt mode
-  sys_haltmode = SYS_HALT_STOP
+  sys_haltmode = SYS_HALT_THROWFPE
 
   ! Initialize the output system
   call date_and_time(sdate, stime)

@@ -55,76 +55,65 @@
 !# 1.) transp_app
 !#     -> The main routine of the application called from the main problem
 !#
-!# 2.) transp_initApplication
-!#     -> Initializes the application descriptor by the parameter
-!#        settings given by the parameter list
-!#
-!# 3.) transp_doneApplication
-!#     -> Finalizes the application descriptor
-!# 
-!# 4.) transp_initCollection
-!#     -> Initializes the collection structure based on the parameter
-!#        settings given by the application descriptor
-!#
-!# 5.) transp_initSolvers
+!# 2.) transp_initSolvers
 !#     -> Initializes the solve structures from the parameter list
 !#
-!# 6.) transp_initProblem
+!# 3.) transp_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list
 !#
-!# 7.) transp_initProblemLevel
+!# 4.) transp_initProblemLevel
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the application descriptor
 !#
-!# 8.) transp_initAllProblemLevels
+!# 5.) transp_initAllProblemLevels
 !#     -> Initializes all problem levels attached to the global
 !#        problem structure based on the parameter settings
 !#        given by the parameter list
 !#
-!# 9.) transp_initSolution
+!# 6.) transp_initSolution
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 10.) transp_initRHS
-!#      -> Initializes the right-hand side vector based on the
-!#         parameter settings given by the application descriptor
+!# 7.) transp_initRHS
+!#     -> Initializes the right-hand side vector based on the
+!#        parameter settings given by the application descriptor
 !#
-!# 11.) transp_initTargetFunc
-!#      -> Initializes the target functional for the dual problem
+!# 8.) transp_initTargetFunc
+!#     -> Initializes the target functional for the dual problem
 !#
-!# 12.) transp_outputSolution
-!#      -> Outputs the solution vector to file in UCD format
+!# 9.) transp_outputSolution
+!#     -> Outputs the solution vector to file in UCD format
 !#
-!# 13.) transp_outputStatistics
+!# 10.) transp_outputStatistics
 !#      -> Outputs the application statitics
 !#
-!# 14.) transp_estimateTargetFuncError
+!# 11.) transp_estimateTargetFuncError
 !#      -> Estimates the error in the quantity of interest
 !#
-!# 15.) transp_estimateRecoveryError
+!# 12.) transp_estimateRecoveryError
 !#      -> Estimates the solution error using recovery techniques
 !#
-!# 16.) transp_adaptTriangulation
+!# 13.) transp_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 17.) transp_solveTransientPrimal
+!# 14.) transp_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         convection-diffusion-reaction equation.
 !#
-!# 18.) transp_solvePseudoTransientPrimal
+!# 15.) transp_solvePseudoTransientPrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 19.) transp_solvePseudoTransientPrimalDual
+!# 16.) transp_solvePseudoTransientPrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation using pseudo time-stepping.
 !#
-!# 20.) transp_solveSteadyStatePrimal
+!# 17.) transp_solveSteadyStatePrimal
 !#      -> Solves the primal formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
-!# 21.) transp_solveSteadyStatePrimalDual
+!# 18.) transp_solveSteadyStatePrimalDual
 !#      -> Solves the primal and the dual formulation of the steady 
 !#         convection-diffusion-reaction equation directly
 !#
@@ -134,6 +123,9 @@
 !# 1.) transp_parseCmdlArguments
 !#     -> Parses the list of commandline arguments and overwrites
 !#        parameter values from the parameter files
+!#
+!# 2.) transp_adjustParameterlist
+!#     -> Adjust the parameter list depending on internal data
 !# 
 !# </purpose>
 !##############################################################################
@@ -183,9 +175,6 @@ module transport_application
   
   private
   public :: transp_app
-  public :: transp_initApplication
-  public :: transp_doneApplication
-  public :: transp_initCollection
   public :: transp_initSolvers
   public :: transp_initProblem
   public :: transp_initProblemLevel
@@ -230,10 +219,9 @@ contains
     ! Global collection which is used to pass arguments to callback routines
     type(t_collection) :: rcollection
 
-    ! Application descriptor which holds all internal information
-    ! for the convection-diffusion-reaction application
-    type(t_transport) :: rappDescriptor
-
+    ! Global function parser which is used to evaluate analytical functions
+    type(t_fparser) :: rfparser
+    
     ! Boundary condition structure for the primal problem
     type(t_boundaryCondition) :: rbdrCondPrimal
 
@@ -259,38 +247,81 @@ contains
     ! Timer for the total solution process
     type(t_timer) :: rtimerTotal
 
+    ! Timer for the solution process
+    type(t_timer) :: rtimerSolution
+
+    ! Timer for the adaptation process
+    type(t_timer) :: rtimerAdaptation
+
+    ! Timer for the error estimation process
+    type(t_timer) :: rtimerErrorEstimation
+
+    ! Timer for the triangulation process
+    type(t_timer) :: rtimerTriangulation
+
+    ! Timer for the assembly of constant coefficient matrices
+    type(t_timer) :: rtimerAssemblyCoeff
+    
+    ! Timer for the assembly of system matrices
+    type(t_timer) :: rtimerAssemblyMatrix
+
+    ! Timer for the assembly of residual/right-hand side vectors
+    type(t_timer) :: rtimerAssemblyVector
+
+    ! Timer for pre- and post-processing
+    type(t_timer) :: rtimerPrePostprocess
+
+
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
     character(LEN=SYS_STRLEN) :: algorithm
 
     ! local variables
-    integer :: systemMatrix
+    integer :: systemMatrix,ndimension
     
 
     ! Start total time measurement
-    call stat_clearTimer(rtimerTotal)
     call stat_startTimer(rtimerTotal)
     
     !---------------------------------------------------------------------------
     ! Pre-processing
     !---------------------------------------------------------------------------
+
+    ! Start time measurement
+    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
     
-    ! Overwrite global configuration from command line arguments. After
-    ! this subroutine has been called, the parameter list remains unchanged.
+    ! Overwrite configuration from command line arguments. After this
+    ! subroutine has been called, the parameter list remains unchanged
+    ! unless the used updates some parameter values interactively
     call transp_parseCmdlArguments(rparlist)
+    call transp_adjustParameterlist(rparlist, 'transport')
 
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    ! Initialize the application descriptor
-    call transp_initApplication(rparlist, 'transport', rappDescriptor)
+    !  Attach the parameter list and the timers to the collection
+    call collct_setvalue_parlst(rcollection, 'rparlist', rparlist, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerSolution', rtimerSolution, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerAdaptation', rtimerAdaptation, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerTriangulation', rtimerTriangulation, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
+    call collct_setvalue_timer(rcollection, 'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
 
-    ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
+    ! Create function parser
+    call fparser_create(rfparser, 100)
     
-    ! Initialize the global collection
-    call transp_initCollection(rappDescriptor, rparlist, 'transport', rcollection)
+    ! Read in all constants, predefined expressions and functions from the parameter file
+    call parlst_getvalue_string(rparlist, 'transport', 'indatfile', sindatfileName)
+    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'defconst', FPAR_CONSTANT)
+    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'defexpr', FPAR_EXPRESSION)
+    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'deffunc', FPAR_FUNCTION)
+
+    ! Attach the function parser to the collection
+    call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
 
     ! Initialize the solver structures
     call transp_initSolvers(rparlist, 'transport', rtimestep, rsolver)
@@ -298,20 +329,19 @@ contains
     ! Initialize the abstract problem structure
     call transp_initProblem(rparlist, 'transport',&
                             solver_getMinimumMultigridlevel(rsolver),&
-                            solver_getMaximumMultigridlevel(rsolver),&
-                            rproblem, rcollection)
+                            solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
-    call transp_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
+    call transp_initAllProblemLevels(rparlist, 'transport', rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
-    systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix') 
+    call parlst_getvalue_int(rparlist, 'transport', 'systemMatrix', systemMatrix)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
                                      systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
     
 
     !---------------------------------------------------------------------------
@@ -322,13 +352,13 @@ contains
       
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, 'transport', 'algorithm', algorithm)
-      call parlst_getvalue_string(rparlist, 'transport', 'indatfile', sindatfileName)
-      
+      call parlst_getvalue_int(rparlist, 'transport', 'ndimension', ndimension)
+            
       ! The boundary conditions for the primal problem are required for all 
       ! solution strategies. So initialize them from the parameter file.
       call parlst_getvalue_string(rparlist, 'transport', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
-                                      '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
+                                      '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
       select case(trim(algorithm))
@@ -337,11 +367,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveTransientPrimal(rappDescriptor, rparlist, 'transport',&
-                                         rbdrCondPrimal, rproblem, rtimestep,&
-                                         rsolver, rsolutionPrimal, rcollection)
+        call transp_solveTransientPrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
+                                         rtimestep, rsolver, rsolutionPrimal, rcollection)
         call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal, dtime=rtimestep%dTime)
+                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
         
       case ('transient_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -355,11 +384,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, 'transport',&
-                                               rbdrCondPrimal, rproblem, rtimestep,&
-                                               rsolver, rsolutionPrimal, rcollection)
+        call transp_solvePseudoTransientPrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
+                                               rtimestep, rsolver, rsolutionPrimal, rcollection)
         call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal, dtime=rtimestep%dTime)
+                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
 
 
       case ('pseudotransient_primaldual')
@@ -374,11 +402,10 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveSteadyStatePrimal(rappDescriptor, rparlist, 'transport',&
-                                           rbdrCondPrimal, rproblem, rtimestep,&
-                                           rsolver, rsolutionPrimal, rcollection)
+        call transp_solveSteadyStatePrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
+                                           rtimestep, rsolver, rsolutionPrimal, rcollection)
         call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal, dtime=rtimestep%dTime)
+                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
 
 
       case ('stationary_primaldual')
@@ -387,10 +414,9 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call parlst_getvalue_string(rparlist, 'transport', 'sdualbdrcondname', sbdrcondName)
         call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
-                                      '['//trim(sbdrcondName)//']', rappDescriptor%ndimension)
+                                      '['//trim(sbdrcondName)//']', ndimension)
 
-        call transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, 'transport',&
-                                               rbdrCondPrimal, rbdrCondDual,&
+        call transp_solveSteadyStatePrimalDual(rparlist, 'transport', rbdrCondPrimal, rbdrCondDual,&
                                                rproblem, rtimestep, rsolver,&
                                                rsolutionPrimal, rsolutionDual, rcollection)
         call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
@@ -402,6 +428,12 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
         call sys_halt()
       end select
+
+    else
+
+      ! Just output the computational mesh and exit
+      call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax)
+
     end if
 
     
@@ -410,7 +442,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
+    call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Release time-stepping
     call tstep_infoTimestep(rtimestep, .false.)
@@ -422,9 +454,6 @@ contains
     
     ! Release problem structure
     call problem_releaseProblem(rproblem)
-
-    ! Release application descriptor
-    call transp_doneApplication(rappDescriptor)
     
     ! Release boundary conditions
     call bdrf_release(rbdrCondPrimal)
@@ -434,268 +463,22 @@ contains
     call lsysbl_releaseVector(rsolutionPrimal)
     call lsysbl_releaseVector(rsolutionDual)
 
-    ! Release collection
-    call collct_done(rcollection)
+    ! Release function parser
+    call fparser_release(rfparser)
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
 
     ! Stop time measurement for total time measurement
     call stat_stopTimer(rtimerTotal)
 
     ! Output statistics
-    call transp_outputStatistics(rappDescriptor, rtimerTotal)
+    call transp_outputStatistics(rtimerTotal, rcollection)
+
+    ! Release collection
+    call collct_done(rcollection)
     
   end subroutine transp_app
-  
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_initApplication(rparlist, ssectionName, rappDescriptor)
-
-!<description>
-    ! This subroutine initializes the application descriptor by the
-    ! parameter settings given by the parameter list
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
-!</input>
-
-!<output>
-    ! application descriptor
-    type(t_transport), intent(OUT) :: rappDescriptor
-!</output>
-!</subroutine>
-
-    ! section names
-    character(LEN=SYS_STRLEN) :: sindatfileName
-    
-    ! symbolic variable names
-    character(LEN=*), dimension(4), parameter ::&
-                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
-
-
-    ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
-
-    ! Create function parser
-    call fparser_create(rappDescriptor%rfparser, 100)
-    
-    ! Read in all constants, predefined expressions and functions from the parameter file
-    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
-                                     sindatfileName, 'defconst', FPAR_CONSTANT)
-    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
-                                     sindatfileName, 'defexpr',  FPAR_EXPRESSION)
-    call fparser_parseFileForKeyword(rappDescriptor%rfparser,&
-                                     sindatfileName, 'deffunc', FPAR_FUNCTION)
-
-    ! Get application specifig parameters from the parameterlist
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ndimension', rappDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'imasstype', rappDescriptor%imasstype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'imassantidiffusiontype', rappDescriptor%imassantidiffusiontype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ivelocitytype', rappDescriptor%ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'idiffusiontype', rappDescriptor%idiffusiontype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ireactiontype', rappDescriptor%ireactiontype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'irhstype', rappDescriptor%irhstype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'itargetfunctype', rappDescriptor%itargetfunctype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'celement', rappDescriptor%celement)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'imatrixformat', rappDescriptor%imatrixformat)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ijacobianformat', rappDescriptor%ijacobianformat)
-
-  end subroutine transp_initApplication
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_doneApplication(rappDescriptor)
-
-!<description>
-    ! This subroutine finalizes the application descriptor
-!</description>
-
-!<inputoutput>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
-!</inputoutput>
-!</subroutine>
-
-    ! Release function parser
-    call fparser_release(rappDescriptor%rfparser)
-
-  end subroutine transp_doneApplication
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_initCollection(rappDescriptor, rparlist, ssectionName, rcollection)
-
-!<description>
-    ! This subroutine initializes the collection based on
-    ! the parameter settings of the application descriptor
-!</description>
-
-!<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
-
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
-!</input>
-
-!<inputoutput>
-    ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: i
-
-
-    ! Add parameter settings from application descriptor
-    call collct_setvalue_int(rcollection, 'ndimension',&
-                             rappDescriptor%ndimension, .true.)
-    call collct_setvalue_int(rcollection, 'imasstype',&
-                             rappDescriptor%imasstype, .true.)
-    call collct_setvalue_int(rcollection, 'imassantidiffusiontype',&
-                             rappDescriptor%imassantidiffusiontype, .true.)
-    call collct_setvalue_int(rcollection, 'ivelocitytype',&
-                             rappDescriptor%ivelocitytype, .true.)
-    call collct_setvalue_int(rcollection, 'idiffusiontype',&
-                             rappDescriptor%idiffusiontype, .true.)
-    call collct_setvalue_int(rcollection, 'ireactiontype',&
-                             rappDescriptor%ireactiontype, .true.)
-    call collct_setvalue_int(rcollection, 'irhstype',&
-                             rappDescriptor%irhstype, .true.)
-    call collct_setvalue_int(rcollection, 'celement',&
-                             rappDescriptor%celement, .true.)
-    call collct_setvalue_int(rcollection, 'imatrixformat',&
-                             rappDescriptor%imatrixFormat, .true.)
-    call collct_setvalue_int(rcollection, 'ijacobianformat',&
-                             rappDescriptor%ijacobianFormat, .true.)
-    
-
-    ! Add timer structures
-    call collct_setvalue_timer(rcollection, 'timerSolution',&
-                               rappDescriptor%rtimerSolution, .true.)
-    call collct_setvalue_timer(rcollection, 'timerAdaptation',&
-                               rappDescriptor%rtimerAdaptation, .true.)
-    call collct_setvalue_timer(rcollection, 'timerErrorEstimation',&
-                               rappDescriptor%rtimerErrorEstimation, .true.)
-    call collct_setvalue_timer(rcollection, 'timerTriangulation',&
-                               rappDescriptor%rtimerTriangulation, .true.)
-    call collct_setvalue_timer(rcollection, 'timerAssemblyCoeff',&
-                               rappDescriptor%rtimerAssemblyCoeff, .true.)
-    call collct_setvalue_timer(rcollection, 'timerAssemblyMatrix',&
-                               rappDescriptor%rtimerAssemblyMatrix, .true.)
-    call collct_setvalue_timer(rcollection, 'timerAssemblyVector',&
-                               rappDescriptor%rtimerAssemblyVector, .true.)
-    call collct_setvalue_timer(rcollection, 'timerPrePostprocess',&
-                               rappDescriptor%rtimerPrePostprocess, .true.)
-
-    ! Add internal information about the position of 
-    ! constant coefficient matrices and auxiliary vectors
-    call parlst_getvalue_int(rparlist, ssectionName, 'Discretisation', i)
-    call collct_setvalue_int(rcollection, 'Discretisation', i, .true.)
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'VelocityField', i)
-    call collct_setvalue_int(rcollection, 'VelocityField', i, .true.)
-    
-    call parlst_getvalue_int(rparlist, ssectionName, 'ConvectionAFC', i)
-    call collct_setvalue_int(rcollection, 'ConvectionAFC', i, .true.)
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'DiffusionAFC', i)
-    call collct_setvalue_int(rcollection, 'DiffusionAFC', i, .true.)
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'TemplateMatrix', i)
-    call collct_setvalue_int(rcollection, 'TemplateMatrix', i, .true.)
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'SystemMatrix', i)
-    call collct_setvalue_int(rcollection, 'SystemMatrix', i, .true.)
-    
-    call parlst_getvalue_int(rparlist, ssectionName, 'JacobianMatrix', i)
-    call collct_setvalue_int(rcollection, 'JacobianMatrix', i, .true.)
-
-    call parlst_getvalue_int(rparlist, ssectionName, 'TransportMatrix', i)
-    call collct_setvalue_int(rcollection, 'TransportMatrix', i, .true.)
-
-    if ((rappDescriptor%imasstype .ne. MASS_ZERO) .or.&
-        (rappDescriptor%imassantidiffusiontype .ne. MASS_ZERO)) then
-      
-      call parlst_getvalue_int(rparlist, ssectionName, 'ConsistentMassMatrix', i)
-      call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', i, .true.)
-
-      call parlst_getvalue_int(rparlist, ssectionName, 'LumpedMassMatrix', i)
-      call collct_setvalue_int(rcollection, 'LumpedMassMatrix', i, .true.)
-      
-    else
-      
-      call collct_setvalue_int(rcollection, 'ConsistentMassMatrix', 0, .true.)
-      call collct_setvalue_int(rcollection, 'LumpedMassMatrix',     0, .true.)
-
-    end if
-
-    if (rappDescriptor%idiffusiontype .ne. 0)then
-      call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_S', i)
-      call collct_setvalue_int(rcollection, 'CoeffMatrix_S', i, .true.)
-    else
-      call collct_setvalue_int(rcollection, 'CoeffMatrix_S', 0, .true.)
-    end if
-
-    if (rappDescriptor%ivelocitytype .ne. 0)then
-      select case(rappDescriptor%ndimension)
-      case (NDIM1D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', 0, .true.)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
-      case (NDIM2D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', 0, .true.)
-      case (NDIM3D)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CX', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CY', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY', i, .true.)
-        call parlst_getvalue_int(rparlist, ssectionName, 'CoeffMatrix_CZ', i)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ', i, .true.)
-      case DEFAULT
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CY',  0, .true.)
-        call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ',  0, .true.)
-      end select
-    else
-      call collct_setvalue_int(rcollection, 'CoeffMatrix_CX',  0, .true.)
-      call collct_setvalue_int(rcollection, 'CoeffMatrix_CY',  0, .true.)
-      call collct_setvalue_int(rcollection, 'CoeffMatrix_CZ',  0, .true.)
-    end if
-
-  end subroutine transp_initCollection
 
   !*****************************************************************************
 
@@ -704,8 +487,9 @@ contains
   subroutine transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
 !<description>
-    ! This subroutine initializes the time-stepping structure and
-    ! the top-level solver structure from the parameter list
+    ! This subroutine initializes the time-stepping structure
+    ! and the top-level solver structure using the
+    ! parameter settings defined in the parameter list
 !</description>
 
 !<input>
@@ -759,12 +543,11 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax,&
-                                rproblem, rcollection)
+  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem)
 
 !<description>
     ! This subroutine initializes the abstract problem structure 
-    ! based on the parameters settings given by the parameter list
+    ! using the parameters settings defined in the parameter list
 !</description>
 
 !<input>
@@ -778,11 +561,6 @@ contains
     integer, intent(IN) :: nlmin, nlmax
 !</input>
 
-!<inputoutput>
-    ! collection
-    type(t_collection), intent(INOUT) :: rcollection
-!</intputoutput>
-
 !<output>
     ! problem structure
     type(t_problem), intent(OUT) :: rproblem
@@ -790,8 +568,8 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sconvectionName
-    character(LEN=SYS_STRLEN) :: sdiffusionName
+    character(LEN=SYS_STRLEN) :: sconvection
+    character(LEN=SYS_STRLEN) :: sdiffusion
 
     ! abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
@@ -806,21 +584,21 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'diffusion', sdiffusionName)
-    call parlst_getvalue_string(rparlist, ssectionName, 'convection', sconvectionName)
+    call parlst_getvalue_string(rparlist, ssectionName, 'diffusion', sdiffusion)
+    call parlst_getvalue_string(rparlist, ssectionName, 'convection', sconvection)
     call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
     call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1   ! one discretisation
-    rproblemDescriptor%nafcstab        = 2   ! for convective and diffusive stabilization
+    rproblemDescriptor%nafcstab        = 2   ! convective and diffusive stabilization
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = 1   ! for velocity field
+    rproblemDescriptor%nvectorBlock    = 1   ! velocity field
 
     ! Check if quadrilaterals should be converted to triangles
     call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
@@ -831,26 +609,22 @@ contains
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
-
     
     ! Initialize the stabilisation structure
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-    diffusionAFC  = collct_getvalue_int(rcollection, 'diffusionAFC')
+    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
     
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
-      if (convectionAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sconvectionName,&
-                                           p_rproblemLevel%Rafcstab(convectionAFC))
-      end if
-
-      if (diffusionAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sdiffusionName,&
-                                           p_rproblemLevel%Rafcstab(diffusionAFC))
-      end if
-
+      if (convectionAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, sconvection,&
+                                             p_rproblemLevel%Rafcstab(convectionAFC))
+      if (diffusionAFC > 0)&
+          call afcstab_initFromParameterlist(rparlist, sdiffusion,&
+                                             p_rproblemLevel%Rafcstab(diffusionAFC))
+      
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
@@ -861,7 +635,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initProblemLevel(rappDescriptor, rproblemLevel, rcollection)
+  subroutine transp_initProblemLevel(rparlist, ssectionName, rproblemLevel, rcollection)
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
@@ -870,8 +644,11 @@ contains
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -898,28 +675,32 @@ contains
     integer :: diffusionAFC
     integer :: discretisation
     integer :: ijacobianFormat
+    integer :: celement
+    integer :: imatrixFormat
 
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_boundary) , pointer :: p_rboundary
+    type(t_fparser), pointer :: p_rfparser
     
     
-    ! Retrieve application specific parameters from the collection
-    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
-    systemMatrix         = collct_getvalue_int(rcollection, 'systemmatrix')
-    jacobianMatrix       = collct_getvalue_int(rcollection, 'jacobianmatrix')
-    transportMatrix      = collct_getvalue_int(rcollection, 'transportmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-    coeffMatrix_S        = collct_getvalue_int(rcollection, 'coeffmatrix_s')
-    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffmatrix_cx')
-    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffmatrix_cy')
-    coeffMatrix_CZ       = collct_getvalue_int(rcollection, 'coeffmatrix_cz')
-    convectionAFC        = collct_getvalue_int(rcollection, 'convectionAFC')
-    diffusionAFC         = collct_getvalue_int(rcollection, 'diffusionAFC')
-    discretisation       = collct_getvalue_int(rcollection, 'discretisation')
-
-    ! Set pointers
+    ! Retrieve application specific parameters from the parameter list
+    call parlst_getvalue_int(rparlist, ssectionName, 'templatematrix', templateMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'jacobianmatrix', jacobianMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_s', coeffMatrix_S)
+    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
+    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
+    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName, 'celement', celement)
+    
+    ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
 
@@ -936,7 +717,7 @@ contains
       ! Get spatial dimension
       select case(p_rdiscretisation%ndimension)
       case (NDIM1D)
-        select case(rappDescriptor%celement)
+        select case(celement)
         case (-1,1,11)
           ! P1=Q1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
@@ -953,7 +734,7 @@ contains
         end select
         
       case (NDIM2D)
-        select case(rappDescriptor%celement)
+        select case(celement)
         case (1)
           ! P1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
@@ -993,7 +774,7 @@ contains
         end select
       
       case (NDIM3D)
-        select case(rappDescriptor%celement)
+        select case(celement)
         case (1)
           ! P1 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
@@ -1024,9 +805,9 @@ contains
     ! descretization and store it as the template matrix. Otherwise we
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
+      call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
       call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
-                                      rappDescriptor%imatrixFormat,&
-                                      rproblemLevel%Rmatrix(templateMatrix))
+                                      imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
     end if
 
 
@@ -1068,7 +849,7 @@ contains
     if (jacobianMatrix > 0) then
       
       ! What format do we have for the Jacobian matrix?
-      ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
+      call parlst_getvalue_int(rparlist, ssectionName, 'ijacobianFormat', ijacobianFormat)
 
       if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
         if (ijacobianFormat .eq. 0) then
@@ -1137,19 +918,16 @@ contains
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       end if
 
-      select case(rproblemLevel%rtriangulation%ndim)
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      select case(p_rtriangulation%ndim)
       case (NDIM1D)
-        call initDiffusionMatrix1D(rappDescriptor%rfparser,&
-                                   rappDescriptor%idiffusiontype,&
-                                   rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix1D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
       case (NDIM2D)
-        call initDiffusionMatrix2D(rappDescriptor%rfparser,&
-                                   rappDescriptor%idiffusiontype,&
-                                   rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix2D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
       case (NDIM3D)
-        call initDiffusionMatrix3D(rappDescriptor%rfparser,&
-                                   rappDescriptor%idiffusiontype,&
-                                   rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix3D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
       case DEFAULT
         call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
       end select
@@ -1248,22 +1026,30 @@ contains
     
     !**************************************************************
 
-    subroutine initDiffusionMatrix1D(rfparser, idiffusiontype, rmatrix)
+    subroutine initDiffusionMatrix1D(rfparser, rmatrix)
+      
       type(t_fparser), intent(IN) :: rfparser
-      integer, intent(IN) :: idiffusiontype
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
+      character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: icomp
+      integer :: icomp,idiffusiontype
+      
+      ! Retrieve data from parameter list
+      call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', idiffusiontype)
       
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC,&
             DIFFUSION_ANISOTROPIC)
 
+        ! Retrieve name/number of expression describing the diffusion coefficient
+        call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
+                                    sdiffusionName, isubString=1)
+        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
+
         ! Evaluate the constant coefficient from the function parser
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
         call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
         
         ! Assemble the Laplace matrix multiplied by the negative value
@@ -1278,36 +1064,47 @@ contains
 
     !**************************************************************
     
-    subroutine initDiffusionMatrix2D(rfparser, idiffusiontype, rmatrix)
+    subroutine initDiffusionMatrix2D(rfparser, rmatrix)
+
       type(t_fparser), intent(IN) :: rfparser
-      integer, intent(IN) :: idiffusiontype
       type(t_matrixScalar), intent(INOUT) :: rmatrix
 
       ! local variables
       type(t_bilinearform) :: rform
+      character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: icomp
+      integer :: i,icomp,idiffusiontype
       
+      ! Retrieve data from parameter list
+      call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', idiffusiontype)
+
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC)
+        
+        ! Retrieve name/number of expression describing the diffusion coefficient
+        call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
+                                    sdiffusionName, isubString=1)
+        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
+
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, 1, Dunity, dalpha)
+        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
         call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
         
       case (DIFFUSION_ANISOTROPIC)
-        ! Evaluate the constant coefficient from the function parser
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(1))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_12')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(2))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_21')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(3))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_22')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(4))
+        
+        do i = 1, 4
+          ! Retrieve name/number of expression describing the diffusion coefficient
+          call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
+                                      sdiffusionName, isubString=i)
+          icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
+
+          ! Evaluate the constant coefficient from the function parser
+          call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(i))
+        end do
         
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
@@ -1339,46 +1136,47 @@ contains
     
     !**************************************************************
     
-    subroutine initDiffusionMatrix3D(rfparser, idiffusiontype, rmatrix)
+    subroutine initDiffusionMatrix3D(rfparser, rmatrix)
+
       type(t_fparser), intent(IN) :: rfparser
-      integer, intent(IN) :: idiffusiontype
       type(t_matrixScalar), intent(INOUT) :: rmatrix
       
       ! local variables
       type(t_bilinearform) :: rform
+      character(LEN=SYS_STRLEN) :: sdiffusionName
       real(DP), dimension(1) :: Dunity = (/1.0_DP/)
       real(DP) :: dalpha
-      integer :: icomp
+      integer :: i,icomp,idiffusiontype
+
+      ! Retrieve data from parameter list
+      call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', idiffusiontype)
       
       select case(idiffusiontype)
       case (DIFFUSION_ISOTROPIC)
+
+        ! Retrieve name/number of expression describing the diffusion coefficient
+        call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
+                                    sdiffusionName, isubString=1)
+        icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
+
         ! Evaluate the constant coefficient from the function parser
-        call fparser_evalFunction(rfparser, 1, Dunity, dalpha)
+        call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
         
         ! Assemble the Laplace matrix multiplied by the negative value
         ! of the parameter alpha
         call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
         
       case (DIFFUSION_ANISOTROPIC)
-        ! Evaluate the constant coefficient from the function parser
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_11')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(1))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_12')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(2))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_13')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(3))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_21')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(4))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_22')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(5))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_23')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(6))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_31')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(7))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_32')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(8))
-        icomp = fparser_getFunctionNumber(rfparser, 'fp_diffusion_33')
-        call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(9))
+
+        do i = 1, 9
+          ! Retrieve name/number of expression describing the diffusion coefficient
+          call parlst_getvalue_string(rparlist, ssectionName, 'sdiffusionname',&
+                                      sdiffusionName, isubString=i)
+          icomp = fparser_getFunctionNumber(rfparser, sdiffusionName)
+
+          ! Evaluate the constant coefficient from the function parser
+          call fparser_evalFunction(rfparser, icomp, Dunity, rform%Dcoefficients(i))
+        end do
         
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
@@ -1429,7 +1227,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initAllProblemLevels(rappDescriptor, rproblem, rcollection)
+  subroutine transp_initAllProblemLevels(rparlist, ssectionName, rproblem, rcollection)
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
@@ -1439,8 +1237,11 @@ contains
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 !</input>
 
 !<inputoutput>
@@ -1461,7 +1262,7 @@ contains
     do while(associated(p_rproblemLevel))
       
       ! Initialize individual problem level
-      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
       
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
@@ -1473,17 +1274,14 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initSolution(rappDescriptor, rparlist, ssectionName,&
-                                 rproblemLevel, dtime, rvector)
+  subroutine transp_initSolution(rparlist, ssectionName, rproblemLevel,&
+                                 dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the solution vector
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
-
     ! parameter list
     type(t_parlist), intent(IN) :: rparlist
 
@@ -1500,40 +1298,40 @@ contains
 !<inputoutput>
     ! solution vector
     type(t_vectorBlock), intent(INOUT) :: rvector
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
 !</intputoutput>
 !</subroutine>
 
-    ! section names
-    character(LEN=SYS_STRLEN) :: sindatfileName
-    character(LEN=SYS_STRLEN) :: ssolutionName
-
     ! local variables
+    type(t_fparser), pointer :: rfparser
     type(t_pgm) :: rpgm
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    character(LEN=SYS_STRLEN) :: ssolutionname
     integer :: isolutiontype
     integer :: ieq, neq, ndim, icomp
     
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
     call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
 
     ! How should the solution be initialized?
     select case(isolutionType)
-    case (0)
+    case (SOLUTION_ZERO)
       ! Initialize solution by zeros
       call lsysbl_clearVector(rvector)
 
 
-    case (1)
-      
-      ! Set pointers
+    case (SOLUTION_ANALYTIC)
+      ! Set pointer to vertex coordinates
       call storage_getbase_double2D(&
           rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
       
+      ! Get number of spatial dimensions
       ndim = rproblemLevel%rtriangulation%ndim
       
       ! Initialize variable values
@@ -1543,18 +1341,21 @@ contains
       neq = rvector%RvectorBlock(1)%NEQ
       call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
       
-      ! Get function number
-      icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_initsol')
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      
+      ! Get the number of the component used for evaluating the initial solution
+      icomp = fparser_getFunctionNumber(rfparser, ssolutionname)
 
       ! Loop over all equations of scalar subvector
       do ieq = 1, neq
         Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
         Dvalue(NDIM3D+1) = dtime
-        call fparser_evalFunction(rappDescriptor%rfparser, icomp, Dvalue, p_Ddata(ieq))
+        call fparser_evalFunction(rfparser, icomp, Dvalue, p_Ddata(ieq))
       end do
             
 
-    case (2)
+    case (SOLUTION_GRAYMAP)
       ! Initialize solution from portable graymap image
       call ppsol_readPGM(0, ssolutionName, rpgm)
       
@@ -1582,15 +1383,19 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initRHS(rappDescriptor, rproblemLevel, dtime, rvector)
+  subroutine transp_initRHS(rparlist, ssectionName, rproblemLevel,&
+                            dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the right-hand side vector.
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 
     ! problem level structure
     type(t_problemLevel), intent(IN), target :: rproblemLevel
@@ -1602,29 +1407,42 @@ contains
 !<intputoutput>
     ! right-hand side vector
     type(t_vectorBlock), intent(INOUT) :: rvector
+    
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_collection) :: rcollection
+    type(t_fparser), pointer :: rfparser
     type(t_linearForm) :: rform
+    character(LEN=SYS_STRLEN) :: srhsname
+    integer :: irhstype
+    integer :: icomp
+
     
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName, 'srhsnname', srhsname)
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
     
-    ! How should the target functional be initialized?
-    select case(rappDescriptor%irhstype)
+    ! How should the right-hand side be initialized?
+    select case(irhstype)
     case (RHS_ZERO)
+      ! Initialize right-hand side by zeros
       call lsysbl_clearVector(rvector)
 
 
     case (RHS_ANALYTIC)
-      ! Create a collection and attach the function parser
-      call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-                                      rappDescriptor%rfparser, 'fp_rhs')
-      rcollection%SquickAccess(1) = 'FunctionParser'
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      
+      ! Get the number of the component used for evaluating the right-hand side
+      icomp = fparser_getFunctionNumber(rfparser, srhsname)
+
+      ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
       
       ! Set up the corresponding linear form
       rform%itermCount      = 1
@@ -1634,11 +1452,8 @@ contains
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
                                   transp_coeffVectorAnalytic, rcollection)
-
-      ! Release collection structure
-      call collct_done(rcollection)
-
       
+
     case DEFAULT
       call output_line('Invalid type of target functional!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
@@ -1651,7 +1466,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initTargetFunc(rappDescriptor, rproblemLevel, dtime, rvector)
+  subroutine transp_initTargetFunc(rparlist, ssectionName, rproblemLevel,&
+                                   dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the target functional which serves as
@@ -1660,8 +1476,11 @@ contains
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 
     ! problem level structure
     type(t_problemLevel), intent(IN), target :: rproblemLevel
@@ -1670,37 +1489,45 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
-!<output>
+!<intputoutput>
     ! target function vector
-    type(t_vectorBlock), intent(OUT) :: rvector
-!</output>
+    type(t_vectorBlock), intent(INOUT) :: rvector
+
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</intputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    type(t_collection) :: rcollection
+    type(t_fparser), pointer :: rfparser
     type(t_linearForm) :: rform
+    character(LEN=SYS_STRLEN) :: stargetfuncname
+    integer :: itargetfunctype
+    integer :: icomp
 
 
-    ! Create new block vector based on the spatial discretisation
-    p_rdiscretisation => rproblemLevel%Rdiscretisation(1)
-    call lsysbl_createVectorBlock(p_rdiscretisation, rvector, .false., ST_DOUBLE)
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', itargetfunctype)
     
     ! How should the target functional be initialized?
-    select case(rappDescriptor%itargetfunctype)
+    select case(itargetfunctype)
     case (TFUNC_ZERO)
+      ! Initialize target functional by zeros
       call lsysbl_clearVector(rvector)
 
 
     case (TFUNC_VOLINTG)
-      ! Create a collection and attach the function parser
-      call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-                                      rappDescriptor%rfparser, 'fp_targetFuncInt')
-      rcollection%SquickAccess(1) = 'FunctionParser'
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get the number of the component used for evaluating the target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
+      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+
+      ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
       
       ! Set up the corresponding linear form
       rform%itermCount      = 1
@@ -1711,39 +1538,41 @@ contains
                                   rform, .true., rvector%RvectorBlock(1),&
                                   transp_coeffVectorAnalytic, rcollection)
 
-      ! Release collection structure
-      call collct_done(rcollection)
-
-
+      
     case (TFUNC_SURFINTG)
-      ! Create a collection and attach the function parser
-      call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-                                      rappDescriptor%rfparser, 'fp_targetFuncBdrInt')
-      rcollection%SquickAccess(1) = 'FunctionParser'
-      rcollection%DquickAccess(1) = dtime
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
+      ! Get the number of the component used for evaluating the target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
+      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
+      
       ! Build the boundary part of the discretized target function
       call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                        .true., rvector%RvectorBlock(1),&
                                        rcollection=rcollection)
-
-      ! Release collection structure
-      call collct_done(rcollection)
-
+      
       
     case (TFUNC_MIXINTG)
-      ! Create a collection and attach the function parser
-      call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-                                      rappDescriptor%rfparser, 'fp_targetFuncInt')
-      rcollection%SquickAccess(1) = 'FunctionParser'
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get the number of the component used for evaluating the
+      ! volume integral part of the target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
+                                  stargetfuncname, isubstring=1)
+      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+            
+      ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
-      
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
+
       ! Set up the corresponding linear form
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
@@ -1752,18 +1581,23 @@ contains
       call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                   rform, .true., rvector%RvectorBlock(1),&
                                   transp_coeffVectorAnalytic, rcollection)
+      
+      ! Get the number of the component used for evaluating the
+      ! surface integral part of the target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
+                                  stargetfuncname, isubstring=2)
+      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
 
-      ! Prepare collection for callback function
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_targetFuncBdrInt')
-
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
+      
       ! Build the boundary part of the discretized target function
       call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
                                        .false., rvector%RvectorBlock(1),&
                                        rcollection=rcollection)
-
-      ! Release collection structure
-      call collct_done(rcollection)
-
+      
       
     case DEFAULT
       call output_line('Invalid type of target functional!',&
@@ -1794,8 +1628,8 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(IN) :: rproblemLevel
 
-    ! solution vector for primal problem
-    type(t_vectorBlock), intent(IN) :: rsolutionPrimal
+    ! OPTIONAL: solution vector for primal problem
+    type(t_vectorBlock), intent(IN), optional :: rsolutionPrimal
 
     ! OPTIONAL: solution vector for dual problem
     type(t_vectorBlock), intent(IN), optional :: rsolutionDual
@@ -1834,8 +1668,10 @@ contains
     if (present(dtime)) call ucd_setSimulationTime(rexport, dtime)
 
     ! Add primal solution vector
-    call lsysbl_getbase_double(rsolutionPrimal, p_Ddata)
-    call ucd_addVariableVertexBased (rexport, 'u', UCD_VAR_STANDARD, p_Ddata)
+    if (present(rsolutionPrimal)) then
+      call lsysbl_getbase_double(rsolutionPrimal, p_Ddata)
+      call ucd_addVariableVertexBased (rexport, 'u', UCD_VAR_STANDARD, p_Ddata)
+    end if
 
     ! Add dual solution vector
     if (present(rsolutionDual)) then
@@ -1853,32 +1689,52 @@ contains
 
 !<subroutine>
 
-  subroutine transp_outputStatistics(rappDescriptor, rtimerTotal)
+  subroutine transp_outputStatistics(rtimerTotal, rcollection)
 
 !<description>
     ! This subroutine output application statistics
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
-
     ! timer for total time measurement
     type(t_timer), intent(IN) :: rtimerTotal
 !</input>
+
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
 !</subroutine>
 
     ! local variable
-    type(t_timer) :: rtimerSolution
+    type(t_timer), pointer :: rtimerSolution
+    type(t_timer), pointer :: rtimerAdaptation
+    type(t_timer), pointer :: rtimerErrorEstimation
+    type(t_timer), pointer :: rtimerTriangulation
+    type(t_timer), pointer :: rtimerAssemblyCoeff
+    type(t_timer), pointer :: rtimerAssemblyMatrix
+    type(t_timer), pointer :: rtimerAssemblyVector
+    type(t_timer), pointer :: rtimerPrePostprocess    
     real(DP) :: dtotalTime, dfraction
 
+    
+    ! Get timer objects from collection
+    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    rtimerAssemblyMatrix => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    rtimerAssemblyVector => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+
+    ! Output statistics
     call output_lbrk()
     call output_line('Time measurement:')
     call output_line('-----------------')
     
-    rtimerSolution = rappDescriptor%rtimerSolution
-    call stat_subTimers(rappDescriptor%rtimerAssemblyMatrix, rtimerSolution)
-    call stat_subTimers(rappDescriptor%rtimerAssemblyVector, rtimerSolution)
+    call stat_subTimers(rtimerAssemblyMatrix, rtimerSolution)
+    call stat_subTimers(rtimerAssemblyVector, rtimerSolution)
 
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
@@ -1887,26 +1743,26 @@ contains
                      trim(adjustl(sys_sdE(rtimerSolution%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*rtimerSolution%delapsedCPU, 5)))//' %')
     call output_line('Time for mesh adaptivity:      '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAdaptation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerAdaptation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerAdaptation%delapsedCPU, 5)))//' %')
     call output_line('Time for error estimation:     '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerErrorEstimation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerErrorEstimation%delapsedCPU, 5)))//' %')
     call output_line('Time for triangulation:        '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerTriangulation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerTriangulation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerTriangulation%delapsedCPU, 5)))//' %')
     call output_line('Time for coefficient assembly: '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
     call output_line('Time for matrix assembly:      '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
     call output_line('Time for vector assembly:      '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerAssemblyVector%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing: '//&
-                     trim(adjustl(sys_sdE(rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rappDescriptor%rtimerPrePostprocess%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*rtimerPrePostprocess%delapsedCPU, 5)))//' %')
     call output_lbrk()
     call output_line('Time for total simulation:     '//&
                      trim(adjustl(sys_sdE(dtotalTime, 5))))
@@ -1918,9 +1774,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName,&
-                                            rproblemLevel, rtimestep, rsolver,&
-                                            rsolutionPrimal, rsolutionDual,&
+  subroutine transp_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
+                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, rtargetError, dtargetError, rrhs)
 
 !<description>
@@ -1928,12 +1783,6 @@ contains
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
-
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
     ! section name in parameter list
     character(LEN=*), intent(IN) :: ssectionName
 
@@ -1951,6 +1800,9 @@ contains
 !</input>
 
 !<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
+
     ! problem level structure
     type(t_problemLevel), intent(INOUT) :: rproblemLevel
 
@@ -1977,14 +1829,14 @@ contains
     character(LEN=SYS_STRLEN) :: sexacttargetfuncName
 
     ! local variables
-    type(t_collection) :: rcollectionTmp
+    type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock) :: rvector
     type(t_matrixScalar) :: rmatrix
-    real(DP), dimension(:), pointer :: p_DsolutionDual, p_DnodalError
+    real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dexactTargetError, dexactTargetFunction, dtargetFunction, dprotectLayerTolerance
+    real(DP) :: dexactTargetError, dexactTargetFunction, dtargetFunction, dprotectLayerTolerance, daux
     integer :: i, icomp, convectionAFC, diffusionAFC
     integer :: lumpedMassMatrix, templateMatrix
     integer :: itargetfunctype, iexacttargetfunctype, igridindicator
@@ -1996,7 +1848,7 @@ contains
     ! Perform goal-oriented error estimation
     !---------------------------------------------------------------------------
 
-    ! Create vector for nodal errors
+    ! Create vector for Galerkin residual
     call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true., ST_DOUBLE)
 
     ! Ok, this is a little bit tricky. We need to compute the residual
@@ -2005,16 +1857,16 @@ contains
     ! stabilization, force the velocity field, and hence, the
     ! preconditioner to be updated and evaluate the residual vector.
     
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
-    diffusionAFC  = collct_getvalue_int(rcollection, 'diffusionAFC')
+    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
 
-    call collct_setvalue_int(rcollection, 'convectionAFC', -abs(convectionAFC), .false.)
-    call collct_setvalue_int(rcollection, 'diffusionAFC',  -abs(diffusionAFC),  .false.)
-
+    call parlst_setvalue(rparlist, ssectionName, 'convectionAFC', '0')
+    call parlst_setvalue(rparlist, ssectionName, 'diffusionAFC', '0')
+    
     ! Set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
 
-    ! Calculate the standard Galerkin preconditioner
+    ! Calculate the standard Galerkin preconditioner (required for residual calculation)
     call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
                                    rsolutionPrimal, rcollection)
 
@@ -2024,15 +1876,15 @@ contains
                              rvector, rvector, 0, rcollection, rrhs)
         
     ! Ok, now we have to switch on all types of stabilization
-    call collct_setvalue_int(rcollection, 'convectionAFC', convectionAFC, .false.)
-    call collct_setvalue_int(rcollection, 'diffusionAFC',  diffusionAFC,  .false.)
+    call parlst_setvalue(rparlist, ssectionName, 'convectionAFC', trim(sys_siL(convectionAFC,10)))
+    call parlst_setvalue(rparlist, ssectionName, 'diffusionAFC', trim(sys_siL(convectionAFC,10)))
 
     ! Again, set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
     
     
     ! We need the lumped mass matrix for scaling
-    lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+    call parlst_getvalue_int(rparlist, ssectionName, 'lumpedMassMatrix', lumpedMassMatrix)
     if (lumpedMassMatrix > 0) then
 
       ! Set pointer to the lumped mass matrix
@@ -2040,7 +1892,7 @@ contains
                                  p_DlumpedMassMatrix)
     else
       ! Compute the lumped mass matrix explicitly
-      templateMatrix = collct_getvalue_int(rcollection, 'templatematrix')
+      call parlst_getvalue_int(rparlist, ssectionName, 'templatematrix', templateMatrix)
       call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
                                   rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC) 
@@ -2050,21 +1902,24 @@ contains
     end if   ! lumpedMassMatrix > 0
 
     ! Set pointers
-    call lsysbl_getbase_double(rvector, p_DnodalError)
+    call lsysbl_getbase_double(rvector, p_Dresidual)
     call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
     
-    ! Now we compute the nodal error contributions
+    ! Now we compute the global error and its nodal contributions
+    dtargetError = 0
     do i = 1, rmatrix%NEQ
-      p_DnodalError(i) = abs(p_DnodalError(i) * p_DsolutionDual(i)) / p_DlumpedMassMatrix(i)
+      p_Dresidual(i) = p_Dresidual(i)*p_DsolutionDual(i)
+      dtargetError   = dtargetError + p_Dresidual(i)
+      p_Dresidual(i) = abs(p_Dresidual(i))/p_DlumpedMassMatrix(i)
     end do
+    dtargetError = abs(dtargetError)
 
-    ! Compute the element-wise and the global error.  We create a
-    ! scalar vector and compute the global and local L1-norms of nodal
-    ! error vector which yields the global and local values of the a
-    ! posteriori error estimator.
+    ! Compute the element-wise error.  We create a scalar vector and
+    ! compute the local L1-norms of nodal error vector which yields
+    ! the local values of the a posteriori error estimator.
     call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
     call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR,&
-                      dtargetError, relementError=rtargetError)   
+                      daux, relementError=rtargetError)   
 
     ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
@@ -2079,51 +1934,48 @@ contains
 
     call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncName, '')
-    call parlst_getvalue_string(rparlist, ssectionName, 'sexacttargetfuncname', sexacttargetfuncName, '')
     call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', itargetfunctype, 0)
     call parlst_getvalue_int(rparlist, ssectionName, 'iexacttargetfunctype', iexacttargetfunctype, 0)
 
     select case(iexacttargetfunctype)
     
     case(TFUNC_VOLINTG)
-      ! Create a temporal collection and attach the function parser
-      call collct_init(rcollectionTmp)
-      call collct_setvalue_pars(rcollectionTmp, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_exactSol')
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
-      rcollectionTmp%SquickAccess(1) = 'FunctionParser'
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
+      ! Get the number of the component used for evaluating the target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
+      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
+
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
+      
       ! Compute the exact error of the quantity of interest
       call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
+                                  transp_refFuncAnalytic, rcollection)
       
       ! Compute the exact value of the quantity of interest.
       ! Create an empty vector initialized by zeros and compute the
       ! 'error' between this vector and the analytic quantity of interest.
       call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
       call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexactTargetFunction,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
+                                  transp_refFuncAnalytic, rcollection)
       
       ! Inverse the sign of the exact target functional since we computed $J(0-u)$
       dexactTargetFunction = -dexactTargetFunction
 
       ! Compute the value of the quantity of interest.
       ! Use the same trick as above but use the analytical function 'null'
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_null')
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
+!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+!!$                                         rappDescriptor%rfparser, 'fp_null')
+!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
+!!$                                  transp_refFuncAnalytic, rcollection)
 
       ! Release temporal vector
       call lsysbl_releaseVector(rvector)
 
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
-      
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
@@ -2150,44 +2002,59 @@ contains
       
 
     case (TFUNC_ANALYTIC)
-      ! Get function number
-      icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_TargetFuncAnalytic')
 
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get the number of the component used for evaluating the exact target functional
+      call parlst_getvalue_string(rparlist, ssectionName, 'sexacttargetfuncname', sexacttargetfuncName, '')
+      icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
+      
       ! Evaluate exact target functional
-      call fparser_evalFunction(rappDescriptor%rfparser, icomp,&
+      call fparser_evalFunction(p_rfparser, icomp,&
                                 (/rtimestep%dTime/), dexactTargetFunction)
 
-      ! Create a temporal collection and attach the function parser
-      call collct_init(rcollectionTmp)
-      call collct_setvalue_pars(rcollectionTmp, 'FunctionParser',&
-                                rappDescriptor%rfparser, .true.)
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_exactSol')
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
-      rcollectionTmp%SquickAccess(1) = 'FunctionParser'
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+      ! Compute the approximate target functional
+      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction)
 
-      ! Compute the exact error of the quantity of interest
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
+      print *, dtargetError
+      print *, daux
+      print *, dexactTargetFunction
+      print *, dtargetFunction
+      print *, dexactTargetFunction-dtargetFunction
+      stop
+      
 
-      ! Compute the value of the quantity of interest.
-      ! Create an empty vector initialized by zeros and compute the
-      ! 'error' between this vector and the analytic quantity of interest.
-      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
+!!$
+!!$      ! Create a temporal collection and attach the function parser
+!!$      call collct_init(rcollection)
+!!$      call collct_setvalue_pars(rcollection, 'FunctionParser',&
+!!$                                rappDescriptor%rfparser, .true.)
+!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+!!$                                         rappDescriptor%rfparser, 'fp_exactSol')
+!!$      rcollection%IquickAccess(2) = fparser_getFunctionNumber(&
+!!$                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
 
-      ! Use the analytical function 'null'
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(&
-                                         rappDescriptor%rfparser, 'fp_null')
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
-                                  transp_refFuncAnalytic, rcollectionTmp)
 
-      ! Release temporal vector
-      call lsysbl_releaseVector(rvector)
-
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
+!!$
+!!$      ! Compute the exact error of the quantity of interest
+!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
+!!$                                  transp_refFuncAnalytic, rcollection)
+!!$
+!!$      ! Compute the value of the quantity of interest.
+!!$      ! Create an empty vector initialized by zeros and compute the
+!!$      ! 'error' between this vector and the analytic quantity of interest.
+!!$      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
+!!$
+!!$      ! Use the analytical function 'null'
+!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+!!$                                         rappDescriptor%rfparser, 'fp_null')
+!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
+!!$                                  transp_refFuncAnalytic, rcollection)
+!!$
+!!$      ! Release temporal vector
+!!$      call lsysbl_releaseVector(rvector)
+!!$
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2201,6 +2068,8 @@ contains
                                                                                         dexactTargetFunction ),15,6)))
       call output_lbrk()
       
+      stop
+
     case DEFAULT
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2334,7 +2203,7 @@ contains
 !<subroutine>
 
   subroutine transp_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
-                                          rsolution, dtime, rerror, derror)
+                                          rsolution, dtime, rerror, derror, rcollection)
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
@@ -2362,6 +2231,11 @@ contains
     real(DP), intent(IN) :: dtime
 !</input>
 
+!<inputoutput>
+    ! collection structure
+    type(t_collection), intent(INOUT) :: rcollection
+!</inputoutput>
+
 !<output>
     ! element-wise error distribution
     type(t_vectorScalar), intent(OUT) :: rerror
@@ -2378,7 +2252,6 @@ contains
 
     ! local variables
     type(t_fparser) :: rfparser
-    type(t_collection) :: rcollection
     type(t_vectorScalar) :: rvectorScalar
     real(DP), dimension(:), pointer :: p_Ddata, p_Derror
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -2463,23 +2336,23 @@ contains
       call flagship_readParserFromFile(sindatfileName, '['//trim(sexactsolutionName)//']',&
                                        cvariables, rfparser)
       
-      ! Create a collection and attach the function parser
-      call collct_init(rcollection)
-      call collct_setvalue_pars(rcollection, 'FunctionParser', rfparser, .true.)
-      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-                                      rfparser, 'fp_exactSolution')
-      rcollection%SquickAccess(1) = 'FunctionParser'
-      rcollection%DquickAccess(1) = dtime
-      
-      ! Calculate the H1-error of the reference solution
-      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
-                        transp_refFuncAnalytic, rcollection)
-
-      ! Release collection structure
-      call collct_done(rcollection)
-
-      ! Release function parser
-      call fparser_release(rfparser)
+!!$      ! Create a collection and attach the function parser
+!!$      call collct_init(rcollection)
+!!$      call collct_setvalue_pars(rcollection, 'FunctionParser', rfparser, .true.)
+!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
+!!$                                      rfparser, 'fp_exactSolution')
+!!$      rcollection%SquickAccess(1) = 'FunctionParser'
+!!$      rcollection%DquickAccess(1) = dtime
+!!$      
+!!$      ! Calculate the H1-error of the reference solution
+!!$      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
+!!$                        transp_refFuncAnalytic, rcollection)
+!!$
+!!$      ! Release collection structure
+!!$      call collct_done(rcollection)
+!!$
+!!$      ! Release function parser
+!!$      call fparser_release(rfparser)
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2809,9 +2682,8 @@ contains
 
 !<subroutine>
 
-    subroutine transp_solveTransientPrimal(rappDescriptor, rparlist, ssectionName,&
-                                           rbdrCond, rproblem, rtimestep, rsolver,&
-                                           rsolution, rcollection)
+    subroutine transp_solveTransientPrimal(rparlist, ssectionName, rbdrCond, rproblem,&
+                                           rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
       ! This subroutine solves the transient primal flow problem
@@ -2824,10 +2696,7 @@ contains
 !</description>
 
 !<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
-    ! section name in parameter list
+      ! section name in parameter list
     character(LEN=*), intent(IN) :: ssectionName
 
     ! boundary condition structure
@@ -2835,8 +2704,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -2874,6 +2743,14 @@ contains
     ! Structure for the sparsity pattern
     type(t_graph) :: rgraph
 
+    ! Timer structures
+    type(t_timer), pointer :: rtimerPrePostprocess
+    type(t_timer), pointer :: rtimerSolution
+    type(t_timer), pointer :: rtimerErrorEstimation
+    type(t_timer), pointer :: rtimerAdaptation
+    type(t_timer), pointer :: rtimerTriangulation
+    type(t_timer), pointer :: rtimerAssemblyCoeff
+
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
@@ -2881,14 +2758,24 @@ contains
     ! local variables
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, discretisation
-    integer :: nlmin, ipreadapt, npreadapt
+    integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
     integer, external :: signal_SIGINT
 
+    
+    ! Get timer structures
+    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
+    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    ! Get position of discretisation structure
+    ! Get global parameters
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level and discretisation
@@ -2897,8 +2784,8 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
-                             rtimestep%dinitialTime, rsolution)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+                             rtimestep%dinitialTime, rsolution, rcollection)
     call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                    rsolution, rtimestep%dinitialTime)
 
@@ -2928,7 +2815,7 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this
         ! type to the callback function for h-adaptation
-        templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
         
@@ -2949,7 +2836,7 @@ contains
             ! Compute the error estimator using recovery techniques
             call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
                                               rsolution, rtimestep%dinitialTime,&
-                                              relementError, derror)
+                                              relementError, derror, rcollection)
 
             ! Perform h-adaptation and update the triangulation structure
             call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
@@ -2962,7 +2849,7 @@ contains
             call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
-            templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+            call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
             call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
 
             ! Resize the solution vector accordingly
@@ -2970,17 +2857,17 @@ contains
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call transp_initSolution(rappDescriptor, rparlist, ssectionname, p_rproblemLevel,&
-                                     rtimestep%dinitialTime, rsolution)
+            call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
+                                     rtimestep%dinitialTime, rsolution, rcollection)
             call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
                                            rsolution, rtimestep%dinitialTime)
 
             ! Re-initialize all constant coefficient matrices
-            call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+            call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
           end do
           
           ! Prepare internal data arrays of the solver structure
-          systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+          call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
           call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
                                            SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
           call solver_updateStructure(rsolver)
@@ -2996,25 +2883,25 @@ contains
     end if
     
     ! Initialize right-hand side vector
-    if (rappDescriptor%irhstype > 0) then
+    if (irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
-      call transp_initRHS(rappDescriptor, p_rproblemLevel,&
-                          rtimestep%dinitialTime, rrhs)
+      call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                          rtimestep%dinitialTime, rrhs, rcollection)
     end if
 
     ! Calculate the initial velocity field
     nlmin = solver_getMinimumMultigridlevel(rsolver)
-    call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+    call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                   rtimestep%dinitialTime, rcollection, nlmin)
     
     ! Attach the boundary condition to the solver structure
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
 
-    ! Set collection to primal problem mode
-    call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+    ! Set primal problem mode
+    call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
 
 
     !---------------------------------------------------------------------------
@@ -3033,14 +2920,17 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
       
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
         
       case (TSTEP_RK_SCHEME)
         
-        if (rappDescriptor%irhstype > 0) then
+        if (irhstype > 0) then
           ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
           call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
                                    rsolution, transp_nlsolverCallback,&
@@ -3054,7 +2944,7 @@ contains
         
       case (TSTEP_THETA_SCHEME)
         
-        if (rappDescriptor%irhstype > 0) then
+        if (irhstype > 0) then
           ! Two-level theta-scheme with non-zero right-hand side vector
           call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                       rsolution, transp_nlsolverCallback,&
@@ -3073,7 +2963,7 @@ contains
       end select
       
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      call stat_stopTimer(rtimerSolution)
       
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
@@ -3089,14 +2979,14 @@ contains
         dtimeUCD = dtimeUCD + dstepUCD
 
         ! Start time measurement for post-processing
-        call stat_startTimer(rappDescriptor%rtimerPrepostProcess, STAT_TIMERSHORT)
+        call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
         call transp_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
                                    rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
-        call stat_stopTimer(rappDescriptor%rtimerPrepostProcess)
+        call stat_stopTimer(rtimerPrepostProcess)
 
       end if
 
@@ -3115,14 +3005,15 @@ contains
         !-----------------------------------------------------------------------
         
         ! Start time measurement for error estimation
-        call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+        call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
         
         ! Compute the error estimator using recovery techniques
         call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                          rsolution, rtimestep%dTime, relementError, derror)
+                                          rsolution, rtimestep%dTime,&
+                                          relementError, derror, rcollection)
         
         ! Stop time measurement for error estimation
-        call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+        call stat_stopTimer(rtimerErrorEstimation)
         
         
         !-------------------------------------------------------------------------
@@ -3130,7 +3021,7 @@ contains
         !-------------------------------------------------------------------------
         
         ! Start time measurement for mesh adaptation
-        call stat_startTimer(rappDescriptor%rtimerAdaptation, STAT_TIMERSHORT)
+        call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
         
         ! Set the names of the template matrix and the solution vector
         rcollection%SquickAccess(1) = 'sparsitypattern'
@@ -3154,7 +3045,7 @@ contains
             p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
         
         ! Stop time measurement for mesh adaptation
-        call stat_stopTimer(rappDescriptor%rtimerAdaptation)
+        call stat_stopTimer(rtimerAdaptation)
 
       
         !-------------------------------------------------------------------------
@@ -3162,49 +3053,49 @@ contains
         !-------------------------------------------------------------------------
         
         ! Start time measurement for generation of the triangulation
-        call stat_startTimer(rappDescriptor%rtimerTriangulation, STAT_TIMERSHORT)
+        call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
         
         ! Generate standard mesh from raw mesh
         call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation,&
                                           rproblem%rboundary)
         
         ! Stop time measurement for generation of the triangulation
-        call stat_stopTimer(rappDescriptor%rtimerTriangulation)
+        call stat_stopTimer(rtimerTriangulation)
         
         
         ! Start time measurement for generation of constant coefficient matrices
-        call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
+        call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
         
         ! Re-initialize all constant coefficient matrices
-        call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+        call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
         
         ! Prepare internal data arrays of the solver structure
-        systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+        call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
         call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
                                          SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
         
         ! Re-calculate the velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+        call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                       rtimestep%dTime, rcollection, nlmin)
 
         ! Re-initialize the right-hand side vector
-        if (rappDescriptor%irhstype > 0) then
+        if (irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call transp_initRHS(rappDescriptor, p_rproblemLevel,&
-                              rtimestep%dinitialTime, rrhs)
+          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                              rtimestep%dinitialTime, rrhs, rcollection)
         end if
 
         ! Stop time measurement for generation of constant coefficient matrices
-        call stat_stopTimer(rappDescriptor%rtimerAssemblyCoeff)
+        call stat_stopTimer(rtimerAssemblyCoeff)
 
-      elseif(abs(rappDescriptor%ivelocitytype) .eq. VELOCITY_TIMEDEP) then
+      elseif(abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
 
         ! Re-calculate the time-dependent velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+        call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                       rtimestep%dTime, rcollection, nlmin)
        
       end if
@@ -3219,7 +3110,7 @@ contains
     end if
 
     ! Release right-hand side
-    if (rappDescriptor%irhstype > 0) then
+    if (irhstype > 0) then
       call lsysbl_releaseVector(rrhs)
     end if
 
@@ -3229,9 +3120,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solvePseudoTransientPrimal(rappDescriptor, rparlist, ssectionName,&
-                                               rbdrCond, rproblem, rtimestep, rsolver,&
-                                               rsolution, rcollection)
+  subroutine transp_solvePseudoTransientPrimal(rparlist, ssectionName, rbdrCond, rproblem,&
+                                               rtimestep, rsolver, rsolution, rcollection)
 !<description>
     ! This subroutine solves the pseudo-transient primal flow problem
     !
@@ -3241,9 +3131,6 @@ contains
 !</description>
 
 !<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
     ! section name in parameter list
     character(LEN=*), intent(IN) :: ssectionName
 
@@ -3252,8 +3139,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3292,19 +3179,37 @@ contains
     ! Structure for the sparsity pattern
     type(t_graph) :: rgraph
 
+    ! Timer structures
+    type(t_timer), pointer :: rtimerPrePostprocess
+    type(t_timer), pointer :: rtimerSolution
+    type(t_timer), pointer :: rtimerErrorEstimation
+    type(t_timer), pointer :: rtimerAdaptation
+    type(t_timer), pointer :: rtimerTriangulation
+    type(t_timer), pointer :: rtimerAssemblyCoeff
+
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
     real(DP) :: derror
     integer :: templateMatrix, systemMatrix, discretisation
-    integer :: nlmin, iadapt, nadapt
+    integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
-
+    
+    ! Get timer structures
+    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
+    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    ! Get position of discretisation structure
+    ! Get global parameters
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
@@ -3313,8 +3218,10 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
-    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+                             0.0_DP, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+                                   rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -3333,7 +3240,7 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
         
@@ -3350,7 +3257,7 @@ contains
     end if
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
 
     
     ! Adaptation loop
@@ -3361,27 +3268,31 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
 
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
-                                    rtimestep%dTime, rcollection, nlmin)
+      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
+                                    0.0_DP, rcollection, nlmin)
 
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
 
-      ! Set collection to primal problem mode
-      call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
 
       ! Reset the time-stepping algorithm
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
       ! Check if right-hand side vector exists
-      if (rappDescriptor%irhstype > 0) then
+      if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
-        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                            0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
@@ -3400,7 +3311,7 @@ contains
       end if
 
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      call stat_stopTimer(rtimerSolution)
       
 
       if (iadapt .eq. nadapt) exit adaptloop
@@ -3410,14 +3321,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for error estimation
-      call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
       call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                        rsolution, 1.0_DP, relementError, derror)
+                                        rsolution, 0.0_DP, relementError, derror, rcollection)
 
       ! Stop time measurement for error estimation
-      call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+      call stat_stopTimer(rtimerErrorEstimation)
 
 
       !-------------------------------------------------------------------------
@@ -3425,7 +3336,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for mesh adaptation
-      call stat_startTimer(rappDescriptor%rtimerAdaptation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
       
       ! Set the names of the template matrix and the solution vector
       rcollection%SquickAccess(1) = 'sparsitypattern'
@@ -3449,7 +3360,7 @@ contains
       call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
-      call stat_stopTimer(rappDescriptor%rtimerAdaptation)
+      call stat_stopTimer(rtimerAdaptation)
 
       
       !-------------------------------------------------------------------------
@@ -3457,29 +3368,29 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for generation of the triangulation
-      call stat_startTimer(rappDescriptor%rtimerTriangulation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
       call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
-      call stat_stopTimer(rappDescriptor%rtimerTriangulation)
+      call stat_stopTimer(rtimerTriangulation)
 
       
       ! Start time measurement for generation of constant coefficient matrices
-      call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
                                        SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
-      call stat_stopTimer(rappDescriptor%rtimerAssemblyCoeff)
+      call stat_stopTimer(rtimerAssemblyCoeff)
       
     end do adaptloop
     
@@ -3496,9 +3407,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveSteadyStatePrimal(rappDescriptor, rparlist, ssectionName,&
-                                           rbdrCond, rproblem, rtimestep, rsolver,&
-                                           rsolution, rcollection)
+  subroutine transp_solveSteadyStatePrimal(rparlist, ssectionName, rbdrCond, rproblem,&
+                                           rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -3509,9 +3419,6 @@ contains
 !</description>
 
 !<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
     ! section name in parameter list
     character(LEN=*), intent(IN) :: ssectionName
 
@@ -3520,8 +3427,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3560,17 +3467,33 @@ contains
     ! Structure for the sparsity pattern
     type(t_graph) :: rgraph
 
+    ! Timer structures
+    type(t_timer), pointer :: rtimerPrePostprocess
+    type(t_timer), pointer :: rtimerSolution
+    type(t_timer), pointer :: rtimerErrorEstimation
+    type(t_timer), pointer :: rtimerAdaptation
+    type(t_timer), pointer :: rtimerTriangulation
+    type(t_timer), pointer :: rtimerAssemblyCoeff
+
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
     real(dp) :: derror
     integer :: templateMatrix, systemMatrix, discretisation
-    integer :: nlmin, iadapt, nadapt
+    integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
     
+    ! Get timer structures
+    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
+    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
     
     ! Adjust time stepping scheme
     rtimestep%ctimestepType = TSTEP_THETA_SCHEME
@@ -3579,7 +3502,9 @@ contains
     rtimestep%dfinalTime    = 1.0_DP
     rtimestep%theta         = 1.0_DP
 
-    ! Get position of discretisation structure
+    ! Get global parameters
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
@@ -3588,8 +3513,10 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel, 0.0_DP, rsolution)
-    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation, rsolution, 0.0_DP)    
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+                             0.0_DP, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+                                   rsolution, 0.0_DP)    
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -3608,7 +3535,7 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
         
@@ -3625,7 +3552,7 @@ contains
     end if
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
 
 
     adaptloop: do iadapt = 0, nadapt
@@ -3635,27 +3562,31 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
 
-      ! Set collection to primal problem mode
-      call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
       
       ! Reset the time-stepping algorithm
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
       ! Check if right-hand side vector exists
-      if (rappDescriptor%irhstype > 0) then
+      if (irhstype > 0) then
         call lsysbl_createVectorblock(rsolution, rrhs)
-        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                            0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
@@ -3674,7 +3605,7 @@ contains
       end if
             
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      call stat_stopTimer(rtimerSolution)
 
 
       if (iadapt .eq. nadapt) exit adaptloop
@@ -3684,14 +3615,14 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for error estimation
-      call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
       call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                        rsolution, 1.0_DP, relementError, derror)
+                                        rsolution, 0.0_DP, relementError, derror, rcollection)
 
       ! Stop time measurement for error estimation
-      call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+      call stat_stopTimer(rtimerErrorEstimation)
 
 
       !-------------------------------------------------------------------------
@@ -3699,7 +3630,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for mesh adaptation
-      call stat_startTimer(rappDescriptor%rtimerAdaptation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
       
       ! Set the names of the template matrix and the solution vector
       rcollection%SquickAccess(1) = 'sparsitypattern'
@@ -3723,7 +3654,7 @@ contains
       call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
-      call stat_stopTimer(rappDescriptor%rtimerAdaptation)
+      call stat_stopTimer(rtimerAdaptation)
 
       
       !-------------------------------------------------------------------------
@@ -3731,29 +3662,29 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for generation of the triangulation
-      call stat_startTimer(rappDescriptor%rtimerTriangulation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
       call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
-      call stat_stopTimer(rappDescriptor%rtimerTriangulation)
+      call stat_stopTimer(rtimerTriangulation)
 
       
       ! Start time measurement for generation of constant coefficient matrices
-      call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
                                        SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
-      call stat_stopTimer(rappDescriptor%rtimerAssemblyCoeff)
+      call stat_stopTimer(rtimerAssemblyCoeff)
 
     end do adaptloop
 
@@ -3770,9 +3701,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveSteadyStatePrimalDual(rappDescriptor, rparlist, ssectionName,&
-                                               rbdrCondPrimal, rbdrCondDual, rproblem,&
-                                               rtimestep, rsolver, rsolutionPrimal,&
+  subroutine transp_solveSteadyStatePrimalDual(rparlist, ssectionName, rbdrCondPrimal, rbdrCondDual,&
+                                               rproblem, rtimestep, rsolver, rsolutionPrimal,&
                                                rsolutionDual, rcollection)
 
 !<description>
@@ -3786,9 +3716,6 @@ contains
 !</description>
 
 !<input>
-    ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
-
     ! section name in parameter list
     character(LEN=*), intent(IN) :: ssectionName
 
@@ -3800,8 +3727,8 @@ contains
 !</input>
 
 !<inputoutput>
-    ! application descriptor
-    type(t_transport), intent(INOUT) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
 
     ! problem structure
     type(t_problem), intent(INOUT) :: rproblem
@@ -3843,17 +3770,33 @@ contains
     ! Structure for the sparsity pattern
     type(t_graph) :: rgraph
 
+    ! Timer structures
+    type(t_timer), pointer :: rtimerPrePostprocess
+    type(t_timer), pointer :: rtimerSolution
+    type(t_timer), pointer :: rtimerErrorEstimation
+    type(t_timer), pointer :: rtimerAdaptation
+    type(t_timer), pointer :: rtimerTriangulation
+    type(t_timer), pointer :: rtimerAssemblyCoeff
+
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
 
     ! local variables
     real(dp) :: derror
     integer :: templateMatrix, systemMatrix, discretisation
-    integer :: nlmin, iadapt, nadapt
+    integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
+
+    ! Get timer structures
+    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescriptor%rtimerPrePostprocess, STAT_TIMERSHORT)
+    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Adjust time stepping scheme
     rtimestep%ctimestepType = TSTEP_THETA_SCHEME
@@ -3862,7 +3805,9 @@ contains
     rtimestep%dfinalTime    = 1.0_DP
     rtimestep%theta         = 1.0_DP
 
-    ! Get position of discretisation structure
+    ! Get global parameters
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
 
     ! Set pointer to maximum problem level
@@ -3871,8 +3816,8 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal, .false., ST_DOUBLE)
-    call transp_initSolution(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
-                             0.0_DP, rsolutionPrimal)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+                             0.0_DP, rsolutionPrimal, rcollection)
     call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation,&
                                    rsolutionPrimal, 0.0_DP)
 
@@ -3893,7 +3838,7 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        templateMatrix = collct_getvalue_int(rcollection, 'templateMatrix')
+        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
         
@@ -3910,7 +3855,7 @@ contains
     end if
     
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescriptor%rtimerPrePostprocess)
+    call stat_stopTimer(rtimerPrePostprocess)
     
     
     adaptloop: do iadapt = 0, nadapt
@@ -3920,27 +3865,31 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
 
-      ! Set collection to primal problem mode
-      call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
       
       ! Reset the time-stepping algorithm
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
       ! Check if right-hand side vector exists
-      if (rappDescriptor%irhstype > 0) then
+      if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                            0.0_DP, rrhs, rcollection)
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
@@ -3959,7 +3908,7 @@ contains
       end if
 
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      call stat_stopTimer(rtimerSolution)
       
       
       !-------------------------------------------------------------------------
@@ -3967,14 +3916,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for error estimation
-      call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Initialize target functional
-      call transp_initTargetFunc(rappDescriptor, p_rproblemLevel,&
-                                 1.0_DP, rtargetFunc)
+      call lsysbl_createVectorBlock(rsolutionPrimal, rtargetFunc)      
+      call transp_initTargetFunc(rparlist, ssectionName, p_rproblemLevel,&
+                                 0.0_DP, rtargetFunc, rcollection)
       
       ! Stop time measurement for error estimation
-      call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+      call stat_stopTimer(rtimerErrorEstimation)
 
 
       !-------------------------------------------------------------------------
@@ -3982,13 +3932,13 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for solution procedure
-      call stat_startTimer(rappDescriptor%rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
       
-      ! Set collection to primal problem mode
-      call collct_setvalue_int(rcollection, 'primaldual', 2, .true.)
+      ! Set dual problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
       
       ! Create dual solution vector initialized by zeros
       call lsysbl_releaseVector(rsolutionDual)
@@ -3998,6 +3948,9 @@ contains
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
       
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
       ! Solve the dual problem
       call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                   rsolutionDual, transp_nlsolverCallback,&
@@ -4007,7 +3960,7 @@ contains
       call lsysbl_releaseVector(rtargetFunc)
 
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rappDescriptor%rtimerSolution)
+      call stat_stopTimer(rtimerSolution)
 
       
       if (iadapt .eq. nadapt) exit adaptloop
@@ -4017,28 +3970,29 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for error estimation
-      call stat_startTimer(rappDescriptor%rtimerErrorEstimation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rappDescriptor, p_rproblemLevel,&
+      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition to the solver structure
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
       
-      ! Set collection to primal problem mode
-      call collct_setvalue_int(rcollection, 'primaldual', 1, .true.)
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
 
       ! Check if right-hand side vector exists
-      if (rappDescriptor%irhstype > 0) then
+      if (irhstype > 0) then
 
         ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call transp_initRHS(rappDescriptor, p_rproblemLevel, 0.0_DP, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+                            0.0_DP, rrhs, rcollection)
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror, rrhs)
 
@@ -4048,14 +4002,14 @@ contains
       else
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rappDescriptor, rparlist, ssectionName, p_rproblemLevel,&
+        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
                                             rcollection, relementError, derror)
 
       end if
 
       ! Stop time measurement for error estimation
-      call stat_stopTimer(rappDescriptor%rtimerErrorEstimation)
+      call stat_stopTimer(rtimerErrorEstimation)
 
 
       !-------------------------------------------------------------------------
@@ -4063,7 +4017,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Start time measurement for mesh adaptation
-      call stat_startTimer(rappDescriptor%rtimerAdaptation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
       
       ! Set the names of the template matrix and the solution vector
       rcollection%SquickAccess(1) = 'sparsitypattern'
@@ -4087,7 +4041,7 @@ contains
       call lsyssc_releaseVector(relementError)
 
       ! Stop time measurement for mesh adaptation
-      call stat_stopTimer(rappDescriptor%rtimerAdaptation)
+      call stat_stopTimer(rtimerAdaptation)
 
       
       !-------------------------------------------------------------------------
@@ -4095,30 +4049,30 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for generation of the triangulation
-      call stat_startTimer(rappDescriptor%rtimerTriangulation, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
       call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
-      call stat_stopTimer(rappDescriptor%rtimerTriangulation)
+      call stat_stopTimer(rtimerTriangulation)
 
       !-------------------------------------------------------------------
       
       ! Start time measurement for generation of constant coefficient matrices
-      call stat_startTimer(rappDescriptor%rtimerAssemblyCoeff, STAT_TIMERSHORT)
+      call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rappDescriptor, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
-      systemMatrix = collct_getvalue_int(rcollection, 'systemMatrix')
+      call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
       call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
                                        SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
-      call stat_stopTimer(rappDescriptor%rtimerAssemblyCoeff)
+      call stat_stopTimer(rtimerAssemblyCoeff)
 
     end do adaptloop
 
@@ -4218,5 +4172,81 @@ contains
     end do cmdarg
 
   end subroutine transp_parseCmdlArguments
+
+!*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_adjustParameterlist(rparlist, ssectionName)
+
+!<description>
+    ! This subroutine adjusts the content of the parameter list
+    ! depending on internal data, i.e., the dimension
+!</description>
+
+!<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(INOUT) :: rparlist
+    
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: ndimension
+    integer :: imasstype
+    integer :: imassantidiffusiontype
+    integer :: idiffusiontype
+    integer :: ivelocitytype
+
+    
+    ! Check if mass matrix needs to be built
+    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', imasstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
+
+    if ((imasstype .eq. MASS_ZERO) .and. &
+        (imassantidiffusiontype .eq. MASS_ZERO)) then
+      call parlst_setvalue(rparlist, ssectionName, 'ConsistentMassMatrix', '0')
+      call parlst_setvalue(rparlist, ssectionName, 'LumpedMassMatrix', '0')
+    end if
+
+    
+    ! Check if diffusion matrix needs to be built
+    call parlst_getvalue_int(rparlist, ssectionName, 'idiffusiontype', idiffusiontype)
+
+    if (idiffusiontype .eq. DIFFUSION_ZERO) then
+      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_S', '0')
+    end if
+
+
+    ! Check if convection matrix needs to be build
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
+
+    if (ivelocitytype .eq. VELOCITY_ZERO) then
+      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CX', '0')
+      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CY', '0')
+      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+    else
+
+      call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', ndimension)
+
+      select case(ndimension)
+      case (NDIM1D)
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CY', '0')
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      case (NDIM2D)
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      case (NDIM3D)
+        ! We actually need all three matrices
+      case default
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CX', '0')
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CY', '0')
+        call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      end select
+      
+    end if
+
+  end subroutine transp_adjustParameterlist
 
 end module transport_application

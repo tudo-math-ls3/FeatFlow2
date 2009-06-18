@@ -68,6 +68,7 @@ module transport_callback
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use paramlist
   use problem
   use solveraux
   use spatialdiscretisation
@@ -105,7 +106,6 @@ contains
   subroutine transp_coeffVectorAnalytic(rdiscretisation, rform, nelements,&
                                         npointsPerElement, Dpoints, IdofsTest,&
                                         rdomainIntSubset, Dcoefficients, rcollection)
-    
     use basicgeometry
     use collection
     use domainintegration
@@ -229,8 +229,7 @@ contains
 
   subroutine transp_refFuncAnalytic(cderivative, rdiscretisation, nelements,&
                                     npointsPerElement, Dpoints, IdofsTest,&
-                                    rdomainIntSubset, Dvalues, rcollection)
-    
+                                    rdomainIntSubset, Dvalues, rcollection)   
     use basicgeometry
     use collection
     use domainintegration
@@ -399,6 +398,7 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     integer :: jacobianMatrix
 
     
@@ -413,13 +413,14 @@ contains
     end if
 
     
-!!$    ! Do we have to calculate the constant right-hand side?
-!!$    ! --------------------------------------------------------------------------
-!!$    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-!!$
-!!$      call transp_calcrhs(rproblemLevel, rtimestep, rsolver,&
-!!$                          rsolution, rvector, rcollection)
-!!$    end if
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+
+      call transp_calcRhs(rproblemLevel, rtimestep, rsolver,&
+                          rsolution, rsolutionInitial,&
+                          rrhs, istep, rcollection)
+    end if
           
     
     ! Do we have to calculate the residual
@@ -453,9 +454,9 @@ contains
     ! Do we have to apply the Jacobian operator?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
-      
-      jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
 
+      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
                                rsolution%RvectorBlock(1),&
                                rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
@@ -500,7 +501,9 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
+    character(LEN=SYS_STRLEN) :: smode
     logical :: bStabilize, bbuildAFC, bconservative
     integer :: systemMatrix, transportMatrix
     integer :: lumpedMassMatrix, consistentMassMatrix
@@ -515,27 +518,27 @@ contains
     
 
      ! Start time measurement for matrix evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
     
     ! Remove update notifier for further calls. Depending on the
     ! velocity, diffusion type it will be re-activited below.
     rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                       not(PROBLEV_MSPEC_UPDATE))
 
-    ! Get parameters from collection which are required unconditionally
-    transportMatrix = collct_getvalue_int(rcollection, 'transportmatrix')
-    coeffMatrix_CX  = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY  = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    coeffMatrix_CZ  = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
-    coeffMatrix_S   = collct_getvalue_int(rcollection, 'coeffMatrix_S')
-
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_S', coeffMatrix_S)
     
     !---------------------------------------------------------------------------
     ! Assemble diffusion operator
     !---------------------------------------------------------------------------
     
-    idiffusiontype = collct_getvalue_int(rcollection, 'idiffusiontype')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'idiffusiontype', idiffusiontype)
     
     ! Primal and dual mode are equivalent
     select case(idiffusiontype)
@@ -551,7 +554,7 @@ contains
 
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
-      diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -608,9 +611,9 @@ contains
     ! Assemble convective operator
     !---------------------------------------------------------------------------
 
-    primaldual    = collct_getvalue_int(rcollection, 'primaldual')
-    ivelocitytype = collct_getvalue_int(rcollection, 'ivelocitytype')
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1), 'mode', smode)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
 
     if (convectionAFC > 0) then
 
@@ -634,7 +637,8 @@ contains
 
 
     ! Are we in primal or dual mode?
-    if (primaldual .eq. 1) then
+    select case(trim(smode))
+    case('primal')
       
       select case(abs(ivelocitytype))
       case (VELOCITY_ZERO)
@@ -645,7 +649,7 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
@@ -703,7 +707,7 @@ contains
         if (abs(ivelocitytype) .eq. VELOCITY_TIMEDEP) then
           ! Set update notification in problem level structure
           rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                       PROBLEV_MSPEC_UPDATE)
+                                           PROBLEV_MSPEC_UPDATE)
         end if
         
 
@@ -730,7 +734,7 @@ contains
         
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                         PROBLEV_MSPEC_UPDATE)
 
 
       case (VELOCITY_BUCKLEV_SPACETIME)
@@ -757,7 +761,7 @@ contains
 
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                         PROBLEV_MSPEC_UPDATE)
 
 
       case (VELOCITY_BURGERS1D)
@@ -783,7 +787,7 @@ contains
 
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                         PROBLEV_MSPEC_UPDATE)
         
 
       case (VELOCITY_BURGERS2D)
@@ -809,7 +813,7 @@ contains
 
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                         PROBLEV_MSPEC_UPDATE)
 
 
       case (VELOCITY_BUCKLEV1D)
@@ -835,7 +839,7 @@ contains
 
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
+                                         PROBLEV_MSPEC_UPDATE)
 
 
       case DEFAULT
@@ -844,8 +848,9 @@ contains
         call sys_halt()
       end select
 
-    else   ! primaldual /= 1
-
+      
+    case('dual')
+      
       select case(abs(ivelocitytype))
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
@@ -855,7 +860,7 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
@@ -938,14 +943,18 @@ contains
         call sys_halt()
       end select
 
-    end if
+    case DEFAULT
+      call output_line('Invalid mode!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+      call sys_halt()
+    end select
         
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
     
-    systemMatrix = collct_getvalue_int(rcollection, 'systemmatrix')
-    imasstype    = collct_getvalue_int(rcollection, 'imasstype')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -954,7 +963,7 @@ contains
       !
       !   $ A = ML-theta*dt*L $
 
-      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
@@ -966,7 +975,7 @@ contains
       !
       !   $ A = MC-theta*dt*L $
 
-      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
@@ -1004,7 +1013,7 @@ contains
     call solver_updateContent(rsolver)
 
     ! Stop time measurement for global operator
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
     
   end subroutine transp_calcPreconditioner
 
@@ -1043,8 +1052,10 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     real(DP) :: hstep
+    character(LEN=SYS_STRLEN) :: smode
     integer :: transportMatrix, jacobianMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
@@ -1055,19 +1066,20 @@ contains
 
 
     ! Start time measurement for matrix evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from collection which are required unconditionally
-    consistentMassMatrix  = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-    lumpedMassMatrix      = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-    transportMatrix       = collct_getvalue_int(rcollection, 'transportmatrix')
-    jacobianMatrix        = collct_getvalue_int(rcollection, 'jacobianmatrix')
-    coeffMatrix_CX        = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY        = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    coeffMatrix_CZ        = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
-    coeffMatrix_S         = collct_getvalue_int(rcollection, 'coeffMatrix_S')
-       
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianmatrix', jacobianMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_S', coeffMatrix_S)
+    
     ! The Jacobian matrix for the low-order transport operator needs
     ! to be generated only in case of nonlinear governing equations.
     ! In this case, the corresponding transport operator L has to be
@@ -1080,8 +1092,8 @@ contains
       ! Choice h=[(1+|u|)*EPS]^{1/(1+p)} by Pernice et al. in
       ! M. Pernice, H.F. Walker, NITSOL: a Newton iterative solver
       ! for nonlinear systems, SIAM J. Sci. Comput. 19 (1998) 302-318.
-      hstep = ( (1+&
-          lsysbl_vectorNorm(rsolution, LINALG_NORMEUCLID))*SYS_EPSREAL )**(1.0_DP/3._DP)
+      hstep = ( (1+lsysbl_vectorNorm(rsolution,&
+                   LINALG_NORMEUCLID))*SYS_EPSREAL )**(1.0_DP/3._DP)
       
     case (PERTURB_SQRTEPS)
       hstep= sqrt(SYS_EPSREAL)
@@ -1095,8 +1107,8 @@ contains
     ! Assemble diffusion operator
     !---------------------------------------------------------------------------
 
-    idiffusiontype = collct_getvalue_int(rcollection, 'idiffusiontype')
-    diffusionAFC   = collct_getvalue_int(rcollection, 'diffusionAFC')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'idiffusiontype', idiffusiontype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
 
     select case(idiffusiontype)
     case (DIFFUSION_ZERO)
@@ -1125,16 +1137,17 @@ contains
     ! Assemble convection operator
     !---------------------------------------------------------------------------
 
-    primaldual    = collct_getvalue_int(rcollection, 'primaldual')
-    ivelocitytype = collct_getvalue_int(rcollection, 'ivelocitytype')
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1), 'mode', smode)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
 
     ! Check if stabilization should be applied
     bStabilize = (AFCSTAB_GALERKIN .ne.&
                   rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
     
-    ! Are we in primal or dual mode
-    if (primaldual .eq. 1) then
+    ! Are we in primal or dual mode?
+    select case(trim(smode))
+    case('primal')
 
       select case (abs(ivelocitytype))
       case (VELOCITY_ZERO)
@@ -1143,7 +1156,8 @@ contains
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP) 
         ! linear velocity
-        velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
+        
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1207,7 +1221,8 @@ contains
         call sys_halt()
       end select
 
-    else   ! primaldual /= 1
+
+    case('dual')
       
       select case (abs(ivelocitytype))
       case (VELOCITY_ZERO)
@@ -1216,7 +1231,8 @@ contains
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP) 
         ! linear velocity
-        velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
+
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1260,11 +1276,15 @@ contains
         call sys_halt()
       end select
 
-    end if
+    case DEFAULT
+      call output_line('Invalid mode!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+      call sys_halt()
+    end select
     
     
     ! Check if the Jacobian operator has extended sparsity pattern
-    ijacobianFormat = collct_getvalue_int(rcollection, 'ijacobianFormat')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ijacobianFormat', ijacobianFormat)
     if (ijacobianFormat .eq. 0) then
       bisExactStructure   = .true.
       bisExtendedSparsity = .false.
@@ -1278,7 +1298,7 @@ contains
     ! Assemble the global system operator for the high-/low-order contribution
     !---------------------------------------------------------------------------
 
-    imasstype = collct_getvalue_int(rcollection, 'imasstype')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1360,7 +1380,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
         
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1395,7 +1416,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1438,7 +1460,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1481,7 +1504,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1524,7 +1548,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1567,7 +1592,8 @@ contains
       case (AFCSTAB_FEMFCT,&
             AFCSTAB_FEMFCT_CLASSICAL)
 
-        imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1638,7 +1664,7 @@ contains
     call solver_updateContent(rsolver)
     
     ! Stop time measurement for matrix evaluation
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
 
   end subroutine transp_calcJacobian
 
@@ -1677,10 +1703,14 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     integer :: jacobianMatrix
-
-    jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
-
+    
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'jacobianMatrix', jacobianMatrix)
+    
     ! We know where the Jacobian matrix is stored and can apply it
     ! by means of matrix vector multiplication
     call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1693,7 +1723,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-                            rsolution, rsolutionInitial, rrhs, istep, rcollection)
+                            rsolution, rsolutionInitial,&
+                            rrhs, istep, rcollection)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -1730,7 +1761,8 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     real(DP) :: dweight
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
@@ -1739,8 +1771,8 @@ contains
 
 
     ! Start time measurement for residual/rhs evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! For nonlinear conservation laws, the global system operator
     ! needs to be updated in each nonlinear iteration. The update 
@@ -1749,10 +1781,11 @@ contains
     call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
 
 
-    ! Get parameters from collection which are required unconditionally
-    transportMatrix      = collct_getvalue_int(rcollection, 'transportmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
 
 
     ! Compute the right-hand side
@@ -1770,7 +1803,7 @@ contains
     !
     !   $ rhs = rhs + f^*(u^n+1,u^n) $
 
-    convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
        
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
@@ -1779,7 +1812,8 @@ contains
           AFCSTAB_FEMFCT_CLASSICAL)
 
       dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
-      imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'imassantidiffusiontype', imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1808,7 +1842,7 @@ contains
     !
     !   $ rhs = rhs + g^*(u^n+1,u^n) $
 
-    diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
     
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
@@ -1818,7 +1852,7 @@ contains
     end select
     
     ! Stop time measurement for residual/rhs evaluation
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
 
   end subroutine transp_calcRHS
     
@@ -1881,20 +1915,22 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     integer :: transportMatrix, consistentMassMatrix, lumpedMassMatrix
     integer :: convectionAFC, diffusionAFC
     integer :: imasstype, imassantidiffusiontype
 
     
     ! Start time measurement for residual/rhs evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from collection which are required unconditionally
-    transportMatrix      = collct_getvalue_int(rcollection, 'transportmatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
 
     ! Are we in the zero-th iteration?
     if (ite .eq. 0) then
@@ -1904,7 +1940,7 @@ contains
       ! residual vector and the constant right-hand side vector
       !-------------------------------------------------------------------------
 
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
       
       select case(imasstype)
       case (MASS_LUMPED)
@@ -1980,7 +2016,7 @@ contains
       !
       !   $ res^{(0)} = res^{(0)} + f(u^n,u^n) $
 
-      convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
 
       if (convectionAFC > 0) then
 
@@ -1990,7 +2026,8 @@ contains
         case (AFCSTAB_FEMFCT,&
               AFCSTAB_FEMFCT_CLASSICAL)
 
-          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+          call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                   'imassantidiffusiontype', imassantidiffusiontype)
           
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2020,8 +2057,8 @@ contains
       ! Perform algebraic flux correction for the diffusive term if required
       !
       !   $ res^{(0)} = res^{(0)} + g(u^n,u^n) $
-
-      diffusionAFC = collct_getvalue_int(rcollection, 'diffusionAFC')
+      
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -2041,7 +2078,7 @@ contains
       ! updated, using the right-hand side vector from the zero-th iteration
       !-------------------------------------------------------------------------
 
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
 
       select case(imasstype)
       case (MASS_LUMPED)
@@ -2095,7 +2132,7 @@ contains
       !
       !   $ res = res + f^*(u^(m),u^n) $
 
-      convectionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
 
       if (convectionAFC > 0) then
 
@@ -2103,7 +2140,8 @@ contains
         case (AFCSTAB_FEMFCT,&
               AFCSTAB_FEMFCT_CLASSICAL)
         
-          imassantidiffusiontype = collct_getvalue_int(rcollection, 'imassantidiffusiontype')
+          call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                   'imassantidiffusiontype', imassantidiffusiontype)
           
           ! Should we apply consistent mass antidiffusion?
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -2134,7 +2172,7 @@ contains
       !
       !   $ res = res + g^*(u^n+1,u^n) $
 
-      diffusionAFC = collct_getvalue_int(rcollection, 'convectionAFC')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -2153,7 +2191,7 @@ contains
     if (present(rb)) call lsysbl_vectorLinearComb(rb, rres, 1.0_DP, 1.0_DP)
 
     ! Stop time measurement for residual/rhs evaluation
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
     
   end subroutine transp_calcResidual
 
@@ -2196,19 +2234,22 @@ contains
 !</subroutine>
     
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     integer :: imatrix
 
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     
     select case(rsolver%iprecond)
     case (NLSOL_PRECOND_BLOCKD,&
           NLSOL_PRECOND_DEFCOR, &
           NLSOL_PRECOND_NEWTON_FAILED)
 
-      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')      
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'systemmatrix', imatrix)
       
     case (NLSOL_PRECOND_NEWTON)
 
-      imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianmatrix', imatrix)
       
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
@@ -2232,7 +2273,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcVelocityField(rappDescriptor, rproblemLevel,&
+  subroutine transp_calcVelocityField(rparlist, ssectionName, rproblemLevel,&
                                       dtime, rcollection, nlminOpt)
 
 !<description>
@@ -2241,8 +2282,11 @@ contains
 !</description>
 
 !<input>
-    ! application descriptor
-    type(t_transport), intent(IN) :: rappDescriptor
+    ! parameter list
+    type(t_parlist), intent(IN) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(IN) :: ssectionName
 
     ! simulation time
     real(DP), intent(IN) :: dtime
@@ -2261,20 +2305,26 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_fparser), pointer :: p_rfparser
     type(t_problemLevel), pointer :: p_rproblemLevel
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    character(LEN=SYS_STRLEN) :: svelocityname
     integer :: ieq, neq, idim, ndim, nlmin, icomp
-    integer :: velocityfield
+    integer :: ivelocitytype, velocityfield
 
     
     ! Check if the velocity "vector" needs to be generated explicitly
-    if ((abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
-        (abs(rappDescriptor%ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
+    if ((abs(ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
+        (abs(ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
 
-    ! Get parameter from collection
-    velocityfield = collct_getvalue_int(rcollection, 'velocityfield')
+    ! Get parameter from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName, 'velocityfield', velocityfield)
+
+    ! Get function parser from collection
+    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
     ! Set minimum problem level
     nlmin = rproblemLevel%ilev
@@ -2313,21 +2363,19 @@ contains
         call lsyssc_getbase_double(&
             p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim), p_Ddata)
 
-        select case(idim)
-        case(1)
-          icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_velocity_x')
-        case(2)
-          icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_velocity_y')
-        case(3)
-          icomp = fparser_getFunctionNumber(rappDescriptor%rfparser, 'fp_velocity_z')
-        end select
+        ! Retrieve function name from parameter list
+        call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
+                                    svelocityname, isubString=idim)
+
+        ! Determine corresponding component number from the function parser
+        icomp = fparser_getFunctionNumber(p_rfparser, svelocityname)
 
         ! Loop over all equations of scalar subvector
         do ieq = 1, neq
           Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
           Dvalue(NDIM3D+1) = dtime
           
-          call fparser_evalFunction(rappDescriptor%rfparser, icomp, Dvalue, p_Ddata(ieq))
+          call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
         end do
       end do
 
@@ -2416,6 +2464,7 @@ contains
 
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_parlist), pointer :: p_rparlist
     type(t_vectorScalar) :: rflux0, rflux
     type(t_vectorBlock) :: rdata
     real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data
@@ -2423,12 +2472,14 @@ contains
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
 
-    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedMassMatrix')
-    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'templatematrix', templateMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
 
     ! Set pointers

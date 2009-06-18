@@ -12,7 +12,6 @@
 
 module zpinch_basic
 
-  use transport_basic
   use euler_basic
 
   implicit none
@@ -31,9 +30,6 @@ module zpinch_basic
 
     ! Application descriptor for the compressible Euler model
     type(t_euler) :: rappDescrEuler
-
-    ! Application descriptor for the scalar transport model
-    type(t_transport) :: rappDescrTransport
     
   end type t_Zpinch
 
