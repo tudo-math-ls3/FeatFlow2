@@ -754,7 +754,7 @@ module collection
   public :: collct_getvalue_mat 
   public :: collct_getvalue_linsol 
   public :: collct_getvalue_discbc 
-  public :: collct_getvalue_plst 
+  public :: collct_getvalue_parlst 
   public :: collct_getvalue_ilvpsc 
   public :: collct_getvalue_ilvp 
   public :: collct_getvalue_coll 
@@ -3501,7 +3501,7 @@ contains
   
 !<function>
 
-  function collct_getvalue_plst (rcollection, sparameter, &
+  function collct_getvalue_parlst (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) result(value)
 !<description>
   ! Returns the the parameter sparameter as pointer to a parameter list.
@@ -3558,7 +3558,7 @@ contains
       nullify(value)
     end if
     
-  end function collct_getvalue_plst
+  end function collct_getvalue_parlst
 
   ! ***************************************************************************
   
