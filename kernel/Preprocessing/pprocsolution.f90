@@ -70,7 +70,7 @@ contains
 
 !<subroutine>
 
-  subroutine ppsol_readPGM(ifile,sfile,rpgm)
+  subroutine ppsol_readPGM(ifile, sfile, rpgm)
 
 !<description>
     ! This subroutine reads a portable graymap image from file.
@@ -102,7 +102,8 @@ contains
     if (ifile .eq. 0) then
       call io_openFileForReading(sfile, cf, .true.)
       if (cf .eq. -1) then
-        print *, 'ppsol_readPGM: Could not open file '//trim(sfile)
+        call output_line('Could not open file '//trim(sfile)//'!',&
+                         OU_CLASS_ERROR, OU_MODE_STD, 'ppsol_readPGM')
         call sys_halt()
       end if
     else
@@ -131,7 +132,7 @@ contains
           call getNextEntryASCII(cbuffer); read(cbuffer,*) p_Idata(ix,iy)
           if (p_Idata(ix,iy) .gt. rpgm%maxgray) then
             call output_line('Image data exceeds range!',&
-                OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
+                             OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
             call sys_halt()
           end if
         end do
@@ -139,7 +140,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid PGM format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
+                       OU_CLASS_ERROR,OU_MODE_STD,'ppsol_readPGM')
       call sys_halt()
     end select
       
