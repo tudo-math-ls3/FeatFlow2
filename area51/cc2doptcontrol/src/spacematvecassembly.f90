@@ -228,8 +228,14 @@ module spacematvecassembly
     ! NEWTON-parameters that switch the Newton term ((.)*grad(y)) on/off
     real(DP), dimension(2,2) :: Dnewton = 0.0_DP
 
+    ! NEWTON-parameters that switch a 2nd Newton term ((.)*grad(y)) on/off
+    real(DP), dimension(2,2) :: Dnewton2 = 0.0_DP
+
     ! GAMMAT-parameters that switch the transposed nonlinearity (y*grad(.)^T) on/off
     real(DP), dimension(2,2) :: DgammaT = 0.0_DP
+
+    ! GAMMAT-parameters that switch a 2nd transposed nonlinearity (y*grad(.)^T) on/off
+    real(DP), dimension(2,2) :: DgammaT2 = 0.0_DP
   
     ! NEWTONT-parameters that switch the transposed Newton term ((.)*grad(y)^T) on/off
     real(DP), dimension(2,2) :: DnewtonT = 0.0_DP
@@ -338,6 +344,14 @@ module spacematvecassembly
     ! evaluated. 1=lambda_{i-1}, 2=lambda_i, 3=lambda_{i+1}.
     ! =0: undefined.
     integer :: idualSol  = 2
+
+    ! The following three variables specify the id of a 2nd dual solution to be
+    ! evaluated. 1=lambda_{i-1}, 2=lambda_i, 3=lambda_{i+1}.
+    ! =0: undefined.
+    ! This is used for the discretisation of the 2nd Newton/GammT-term which
+    ! appears on the main diagonal of the system for the dual equation
+    ! if Crank-Nicolson is active.
+    integer :: idualSol2  = 2
 
     ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
     ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
@@ -1059,6 +1073,24 @@ contains
             rmatrixComponents,rtempMatrix,rtempVector,&
             rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
             rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
+            rstabilisation)      
+            
+        ! There is probably a 2nd reactive term stemming from the next time step.
+        ! Assemble it.
+        
+        select case (rmatrixComponents%idualSol2)
+        case (1)
+          call lsysbl_deriveSubvector(rvector1,rtempVector, 4,6,.true.)
+        case (2)
+          call lsysbl_deriveSubvector(rvector2,rtempVector, 4,6,.true.)
+        case (3)
+          call lsysbl_deriveSubvector(rvector3,rtempVector, 4,6,.true.)
+        end select
+            
+        call assembleConvection (&
+            rmatrixComponents,rtempMatrix,rtempVector,&
+            0.0_DP,rmatrixComponents%DgammaT2(2,1),&
+            rmatrixComponents%Dnewton2(2,1),0.0_DP,&
             rstabilisation)      
 
         ! Reintegrate the computed matrix
@@ -3734,7 +3766,7 @@ contains
     real(DP) :: dcx
     type(t_matrixBlock) :: rtempmatrix
     type(t_vectorBlock) :: rtempVectorX,rtempVectorB
-    type(t_vectorBlock) :: rvectorPrimal,rvectorDual
+    type(t_vectorBlock) :: rvectorPrimal,rvectorDual,rvectorDual2
     type(t_vectorBlock), pointer :: p_rprimalSol, p_rdualSol
     type(t_convecStabilisation) :: rstabilisation    
     type(t_optcoperator) :: roptcoperator
@@ -3945,6 +3977,15 @@ contains
         call lsysbl_deriveSubvector(rvector3,rvectorDual, 4,5,.true.)
       end select
 
+      select case (rmatrixComponents%idualSol2)
+      case (1)
+        call lsysbl_deriveSubvector(rvector1,rvectorDual2, 4,5,.true.)
+      case (2)
+        call lsysbl_deriveSubvector(rvector2,rvectorDual2, 4,5,.true.)
+      case (3)
+        call lsysbl_deriveSubvector(rvector3,rvectorDual2, 4,5,.true.)
+      end select
+
       ! Create a block discretisation by deriving it from the 'full' matrix.
       ! This will serve as a local discretisation structure for all
       ! velocity modifications.
@@ -4034,6 +4075,17 @@ contains
           rmatrixComponents,rtempMatrix,rvectorDual,rtempVectorX,rtempVectorB,&
           rmatrixComponents%Dgamma(2,1),rmatrixComponents%DgammaT(2,1),&
           rmatrixComponents%Dnewton(2,1),rmatrixComponents%DnewtonT(2,1),&
+          rstabilisation,dcx)    
+      
+      ! There is probably a 2nd reactive term involved stemming from
+      ! the next timestep when Crank-Nicolson is used.
+
+      rstabilisation = t_convecStabilisation(0,0.0_DP,NULL())
+      
+      call assembleConvectionDefect (&
+          rmatrixComponents,rtempMatrix,rvectorDual2,rtempVectorX,rtempVectorB,&
+          0.0_DP,rmatrixComponents%DgammaT2(2,1),&
+          rmatrixComponents%Dnewton2(2,1),0.0_DP,&
           rstabilisation,dcx)    
       
       call lsysbl_releaseVector (rtempVectorX)

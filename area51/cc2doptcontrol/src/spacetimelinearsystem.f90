@@ -368,6 +368,8 @@ contains
     rmatrixComponents%Dgamma(:,:) = 0.0_DP
     rmatrixComponents%Dnewton(:,:) = 0.0_DP
     rmatrixComponents%DgammaT(:,:) = 0.0_DP
+    rmatrixComponents%Dnewton2(:,:) = 0.0_DP
+    rmatrixComponents%DgammaT2(:,:) = 0.0_DP
     rmatrixComponents%DnewtonT(:,:) = 0.0_DP
     rmatrixComponents%Deta(:,:) = 0.0_DP
     rmatrixComponents%Dtau(:,:) = 0.0_DP
@@ -438,13 +440,15 @@ contains
         if (.not. bconvectionExplicit) then
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 2
+          rmatrixComponents%idualSol2 = 3
         else
           rmatrixComponents%iprimalSol = 2
           rmatrixComponents%idualSol = 3
+          rmatrixComponents%idualSol2 = 2
         end if
 
         rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
+        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
         rmatrixComponents%Dtheta(1,1) = 1.0_DP
         rmatrixComponents%Dtheta(2,2) = 1.0_DP
@@ -482,6 +486,16 @@ contains
             !    ( dequationType)
             rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType)
+
+            ! For Crank-Nicolson there appears a 2nd reactive term
+            ! stemming from the next timestep.
+
+            rmatrixComponents%DgammaT2(2,1) = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * ( dequationType)
+            !rmatrixComponents%Dgamma2(2,1) = ddualPrimalCoupling * &
+            !    (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%Dnewton2(2,1) = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * (-dequationType)
           end if
           
         else
@@ -528,7 +542,7 @@ contains
 
         rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(2,2) = 0.0_DP
+        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta)
         
         if (.not. bconvectionExplicit) then
         
@@ -549,19 +563,6 @@ contains
 
         rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
-            
-        if (.not. bconvectionExplicit) then
-
-          if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
-                (1.0_DP-dtheta) * ( dequationType)
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
-                (1.0_DP-dtheta) * (-dequationType)
-          end if
-        
-        end if
             
       end if
     
@@ -666,6 +667,16 @@ contains
             !    ( dequationType) * dtheta 
             rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
+
+            ! For Crank-Nicolson there appears a 2nd reactive term
+            ! stemming from the next timestep.
+
+            rmatrixComponents%DgammaT2(2,1) = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * ( dequationType)
+            !rmatrixComponents%Dgamma2(2,1) = ddualPrimalCoupling * &
+            !    (1.0_DP-dtheta) * ( dequationType)
+            rmatrixComponents%Dnewton2(2,1) = ddualPrimalCoupling * &
+                (1.0_DP-dtheta) * (-dequationType)
           end if
           
         else
@@ -689,6 +700,7 @@ contains
         ! at xi due to the discretisation scheme!!!
         rmatrixComponents%iprimalSol = 2
         rmatrixComponents%idualSol = 2
+        rmatrixComponents%idualSol2 = 3
         
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
@@ -730,7 +742,9 @@ contains
         rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
-        if (.not. bconvectionExplicit) then
+        if (bconvectionExplicit) then
+
+          ! DON'T KNOW IF THIS IS CORRECT!!!
         
           if (dnewton .ne. 0.0_DP) then
             rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
