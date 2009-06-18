@@ -1644,7 +1644,7 @@ end subroutine
     dradius = rgeomObject%rcircle%dradius
   
     ! Allocate desired number of vertices
-    Isize = (/ 2, ndesiredVerticeCount /)
+    Isize = (/ 2, ndesiredVerticeCount+2 /)
     call storage_new('geom_circle_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
@@ -1652,17 +1652,20 @@ end subroutine
     call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set vertices
-    do i=1, ndesiredVerticeCount
+    do i=0, ndesiredVerticeCount
     
       ! Calculate angle
       dangle = dstep * real(i, DP)
       
       ! Calculate vertice position
-      p_DVertices(1, i) = dradius * cos(dangle)
-      p_DVertices(2, i) = dradius * sin(dangle)
+      p_DVertices(1, i+1) = dradius * cos(dangle)
+      p_DVertices(2, i+1) = dradius * sin(dangle)
     
     end do
 
+    p_DVertices(1, ndesiredVerticeCount+2) = dradius * cos(SYS_PI)
+    p_DVertices(2, ndesiredVerticeCount+2) = dradius * sin(SYS_PI)
+    
   end subroutine
   
   ! ***************************************************************************
@@ -2866,7 +2869,7 @@ end subroutine
     dradiusY = rgeomObject%rellipse%Dradii(2)
   
     ! Allocate desired number of vertices
-    Isize = (/ 2, ndesiredVerticeCount /)
+    Isize = (/ 2, ndesiredVerticeCount+2/)
     call storage_new('geom_ellipse_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
@@ -2874,16 +2877,20 @@ end subroutine
     call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set vertices
-    do i=1, ndesiredVerticeCount
+    do i=0, ndesiredVerticeCount
     
       ! Calculate angle
       dangle = dstep * real(i, DP)
       
       ! Calculate vertice position
-      p_DVertices(1, i) = dradiusX * cos(dangle)
-      p_DVertices(2, i) = dradiusY * sin(dangle)
+      p_DVertices(1, i+1) = dradiusX * cos(dangle)
+      p_DVertices(2, i+1) = dradiusY * sin(dangle)
     
     end do
+
+    p_DVertices(1, ndesiredVerticeCount+2) = dradiusX * cos(SYS_PI)
+    p_DVertices(2, ndesiredVerticeCount+2) = dradiusY * sin(SYS_PI)
+    
 
   end subroutine
   
