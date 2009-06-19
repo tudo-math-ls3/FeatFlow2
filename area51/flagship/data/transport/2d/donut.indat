@@ -22,28 +22,27 @@ defexpr:  sqr1 = SQRT((x-1)^2+y^2)
 defexpr:  sqr2 = SQRT((x-_x0)^2+(y-_y0)^2)
 defexpr:  abs  =      (x-_x0)^2+(y-_y0)^2
 
-deffunc: fp_null = 0; x,y,z,t
+deffunc: @null = 0; x,y,z,t
 
 # Specify the initial solution
-deffunc: fp_initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
+deffunc: @initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
 
 # Specify the exact solution
-deffunc: fp_exactsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
+deffunc: @exactsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
 
 # Specify the velocity field
-deffunc: fp_velocity_x = y ; x,y,z,t
-deffunc: fp_velocity_y = 1-x ; x,y,z,t
+deffunc: @velocity_x = y ; x,y,z,t
+deffunc: @velocity_y = 1-x ; x,y,z,t
 
 
 # Specify the quantity of interest
-#deffunc: fp_targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.4 & y <= 0.6, 1, 0) ; x,y,z,t
-#deffunc: fp_targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
-deffunc: fp_targetFuncInt = if(x >= 1.6 & x <= 1.8 & y >= 0.6 & y <= 0.8, 1, 0) ; x,y,z,t
-#deffunc: fp_targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
-#deffunc: fp_targetFuncBdrInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
-#deffunc: fp_TargetFuncAnalytic = 0.06044974016448 ; t
-#deffunc: fp_TargetFuncAnalytic = 0.00948534325289 ; t
-deffunc: fp_TargetFuncAnalytic = 0.0 ; t
+#deffunc: @targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.4 & y <= 0.6, 1, 0) ; x,y,z,t
+#deffunc: @targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
+deffunc: @targetFuncInt = if(x >= 1.6 & x <= 1.8 & y >= 0.6 & y <= 0.8, 1, 0) ; x,y,z,t
+#deffunc: @targetFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
+#deffunc: @targetFuncBdrInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
+#deffunc: @targetFuncAnalytic = 0.06044974016448 ; t
+deffunc: @targetFuncAnalytic = 0.00948534325289 ; t
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]

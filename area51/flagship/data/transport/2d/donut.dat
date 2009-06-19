@@ -61,7 +61,9 @@ imassantidiffusiontype = 0
 ivelocitytype = 2
 
 # section name of velocity field
-svelocityname = velocityfield
+svelocityname(2) = 
+  @velocity_x
+  @velocity_y
 
 # type of flow diffusion
 # 0 = zero diffusion
@@ -96,7 +98,7 @@ srhsname =
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname = @initsol
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -105,7 +107,7 @@ ssolutionname = initial_solution
 iexactsolutiontype = 1
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname = @exactsol
 
 # type of target functional
 # 0 = no target variable
@@ -115,7 +117,7 @@ sexactsolutionname = exact_solution
 itargetfunctype = 1
 
 # section name of target functional
-stargetfuncname = targetfunctional
+stargetfuncname = @targetFuncInt
 
 # type of exact target functional type
 # 0 = no exact target functional available
@@ -126,7 +128,7 @@ stargetfuncname = targetfunctional
 iexacttargetfunctype = 4
 
 # section name of exact target functional
-sexacttargetfuncname = exacttargetfunctional
+sexacttargetfuncname = @targetFuncAnalytic
 
 
 #-------------------------------------------------------------------------------
@@ -317,10 +319,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -702,7 +704,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 5
+nadapt = 1
 
 # time for grid adaptivity
 dtimeadapt = 0.0
