@@ -270,8 +270,7 @@ contains
 
     ! Timer for pre- and post-processing
     type(t_timer) :: rtimerPrePostprocess
-
-
+    
     ! Parameter file and section names
     character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: sbdrcondName
@@ -699,7 +698,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist, ssectionName, 'celement', celement)
-    
+
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
@@ -707,7 +706,7 @@ contains
 
     ! Create discretisation structure
     if (discretisation > 0) then
-      
+     
       ! Initialize the discretization structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
@@ -1305,7 +1304,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_fparser), pointer :: rfparser
+    type(t_fparser), pointer :: p_rfparser
     type(t_pgm) :: rpgm
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
@@ -1342,16 +1341,16 @@ contains
       call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
       
       ! Get function parser from collection structure
-      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
       
       ! Get the number of the component used for evaluating the initial solution
-      icomp = fparser_getFunctionNumber(rfparser, ssolutionname)
+      icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
       ! Loop over all equations of scalar subvector
       do ieq = 1, neq
         Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
         Dvalue(NDIM3D+1) = dtime
-        call fparser_evalFunction(rfparser, icomp, Dvalue, p_Ddata(ieq))
+        call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
       end do
             
 
@@ -2112,7 +2111,7 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('transp_estimateRecoveryError',' BisactiveElement',&
+      call storage_new('transp_estimateTargetFuncError',' BisactiveElement',&
                        rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
                        h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
@@ -2251,7 +2250,7 @@ contains
     character(LEN=SYS_STRLEN) :: sexactsolutionName
 
     ! local variables
-    type(t_fparser) :: rfparser
+    type(t_fparser), pointer :: p_rfparser
     type(t_vectorScalar) :: rvectorScalar
     real(DP), dimension(:), pointer :: p_Ddata, p_Derror
     integer, dimension(:,:), pointer :: p_IverticesAtElement
@@ -2259,13 +2258,9 @@ contains
     logical, dimension(:), pointer :: p_BisactiveElement
     real(DP) :: dnoiseFilter, dabsFilter, dsolution, dvalue,&
                 dexacterror, dprotectLayerTolerance
-    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype
+    integer :: i, ierrorEstimator, igridindicator, iexactsolutiontype, icomp
     integer :: iprotectLayer, nprotectLayers
     integer :: h_BisactiveElement
-    
-    ! symbolic variable names
-    character(LEN=*), dimension(4), parameter ::&
-                      cvariables = (/ (/'x'/), (/'y'/), (/'z'/), (/'t'/) /)
 
 
     ! Get global configuration from parameter list
@@ -2331,28 +2326,22 @@ contains
     !---------------------------------------------------------------------------
 
     select case(iexactsolutiontype)
-    case (1)
-      ! Initialize exact solution from analytic profile
-      call flagship_readParserFromFile(sindatfileName, '['//trim(sexactsolutionName)//']',&
-                                       cvariables, rfparser)
+    case (SOLUTION_ANALYTIC)
+
+      ! Get function parser from collection
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get the number of the component used for evaluating the target functional
+      icomp = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
       
-!!$      ! Create a collection and attach the function parser
-!!$      call collct_init(rcollection)
-!!$      call collct_setvalue_pars(rcollection, 'FunctionParser', rfparser, .true.)
-!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-!!$                                      rfparser, 'fp_exactSolution')
-!!$      rcollection%SquickAccess(1) = 'FunctionParser'
-!!$      rcollection%DquickAccess(1) = dtime
-!!$      
-!!$      ! Calculate the H1-error of the reference solution
-!!$      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
-!!$                        transp_refFuncAnalytic, rcollection)
-!!$
-!!$      ! Release collection structure
-!!$      call collct_done(rcollection)
-!!$
-!!$      ! Release function parser
-!!$      call fparser_release(rfparser)
+      ! Calculate the H1-error of the reference solution
+      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
+                        transp_refFuncAnalytic, rcollection)
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -4173,7 +4162,7 @@ contains
 
   end subroutine transp_parseCmdlArguments
 
-!*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 

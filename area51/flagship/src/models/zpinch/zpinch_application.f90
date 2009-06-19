@@ -77,7 +77,6 @@ module zpinch_application
   use transport_callback2d
   use transport_callback3d
   use ucd
-  use zpinch_basic
   use zpinch_callback
 
   implicit none
@@ -110,10 +109,6 @@ contains
     
     ! Global collection which is used to pass arguments to callback routines
     type(t_collection) :: rcollectionEuler, rcollectionTransport
-
-    ! Application descriptors which hold all internal information
-    ! for the compressible Euler model and the scalar transport model
-    type(t_euler) :: rappDescrEuler
 
     ! Boundary condition structure for the primal problem
     type(t_boundaryCondition) :: rbdrCondEuler, rbdrCondTransport
@@ -165,15 +160,15 @@ contains
     call collct_init(rcollectionTransport)
 
     ! Initialize the application descriptors
-    call euler_initApplication(rparlist, ssectionNameEuler, rappDescrEuler)
+!!!    call euler_initApplication(rparlist, ssectionNameEuler, rappDescrEuler)
 !!!    call transp_initApplication(rparlist, ssectionNameTransport, rappDescrTransport)
 
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+!!!    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
 !!$    call stat_startTimer(rappDescrTransport%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Initialize the global collections
-    call euler_initCollection(rappDescrEuler, rparlist, ssectionNameEuler, rcollectionEuler)
+!!!    call euler_initCollection(rappDescrEuler, rparlist, ssectionNameEuler, rcollectionEuler)
 !!!    call transp_initCollection(rparlist, ssectionNameTransport, rcollectionTransport)
 
     ! Initialize the solver structures
@@ -190,13 +185,14 @@ contains
                             rproblem, rcollectionEuler, rcollectionTransport)
 
     ! Initialize the individual problem levels
-    call euler_initAllProblemLevels(rappDescrEuler, rproblem, rcollectionEuler)
+    call euler_initAllProblemLevels(rparlist, 'euler', rproblem, rcollectionEuler)
     call transp_initAllProblemLevels(rparlist, 'transport', rproblem, rcollectionTransport)
 
     ! Prepare internal data arrays of the solver structure for Euler model
     systemMatrix = collct_getvalue_int(rcollectionEuler, 'systemMatrix') 
-    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolverEuler,&
-                                     systemMatrix, rappDescrEuler%isystemFormat, UPDMAT_ALL)
+!!!    isystemFormat = collct_getvalue_int(rcollectionEuler, 'isystemFormat') 
+!!!    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolverEuler,&
+!!!                                     systemMatrix, isystemFormat, UPDMAT_ALL)
     call solver_updateStructure(rsolverEuler)
 
     ! Prepare internal data arrays of the solver structure for transport model
@@ -206,8 +202,8 @@ contains
     call solver_updateStructure(rsolverTransport)
     
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
-!!    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
+!!!    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
+!!!    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
 
 
     !---------------------------------------------------------------------------
@@ -219,8 +215,8 @@ contains
     ! Initialize the boundary condition for the Euler model
     call parlst_getvalue_string(rparlist, ssectionNameEuler, 'sprimalbdrcondname', sbdrcondName)
     call parlst_getvalue_string(rparlist, ssectionNameEuler, 'indatfile', sindatfileName)
-    call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
-                                    '['//trim(sbdrcondName)//']', rappDescrEuler%ndimension)
+!!$    call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
+!!$                                    '['//trim(sbdrcondName)//']', rappDescrEuler%ndimension)
 
     ! Initialize the boundary condition for the scalar transport model
     call parlst_getvalue_string(rparlist, ssectionNameTransport, 'sprimalbdrcondname', sbdrcondName)
@@ -259,7 +255,7 @@ contains
     !---------------------------------------------------------------------------
     
     ! Start time measurement for pre-processing
-    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
+!!!    call stat_startTimer(rappDescrEuler%rtimerPrepostProcess, STAT_TIMERSHORT)
     
     ! Release time-stepping
     call tstep_releaseTimestep(rtimestepEuler)
@@ -277,7 +273,7 @@ contains
     call collct_done(rcollectionEuler)
     
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
+!!!    call stat_stopTimer(rappDescrEuler%rtimerPrePostprocess)
 
     !---------------------------------------------------------------------------
 
@@ -320,7 +316,7 @@ contains
     call output_lbrk()
     call output_separator(OU_SEP_MINUS)
     call output_line('Compressible Euler model')
-    call euler_outputStatistics(rappDescrEuler, rtimerTotal)
+!!!!    call euler_outputStatistics(rappDescrEuler, rtimerTotal)
     call output_lbrk()
     call output_separator(OU_SEP_MINUS)
     call output_line('Scalar transport model')       
@@ -891,7 +887,7 @@ contains
 
     ! Initialize the solution vector and impose boundary conditions explicitly
     call euler_initSolution(rparlist, ssectionNameEuler, p_rproblemLevel,&
-                            rtimestepEuler%dinitialTime, rsolutionEuler)
+                            rtimestepEuler%dinitialTime, rsolutionEuler, rcollectionEuler)
 !!$    select case(rappDescrEuler%ndimension)
 !!$    case (NDIM1D)
 !!$      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rproblemLevel%rtriangulation,&
@@ -1044,7 +1040,7 @@ contains
 
             ! Re-generate the initial solution vectors
             call euler_initSolution(rparlist, ssectionnameEuler, p_rproblemLevel,&
-                                    rtimestepEuler%dinitialTime, rsolutionEuler)
+                                    rtimestepEuler%dinitialTime, rsolutionEuler, rcollectionEuler)
 !!!!            call transp_initSolution(rappDescrTransport, rparlist, ssectionnameTransport, p_rproblemLevel,&
 !!!!                                     rtimestepTransport%dinitialTime, rsolutionTransport)
             

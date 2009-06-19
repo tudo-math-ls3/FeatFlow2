@@ -105,13 +105,13 @@ module transport_basic
 
 !<constantblock description="Global type of initial solution">
 
-  ! zero initial solution
+  ! zero solution
   integer, parameter, public :: SOLUTION_ZERO     = 0
 
-  ! analytical initial solution
+  ! analytical solution
   integer, parameter, public :: SOLUTION_ANALYTIC = 1
 
-  ! graymap profile for initial solution
+  ! graymap profile for solution
   integer, parameter, public :: SOLUTION_GRAYMAP  = 2
 
 !</constantblock>

@@ -17,24 +17,5 @@ module zpinch_basic
   implicit none
 
   private
-  public :: t_Zpinch
-
-
-!<types>
-  
-!<typeblock>
-
-  ! This structure contains all required data to describe an instance
-  ! of the simplified magneto hydrodynamic flow benchmark application
-  type t_Zpinch
-
-    ! Application descriptor for the compressible Euler model
-    type(t_euler) :: rappDescrEuler
-    
-  end type t_Zpinch
-
-!</typeblock>
-
-!</types>
 
 end module zpinch_basic
