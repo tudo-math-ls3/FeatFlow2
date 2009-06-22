@@ -554,7 +554,8 @@ contains
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     integer :: ioutputUCD,ilevelUCD,ipolyHandle
-    integer(I32) :: ieltype,ivt,iin
+    integer(I32) :: ieltype,ivt
+    integer :: iin
     
     type(t_vectorScalar) :: vecDensity
     

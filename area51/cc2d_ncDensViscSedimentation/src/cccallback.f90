@@ -545,9 +545,9 @@ contains
     
   !</subroutine>
 
-    real(DP) :: dtime,drho1,drho2,iel,icup,dvolume,dmasssl,ddmasssl
+    real(DP) :: dtime,drho1,drho2,dvolume,dmasssl,ddmasssl
     type(t_geometryObject), pointer :: p_rgeometryObject   
-    integer :: iin
+    integer :: iin,iel,icup
          
     
     
@@ -576,8 +576,8 @@ contains
     do iel=1,nelements
       do icup=1,npointsPerElement
         call geom_isInGeometry (p_rgeometryObject, Dpoints(:,icup,iel), iin)
-        if(iin .eq. 1)then 
-          Dcoefficients(1,icup,iel) = drho2 * -980.0_dp
+        if (iin .eq. 1) then 
+          Dcoefficients(1,icup,iel) = drho2 * (-980.0_dp)
         else
           Dcoefficients(1,icup,iel) = drho1 * 9.807_dp * 0.0_dp
         end if
