@@ -53,6 +53,7 @@ module euler_callback
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use paramlist
   use problem
   use solveraux
   use statistics
@@ -140,13 +141,14 @@ contains
     end if
     
     
-!!$    ! Do we have to calculate the constant right-hand side?
-!!$    ! --------------------------------------------------------------------------
-!!$    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-!!$
-!!$      call euler_calcrhs(rproblemLevel, rtimestep, rsolver,&
-!!$                         rsolution, rvector, rcollection)
-!!$    end if
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+
+      call euler_calcRhs(rproblemLevel, rtimestep, rsolver,&
+                         rsolution, rsolutionInitial,&
+                         rrhs, istep, rcollection)
+    end if
 
 
     ! Do we have to calculate the residual
@@ -208,30 +210,40 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar, jvar
 
     ! Start time measurement for matrix evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyMatrix')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from collection which are required unconditionally
-    systemMatrix   = collct_getvalue_int(rcollection, 'systemmatrix')
-    coeffMatrix_CX = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    coeffMatrix_CZ = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CZ', coeffMatrix_CZ)
 
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
     if (rtimestep%theta .le. SYS_EPSREAL) then
       
-      isystemFormat        = collct_getvalue_int(rcollection, 'isystemformat')
-      imasstype            = collct_getvalue_int(rcollection, 'imasstype')
-      lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
-      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'isystemformat', isystemFormat)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
@@ -294,8 +306,10 @@ contains
     !         primaldual which has to be extracted from the collection.
     !---------------------------------------------------------------------------
 
-    isystemCoupling = collct_getvalue_int(rcollection, 'isystemCoupling')
-    isystemPrecond = collct_getvalue_int(rcollection, 'isystemPrecond')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'isystemCoupling', isystemCoupling)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'isystemPrecond', isystemPrecond)
 
     ! What kind of coupling is applied?
     select case(isystemCoupling)
@@ -559,8 +573,10 @@ contains
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
 
-    isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
-    imasstype     = collct_getvalue_int(rcollection, 'imasstype')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'isystemformat', isystemFormat)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'imasstype', imasstype)
 
     select case(isystemFormat)
 
@@ -576,7 +592,8 @@ contains
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
 
-        lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
 
         call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
             rproblemLevel%Rmatrix(systemMatrix),&
@@ -588,8 +605,9 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_C)-theta*dt*L $
-        
-        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
 
         call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                                      rproblemLevel%Rmatrix(systemMatrix),&
@@ -617,7 +635,8 @@ contains
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
 
-        lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
 
         do ivar = 1, euler_getNVAR(rproblemLevel)
           do jvar = 1, euler_getNVAR(rproblemLevel)
@@ -642,7 +661,8 @@ contains
         !
         !   $ A = blockdiag(M_C)-theta*dt*L $
 
-        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
 
         do ivar = 1, euler_getNVAR(rproblemLevel)
           do jvar = 1, euler_getNVAR(rproblemLevel)
@@ -694,7 +714,7 @@ contains
     call solver_updateContent(rsolver)
 
     ! Stop time measurement for global operator
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
 
   end subroutine euler_calcPreconditioner
 
@@ -774,13 +794,18 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     integer :: jacobianMatrix
 
-    jacobianMatrix = collct_getvalue_int(rcollection, 'jacobianMatrix')
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'jacobianMatrix', jacobianMatrix)
 
     ! We know where the Jacobian matrix is stored and can apply it
     ! by means of matrix vector multiplication
-    call lsysbl_blockMatVec(rproblemLevel%RmatrixBlock(jacobianMatrix), rx, ry, cx, cy)
+    call lsysbl_blockMatVec(rproblemLevel%RmatrixBlock(jacobianMatrix),&
+                            rx, ry, cx, cy)
 
   end subroutine euler_applyJacobian
 
@@ -830,7 +855,8 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
@@ -838,8 +864,8 @@ contains
 
     
     ! Start time measurement for residual/rhs evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
     ! Are we in the zeroth iteration?
     if (ite .eq. 0) then
@@ -853,10 +879,17 @@ contains
       !
       !-------------------------------------------------------------------------
       
-      coeffMatrix_CX = collct_getvalue_int(rcollection, 'coeffmatrix_cx')
-      coeffMatrix_CY = collct_getvalue_int(rcollection, 'coeffmatrix_cy')
-      coeffMatrix_CZ = collct_getvalue_int(rcollection, 'coeffmatrix_cz')
-      inviscidAFC    = collct_getvalue_int(rcollection, 'inviscidAFC')
+      ! Get parameters from parameter list which are required unconditionally
+      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cx', coeffMatrix_CX)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cy', coeffMatrix_CY)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cz', coeffMatrix_CZ)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'inviscidAFC', inviscidAFC)
 
       select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
         
@@ -889,8 +922,9 @@ contains
         ! Compute the initial low-order residual
         !
         !   $ res = dt*L(U^n)*U^n $
-
-        idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
+        
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'idissipationtype', idissipationtype)
 
         select case(idissipationtype)
 
@@ -1052,7 +1086,8 @@ contains
       ! Compute the constant right-hand side for (pseudo-)transient flows
       !-------------------------------------------------------------------------
 
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'imasstype', imasstype)
 
       select case(imasstype)
       case (MASS_LUMPED)
@@ -1060,8 +1095,10 @@ contains
         ! Compute the constant right-hand side
         !
         !   $ rhs = M_L*U^n + (1-theta)*res $
-
-        lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+        
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'lumpedmassmatrix', lumpedMassMatrix)
+        
         call lsysbl_vectorLinearComb(rres, rrhs, 1.0_DP, 0.0_DP)
         
         do iblock = 1, rsolution%nblocks
@@ -1077,7 +1114,9 @@ contains
         !
         !   $ rhs = M_C*U^n + (1-theta)*res $
 
-        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'consistentmassmatrix', consistentMassMatrix)
+
         call lsysbl_vectorLinearComb(rres, rrhs, 1.0_DP, 0.0_DP)
         
         do iblock = 1, rsolution%nblocks
@@ -1095,7 +1134,8 @@ contains
       ! updated, using the right-hand side vector from the first iteration
       !-------------------------------------------------------------------------
 
-      imasstype = collct_getvalue_int(rcollection, 'imasstype')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'imasstype', imasstype)
       
       select case(imasstype)
       case (MASS_LUMPED)
@@ -1104,7 +1144,9 @@ contains
         !
         !   $ res = rhs-M_L*U^{(m)} $
         
-        lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'lumpedmassmatrix', lumpedMassMatrix)
+
         call lsysbl_vectorLinearComb(rrhs, rres, 1.0_DP, 0.0_DP)
         
         do iblock = 1, rsolution%nblocks
@@ -1119,7 +1161,9 @@ contains
         !
         !   $ res = rhs-M_C*U^{(m)} $
         
-        consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'consistentmassmatrix', consistentMassMatrix)
+
         call lsysbl_vectorLinearComb(rrhs, rres, 1.0_DP, 0.0_DP)
         
         do iblock = 1, rsolution%nblocks
@@ -1141,10 +1185,14 @@ contains
       ! Update the residual vector
       !-------------------------------------------------------------------------
 
-      coeffMatrix_CX = collct_getvalue_int(rcollection, 'coeffmatrix_cx')
-      coeffMatrix_CY = collct_getvalue_int(rcollection, 'coeffmatrix_cy')
-      coeffMatrix_CZ = collct_getvalue_int(rcollection, 'coeffmatrix_cz')
-      inviscidAFC    = collct_getvalue_int(rcollection, 'inviscidAFC')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cx', coeffMatrix_CX)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cy', coeffMatrix_CY)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffmatrix_cz', coeffMatrix_CZ)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'inviscidAFC', inviscidAFC)
 
       select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
         
@@ -1178,7 +1226,8 @@ contains
         !
         !   $ res = res + dt*theta*L(U^{(m)})*U^(m) $
 
-        idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'idissipationtype', idissipationtype)
 
         select case(idissipationtype)
 
@@ -1340,7 +1389,10 @@ contains
       end select
 
     end if
-        
+
+    ! Stop time measurement for residual/rhs evaluation
+    call stat_stopTimer(p_rtimer)
+    
   end subroutine euler_calcResidual
 
   !*****************************************************************************
@@ -1386,7 +1438,8 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_timer), pointer :: rtimer
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
     real(DP) :: dscale
     integer :: lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
@@ -1394,20 +1447,26 @@ contains
     integer :: iblock
 
     ! Start time measurement for residual/rhs evaluation
-    rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
-    call stat_startTimer(rtimer, STAT_TIMERSHORT)
+    p_rtimer => collct_getvalue_timer(rcollection, 'timerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! Get parameters from collection which are required unconditionally
-    coeffMatrix_CX = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    coeffMatrix_CZ = collct_getvalue_int(rcollection, 'coeffMatrix_CZ')
-    inviscidAFC    = collct_getvalue_int(rcollection, 'inviscidAFC')
-
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Initialize the right-hand side vector
     !---------------------------------------------------------------------------
-    imasstype = collct_getvalue_int(rcollection, 'imasstype')
+
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1416,7 +1475,9 @@ contains
       !
       !  $ M_L*U
 
-      lumpedMassMatrix = collct_getvalue_int(rcollection, 'lumpedmassmatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
                                  rsolution%RvectorBlock(iblock),&
@@ -1429,7 +1490,9 @@ contains
       !
       !  $ M_C*U
 
-      consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentmassmatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
+
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                  rsolution%RvectorBlock(iblock),&
@@ -1447,7 +1510,8 @@ contains
     ! Compute the divergence term of the right-hand side
     !---------------------------------------------------------------------------
     
-    inviscidAFC = collct_getvalue_int(rcollection, 'inviscidAFC')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'inviscidAFC', inviscidAFC)
 
     ! Compute the scaling parameter
     !
@@ -1482,8 +1546,9 @@ contains
       ! Compute the low-order right-hand side
       !
       !   $ rhs = M*U+weight*(1-theta)*dt*L(U)*U
-      
-      idissipationtype = collct_getvalue_int(rcollection, 'idissipationtype')
+
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'idissipationtype', idissipationtype)
 
       select case(idissipationtype)
         
@@ -1576,7 +1641,7 @@ contains
     end select
 
     ! Stop time measurement for global operator
-    call stat_stopTimer(rtimer)
+    call stat_stopTimer(p_rtimer)
     
   end subroutine euler_calcRHS
 
@@ -1619,8 +1684,12 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_parlist), pointer :: p_rparlist
     integer :: imatrix, istatus
     
+
+    ! Get parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
     ! What type of nonlinear preconditioner are we?
     select case(rsolver%iprecond)
@@ -1628,11 +1697,13 @@ contains
           NLSOL_PRECOND_DEFCOR,&
           NLSOL_PRECOND_NEWTON_FAILED)
       
-      imatrix = collct_getvalue_int(rcollection, 'SystemMatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'systemmatrix', imatrix)
       
     case (NLSOL_PRECOND_NEWTON)
       
-      imatrix = collct_getvalue_int(rcollection, 'JacobianMatrix')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'jacobianmatrix', imatrix)
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
@@ -1710,6 +1781,7 @@ contains
 
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_parlist), pointer :: p_rparlist
     type(t_vectorScalar) :: rflux0, rflux, ralpha
     type(t_vectorBlock) :: rdata
     real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data, p_alpha
@@ -1717,15 +1789,21 @@ contains
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
 
-    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedMassMatrix')
-    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'templatematrix', templateMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
     
+    ! Set pointers to template matrix
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-
-    ! Set pointers
     call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
     call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
     call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)

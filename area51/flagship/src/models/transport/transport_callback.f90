@@ -456,7 +456,8 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
 
       p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'jacobianMatrix', jacobianMatrix)
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
                                rsolution%RvectorBlock(1),&
                                rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
@@ -528,17 +529,23 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_S', coeffMatrix_S)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_S', coeffMatrix_S)
     
     !---------------------------------------------------------------------------
     ! Assemble diffusion operator
     !---------------------------------------------------------------------------
     
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'idiffusiontype', idiffusiontype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'idiffusiontype', idiffusiontype)
     
     ! Primal and dual mode are equivalent
     select case(idiffusiontype)
@@ -554,7 +561,8 @@ contains
 
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -611,9 +619,12 @@ contains
     ! Assemble convective operator
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1), 'mode', smode)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
+    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1),&
+                                'mode', smode)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'convectionAFC', convectionAFC)
 
     if (convectionAFC > 0) then
 
@@ -649,7 +660,8 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
@@ -860,7 +872,8 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
         if (bbuildAFC) then
@@ -953,8 +966,10 @@ contains
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
     
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -963,7 +978,9 @@ contains
       !
       !   $ A = ML-theta*dt*L $
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'lumpedmassmatrix', lumpedMassMatrix)
+
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
@@ -975,7 +992,9 @@ contains
       !
       !   $ A = MC-theta*dt*L $
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'consistentmassmatrix', consistentMassMatrix)
+
       call lsyssc_MatrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                                    rproblemLevel%Rmatrix(transportMatrix),&
                                    -rtimestep%theta*rtimestep%dStep,&
@@ -1071,14 +1090,22 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianmatrix', jacobianMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_S', coeffMatrix_S)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'jacobianmatrix', jacobianMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_S', coeffMatrix_S)
     
     ! The Jacobian matrix for the low-order transport operator needs
     ! to be generated only in case of nonlinear governing equations.
@@ -1107,8 +1134,10 @@ contains
     ! Assemble diffusion operator
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'idiffusiontype', idiffusiontype)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'idiffusiontype', idiffusiontype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'diffusionAFC', diffusionAFC)
 
     select case(idiffusiontype)
     case (DIFFUSION_ZERO)
@@ -1137,9 +1166,12 @@ contains
     ! Assemble convection operator
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1), 'mode', smode)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
+    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1),&
+                                'mode', smode)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'convectionAFC', convectionAFC)
 
     ! Check if stabilization should be applied
     bStabilize = (AFCSTAB_GALERKIN .ne.&
@@ -1157,7 +1189,8 @@ contains
             VELOCITY_TIMEDEP) 
         ! linear velocity
         
-        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1232,7 +1265,8 @@ contains
             VELOCITY_TIMEDEP) 
         ! linear velocity
 
-        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'velocityfield', velocityfield)
+        call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                                 'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
 
         select case(rproblemLevel%rtriangulation%ndim)
@@ -1284,7 +1318,8 @@ contains
     
     
     ! Check if the Jacobian operator has extended sparsity pattern
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'ijacobianFormat', ijacobianFormat)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'ijacobianFormat', ijacobianFormat)
     if (ijacobianFormat .eq. 0) then
       bisExactStructure   = .true.
       bisExtendedSparsity = .false.
@@ -1298,7 +1333,8 @@ contains
     ! Assemble the global system operator for the high-/low-order contribution
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'imasstype', imasstype)
 
     select case(imasstype)
     case (MASS_LUMPED)
@@ -1783,9 +1819,12 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
 
 
     ! Compute the right-hand side
@@ -1803,7 +1842,8 @@ contains
     !
     !   $ rhs = rhs + f^*(u^n+1,u^n) $
 
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'convectionAFC', convectionAFC)
        
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
@@ -1842,13 +1882,15 @@ contains
     !
     !   $ rhs = rhs + g^*(u^n+1,u^n) $
 
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'diffusionAFC', diffusionAFC)
     
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
     case (AFCSTAB_SYMMETRIC)
-      call gfsc_buildResidualSymm(rsolution, 1.0_DP, rrhs, rproblemLevel%Rafcstab(diffusionAFC))
+      call gfsc_buildResidualSymm(rsolution, 1.0_DP, rrhs,&
+                                  rproblemLevel%Rafcstab(diffusionAFC))
     end select
     
     ! Stop time measurement for residual/rhs evaluation
@@ -1928,9 +1970,12 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'transportmatrix', transportMatrix)
 
     ! Are we in the zero-th iteration?
     if (ite .eq. 0) then
@@ -1940,7 +1985,8 @@ contains
       ! residual vector and the constant right-hand side vector
       !-------------------------------------------------------------------------
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'imasstype', imasstype)
       
       select case(imasstype)
       case (MASS_LUMPED)
@@ -2016,7 +2062,8 @@ contains
       !
       !   $ res^{(0)} = res^{(0)} + f(u^n,u^n) $
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'convectionAFC', convectionAFC)
 
       if (convectionAFC > 0) then
 
@@ -2058,7 +2105,8 @@ contains
       !
       !   $ res^{(0)} = res^{(0)} + g(u^n,u^n) $
       
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -2066,7 +2114,8 @@ contains
         select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
         case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
+          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres,&
+                                      rproblemLevel%Rafcstab(diffusionAFC))
         end select
       
       end if   ! diffusionAFC > 0    
@@ -2078,7 +2127,8 @@ contains
       ! updated, using the right-hand side vector from the zero-th iteration
       !-------------------------------------------------------------------------
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'imasstype', imasstype)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'imasstype', imasstype)
 
       select case(imasstype)
       case (MASS_LUMPED)
@@ -2132,7 +2182,8 @@ contains
       !
       !   $ res = res + f^*(u^(m),u^n) $
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'convectionAFC', convectionAFC)
 
       if (convectionAFC > 0) then
 
@@ -2172,7 +2223,8 @@ contains
       !
       !   $ res = res + g^*(u^n+1,u^n) $
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'diffusionAFC', diffusionAFC)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'diffusionAFC', diffusionAFC)
 
       if (diffusionAFC > 0) then
         
@@ -2180,7 +2232,8 @@ contains
         select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
         case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres, rproblemLevel%Rafcstab(diffusionAFC))
+          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres,&
+                                      rproblemLevel%Rafcstab(diffusionAFC))
         end select
       
       end if   ! diffusionAFC > 0
@@ -2237,6 +2290,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     integer :: imatrix
 
+    
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     
@@ -2245,11 +2299,13 @@ contains
           NLSOL_PRECOND_DEFCOR, &
           NLSOL_PRECOND_NEWTON_FAILED)
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'systemmatrix', imatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'systemmatrix', imatrix)
       
     case (NLSOL_PRECOND_NEWTON)
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'jacobianmatrix', imatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                               'jacobianmatrix', imatrix)
       
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
@@ -2316,12 +2372,14 @@ contains
 
     
     ! Check if the velocity "vector" needs to be generated explicitly
-    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ivelocitytype', ivelocitytype)
     if ((abs(ivelocitytype) .ne. VELOCITY_CONSTANT) .and.&
         (abs(ivelocitytype) .ne. VELOCITY_TIMEDEP)) return
 
     ! Get parameter from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName, 'velocityfield', velocityfield)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'velocityfield', velocityfield)
 
     ! Get function parser from collection
     p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
@@ -2474,15 +2532,19 @@ contains
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'templatematrix', templateMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'templatematrix', templateMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+                             'lumpedmassmatrix', lumpedMassMatrix)
 
+    ! Set pointers to template matrix
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-
-    ! Set pointers
     call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
     call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
     call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)

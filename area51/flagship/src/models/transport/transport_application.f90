@@ -583,11 +583,16 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'diffusion', sdiffusion)
-    call parlst_getvalue_string(rparlist, ssectionName, 'convection', sconvection)
-    call parlst_getvalue_string(rparlist, ssectionName, 'trifile', rproblemDescriptor%trifile)
-    call parlst_getvalue_string(rparlist, ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
-    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', rproblemDescriptor%ndimension)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'diffusion', sdiffusion)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'convection', sconvection)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'trifile', rproblemDescriptor%trifile)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'prmfile', rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ndimension', rproblemDescriptor%ndimension)
     
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1   ! one discretisation
@@ -600,7 +605,8 @@ contains
     rproblemDescriptor%nvectorBlock    = 1   ! velocity field
 
     ! Check if quadrilaterals should be converted to triangles
-    call parlst_getvalue_int(rparlist, ssectionName, 'iconvtotria', iconvToTria, 0)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'iconvtotria', iconvToTria, 0)
     if (iconvToTria .ne. 0) then
       rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                       + PROBDESC_MSPEC_CONVTRIANGLES
@@ -610,8 +616,10 @@ contains
     call problem_initProblem(rproblemDescriptor, rproblem)
     
     ! Initialize the stabilisation structure
-    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'diffusionAFC', diffusionAFC)
     
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -684,20 +692,34 @@ contains
     
     
     ! Retrieve application specific parameters from the parameter list
-    call parlst_getvalue_int(rparlist, ssectionName, 'templatematrix', templateMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'jacobianmatrix', jacobianMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_s', coeffMatrix_S)
-    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
-    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
-    call parlst_getvalue_int(rparlist, ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
-    call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
-    call parlst_getvalue_int(rparlist, ssectionName, 'celement', celement)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'templatematrix', templateMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'jacobianmatrix', jacobianMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'coeffmatrix_s', coeffMatrix_S)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'coeffmatrix_cx', coeffMatrix_CX)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'coeffmatrix_cy', coeffMatrix_CY)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'celement', celement)
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
@@ -722,6 +744,8 @@ contains
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
                                         EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
                                         p_rtriangulation, p_rboundary)
+
+        case(-2,2,12)
           ! P2=Q2 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
                                         EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
@@ -1315,8 +1339,8 @@ contains
     
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'ssolutionname', ssolutionName)
-    call parlst_getvalue_int(rparlist, ssectionName, 'isolutiontype', isolutiontype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'isolutiontype', isolutiontype)
 
     ! How should the solution be initialized?
     select case(isolutionType)
@@ -1326,6 +1350,10 @@ contains
 
 
     case (SOLUTION_ANALYTIC)
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'ssolutionname', ssolutionName)
+
       ! Set pointer to vertex coordinates
       call storage_getbase_double2D(&
           rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
@@ -1355,6 +1383,10 @@ contains
             
 
     case (SOLUTION_GRAYMAP)
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'ssolutionname', ssolutionName)
+
       ! Initialize solution from portable graymap image
       call ppsol_readPGM(0, ssolutionName, rpgm)
       
@@ -1421,8 +1453,8 @@ contains
 
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'srhsnname', srhsname)
-    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'irhstype', irhstype)
     
     ! How should the right-hand side be initialized?
     select case(irhstype)
@@ -1431,7 +1463,11 @@ contains
       call lsysbl_clearVector(rvector)
 
 
-    case (RHS_ANALYTIC)
+    case (RHS_ANALYTIC)     
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'srhsname', srhsname)
+      
       ! Get function parser from collection structure
       rfparser => collct_getvalue_pars(rcollection, 'rfparser')
       
@@ -1506,7 +1542,8 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', itargetfunctype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'itargetfunctype', itargetfunctype)
     
     ! How should the target functional be initialized?
     select case(itargetfunctype)
@@ -1516,11 +1553,14 @@ contains
 
 
     case (TFUNC_VOLINTG)
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'stargetfuncname', stargetfuncname)
+
       ! Get function parser from collection structure
       rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get the number of the component used for evaluating the target functional
-      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
       icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
@@ -1539,11 +1579,14 @@ contains
 
       
     case (TFUNC_SURFINTG)
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'stargetfuncname', stargetfuncname)
+
       ! Get function parser from collection structure
       rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get the number of the component used for evaluating the target functional
-      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
       icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
@@ -1652,9 +1695,12 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'output', soutputName)
-    call parlst_getvalue_string(rparlist, trim(soutputName), 'ucdsolution', ucdsolution)
-    call parlst_getvalue_int(rparlist, trim(soutputName), 'iformatucd', iformatUCD)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'output', soutputName)
+    call parlst_getvalue_string(rparlist, trim(soutputName),&
+                                'ucdsolution', ucdsolution)
+    call parlst_getvalue_int(rparlist, trim(soutputName),&
+                             'iformatucd', iformatUCD)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, ucdsolution,&
@@ -3273,15 +3319,15 @@ contains
       ! Reset the time-stepping algorithm
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
-
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
+      
       ! Check if right-hand side vector exists
       if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
@@ -3292,6 +3338,9 @@ contains
         call lsysbl_releaseVector(rrhs)
         
       else
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
         call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
@@ -3568,14 +3617,14 @@ contains
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! Check if right-hand side vector exists
       if (irhstype > 0) then
         call lsysbl_createVectorblock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
@@ -3587,6 +3636,9 @@ contains
 
       else
         
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                     rsolution, transp_nlsolverCallback,&
@@ -3871,14 +3923,14 @@ contains
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%SquickAccess(1) = ssectionName
-
       ! Check if right-hand side vector exists
       if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
@@ -3890,6 +3942,9 @@ contains
 
       else
         
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
         ! Solve the primal problem without right-hand side
         call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
                                     rsolutionPrimal, transp_nlsolverCallback,&
