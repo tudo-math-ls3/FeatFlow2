@@ -260,7 +260,7 @@ itargetfunctype = 0
 stargetfuncname = 
 
 # type of exact target functional type
-# 0 = no exact target functional available
+# 0 = zero target functional
 # 1 = volume integral
 # 2 = surface integral
 # 3 = analytical target functional

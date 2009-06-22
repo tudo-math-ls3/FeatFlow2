@@ -107,7 +107,7 @@ iexactsolutiontype = 0
 sexactsolutionname = @exactsol
 
 # type of target functional
-# 0 = no exact target functional available
+# 0 = zero target functional
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
