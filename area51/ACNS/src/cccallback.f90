@@ -124,7 +124,7 @@ module cccallback
   
   use feevaluation
   use ccbasic
-
+  use derivatives
 
   use AllenCahn_basic
 
@@ -274,11 +274,11 @@ contains
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -359,11 +359,11 @@ contains
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -442,7 +442,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -529,7 +529,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -620,7 +620,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -651,7 +651,7 @@ contains
     
   !</subroutine>
     real(DP) :: dtime
-	
+
     type(t_vectorBlock), pointer :: p_rvector
     integer :: i, j
     integer :: ndimSpace
@@ -660,7 +660,7 @@ contains
 ! Mcai, debug
     real(DP), dimension(:), pointer ::  p_vectordata
 
-	
+
     ! Values of the FE function at the points specified by Dpoints.
     ! DIMENSION(itermCount, npoints,nelements).
     real(DP), dimension(:,:,:), allocatable :: Dvalues_derX
@@ -785,7 +785,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -947,7 +947,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1106,7 +1106,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1262,7 +1262,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1409,7 +1409,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1556,7 +1556,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -1653,7 +1653,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -1759,7 +1759,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1860,7 +1860,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1961,7 +1961,7 @@ contains
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -2062,7 +2062,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -2159,7 +2159,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -2256,7 +2256,7 @@ contains
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(IN) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
@@ -2464,8 +2464,8 @@ contains
     ! local variables
     real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
     
@@ -2573,19 +2573,19 @@ contains
     
     ! Identifier. Either vertex number, edge number or element number,
     ! depending on cinfoNeeded.
-    integer(I32), intent(IN) :: iwhere
+    integer, intent(IN) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
     real(DP), dimension(:,:), intent(IN) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(IN) :: IverticesAtElement
     
     ! Array with numbers of points adjacent to all edges
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
+    integer, dimension(:,:), intent(IN) :: IverticesAtEdge
     
     ! Number of vertices in the triangulation
-    integer(PREC_POINTIDX), intent(IN) :: NVT
+    integer, intent(IN) :: NVT
     
     ! Output: X-coordinate
     real(DP), intent(OUT) :: dx
@@ -2596,7 +2596,7 @@ contains
       ! local variables
       real(DP) :: dm1,dm2
       integer :: i,j
-      integer(PREC_POINTIDX) :: iv1,iv2
+      integer :: iv1,iv2
     
       ! Let's see, what do we have...
       select case (cinfoNeeded)

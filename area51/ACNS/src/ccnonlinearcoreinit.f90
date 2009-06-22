@@ -444,7 +444,7 @@ contains
     integer :: isolverType,ismootherType,icoarseGridSolverType
     character(LEN=SYS_STRLEN) :: sstring,ssolverSection,ssmootherSection
     character(LEN=SYS_STRLEN) :: scoarseGridSolverSection,spreconditionerSection
-    type(t_linsolMGLevelInfo2), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     type(t_linsolNode), pointer :: p_rpreconditioner, p_rsmoother
     type(t_linsolNode), pointer :: p_rsolverNode
 
@@ -515,7 +515,7 @@ contains
           
       ! Ok, now we have to initialise all levels. First, we create a coarse
       ! grid solver and configure it.
-      call linsol_getMultigridLevel2 (p_rsolverNode,1,p_rlevelInfo)
+      call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
       
       select case (icoarseGridSolverType)
       case (0)
@@ -528,7 +528,7 @@ contains
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
         
-        call parlst_getvalue_string_direct (p_rparamList, scoarseGridSolverSection, &
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
             'spreconditionerSection', sstring, '')
         read (sstring,*) spreconditionerSection
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -614,13 +614,14 @@ contains
           
           ! Put the smoother into the level info structure as presmoother
           ! and postsmoother
-          call linsol_getMultigridLevel2 (p_rsolverNode,ilev,p_rlevelInfo)
+          call linsol_getMultigrid2Level (p_rsolverNode,ilev,p_rlevelInfo)
           p_rlevelInfo%p_rpresmoother => p_rsmoother
           p_rlevelInfo%p_rpostsmoother => p_rsmoother
           
           ! Set up the interlevel projection structure on all levels
-          p_rlevelInfo%rinterlevelProjection = &
-            rnonlinearIteration%rpreconditioner%p_rprojection
+          call linsol_initProjMultigrid2Level(p_rlevelInfo,&
+              rnonlinearIteration%RcoreEquation(ilev+&
+                rnonlinearIteration%NLMIN-1)%p_rprojection)
           
         end select
       
@@ -704,13 +705,13 @@ contains
     ! local variables
     integer :: NLMIN,NLMAX
     integer :: i
-    integer(PREC_VECIDX) :: imaxmem
+    integer :: imaxmem
     character(LEN=PARLST_MLDATA) :: ssolverName,sstring
 
     ! At first, ask the parameters in the INI/DAT file which type of 
     ! preconditioner is to be used. The data in the preconditioner structure
     ! is to be initialised appropriately!
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC2D-NONLINEAR', &
         'itypePreconditioning', &
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
     
@@ -737,19 +738,24 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'cc_initPreconditioner')
         call sys_halt()
       end if
-                                    
-      ! Initialise a standard interlevel projection structure. We
-      ! can use the same structure for all levels. Therefore it's enough
-      ! to initialise one structure using the RHS vector on the finest
-      ! level to specify the shape of the PDE-discretisation.
-      allocate(rnonlinearIteration%rpreconditioner%p_rprojection)
-      call mlprj_initProjectionVec (&
-          rnonlinearIteration%rpreconditioner%p_rprojection,rrhs)
       
-      ! Initialise the projection structure with data from the INI/DAT
-      ! files. This allows to configure prolongation/restriction.
-      call cc_getProlRest (rnonlinearIteration%rpreconditioner%p_rprojection, &
-          rproblem%rparamList,  'CC-PROLREST')
+      ! Initialise a standard interlevel projection structures.
+      do i = NLMIN+1, NLMAX
+      
+        ! Allocate the projection structure
+        allocate(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+        
+        ! Initialise the projection based on the discretisation.
+        call mlprj_initProjectionDiscr (&
+            rnonlinearIteration%RcoreEquation(i)%p_rprojection,&
+            rnonlinearIteration%RcoreEquation(i)%p_rdiscretisation)
+      
+        ! Initialise the projection structure with data from the INI/DAT
+        ! files. This allows to configure prolongation/restriction.
+        call cc_getProlRest (rnonlinearIteration%RcoreEquation(i)%p_rprojection, &
+            rproblem%RlevelInfo(i), rproblem%rparamList,  'CC-PROLREST')
+      
+      end do
       
       ! Initialise the linear solver as configured in the DAT file.
       call cc_initLinearSolver (rproblem,rnonlinearIteration,ssolverName)
@@ -765,7 +771,7 @@ contains
         ! mlprj_getTempMemoryMat to specify the discretisation structures
         ! of all equations in the PDE there.
         imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
-            rnonlinearIteration%rpreconditioner%p_rprojection,&
+            rnonlinearIteration%RcoreEquation(i)%p_rprojection,&
             rproblem%RlevelInfo(i-1)% &
               rdiscretisation%RspatialDiscr(1:rrhs%nblocks),&
             rproblem%RlevelInfo(i)% &
@@ -1192,8 +1198,10 @@ contains
       deallocate(rnonlinearIteration%rpreconditioner%p_rtempVectorSc2)
       
       ! Clean up data about the projection etc.
-      call mlprj_doneProjection(rnonlinearIteration%rpreconditioner%p_rprojection)
-      deallocate(rnonlinearIteration%rpreconditioner%p_rprojection)
+      do i = rnonlinearIteration%NLMIN+1, rnonlinearIteration%NLMAX
+        call mlprj_doneProjection(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+        deallocate(rnonlinearIteration%RcoreEquation(i)%p_rprojection)
+      end do
 
       ! Clean up the linear solver, release all memory, remove the solver node
       ! from memory.
@@ -1215,7 +1223,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_getProlRest (rprojection, rparamList, sname)
+  subroutine cc_getProlRest (rprojection, rlevelInfo, rparamList, sname)
   
 !<description>
   ! Initialises an existing interlevel projection structure rprojection
@@ -1224,6 +1232,9 @@ contains
 !</description>
 
 !<input>
+  ! The level info structure of the current level.
+  type(t_problem_lvl), intent(IN) :: rlevelInfo
+  
   ! Parameter list that contains the parameters from the INI/DAT file(s).
   type(t_parlist), intent(IN) :: rparamList
   

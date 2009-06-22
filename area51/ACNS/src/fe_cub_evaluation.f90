@@ -1,6 +1,13 @@
 module fe_cub_evaluation
 
+  use fsystem
+  use storage
+  use genoutput
   use cubature
+  use basicgeometry
+  use element
+  use derivatives
+  use transformation
   use triangulation
   use linearalgebra
   use linearsystemscalar
@@ -11,6 +18,7 @@ module fe_cub_evaluation
   use elementpreprocessing
   use feevaluation
   use collection
+  use dofmapping
 
   IMPLICIT NONE
 
@@ -103,7 +111,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -131,10 +139,10 @@ contains
     type(t_evalElementSet) :: revalElementSet
     
     ! An allocateable array accepting the DOF's of a set of elements.
-    integer(PREC_DOFIDX), dimension(:,:), allocatable, target :: IdofsTrial
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! type of transformation from the reference to the real element 
-    integer :: ctrafotype
+    integer(I32) :: ctrafotype
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -422,7 +430,8 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
-  integer :: iel,ipoint,ibas,ieltyp
+  integer :: iel,ipoint,ibas
+  integer(I32) :: ieltyp
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   integer, dimension(:,:), pointer :: p_IdofsTrial

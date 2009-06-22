@@ -44,6 +44,9 @@
 !</constantblock>
 
 !</constants>
+
+contains
+
 !<subroutine>
 
   subroutine fun_integral2d_conf (rvectorScalar,cerrortype,derror,&
@@ -366,15 +369,15 @@
 ! An example to call the above subroutine
 !
 !
-call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
-                         ffunction_TargetX,rproblem%rcollection)
+!call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
+!                         ffunction_TargetX,rproblem%rcollection)
 
 ! where ffunction_TargetX is defined as follows, we also give some modifications.
 ! ffunction_TargetX -------> fun2d_Target
 
 ! Actually, we call 
-call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
-                         fun2d_Target, rproblem%rcollection)
+!call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
+!                         fun2d_Target, rproblem%rcollection)
 
 
 ! We need use rcollection to get rACvector, and use rACvector to evaluate
@@ -479,8 +482,8 @@ call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
     rInnervector=>rcollection%Dquickaccess1
     if (cderivative .EQ. DER_FUNC) then
        write(*,*)'we need to specify Dvalues(npointsPerElement,nelements), & 
-       where it corresponds to the values of the (analytical) function &
-       in all the points specified in Dpoints, '
+       & where it corresponds to the values of the (analytical) function &
+       &in all the points specified in Dpoints, '
     end if 
 
  
@@ -492,4 +495,5 @@ call pperr_scalar (zeroVectorScalar,PPERR_L1ERROR,Derr(1),&
   end subroutine
 
   ! ***************************************************************************
-  
+
+end module  
