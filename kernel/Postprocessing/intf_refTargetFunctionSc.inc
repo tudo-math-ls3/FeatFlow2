@@ -7,9 +7,9 @@
   
   !<subroutine>
 
-    subroutine ftargetFuncReference (cfunction, rdiscretisation, nelements,&
-                                     npointsPerElement, Dpoints, IdofsTest,&
-                                     rdomainIntSubset,  Dvalues, rcollection)
+    subroutine ffunctionReference (cderivative, rdiscretisation, nelements,&
+                                   npointsPerElement, Dpoints, IdofsTest,&
+                                   rdomainIntSubset,  Dvalues, rcollection)
     
     use fsystem
     use basicgeometry
@@ -32,9 +32,11 @@
   !</description>
     
   !<input>
-    ! Specifies which function is to be evaluated
-    integer, intent(IN) :: cfunction
-  
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(IN) :: cderivative
+      
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
@@ -77,7 +79,7 @@
     
   !</subroutine>
   
-    end subroutine
+    end subroutine ffunctionReference
 
   end interface
 
@@ -87,7 +89,7 @@
   
   !<subroutine>
 
-    subroutine fweightingFunc (cfunction, rdiscretisation, nelements,&
+    subroutine fweightingFunc (rdiscretisation, nelements,&
                                npointsPerElement, Dpoints, IdofsTest,&
                                rdomainIntSubset,  Dvalues, rcollection)
     
@@ -111,10 +113,7 @@
     ! simultaneously for all these points.
   !</description>
     
-  !<input>
-    ! Specifies which function is to be evaluated
-    integer, intent(IN) :: cfunction
-  
+  !<input> 
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
@@ -157,6 +156,6 @@
     
   !</subroutine>
   
-    end subroutine
+    end subroutine fweightingFunc
 
   end interface
