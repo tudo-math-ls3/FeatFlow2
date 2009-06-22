@@ -99,7 +99,7 @@ contains
   
   ! 1D cubature formula to use for line integration.
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -198,7 +198,7 @@ contains
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -965,7 +965,7 @@ contains
   
   ! 2D cubature formula to use for quadrilateral integration
   ! Standard = CUB_G2_2D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -1674,7 +1674,7 @@ contains
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -2285,7 +2285,7 @@ contains
   
   ! 1D cubature formula to use for line integration.
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -2374,7 +2374,7 @@ contains
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -2963,7 +2963,7 @@ contains
   
   ! 2D cubature formula to use for quadrilateral integration
   ! Standard = CUB_G2_2D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu
@@ -3337,7 +3337,7 @@ contains
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
   real(DP), intent(IN) :: dnu

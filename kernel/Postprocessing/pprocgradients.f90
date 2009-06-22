@@ -267,8 +267,8 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_blockDiscretisation) :: rdiscrBlock,rdiscrBlockRef
     type(t_vectorBlock) :: rgradient,rgradientRef
-    integer :: imethod,isubmethod,idim,ccub,i
-    integer(I32) :: celement
+    integer :: imethod,isubmethod,idim,i
+    integer(I32) :: celement,ccub
 
     ! Some basic checks:
     

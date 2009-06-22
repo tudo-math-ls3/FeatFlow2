@@ -119,7 +119,7 @@ contains
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer, intent(IN)                 :: ccub
+  integer(I32), intent(IN)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
@@ -214,7 +214,7 @@ contains
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer, intent(IN)                 :: ccub
+  integer(I32), intent(IN)           :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
@@ -764,7 +764,7 @@ contains
   
   ! 2D Cubature formula identifier to use for the volume integration.
   ! One of the CUB_xxxx constants in the cubature.f90.
-  integer, intent(IN)                 :: ccub
+  integer(I32), intent(IN)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
@@ -1244,7 +1244,7 @@ contains
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer, intent(IN)                 :: ccub
+  integer(I32), intent(IN)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
@@ -1892,7 +1892,7 @@ contains
   
   ! 2D Cubature formula identifier to use for the quad integration.
   ! One of the CUB_xxxx constants in the cubature.f90.
-  integer, intent(IN)                 :: ccub
+  integer(I32), intent(IN)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.

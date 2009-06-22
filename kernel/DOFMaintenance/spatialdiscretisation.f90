@@ -121,10 +121,10 @@ module spatialdiscretisation
 !<constantblock description="Additional constants for cubature formulas">
 
   ! Automatically determine cubature formula for a discretisation.
-  integer, parameter, public :: SPDISC_CUB_AUTOMATIC = 0
+  integer(I32), parameter, public :: SPDISC_CUB_AUTOMATIC = 0
 
   ! Cubature formula stays unchanged.
-  integer, parameter, public :: SPDISC_CUB_NOCHANGE  = -1
+  integer(I32), parameter, public :: SPDISC_CUB_NOCHANGE  = -1
 
 !</constantblock>
 
@@ -155,16 +155,16 @@ module spatialdiscretisation
     ! Note: When evaluating bilinear forms, the ccubTypeBilForm
     ! constant of the test space decides about the cubature formula
     ! to be used!
-    integer :: ccubTypeBilForm      = 0
+    integer(I32) :: ccubTypeBilForm      = 0
     
     ! Cubature formula to use for the discretisation of this element pair
     ! during the evaluation of linear forms (RHS generation).
-    integer :: ccubTypeLinForm      = 0
+    integer(I32) :: ccubTypeLinForm      = 0
 
     ! Cubature formula to use for the evaluation of integrals over an FE
     ! function. This is used e.g. in postprocessing routines to calculate
     ! an integral to get an error to a reference solution.
-    integer :: ccubTypeEval         = 0
+    integer(I32) :: ccubTypeEval         = 0
     
     ! Type of transformation to use from the reference element to
     ! the real element. One of the TRAFO_IDxxxx constants of the module 
@@ -375,7 +375,7 @@ contains
 
 !<input>
   ! The cubature formula to be tested
-  integer, intent(IN)                       :: ccubType
+  integer(I32), intent(IN)                       :: ccubType
   
   ! The element type the cubature formula should be checked against
   integer(I32), intent(IN)                       :: celement
@@ -457,7 +457,7 @@ contains
   
 !<function>
 
-  integer function spdiscr_getLumpCubature (celement) result (ccubType)
+  integer(I32) function spdiscr_getLumpCubature (celement) result (ccubType)
   
 !<description>
   ! This routine tries to determine a cubature formula identifier according
@@ -574,7 +574,7 @@ contains
   
 !<function>
 
-  integer function spdiscr_getStdCubature (celement) result (ccubType)
+  integer(I32) function spdiscr_getStdCubature (celement) result (ccubType)
   
 !<description>
   ! This routine returns a standard cubature formula for an element which
@@ -958,7 +958,7 @@ contains
   ! Cubature formula CUB_xxxx to use for calculating integrals.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
   type(t_triangulation), intent(IN), target :: rtriangulation
@@ -978,7 +978,7 @@ contains
   integer :: i
   integer, dimension(:), pointer :: p_Iarray
   type(t_elementDistribution), pointer :: p_relementDistr
-  integer :: ccub
+  integer(I32) :: ccub
 
   ! Automatically determine cubature formula if necessary  
   ccub = ccubType
@@ -1078,13 +1078,13 @@ contains
   ! on triangular elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN) :: ccubTypeTri
+  integer(I32), intent(IN) :: ccubTypeTri
 
   ! Cubature formula CUB_xxxx to use for calculating integrals on 
   ! quadrilateral elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN) :: ccubTypeQuad
+  integer(I32), intent(IN) :: ccubTypeQuad
   
   ! The triangulation structure underlying to the discretisation.
   type(t_triangulation), intent(IN), target :: rtriangulation
@@ -1106,7 +1106,7 @@ contains
   integer, dimension(:), pointer :: p_Iarray,p_IelementCounter
   type(t_elementDistribution), pointer :: p_relementDistrTria,p_relementDistrQuad
   integer, dimension(:,:), pointer :: p_IverticesAtElement
-  integer :: ccubTri,ccubQuad
+  integer(I32) :: ccubTri,ccubQuad
   
   ! Automatically determine cubature formula if necessary  
   ccubTri = ccubTypeTri
@@ -1303,7 +1303,7 @@ contains
   ! automatically determine cubature formula.
   ! A value SPDISC_CUB_NOCHANGE means:
   ! take the cubature formula from the source discretisation.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
 !</input>
   
 !<output>
@@ -1318,7 +1318,7 @@ contains
   ! local variables
   ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
   ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
-  integer :: ccub
+  integer(I32) :: ccub
 
   ! Automatically determine cubature formula if necessary  
   ccub = ccubType
@@ -1430,13 +1430,13 @@ contains
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN) :: ccubTypeTri
+  integer(I32), intent(IN) :: ccubTypeTri
 
   ! Cubature formula to use for calculating integrals on quad
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer, intent(IN) :: ccubTypeQuad
+  integer(I32), intent(IN) :: ccubTypeQuad
 !</input>
   
 !<output>
@@ -1451,7 +1451,8 @@ contains
     ! local variables
     ! INTEGER(I32), DIMENSION(:), POINTER :: p_Iarray
     ! TYPE(t_elementDistribution), POINTER :: p_relementDistr
-    integer :: ccubTri,ccubQuad,idistr,nve
+    integer(I32) :: ccubTri,ccubQuad
+    integer :: idistr,nve
 
     ! Automatically determine cubature formula if necessary  
     ccubTri = ccubTypeTri
@@ -1861,9 +1862,9 @@ contains
      call output_line ('ElementDistribution:')
      call output_line ('--------------------')
      call output_line ('ielement:        '//trim(sys_siL(int(relementDistr%celement),15)))
-     call output_line ('ccubTypeBilForm: '//trim(sys_siL(relementDistr%ccubTypeBilForm,15)))
-     call output_line ('ccubTypeLinForm: '//trim(sys_siL(relementDistr%ccubTypeLinForm,15)))
-     call output_line ('ccubTypeEval:    '//trim(sys_siL(relementDistr%ccubTypeEval,15)))
+     call output_line ('ccubTypeBilForm: '//trim(sys_siL(int(relementDistr%ccubTypeBilForm),15)))
+     call output_line ('ccubTypeLinForm: '//trim(sys_siL(int(relementDistr%ccubTypeLinForm),15)))
+     call output_line ('ccubTypeEval:    '//trim(sys_siL(int(relementDistr%ccubTypeEval),15)))
      call output_line ('ctrafoType:      '//trim(sys_siL(int(relementDistr%ctrafoType),15)))
      call output_line ('NEL:             '//trim(sys_siL(relementDistr%NEL,15)))
      call output_line ('h_IelementList:  '//trim(sys_siL(relementDistr%h_IelementList,15)))

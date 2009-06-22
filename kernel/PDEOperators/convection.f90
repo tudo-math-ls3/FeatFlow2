@@ -322,7 +322,7 @@ module convection
     ! Line integral cubature formula for discretising the Jump.
     ! One of the CUB_xxxx_1D-constants of the cubature.f90 module.
     ! Standard is Gauss 2-point formula.
-    integer               :: ccubType = CUB_G2_1D
+    integer(I32)          :: ccubType = CUB_G2_1D
   
     ! Type of Jump stabilisation.
     ! One of the CONV_JUMP_xxxx-constants. Standard is unified edge

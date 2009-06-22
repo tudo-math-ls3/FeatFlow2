@@ -392,7 +392,8 @@ contains
     integer :: IEL, IELmax, IELset
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(dp), dimension(:), pointer :: p_Ddata
-    integer :: h_Dweight, ccub, idof
+    integer :: h_Dweight, idof
+    integer(I32) :: ccub
     real(dp), dimension(:), pointer :: p_Dweight
     integer :: iactualorder
     

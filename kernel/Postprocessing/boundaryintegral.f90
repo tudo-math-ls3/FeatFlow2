@@ -74,7 +74,7 @@ contains
   type(t_triangulation), intent(IN) :: rtriangulation
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -158,7 +158,7 @@ contains
   type(t_triangulation), intent(IN) :: rtriangulation
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN)                      :: ccubType
+  integer(I32), intent(IN)                     :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
@@ -451,7 +451,7 @@ contains
   type(t_vectorScalar), intent(IN) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
@@ -595,7 +595,7 @@ contains
   type(t_vectorScalar), intent(IN) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over

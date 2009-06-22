@@ -244,8 +244,8 @@ contains
   real(DP), dimension(:), pointer :: p_DerrL2, p_DerrH1, p_DerrL1
   
   ! Some other local variables
-  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,ccubature,iel,ider
-  integer(I32) :: ctrafoType
+  integer :: i,j,k,NEL,ieldist,ndofs,ncubp,iel,ider
+  integer(I32) :: ctrafoType,ccubature
   integer :: NELtodo,NELdone,NELbatchSize
   integer(I32) :: cevalTag, celement
   real(DP) :: derrL2, derrH1, derrL1, dom, daux, daux2
@@ -2594,7 +2594,7 @@ contains
   integer, intent(IN) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
@@ -2705,7 +2705,7 @@ contains
   integer, intent(IN) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
+  integer(I32), intent(IN) :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
