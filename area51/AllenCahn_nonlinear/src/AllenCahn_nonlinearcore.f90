@@ -127,6 +127,7 @@ module AllenCahn_nonlinearcore
   use statistics
   use collection
   use convection
+  use linearsystemblock
   
   use AllenCahn_matvec
   use AllenCahn_callback
@@ -1184,7 +1185,7 @@ contains
         ! The other MAX-norms have to be calculated from U...
         
         Cnorms(:) = LINALG_NORMMAX
-        Dresiduals(:) = lsysbl_vectorNormBlock (rx,Cnorms)
+        call lsysbl_vectorNormBlock (rx,Cnorms,Dresiduals)
 
         dtmp = abs(Dresiduals(1))
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
@@ -1281,19 +1282,19 @@ contains
 
     ! RESF := abs ( ||F1||_E)
 
-    DresTmp = lsysbl_vectorNormBlock (rrhs,Cnorms)
+    call lsysbl_vectorNormBlock (rrhs,Cnorms,DresTmp)
     dresF = abs(DresTmp(1))
     
     if (dresF .lt. 1.0E-8_DP) dresF = 1.0_DP
 
     ! RESU = || D1 ||
 
-    DresTmp = lsysbl_vectorNormBlock (rdefect,Cnorms)
+    call lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
     Dresiduals(1) = abs(DresTmp(1))/dresF
 
     ! DNORMU = || U1 ||_l2 
 
-    DresTmp = lsysbl_vectorNormBlock (rvector,Cnorms)
+    call lsysbl_vectorNormBlock (rvector,Cnorms,DresTmp)
     dnormU = abs(DresTmp(1))
     if (dnormU .lt. 1.0E-8_DP) dnormU = 1.0_DP
 
@@ -1589,7 +1590,7 @@ contains
       ! Calculate the max-norm of the correction vector.
       ! This is used for the stopping criterium in AC_resNormCheck!
       Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      call lsysbl_vectorNormBlock(rd,Cnorms,rnonlinearIteration%DresidualCorr)
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not

@@ -20,6 +20,10 @@ MODULE AllenCahn_basic
   use spatialdiscretisation
   use sortstrategy
   use timestepping
+  use discretebc
+  use linearsystemblock
+  use multilevelprojection
+  use filtersupport
   
   use collection
   use paramlist

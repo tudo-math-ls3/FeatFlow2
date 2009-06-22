@@ -29,6 +29,11 @@ module ccbasic
   use nonlinearsolver
   use paramlist
   use timestepping
+  use discretebc
+  use discretefbc
+  use linearsystemscalar
+  use linearsystemblock
+  use multilevelprojection
   
   use collection
   
@@ -117,6 +122,9 @@ module ccbasic
     ! Precomputed matrix for edge stabilisation. Only active if
     ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
     type(t_matrixScalar) :: rmatrixStabil
+    
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
     
   end type
   

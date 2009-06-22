@@ -188,7 +188,7 @@ CONTAINS
 
     ! First, p_rrhs is to save RHS for core equation
     p_rrhs => rACproblem%rrhs
-    call lsysbl_assignDiscretIndirect(rACproblem%rrhs, p_rrhs)
+    call lsysbl_assignDiscrIndirect(rACproblem%rrhs, p_rrhs)
 
     ! Create a temporary vector we need for some preparations.
     call lsysbl_createVecBlockIndirect (p_rrhs, rtempBlock, .FALSE.)

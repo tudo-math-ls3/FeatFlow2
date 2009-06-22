@@ -270,7 +270,7 @@ contains
 
     ! Add space for level information in the collection
     do i=1,rACproblem%NLMAX
-      call collct_addlevel_all (rACproblem%rcollection)
+      call collct_addlevel (rACproblem%rcollection)
     end do
     
     ! Allocate memory for the level information
@@ -324,7 +324,7 @@ contains
 
 ! An alternative way to set initial solution
     ! Use the discretisation to create the rACvector
-   call lsyssc_getbaseVector_double(rACvector%rvectorBlock(1), p_vectordata)
+   call lsyssc_getbase_double(rACvector%rvectorBlock(1), p_vectordata)
    call storage_getbase_double2D(rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
      do i=1,rACproblem%RlevelInfo(rACproblem%NLMAX)%rtriangulation%NVT

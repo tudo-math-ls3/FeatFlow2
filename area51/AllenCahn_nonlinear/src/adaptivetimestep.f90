@@ -36,6 +36,7 @@ module adaptivetimestep
 
   use fsystem
   use paramlist
+  use genoutput
   use timestepping
     
   implicit none
@@ -447,7 +448,7 @@ contains
     if (radTimeStepping%ctype .eq. TADTS_FIXED) return
     
     ! Check if we can use time analysis...
-    if (iand(isolverStatus,3) .ne. 0) then
+    if (iand(isolverStatus,3_I32) .ne. 0) then
     
       ! A critical solver component broke down, we cannot do time analysis.
       ! we really don't have much information in this case.

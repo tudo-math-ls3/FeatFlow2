@@ -63,6 +63,7 @@ module ccgeneraldiscretisation
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use element
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -72,6 +73,7 @@ module ccgeneraldiscretisation
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use scalarpde
   use stdoperators
   
   use collection
@@ -108,7 +110,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: I,j,k,ielementType,icubA,icubB,icubF, icubM, iElementTypeStabil
+  integer :: I,j,k,ielementType,iElementTypeStabil,icubtemp
+  integer(I32) :: icubA,icubB,icubF, icubM
   character(LEN=SYS_NAMELEN) :: sstr
   
     ! An object for saving the domain:
@@ -130,8 +133,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,CUB_G2X2)
+                                'icubStokes',icubtemp,icubtemp)
+      icubA = icubtemp                       
     else
       icubA = cub_igetID(sstr)
     end if
@@ -139,8 +144,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2X2)
+                                'icubB',icubtemp,icubtemp)
+      icubB = icubtemp
     else
       icubB = cub_igetID(sstr)
     end if
@@ -148,8 +155,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,CUB_G2X2)
+                                'icubF',icubtemp,icubtemp)
+      icubF = icubtemp
     else
       icubF = cub_igetID(sstr)
     end if
@@ -213,10 +222,12 @@ contains
           rproblem%RlevelInfo(i)%rdiscretisationMassPressure
       
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'scubStokes',sstr,'')
+                                  'scubMass',sstr,'')
       if (sstr .eq. '') then
+        icubtemp = CUB_G2X2
         call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubStokes',icubM,CUB_G2X2)
+                                  'icubM',icubtemp,icubtemp)
+        icubM = icubtemp
       else
         icubM = cub_igetID(sstr)
       end if
@@ -228,14 +239,14 @@ contains
       end do
 
       ! Should we do mass lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                      'IMASS', j, 0)
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                'IMASS', j, 0)
                                       
       if (j .eq. 0) then
       
         ! How to do lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
-                                        'IMASSLUMPTYPE', j, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                                  'IMASSLUMPTYPE', j, 0)
                                         
         ! Set cubature formula for lumping. The constant from the DAT file corresponds
         ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
@@ -301,13 +312,13 @@ contains
   type(t_triangulation), intent(in), target :: rtriangulation
   
   ! Cubature formula for the velocity matrices
-  integer, intent(in) :: icubA
+  integer(I32), intent(in) :: icubA
   
   ! Cubature formula for the gradient/divergence matrices
-  integer, intent(in) :: icubB
+  integer(I32), intent(in) :: icubB
   
   ! Cubature formula for linear forms (RHS vectors)
-  integer, intent(in) :: icubF
+  integer(I32), intent(in) :: icubF
 !</input>
 
 !<output>
@@ -322,7 +333,7 @@ contains
   integer, parameter :: nequations = 3
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP
+  integer(I32) :: ieltypeUV, ieltypeP
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -444,7 +455,7 @@ contains
   integer, parameter :: nequations = 3
   
   ! local variables
-  integer :: ieltypeUV, ieltypeP
+  integer(I32) :: ieltypeUV, ieltypeP
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
@@ -577,7 +588,7 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
@@ -777,7 +788,7 @@ contains
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
@@ -954,9 +965,9 @@ contains
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
-    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMass,&
         rlevelInfo%rdiscretisationMass)
-    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMassPressure,&
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMassPressure,&
         rlevelInfo%rdiscretisationMassPressure)
 
     ! Call the standard matrix setup routine to build the matrix.                    
@@ -964,13 +975,13 @@ contains
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
     ! Should we do mass lumping?
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                     'IMASS', j, 0)
                                     
     if (j .eq. 0) then
     
       ! How to do lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                       'IMASSLUMPTYPE', j, 0)
                                       
       ! Lump the mass matrix. The constant from the DAT file corresponds
@@ -1214,12 +1225,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: istart,ctypeInitialSolution
+    integer :: istart,ctypeInitialSolution
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
     integer :: ilev,ierror
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
@@ -1502,12 +1513,12 @@ contains
 !</subroutine>
 
     ! local variables
-    integer(I32) :: idestLevel
+    integer :: idestLevel
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
 
