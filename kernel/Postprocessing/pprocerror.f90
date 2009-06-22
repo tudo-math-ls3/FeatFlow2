@@ -43,7 +43,7 @@
 !#
 !# 7.) pperr_scalarTargetFunc
 !#     -> Calculate the target functional for a FE function:
-!#   $$ int_\Omega w(x)u(x) - w(x)u_h(x) dx $$
+!#   $$ int_\Omega w(x)[u(x) - u_h(x)] dx $$
 !#        where w(x) is a weighting function
 !#
 !# </purpose>
@@ -4263,7 +4263,7 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarTargetFunc (rvectorScalar, derror, ftargetFuncReference,&
-                                     rcollection, rdiscretisation, rerror)
+                                     fweightingFunc, rcollection, rdiscretisation, rerror)
 
 !<description>
 
@@ -4272,7 +4272,7 @@ contains
   ! a given analytical callback function ftargetFuncReference using
   ! the weighting function ftargetFuncWeight.
   !
-  ! $$ \int_\Omega w(x)*( u(x)-u_h(x) ) dx $$
+  ! $$ \int_\Omega w(x)*[ u(x)-u_h(x) ] dx $$
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the
@@ -4289,6 +4289,7 @@ contains
   !           assumed to be zero!
   include 'intf_refTargetFunctionSc.inc'
   optional :: ftargetFuncReference
+  optional :: fweightingFunc
   
   ! OPTIONAL: A collection structure. This structure is given to the
   !           callback function to provide additional information.
@@ -4347,8 +4348,8 @@ contains
       select case(rvectorScalar%cdataType)
         
       case (ST_DOUBLE)
-        call scalarTargetFunc_conf(rvectorScalar, derror,&
-                                   p_rdiscretisation, ftargetFuncReference,&
+        call scalarTargetFunc_conf(rvectorScalar, derror, p_rdiscretisation,&
+                                   ftargetFuncReference, fweightingFunc,&
                                    rcollection, rerror)
 
       case DEFAULT
@@ -4369,8 +4370,8 @@ contains
 
     !**************************************************************
 
-    subroutine scalarTargetFunc_conf(rvectorScalar, derror,&
-                                     rdiscretisation, ftargetFuncReference,&
+    subroutine scalarTargetFunc_conf(rvectorScalar, derror, rdiscretisation,&
+                                     ftargetFuncReference, fweightingFunc,&
                                      rcollection, rerror)
 
       type(t_vectorScalar), intent(IN), target :: rvectorScalar
@@ -4381,6 +4382,7 @@ contains
 
       include 'intf_refTargetFunctionSc.inc'
       optional :: ftargetFuncReference
+      optional :: fweightingFunc
 
       ! local variables
       integer :: icurrentElementDistr, ICUBP, NVE
@@ -4583,7 +4585,12 @@ contains
                                       revalElementSet%p_DpointsReal,&
                                       IdofsTrial, rintSubset, &
                                       Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
 
+          
+          if (present(fweightingFunc)) then
             ! Calculate the values of the weighting function in the
             ! cubature points: w(x).
             ! Save the result to Dcoefficients(:,:,3)
@@ -4593,13 +4600,12 @@ contains
                                       IdofsTrial, rintSubset, &
                                       Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
           else
-            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
             Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
           end if
 
           ! Subtract Dcoefficients(:,:,2) from Dcoefficients(:,:,1)
           ! and multiply the result by Dcoefficients(:,:,3) to obtain
-          ! "w*(u_h-u) (cubature pt.)"!
+          ! "w*[u_h-u] (cubature pt.)"!
 
           if (present(rerror)) then
             
