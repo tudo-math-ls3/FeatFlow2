@@ -669,8 +669,12 @@ module triangulation
   integer(I32), parameter, public :: TR_SHARE_EXTENDEDRAW            = &
             TR_SHARE_IELEMENTSATVERTEX + TR_SHARE_INEIGHBOURSATELEMENT + &
             TR_SHARE_IEDGESATELEMENT + TR_SHARE_IFACESATELEMENT
+  
   ! Share everything
   integer(I32), parameter, public :: TR_SHARE_ALL = not(0_I32)
+
+  ! Share nothing
+  integer(I32), parameter, public :: TR_SHARE_NONE = 0_I32
 
 !</constantblock>
 
