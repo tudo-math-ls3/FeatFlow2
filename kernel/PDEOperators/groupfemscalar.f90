@@ -1791,7 +1791,7 @@ contains
         ii = Kld(i)
 
         ! Compute coefficient
-        C_ij(1) = Cx(ij)
+        C_ij(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
         call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
@@ -2148,7 +2148,7 @@ contains
         ii = Kdiagonal(i)
 
         ! Compute coefficient
-        C_ij(1) = Cx(ij)
+        C_ij(1) = Cx(ii)
 
         ! Compute convection coefficients for diagonal
         call fcb_calcMatrix(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
