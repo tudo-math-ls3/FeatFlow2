@@ -401,7 +401,7 @@ contains
   
 !<input>
   ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(IN), target :: rsolution
 !</input>
 
 !<inputoutput>
@@ -469,7 +469,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieltype
+    integer(I32) :: ieltype
     type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
     
@@ -566,7 +566,8 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ieltype,ilevelUCD,ipolyHandle
+    integer :: ioutputUCD,ilevelUCD,ipolyHandle
+    integer(I32) :: ieltype
     
     character(SYS_STRLEN) :: sfile,sfilename
     
@@ -839,7 +840,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
     
@@ -1574,7 +1575,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -1618,7 +1619,7 @@ contains
     
   
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.
@@ -1955,7 +1956,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -1999,7 +2000,7 @@ contains
     
   
     ! Type of transformation from the reference to the real element 
-    integer :: ctrafoType
+    integer(I32) :: ctrafoType
     
     ! Element evaluation tag; collects some information necessary for evaluating
     ! the elements.

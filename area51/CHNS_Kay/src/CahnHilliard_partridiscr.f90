@@ -44,6 +44,7 @@ module CahnHilliard_partridiscr
   use ucd
   use timestepping
   use genoutput
+  use element
   
   use collection
   use paramlist
@@ -83,7 +84,7 @@ CONTAINS
   real(DP), dimension(:), pointer ::  p_vectordata
   real(DP), dimension(:), pointer ::  p_data
 
-    call lsyssc_getbaseVector_double(rCHvector%rvectorBlock(1), p_vectordata)
+    call lsyssc_getbase_double(rCHvector%rvectorBlock(1), p_vectordata)
     call storage_getbase_double2D(rCHproblem%RlevelInfo(&
              rCHproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
@@ -92,7 +93,7 @@ CONTAINS
     end do
 
     ! for initial solution of chemical potential
-	call lsyssc_getbaseVector_double(rCHvector%rvectorBlock(2), p_vectordata)
+	call lsyssc_getbase_double(rCHvector%rvectorBlock(2), p_vectordata)
     call storage_getbase_double2D(rCHproblem%RlevelInfo(&
              rCHproblem%NLMAX)%rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
@@ -206,8 +207,9 @@ CONTAINS
     ! p_rdiscretisation(2)=p_rdiscretisation_chemPoten
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationLaplace, p_rdiscretisationMass
 	character(LEN=SYS_NAMELEN) :: sstr
-    integer :: i, k, ielementType,icubA,icubB,icubF
-    integer ::  ieltype_A, ieltype_B
+    integer :: i, k, ielementType,icubtemp
+    integer(i32) :: icubA,icubB,icubF
+    integer(i32) ::  ieltype_A, ieltype_B
 
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
@@ -219,8 +221,10 @@ CONTAINS
     call parlst_getvalue_string (rCHproblem%rparamList,'CH-DISCRETISATION',&
                                  'scubA',sstr,'')
     if (sstr .eq. '') then
+    	icubtemp = CUB_G2X2
       call parlst_getvalue_int (rCHproblem%rparamList,'CH-DISCRETISATION',&
-                              'icubA',icubA,CUB_G2X2)
+                              'icubA',icubtemp,icubtemp)
+      icubA = icubtemp
     else
       icubA = cub_igetID(sstr)
     end if
@@ -228,8 +232,10 @@ CONTAINS
     call parlst_getvalue_string (rCHproblem%rparamList,'CH-DISCRETISATION',&
                               'scubB',sstr,'')
     if (sstr .eq. '') then
+    	icubtemp = CUB_G2X2
       call parlst_getvalue_int (rCHproblem%rparamList,'CH-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2X2)
+                                'icubB',icubtemp,icubtemp)
+      icubB = icubtemp
     else
       icubB = cub_igetID(sstr)
     end if
@@ -237,8 +243,10 @@ CONTAINS
     call parlst_getvalue_string (rCHproblem%rparamList,'CH-DISCRETISATION',&
                                'scubF',sstr,'')
     if (sstr .eq. '') then
+    	icubtemp = CUB_G2X2
       call parlst_getvalue_int (rCHproblem%rparamList,'CH-DISCRETISATION',&
-                              'icubF',icubF,CUB_G2X2)
+                              'icubF',icubtemp,icubtemp)
+      icubF = icubtemp
     else
       icubF = cub_igetID(sstr)
     end if
@@ -308,7 +316,7 @@ CONTAINS
       ! Manually set the cubature formula for the RHS as the above routine
       ! uses the same for matrix and vectors.
       p_rdiscretisation%RspatialDiscr(2)% &
-        RelementDistr(2)%ccubTypeLinForm = icubF
+        RelementDistr(1)%ccubTypeLinForm = icubF
 
       ! Save the discretisation structure to our local LevelInfo structure
       ! for later use.

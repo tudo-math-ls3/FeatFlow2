@@ -116,6 +116,7 @@ module CahnHilliard_nonlinearcore
   use storage
   use linearsolver
   use boundary
+  use linearalgebra
   use bilinearformevaluation
   use linearformevaluation
   use cubature
@@ -135,6 +136,8 @@ module CahnHilliard_nonlinearcore
   use statistics
   use collection
   use convection
+  use linearsystemscalar
+  use linearsystemblock
   
   use CahnHilliard_matvec
   use CahnHilliard_callback
@@ -1247,7 +1250,7 @@ contains
       ! Calculate the max-norm of the correction vector.
       ! This is used for the stopping criterium in CH_resNormCheck!
       Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      call lsysbl_vectorNormBlock(rd,Cnorms,rnonlinearIteration%DresidualCorr)
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not
@@ -1354,14 +1357,18 @@ contains
 
       p_rmatrixTemplateFEM => rCHproblem%RlevelInfo(NLMAX)%rmatrixTemplateFEM
 
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(1,1), &
-                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(1,2), &
-                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(2,1), &
-                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(2,2), &
-                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+        rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(1,1), &
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+        rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(1,2), &
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+        rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(2,1), &
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
+        rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner%RmatrixBlock(2,2), &
+        LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
           p_rmatrix => rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixPreconditioner
 ! Debug
@@ -2031,7 +2038,7 @@ contains
 ! MCai, 
 
         Cnorms(:) = LINALG_NORMMAX
-        Dresiduals(:) = lsysbl_vectorNormBlock (rx,Cnorms)
+        call lsysbl_vectorNormBlock (rx,Cnorms,Dresiduals)
 
         dtmp = max(Dresiduals(1),Dresiduals(2))
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
@@ -2149,7 +2156,7 @@ contains
 
     ! RESF := sqrt ( ||F1||_E**2 + ||F2||_E**2 )
 
-    DresTmp = lsysbl_vectorNormBlock (rrhs,Cnorms)
+    call lsysbl_vectorNormBlock (rrhs,Cnorms,DresTmp)
     dresF = max(DresTmp(1), DresTmp(2))
     
     if (dresF .lt. 1.0E-8_DP) dresF = 1.0_DP
@@ -2158,7 +2165,7 @@ contains
     ! RESU = -----------------------------
     !        sqrt( ||F1||_E**2+||F2||_E**2 )
 
-    DresTmp = lsysbl_vectorNormBlock (rdefect,Cnorms)
+    call lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
 
     Dresiduals(1) = DresTmp(1)/dresF
     Dresiduals(2) = DresTmp(2)/dresF
@@ -2307,7 +2314,7 @@ contains
     integer :: isolverType,ismootherType,icoarseGridSolverType
     character(LEN=SYS_STRLEN) :: sstring,ssolverSection,ssmootherSection
     character(LEN=SYS_STRLEN) :: scoarseGridSolverSection,spreconditionerSection
-    type(t_linsolMGLevelInfo2), pointer :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     type(t_linsolNode), pointer :: p_rpreconditioner, p_rsmoother
     type(t_linsolNode), pointer :: p_rsolverNode
 
@@ -2448,7 +2455,7 @@ contains
 !MCai
     call parlst_readfromfile(rCHproblem%rparamList, 'data/nonlinsol_cc2d.dat')
 !~MCai
-    call parlst_getvalue_int_direct (rCHproblem%rparamList, 'CC2D-NONLINEAR', &
+    call parlst_getvalue_int (rCHproblem%rparamList, 'CC2D-NONLINEAR', &
         'itypePreconditioning', &
         rnonlinearIteration%rpreconditioner%ctypePreconditioning, 1)
  

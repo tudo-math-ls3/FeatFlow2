@@ -87,10 +87,10 @@ module ccboundaryconditionparser
   ! Basic variables that are allowed in expressions.
   ! Variables that are not defined in the actual situation are set to 0.
   !
-  ! X,Y,Z - coordinate of a point (z=0 in 2D case), \\
-  ! L     - local parameter value in the range [0..1],\\
-  ! R     - parameter value of a boundary point, 0-1 parametrisation, \\
-  ! S     - parameter value of a boundary point, arc length parametrisation, \\
+  ! X,Y,Z - coordinate of a point (z=0 in 2D case), 
+  ! L     - local parameter value in the range [0..1],
+  ! R     - parameter value of a boundary point, 0-1 parametrisation, 
+  ! S     - parameter value of a boundary point, arc length parametrisation, 
   ! TIME  - current simulation time (=0 in stationary simulation)
   !
   ! Depending on the situation, this list may be extended by situation
@@ -594,7 +594,7 @@ contains
   type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  integer(I32), intent(IN)                                    :: ielement
+  integer, intent(IN)                                         :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
@@ -618,7 +618,7 @@ contains
   !            should be computed
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   iwhere = Number of the edge where the normal stress should be computed.
-  integer(I32), intent(IN)                                    :: iwhere
+  integer, intent(IN)                                         :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 

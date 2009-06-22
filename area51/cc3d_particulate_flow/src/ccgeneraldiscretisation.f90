@@ -97,7 +97,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: I,j,k,ielementType,icubA,icubB,icubF, icubM
+  integer :: I,j,k,ielementType,icubtemp
+  integer(I32) :: icubA,icubB,icubF, icubM
   character(LEN=SYS_NAMELEN) :: sstr
   
   ! Number of equations in our problem. 3*velocity+pressure = 4
@@ -121,8 +122,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2_3D
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,CUB_G2_3D)
+                                'icubStokes',icubtemp,icubtemp)
+      icubA = icubtemp                       
     else
       icubA = cub_igetID(sstr)
     end if
@@ -130,8 +133,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2_3D
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2_3D)
+                                'icubB',icubtemp,icubtemp)
+      icubB = icubtemp
     else
       icubB = cub_igetID(sstr)
     end if
@@ -139,8 +144,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2_3D
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,CUB_G2_3D)
+                                'icubF',icubtemp,icubtemp)
+      icubF = icubtemp
     else
       icubF = cub_igetID(sstr)
     end if
@@ -299,10 +306,12 @@ contains
         p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
         
         call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                    'scubStokes',sstr,'')
+                                    'scubMass',sstr,'')
         if (sstr .eq. '') then
+          icubtemp = CUB_G2_3D
           call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                    'icubStokes',icubM,CUB_G2_3D)
+                                    'icubM',icubtemp,icubtemp)
+          icubM = icubtemp
         else
           icubM = cub_igetID(sstr)
         end if

@@ -19,6 +19,12 @@ module CahnHilliard_basic
   use triangulation
   use spatialdiscretisation
   use sortstrategy
+  use discretebc
+  use discretefbc
+  use linearsystemscalar
+  use linearsystemblock
+  use multilevelprojection
+  use filtersupport
   
 ! Take care of this ...how to use adaptive time stepping? 
   use timestepping

@@ -455,7 +455,7 @@ contains
 	type(t_array), dimension(nvar2d), intent(IN)    :: rarraySol
 	real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata
 	integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
-	integer(I32), dimension(:,:), pointer           :: p_Kedge
+	integer, dimension(:,:), pointer                :: p_Kedge
 	integer, intent(IN)                             :: NEQ,	nedge
 	real(DP), intent(IN)                            :: theta, gravconst, dt
 	
@@ -575,7 +575,7 @@ contains
 	real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
 	real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata
 	integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
-	integer(I32), dimension(:,:), pointer           :: p_Kedge
+	integer, dimension(:,:), pointer                :: p_Kedge
 	integer, intent(IN)                             :: NEQ,	nedge
 	real(DP), intent(IN)                            :: theta, gravconst, dt
 	integer, intent(IN)                             :: Method, limiter
@@ -934,7 +934,7 @@ contains
 	integer                                         :: h_fld1
 	real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
 	integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
-	integer(I32), dimension(:,:), pointer           :: p_Kedge
+	integer, dimension(:,:), pointer                :: p_Kedge
 	integer, intent(IN)                             :: NEQ,	nedge
 	real(DP), intent(IN)                            :: theta, gravconst, dt
 	integer, intent(IN)                             :: Method, limiter
@@ -1304,7 +1304,7 @@ contains
 	integer                                         :: h_fld1
 	real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
 	integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
-	integer(I32), dimension(:,:), pointer           :: p_Kedge
+	integer, dimension(:,:), pointer                :: p_Kedge
 	integer, intent(IN)                             :: NEQ,	nedge
 	real(DP), intent(IN)                            :: gravconst, dt
 	integer, intent(IN)                             :: Method, prelimiting

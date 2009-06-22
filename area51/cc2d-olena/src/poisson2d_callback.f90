@@ -72,6 +72,7 @@ module poisson2d_callback
   use bcassembly
   use bilinearformevaluation
   use linearformevaluation
+  use triangulation
   
   IMPLICIT NONE
 
@@ -375,7 +376,7 @@ CONTAINS
   TYPE(t_boundaryRegion), INTENT(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  INTEGER(I32), INTENT(IN)                                    :: ielement
+  INTEGER, INTENT(IN)                                         :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
@@ -394,7 +395,7 @@ CONTAINS
   ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
   !   iwhere = number of the edge where the value integral mean value
   !            should be computed
-  INTEGER(I32), INTENT(IN)                                     :: iwhere
+  INTEGER, INTENT(IN)                                          :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 

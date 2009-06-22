@@ -583,7 +583,7 @@ contains
     logical :: babortTimestep
     
     integer :: irepetition
-    integer :: isolverStatus,isolverStatusPredictor
+    integer(I32) :: isolverStatus,isolverStatusPredictor
     type(t_timeError) :: rtimeerror
     type(t_timeDerivatives) :: rtimeDerivative
 

@@ -40,6 +40,7 @@ module CHNSmainproblem
   use nonlinearsolver
   use paramlist
   use statistics
+  use dofmapping
   
   use collection
   use convection
@@ -273,7 +274,7 @@ contains
 
     ! Add space for level information in the collection
     do i=1,rCHproblem%NLMAX
-      call collct_addlevel_all (rCHproblem%rcollection)
+      call collct_addlevel (rCHproblem%rcollection)
     end do
 
     ! Allocate memory for the level information

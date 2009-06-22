@@ -132,6 +132,8 @@ module ccnonlinearcore
   use statistics
   use collection
   use convection
+  use linearalgebra
+  use matrixmodification
   
   use ccmatvecassembly
   use cccallback
@@ -249,9 +251,6 @@ module ccnonlinearcore
     ! If the linerar solver contains a multigrid preconditioner, this is a pointer
     ! to the coarse grid solver. Otherwise, the pointer is not associated.
     type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
-    
-    ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
     
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
@@ -390,6 +389,9 @@ module ccnonlinearcore
     ! Pointer to the Jump stabilisation matrix. 
     ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
     type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
 
   end type
 
@@ -1191,7 +1193,7 @@ contains
       ! Calculate the max-norm of the correction vector.
       ! This is used for the stopping criterium in cc_resNormCheck!
       Cnorms(:) = LINALG_NORMMAX
-      rnonlinearIteration%DresidualCorr(:) = lsysbl_vectorNormBlock(rd,Cnorms)
+      call lsysbl_vectorNormBlock(rd,Cnorms,rnonlinearIteration%DresidualCorr)
       
       if ((.not. bsuccess) .and. (domega .ge. 0.001_DP)) then
         ! The preconditioner did actually not work, but the solution is not
@@ -1244,7 +1246,7 @@ contains
       ! local variables
       real(DP) :: dnewton
       integer :: ilev,icol
-      integer(PREC_MATIDX), dimension(1) :: Irows = (/1/)
+      integer, dimension(1) :: Irows = (/1/)
       type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
       type(t_vectorScalar), pointer :: p_rvectorTemp
       type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse
@@ -1263,7 +1265,6 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
 
         ! Get the filter chain. We need tghat later to filter the matrices.        
@@ -1292,6 +1293,9 @@ contains
           else
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
             
+            ! Get the projection structure for this level.
+            p_rprojection => rnonlinearIteration%RcoreEquation(ilev+1)%p_rprojection
+
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
             p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector
@@ -1556,7 +1560,7 @@ contains
         ! The other MAX-norms have to be calculated from U...
         
         Cnorms(:) = LINALG_NORMMAX
-        Dresiduals(:) = lsysbl_vectorNormBlock (rx,Cnorms)
+        call lsysbl_vectorNormBlock (rx,Cnorms,Dresiduals)
 
         dtmp = max(Dresiduals(1),Dresiduals(2))
         if (dtmp .lt. 1.0E-8_DP) dtmp = 1.0_DP
@@ -1665,7 +1669,7 @@ contains
 
     ! RESF := max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rrhs,Cnorms)
+    call lsysbl_vectorNormBlock (rrhs,Cnorms,DresTmp)
     dresF = max(DresTmp(1),DresTmp(2))
     if (dresF .lt. 1.0E-8_DP) dresF = 1.0_DP
 
@@ -1673,12 +1677,12 @@ contains
     ! RESU = -----------------------------
     !        max ( ||F1||_E , ||F2||_E )
 
-    DresTmp = lsysbl_vectorNormBlock (rdefect,Cnorms)
+    call lsysbl_vectorNormBlock (rdefect,Cnorms,DresTmp)
     Dresiduals(1) = sqrt(DresTmp(1)**2+DresTmp(2)**2)/dresF
 
     ! DNORMU = || (U1,U2) ||_l2 
 
-    DresTmp = lsysbl_vectorNormBlock (rvector,Cnorms)
+    call lsysbl_vectorNormBlock (rvector,Cnorms,DresTmp)
     dnormU = sqrt(DresTmp(1)**2+DresTmp(2)**2)
     if (dnormU .lt. 1.0E-8_DP) dnormU = 1.0_DP
 

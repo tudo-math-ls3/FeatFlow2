@@ -73,7 +73,7 @@ module ccnonstationary
 !<typeblock>
 
   ! Saves data about a time step. Is used to make a snapshot of the current
-  ! flow/mesh situation. THat way, the solver can make backups that can be
+  ! flow/mesh situation. That way, the solver can make backups that can be
   ! restored if necessary.
 
   type t_timestepSnapshot

@@ -256,9 +256,6 @@ module ccnonlinearcore
     ! to the coarse grid solver. Otherwise, the pointer is not associated.
     type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
     
-    ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
-    
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
@@ -396,6 +393,9 @@ module ccnonlinearcore
     ! Pointer to the Jump stabilisation matrix. 
     ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
     type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
 
   end type
 
@@ -1071,9 +1071,7 @@ contains
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                           rnonlinearIteration%DresidualOld(2)**2)
             
-            if(dres .ne. 0.0_dp) then
-              dtempdef = dres / dresInit
-            end if
+            dtempdef = dres / dresInit
             
             if (bassembleNewton) then
               p_rsolverNode%depsAbs = &
@@ -1252,7 +1250,7 @@ contains
       ! local variables
       real(DP) :: dnewton
       integer :: ilev,icol
-      integer(PREC_MATIDX), dimension(1) :: Irows = (/1/)
+      integer, dimension(1) :: Irows = (/1/)
       type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
       type(t_vectorScalar), pointer :: p_rvectorTemp
       type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse
@@ -1271,7 +1269,6 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
 
         ! Get the filter chain. We need tghat later to filter the matrices.        
@@ -1300,6 +1297,9 @@ contains
           else
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
             
+            ! Get the projection structure for this level.
+            p_rprojection => rnonlinearIteration%RcoreEquation(ilev+1)%p_rprojection
+
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
             p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector
@@ -1404,13 +1404,9 @@ contains
           ! In this case, we have to include a unit vector to the pressure
           ! matrix to make the problem definite!
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 0) then
-            p_rmatrix => rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner
-            
             ! Include a unit vector
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-            call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-            
+            call mmod_replaceLinesByUnitBlk (&
+                rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner,3,Irows)
           end if
           
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 1) then
@@ -1420,13 +1416,9 @@ contains
             ! What we don't check is the smoother, thus we assume that smoothers
             ! are always solvers that allow the applicance of a filter chain.
             if (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) then
-              p_rmatrix => rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner
-              
               ! Include a unit vector
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-              call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-              
+              call mmod_replaceLinesByUnitBlk (&
+                  rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner,3,Irows)
             end if
             
           end if
@@ -1727,7 +1719,7 @@ contains
   ! A t_nlsolNode structure that contains the configuration of the nonlinear
   ! solver. The parameters are initialised according to the information
   ! in the section sname of the parameter list rparamList
-  type(t_nlsolNode) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
 !</output>
 
 !</subroutine>

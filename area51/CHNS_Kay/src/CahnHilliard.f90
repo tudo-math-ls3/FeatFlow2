@@ -148,7 +148,7 @@ CONTAINS
     ! acts as a RHS vector.
     
     call lsysbl_createVecBlockIndirect (rCHrhs, rtempVectorRhs, .false.)
-    call lsysbl_assignDiscretIndirect(rCHrhs,rtempVectorRhs)
+    call lsysbl_assignDiscrIndirect(rCHrhs,rtempVectorRhs)
 
     ! We have an equation of the type
     !

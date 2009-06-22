@@ -148,12 +148,12 @@ contains
 	! Kedge is an array, which saves the corresponding grid-points
 	! for each edge
     integer, dimension(:), pointer		    :: p_Kld, p_Kcol, p_Kdiagonal
-    integer(I32), dimension(:), pointer     :: p_Ksep
-    integer(I32), dimension(:,:), pointer   :: p_Kedge
+    integer, dimension(:), pointer     :: p_Ksep
+    integer, dimension(:,:), pointer   :: p_Kedge
 	real(dp), dimension(:), pointer	        :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
     
     ! Size of the 2D-array Kedge
-    integer(I32), dimension(2)              :: iSize
+    integer, dimension(2)              :: iSize
     
     ! Number of edges of the grid
     integer                                 :: nedge
@@ -236,6 +236,7 @@ contains
 
     ! The kind of used FE
     integer :: FEkind
+    integer(I32) :: celement
 
     ! What kind of limiter to use for TVD?
     integer :: limiter
@@ -379,12 +380,12 @@ contains
 	! Get the type of FE from the parameter file
 	call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', FEkind)
 	if (FEkind == 0) then
-	    FEkind = EL_E001
+	    celement = EL_E001
 	else if (FEkind == 1) then
-	    FEkind = EL_E011
+	    celement = EL_E011
 	end if
 	call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   FEkind,SPDISC_CUB_AUTOMATIC, rtriangulation, &
+                                   celement,SPDISC_CUB_AUTOMATIC, rtriangulation, &
 								   rboundary)
 
 	! Now copy this initialised block into the other ones

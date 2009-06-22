@@ -1190,7 +1190,7 @@ contains
     
     !CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
     
-    CALL storage_new1D('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
+    CALL storage_new('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
           1, ST_DOUBLE, rmatrix%rmatrixBlock(4,4)%h_DA, ST_NEWBLOCK_ZERO)
           
       CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)

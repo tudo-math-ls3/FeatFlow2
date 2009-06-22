@@ -1199,7 +1199,7 @@ contains
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(IN), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
 !</input>
 
 !<output>
@@ -1271,7 +1271,7 @@ contains
     
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), optional                                :: rcollection
+    type(t_collection), optional, intent(INOUT)                 :: rcollection
 
   !</input>
   
@@ -1286,7 +1286,7 @@ contains
     !
     ! The number of structures in this array depend on what to evaluate:
     !
-    ! For Dirichlet boudary:
+    ! For Dirichlet boundary:
     !   revaluation contains as many entries as Icomponents; every entry in
     !   Icomponent corresponds to one entry in revaluation
     !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
@@ -1309,8 +1309,8 @@ contains
     ! local variables
     real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
     
@@ -1381,19 +1381,19 @@ contains
     
     ! Identifier. Either vertex number, edge number or element number,
     ! depending on cinfoNeeded.
-    integer(I32), intent(IN) :: iwhere
+    integer, intent(IN) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
     real(DP), dimension(:,:), intent(IN) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(IN) :: IverticesAtElement
     
     ! Array with numbers of points adjacent to all edges
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
+    integer, dimension(:,:), intent(IN) :: IverticesAtEdge
     
     ! Number of vertices in the triangulation
-    integer(PREC_POINTIDX), intent(IN) :: NVT
+    integer, intent(IN) :: NVT
     
     ! Output: X-coordinate
     real(DP), intent(OUT) :: dx
@@ -1404,7 +1404,7 @@ contains
       ! local variables
       real(DP) :: dm1,dm2
       integer :: i,j
-      integer(PREC_POINTIDX) :: iv1,iv2
+      integer :: iv1,iv2
     
       ! Let's see, what do we have...
       select case (cinfoNeeded)
@@ -1527,8 +1527,8 @@ contains
     ! local variables
     real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy,robx,roby,lvx,lvy
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
     type(t_geometryObject), pointer :: p_rgeometryObject
@@ -1612,19 +1612,19 @@ contains
     
     ! Identifier. Either vertex number, edge number or element number,
     ! depending on cinfoNeeded.
-    integer(I32), intent(IN) :: iwhere
+    integer, intent(IN) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
     real(DP), dimension(:,:), intent(IN) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(IN) :: IverticesAtElement
     
     ! Array with numbers of points adjacent to all edges
-    integer(PREC_POINTIDX), dimension(:,:), intent(IN) :: IverticesAtEdge
+    integer, dimension(:,:), intent(IN) :: IverticesAtEdge
     
     ! Number of vertices in the triangulation
-    integer(PREC_POINTIDX), intent(IN) :: NVT
+    integer, intent(IN) :: NVT
     
     ! Output: X-coordinate
     real(DP), intent(OUT) :: dx
@@ -1635,7 +1635,7 @@ contains
       ! local variables
       real(DP) :: dm1,dm2
       integer :: i,j
-      integer(PREC_POINTIDX) :: iv1,iv2
+      integer :: iv1,iv2
     
       ! Let's see, what do we have...
       select case (cinfoNeeded)

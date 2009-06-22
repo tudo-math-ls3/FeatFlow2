@@ -33,6 +33,7 @@ module CahnHilliard_matvec
 
   use fsystem
   use storage
+  use basicgeometry
   use linearsolver
   use boundary
   use bilinearformevaluation
@@ -51,6 +52,7 @@ module CahnHilliard_matvec
 
   use spdiscprojection
   use nonlinearsolver
+  use scalarpde
   use stdoperators
 
  use trilinearformevaluation
@@ -1424,7 +1426,8 @@ CONTAINS
 !</subroutine>
 
     ! local variables
-    integer :: i,cmatBuildtype, icubA, ielementtype
+    integer :: i,cmatBuildtype,ielementtype,icubtemp
+    integer(I32) :: icubA
     character(LEN=SYS_NAMELEN) :: sstr
   
     ! A pointer to the system matrix and the RHS/solution vectors.
@@ -1441,8 +1444,10 @@ CONTAINS
     call parlst_getvalue_string (rCHparams,'CH-DISCRETISATION',&
                                  'scubA',sstr,'')
     if (sstr .eq. '') then
+    	icubtemp = CUB_G2X2
       call parlst_getvalue_int (rCHparams,'CH-DISCRETISATION',&
-                                'icubA',icubA,CUB_G2X2)
+                                'icubA',icubtemp,icubtemp)
+      icubA = icubtemp
     else
       icubA = cub_igetID(sstr)
     end if
@@ -1663,7 +1668,7 @@ CONTAINS
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Laplace matrix...
-    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMass,&
         rlevelInfo%rdiscretisationMass)
 !MCai
 !or 

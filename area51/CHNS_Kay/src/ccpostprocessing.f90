@@ -48,6 +48,7 @@ module ccpostprocessing
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use element
   use matrixfilters
   use vectorfilters
   use bcassembly
@@ -59,6 +60,8 @@ module ccpostprocessing
   use paramlist
   use ccboundaryconditionparser
   use statistics
+  use linearalgebra
+  use vectorio
   
   use collection
   use convection
@@ -362,7 +365,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ieltype
+    integer(i32) :: ieltype
     type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
     
@@ -459,7 +462,8 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ieltype,ilevelUCD
+    integer :: ioutputUCD,ilevelUCD
+    integer(I32) :: ieltype
     
     character(SYS_STRLEN) :: sfile,sfilename
     
@@ -725,7 +729,7 @@ contains
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfilename
     integer :: ilev
-    integer(PREC_VECIDX) :: NEQ
+    integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     logical :: bformatted
     

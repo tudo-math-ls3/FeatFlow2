@@ -55,6 +55,7 @@ module CahnHilliard_callback
   use vectorfilters
   use bcassembly
   use mprimitives
+  use derivatives
 
   use feevaluation
 
@@ -216,7 +217,7 @@ CONTAINS
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), DIMENSION(:,:), intent(IN) :: IdofsTest
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -235,7 +236,7 @@ CONTAINS
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
 
-    real(DP), DIMENSION(:,:,:), intent(OUT)                      :: Dcoefficients
+    real(DP), DIMENSION(:,:,:), intent(OUT)          :: Dcoefficients
   
     ! Values of the FE function at the points specified by Dpoints.
     ! DIMENSION(itermCount, npoints,nelements).
@@ -325,7 +326,7 @@ CONTAINS
     type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -338,11 +339,11 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -454,7 +455,7 @@ CONTAINS
     type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -467,11 +468,11 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -588,11 +589,11 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in trial space,Number of elements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(\#local DOF's in test space,Number of elements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -692,7 +693,7 @@ CONTAINS
     type(t_trilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                        :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -703,12 +704,12 @@ CONTAINS
     real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,Number of elements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    ! DIMENSION(#local DOF's in trial space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,Number of elements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -807,7 +808,7 @@ CONTAINS
     type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    integer, intent(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -820,11 +821,11 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -936,7 +937,7 @@ CONTAINS
     type(t_bilinearForm), intent(IN)                            :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer(PREC_ELEMENTIDX), intent(IN)                        :: nelements
+    INTEGER, intent(IN)                                         :: nelements
     
     ! Number of points per element, where the coefficients must be computed
     integer, intent(IN)                                         :: npointsPerElement
@@ -949,11 +950,11 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTrial
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), dimension(:,:), intent(IN) :: IdofsTest
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1138,7 +1139,7 @@ CONTAINS
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), DIMENSION(:,:), intent(IN) :: IdofsTest
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1219,7 +1220,7 @@ CONTAINS
 
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), DIMENSION(:,:), intent(IN) :: IdofsTest
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1398,12 +1399,12 @@ CONTAINS
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in trial space,nelements)
-    integer(PREC_DOFIDX), DIMENSION(:,:), intent(IN) :: IdofsTrial
+    integer, DIMENSION(:,:), intent(IN) :: IdofsTrial
     
     ! An array accepting the DOF's on all elements trial in the trial space.
     ! DIMENSION(#local DOF's in test space,nelements)
-    integer(PREC_DOFIDX), DIMENSION(:,:), intent(IN) :: IdofsTest
-    
+    INTEGER, DIMENSION(:,:), intent(IN) :: IdofsTest
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).

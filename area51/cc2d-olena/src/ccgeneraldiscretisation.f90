@@ -108,7 +108,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: I,j,k,ielementType,icubA,icubB,icubF, icubM, iElementTypeStabil
+  integer :: I,j,k,ielementType,iElementTypeStabil,icubtemp
+  integer(I32) :: icubA,icubB,icubF, icubM
   character(LEN=SYS_NAMELEN) :: sstr
   
     ! An object for saving the domain:
@@ -130,8 +131,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,CUB_G2X2)
+                                'icubStokes',icubtemp,icubtemp)
+      icubA = icubtemp                       
     else
       icubA = cub_igetID(sstr)
     end if
@@ -139,8 +142,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2X2)
+                                'icubB',icubtemp,icubtemp)
+      icubB = icubtemp
     else
       icubB = cub_igetID(sstr)
     end if
@@ -148,8 +153,10 @@ contains
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
+      icubtemp = CUB_G2X2
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,CUB_G2X2)
+                                'icubF',icubtemp,icubtemp)
+      icubF = icubtemp
     else
       icubF = cub_igetID(sstr)
     end if
@@ -213,10 +220,12 @@ contains
           rproblem%RlevelInfo(i)%rdiscretisationMassPressure
       
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'scubStokes',sstr,'')
+                                  'scubMass',sstr,'')
       if (sstr .eq. '') then
+        icubtemp = CUB_G2X2
         call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubStokes',icubM,CUB_G2X2)
+                                  'icubM',icubtemp,icubtemp)
+        icubM = icubtemp
       else
         icubM = cub_igetID(sstr)
       end if
@@ -306,13 +315,13 @@ contains
   type(t_triangulation), intent(in), target :: rtriangulation
   
   ! Cubature formula for the velocity matrices
-  integer, intent(in) :: icubA
+  integer(I32), intent(in) :: icubA
   
   ! Cubature formula for the gradient/divergence matrices
-  integer, intent(in) :: icubB
+  integer(I32), intent(in) :: icubB
   
   ! Cubature formula for linear forms (RHS vectors)
-  integer, intent(in) :: icubF
+  integer(I32), intent(in) :: icubF
 !</input>
 
 !<output>
