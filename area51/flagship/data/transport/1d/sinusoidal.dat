@@ -97,24 +97,15 @@ iexactsolutiontype = 1
 sexactsolutionname = qexactsol
 
 # type of target functional
-# 0 = no target variable
-# 1 = volume integral
-# 2 = surface integral
-itargetfunctype = 0
-
-# section name of target functional
-stargetfuncname = @targetFuncInt
-
-# type of exact target functional type
 # 0 = no exact target functional available
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
 # 4 = analytical target functional
-iexacttargetfunctype = 0
+itargetfunctype = 0
 
-# section name of exact target functional
-sexacttargetfuncname = @targetFuncAnalytic
+# section name of target functional
+stargetfuncname = @targetFuncInt
 
 
 #-------------------------------------------------------------------------------

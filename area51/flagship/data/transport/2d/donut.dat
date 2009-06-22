@@ -114,22 +114,11 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
+# 4 = analytical target functional
 itargetfunctype = 1
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
-
-# type of exact target functional type
-# 0 = no exact target functional available
-# 1 = volume integral
-# 2 = surface integral
-# 3 = mixed volume/surface integral
-# 4 = analytical target functional
-iexacttargetfunctype = 4
-
-# section name of exact target functional
-sexacttargetfuncname = @targetFuncAnalytic
-
+stargetfuncname = @weightingFuncInt
 
 #-------------------------------------------------------------------------------
 
@@ -319,10 +308,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
