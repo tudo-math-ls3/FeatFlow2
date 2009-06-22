@@ -1,27 +1,17 @@
 # -*- mode: any-ini; -*-
 
-#
-# Input data for LeVeque benchmark
-#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                    Inviscid Burger's equation in 2D                          #
+################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if( x <= 0.5 & y <= 0.5 | x >= 0.5 & y >= 0.5, 1.0, 0.0)
+# Specify the initial solution
+deffunc: @initsol = if( x <= 0.5 & y <= 0.5 | x >= 0.5 & y >= 0.5, 1.0, 0.0) ; x,y,z,t
 
-[exact_solution]
-NCOMP
-1
-1.0
-
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-2
-1.0
-2.0
-
+# Specify the velocity field
+deffunc: @velocity_x = 1.0 ; x,y,z,t
+deffunc: @velocity_y = 2.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

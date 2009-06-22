@@ -12,53 +12,40 @@
 #                                                                              #
 ################################################################################
 
-# constants
+# Definition of user-defined constants
 defconst: a11 = 1.0
 defconst: a12 = 0.0
 defconst: a21 = 0.0
 defconst: a22 = 1000.0
 defconst: ang = 30
-defexpr: D11 = (COS(_ang)*_a11-SIN(_ang)*_a21)*COS(_ang)-(COS(_ang)*_a12-SIN(_ang)*_a22)*SIN(_ang)
-defexpr: D12 = (COS(_ang)*_a11-SIN(_ang)*_a21)*SIN(_ang)+(COS(_ang)*_a12-SIN(_ang)*_a22)*COS(_ang)
-defexpr: D21 = (SIN(_ang)*_a11+COS(_ang)*_a21)*COS(_ang)-(SIN(_ang)*_a12+COS(_ang)*_a22)*SIN(_ang)
-defexpr: D22 = (SIN(_ang)*_a11+COS(_ang)*_a21)*SIN(_ang)+(SIN(_ang)*_a12+COS(_ang)*_a22)*COS(_ang)
+
+# Definition of user-defined expressions
+defexpr: d11 = (COS(_ang)*_a11-SIN(_ang)*_a21)*COS(_ang)-(COS(_ang)*_a12-SIN(_ang)*_a22)*SIN(_ang)
+defexpr: d12 = (COS(_ang)*_a11-SIN(_ang)*_a21)*SIN(_ang)+(COS(_ang)*_a12-SIN(_ang)*_a22)*COS(_ang)
+defexpr: d21 = (SIN(_ang)*_a11+COS(_ang)*_a21)*COS(_ang)-(SIN(_ang)*_a12+COS(_ang)*_a22)*SIN(_ang)
+defexpr: d22 = (SIN(_ang)*_a11+COS(_ang)*_a21)*SIN(_ang)+(SIN(_ang)*_a12+COS(_ang)*_a22)*COS(_ang)
 
 # Specify the initial solution
-[initial_solution]
-NCOMP
-1
-0.0
+deffunc: @initsol = 0.0 ; x,y,z,t
 
-# Specify the initial solution
-[exact_solution]
-NCOMP
-1
-0.0
+# Specify the exact solution
+deffunc: @initsol = 0.0 ; x,y,z,t
 
 # Specify the velocity field
-[velocityfield]
-NCOMP
-2
-0.0
-0.0
+deffunc: @velocity_x = 0.0 ; x,y,z,t
+deffunc: @velocity_y = 0.0 ; x,y,z,t
 
 # Specify the diffusion tensor
-[diffusiontensor]
-NCOMP
-4
-@D11
-@D12
-@D21
-@D22
+deffunc: @diffusion_11 = @d11 ; x,y,z,t
+deffunc: @diffusion_12 = @d12 ; x,y,z,t
+deffunc: @diffusion_21 = @d21 ; x,y,z,t
+deffunc: @diffusion_22 = @d22 ; x,y,z,t
 
 # Specify the right-hand side profile
-[rhs]
-NCOMP
-1
--( -32*@D11*y*(1-y)+ ...
-       @D12*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
-       @D21*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
-   -32*@D22*x*(1-x) )
+deffunc: @rhs = -( -32*@d11*y*(1-y)+ ...
+                       @d12*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+                       @d21*(16*(1-x)*(1-y)-16*(1-x)*y-16*x*(1-y)+16*x*y)+ ...
+                   -32*@d22*x*(1-x) ) ; x,y,z,t
 
 
 # Specify the boundary conditions for the primal problem

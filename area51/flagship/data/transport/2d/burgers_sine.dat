@@ -52,7 +52,7 @@ imassantidiffusiontype = 0
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 6
 
 # section name of velocity field
 svelocityname = velocityfield
