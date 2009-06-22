@@ -611,7 +611,7 @@ contains
     type(t_vectorScalar), intent(INOUT)  :: rsolution
 
     ! The type of element used for the FE solution
-    integer(I32), intent(IN) :: ieltype
+    integer, intent(IN) :: ieltype
 
     ! The type of error estimator
     integer, intent(IN) :: ierrorestimator

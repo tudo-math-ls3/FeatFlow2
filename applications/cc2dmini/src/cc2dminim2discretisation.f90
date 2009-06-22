@@ -77,7 +77,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: I,ielementType,icubA,icubB,icubF
+  integer :: I,ielementType,icubtemp
+  integer(I32) :: icubA,icubB,icubF
   
   ! Number of equations in our problem. velocity+velocity+pressure = 3
   integer, parameter :: nequations = 3
@@ -95,12 +96,21 @@ contains
     ! Which cubature formula should be used?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iElementType',ielementType,3)
+		
+		icubtemp = CUB_G2X2
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubLaplace',icubA,CUB_G2X2)
+                              'icubLaplace',icubtemp,icubtemp)
+		icubA = icubtemp
+		
+		icubtemp = CUB_G2X2
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubB',icubB,CUB_G2X2)
+                              'icubB',icubtemp,icubtemp)
+		icubB = icubtemp
+                              
+		icubtemp = CUB_G2X2
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'icubF',icubF,CUB_G2X2)
+                              'icubF',icubtemp,icubtemp)
+		icubF = icubtemp
 
     ! Now set up discrezisation structures on all levels:
 

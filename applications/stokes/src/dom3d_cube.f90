@@ -89,7 +89,7 @@ contains
   
   ! A combination of DOM3D_CUBE_REG_XXXX contants defined above specifying
   ! which faces should be in the mesh region.
-  integer, intent(IN)                            :: cfaces
+  integer(I32), intent(IN)                       :: cfaces
 !<input>
 
 !<output>
@@ -108,7 +108,7 @@ contains
       
       ! If the corresponding bit is set, we'll add the face, otherwise
       ! we will set the corresponding Ifaces entry to -1.
-      if(iand(cfaces, 2**(i-1)) .ne. 0) then
+      if(iand(cfaces, int(2**(i-1),I32)) .ne. 0) then
         ! Add the face
         Ifaces(i) = i
       else

@@ -150,7 +150,7 @@ contains
   
   ! A combination of DOM3D_C3D0_REG_XXXX contants defined above specifying
   ! which regions should be in the mesh region.
-  integer, intent(IN)                            :: cregions
+  integer(I32), intent(IN)                       :: cregions
 !<input>
 
 !<output>
@@ -169,7 +169,7 @@ contains
       
       ! If the corresponding bit is set, we'll add the region, otherwise
       ! we will set the corresponding Iregions entry to -1.
-      if(iand(cregions, 2**(i-1)) .ne. 0) then
+      if(iand(cregions, int(2**(i-1),I32)) .ne. 0) then
         ! Add the region
         Iregions(i) = i
       else
