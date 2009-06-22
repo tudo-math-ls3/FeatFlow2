@@ -38,7 +38,8 @@ program bloodflow_app
     call bloodflow_evalObject(rbloodflow, dtime)
     
     ! Duplicate triangulation of base mesh
-    call tria_duplicate(rbloodflow%rtriangulationBase, rbloodflow%rtriangulation, 0, .false.)
+    call tria_duplicate(rbloodflow%rtriangulationBase, rbloodflow%rtriangulation, &
+      TR_SHARE_NONE, .false.)
 
     ! Adapt the grid to the thin object
     call bloodflow_adaptObject(rbloodflow)
