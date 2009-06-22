@@ -47,20 +47,20 @@ imassantidiffusiontype = 0
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 1
 
 # section name of velocity field
-svelocityname = velocityfield
+svelocityname = @velocity_x
 
 # type of flow diffusion
 # 0 = zero diffusion
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 2
+idiffusiontype = 1
 
 # section name of diffusion tensor
-sdiffusionname = diffusiontensor
+sdiffusionname = @diffusion
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -68,15 +68,15 @@ sdiffusionname = diffusiontensor
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = reactionterm
+sreactionname = @reaction
 
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 1
+irhstype = 0
 
 # section name of right-hand side vector
-srhsname = rhs
+srhsname = @rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -85,7 +85,7 @@ srhsname = rhs
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname = @initsol
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -94,7 +94,7 @@ ssolutionname = initial_solution
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname = @exactsol
 
 # type of target functional
 # 0 = no target variable
@@ -103,7 +103,19 @@ sexactsolutionname = exact_solution
 itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = targetfunctional
+stargetfuncname = @targetFuncInt
+
+# type of exact target functional type
+# 0 = no exact target functional available
+# 1 = volume integral
+# 2 = surface integral
+# 3 = mixed volume/surface integral
+# 4 = analytical target functional
+iexacttargetfunctype = 0
+
+# section name of exact target functional
+sexacttargetfuncname = @targetFuncAnalytic
+
 
 #-------------------------------------------------------------------------------
 
@@ -237,7 +249,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 0.01
@@ -288,10 +300,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce

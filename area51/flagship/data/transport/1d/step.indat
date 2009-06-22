@@ -7,23 +7,27 @@
 #                                                                              #
 ################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if(x >= 0.2 & x <= 0.4, 1.0, 0.0)
+# Specify the initial solution
+deffunc: @initsol = if(x >= 0.2 & x <= 0.4, 1.0, 0.0) ; x,y,z,t
 
-# Specify the exact solution by logical expressions and solution values
-[exact_solution]
-NCOMP
-1
-if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0)
+# Specify the exact solution
+deffunc: @exactsol = if(x-t >= 0.2 & x-t <= 0.4, 1.0, 0.0) ; x,y,z,t
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-1
-1.0
+# Specify the velocity field
+deffunc: @velocity_x = 1.0 ; x,y,z,t
+
+# Specify the diffusion coefficient
+deffunc: @diffusion = -1e-3 ; x,y,z,t
+
+# Specify the reaction term
+deffunc: @reaction = 0 ; x,y,z,t
+
+# Specify the right-hand side
+deffunc: @rhs = 0 ; x,y,z,t
+
+# Specify the quantity of interest
+deffunc: @targetFuncInt = 0 ; x,y,z,t
+deffunc: @targetFuncAnalytic = 0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

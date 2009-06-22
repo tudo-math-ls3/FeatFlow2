@@ -7,23 +7,28 @@
 #                                                                              #
 ################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-SIN(2*_PI*x)
+# Specify the initial solution
+deffunc: @initsol = SIN(2*_PI*x) ; x,y,z,t
 
-# Specify the exact solution by logical expressions and solution values
-[exact_solution]
-NCOMP
-1
-SIN(2*_PI*(x-t))
+# Specify the exact solution
+deffunc: @exactsol = SIN(2*_PI*(x-t)) ; x,y,z,t
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-1
-1.0
+# Specify the velocity field
+deffunc: @velocity_x = 1.0 ; x,y,z,t
+
+# Specify the diffusion coefficient
+deffunc: @diffusion = 0 ; x,y,z,t
+
+# Specify the reaction term
+deffunc: @reaction = 0 ; x,y,z,t
+
+# Specify the right-hand side
+deffunc: @rhs = 0 ; x,y,z,t
+
+# Specify the quantity of interest
+deffunc: @targetFuncInt = 0 ; x,y,z,t
+deffunc: @targetFuncAnalytic = 0 ; x,y,z,t
+
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 
@@ -47,5 +52,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0  T  12 2 1
+0.0  T  1 0
 0.0  T  0
