@@ -1,4 +1,5 @@
 # -*- mode: any-ini; -*-
+
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
@@ -55,17 +56,19 @@ imassantidiffusiontype = 0
 ivelocitytype = 2
 
 # section name of velocity field
-svelocityname = velocityfield
+svelocityname(2) =
+  @velocity_x
+  @velocity_y
 
 # type of flow diffusion
 # 0 = zero diffusion
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 2
+idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = diffusiontensor
+sdiffusionname = @diffusion
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -73,15 +76,15 @@ sdiffusionname = diffusiontensor
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = reactionterm
+sreactionname = @reaction
 
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 1
+irhstype = 0
 
 # section name of right-hand side vector
-srhsname = rhs
+srhsname = @rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -90,7 +93,7 @@ srhsname = rhs
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname = @initsol
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -99,16 +102,28 @@ ssolutionname = initial_solution
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname = @exactsol
 
 # type of target functional
 # 0 = no target variable
 # 1 = volume integral
 # 2 = surface integral
-itargetfunctype = 0
+# 3 = mixed volume/surface integral
+itargetfunctype = 1
 
 # section name of target functional
-stargetfuncname = targetfunctional
+stargetfuncname = @targetFuncInt
+
+# type of exact target functional type
+# 0 = no exact target functional available
+# 1 = volume integral
+# 2 = surface integral
+# 3 = mixed volume/surface integral
+# 4 = analytical target functional
+iexacttargetfunctype = 0
+
+# section name of exact target functional
+sexacttargetfuncname = @targetFuncAnalytic
 
 #-------------------------------------------------------------------------------
 

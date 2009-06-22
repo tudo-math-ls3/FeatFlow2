@@ -1,31 +1,24 @@
 # -*- mode: any-ini; -*-
 
-#
-# Input data for Convection of a step function benchmark
-#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                      Steady-state convection in space-time                   #
+################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if(ABS(x-0.5*y-0.2)<=0.15, 1, 0)
-#if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0)
-#if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0)
+# Specify the initial solution
+deffunc: @initsol = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,z,t
+#deffunc: @initsol = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,z,t
+#deffunc: @initsol = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,z,t
 
-[exact_solution]
-NCOMP
-1
-if(ABS(x-0.5*y-0.2)<=0.15, 1, 0)
-#if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0)
-#if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0)
+# Specify the exactsolution
+deffunc: @exactsol = if(ABS(x-0.5*y-0.2)<=0.15, 1, 0) ; x,y,z,t
+#deffunc: @exactsol = if(ABS(x-0.5*y-0.2)<=0.15, 1-ABS(x-0.2-0.5*y)/0.15, 0) ; x,y,z,t
+#deffunc: @exactsol = if(ABS(x-0.5*y-0.2)<=0.15, SQRT(1-((x-0.5*y-0.2)/0.15)^2), 0) ; x,y,z,t
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-2
-0.5
-1.0
-
+# Specify the  velocity field
+deffunc: @velocity_x = 0.5 ; x,y,z,t
+deffunc: @velocity_y = 1.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

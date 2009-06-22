@@ -13,34 +13,22 @@
 #                                                                              #
 ################################################################################
 
+# Definition of user-defined constants
 defconst: Tfin = 1.5
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0)
+# Specify the initial solution
+deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
 
-# Specify the exact solution by logical expressions and solution values
-[exact_solution]
-NCOMP
-1
-if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0)
+# Specify the exact solution
+deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
+
+# Specify the velocity field
+#deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/_Tfin) ; x,y,z,t
+#deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/_Tfin) ; x,y,z,t
 
 # Specify the initial velocity by logical expressions and solution values
-[velocityfield_timedependent]
-NCOMP
-2
-SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/_Tfin)
--SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/_Tfin)
-
-# Specify the initial velocity by logical expressions and solution values
-[velocityfield_constant]
-NCOMP
-2
-SIN(_pi*x)^2*SIN(2*_pi*y)
--SIN(_pi*y)^2*SIN(2*_pi*x)
-
+deffunc: @velocity_x = SIN(_pi*x)^2*SIN(2*_pi*y) ; x,y,z,t
+deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x) ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

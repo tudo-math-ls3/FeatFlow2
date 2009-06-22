@@ -1,27 +1,23 @@
 # -*- mode: any-ini; -*-
 
-#
-# Input data for Convection of a step function benchmark
-#
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                          Convection of a step function                       #
+#                                                                              #
+# 1) Constant velocity and final time T=0.5                                    #
+#                                                                              #
+################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0)
+# Specify the initial solution
+deffunc: @initsol = if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0) ; x,y,z,t
 
-[exact_solution]
-NCOMP
-1
-if(x>=0.2+t & x<=0.4+t & y>=0.2+t & y<=0.4+t,1,0)
+# Specify the exact solution
+deffunc: @exactsol = if(x>=0.2+t & x<=0.4+t & y>=0.2+t & y<=0.4+t,1,0) ; x,y,z,t
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-2
-1.0
-1.0
-
+# Specify the velocity field
+deffunc: @velocity_x = 1.0 ; x,y,z,t
+deffunc: @velocity_y = 1.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

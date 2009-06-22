@@ -1,26 +1,20 @@
 # -*- mode: any-ini; -*-
-#
-# Input data for Convection of a step function benchmark
-#
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0)
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                             Deformation of an image                          #
+################################################################################
 
-[exact_solution]
-NCOMP
-1
-if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0)
+# Specify the initial solution
+deffunc: @initsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
 
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-2
-SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/1.5)
--SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/1.5)
+# Specify the exact solution
+deffunc: @exactsol = if(SQRT((x-1)^2+(y-1)^2 )<0.8,1,0) ; x,y,z,t
 
+# Specify the velocity field
+deffunc: @velocity_x =  SIN(_pi*x)^2*SIN(2*_pi*y)*COS(_pi*t/1.5) ; x,y,z,t
+deffunc: @velocity_y = -SIN(_pi*y)^2*SIN(2*_pi*x)*COS(_pi*t/1.5) ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

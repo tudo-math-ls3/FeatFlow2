@@ -14,29 +14,18 @@
 #                                                                              #
 ################################################################################
 
+# Definition of user-defined constants
 defconst: ang = 10
 
 # Specify the initial solution
-[initial_solution]
-NCOMP
-1
-if(y>=0.5,1-x,0)
-
+deffunc: = @initsol = if(y>=0.5,1-x,0) ; x,y,z,t
 
 # Specify the velocity field
-[velocityfield]
-NCOMP
-2
-COS(_ang*_pi/180)
-SIN(_ang*_pi/180)
-
+deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,z,t
+deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
 
 # Specify the diffusion tensor
-[diffusiontensor]
-NCOMP
-1
--1e-3
-
+deffunc: @diffusion = -1e-3 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]
@@ -52,7 +41,6 @@ PARAMETERS
 0.5  T  1   1.0
 3.0  T  1   0.0
 4.0  F  0
-
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_dual]

@@ -3,31 +3,21 @@
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
-#                    Inviscid Burger's equation in space-time                  #
+#                           Inviscid Burger's equation                         #
 ################################################################################
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-1
-if( x>=0.1 & x<0.4, 1.0, if( x>=0.4 & x<=0.7, 0.5, 0.0))
+# Specify the initial solution
+deffunc: @initsol = if( x>=0.1 & x<0.4, 1.0, if( x>=0.4 & x<=0.7, 0.5, 0.0)) ; x,y,z,t
 
-[exact_solution]
-NCOMP
-1
-if (x <  0.1, 0.0, ...
-if (x-0.1 <=      y, (x-0.1)/y, ...
-if (x-0.4 <  0.75*y, 1.0, ...
-if (x-0.7 <= 0.25*y, 0.5, 0.0))))
+# Specify the exact solution
+deffunc: @exactsol = if (x <  0.1, 0.0, ...
+                     if (x-0.1 <=      y, (x-0.1)/y, ...
+                     if (x-0.4 <  0.75*y, 1.0, ...
+                     if (x-0.7 <= 0.25*y, 0.5, 0.0)))) ; x,y,z,t
 
-
-# Specify the initial velocity by logical expressions and solution values
-[initial_velocity]
-NCOMP
-2
-1.0
-1.0
-
+# Specify the velocity field
+deffunc: @velocity_x = 1.0 ; x,y,z,t
+deffunc: @velocity_y = 1.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 

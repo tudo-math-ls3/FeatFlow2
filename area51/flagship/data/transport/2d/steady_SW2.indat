@@ -14,22 +14,15 @@
 #                                                                              #
 ################################################################################
 
+# Definition of user-defined constants
 defconst: ang = -60
 
 # Specify the initial solution
-[initial_solution]
-NCOMP
-1
-y
-
+deffunc: @initsol = y ; x,y,z,t
 
 # Specify the velocity field
-[velocityfield]
-NCOMP
-2
-COS(_ang*_pi/180)
-SIN(_ang*_pi/180)
-
+deffunc: @velocity_x = COS(_ang*_pi/180) ; x,y,z,t
+deffunc: @velocity_y = SIN(_ang*_pi/180) ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]
@@ -45,7 +38,6 @@ PARAMETERS
 2.0  T  1   0.0
 3.3  T  1   1.0
 4.0  T  1   0.0
-
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_dual]

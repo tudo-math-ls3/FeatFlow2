@@ -130,7 +130,7 @@ stargetfuncname = @targetFuncInt
 # 2 = surface integral
 # 3 = mixed volume/surface integral
 # 4 = analytical target functional
-iexacttargetfunctype = 4
+iexacttargetfunctype = 0
 
 # section name of exact target functional
 sexacttargetfuncname = @targetFuncAnalytic
