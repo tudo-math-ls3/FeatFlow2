@@ -2345,7 +2345,6 @@ contains
     integer :: ndimension
     integer :: imasstype
     integer :: imassantidiffusiontype
-    integer :: ivelocitytype
 
     
     ! Check if mass matrix needs to be built
