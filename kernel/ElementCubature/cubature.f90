@@ -673,7 +673,8 @@ contains
   
 !</function>
 
-    integer :: cstdCubType,nreflevels
+    integer(I32) :: cstdCubType
+    integer :: nreflevels
     
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
@@ -812,7 +813,7 @@ contains
   
 !</function>
 
-    integer :: cstdCubType
+    integer(I32) :: cstdCubType
     
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
@@ -940,8 +941,8 @@ contains
   integer :: ndim, npts
 
   ! Variables needed for summed cubature formulas.  
-  integer :: cstdCubType,nreflevels
-  integer :: icubp,ncubpts
+  integer(I32) :: cstdCubType
+  integer :: nreflevels,icubp,ncubpts
   integer :: isubelement, nsubelements, isubx, isuby
   real(DP) :: dweight,dedgelen
   real(DP), dimension(:,:), allocatable :: DpointsLocal
