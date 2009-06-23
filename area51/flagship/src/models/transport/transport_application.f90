@@ -137,6 +137,7 @@ module transport_application
   use boundary
   use boundaryfilter
   use collection
+  use cubature
   use derivatives
   use element
   use flagship_basic
@@ -1534,7 +1535,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_fparser), pointer :: rfparser
+    type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
     character(LEN=SYS_STRLEN) :: stargetfuncname
     integer :: itargetfunctype
@@ -1558,10 +1559,10 @@ contains
                                   'stargetfuncname', stargetfuncname)
 
       ! Get function parser from collection structure
-      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
@@ -1584,10 +1585,10 @@ contains
                                   'stargetfuncname', stargetfuncname)
 
       ! Get function parser from collection structure
-      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
@@ -1602,13 +1603,13 @@ contains
       
     case (TFUNC_MIXINTG)
       ! Get function parser from collection structure
-      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get the number of the component used for evaluating the
       ! volume integral part of the target functional
       call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
                                   stargetfuncname, isubstring=1)
-      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
             
       ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
@@ -1628,7 +1629,7 @@ contains
       ! surface integral part of the target functional
       call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
                                   stargetfuncname, isubstring=2)
-      icomp = fparser_getFunctionNumber(rfparser, stargetfuncname)
+      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = dtime
@@ -1868,23 +1869,25 @@ contains
 !</subroutine>
     
     ! section names
-    character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: serrorestimatorName
-    character(LEN=SYS_STRLEN) :: stargetfuncName
     character(LEN=SYS_STRLEN) :: sexacttargetfuncName
+    character(LEN=SYS_STRLEN) :: sexactsolutionName
+    character(LEN=SYS_STRLEN) :: sweightingfuncName
+    character(LEN=SYS_STRLEN) :: svelocityName
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock) :: rvector
     type(t_matrixScalar) :: rmatrix
+    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dexactTargetError, dexactTargetFunction, dtargetFunction, dprotectLayerTolerance, daux
+    real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance, daux, dtargetFunc
     integer :: i, icomp, convectionAFC, diffusionAFC
-    integer :: lumpedMassMatrix, templateMatrix
-    integer :: itargetfunctype, iexacttargetfunctype, igridindicator
+    integer :: lumpedMassMatrix, templateMatrix, velocityfield
+    integer :: iexacttargetfunctype, igridindicator
     integer :: iprotectLayer, nprotectLayers
     integer :: h_BisactiveElement
 
@@ -1951,7 +1954,7 @@ contains
     call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
     
     ! Now we compute the global error and its nodal contributions
-    dtargetError = 0
+    dtargetError = 0.0_DP
     do i = 1, rmatrix%NEQ
       p_Dresidual(i) = p_Dresidual(i)*p_DsolutionDual(i)
       dtargetError   = dtargetError + p_Dresidual(i)
@@ -1968,7 +1971,7 @@ contains
 
     ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
-
+    
     ! Release temporal mass matrix if required
     if (lumpedMassMatrix .le. 0) call lsyssc_releaseMatrix(rmatrix)
     
@@ -1977,143 +1980,197 @@ contains
     ! Compute the effectivity index
     !---------------------------------------------------------------------------
 
-    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
-    call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncName, '')
-    call parlst_getvalue_int(rparlist, ssectionName, 'itargetfunctype', itargetfunctype, 0)
-    call parlst_getvalue_int(rparlist, ssectionName, 'iexacttargetfunctype', iexacttargetfunctype, 0)
-
-    select case(iexacttargetfunctype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'iexacttargetfunctype', iexacttargetfunctype)
     
+    select case(iexacttargetfunctype)
     case(TFUNC_VOLINTG)
       ! Get function parser from collection structure
       p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
-      ! Get the number of the component used for evaluating the target functional
-      call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname', stargetfuncname)
-      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
-
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sweightingfuncName, isubstring = 1)
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sexactsolutionName, isubstring = 2)
+      
       ! Prepare quick access arrays of the collection
       rcollection%DquickAccess(1) = rtimestep%dTime
-      rcollection%IquickAccess(1) = icomp
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
       rcollection%SquickAccess(1) = 'rfparser'
       
       ! Compute the exact error of the quantity of interest
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
-                                  transp_refFuncAnalytic, rcollection)
+      call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
+                        rsolutionPrimal%RvectorBlock(1),&
+                        transp_refFuncAnalytic, rcollection,&
+                        ffunctionWeight=transp_weightFuncAnalytic)
       
       ! Compute the exact value of the quantity of interest.
-      ! Create an empty vector initialized by zeros and compute the
-      ! 'error' between this vector and the analytic quantity of interest.
-      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
-      call pperr_scalarTargetFunc(rvector%RvectorBlock(1), dexactTargetFunction,&
-                                  transp_refFuncAnalytic, rcollection)
-      
-      ! Inverse the sign of the exact target functional since we computed $J(0-u)$
-      dexactTargetFunction = -dexactTargetFunction
-
-      ! Compute the value of the quantity of interest.
-      ! Use the same trick as above but use the analytical function 'null'
-!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-!!$                                         rappDescriptor%rfparser, 'fp_null')
-!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
-!!$                                  transp_refFuncAnalytic, rcollection)
-
-      ! Release temporal vector
-      call lsysbl_releaseVector(rvector)
+      call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
+                        ffunctionReference=transp_refFuncAnalytic,&
+                        rcollection=rcollection,&
+                        rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+                        ffunctionWeight=transp_weightFuncAnalytic)
 
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
-      call output_line('exact target functional value:           '//trim(sys_sdEP(dexactTargetFunction,15,6)))
-      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetFunction,15,6)))
       call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
       call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
       call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
       call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
-                                                                                        dexactTargetFunction ),15,6)))
+                                                                                        dexactTargetFunc ),15,6)))
       call output_lbrk()
       
-
-    case (TFUNC_SURFINTG)
-      call output_line('Target functionals in terms of surface integrals are not implemented',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
-      call sys_halt()
-
-
-    case (TFUNC_MIXINTG)
-      call output_line('Target functionals in terms of mixed volume and surface integrals are not implemented',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
-      call sys_halt()
       
+    case (TFUNC_SURFINTG)
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sweightingfuncName, isubstring = 1)
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sexactsolutionName, isubstring = 2)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+                               'velocityfield', velocityfield)
+      
+      ! Create temporal collection structure
+      call collct_init(rcollectionTmp)
+      
+      ! Prepare quick access arrays of the collection
+      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
+      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollectionTmp%SquickAccess(1) = 'rfparser'
+
+      do i = 1, rproblemLevel%rtriangulation%ndim
+        call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
+                                    svelocityname, isubString=i)
+        rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+      end do
+
+      ! Attach data to temporal collection structure
+      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      call collct_setvalue_vec(rcollectionTmp, 'rsolution', rsolutionPrimal, .true.)
+      call collct_setvalue_vec(rcollectionTmp, 'rvelocity',&
+                               rproblemLevel%RvectorBlock(velocityfield), .true.)
+
+      ! Compute the exact error of the quantity of interest
+      call pperr_scalarBoundary2D(0, CUB_G1_1D, dexactTargetError,&
+                                  ffunctionReference=transp_errorBdrInt2D,&
+                                  rcollection=rcollectionTmp,&
+                                  rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+                                  ffunctionWeight=transp_weightFuncBdrInt2D)
+
+      ! Compute the exact value of the quantity of interest
+      call pperr_scalarBoundary2D(0, CUB_G1_1D, dexactTargetFunc,&
+                                  ffunctionReference=transp_refFuncBdrInt2D,&
+                                  rcollection=rcollectionTmp,&
+                                  rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+                                  ffunctionWeight=transp_weightFuncBdrInt2D)
+
+      ! Release temporal collection structure
+      call collct_done(rcollectionTmp)
+
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
+                                                                                        dexactTargetFunc ),15,6)))
+      call output_lbrk()
+      
+      
+    case (TFUNC_MIXINTG)
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sweightingfuncName, isubstring = 1)
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sexactsolutionName, isubstring = 2)
+      
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
+      
+      ! Compute the exact error of the quantity of interest
+      call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
+                        rsolutionPrimal%RvectorBlock(1),&
+                        transp_refFuncAnalytic, rcollection,&
+                        ffunctionWeight=transp_weightFuncAnalytic)
+      
+      ! Compute the exact value of the quantity of interest.
+      call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
+                        ffunctionReference=transp_refFuncAnalytic,&
+                        rcollection=rcollection,&
+                        rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
+                        ffunctionWeight=transp_weightFuncAnalytic)
+      
+      ! @TODO: Evaluate the boundary integral
+
+      call output_lbrk()
+      call output_line('Error Analysis')
+      call output_line('--------------')
+      call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
+      call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
+      call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
+      call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
+                                                                                        dexactTargetFunc ),15,6)))
+      call output_lbrk()
+
 
     case (TFUNC_ANALYTIC)
-
       ! Get function parser from collection
       p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sweightingfuncName, isubstring = 1)
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sexacttargetfuncname', sexacttargetfuncName, isubstring = 2)
+
       ! Get the number of the component used for evaluating the exact target functional
-      call parlst_getvalue_string(rparlist, ssectionName, 'sexacttargetfuncname', sexacttargetfuncName, '')
       icomp = fparser_getFunctionNumber(p_rfparser, sexacttargetfuncName)
       
       ! Evaluate exact target functional
       call fparser_evalFunction(p_rfparser, icomp,&
-                                (/rtimestep%dTime/), dexactTargetFunction)
+                                (/rtimestep%dTime/), dexactTargetFunc)
+
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = 0
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
 
       ! Compute the approximate target functional
-      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction)
+      call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
+                        rsolutionPrimal%RvectorBlock(1),&
+                        rcollection=rcollection,&
+                        ffunctionWeight=transp_weightFuncAnalytic)
 
-      print *, dtargetError
-      print *, daux
-      print *, dexactTargetFunction
-      print *, dtargetFunction
-      print *, dexactTargetFunction-dtargetFunction
-      stop
-      
-
-!!$
-!!$      ! Create a temporal collection and attach the function parser
-!!$      call collct_init(rcollection)
-!!$      call collct_setvalue_pars(rcollection, 'FunctionParser',&
-!!$                                rappDescriptor%rfparser, .true.)
-!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-!!$                                         rappDescriptor%rfparser, 'fp_exactSol')
-!!$      rcollection%IquickAccess(2) = fparser_getFunctionNumber(&
-!!$                                         rappDescriptor%rfparser, 'fp_TargetFuncInt')
-
-
-!!$
-!!$      ! Compute the exact error of the quantity of interest
-!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dexactTargetError,&
-!!$                                  transp_refFuncAnalytic, rcollection)
-!!$
-!!$      ! Compute the value of the quantity of interest.
-!!$      ! Create an empty vector initialized by zeros and compute the
-!!$      ! 'error' between this vector and the analytic quantity of interest.
-!!$      call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true.)
-!!$
-!!$      ! Use the analytical function 'null'
-!!$      rcollection%IquickAccess(1) = fparser_getFunctionNumber(&
-!!$                                         rappDescriptor%rfparser, 'fp_null')
-!!$      call pperr_scalarTargetFunc(rsolutionPrimal%RvectorBlock(1), dtargetFunction,&
-!!$                                  transp_refFuncAnalytic, rcollection)
-!!$
-!!$      ! Release temporal vector
-!!$      call lsysbl_releaseVector(rvector)
-!!$
+      ! Compute exact error in target functional. Note that the
+      ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
+      ! have to change the sign to minus
+      dexactTargetError = dexactTargetFunc+dtargetFunc
 
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
-      call output_line('exact target functional value:           '//trim(sys_sdEP(dexactTargetFunction,15,6)))
-      call output_line('approximate target functional value:     '//trim(sys_sdEP(dtargetFunction,15,6)))
       call output_line('estimated error in quantity of interest: '//trim(sys_sdEP(dtargetError,15,6)))
       call output_line('exact error in quantity of interest:     '//trim(sys_sdEP(abs(dexactTargetError),15,6)))
       call output_line('effectivity index:                       '//trim(sys_sdEP(dtargetError/abs(dexactTargetError),15,6)))
       call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
-                                                                                        dexactTargetFunction ),15,6)))
+                                                                                        dexactTargetFunc ),15,6)))
       call output_lbrk()
       
-      stop
 
     case DEFAULT
       call output_lbrk()
@@ -2291,7 +2348,6 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sindatfileName
     character(LEN=SYS_STRLEN) :: serrorestimatorName
     character(LEN=SYS_STRLEN) :: sexactsolutionName
 
@@ -2310,7 +2366,6 @@ contains
 
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName, 'indatfile', sindatfileName)
     call parlst_getvalue_string(rparlist, ssectionName, 'errorestimator', serrorestimatorName)
     call parlst_getvalue_string(rparlist, ssectionName, 'sexactsolutionname', sexactsolutionName, '')
     call parlst_getvalue_int(rparlist, ssectionName, 'iexactsolutiontype', iexactsolutiontype, 0)
@@ -2386,7 +2441,7 @@ contains
       rcollection%SquickAccess(1) = 'rfparser'
       
       ! Calculate the H1-error of the reference solution
-      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dexacterror,&
+      call pperr_scalar(PPERR_H1ERROR, dexacterror, rsolution%RvectorBlock(1),&
                         transp_refFuncAnalytic, rcollection)
 
       call output_lbrk()
@@ -2425,7 +2480,7 @@ contains
       call output_line('-------------------------')
 
       ! We need the global norm of the scalar error variable
-      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dsolution)
+      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution%RvectorBlock(1))
 
       call output_line('Total percentage error:       '//trim(sys_sdEP(derror/dsolution,15,6)))
       
@@ -2447,7 +2502,7 @@ contains
 
       ! We need the global norm of the scalar error variable
       call lsyssc_createVector(rvectorScalar, rerror%NEQ, .true.)
-      call pperr_scalar(rsolution%RvectorBlock(1), PPERR_H1ERROR, dsolution,&
+      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution%RvectorBlock(1),&
                         relementError=rvectorScalar)
 
       call output_line('Total percentage error: '//trim(sys_sdEP(derror/dsolution,15,6)))
