@@ -52,7 +52,7 @@
 !#   $$ \int_\Omega w(x)[u(x) - u_h(x)] dx $$
 !#        where $w(x)$ is a weighting function
 !#
-!# 9.) pperr_scalarTargetFuncBdr2D
+!# 9.) pperr_scalarTargetFuncBoundary2d
 !#     -> On a 2D boundary segment, calculate the target functional
 !#        for a FE function:
 !#   $$ \\int_\Gamma w(x)[u(x)*v(x) - u_h(x)*v_h(x)]
@@ -187,7 +187,7 @@ module pprocerror
   public :: pperr_scalarStandardDeviation
   public :: pperr_blockStandardDeviation
   public :: pperr_scalarTargetFunc
-  public :: pperr_scalarTargetFuncBdr2D
+  public :: pperr_scalarTargetFuncBoundary2d
 
 contains
 
@@ -4517,8 +4517,8 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarTargetFunc (rvectorScalar, derror,&
-                                     ffunctionReference, rcollection, &
-                                     fweightingFunc,rdiscretisation,relementError)
+                                     ffunctionReference, fweightingFunc,&
+                                     rcollection, rdiscretisation, relementError)
 
 !<description>
   ! This routine calculates the error in the target functional of a
@@ -4944,9 +4944,9 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalarTargetFuncBdr2D (rvectorScalar, ccubType, derror,&
-                                          rboundaryRegion, ffunctionReference,&
-                                          fweightingFunc,  rcollection, rdiscretisation)
+  subroutine pperr_scalarTargetFuncBoundary2D (rvectorScalar, ccubType, derror,&
+                                               rboundaryRegion, ffunctionReference,&
+                                               fweightingFunc,  rcollection, rdiscretisation)
 
 !<description>
   ! This routine calculates the error in the target functional of a
@@ -5042,7 +5042,7 @@ contains
     ! for that boundary region. Otherwise, call pperr_scalarBoundary2d_conf
     ! for all possible boundary regions and sum up the errors.
     if (present(rboundaryRegion)) then
-      call pperr_scalarTargetFuncBdr2d_cf (rvectorScalar, ccubType, derror,&
+      call pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
                                              rboundaryRegion, ffunctionReference,&
                                              fweightingFunc, rcollection, rdiscretisation)
     else
@@ -5052,22 +5052,22 @@ contains
       do ibdc = 1,boundary_igetNBoundComp(p_rdiscretisation%p_rboundary)
         call boundary_createRegion (p_rdiscretisation%p_rboundary, &
                                     ibdc, 0, rboundaryReg)
-        call pperr_scalarTargetFuncBdr2d_cf (rvectorScalar, ccubType, derror,&
+        call pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
                                                rboundaryRegion, ffunctionReference,&
                                                fweightingFunc, rcollection, rdiscretisation)
         derror = derror + dlocalError
       end do
     end if
 
-  end subroutine 
+  end subroutine pperr_scalarTargetFuncBoundary2D
 
   !****************************************************************************
 
 !<subroutine>
 
-  subroutine pperr_scalarTargetFuncBdr2d_cf (rvectorScalar, ccubType, derror,&
-                                             rboundaryRegion, ffunctionReference,&
-                                             fweightingFunc, rcollection, rdiscretisation)
+  subroutine pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
+                                               rboundaryRegion, ffunctionReference,&
+                                               fweightingFunc, rcollection, rdiscretisation)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -5414,7 +5414,7 @@ contains
     deallocate(DedgePosition)
     deallocate(Ielements, IelementOrientation)
 
-  end subroutine 
+  end subroutine pperr_scalarTargetFuncBdr2d_conf
   
 end module pprocerror
  
