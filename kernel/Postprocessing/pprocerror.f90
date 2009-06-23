@@ -72,6 +72,7 @@ module pprocerror
   use feevaluation
   use transformation
   use collection
+  use mprimitives
 
   implicit none
   
@@ -944,8 +945,8 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarObsolete (rvectorScalar, cerrortype, derror,&
-                                   ffunctionReference, rcollection, rdiscretisation,&
-                                   relementError, ffunctionWeight)
+                                   ffunctionReference, rcollection,&
+                                   rdiscretisation, relementError)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a
@@ -986,12 +987,7 @@ contains
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
-  
-  ! OPTIONAL: A callback function that provides the weighting function
-  ! by which the computed error is multipled.
-  ! If not specified, the reference function is assumed to be =1!
-  optional :: ffunctionWeight
-  
+    
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
   type(t_collection), intent(INOUT), target, optional :: rcollection
@@ -1020,7 +1016,7 @@ contains
   ! Call the new routine with diffenret ordering of parameters
   call pperr_scalar(cerrortype, derror, rvectorScalar,&
                     ffunctionReference, rcollection,&
-                    rdiscretisation, relementError, ffunctionWeight)
+                    rdiscretisation, relementError)
 
   end subroutine pperr_scalarObsolete
 
