@@ -578,7 +578,7 @@ contains
 !</function>
   
     ! Include the number of levels into ccubType.
-    n = ior(cub_getStdCubType(ccubType),ishft(max(0,nlevels),16))
+    n = ior(cub_getStdCubType(ccubType),ishft(int(max(0,nlevels),I32),16))
   
   end function
 
