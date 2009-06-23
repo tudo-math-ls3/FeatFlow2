@@ -148,10 +148,10 @@
   !</input>
   
   !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
+    ! This array has to receive the values of the weights in all the
+    ! points specified in Dpoints, or the appropriate derivative of
+    ! the function, respectively, according to cderivative.
+    ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(OUT) :: Dvalues
   !</output>
     
