@@ -102,6 +102,9 @@ module pprocerror
 
   ! $L_1$-error/norm
   integer, parameter, public :: PPERR_L1ERROR = 3
+
+  ! Mean value error/norm
+  integer, parameter, public :: PPERR_MEANERROR = 4
   
 !</constantblock>
 
@@ -851,7 +854,7 @@ contains
     ! Get the correct discretisation structure and check if we can use it.
     if (present(rdiscretisation)) then
       p_rdiscretisation => rdiscretisation
-      call lsyssc_checkDiscretisation (rvectorScalar,p_rdiscretisation)
+      call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
     else
       p_rdiscretisation => rvectorScalar%p_rspatialdiscr
     end if
@@ -2839,14 +2842,18 @@ contains
     type(t_boundaryRegion) :: rboundaryReg
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
     real(DP) :: dlocalError
-    integer :: ibdc
+    integer :: ibdc,cdataType
     
     ! Get the correct discretisation structure and check if we can use it.
     if (present(rdiscretisation)) then
       p_rdiscretisation => rdiscretisation
-      call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
-    else
+      if (present(rvectorScalar)) then
+        call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
+      end if
+    elseif (present(rvectorScalar)) then
       p_rdiscretisation => rvectorScalar%p_rspatialdiscr
+    else
+      nullify(p_rdiscretisation)
     end if
     
     if (.not. associated(p_rdiscretisation)) then
@@ -2862,33 +2869,60 @@ contains
     end if
 
     ! The vector must be unsorted, otherwise we can't set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarBoundary2D')
-      call sys_halt()
+    if (present(rvectorScalar)) then
+      if (rvectorScalar%isortStrategy .gt. 0) then
+        call output_line('Vector must be unsorted!',&
+                         OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarBoundary2D')
+        call sys_halt()
+      end if
+      cdataType = rvectorScalar%cdataType
+    else
+      cdataType = ST_DOUBLE
     end if
   
     ! If the boundary region is specified, call pperr_scalarBoundary2d_conf
     ! for that boundary region. Otherwise, call pperr_scalarBoundary2d_conf
     ! for all possible boundary regions and sum up the errors.
     if (present(rboundaryRegion)) then
-      call pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
-                                        rboundaryRegion, rvectorScalar,&
-                                        ffunctionReference, p_rdiscretisation,&
-                                        rcollection, ffunctionWeight)
-    else
-      derror = 0.0_DP
-      ! Create a boundary region for each boundary component and call
-      ! the calculation routine for that.
-      do ibdc = 1,boundary_igetNBoundComp(p_rdiscretisation%p_rboundary)
-        call boundary_createRegion (p_rdiscretisation%p_rboundary, &
-                                    ibdc, 0, rboundaryReg)
-        call pperr_scalarBoundary2d_conf (cerrortype, ccubType, dlocalError,&
-                                          rboundaryReg, rvectorScalar,&
+      
+      select case(cdataType)
+        
+      case (ST_DOUBLE)
+        call pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
+                                          rboundaryRegion, rvectorScalar,&
                                           ffunctionReference, p_rdiscretisation,&
                                           rcollection, ffunctionWeight)
-        derror = derror + dlocalError
-      end do
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2D')
+        call sys_halt()
+      end select
+
+    else
+
+      select case(cdataType)
+        
+      case (ST_DOUBLE)
+
+        derror = 0.0_DP
+        ! Create a boundary region for each boundary component and call
+        ! the calculation routine for that.
+        do ibdc = 1,boundary_igetNBoundComp(p_rdiscretisation%p_rboundary)
+          call boundary_createRegion (p_rdiscretisation%p_rboundary, &
+                                      ibdc, 0, rboundaryReg)
+          call pperr_scalarBoundary2d_conf (cerrortype, ccubType, dlocalError,&
+                                            rboundaryReg, rvectorScalar,&
+                                            ffunctionReference, p_rdiscretisation,&
+                                            rcollection, ffunctionWeight)
+          derror = derror + dlocalError
+        end do
+
+      case DEFAULT
+        call output_line('Single precision vectors currently not supported!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2D')
+        call sys_halt()
+      end select
+
     end if
     
   end subroutine pperr_scalarBoundary2D
@@ -3610,19 +3644,19 @@ contains
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     do iblock=2,rvector%nblocks
-      call lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
+      call lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock), p_rdiscretisation)
     end do
 
     ! Get the correct discretisation structure for the reference 
     ! vector and check if we can use it.
     if (present(rdiscretisationRef)) then
       p_rdiscretisationRef => rdiscretisationRef
-      call lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(1),p_rdiscretisationRef)
+      call lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(1), p_rdiscretisationRef)
     else
       p_rdiscretisationRef => rvectorRef%p_rblockDiscr%RspatialDiscr(1)
     end if
     do iblock=2,rvectorRef%nblocks
-      call lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(iblock),p_rdiscretisationRef)
+      call lsyssc_checkDiscretisation (rvectorRef%RvectorBlock(iblock), p_rdiscretisationRef)
     end do
     
     if (.not. associated(p_rdiscretisation) .or.&
@@ -4131,7 +4165,7 @@ contains
     ! Get the correct discretisation structure for the solution vector
     p_rdiscretisation => rvector%p_rblockDiscr%RspatialDiscr(1)
     do iblock=2,rvector%nblocks
-      call lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock),p_rdiscretisation)
+      call lsyssc_checkDiscretisation (rvector%RvectorBlock(iblock), p_rdiscretisation)
     end do
 
     if (.not. associated(p_rdiscretisation)) then
@@ -4516,21 +4550,21 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalarTargetFunc (rvectorScalar, derror,&
-                                     ffunctionReference, fweightingFunc,&
-                                     rcollection, rdiscretisation, relementError)
+  subroutine pperr_scalarTargetFunc (cerrortype, derror, rvectorScalar,&
+                                     ffunctionReference, rcollection, rdiscretisation,&
+                                     relementError, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error in the target functional of a
   ! given finite element function in rvectorScalar to a given
   ! analytical callback function ffunctionReference using the
-  ! weighting function fweightingFunc.
+  ! weighting function ffunctionWeight.
   !
   ! $$ \int_\Omega w(x)*[ u(x)-u_h(x) ] dx $$
   !
   ! Here, $w(x)$ is some weighting function which can be used to restrict
   ! the integral to a subdomain of the global domain $\Omega$. If the
-  ! function fweightingFunc is omited, it is assumed to by =1 everywhere.
+  ! function ffunctionWeight is not present, it is assumed to be =1.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the
@@ -4538,28 +4572,36 @@ contains
 !</description>
 
 !<input>
-  ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalar
+  ! Type of error to compute. Bitfield. This is a combination of the
+  ! PPERR_xxxx-constants, which specifies what to compute.
+  ! Example: PPERR_MEANERROR computes the error in the mean value.
+  integer, intent(IN) :: cerrortype
+
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
   
   ! OPTIONAL: A callback function that provides the analytical
-  !           reference function to which the error should be
-  !           computed.  If not specified, the reference function is
-  !           assumed to be zero!
+  ! reference function to which the error should be computed.  If not
+  ! specified, the reference function is assumed to be zero!
   include 'intf_refTargetFunctionSc.inc'
   optional :: ffunctionReference
-  optional :: fweightingFunc
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be =1!
+  optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
-  !           callback function to provide additional information.
+  ! callback function to provide additional information.
   type(t_collection), intent(INOUT), target, optional :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the
-  !           error. If not specified, the discretisation structure
-  !           in the vector is used.  If specified, the discretisation
-  !           structure must be 'compatible' to the vector (concerning
-  !           NEQ,...). pperr_scalar uses the cubature formula
-  !           specifier of the linear form in rdiscretisation to
-  !           compute the integrals for the error.
+  ! error. If not specified, the discretisation structure in the
+  ! vector is used.  If specified, the discretisation structure must
+  ! be 'compatible' to the vector (concerning NEQ,...). pperr_scalar
+  ! uses the cubature formula specifier of the linear form in
+  ! rdiscretisation to compute the integrals for the error.
   type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
 !</input>
 
@@ -4577,38 +4619,48 @@ contains
 
     ! local variables
     type(t_spatialDiscretisation), pointer :: p_rdiscretisation
+    integer :: cdataType
 
     ! Get the correct discretisation structure and check if we can use it.
     if (present(rdiscretisation)) then
       p_rdiscretisation => rdiscretisation
-      call lsyssc_checkDiscretisation (rvectorScalar,p_rdiscretisation)
-    else
+      if (present(rvectorScalar)) then
+        call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
+      end if
+    elseif (present(rvectorScalar)) then
       p_rdiscretisation => rvectorScalar%p_rspatialdiscr
+    else
+      nullify(p_rdiscretisation)
     end if
     
     if (.not. associated(p_rdiscretisation)) then
       call output_line('No discretisation structure!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarTargetFunc')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarTargetFunc')
       call sys_halt()
     end if
     
     ! The vector must be unsorted, otherwise we can't set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarTargetFunc')
-      call sys_halt()
+    if (present(rvectorScalar)) then
+      if (rvectorScalar%isortStrategy .gt. 0) then
+        call output_line('Vector must be unsorted!',&
+                         OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarTargetFunc')
+        call sys_halt()
+      end if
+      cdataType = rvectorScalar%cdataType
+    else
+      cdataType = ST_DOUBLE
     end if
 
     ! Do we have a uniform triangulation? Would simplify a lot...
     if ((p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
         (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
 
-      select case(rvectorScalar%cdataType)
+      select case(cdataType)
         
       case (ST_DOUBLE)
-        call scalarTargetFunc_conf(rvectorScalar, derror, p_rdiscretisation,&
-                                   ffunctionReference, fweightingFunc,&
-                                   rcollection, relementError)
+        call pperr_scalarTargetFunc_conf(cerrortype, derror, p_rdiscretisation,&
+                                         rvectorScalar, ffunctionReference,&
+                                         rcollection, relementError, ffunctionWeight)
 
       case DEFAULT
         call output_line('Single precision vectors currently not supported!',&
@@ -4622,249 +4674,295 @@ contains
       call sys_halt()
     end if
 
-  contains
+  end subroutine pperr_scalarTargetFunc
 
-    ! Here, the real working routines follow
+  !****************************************************************************
 
-    !**************************************************************
+!<subroutine>
 
-    subroutine scalarTargetFunc_conf(rvectorScalar, derror, rdiscretisation,&
-                                     ffunctionReference, fweightingFunc,&
-                                     rcollection, relementError)
+  subroutine pperr_scalarTargetFunc_conf(cerrortype, derror, rdiscretisation,&
+                                         rvectorScalar, ffunctionReference,&
+                                         rcollection, relementError, ffunctionWeight)
 
-      type(t_vectorScalar), intent(IN), target :: rvectorScalar
-      type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
-      type(t_collection), intent(INOUT), optional :: rcollection
-      type(t_vectorScalar), intent(INOUT), optional :: relementError
-      real(DP), intent(OUT) :: derror
+!<description>
+  ! This routine calculates the error of a given finite element function
+  ! in rvector to a given analytical callback function ffunctionReference
+  ! in terms of an output functional.
+!</description>
 
-      include 'intf_refTargetFunctionSc.inc'
-      optional :: ffunctionReference
-      optional :: fweightingFunc
+!<input>
+  ! Type of error to compute. Bitfield. This is a combination of the
+  ! PPERR_xxxx-constants, which specifies what to compute.
+  ! Example: PPERR_MEANERROR computes the error in the mean value
+  integer, intent(IN) :: cerrortype
 
-      ! local variables
-      integer :: icurrentElementDistr, ICUBP, NVE
-      integer :: IEL, IELmax, IELset, IELGlobal
-      real(DP) :: OM
-      
-      ! Array to tell the element which derivatives to calculate
-      logical, dimension(EL_MAXNDER) :: Bder
-      
-      ! For every cubature point on the reference element,
-      ! the corresponding cubature weight
-      real(DP), dimension(:), allocatable :: Domega
-      
-      ! number of cubature points on the reference element
-      integer :: ncubp
-      
-      ! Number of local degees of freedom for test functions
-      integer :: indofTrial
-      
-      ! The triangulation structure - to shorten some things...
-      type(t_triangulation), pointer :: p_rtriangulation
-      
-      ! A pointer to an element-number list
-      integer, dimension(:), pointer :: p_IelementList
-      
-      ! An array receiving the coordinates of cubature points on
-      ! the reference element for all elements in a set.
-      real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
-      
-      ! Arrays for saving Jacobian determinants and matrices
-      real(DP), dimension(:,:), pointer :: p_Ddetj
-      
-      ! Current element distribution
-      type(t_elementDistribution), pointer :: p_relementDistribution
-      
-      ! Number of elements in the current element distribution
-      integer :: NEL
-      
-      ! Pointer to the values of the function that are computed by the callback routine.
-      real(DP), dimension(:,:,:), allocatable :: Dcoefficients
-      
-      ! Number of elements in a block. Normally =BILF_NELEMSIM,
-      ! except if there are less elements in the discretisation.
-      integer :: nelementsPerBlock
-      
-      ! A t_domainIntSubset structure that is used for storing information
-      ! and passing it to callback routines.
-      type(t_domainIntSubset) :: rintSubset
-      type(t_evalElementSet) :: revalElementSet
-      
-      ! Type of transformation from the reference to the real element 
-      integer(I32) :: ctrafoType
-      
-      ! Element evaluation tag; collects some information necessary for evaluating
-      ! the elements.
-      integer(I32) :: cevaluationTag
-      
-      ! An allocateable array accepting the DOF's of a set of elements.
-      integer, dimension(:,:), allocatable, target :: IdofsTrial
-      
-      ! Pointer to the element-wise target functional
-      real(DP), dimension(:), pointer :: p_DelementError
+  ! A discretisation structure specifying how to compute the error.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
 
-      
-      ! We only need function values
-      Bder = .false.
-      Bder(DER_FUNC) = .true.
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+  
+  ! OPTIONAL: A callback function that provides the analytical reference 
+  ! function to which the error should be computed.
+  ! If not specified, the reference function is assumed to be zero!
+  include 'intf_refFunctionSc.inc'
+  optional :: ffunctionReference
 
-      ! Get a pointer to the triangulation - for easier access.
-      p_rtriangulation => rdiscretisation%p_rtriangulation
-      
-      ! For saving some memory in smaller discretisations, we calculate
-      ! the number of elements per block. For smaller triangulations,
-      ! this is NEL. If there are too many elements, it's at most
-      ! BILF_NELEMSIM. This is only used for allocating some arrays.
-      nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
-      
-      ! Set the current target functional to 0 
-      derror = 0.0_DP
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be =1!
+  optional :: ffunctionWeight
+!</input>
 
-      ! Set pointer to element-wise target functional
-      if (present(relementError)) then
-        call lsyssc_getbase_double(relementError, p_DelementError)
-      end if
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional :: rcollection
 
+  ! OPTIONAL: A scalar vector which holds the calculated error per element
+  type(t_vectorScalar), intent(INOUT), optional :: relementError
+!</inputoutput>
 
-      ! Now loop over the different element distributions
-      ! (=combinations of trial and test functions) in the
-      ! discretisation.
+!<output>
+  ! Array receiving the calculated error.
+  real(DP), intent(OUT) :: derror
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: icurrentElementDistr, ICUBP, NVE
+    integer :: IEL, IELmax, IELset, IELGlobal
+    real(DP) :: OM
+    
+    ! Array to tell the element which derivatives to calculate
+    logical, dimension(EL_MAXNDER) :: Bder
+    
+    ! For every cubature point on the reference element,
+    ! the corresponding cubature weight
+    real(DP), dimension(:), allocatable :: Domega
+    
+    ! number of cubature points on the reference element
+    integer :: ncubp
+    
+    ! Number of local degees of freedom for test functions
+    integer :: indofTrial
+    
+    ! The triangulation structure - to shorten some things...
+    type(t_triangulation), pointer :: p_rtriangulation
+    
+    ! A pointer to an element-number list
+    integer, dimension(:), pointer :: p_IelementList
+    
+    ! An array receiving the coordinates of cubature points on
+    ! the reference element for all elements in a set.
+    real(DP), dimension(:,:), allocatable :: p_DcubPtsRef
+    
+    ! Arrays for saving Jacobian determinants and matrices
+    real(DP), dimension(:,:), pointer :: p_Ddetj
+    
+    ! Current element distribution
+    type(t_elementDistribution), pointer :: p_relementDistribution
+    
+    ! Number of elements in the current element distribution
+    integer :: NEL
+    
+    ! Pointer to the values of the function that are computed by the callback routine.
+    real(DP), dimension(:,:,:), allocatable :: Dcoefficients
+    
+    ! Number of elements in a block. Normally =BILF_NELEMSIM,
+    ! except if there are less elements in the discretisation.
+    integer :: nelementsPerBlock
+    
+    ! A t_domainIntSubset structure that is used for storing information
+    ! and passing it to callback routines.
+    type(t_domainIntSubset) :: rintSubset
+    type(t_evalElementSet) :: revalElementSet
+    
+    ! Type of transformation from the reference to the real element 
+    integer(I32) :: ctrafoType
+    
+    ! Element evaluation tag; collects some information necessary for evaluating
+    ! the elements.
+    integer(I32) :: cevaluationTag
       
-      do icurrentElementDistr = 1, rdiscretisation%inumFESpaces
+    ! An allocateable array accepting the DOF's of a set of elements.
+    integer, dimension(:,:), allocatable, target :: IdofsTrial
+    
+    ! Pointer to the element-wise target functional
+    real(DP), dimension(:), pointer :: p_DelementError
+    
+    
+    ! We only need function values
+    Bder = .false.
+    Bder(DER_FUNC) = .true.
+    
+    ! Get a pointer to the triangulation - for easier access.
+    p_rtriangulation => rdiscretisation%p_rtriangulation
+    
+    ! For saving some memory in smaller discretisations, we calculate
+    ! the number of elements per block. For smaller triangulations,
+    ! this is NEL. If there are too many elements, it's at most
+    ! BILF_NELEMSIM. This is only used for allocating some arrays.
+    nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
+    
+    ! Set the current target functional to 0 
+    derror = 0.0_DP
+    
+    ! Set pointer to element-wise target functional
+    if (present(relementError)) then
+      call lsyssc_getbase_double(relementError, p_DelementError)
+    end if
+    
+    
+    ! Now loop over the different element distributions
+    ! (=combinations of trial and test functions) in the
+    ! discretisation.
+    
+    do icurrentElementDistr = 1, rdiscretisation%inumFESpaces
+      
+      ! Activate the current element distribution
+      p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+      
+      ! Cancel if this element distribution is empty.
+      if (p_relementDistribution%NEL .eq. 0) cycle
+      
+      ! Get the number of local DOF's for trial functions
+      indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+      
+      ! Get the number of corner vertices of the element
+      NVE = elem_igetNVE(p_relementDistribution%celement)
+      
+      ! Get from the trial element space the type of coordinate system
+      ! that is used there:
+      ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+      
+      ! Get the number of cubature points for the cubature formula
+      ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType), ncubp))
+      
+      ! Get the cubature formula
+      call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
+      
+      ! Allocate memory for the DOF's of all the elements.
+      allocate(IdofsTrial(indofTrial, nelementsPerBlock))
+      
+      ! Allocate memory for the coefficients
+      allocate(Dcoefficients(ncubp,nelementsPerBlock, 3))
+      
+      ! Initialisation of the element set.
+      call elprep_init(revalElementSet)
+      
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
+      
+      ! Evaluate real coordinates if necessary.
+      cevaluationTag = ior(cevaluationTag, EL_EVLTAG_REALPOINTS)
+      
+      ! Make sure that we have determinants.
+      cevaluationTag = ior(cevaluationTag, EL_EVLTAG_DETJ)
+      
+      ! p_IelementList must point to our set of elements in the discretisation
+      ! with that combination of trial functions
+      call storage_getbase_int (p_relementDistribution%h_IelementList, &
+                                p_IelementList)
+      
+      ! Get the number of elements there.
+      NEL = p_relementDistribution%NEL
+      
+      ! Loop over the elements - blockwise.
+      do IELset = 1, NEL, PPERR_NELEMSIM
         
-        ! Activate the current element distribution
-        p_relementDistribution => rdiscretisation%RelementDistr(icurrentElementDistr)
+        ! We always handle LINF_NELEMSIM elements simultaneously.
+        ! How many elements have we actually here?
+        ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
+        ! elements simultaneously.
         
-        ! Cancel if this element distribution is empty.
-        if (p_relementDistribution%NEL .eq. 0) cycle
+        IELmax = min(NEL, IELset-1+PPERR_NELEMSIM)
         
-        ! Get the number of local DOF's for trial functions
-        indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
+        ! Calculate the global DOF's into IdofsTrial.
+        !
+        ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
+                                     IdofsTrial)
         
-        ! Get the number of corner vertices of the element
-        NVE = elem_igetNVE(p_relementDistribution%celement)
+        ! Prepare the call to the evaluation routine of the analytic function.    
+        call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
+        rintSubset%ielementDistribution = icurrentElementDistr
+        rintSubset%ielementStartIdx = IELset
+        rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
+        rintSubset%p_IdofsTrial => IdofsTrial
+        rintSubset%celement = p_relementDistribution%celement
         
-        ! Get from the trial element space the type of coordinate system
-        ! that is used there:
-        ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
+        ! Calculate all information that is necessary to evaluate the finite element
+        ! on all cells of our subset. This includes the coordinates of the points
+        ! on the cells.
+        call elprep_prepareSetForEvaluation (revalElementSet,&
+            cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
+            ctrafoType, p_DcubPtsRef(:,1:ncubp))
+        p_Ddetj => revalElementSet%p_Ddetj
         
-        ! Get the number of cubature points for the cubature formula
-        ncubp = cub_igetNumPts(p_relementDistribution%ccubTypeEval)
+        ! In the next loop, we don't have to evaluate the coordinates
+        ! on the reference elements anymore.
+        cevaluationTag = iand(cevaluationTag, not(EL_EVLTAG_REFPOINTS))
         
-        ! Allocate two arrays for the points and the weights
-        allocate(Domega(ncubp))
-        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType), ncubp))
-        
-        ! Get the cubature formula
-        call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
-        
-        ! Allocate memory for the DOF's of all the elements.
-        allocate(IdofsTrial(indofTrial, nelementsPerBlock))
-        
-        ! Allocate memory for the coefficients
-        allocate(Dcoefficients(ncubp,nelementsPerBlock, 3))
-        
-        ! Initialisation of the element set.
-        call elprep_init(revalElementSet)
-        
-        ! Get the element evaluation tag of all FE spaces. We need it to evaluate
-        ! the elements later. All of them can be combined with OR, what will give
-        ! a combined evaluation tag. 
-        cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
-      
-        ! Evaluate real coordinates if necessary.
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_REALPOINTS)
+        ! At this point, we must select the correct domain integration and coefficient
+        ! calculation routine, depending which type of error we should compute!
 
-        ! Make sure that we have determinants.
-        cevaluationTag = ior(cevaluationTag, EL_EVLTAG_DETJ)
+        select case (cerrortype)
 
-        ! p_IelementList must point to our set of elements in the discretisation
-        ! with that combination of trial functions
-        call storage_getbase_int (p_relementDistribution%h_IelementList, &
-                                  p_IelementList)
-        
-        ! Get the number of elements there.
-        NEL = p_relementDistribution%NEL
-        
-        ! Loop over the elements - blockwise.
-        do IELset = 1, NEL, PPERR_NELEMSIM
-          
-          ! We always handle LINF_NELEMSIM elements simultaneously.
-          ! How many elements have we actually here?
-          ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
-          ! elements simultaneously.
-          
-          IELmax = min(NEL, IELset-1+PPERR_NELEMSIM)
-          
-          ! Calculate the global DOF's into IdofsTrial.
-          !
-          ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-          ! global DOF's of our LINF_NELEMSIM elements simultaneously.
-          call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
-                                       IdofsTrial)
-          
-          ! Prepare the call to the evaluation routine of the analytic function.    
-          call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
-          rintSubset%ielementDistribution = icurrentElementDistr
-          rintSubset%ielementStartIdx = IELset
-          rintSubset%p_Ielements => p_IelementList(IELset:IELmax)
-          rintSubset%p_IdofsTrial => IdofsTrial
-          rintSubset%celement = p_relementDistribution%celement
-          
-          ! Calculate all information that is necessary to evaluate the finite element
-          ! on all cells of our subset. This includes the coordinates of the points
-          ! on the cells.
-          call elprep_prepareSetForEvaluation (revalElementSet,&
-              cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
-              ctrafoType, p_DcubPtsRef(:,1:ncubp))
-          p_Ddetj => revalElementSet%p_Ddetj
-          
-          ! In the next loop, we don't have to evaluate the coordinates
-          ! on the reference elements anymore.
-          cevaluationTag = iand(cevaluationTag, not(EL_EVLTAG_REFPOINTS))
+        case (PPERR_MEANERROR)
 
-
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x).
-          ! Save the result to Dcoefficients(:,:,1)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                                   p_relementDistribution%celement,&
-                                   IdofsTrial, DER_FUNC,&
-                                   Dcoefficients(:,1:IELmax-IELset+1,1))
-
-          
-          ! Calculate the values of the coefficient function in the
-          ! cubature points: u(x).
-          ! Save the result to Dcoefficients(:,:,2)
+          ! The integral mean value uses only the values of the function
           
           if (present(ffunctionReference)) then
-            call ffunctionReference(DER_FUNC, rdiscretisation, int(IELmax-IELset+1), ncubp, &
-                                    revalElementSet%p_DpointsReal,&
-                                    IdofsTrial, rintSubset, &
-                                    Dcoefficients(:,1:IELmax-IELset+1,2), rcollection)
+            ! Calculate the values of the coefficient function in the
+            ! cubature points: u(x).
+            ! Save the result to Dcoefficients(:,:,1)
+            call ffunctionReference(DER_FUNC, rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal,&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
+          end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                p_relementDistribution%celement,&
+                IdofsTrial, DER_FUNC,&
+                Dcoefficients(:,1:IELmax-IELset+1,2))
           else
             Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
           end if
-
-
-          ! Calculate the values of the weighting function in the
-          ! cubature points: w(x).
-          ! Save the result to Dcoefficients(:,:,3)
           
-          if (present(fweightingFunc)) then
-            call fweightingFunc(rdiscretisation, int(IELmax-IELset+1), ncubp, &
-                                revalElementSet%p_DpointsReal,&
-                                IdofsTrial, rintSubset, &
-                                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
           else
             Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
           end if
 
           ! Subtract Dcoefficients(:,:,2) from Dcoefficients(:,:,1)
           ! and multiply the result by Dcoefficients(:,:,3) to obtain
-          ! "w*[u_h-u] (cubature pt.)"!
+          ! "w*[u-u_h] (cubature pt.)"!
 
           if (present(relementError)) then
             
@@ -4880,13 +4978,12 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 IELGlobal = p_IelementList(IELset+IEL-1)
                 
                 p_DelementError(IELGlobal) = OM * ( Dcoefficients(icubp,IEL,1) - &
-                                                    Dcoefficients(icubp,IEL,2)   ) * &
-                                                    Dcoefficients(icubp,IEL,3)
+                                                    Dcoefficients(icubp,IEL,2) )
 
                 derror = derror + p_DelementError(IELGlobal)
                 
@@ -4908,12 +5005,11 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 derror = derror + &
                          OM * ( Dcoefficients(icubp,IEL,1) - &
-                                Dcoefficients(icubp,IEL,2)   ) * &
-                                Dcoefficients(icubp,IEL,3)
+                                Dcoefficients(icubp,IEL,2) )
                 
               end do ! ICUBP 
               
@@ -4921,24 +5017,28 @@ contains
 
           end if
 
-          ! Release the temporary domain integration structure again
-          call domint_doneIntegration (rintSubset)
+        case default
+          call output_line('Unknown error type identifier!',&
+              OU_CLASS_ERROR, OU_MODE_STD, 'scalarTargetFunc_conf')
+          call sys_halt()
+        end select
+
+        ! Release the temporary domain integration structure again
+        call domint_doneIntegration (rintSubset)
           
-        end do ! IELset
+      end do ! IELset
         
-        ! Release memory
-        call elprep_releaseElementSet(revalElementSet)
-        
-        deallocate(p_DcubPtsRef)
-        deallocate(Dcoefficients)
-        deallocate(IdofsTrial)
-        deallocate(Domega)
-        
-      end do ! icurrentElementDistr
+      ! Release memory
+      call elprep_releaseElementSet(revalElementSet)
+      
+      deallocate(p_DcubPtsRef)
+      deallocate(Dcoefficients)
+      deallocate(IdofsTrial)
+      deallocate(Domega)
+      
+    end do ! icurrentElementDistr
 
-    end subroutine scalarTargetFunc_conf
-
-  end subroutine pperr_scalarTargetFunc
+  end subroutine pperr_scalarTargetFunc_conf
 
   !****************************************************************************
 
