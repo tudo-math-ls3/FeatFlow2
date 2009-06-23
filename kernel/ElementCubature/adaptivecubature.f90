@@ -90,7 +90,7 @@ contains
   integer, dimension(:), intent(in) :: Ielements
   
   ! Reference function which should be tested for integration.
-  include 'intf_functionScSimple.inc'
+  include '../Postprocessing/intf_functionScSimple.inc'
   
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
@@ -165,7 +165,7 @@ contains
   integer, dimension(:), intent(in), target :: Ielements
   
   ! Reference function which should be tested for integration.
-  include 'intf_functionScSimple.inc'
+  include '../Postprocessing/intf_functionScSimple.inc'
   
   ! OPTIONAL: Collection structure to be passed to ffunctionReference.
   type(t_collection), intent(inout), optional :: rcollection
