@@ -763,8 +763,8 @@ contains
 !<subroutine>
 
   subroutine pperr_scalar (cerrortype, derror, rvectorScalar,&
-                           ffunctionReference, rcollection, rdiscretisation,&
-                           relementError, ffunctionWeight)
+                           ffunctionReference, rcollection,&
+                           rdiscretisation, relementError, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a
@@ -4168,8 +4168,133 @@ contains
       
       deallocate(Dcoefficients)  
       
-    end select
+    case (PPERR_MEANERROR)
+     
+      allocate (Dcoefficients(ncubp,NEL,3))
+      
+      ! If the FE function exists, evaluate it.
+      if (present(rvectorScalar)) then
+        do iel = 1,NEL
+          ! Evaluate on the element, write results to Dcoefficients
+          call fevl_evaluate_mult (DER_FUNC, Dcoefficients(:,iel,1), rvectorScalar, &
+                                   Ielements(iel), DpointsRef(:,:,iel))
+        end do
+      else
+        Dcoefficients(:,:,1) = 0.0_DP
+      end if
 
+      ! If the reference function exists, evaluate it.
+      if (present(ffunctionReference)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
+                                 Dpoints, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2),rcollection)
+      else
+        Dcoefficients(:,:,2) = 0.0_DP
+      end if
+
+      ! If the weighting function exists, evaluate it.
+      if (present(ffunctionWeight)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
+      else
+        Dcoefficients(:,:,3) = 1.0_DP
+      end if
+      
+      ! Linear combination to get the actual values in the cubature points.
+      do iel = 1,NEL
+        do ipoint = 1,ncubp
+          Dcoefficients(ipoint,iel,1) = Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,1)
+        end do
+      end do
+
+      ! Now, Dcoefficients contains in Dcoefficients(:,:,1) the term
+      ! "u(x,y)-u_h(x,y)" -- in every cubature point on every
+      ! element. We are finally able to calculate the integral!
+      ! That means, run over all the edges and sum up...
+      ! (ok, if rvectorScalar is not specified, we have
+      !  -u_h(x,y) in Dcoefficients(:,:,1), but as we take the square,
+      !  it doesn't matter if we have u_h or -u_h there!)
+      
+      derror = 0.0_DP
+      do iel = 1, NEL
+      
+        ! Get the length of the edge. Let's use the parameter values
+        ! on the boundary for that purpose; this is a more general
+        ! implementation than using simple lines as it will later 
+        ! support isoparametric elements.
+        !
+        ! The length of the current edge serves as a "determinant"
+        ! in the cubature, so we have to divide it by 2 as an edge on 
+        ! the unit inverval [-1,1] has length 2.
+        dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
+      
+        do ipoint = 1, ncubp
+          derror = derror + dlen * Domega1D(ipoint) *&
+              Dcoefficients(ipoint,iel,3) * Dcoefficients(ipoint,iel,1)
+        end do
+      end do
+      
+      deallocate(Dcoefficients)
+
+    case DEFAULT
+
+      allocate (Dcoefficients(ncubp,NEL,2))
+
+      ! If the reference function exists, evaluate it.
+      if (present(ffunctionReference)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
+                                 Dpoints, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,1),rcollection)
+      else
+        call output_line('Reference function missing in user-defined error type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2d_conf')
+        call sys_halt()
+      end if
+
+      ! If the weighting function exists, evaluate it.
+      if (present(ffunctionWeight)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              Ielements(1:NEL), Dcoefficients(:,:,2), rcollection)
+      else
+        Dcoefficients(:,:,2) = 1.0_DP
+      end if
+
+      ! Now, Dcoefficients contains in Dcoefficients(:,:,1) the term
+      ! "f(u(x,y)-u_h(x,y)" -- in every cubature point on every
+      ! element. We are finally able to calculate the integral!
+      ! That means, run over all the edges and sum up...
+      
+      derror = 0.0_DP
+      do iel = 1, NEL
+      
+        ! Get the length of the edge. Let's use the parameter values
+        ! on the boundary for that purpose; this is a more general
+        ! implementation than using simple lines as it will later 
+        ! support isoparametric elements.
+        !
+        ! The length of the current edge serves as a "determinant"
+        ! in the cubature, so we have to divide it by 2 as an edge on 
+        ! the unit inverval [-1,1] has length 2.
+        dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
+      
+        do ipoint = 1, ncubp
+          derror = derror + dlen * Domega1D(ipoint) *&
+              Dcoefficients(ipoint,iel,2) * Dcoefficients(ipoint,iel,1)
+        end do
+      end do
+      
+      deallocate(Dcoefficients)
+      
+    end select
+    
     ! Release memory
 
     if (present(ffunctionReference)) deallocate(Dpoints)
@@ -5288,482 +5413,6 @@ contains
     end if
 
   end subroutine pperr_blockStandardDeviation
-
-  !****************************************************************************
-
-!<subroutine>
-
-  subroutine pperr_scalarTargetFuncBoundary2D (rvectorScalar, ccubType, derror,&
-                                               rboundaryRegion, ffunctionReference,&
-                                               fweightingFunc,  rcollection, rdiscretisation)
-
-!<description>
-  ! This routine calculates the error in the target functional of a
-  ! given finite element function in rvectorScalar to a given
-  ! analytical callback function ffunctionReference using the
-  ! weighting function fweightingFunc.
-  !
-  ! $$ \int_\Omega w(x)*[ u(x)*v(x)-u_h(x)*v_h(x) ] dx $$
-  !
-  ! Here, $w(x)$ is some weighting function which can be used to restrict
-  ! the integral to som part of the boundary $\Gamma$. If the function
-  ! fweightingFunc is omited, it is assumed to by =1 everywhere.
-  !
-  ! The functions $v(x)$ and $v_h(x)$ are "weights" which are applied
-  ! either to the exact or to the approximate solution. The can be used,
-  ! e.g., to multiply the solution by the normal velocity.
-  !
-  ! rboundaryRegion is a t_boundaryRegion object that allows to
-  ! specify the boundary region where the error should be computed.
-  ! If not specified, the error is computed over the whole boundary.
-!</description>
-
-!<input>
-  ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN), target :: rvectorScalar
-
-  ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
-  
-  ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
-  ! to calculate. If not specified, the computation is done over
-  ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion 
-  
-  ! OPTIONAL: A callback function that provides the analytical reference 
-  ! function to which the error should be computed.
-  ! If not specified, the reference function is assumed to be zero!
-  include 'intf_refTargetFunctionScBoundary.inc'
-  optional :: ffunctionReference
-  optional :: fweightingFunc
-  
-  ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
-
-  ! OPTIONAL: A discretisation structure specifying how to compute the error.
-  ! Must be specified if rvectorScalar is not specified as this
-  ! describes the domain/triangulation/...
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
-!</input>
-
-!<output>
-  ! The calculated error.
-  real(DP), intent(OUT) :: derror
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    type(t_boundaryRegion) :: rboundaryReg
-    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
-    real(DP) :: dlocalError
-    integer :: ibdc
-
-    ! Get the correct discretisation structure and check if we can use it.
-    if (present(rdiscretisation)) then
-      p_rdiscretisation => rdiscretisation
-      call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
-    else
-      p_rdiscretisation => rvectorScalar%p_rspatialdiscr
-    end if
-    
-    if (.not. associated(p_rdiscretisation)) then
-      call output_line('No discretisation structure!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarTargetFuncBoundary2D')
-      call sys_halt()
-    end if
-    
-    if (p_rdiscretisation%ndimension .ne. NDIM2D) then
-      call output_line('Only 2D discretisations allowed.',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarTargetFuncBoundary2D')
-      call sys_halt()
-    end if
-    
-    ! The vector must be unsorted, otherwise we can't set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarTargetFuncBoundary2D')
-      call sys_halt()
-    end if
-
-    ! If the boundary region is specified, call pperr_scalarBoundary2d_conf
-    ! for that boundary region. Otherwise, call pperr_scalarBoundary2d_conf
-    ! for all possible boundary regions and sum up the errors.
-    if (present(rboundaryRegion)) then
-      call pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
-                                             rboundaryRegion, ffunctionReference,&
-                                             fweightingFunc, rcollection, rdiscretisation)
-    else
-      derror = 0.0_DP
-      ! Create a boundary region for each boundary component and call
-      ! the calculation routine for that.
-      do ibdc = 1,boundary_igetNBoundComp(p_rdiscretisation%p_rboundary)
-        call boundary_createRegion (p_rdiscretisation%p_rboundary, &
-                                    ibdc, 0, rboundaryReg)
-        call pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
-                                               rboundaryRegion, ffunctionReference,&
-                                               fweightingFunc, rcollection, rdiscretisation)
-        derror = derror + dlocalError
-      end do
-    end if
-
-  end subroutine pperr_scalarTargetFuncBoundary2D
-
-  !****************************************************************************
-
-!<subroutine>
-
-  subroutine pperr_scalarTargetFuncBdr2d_conf (rvectorScalar, ccubType, derror,&
-                                               rboundaryRegion, ffunctionReference,&
-                                               fweightingFunc, rcollection, rdiscretisation)
-
-!<description>
-  ! This routine calculates the error of a given finite element function
-  ! in rvector to a given analytical callback function ffunctionReference.
-  ! 2D version for double-precision vectors.
-!</description>
-
-!<input>
-  ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN), target :: rvectorScalar
-
-  ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer, intent(IN) :: ccubType
-  
-  ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
-  ! to calculate. If not specified, the computation is done over
-  ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion 
-  
-  ! OPTIONAL: A callback function that provides the analytical reference 
-  ! function to which the error should be computed.
-  ! If not specified, the reference function is assumed to be zero!
-  include 'intf_refTargetFunctionScBoundary.inc'
-  optional :: ffunctionReference
-  optional :: fweightingFunc
-  
-  ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
-
-  ! OPTIONAL: A discretisation structure specifying how to compute the error.
-  ! Must be specified if rvectorScalar is not specified as this
-  ! describes the domain/triangulation/...
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
-!</input>
-
-!<output>
-  ! The calculated error.
-  real(DP), intent(OUT) :: derror
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    integer, dimension(:), allocatable :: IelementOrientation
-    integer, dimension(:), allocatable :: Ielements
-    real(DP), dimension(:,:), allocatable :: DedgePosition
-    
-    integer :: ibdc,ibdcoffset,iedge,ilocaledge
-    integer :: NEL,NELbdc,iel
-    integer(I32) :: ctrafoType
-    
-    ! The triangulation structure - to shorten some things...
-    type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer, dimension(:), pointer :: p_IedgesAtBoundary
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    real(DP), dimension(:), pointer :: p_DedgeParameterValue
-    real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer, dimension(:,:), pointer :: p_IedgesAtElement
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-
-    ! Arrays for cubature points
-    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
-    real(DP), dimension(:,:,:), allocatable :: Dxi2D,Dpoints,DpointsRef
-    real(DP), dimension(CUB_MAXCUBP) :: Domega1D
-    real(DP), dimension(:,:,:), allocatable :: Dcoefficients
-    real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
-    integer :: ncubp,ipoint
-    integer(I32) :: celement
-    integer(i32) :: icoordSystem
-    real(DP) :: dlen,dpar1,dpar2
-    
-    ! Arrays for element distributions for every element
-    integer, dimension(:), pointer :: p_IelementDistr
-
-    ! List of element distributions in the discretisation structure
-    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
-
-    ! Get some pointers and arrays for quicker access
-    p_rtriangulation => rdiscretisation%p_rtriangulation
-    p_RelementDistribution => rdiscretisation%RelementDistr
-
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
-    call storage_getbase_int (p_rtriangulation%h_IedgesAtBoundary,&
-        p_IedgesAtBoundary)
-    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
-        p_IedgesAtElement)
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-        p_DvertexCoordinates)
-    call storage_getbase_double (p_rtriangulation%h_DedgeParameterValue,&
-        p_DedgeParameterValue)
-    call storage_getbase_double (p_rtriangulation%h_DvertexParameterValue,&
-        p_DvertexParameterValue)
-        
-    ! Boundary component?
-    ibdc = rboundaryRegion%iboundCompIdx
-    
-    ! Number of elements on that boundary component?
-    NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-    
-    ! Position of the boundary component?
-    ibdcoffset = p_IboundaryCpIdx(ibdc)
-
-    ! In a first step, we figure out the elements on the boundary and their
-    ! orientation. Allocate arrays that are large enough to hold
-    ! even all elements on the boundary if necessary.
-    allocate(Ielements(NELbdc), IelementOrientation(NELbdc))
-    
-    ! Allocate an array saving the start- and end-parameter values
-    ! of the edges on the boundary.
-    allocate(DedgePosition(2,NELbdc))
-    
-    ! Loop through the edges on the boundary component ibdc.
-    ! If the edge is inside, remember the element number and figure out
-    ! the orientation of the edge.
-    ! NEL counts the total number of elements in the region.
-    NEL = 0
-    do iedge = 1,NELbdc
-      if (boundary_isInRegion(rboundaryRegion,ibdc,&
-          p_DedgeParameterValue(iedge))) then
-        NEL = NEL + 1
-        
-        ! Element number
-        Ielements(NEL) = p_IelementsAtBoundary(iedge)
-        
-        ! Element orientation; i.e. the local number of the boundary edge 
-        do ilocaledge = 1,ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .eq. &
-              p_IedgesAtBoundary(iedge)) exit
-        end do
-        IelementOrientation(NEL) = ilocaledge
-        
-        ! Save the start parameter value of the edge -- in length
-        ! parametrisation.
-        dpar1 = p_DvertexParameterValue(iedge)
-        
-        ! Save the end parameter value. Be careful: The last edge
-        ! must be treated differently!
-        if (iedge .ne. NELbdc) then
-          dpar2 = p_DvertexParameterValue(iedge+1)
-        else
-          dpar2 = boundary_dgetMaxParVal(&
-            rdiscretisation%p_rboundary,ibdc)
-        end if
-        
-        DedgePosition(1,NEL) = &
-          boundary_convertParameter(rdiscretisation%p_rboundary, &
-            ibdc, dpar1, rboundaryRegion%cparType, BDR_PAR_LENGTH)
-            
-        DedgePosition(2,NEL) = &
-          boundary_convertParameter(rdiscretisation%p_rboundary, &
-            ibdc, dpar2, rboundaryRegion%cparType, BDR_PAR_LENGTH)
-         
-      end if
-    end do
-    
-    ! Get the parameter values of the 1D cubature formula
-    ! as well as the number of cubature points ncubp
-    call cub_getCubPoints(ccubType, ncubp, Dxi1D, Domega1D)
-
-    ! Map the 1D cubature points to the edges in 2D.
-    allocate(Dxi2D(ncubp,NDIM2D+1,NEL))
-    if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
-      ! All elements have the same type. Get the type of the
-      ! corresponding coordinate system and transform the coordinates.
-      icoordSystem = elem_igetCoordSystem(&
-        rdiscretisation%RelementDistr(1)%celement)
-      do iel = 1,NEL
-        call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
-            ncubp, Dxi1D, Dxi2D(:,:,iel))
-      end do
-    else
-      ! The type of the coordinate system may change with every element.
-      ! So we may have to switch... celements in the discretisation
-      ! structure informs us about the element type.
-      call storage_getbase_int (rdiscretisation%h_IelementDistr,&
-          p_IelementDistr)
-      do iel = 1,NEL
-        celement = p_RelementDistribution(p_IelementDistr(Ielements(iel)))%celement
-        icoordSystem = elem_igetCoordSystem(celement)
-        call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(iel), &
-            ncubp, Dxi1D, Dxi2D(:,:,iel))
-      end do
-    end if
-    
-    ! Transpose the coordinate array such that we get coordinates
-    ! we can work with.
-    allocate(DpointsRef(NDIM2D+1,ncubp,NEL))
-    do iel=1,NEL
-      DpointsRef(:,:,iel) = transpose(Dxi2D(:,:,iel))
-    end do
-    
-    ! Dxi2D is not needed anymore.
-    deallocate(Dxi2D)
-
-    ! If the reference function exists, calculate the coordinates of the
-    ! points on world coordinates
-    if (present(ffunctionReference) .or.&
-        present(fweightingFunc)) then
-      
-      ! We need the real coordinates of the points.
-      allocate(Dpoints(ncubp,NDIM2D+1,NEL))
-      
-      if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
-        ! All elements with the same transformation
-        ctrafoType = elem_igetTrafoType(&
-            rdiscretisation%RelementDistr(1)%celement)
-        do iel = 1,NEL
-
-          ! Get the points forming the element
-          do ipoint = 1,ubound(p_IverticesAtElement,1)
-            Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
-            Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
-          end do
-
-          ! Transform the cubature points
-          do ipoint = 1,ncubp
-            call trafo_calcRealCoords (ctrafoType,Dcoord,&
-                DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
-          end do
-        end do
-      else
-        ! Transformation can be different for all elements
-        do iel = 1,NEL
-
-          ! Get the points forming the element
-          do ipoint = 1,ubound(p_IverticesAtElement,1)
-            Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
-            Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
-          end do
-
-          ! Transform the cubature points
-          do ipoint = 1,ncubp
-            celement = p_RelementDistribution(&
-                p_IelementDistr(Ielements(iel)))%celement
-            ctrafoType = elem_igetTrafoType(celement)
-            call trafo_calcRealCoords (ctrafoType,Dcoord,&
-                DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
-          end do
-        end do
-      end if
-    
-    end if
-
-    ! So Dxi2 defines the coordinates on the reference element for all
-    ! elements. Generally said, we have to evaluate the elements in these
-    ! points now. That can be done by using fevl_evaluate_mult.
-
-    allocate (Dcoefficients(ncubp,NEL,5))
-
-
-    ! Calculate the values of the FE function in the
-    ! cubature points: u_h(x).
-    ! Save the result to Dcoefficients(:,:,1)
-
-    do iel = 1,NEL
-      call fevl_evaluate_mult (DER_FUNC, Dcoefficients(:,iel,1), rvectorScalar, &
-                               Ielements(iel), DpointsRef(:,:,iel))
-    end do
-
-    
-    ! Calculate the values of the coefficient function in the
-    ! cubature points: u(x).
-    ! Save the result to Dcoefficients(:,:,2)
-    
-    if (present(ffunctionReference)) then
-      call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
-                               Dpoints, Ielements(1:NEL), Dcoefficients(:,:,2),&
-                               rcollection)
-    else
-      Dcoefficients(:,:,2) = 0.0_DP
-    end if
-
-
-    ! Calculate the values of the weighting function in the
-    ! cubature points: w(x), v(x) and v_h(x).
-    ! Save the result to Dcoefficients(:,:,3-5)
-    if (present(fweightingFunc)) then
-      call fweightingFunc (PPERR_ERRORWEIGHT, rdiscretisation, DpointsRef,&
-                           Dpoints, Ielements(1:NEL), Dcoefficients(:,:,3),&
-                           rcollection)
-
-      call fweightingFunc (PPERR_FEWEIGHT, rdiscretisation, DpointsRef,&
-                           Dpoints, Ielements(1:NEL), Dcoefficients(:,:,4),&
-                           rcollection)
-
-      call fweightingFunc (PPERR_REFWEIGHT, rdiscretisation, DpointsRef,&
-                           Dpoints, Ielements(1:NEL), Dcoefficients(:,:,5),&
-                           rcollection)
-    else
-      Dcoefficients(:,:,3:5) = 1.0_DP
-    end if
-
-    ! Linear combination to get the actual values in the cubature points.
-    do iel = 1,NEL
-      do ipoint = 1,ncubp
-        Dcoefficients(ipoint,iel,1) =  Dcoefficients(ipoint,iel,3) *&
-                                      (Dcoefficients(ipoint,iel,2)*Dcoefficients(ipoint,iel,5)-&
-                                       Dcoefficients(ipoint,iel,1)*Dcoefficients(ipoint,iel,4))
-      end do
-    end do
-
-    ! Now, Dcoefficients contains in Dcoefficients(:,:,1) the term
-    ! "w(x,y)*[u(x,y)*v(x,y)-u_h(x,y)*v_h(x,y)" -- in every cubature
-    ! point on every element. We are finally able to calculate the
-    ! integral!  That means, run over all the edges and sum up.
-    
-    derror = 0.0_DP
-    do iel = 1,NEL
-      
-      ! Get the length of the edge. Let's use the parameter values
-      ! on the boundary for that purpose; this is a more general
-      ! implementation than using simple lines as it will later 
-      ! support isoparametric elements.
-      !
-      ! The length of the current edge serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on 
-      ! the unit inverval [-1,1] has length 2.
-      dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
-      
-      do ipoint = 1,ncubp
-        derror = derror + dlen * Domega1D(ipoint) * Dcoefficients(ipoint,iel,1)
-      end do
-    end do
-    
-    deallocate(Dcoefficients)
-    
-    ! Release memory
-    
-    if (present(ffunctionReference) .or.&
-        present(fweightingFunc)) deallocate(Dpoints)
-    
-    deallocate(DedgePosition)
-    deallocate(Ielements, IelementOrientation)
-
-  end subroutine pperr_scalarTargetFuncBdr2d_conf
   
 end module pprocerror
  
