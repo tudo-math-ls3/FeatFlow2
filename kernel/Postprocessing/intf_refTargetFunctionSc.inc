@@ -20,10 +20,10 @@
     use collection
     
   !<description>
-    ! This subroutine is called during the calculation of errors. It has to compute
-    ! the (analytical) values of a function in a couple of points on a couple
-    ! of elements. These values are compared to those of a computed FE function
-    ! and used to calculate an error.
+    ! This subroutine is called during the calculation of errors. It
+    ! has to compute the (analytical) values of a function in a couple
+    ! of points on a couple of elements. These values are compared to
+    ! those of a computed FE function and used to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in in real coordinates.
@@ -70,10 +70,10 @@
   !</input>
   
   !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
+    ! This array has to receive the values of the (analytical)
+    ! function in all the points specified in Dpoints, or the
+    ! appropriate derivative of the function, respectively, according
+    ! to cderivative.  DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(OUT) :: Dvalues
   !</output>
     
@@ -89,9 +89,9 @@
   
   !<subroutine>
 
-    subroutine fweightingFunc (rdiscretisation, nelements,&
-                               npointsPerElement, Dpoints, IdofsTest,&
-                               rdomainIntSubset,  Dvalues, rcollection)
+    subroutine ffunctionWeight (rdiscretisation, nelements,&
+                                npointsPerElement, Dpoints, IdofsTest,&
+                                rdomainIntSubset,  Dvalues, rcollection)
     
     use fsystem
     use basicgeometry
@@ -102,15 +102,15 @@
     use collection
     
   !<description>
-    ! This subroutine is called during the calculation of errors. It has to compute
-    ! the (analytical) values of a function in a couple of points on a couple
-    ! of elements. These values are compared to those of a computed FE function
-    ! and used to calculate an error.
+    ! This subroutine is called during the calculation of errors. It
+    ! has to compute the values of a weighting function in a couple of
+    ! points on a couple of elements. These values are multiplied by
+    ! the calculated error.
     !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points.
+    ! The routine accepts a set of elements and a set of points on
+    ! these elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to
+    ! compute simultaneously for all these points.
   !</description>
     
   !<input> 
@@ -156,6 +156,6 @@
     
   !</subroutine>
   
-    end subroutine fweightingFunc
+    end subroutine ffunctionWeight
 
   end interface
