@@ -1017,94 +1017,10 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer :: i, imaxder
-    integer(I32) :: celement
-    type(t_spatialDiscretisation), pointer :: p_rdiscretisation
-    
-    ! Get the correct discretisation structure and check if we can use it.
-    if (present(rdiscretisation)) then
-      p_rdiscretisation => rdiscretisation
-      call lsyssc_checkDiscretisation (rvectorScalar, p_rdiscretisation)
-    else
-      p_rdiscretisation => rvectorScalar%p_rspatialdiscr
-    end if
-    
-    if (.not. associated(p_rdiscretisation)) then
-      call output_line('No discretisation structure!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-      call sys_halt()
-    end if
-    
-    ! The vector must be unsorted, otherwise we can't set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-      call sys_halt()
-    end if
-    
-    ! There is one thing we need to assure: If the user wants to calculate
-    ! an H1-error, the corresponding element must have first derivatives!
-    if(cerrortype .eq. PPERR_H1ERROR) then
-      
-      ! So, let's loop through all element distributions of the spatial
-      ! discretisation structure.
-      do i = 1, p_rdiscretisation%inumFESpaces
-        
-        ! Get the element of the FE space
-        celement = p_rdiscretisation%RelementDistr(i)%celement
-        
-        ! Get the maximum derivative of the element
-        imaxder = elem_getMaxDerivative(celement)
-        
-        ! If the maximum derivate is 1 then the element's derivatives can
-        ! not be evaluated (since they are zero). We will simply return
-        ! an error of -1 to indicate that the H1-error cannot be computed.
-        if(imaxder .le. 1) then
-          derror = -1.0_DP
-          return
-        end if
-      end do
-      
-      ! If we come out here, then the element provides first derivatives, and
-      ! we are ready to calculate the H1-error.
-    
-    end if
-  
-    ! Do we have a uniform triangulation? Would simplify a lot...
-    if ((p_rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-        (p_rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
-    
-      select case(rvectorScalar%cdataType)
-
-      case (ST_DOUBLE)
-        ! Do we have a 1D, 2D or 3D discretisation here?
-        select case(p_rdiscretisation%ndimension)
-        case (NDIM1D)
-          call pperr_scalar1d_conf (cerrortype, derror, p_rdiscretisation,&
-                                    rvectorScalar, ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
-        case (NDIM2D)
-          call pperr_scalar2d_conf (cerrortype, derror, p_rdiscretisation,&
-                                    rvectorScalar, ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
-        case (NDIM3D)
-          call pperr_scalar3d_conf (cerrortype, derror, p_rdiscretisation,&
-                                    rvectorScalar,ffunctionReference,&
-                                    rcollection, relementError, ffunctionWeight)
-        end select
-
-      case DEFAULT
-        call output_line('Single precision vectors currently not supported!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-        call sys_halt()
-      end select
-    
-    else
-      call output_line('General discretisation not implemented!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
-      call sys_halt()
-    end if
+  ! Call the new routine with diffenret ordering of parameters
+  call pperr_scalar(cerrortype, derror, rvectorScalar,&
+                    ffunctionReference, rcollection,&
+                    rdiscretisation, relementError, ffunctionWeight)
 
   end subroutine pperr_scalarObsolete
 
@@ -3632,8 +3548,8 @@ contains
         
       case (ST_DOUBLE)
         call pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
-                                          rboundaryRegion, rvectorScalar,&
-                                          ffunctionReference, p_rdiscretisation,&
+                                          rboundaryRegion, p_rdiscretisation,&
+                                          rvectorScalar, ffunctionReference,&
                                           rcollection, ffunctionWeight)
       case DEFAULT
         call output_line('Single precision vectors currently not supported!',&
@@ -3654,8 +3570,8 @@ contains
           call boundary_createRegion (p_rdiscretisation%p_rboundary, &
                                       ibdc, 0, rboundaryReg)
           call pperr_scalarBoundary2d_conf (cerrortype, ccubType, dlocalError,&
-                                            rboundaryReg, rvectorScalar,&
-                                            ffunctionReference, p_rdiscretisation,&
+                                            rboundaryReg, p_rdiscretisation,&
+                                            rvectorScalar, ffunctionReference,&
                                             rcollection, ffunctionWeight)
           derror = derror + dlocalError
         end do
@@ -3675,8 +3591,8 @@ contains
 !<subroutine>
 
   subroutine pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
-                                          rboundaryRegion, rvectorScalar,&
-                                          ffunctionReference, rdiscretisation,&
+                                          rboundaryRegion, rdiscretisation,&
+                                          rvectorScalar, ffunctionReference,&
                                           rcollection, ffunctionWeight)
 
 !<description>
@@ -3696,17 +3612,14 @@ contains
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
 
-  ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), optional, target :: rvectorScalar
-  
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
-  
-  ! Optional: A collection structure to provide additional 
-  ! information for callback routines.
-  type(t_collection), intent(INOUT), optional :: rcollection
+
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), optional, target :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides a coefficient in front
   ! of the FE function. If not specified, a value of 1 is assumed.
@@ -3718,6 +3631,12 @@ contains
   ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
 !</input>
+
+!<inputoutput>
+  ! OPTIONAL: A collection structure to provide additional 
+  ! information for callback routines.
+  type(t_collection), intent(INOUT), optional :: rcollection
+!</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
