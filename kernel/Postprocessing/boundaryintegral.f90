@@ -26,21 +26,22 @@
 
 module boundaryintegral
 
-  use fsystem
-  use storage
+  use basicgeometry
   use boundary
+  use collection
   use cubature
   use derivatives
   use domainintegration
-  use collection
   use feevaluation
-  use mprimitives
-  use basicgeometry
-  use triangulation
-  use linearsystemscalar
+  use fsystem
+  use genoutput
   use linearsystemblock
+  use linearsystemscalar
+  use mprimitives
   use spatialdiscretisation
+  use storage
   use transformation
+  use triangulation
 
   implicit none
 
@@ -52,8 +53,8 @@ contains
 
 !<subroutine>
 
-  subroutine bdint_integral2D (rboundary,rtriangulation,ccubType,&
-      ffunction,dvalue,rboundaryRegion,rcollection)
+  subroutine bdint_integral2D (rboundary, rtriangulation, ccubType,&
+      ffunction, dvalue, rboundaryRegion, rcollection)
 
 !<description>
   ! This routine calculates a boundary integral of an arbitrary
@@ -113,7 +114,8 @@ contains
     end if
     
     if (rtriangulation%ndim .ne. NDIM2D) then
-      print *,'pperr_scalarBoundary2D: Only 2D discretisations allowed.'
+      call output_line('Only 2D discretisations allowed!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bdint_integral2D')
       call sys_halt()
     end if
 
@@ -121,16 +123,16 @@ contains
     ! for that boundary region. Otherwise, call pperr_scalarBoundary2d_conf
     ! for all possible boundary regions and sum up the errors.
     if (present(rboundaryRegion)) then
-      call bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
-        ffunction,dvalue,rboundaryRegion,p_rcollection)
+      call bdint_integral2D_conf (rboundary, rtriangulation, ccubType,&
+        ffunction, dvalue, rboundaryRegion, p_rcollection)
     else
       dvalue = 0.0_DP
       ! Create a boundary region for each boundary component and call
       ! the calculation routine for that.
-      do ibdc=1,boundary_igetNBoundComp(rboundary)
+      do ibdc = 1, boundary_igetNBoundComp(rboundary)
         call boundary_createRegion (rboundary, ibdc, 0, rboundaryReg)
-        call bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
-          ffunction,dlocalValue,rboundaryReg,p_rcollection)
+        call bdint_integral2D_conf (rboundary, rtriangulation, ccubType,&
+          ffunction, dlocalValue, rboundaryReg, p_rcollection)
         dvalue = dvalue + dlocalValue
       end do
     end if
@@ -141,8 +143,8 @@ contains
 
 !<subroutine>
 
-  subroutine bdint_integral2D_conf (rboundary,rtriangulation,ccubType,&
-      ffunction,dvalue,rboundaryRegion,rcollection)
+  subroutine bdint_integral2D_conf (rboundary, rtriangulation, ccubType,&
+      ffunction, dvalue, rboundaryRegion, rcollection)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -434,8 +436,8 @@ contains
 
 !<subroutine>
 
-  subroutine bdint_scalarBoundaryInt2D (rvectorScalar,ccubType,&
-      dvalue,rboundaryRegion)
+  subroutine bdint_scalarBoundaryInt2D (rvectorScalar, ccubType,&
+      dvalue, rboundaryRegion)
 
 !<description>
   ! This function calculates the boundary integral
@@ -473,6 +475,12 @@ contains
     ! Get the underlying discretisation
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
+    if (p_rdiscr%ndimension .ne. NDIM2D) then
+      call output_line('Only 2D discretisations allowed!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bdint_scalarBoundaryInt2D')
+      call sys_halt()
+    end if
+
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
     call collct_init(rcollection)
@@ -481,8 +489,8 @@ contains
     ! the callback routine
     call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
 
-    call bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
-      ccubType,ffunctionFEevaluation2D,dvalue,rboundaryRegion,rcollection)
+    call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
+      ccubType, ffunctionFEevaluation2D, dvalue, rboundaryRegion, rcollection)
       
     ! Release the collection
     call collct_deletevalue (rcollection,'vector')
@@ -493,7 +501,7 @@ contains
   !****************************************************************************
 
   subroutine ffunctionFEevaluation2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
-        Dvalues,rcollection)
+        Dvalues, rcollection)
     
     use basicgeometry
     use triangulation
@@ -578,8 +586,8 @@ contains
 
 !<subroutine>
 
-  subroutine bdint_normalDerivativeInt2D (rvectorScalar,ccubType,&
-      dvalue,rboundaryRegion)
+  subroutine bdint_normalDerivativeInt2D (rvectorScalar, ccubType,&
+      dvalue, rboundaryRegion)
 
 !<description>
   ! This function calculates the boundary integral
@@ -617,6 +625,12 @@ contains
     ! Get the underlying discretisation
     p_rdiscr => rvectorScalar%p_rspatialDiscr
 
+    if (p_rdiscr%ndimension .ne. NDIM2D) then
+      call output_line('Only 2D discretisations allowed!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bdint_normalDerivativeInt2D')
+      call sys_halt()
+    end if
+
     ! Create a collection that allows us to pass the vector to
     ! the callback routine
     call collct_init(rcollection)
@@ -625,8 +639,8 @@ contains
     ! the callback routine
     call collct_setvalue_vecsca (rcollection, 'vector', rvectorScalar, .true.) 
 
-    call bdint_integral2D (p_rdiscr%p_rboundary,p_rdiscr%p_rtriangulation,&
-      ccubType,ffunctionNormalDeriv2D,dvalue,rboundaryRegion,rcollection)
+    call bdint_integral2D (p_rdiscr%p_rboundary, p_rdiscr%p_rtriangulation,&
+      ccubType, ffunctionNormalDeriv2D, dvalue, rboundaryRegion, rcollection)
       
     ! Release the collection
     call collct_deletevalue (rcollection,'vector')
@@ -637,7 +651,7 @@ contains
   !****************************************************************************
 
   subroutine ffunctionNormalDeriv2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
-        Dvalues,rcollection)
+        Dvalues, rcollection)
     
     use basicgeometry
     use triangulation
@@ -663,14 +677,14 @@ contains
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
@@ -690,7 +704,7 @@ contains
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
   !</input>
   
   !<output>
@@ -698,7 +712,7 @@ contains
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(OUT) :: Dvalues
   !</output>
     
   !</subroutine>
