@@ -815,7 +815,7 @@ contains
   
   ! OPTIONAL: A callback function that provides the weighting function
   ! by which the computed error is multipled.
-  ! If not specified, the reference function is assumed to be unity!
+  ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
@@ -969,7 +969,7 @@ contains
 
   ! OPTIONAL: A callback function that provides the weighting function
   ! by which the computed error is multipled.
-  ! If not specified, the reference function is assumed to be unity!
+  ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
 !</input>
 
@@ -1568,7 +1568,7 @@ contains
 
   ! OPTIONAL: A callback function that provides the weighting function
   ! by which the computed error is multipled.
-  ! If not specified, the reference function is assumed to be unity!
+  ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
 !</input>
 
@@ -2172,7 +2172,7 @@ contains
 
   ! OPTIONAL: A callback function that provides the weighting function
   ! by which the computed error is multipled.
-  ! If not specified, the reference function is assumed to be unity!
+  ! If not specified, the reference function is assumed to be =1!
   optional :: ffunctionWeight
 !</input>
 
@@ -2763,8 +2763,8 @@ contains
 
   subroutine pperr_scalarBoundary2D (cerrortype, ccubType, derror,&
                                      rboundaryRegion, rvectorScalar,&
-                                     ffunctionReference,&
-                                     rcollection, rdiscretisation)
+                                     ffunctionReference, rcollection,&
+                                     rdiscretisation, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error or the norm, respectively, of a given 
@@ -2779,6 +2779,10 @@ contains
   !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{L_1}  \textrm{ or }  ||y||_{H_1}.$$
   !
   ! If the vector rvectorScalar is not specified, it's assumed to be =0.
+  !
+  ! If ffunctionWeight is specified, the routine calculates the
+  ! desired norm over the selected boundary and/or scales the error
+  ! by the local weighting coefficients.
   !
   ! rboundaryRegion is a t_boundaryRegion object that allows to
   ! specify the boundary region where the error should be computed.
@@ -2808,6 +2812,11 @@ contains
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionScBoundary.inc'
   optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be =1!
+  optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
@@ -2865,8 +2874,8 @@ contains
     if (present(rboundaryRegion)) then
       call pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
                                         rboundaryRegion, rvectorScalar,&
-                                        ffunctionReference,&
-                                        p_rdiscretisation, rcollection)
+                                        ffunctionReference, p_rdiscretisation,&
+                                        rcollection, ffunctionWeight)
     else
       derror = 0.0_DP
       ! Create a boundary region for each boundary component and call
@@ -2876,8 +2885,8 @@ contains
                                     ibdc, 0, rboundaryReg)
         call pperr_scalarBoundary2d_conf (cerrortype, ccubType, dlocalError,&
                                           rboundaryReg, rvectorScalar,&
-                                          ffunctionReference,&
-                                          p_rdiscretisation, rcollection)
+                                          ffunctionReference, p_rdiscretisation,&
+                                          rcollection, ffunctionWeight)
         derror = derror + dlocalError
       end do
     end if
@@ -2890,8 +2899,8 @@ contains
 
   subroutine pperr_scalarBoundary2d_conf (cerrortype, ccubType, derror,&
                                           rboundaryRegion, rvectorScalar,&
-                                          ffunctionReference,&
-                                          rdiscretisation, rcollection)
+                                          ffunctionReference, rdiscretisation,&
+                                          rcollection, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -2926,6 +2935,11 @@ contains
   ! of the FE function. If not specified, a value of 1 is assumed.
   include 'intf_refFunctionScBoundary.inc'
   optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be =1!
+  optional :: ffunctionWeight
 !</input>
 
 !<output>
@@ -3154,25 +3168,38 @@ contains
     select case (cerrortype)
     case (PPERR_L2ERROR)
     
-      allocate (Dcoefficients(ncubp,NEL,2))
-      Dcoefficients = 0.0_DP
-      
+      allocate (Dcoefficients(ncubp,NEL,3))
+           
       ! If the FE function exists, evaluate it.
       if (present(rvectorScalar)) then
         do iel = 1,NEL
           ! Evaluate on the element, write results to Dcoefficients
           call fevl_evaluate_mult (DER_FUNC, Dcoefficients(:,iel,1), rvectorScalar, &
-              Ielements(iel), DpointsRef(:,:,iel))
+                                   Ielements(iel), DpointsRef(:,:,iel))
         end do
+      else
+        Dcoefficients(:,:,1) = 0.0_DP
       end if
 
       ! If the reference function exists, evaluate it.
       if (present(ffunctionReference)) then
         
         ! Evaluate the reference function on the boundary
-        call ffunctionReference (DER_FUNC,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), Dcoefficients(:,:,2),rcollection)
-            
+        call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
+                                 Dpoints, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2),rcollection)
+      else
+        Dcoefficients(:,:,2) = 0.0_DP
+      end if
+
+      ! If the weighting function exists, evaluate it.
+      if (present(ffunctionWeight)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
+      else
+        Dcoefficients(:,:,3) = 1.0_DP
       end if
       
       ! Linear combination to get the actual values in the cubature points.
@@ -3204,7 +3231,8 @@ contains
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1, ncubp
-          derror = derror + dlen * Domega1D(ipoint) * (Dcoefficients(ipoint,iel,1)**2)
+          derror = derror + dlen * Domega1D(ipoint) *&
+              Dcoefficients(ipoint,iel,3) * (Dcoefficients(ipoint,iel,1)**2)
         end do
       end do
       
@@ -3212,25 +3240,38 @@ contains
 
     case (PPERR_L1ERROR)
     
-      allocate (Dcoefficients(ncubp,NEL,2))
-      Dcoefficients = 0.0_DP
+      allocate (Dcoefficients(ncubp,NEL,3))
       
       ! If the FE function exists, evaluate it.
       if (present(rvectorScalar)) then
         do iel = 1, NEL
           ! Evaluate on the element, write results to Dcoefficients
           call fevl_evaluate_mult (DER_FUNC, Dcoefficients(:,iel,1), rvectorScalar, &
-              Ielements(iel), DpointsRef(:,:,iel))
+                                   Ielements(iel), DpointsRef(:,:,iel))
         end do
+      else
+        Dcoefficients(:,:,1) = 0.0_DP
       end if
 
       ! If the reference function exists, evaluate it.
       if (present(ffunctionReference)) then
         
         ! Evaluate the reference function on the boundary
-        call ffunctionReference (DER_FUNC,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), Dcoefficients(:,:,2),rcollection)
-            
+        call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
+                                 Dpoints, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2),rcollection)
+      else
+        Dcoefficients(:,:,2) = 0.0_DP
+      end if
+
+      ! If the weighting function exists, evaluate it.
+      if (present(ffunctionWeight)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
+      else
+        Dcoefficients(:,:,3) = 1.0_DP
       end if
       
       ! Linear combination to get the actual values in the cubature points.
@@ -3262,7 +3303,8 @@ contains
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1,ncubp
-          derror = derror + dlen * Domega1D(ipoint) * abs(Dcoefficients(ipoint,iel,1))
+          derror = derror + dlen * Domega1D(ipoint) *&
+              Dcoefficients(ipoint,iel,3) * abs(Dcoefficients(ipoint,iel,1))
         end do
       end do
       
@@ -3270,7 +3312,7 @@ contains
       
     case (PPERR_H1ERROR)
     
-      allocate (Dcoefficients(ncubp,NEL,4))
+      allocate (Dcoefficients(ncubp,NEL,5))
       Dcoefficients = 0.0_DP
       
       ! If the FE function exists, evaluate it.
@@ -3303,6 +3345,16 @@ contains
             
       end if
 
+      ! If the weighting function exists, evaluate it.
+      if (present(ffunctionWeight)) then
+        
+        ! Evaluate the reference function on the boundary
+        call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              Ielements(1:NEL), Dcoefficients(:,:,5), rcollection)
+      else
+        Dcoefficients(:,:,5) = 1.0_DP
+      end if
+
       ! Linear combination to get the actual values in the cubature points.
       ! ||u-u_h||_H1 = int ( grad(u-u_h) * grad(u-u_h) )
       !              ~ sum grad_x(u-u_h)**2 + grad_y(u-u_h)
@@ -3332,7 +3384,8 @@ contains
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1,ncubp
-          derror = derror + dlen * Domega1D(ipoint) * (Dcoefficients(ipoint,iel,1)**2)
+          derror = derror + dlen * Domega1D(ipoint) *&
+              Dcoefficients(ipoint,iel,5) * (Dcoefficients(ipoint,iel,1)**2)
         end do
       end do
       
@@ -3424,8 +3477,8 @@ contains
     call lsysbl_createVecFromScalar(rvectorRef, rvectorBlockRef, rDiscrRef)
 
     ! Call block version
-    call pperr_blockErrorEstimate(rvectorBlock, rvectorBlockRef,ctype,&
-        derror, rdiscretisationRef,relementError)
+    call pperr_blockErrorEstimate(rvectorBlock, rvectorBlockRef, ctype,&
+        derror, rdiscretisationRef, relementError)
 
     ! Release auxiliary block discretisations
     call spdiscr_releaseBlockDiscr(rDiscr)
