@@ -16,6 +16,13 @@
 !# Furthermore, the routine cub_igetID allows to translate a string into
 !# a cubature formula ID.
 !#
+!# The module supports standard cubature formulas and summed cubature formulas
+!# which stem from a regular refinement of the reference element. The cubature 
+!# points of an underlying standard cubature formula are transferred to all
+!# subelements of the refined reference element, thus realising a higher
+!# order cubature also for nonsmooth functions. For a summed formula, the 
+!# ID contains additional information about the element refinement.
+!#
 !# The following routines can be found in this module:
 !#
 !# 1.) cub_igetID
@@ -41,6 +48,17 @@
 !#     => DEPRECATED: See note below.
 !#     -> Get information about cubature points for a specific cubature
 !#        formula: Coordinates, number and weights.
+!#
+!# 7.) cub_getStdCubType
+!#     -> For summed cubature formulas: Determine the underlying standard
+!#        cubature formula
+!#
+!# 8.) cub_getRefLevels
+!#     -> Determine the number of refinements of the reference element
+!#        for summed cubature formulas.
+!#
+!# 9.) cub_getSummedCubType
+!#     -> Get the ID of a summed cubature formula.
 !#
 !#
 !# A note on cub_getCubPoints and cub_getCubature
@@ -121,6 +139,22 @@
 !#
 !# </code>
 !#
+!# About the cubature ID
+!# ---------------------
+!# The cubature ID is interpreted as a bitfield that codes the necessary
+!# information about the cubature rule. The following bits are used:
+!#
+!#  Bit 30/31: Type of the cubature formula.
+!#             =0: Standard and summed cubature formula.
+!#  Bit 16-29: For standard and summed cubature formulas:
+!#             Refinement level of the reference element.
+!#  Bit 0-15:  For standard and summed cubature formulas:
+!#             Identifier for the underlying cubature formula.
+!#
+!# Standard and summed cubature formulas differ only in Bit 16-29 which
+!# encodes a refinement level of the reference element; if this is set to a
+!# value > 0, the cubature formula is summed, otherwise it's without summing.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -172,9 +206,11 @@ module cubature
 
   ! trapezoidal rule, degree = 2, ncubp = 4
   integer(I32), parameter, public :: CUB_TRZ = 202
+  integer(I32), parameter, public :: CUB_TRZ_2D = 202
 
   ! midpoint rule, degree = 2, ncubp = 4
   integer(I32), parameter, public :: CUB_MID = 203
+  integer(I32), parameter, public :: CUB_MID_2D = 203
 
   ! 2x2 Gauss formula, degree = 4, ncubp = 4
   integer(I32), parameter, public :: CUB_G2X2 = 204
@@ -218,6 +254,7 @@ module cubature
   
   ! Simpson rule (corners and element midpoint), degree = 3, ncubp = 9
   integer(I32), parameter, public :: CUB_SIMPSON = 216
+  integer(I32), parameter, public :: CUB_SIMPSON_2D = 216
 
   ! Simpson 3/8 rule (corners and 1/3 + 2/3), degree = 3, ncubp = 16
   integer(I32), parameter, public :: CUB_3_8 = 217
@@ -338,6 +375,9 @@ module cubature
   public :: cub_igetCoordDim
   public :: cub_getCubature
   public :: cub_getCubPoints
+  public :: cub_getStdCubType
+  public :: cub_getRefLevels
+  public :: cub_getSummedCubType
   
 contains
 
@@ -387,10 +427,12 @@ contains
   ! 2D-fomulas, quadrilateral
   case ("G1X1","G1_2D")
     cub_igetID=CUB_G1_2D
-  case ("TRZ")
-    cub_igetID=CUB_TRZ
-  case ("MID")
-    cub_igetID=CUB_MID
+  case ("TRZ","TRZ_2D")
+    cub_igetID=CUB_TRZ_2D
+  case ("MID","MID_2D")
+    cub_igetID=CUB_MID_2D
+  case("SIMPSON","SIMPSON_2D")
+    cub_igetID=CUB_SIMPSON_2D
   case ("G2X2","G2_2D")
     cub_igetID=CUB_G2_2D
   case ("NS1")
@@ -486,6 +528,134 @@ contains
 
 !<function>
 
+  elemental integer function cub_getStdCubType(ccubType) result(n)
+  
+!<description>
+  ! Returns the underlying standard cubature formula if ccubType
+  ! identifies a summed cubature formula.
+!</description>
+
+!<result>
+  ! id of the underlying cubature formula.
+!</result>
+
+!<input>
+  ! Cubature type identifier of ad adaptive cubature formula.
+  integer(I32), intent(IN) :: ccubType
+!</input>
+  
+!</function>
+  
+    ! Blend out the highest 16 bit.
+    n = iand(ccubType,int(2**16-1,I32))
+  
+  end function
+
+  !****************************************************************************
+
+!<function>
+
+  elemental integer function cub_getSummedCubType(ccubType,nlevels) result(n)
+  
+!<description>
+  ! Creates the identifier of a summed cubature rule based on a
+  ! standard cubature formula and a number of refinement levels of the
+  ! reference element.
+!</description>
+
+!<result>
+  ! id of the underlying cubature formula.
+!</result>
+
+!<input>
+  ! Cubature type identifier of ad adaptive cubature formula.
+  integer(I32), intent(in) :: ccubType
+  
+  ! Number of refinements of the reference element.
+  integer, intent(in) :: nlevels
+!</input>
+  
+!</function>
+  
+    ! Include the number of levels into ccubType.
+    n = ior(cub_getStdCubType(ccubType),ishft(max(0,nlevels),16))
+  
+  end function
+
+  !****************************************************************************
+
+!<function>
+
+  elemental integer function cub_getRefLevels(ccubType) result(n)
+  
+!<description>
+  ! Returns the number of refinement levels of the reference element.
+  ! This is used for summed cubature formulas to determine the refinement
+  ! level.
+!</description>
+
+!<result>
+  ! Number of refinement levels
+!</result>
+
+!<input>
+  ! Cubature type identifier of ad adaptive cubature formula.
+  integer(I32), intent(IN) :: ccubType
+!</input>
+  
+!</function>
+  
+    ! Get the level from the highest 16 bit.
+    n = ishft(ccubType,-16)
+  
+  end function
+
+  !****************************************************************************
+
+!<function>
+
+  integer function cub_getRefElements(ccubType) result(n)
+  
+!<description>
+  ! Auxiliary. Returns for a given summed cubature formula the number of 
+  ! elements into which the reference element is subdivided in every refinement
+  ! step.
+!</description>
+
+!<result>
+  ! Number of refinement levels
+!</result>
+
+!<input>
+  ! Cubature type identifier of ad adaptive cubature formula.
+  integer(I32), intent(IN) :: ccubType
+!</input>
+  
+!</function>
+
+    integer :: nreflevels
+  
+    ! Get the underlying cubature formula an dnumber of refinement levels.
+    nreflevels = cub_getRefLevels(ccubType)
+    
+    ! Based on this information, calculate the number of cubature points.
+    n = 0
+    select case (cub_getStdCubType(ccubType))
+      case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D,CUB_TRZ)
+        ! One element is refined into four subelements
+        n = 4
+      case default
+        call output_line ('Unsupported element.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
+        call sys_halt()
+    end select
+  
+  end function
+
+  !****************************************************************************
+
+!<function>
+
   integer function cub_igetNumPts(ccubType) result(n)
   
 !<description>
@@ -503,7 +673,13 @@ contains
   
 !</function>
 
-    select case(ccubType)
+    integer :: cstdCubType,nreflevels
+    
+    ! Get the underlying cubature formula an dnumber of refinement levels.
+    cstdCubType = cub_getStdCubType(ccubType)
+    nreflevels = cub_getRefLevels(ccubType)
+
+    select case(cstdCubType)
     ! -= 1D Line Formulas =-
     case (CUB_G1_1D)
       n = 1
@@ -589,6 +765,26 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
       call sys_halt()
     end select
+    
+    ! Based on this information, if this is a summed cubature formula,
+    ! calculate the number of cubature points.
+    if (nreflevels .gt. 0) then
+      select case (cstdCubType)
+        case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
+          ! All points are inner points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is a quad element in 2D, so every refinement brings 4 new
+          ! elements.
+          n = n * (cub_getRefElements(ccubType))**nreflevels
+        case (CUB_TRZ)
+          ! Points are in the corners of the elements.
+          n = 4**nreflevels + 2*2**nreflevels + 1
+        case default
+          call output_line ('Unsupported summed cubature formula.', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
+          call sys_halt()
+      end select
+    end if
 
   end function cub_igetNumPts
 
@@ -616,28 +812,33 @@ contains
   
 !</function>
 
-    if(ccubType .le. 100) then
+    integer :: cstdCubType
+    
+    ! Get the underlying cubature formula an dnumber of refinement levels.
+    cstdCubType = cub_getStdCubType(ccubType)
+
+    if(cstdCubType .le. 100) then
       ! Invalid identifier
       ishp = BGEOM_SHAPE_UNKNOWN
-    else if(ccubType .le. 200) then
+    else if(cstdCubType .le. 200) then
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
-    else if(ccubType .lt. 250) then
+    else if(cstdCubType .lt. 250) then
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
-    else if(ccubType .le. 300) then
+    else if(cstdCubType .le. 300) then
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
-    else if(ccubType .le. 350) then
+    else if(cstdCubType .le. 350) then
       ! 3D Hexahedron
       ishp = BGEOM_SHAPE_HEXA
     else if(ccubType .le. 400) then
       ! 3D Tetrahedron
       ishp = BGEOM_SHAPE_TETRA
-    else if(ccubType .le. 450) then
+    else if(cstdCubType .le. 450) then
       ! 3D Pyramid
       ishp = BGEOM_SHAPE_PYRA
-    else if(ccubType .le. 500) then
+    else if(cstdCubType .le. 500) then
       ! 3D Prism
       ishp = BGEOM_SHAPE_PRISM
     else
@@ -671,7 +872,7 @@ contains
 !</function>
 
     ! Get the shape of the cubature id
-    select case(cub_igetShape(ccubType))
+    select case(cub_igetShape(cub_getStdCubType(ccubType)))
     case(BGEOM_SHAPE_LINE)
       ! 1D line formula -> reference coordinates
       n = 1
@@ -704,7 +905,7 @@ contains
 
 !<subroutine>
 
-  subroutine cub_getCubature(ccubType, Dpoints, Domega)
+  recursive subroutine cub_getCubature(ccubType, Dpoints, Domega)
 
 !<descrption>
   ! This routine returns the cubature point coordinates and the corresponding
@@ -737,187 +938,305 @@ contains
   ! Auxiliary arrays for Gauss-Legendre rules
   real(DP), dimension(6) :: Dv, Dw
   integer :: ndim, npts
+
+  ! Variables needed for summed cubature formulas.  
+  integer :: cstdCubType,nreflevels
+  integer :: icubp,ncubpts
+  integer :: isubelement, nsubelements, isubx, isuby
+  real(DP) :: dweight,dedgelen
+  real(DP), dimension(:,:), allocatable :: DpointsLocal
+  real(DP), dimension(:), allocatable :: DomegaLocal
   
-    ndim = 0
-    npts = 0
-    
-    ! Okay, let's see what cubature rule we have here...
-    select case(ccubType)
-    
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 1D LINE CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    case (CUB_G1_1D)
-      ndim = 1
-      npts = 1
-    
-    case (CUB_G2_1D)
-      ndim = 1
-      npts = 2
-    
-    case (CUB_G3_1D)
-      ndim = 1
-      npts = 3
-    
-    case (CUB_G4_1D)
-      ndim = 1
-      npts = 4
-    
-    case (CUB_G5_1D)
-      ndim = 1
-      npts = 5
-    
-    case (CUB_G6_1D)
-      ndim = 1
-      npts = 6
-
-    case(CUB_TRZ_1D) ! trapezoidal rule
-      Dpoints(1,1) = -1.0_DP
-      Dpoints(1,2) =  1.0_DP
-      Domega(1) = 1.0_DP
-      Domega(2) = 1.0_DP
-
-    case(CUB_SIMPSON_1D) ! Simpson rule
-      Dpoints(1,1) = -1.0_DP
-      Dpoints(1,2) =  0.0_DP
-      Dpoints(1,3) =  1.0_DP
-      Domega(1) = 1.0_DP / 3.0_DP
-      Domega(2) = 4.0_DP / 3.0_DP
-      Domega(3) = 1.0_DP / 3.0_DP
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 2D TRIANGLE CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 2D QUADRILATERAL CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    case (CUB_G1_2D)
-      ndim = 2
-      npts = 1
-    
-    case (CUB_G2_2D)
-      ndim = 2
-      npts = 2
-    
-    case (CUB_G3_2D)
-      ndim = 2
-      npts = 3
-    
-    case (CUB_G4_2D)
-      ndim = 2
-      npts = 4
-    
-    case (CUB_G5_2D)
-      ndim = 2
-      npts = 5
-    
-    case (CUB_G6_2D)
-      ndim = 2
-      npts = 6
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 3D TETRAHEDRON CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 3D HEXAHEDRON CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    case (CUB_G1_3D)
-      ndim = 3
-      npts = 1
-    
-    case (CUB_G2_3D)
-      ndim = 3
-      npts = 2
-    
-    case (CUB_G3_3D)
-      ndim = 3
-      npts = 3
-    
-    case (CUB_G4_3D)
-      ndim = 3
-      npts = 4
-    
-    case (CUB_G5_3D)
-      ndim = 3
-      npts = 5
-    
-    case (CUB_G6_3D)
-      ndim = 3
-      npts = 6
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 3D PYRAMID CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! 3D PRISM CUBATURE RULES
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! OLD INTERFACE WRAPPER
-    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    case default
+    ! Get the underlying cubature formula an dnumber of refinement levels.
+    cstdCubType = cub_getStdCubType(ccubType)
+    nreflevels = cub_getRefLevels(ccubType)
   
-      ! call old routine
-      call cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
-      
-      ! transpose the point array
-      do i = 1, min(4,size(Dpoints,1))
-        do j = 1, min(ncubp,size(Dpoints,2))
-          Dpoints(i,j) = Dxi(j,i)
-        end do
-      end do
-      
-      ! And get out of here
-      return
-      
-    end select
+    if (nreflevels .le. 0) then
     
-    ! Gauss-Legendre rule ?
-    if((ndim .gt. 0) .and. (npts .gt. 0)) then
+      ! Standard cubature formula.
+
+      ndim = 0
+      npts = 0
+      
+      ! Okay, let's see what cubature rule we have here...
+      select case(cstdCubType)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 1D LINE CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      case (CUB_G1_1D)
+        ndim = 1
+        npts = 1
+      
+      case (CUB_G2_1D)
+        ndim = 1
+        npts = 2
+      
+      case (CUB_G3_1D)
+        ndim = 1
+        npts = 3
+      
+      case (CUB_G4_1D)
+        ndim = 1
+        npts = 4
+      
+      case (CUB_G5_1D)
+        ndim = 1
+        npts = 5
+      
+      case (CUB_G6_1D)
+        ndim = 1
+        npts = 6
+
+      case(CUB_TRZ_1D) ! trapezoidal rule
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) =  1.0_DP
+        Domega(1) = 1.0_DP
+        Domega(2) = 1.0_DP
+
+      case(CUB_SIMPSON_1D) ! Simpson rule
+        Dpoints(1,1) = -1.0_DP
+        Dpoints(1,2) =  0.0_DP
+        Dpoints(1,3) =  1.0_DP
+        Domega(1) = 1.0_DP / 3.0_DP
+        Domega(2) = 4.0_DP / 3.0_DP
+        Domega(3) = 1.0_DP / 3.0_DP
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 2D TRIANGLE CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 2D QUADRILATERAL CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      case (CUB_G1_2D)
+        ndim = 2
+        npts = 1
+      
+      case (CUB_G2_2D)
+        ndim = 2
+        npts = 2
+      
+      case (CUB_G3_2D)
+        ndim = 2
+        npts = 3
+      
+      case (CUB_G4_2D)
+        ndim = 2
+        npts = 4
+      
+      case (CUB_G5_2D)
+        ndim = 2
+        npts = 5
+      
+      case (CUB_G6_2D)
+        ndim = 2
+        npts = 6
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 3D TETRAHEDRON CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 3D HEXAHEDRON CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      case (CUB_G1_3D)
+        ndim = 3
+        npts = 1
+      
+      case (CUB_G2_3D)
+        ndim = 3
+        npts = 2
+      
+      case (CUB_G3_3D)
+        ndim = 3
+        npts = 3
+      
+      case (CUB_G4_3D)
+        ndim = 3
+        npts = 4
+      
+      case (CUB_G5_3D)
+        ndim = 3
+        npts = 5
+      
+      case (CUB_G6_3D)
+        ndim = 3
+        npts = 6
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 3D PYRAMID CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! 3D PRISM CUBATURE RULES
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! OLD INTERFACE WRAPPER
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      case default
     
-      ! Okay, get the corresponding Gauss-Legendre rule
-      call cub_auxGaussLegendre(npts,Dv,Dw)
-      
-      ! What dimension should the rule be for?
-      select case(ndim)
-      case (NDIM1D)
-        ! 1D Gauss rule
-        do i = 1, npts
-          Dpoints(1,i) = Dv(i)
-          Domega(i) = Dw(i)
-        end do
-      
-      case (NDIM2D)
-        ! 2D Gauss rule for quadrilaterals
-        l = 1
-        do i = 1, npts
-          do j = 1, npts
-            Dpoints(1,l) = Dv(i)
-            Dpoints(2,l) = Dv(j)
-            Domega(l) = Dw(i)*Dw(j)
-            l = l+1
-          end do
-        end do
-      
-      case(NDIM3D)
-        ! 3D Gauss rule for hexahedra
-        l = 1
-        do i = 1, npts
-          do j = 1, npts
-            do k = 1, npts
-              Dpoints(1,l) = Dv(i)
-              Dpoints(2,l) = Dv(j)
-              Dpoints(3,l) = Dv(k)
-              Domega(l) = Dw(i)*Dw(j)*Dw(k)
-              l = l+1
-            end do
+        ! call old routine
+        call cub_getCubPoints(ccubType, ncubp, Dxi, Domega)
+        
+        ! transpose the point array
+        do i = 1, min(4,size(Dpoints,1))
+          do j = 1, min(ncubp,size(Dpoints,2))
+            Dpoints(i,j) = Dxi(j,i)
           end do
         end do
         
+        ! And get out of here
+        return
+        
       end select
+      
+      ! Gauss-Legendre rule ?
+      if((ndim .gt. 0) .and. (npts .gt. 0)) then
+      
+        ! Okay, get the corresponding Gauss-Legendre rule
+        call cub_auxGaussLegendre(npts,Dv,Dw)
+        
+        ! What dimension should the rule be for?
+        select case(ndim)
+        case (NDIM1D)
+          ! 1D Gauss rule
+          do i = 1, npts
+            Dpoints(1,i) = Dv(i)
+            Domega(i) = Dw(i)
+          end do
+        
+        case (NDIM2D)
+          ! 2D Gauss rule for quadrilaterals
+          l = 1
+          do i = 1, npts
+            do j = 1, npts
+              Dpoints(1,l) = Dv(i)
+              Dpoints(2,l) = Dv(j)
+              Domega(l) = Dw(i)*Dw(j)
+              l = l+1
+            end do
+          end do
+        
+        case(NDIM3D)
+          ! 3D Gauss rule for hexahedra
+          l = 1
+          do i = 1, npts
+            do j = 1, npts
+              do k = 1, npts
+                Dpoints(1,l) = Dv(i)
+                Dpoints(2,l) = Dv(j)
+                Dpoints(3,l) = Dv(k)
+                Domega(l) = Dw(i)*Dw(j)*Dw(k)
+                l = l+1
+              end do
+            end do
+          end do
+          
+        end select
+      
+      end if
+  
+    else
+    
+      ! This is a summed cubature formula, so determining the cubature points
+      ! is slightly more complicated.
+      !
+      ! In a first step, calculate the points on the reference element
+      ! of the standard cubature formula.
+      ncubpts = cub_igetNumPts(cstdCubType)
+      
+      allocate(DpointsLocal(cub_igetCoordDim(cstdCubType),ncubpts))
+      allocate(DomegaLocal(ncubpts))
+      
+      call cub_getCubature(cstdCubType, DpointsLocal, DomegaLocal)
+      
+      select case (cstdCubType)
+        case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
+          ! All points are innter points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is a quad element in 2D, so every refinement brings 4 new
+          ! elements.
+          nsubelements = cub_getRefElements(ccubType) ** nreflevels
+
+          ! Transfer the weights.
+          dweight = 1.0_DP/real(nsubelements,dp)
+          do isubelement = 1,nsubelements
+            do icubp = 1,ncubpts
+              Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
+            end do
+          end do
+          
+          ! Transfer the point coordinates.
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Length of the edge of every subelement.
+          ! Note that the reference element is [-1,1]^2 !
+          dedgelen = 2.0_DP/real(nsubelements,dp)
+          
+          do isuby = 0,nsubelements-1
+            do isubx = 0,nsubelements-1
+              do icubp = 1,ncubpts
+                Dpoints(1,(isuby*nsubelements+isubx)*ncubpts+icubp) = &
+                    DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                    + real(isubx,dp)*dedgelen
+
+                Dpoints(2,(isuby*nsubelements+isubx)*ncubpts+icubp) = &
+                    DpointsLocal(2,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                    + real(isuby,dp)*dedgelen
+              end do
+            end do
+          end do
+          
+        case (CUB_TRZ)
+        
+          ! Points are in the corners of the (sub-)elements.
+          !
+          ! How many subelements do we have?
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Manually initialise the coordinates and weights.
+          dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
+          do isuby = 0,nsubelements
+            do isubx = 0,nsubelements
+              Dpoints(1,isuby*(nsubelements+1)+isubx+1) = &
+                  real(isubx,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+              Dpoints(2,isuby*(nsubelements+1)+isubx+1) = &
+                  real(isuby,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+            end do
+          end do
+
+          do isuby = 1,nsubelements-1
+            do isubx = 1,nsubelements-1
+              Domega(isuby*(nsubelements+1)+isubx+1) = dweight*4.0_DP
+            end do
+          end do
+          
+          do isuby = 1,nsubelements-1
+            Domega(isuby+1)                               = dweight*2.0_DP
+            Domega(nsubelements*(nsubelements+1)+isuby+1) = dweight*2.0_DP
+            Domega(isuby*(nsubelements+1)+1)              = dweight*2.0_DP
+            Domega(isuby*(nsubelements+1)+nsubelements+1) = dweight*2.0_DP
+          end do
+
+          Domega(1)                                            = dweight
+          Domega(nsubelements+1)                               = dweight
+          Domega(nsubelements*(nsubelements+1)+1)              = dweight
+          Domega(nsubelements*(nsubelements+1)+nsubelements+1) = dweight
+
+        case default
+          call output_line ('Unsupported element.', &
+                            OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubature')
+          call sys_halt()
+      end select
+      
+      ! Release memory, that's it.
+      
+      deallocate(DomegaLocal)
+      deallocate(DpointsLocal)
     
     end if
     

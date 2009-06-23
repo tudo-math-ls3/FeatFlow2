@@ -1698,6 +1698,15 @@ contains
         
         case default
 
+          ! This case realises
+          !
+          !  int (w u) dx
+          !  
+          ! with w being the weight and u the analytical function given by
+          ! ffunctionReference. This function must be present such that it can
+          ! be evaluated -- otherwise the user made a mistake in calling
+          ! this routine.
+
           ! Evaluate the error with aid of the callback function
           if (present(ffunctionReference)) then
             ! Calculate the values of the coefficient function in the
@@ -2491,6 +2500,15 @@ contains
           end if
         
         case default
+
+          ! This case realises
+          !
+          !  int (w u) dx
+          !  
+          ! with w being the weight and u the analytical function given by
+          ! ffunctionReference. This function must be present such that it can
+          ! be evaluated -- otherwise the user made a mistake in calling
+          ! this routine.
 
           ! Evaluate the error with aid of the callback function
           if (present(ffunctionReference)) then
@@ -3308,6 +3326,15 @@ contains
         
         case default
 
+          ! This case realises
+          !
+          !  int (w u) dx
+          !  
+          ! with w being the weight and u the analytical function given by
+          ! ffunctionReference. This function must be present such that it can
+          ! be evaluated -- otherwise the user made a mistake in calling
+          ! this routine.
+
           ! Evaluate the error with aid of the callback function
           if (present(ffunctionReference)) then
             ! Calculate the values of the coefficient function in the
@@ -4056,8 +4083,9 @@ contains
       !              ~ sum grad_x(u-u_h)**2 + grad_y(u-u_h)
       do iel = 1,NEL
         do ipoint = 1,ncubp
-          Dcoefficients(ipoint,iel,1) = (Dcoefficients(ipoint,iel,1)-Dcoefficients(ipoint,iel,3))**2 + &
-                                        (Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,4))**2 
+          Dcoefficients(ipoint,iel,1) = &
+              (Dcoefficients(ipoint,iel,1)-Dcoefficients(ipoint,iel,3))**2 + &
+              (Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,4))**2 
         end do
       end do
       
@@ -4159,7 +4187,16 @@ contains
       
       deallocate(Dcoefficients)
 
-    case DEFAULT
+    case default
+
+      ! This case realises
+      !
+      !  int (w u) dx
+      !  
+      ! with w being the weight and u the analytical function given by
+      ! ffunctionReference. This function must be present such that it can
+      ! be evaluated -- otherwise the user made a mistake in calling
+      ! this routine.
 
       allocate (Dcoefficients(ncubp,NEL,2))
 
