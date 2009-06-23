@@ -41,7 +41,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90	\
 	elementpreprocessing.f90 iluk.f90 gmvwritef.c			\
 	multileveloperators.f90 adjacency.f90 meshadjacency.f90		\
 	vanka_navst2d.f90 vanka_bouss2d.f90 uuid.f90 fpersistence.f90	\
-	quicksolver.f90 pprocindicator.f90
+	quicksolver.f90 pprocindicator.f90 adaptivecubature.f90
 
 # path for the make where to look for which files
 

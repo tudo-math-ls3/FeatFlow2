@@ -172,6 +172,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/list.f90 DataStructures/octree.f90 DataStructures/quadtree.f90 DataStructures/stack.f90 " .
 
     "ElementCubature/cubature.f90 ElementCubature/derivatives.f90 ElementCubature/element.f90 " .
+    "ElementCubature/adaptivecubature.f90 " .
     "ElementCubature/element_hexa3d.f90 ElementCubature/element_line1d.f90 " .
     "ElementCubature/element_prism3d.f90 ElementCubature/element_pyra3d.f90 " .
     "ElementCubature/element_quad2d.f90 ElementCubature/element_tetra3d.f90 " .
