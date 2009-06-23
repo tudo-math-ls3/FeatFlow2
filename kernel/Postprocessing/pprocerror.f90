@@ -3695,6 +3695,7 @@ contains
     ! Arrays for cubature points
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,Dpoints,DpointsRef
+    real(DP), dimension(:,:), allocatable :: DpointPar
     real(DP), dimension(CUB_MAXCUBP) :: Domega1D
     real(DP), dimension(:,:,:), allocatable :: Dcoefficients
     real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
@@ -3754,7 +3755,7 @@ contains
     ! NEL counts the total number of elements in the region.
     NEL = 0
     do iedge = 1,NELbdc
-      if (boundary_isInRegion(rboundaryRegion,ibdc,&
+      if (boundary_isInRegion(rboundaryRegion, ibdc,&
           p_DedgeParameterValue(iedge))) then
         NEL = NEL + 1
         
@@ -3763,7 +3764,7 @@ contains
         
         ! Element orientation; i.e. the local number of the boundary edge 
         do ilocaledge = 1,ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge,p_IelementsAtBoundary(iedge)) .eq. &
+          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
               p_IedgesAtBoundary(iedge)) exit
         end do
         IelementOrientation(NEL) = ilocaledge
@@ -3833,10 +3834,14 @@ contains
     
     ! If the reference function exists, calculate the coordinates of the
     ! points on world coordinates
-    if (present(ffunctionReference)) then
+    if (present(ffunctionReference) .or.&
+        present(ffunctionWeight)) then
       
       ! We need the real coordinates of the points.
       allocate(Dpoints(ncubp,NDIM2D+1,NEL))
+      
+      ! We need the parameter values of the points.
+      allocate (DpointPar(ncubp,NEL))
       
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
         ! All elements with the same transformation
@@ -3847,15 +3852,15 @@ contains
           ! Get the points forming the element
           do ipoint = 1,ubound(p_IverticesAtElement,1)
             Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,iel))
             Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,iel))
           end do
 
           ! Transform the cubature points
           do ipoint = 1,ncubp
             call trafo_calcRealCoords (ctrafoType,Dcoord,&
-                DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
+                DpointsRef(:,ipoint,iel), Dpoints(:,ipoint,iel))
           end do
         end do
       else
@@ -3863,11 +3868,11 @@ contains
         do iel = 1,NEL
 
           ! Get the points forming the element
-          do ipoint = 1,ubound(p_IverticesAtElement,1)
+          do ipoint = 1, ubound(p_IverticesAtElement,1)
             Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,iel))
             Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,iel))
           end do
 
           ! Transform the cubature points
@@ -3875,11 +3880,23 @@ contains
             celement = p_RelementDistribution(&
                 p_IelementDistr(Ielements(iel)))%celement
             ctrafoType = elem_igetTrafoType(celement)
-            call trafo_calcRealCoords (ctrafoType,Dcoord,&
-                DpointsRef(:,ipoint,iel),Dpoints(:,ipoint,iel))
+            call trafo_calcRealCoords (ctrafoType, Dcoord,&
+                DpointsRef(:,ipoint,iel), Dpoints(:,ipoint,iel))
           end do
         end do
       end if
+
+      ! Calculate the parameter values of the points on the boundary
+      do iel = 1,NEL
+        do ipoint = 1,ncubp
+          ! Dxi1D is in [-1,1] while the current edge has parmeter values
+          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
+          ! transformation to transform Dxi1D into that interval, this 
+          ! gives the parameter values in length parametrisation
+          call mprim_linearRescale(Dxi1D(ipoint,1), -1.0_DP, 1.0_DP,&
+              DedgePosition(1,iel), DedgePosition(2,iel), DpointPar(ipoint,iel))
+        end do
+      end do
     
     end if
     
@@ -3909,8 +3926,9 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
-                                 Dpoints, Ielements(1:NEL),&
-                                 Dcoefficients(:,:,2),rcollection)
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2), rcollection)
       else
         Dcoefficients(:,:,2) = 0.0_DP
       end if
@@ -3981,8 +3999,9 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
-                                 Dpoints, Ielements(1:NEL),&
-                                 Dcoefficients(:,:,2),rcollection)
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2), rcollection)
       else
         Dcoefficients(:,:,2) = 0.0_DP
       end if
@@ -4045,11 +4064,11 @@ contains
           !
           ! X-derivative
           call fevl_evaluate_mult (DER_DERIV_X, Dcoefficients(:,iel,1), rvectorScalar, &
-              Ielements(iel), DpointsRef(:,:,iel))
+                                   Ielements(iel), DpointsRef(:,:,iel))
               
           ! Y-derivative
           call fevl_evaluate_mult (DER_DERIV_Y, Dcoefficients(:,iel,2), rvectorScalar, &
-              Ielements(iel), DpointsRef(:,:,iel))
+                                   Ielements(iel), DpointsRef(:,:,iel))
         end do
       end if
 
@@ -4059,13 +4078,16 @@ contains
         ! Evaluate the reference function on the boundary
         !
         ! X-derivative
-        call ffunctionReference (DER_DERIV_X,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), Dcoefficients(:,:,3),rcollection)
+        call ffunctionReference (DER_DERIV_X, rdiscretisation, DpointsRef,&
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,3), rcollection)
 
         ! Y-derivative
-        call ffunctionReference (DER_DERIV_Y,rdiscretisation, &
-            DpointsRef,Dpoints, Ielements(1:NEL), Dcoefficients(:,:,4),rcollection)
-            
+        call ffunctionReference (DER_DERIV_Y, rdiscretisation, DpointsRef,&
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,4), rcollection)
       end if
 
       ! If the weighting function exists, evaluate it.
@@ -4083,7 +4105,7 @@ contains
       !              ~ sum grad_x(u-u_h)**2 + grad_y(u-u_h)
       do iel = 1,NEL
         do ipoint = 1,ncubp
-          Dcoefficients(ipoint,iel,1) = &
+          Dcoefficients(ipoint,iel,1) =&
               (Dcoefficients(ipoint,iel,1)-Dcoefficients(ipoint,iel,3))**2 + &
               (Dcoefficients(ipoint,iel,2)-Dcoefficients(ipoint,iel,4))**2 
         end do
@@ -4135,8 +4157,9 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
-                                 Dpoints, Ielements(1:NEL),&
-                                 Dcoefficients(:,:,2),rcollection)
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,2), rcollection)
       else
         Dcoefficients(:,:,2) = 0.0_DP
       end if
@@ -4205,8 +4228,9 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionReference (DER_FUNC, rdiscretisation, DpointsRef,&
-                                 Dpoints, Ielements(1:NEL),&
-                                 Dcoefficients(:,:,1),rcollection)
+                                 Dpoints, rboundaryRegion%iboundCompIdx,&
+                                 DpointPar, Ielements(1:NEL),&
+                                 Dcoefficients(:,:,1), rcollection)
       else
         call output_line('Reference function missing in user-defined error type!',&
             OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarBoundary2d_conf')
@@ -4253,7 +4277,8 @@ contains
     
     ! Release memory
 
-    if (present(ffunctionReference)) deallocate(Dpoints)
+    if (present(ffunctionReference) .or.&
+        present(ffunctionWeight)) deallocate(Dpoints, DpointPar)
       
     deallocate(DedgePosition)
     deallocate(Ielements, IelementOrientation)

@@ -8,8 +8,8 @@
   !<subroutine>
 
     subroutine ffunctionReference (cderivative, rdiscretisation, &
-                                   DpointsRef, Dpoints, Ielements,&
-                                   Dvalues, rcollection)
+                                   DpointsRef, Dpoints, ibct, DpointPar,&
+                                   Ielements, Dvalues, rcollection)
 
     use fsystem    
     use basicgeometry
@@ -55,6 +55,16 @@
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(IN) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
