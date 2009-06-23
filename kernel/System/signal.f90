@@ -92,6 +92,8 @@ contains
 !</input>
 !</subroutine>
     
+#if (!WINDOWS)
+    
     ! external subroutines written in C
     external :: signal_register
     external :: signal_deregister
@@ -102,6 +104,8 @@ contains
     else
       call signal_deregister(sig)
     end if
+    
+#endif
     
   end subroutine fsignal
 end module signal
