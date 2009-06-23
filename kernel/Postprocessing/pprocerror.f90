@@ -9,47 +9,53 @@
 !#
 !# The following routines can be found in this module:
 !#
-!# 1.) pperr_scalar, pperr_scalarVec
+!# 1.) pperr_scalarVec
 !#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
 !#        analytic reference function or the $L_1$-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
-!#   $$ int_\Omega u-u_h dx , \qquad int_\Omega \nabla u-\nabla u_h dx $$
+!#   $$ \int_\Omega u-u_h dx , \qquad \int_\Omega \nabla u-\nabla u_h dx $$
 !#
-!# 2.) pperr_scalarBoundary2d
+!# 2.) pperr_scalar
+!#     -> Calculate, e.g., $L_1$-error, $L_2$-error or $H_1$-error to an
+!#        analytic reference function or the $L_1$-norm, $L_2$-norm
+!#        or $H_1$-norm of a FE function:
+!#   $$ \int_\Omega w(u-u_h) dx , \qquad \int_\Omega w(\nabla u-\nabla u_h) dx $$
+!#
+!# 3.) pperr_scalarBoundary2d
 !#     -> On a 2D boundary segment, calculate $L_1$-error, $L_2$-error 
 !#        or $H_1$-error to an analytic reference function or the 
 !#        $L_1$-norm, $L_2$-norm or $H_1$-norm of a FE function.
-!#   $$ int_\Gamma u-cu_h dx , \qquad int_\Gamma \nabla u-c\nabla u_h dx $$
+!#   $$ \int_\Gamma u-cu_h dx , \qquad \int_\Gamma \nabla u-c\nabla u_h dx $$
 !#
-!# 3.) pperr_scalarErrorEstimate
+!# 4.) pperr_scalarErrorEstimate
 !#     -> Calculate error to two different scalar vectors of a  FE function:
-!#   $$ int_\Omega u_h-u_ref dx $$
+!#   $$ \int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
-!# 4.) pperr_blockErrorEstimate
+!# 5.) pperr_blockErrorEstimate
 !#     -> Calculate error to two different block vectors of a  FE function:
-!#   $$ int_\Omega u_h-u_ref dx $$
+!#   $$ \int_\Omega u_h-u_ref dx $$
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
-!# 5.) pperr_scalarStandardDeviation
+!# 6.) pperr_scalarStandardDeviation
 !#     -> Calculate the standard deviation of a scalar vector
 !#
-!# 6.) pperr_blockStandardDeviation
+!# 7.) pperr_blockStandardDeviation
 !#     -> Calculate the standard deviation of a block vector
 !#
-!# 7.) pperr_scalarTargetFunc
+!# 8.) pperr_scalarTargetFunc
 !#     -> Calculate the target functional for a FE function:
-!#   $$ int_\Omega w(x)[u(x) - u_h(x)] dx $$
+!#   $$ \int_\Omega w(x)[u(x) - u_h(x)] dx $$
 !#        where $w(x)$ is a weighting function
 !#
-!# 8.) pperr_scalarTargetFuncBoundary2d
+!# 9.) pperr_scalarTargetFuncBoundary2d
 !#     -> On a 2D boundary segment, calculate the target functional
 !#        for a FE function:
-!#   $$ \int_\Gamma w(x)[u(x)*v(x) - u_h(x)*v_h(x)]
+!#   $$ \\int_\Gamma w(x)[u(x)*v(x) - u_h(x)*v_h(x)]
 !#        where $w(x)$ is a weighting function, $n(x)$ denotes the outward
 !#        unit normal vector, $v(x)$ is some exact "weighting" function and
 !#        $v_h(x)$ is some approximate "weighting" function.
@@ -757,19 +763,19 @@ contains
     
     ! That's it
 
-  end subroutine
+  end subroutine pperr_scalarVec
 
   !****************************************************************************
 
 !<subroutine>
 
   subroutine pperr_scalar (rvectorScalar, cerrortype, derror,&
-                           ffunctionReference, rcollection,&
-                           rdiscretisation, relementError)
+                           ffunctionReference, rcollection, rdiscretisation,&
+                           relementError, ffunctionWeight)
 
 !<description>
-  ! This routine calculates the error or the norm, respectively, of a given 
-  ! finite element function in rvector to a given analytical 
+  ! This routine calculates the error or the norm, respectively, of a
+  ! given finite element function in rvector to a given analytical
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
@@ -777,7 +783,11 @@ contains
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}.$$
+  !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}$$
+  !
+  ! If ffunctionWeight is specified, the routine calculates the
+  ! desired norm over the selected subdomain and/or scales the error
+  ! by the local weighting coefficients.
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the
@@ -802,6 +812,11 @@ contains
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
+  
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be unity!
+  optional :: ffunctionWeight
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
@@ -892,17 +907,17 @@ contains
         ! Do we have a 1D, 2D or 3D discretisation here?
         select case(p_rdiscretisation%ndimension)
         case (NDIM1D)
-          call pperr_scalar1d_conf (rvectorScalar,cerrortype,derror,&
-                                    p_rdiscretisation,ffunctionReference,&
-                                    rcollection, relementError)
+          call pperr_scalar1d_conf (cerrortype, derror, p_rdiscretisation,&
+                                    rvectorScalar, ffunctionReference,&
+                                    rcollection, relementError, ffunctionWeight)
         case (NDIM2D)
-          call pperr_scalar2d_conf (rvectorScalar,cerrortype,derror,&
-                                    p_rdiscretisation,ffunctionReference,&
-                                    rcollection, relementError)
+          call pperr_scalar2d_conf (cerrortype, derror, p_rdiscretisation,&
+                                    rvectorScalar, ffunctionReference,&
+                                    rcollection, relementError, ffunctionWeight)
         case (NDIM3D)
-          call pperr_scalar3d_conf (rvectorScalar,cerrortype,derror,&
-                                    p_rdiscretisation,ffunctionReference,&
-                                    rcollection, relementError)
+          call pperr_scalar3d_conf (cerrortype, derror, p_rdiscretisation,&
+                                    rvectorScalar,ffunctionReference,&
+                                    rcollection, relementError, ffunctionWeight)
         end select
 
       case DEFAULT
@@ -923,9 +938,9 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalar1d_conf (rvectorScalar, cerrortype, derror,&
-                                  rdiscretisation, ffunctionReference,&
-                                  rcollection, relementError)
+  subroutine pperr_scalar1d_conf (cerrortype, derror, rdiscretisation,&
+                                  rvectorScalar, ffunctionReference,&
+                                  rcollection, relementError, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -934,9 +949,6 @@ contains
 !</description>
 
 !<input>
-  ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalar
-  
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -944,12 +956,21 @@ contains
   
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
   
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be unity!
+  optional :: ffunctionWeight
 !</input>
 
 !<inputoutput>
@@ -1100,7 +1121,7 @@ contains
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
-      allocate(Dcoefficients(ncubp, nelementsPerBlock, 2))
+      allocate(Dcoefficients(ncubp, nelementsPerBlock, 3))
     
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
@@ -1177,22 +1198,38 @@ contains
             ! function values in the cubature points:  u(x)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC1D, rdiscretisation, &
-                        int(IELmax-IELset+1), ncubp, &
-                        revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-                        IdofsTrial, rintSubset, &
-                        Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
           else
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
+         
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
+                Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
 
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x).
-          ! Save the result to Dcoefficients(:,:,2)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
-                  
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
+          end if
+
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
           !        
@@ -1214,7 +1251,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
                 
@@ -1242,7 +1279,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
                 
@@ -1271,14 +1308,30 @@ contains
           else
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
-
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x).
-          ! Save the result to Dcoefficients(:,:,2)
           
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC1D,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
+          end if
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1301,7 +1354,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -1329,7 +1382,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -1359,14 +1412,30 @@ contains
           else
             Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
           end if
-          
-          ! Calculate the X/Y-derivative of the FE function in the
-          ! cubature points: u_h(x,y).
-          ! Save the result to Dcoefficients(:,:,3)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
+                    
+          if (present(rvectorScalar)) then
+            ! Calculate the X-derivative of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,3)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV1D_X,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+             Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,3), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3) = 1.0_DP
+          end if
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -1389,7 +1458,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 
@@ -1417,7 +1486,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 
@@ -1468,9 +1537,9 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalar2d_conf (rvectorScalar, cerrortype, derror,&
-                                  rdiscretisation, ffunctionReference,&
-                                  rcollection, relementError)
+  subroutine pperr_scalar2d_conf (cerrortype, derror, rdiscretisation,&
+                                  rvectorScalar, ffunctionReference,&
+                                  rcollection, relementError, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -1478,10 +1547,7 @@ contains
   ! 2D version for double-precision vectors.
 !</description>
 
-!<input>
-  ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalar
-  
+!<input> 
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -1490,11 +1556,20 @@ contains
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
 
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be unity!
+  optional :: ffunctionWeight
 !</input>
 
 !<inputoutput>
@@ -1646,7 +1721,7 @@ contains
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
-      allocate(Dcoefficients(ncubp, nelementsPerBlock, 4))
+      allocate(Dcoefficients(ncubp, nelementsPerBlock, 5))
     
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
@@ -1730,14 +1805,30 @@ contains
           else
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
-
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x,y).
-          ! Save the result to Dcoefficients(:,:,2)
           
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,5)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,5), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
+          end if
 
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -1760,7 +1851,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
 
@@ -1788,7 +1879,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
                 
@@ -1817,15 +1908,31 @@ contains
           else
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+          
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,5)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,5), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
+          end if
 
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x,y).
-          ! Save the result to Dcoefficients(:,:,2)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
-          
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
           !        
@@ -1843,7 +1950,7 @@ contains
                 ! calculate the current weighting factor in the cubature formula
                 ! in that cubature point.
                 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,5)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -1867,7 +1974,7 @@ contains
                 ! calculate the current weighting factor in the cubature formula
                 ! in that cubature point.
                 
-                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
+                OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)*Dcoefficients(icubp,IEL,5)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -1895,7 +2002,6 @@ contains
                         Dcoefficients(:,1:IELmax-IELset+1,1), rcollection)
                         
             ! Calculate the Y-derivative to Dcoefficients(:,:,2)
-
             call ffunctionReference (DER_DERIV_Y,rdiscretisation, &
                         int(IELmax-IELset+1), ncubp,&
                         revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
@@ -1905,17 +2011,33 @@ contains
             Dcoefficients(:,1:IELmax-IELset+1,1:2) = 0.0_DP
           end if
           
-          ! Calculate the X/Y-derivative of the FE function in the
-          ! cubature points: u_h(x,y).
-          ! Save the result to Dcoefficients(:,:,3..4)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1,3))
+          if (present(rvectorScalar)) then
+            ! Calculate the X/Y-derivative of the FE function in the
+            ! cubature points: u_h(x,y).
+            ! Save the result to Dcoefficients(:,:,3..4)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV_X,&
+                    Dcoefficients(:,1:IELmax-IELset+1,3))
 
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
-                  Dcoefficients(:,1:IELmax-IELset+1,4))
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV_Y,&
+                    Dcoefficients(:,1:IELmax-IELset+1,4))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,3:4) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,5)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,5), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,5) = 1.0_DP
+          end if
 
           ! Subtraction of Dcoefficients(:,:,1..2) from Dcoefficients(:,:,3..4) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -1938,7 +2060,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 
@@ -1967,7 +2089,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 
@@ -2019,9 +2141,9 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalar3d_conf (rvectorScalar, cerrortype, derror,&
-                                  rdiscretisation, ffunctionReference,&
-                                  rcollection, relementError)
+  subroutine pperr_scalar3d_conf (cerrortype, derror, rdiscretisation,&
+                                  rvectorScalar, ffunctionReference,&
+                                  rcollection, relementError, ffunctionWeight)
 
 !<description>
   ! This routine calculates the error of a given finite element function
@@ -2029,10 +2151,7 @@ contains
   ! 3D version for double-precision vectors.
 !</description>
 
-!<input>
-  ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalar
-  
+!<input>  
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
@@ -2041,11 +2160,20 @@ contains
   ! A discretisation structure specifying how to compute the error.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
 
+  ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
+  ! If omitted, the function is assumed to be constantly =0.
+  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
   include 'intf_refFunctionSc.inc'
   optional :: ffunctionReference
+
+  ! OPTIONAL: A callback function that provides the weighting function
+  ! by which the computed error is multipled.
+  ! If not specified, the reference function is assumed to be unity!
+  optional :: ffunctionWeight
 !</input>
 
 !<inputoutput>
@@ -2198,7 +2326,7 @@ contains
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
-      allocate(Dcoefficients(ncubp, nelementsPerBlock, 6))
+      allocate(Dcoefficients(ncubp, nelementsPerBlock, 7))
     
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
@@ -2283,13 +2411,29 @@ contains
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
 
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x,y,z).
-          ! Save the result to Dcoefficients(:,:,2)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y,z).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,7)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,7), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,7) = 1.0_DP
+          end if
           
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
@@ -2312,7 +2456,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
                 
@@ -2340,7 +2484,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! L2-error is:   int_... (u-u_h)*(u-u_h) dx
                 
@@ -2369,15 +2513,31 @@ contains
           else
             Dcoefficients(:,1:IELmax-IELset+1,1) = 0.0_DP
           end if
+          
+          if (present(rvectorScalar)) then
+            ! Calculate the values of the FE function in the
+            ! cubature points: u_h(x,y,z).
+            ! Save the result to Dcoefficients(:,:,2)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
+                    Dcoefficients(:,1:IELmax-IELset+1,2))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,2) = 0.0_DP
+          end if
+          
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,7)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,7), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,7) = 1.0_DP
+          end if
 
-          ! Calculate the values of the FE function in the
-          ! cubature points: u_h(x,y,z).
-          ! Save the result to Dcoefficients(:,:,2)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_FUNC3D,&
-                  Dcoefficients(:,1:IELmax-IELset+1,2))
-          
           ! Subtraction of Dcoefficients(:,:,1) from Dcoefficients(:,:,2) gives
           ! the error "u-u_h(cubature pt.)"!
           !        
@@ -2399,7 +2559,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -2427,7 +2587,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! L1-error is:   int_... abs(u-u_h) dx
                 
@@ -2471,21 +2631,37 @@ contains
             Dcoefficients(:,1:IELmax-IELset+1,1:3) = 0.0_DP
           end if
           
-          ! Calculate the X/Y/Z-derivative of the FE function in the
-          ! cubature points: u_h(x,y,z).
-          ! Save the result to Dcoefficients(:,:,4..6)
-          
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
-                  Dcoefficients(:,1:IELmax-IELset+1,4))
+          if (present(rvectorScalar)) then
+            ! Calculate the X/Y/Z-derivative of the FE function in the
+            ! cubature points: u_h(x,y,z).
+            ! Save the result to Dcoefficients(:,:,4..6)
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_X,&
+                    Dcoefficients(:,1:IELmax-IELset+1,4))
 
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
-                  Dcoefficients(:,1:IELmax-IELset+1,5))
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Y,&
+                    Dcoefficients(:,1:IELmax-IELset+1,5))
 
-          call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
-                  p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
-                  Dcoefficients(:,1:IELmax-IELset+1,6))
+            call fevl_evaluate_sim3 (rvectorScalar, revalElementSet,&
+                    p_relementDistribution%celement, IdofsTrial, DER_DERIV3D_Z,&
+                    Dcoefficients(:,1:IELmax-IELset+1,6))
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,4:6) = 0.0_DP
+          end if
+
+          if (present(ffunctionWeight)) then
+            ! Calculate the values of the weighting function in
+            ! the cubature points: w(x).
+            ! Save the result to Dcoefficients(:,:,3)
+            call ffunctionWeight (rdiscretisation,&
+                int(IELmax-IELset+1), ncubp, &
+                revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+                IdofsTrial, rintSubset, &
+                Dcoefficients(:,1:IELmax-IELset+1,7), rcollection)
+          else
+            Dcoefficients(:,1:IELmax-IELset+1,7) = 1.0_DP
+          end if
 
           ! Subtraction of Dcoefficients(:,:,1..3) from Dcoefficients(:,:,4..6) gives
           ! the error "grad(u-u_h)(cubature pt.)"!
@@ -2508,7 +2684,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 IELGlobal = p_IelementList(IELset+IEL-1)
@@ -2537,7 +2713,7 @@ contains
                 ! In 2D, the determinant is always positive, whereas in 3D,
                 ! the determinant might be negative -- that's normal!
                 
-                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+                OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
                 ! H1-error is:   int_... (grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
                 
@@ -2579,7 +2755,7 @@ contains
       derror = sqrt(derror)
     end if
 
-  end subroutine
+  end subroutine pperr_scalar3d_conf
 
   !****************************************************************************
 
