@@ -528,7 +528,7 @@ contains
 
 !<function>
 
-  elemental integer function cub_getStdCubType(ccubType) result(n)
+  elemental integer(I32) function cub_getStdCubType(ccubType) result(n)
   
 !<description>
   ! Returns the underlying standard cubature formula if ccubType
