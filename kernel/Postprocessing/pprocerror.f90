@@ -3934,6 +3934,7 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              rboundaryRegion%iboundCompIdx, DpointPar,&
                               Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
       else
         Dcoefficients(:,:,3) = 1.0_DP
@@ -4007,6 +4008,7 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              rboundaryRegion%iboundCompIdx, DpointPar,&
                               Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
       else
         Dcoefficients(:,:,3) = 1.0_DP
@@ -4091,6 +4093,7 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              rboundaryRegion%iboundCompIdx, DpointPar,&
                               Ielements(1:NEL), Dcoefficients(:,:,5), rcollection)
       else
         Dcoefficients(:,:,5) = 1.0_DP
@@ -4165,6 +4168,7 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              rboundaryRegion%iboundCompIdx, DpointPar,&
                               Ielements(1:NEL), Dcoefficients(:,:,3), rcollection)
       else
         Dcoefficients(:,:,3) = 1.0_DP
@@ -4238,6 +4242,7 @@ contains
         
         ! Evaluate the reference function on the boundary
         call ffunctionWeight (rdiscretisation,  DpointsRef, Dpoints,&
+                              rboundaryRegion%iboundCompIdx, DpointPar,&
                               Ielements(1:NEL), Dcoefficients(:,:,2), rcollection)
       else
         Dcoefficients(:,:,2) = 1.0_DP

@@ -97,9 +97,8 @@
   
   !<subroutine>
 
-    subroutine ffunctionWeight (rdiscretisation, &
-                                DpointsRef, Dpoints, Ielements,&
-                                Dvalues, rcollection)
+    subroutine ffunctionWeight (rdiscretisation, DpointsRef, Dpoints,&
+                                ibct, DpointPar, Ielements, Dvalues, rcollection)
 
     use fsystem    
     use basicgeometry
@@ -141,6 +140,16 @@
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(IN) :: Dpoints
     
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(IN) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
+
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
@@ -153,10 +162,10 @@
   !</input>
   
   !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
+    ! This array has to receive the values of the weights in all the
+    ! points specified in Dpoints, or the appropriate derivative of
+    ! the function, respectively, according to cderivative.
+    ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(OUT) :: Dvalues
   !</output>
     
