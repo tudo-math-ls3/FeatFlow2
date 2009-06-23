@@ -33,15 +33,11 @@ deffunc: @velocity_x = y ; x,y,z,t
 deffunc: @velocity_y = 1-x ; x,y,z,t
 
 # Specify the quantity of interest
-#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.4 & y <= 0.6, 1, 0) ; x,y,z,t
 #deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
-deffunc: @weightingFuncInt = if(x >= 1.6 & x <= 1.8 & y >= 0.6 & y <= 0.8, 1, 0) ; x,y,z,t
-#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
+deffunc: @weightingFuncInt = if(x >= 0.1 & x <= 0.9 & y <= 0.7, 1, 0) ; x,y,z,t
 
-#deffunc: @weightingFuncBdrInt = if(x >= 0.9 & x <= 1.1 & y >= 0.1 & y <= 0.9, 1, 0) ; x,y,z,t
-
-#deffunc: @targetFuncAnalytic = 0.06044974016448 ; t
-deffunc: @targetFuncAnalytic = 0.00948534325289 ; t
+#deffunc: @exactTargetFunc = 0.06044974016448 ; t
+deffunc: @exactTargetFunc = 0.00948534325289 ; t
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]

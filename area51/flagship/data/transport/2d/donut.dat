@@ -113,12 +113,25 @@ sexactsolutionname = @exactsol
 # 0 = no target variable
 # 1 = volume integral
 # 2 = surface integral
-# 3 = mixed volume/surface integral
+# 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
 itargetfunctype = 1
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
+
+# type of exact target functional
+# 0 = no target variable
+# 1 = volume integral (two components)
+# 2 = surface integral (two components)
+# 3 = mixed volume/surface integral (four components)
+# 4 = analytical target functional
+iexacttargetfunctype = 2
+
+# section name of target functional
+sexacttargetfuncname(2) = 
+  @weightingFuncInt
+  @exactsol
 
 #-------------------------------------------------------------------------------
 
@@ -702,7 +715,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 4
+nsubdividemax = 1
 
 # adaptation strategy
 # 1 = red-green
