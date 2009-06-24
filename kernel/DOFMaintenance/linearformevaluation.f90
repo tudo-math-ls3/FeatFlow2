@@ -858,9 +858,6 @@ contains
   ! one element
   real(DP), dimension(EL_MAXNBAS) :: DlocalData
 
-  ! Pointer to the jacobian determinants
-  real(DP), dimension(:,:), pointer :: p_Ddetj
-
   ! An allocateable array accepting the DOF's of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest
 
@@ -1059,6 +1056,25 @@ contains
   ! Dxi2D is not needed anymore.
   deallocate(Dxi2D)
 
+  
+  ! Allocate memory for the real coordinates of the points
+  allocate(Dpoints(NDIM2D+1,ncubp,NEL))
+  
+  ! Allocate memory for the parameter values of the points
+  allocate (DpointPar(ncubp, NEL))
+
+  ! Calculate the parameter values of the points on the boundary
+  do iel = 1,NEL
+    do ipoint = 1,ncubp
+      ! Dxi1D is in [-1,1] while the current edge has parmeter values
+      ! [DedgePosition(1),DedgePosition(2)]. So do a linear
+      ! transformation to transform Dxi1D into that interval, this 
+      ! gives the parameter values in length parametrisation
+      call mprim_linearRescale(Dxi1D(ipoint,1), -1.0_DP, 1.0_DP,&
+          DedgePosition(1,iel), DedgePosition(2,iel), DpointPar(ipoint,iel))
+    end do
+  end do
+  
   ! Check if discretisation is uniform - this would save a lot
   if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
 
@@ -1068,9 +1084,6 @@ contains
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_RelementDistribution(1)%celement)
-
-    ! Get the number of cubature points for the cubature formula
-    ncubp = cub_igetNumPts(p_RelementDistribution(1)%ccubTypeLinForm)
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
     do IALBET = 1,rform%itermcount
@@ -1093,15 +1106,7 @@ contains
     ! Allocate memory for the coefficients
     allocate(Dcoefficients(rform%itermCount, ncubp, NEL))
 
-    ! Allocate memory for the real coordinates of the points
-    allocate(Dpoints(NDIM2D+1,ncubp,NEL))
-
-    ! Allocate memory for the parameter values of the points
-    allocate (DpointPar(ncubp, NEL))
-
-    ! Initialisation of the element set.
-    call elprep_init(revalElementSet)
-    
+     
     ! Calculate the global DOF's into IdofsTest.
     !
     ! More exactly, we call dof_locGlobMapping_mult to calculate all the
@@ -1116,54 +1121,26 @@ contains
     ! the elements to give us the values of the basis functions
     ! in all the DOF's in all the elements in our set.
 
-    ! Calculate the real coordinates of the points on the boundary
-    do IEL = 1,NEL
-      ! Get the points forming the element
-      do ipoint = 1,ubound(p_IverticesAtElement,1)
-        Dcoord(1,ipoint) = &
-            p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,Ielements(iel)))
-        Dcoord(2,ipoint) = &
-            p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,Ielements(iel)))
-      end do
-      
-      ! Transform the cubature points
-      do ipoint = 1,ncubp
-        call trafo_calcRealCoords (ctrafoType,Dcoord,&
-            DpointsRef(:,ipoint,iel), Dpoints(:,ipoint,iel))
-      end do
-    end do
-    
-    ! Calculate the parameter values of the points on the boundary
-    do IEL = 1,NEL
-      do ipoint = 1,ncubp
-        ! Dxi1D is in [-1,1] while the current edge has parmeter values
-        ! [DedgePosition(1),DedgePosition(2)]. So do a linear
-        ! transformation to transform Dxi1D into that interval, this 
-        ! gives the parameter values in length parametrisation
-        call mprim_linearRescale(Dxi1D(ipoint,1), -1.0_DP, 1.0_DP,&
-            DedgePosition(1,iel), DedgePosition(2,iel), DpointPar(ipoint,iel))
-      end do
-    end do
+    ! Initialisation of the element set.
+    call elprep_init(revalElementSet)
     
     ! Get the element evaluation tag of all FE spaces. We need it to evaluate
     ! the elements later. All of them can be combined with OR, what will give
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_RelementDistribution(1)%celement)
     
-    ! Do NOT calculate the real coordinates; they are already there
+    ! Calculate the real coordinates; they are needed in the callback functionthere
     cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REALPOINTS)
 
     ! Do NOT calculate the coordinates on the reference element; they are already there
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
     
-!!$    ! Calculate all information that is necessary to evaluate the finite element
-!!$    ! on all cells of our subset. This includes the coordinates of the points
-!!$    ! on the cells.
-!!$    call elprep_prepareSetForEvaluation (revalElementSet,&
-!!$        cevaluationTag, p_rtriangulation, Ielements, &
-!!$        ctrafoType, Dpoints, DpointsRef, p_DcubPtsRef(:,1:ncubp))
-    
-    p_Ddetj => revalElementSet%p_Ddetj
+    ! Calculate all information that is necessary to evaluate the finite element
+    ! on all cells of our subset. This includes the coordinates of the points
+    ! on the cells.
+    call elprep_prepareSetForEvaluation (revalElementSet,&
+        cevaluationTag, p_rtriangulation, Ielements, &
+        ctrafoType, DpointsRef=DpointsRef)
     
     ! Now it's time to call our coefficient function to calculate the
     ! function values in the cubature points:
@@ -1173,16 +1150,12 @@ contains
     rintSubset%p_Ielements => Ielements
     rintSubset%p_IdofsTrial => IdofsTest
     rintSubset%celement = p_RelementDistribution(1)%celement
-    
-    
-    
-    do IEL = 1,NEL
-      print *, "IEL=",Ielements(IEL)
-      print *, revalElementSet%p_DpointsReal(:,:,IEL)
-      pause
-    end do
-
-    ! CALL CALLBACK FUNCTION
+        
+    if (present(fcoeff_buildVectorScBdr_sim)) then
+      ! CALL CALLBACK FUNCTION
+    else
+      Dcoefficients = 1.0_DP
+    end if
     
     ! Release the domain integration subset again
     call domint_doneIntegration(rintSubset)
@@ -1190,7 +1163,7 @@ contains
     ! Calculate the values of the basis functions.
     call elem_generic_sim2 (p_RelementDistribution(1)%celement, &
         revalElementSet, Bder, DbasTest)
-    
+
     ! --------------------- DOF COMBINATION PHASE ------------------------
     
     ! Values of all basis functions calculated. Now we can start 
@@ -1209,17 +1182,23 @@ contains
       ! Clear the output vector.
       DlocalData(1:indofTest) = 0.0_DP
       
+      ! Get the length of the edge. Let's use the parameter values
+      ! on the boundary for that purpose; this is a more general
+      ! implementation than using simple lines as it will later 
+      ! support isoparametric elements.
+      !
+      ! The length of the current edge serves as a "determinant"
+      ! in the cubature, so we have to divide it by 2 as an edge on 
+      ! the unit inverval [-1,1] has length 2.
+      dlen = 0.5_DP*(DedgePosition(2,IEL)-DedgePosition(1,IEL))
+
       ! Loop over all cubature points on the current element
       do ICUBP = 1, ncubp
         
         ! calculate the current weighting factor in the cubature formula
-        ! in that cubature point.
-        !
-        ! Take the absolut value of the determinant of the mapping.
-        ! In 2D, the determinant is always positive, whereas in 3D,
-        ! the determinant might be negative -- that's normal!
+        ! in that cubature point.      
         
-        OM = Domega1D(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
+        OM = dlen * Domega1D(ICUBP)
         
         ! Loop over the additive factors in the linear form.
         do IALBET = 1,rform%itermcount
@@ -1280,13 +1259,10 @@ contains
   else
 
     print *, "NOT YET"
-    STOP
+    stop
 
   end if
 
-
-  print *, "HALLO"
-  STOP
   end subroutine linf_buildVecDbleBdr2d_conf
 
 end module linearformevaluation
