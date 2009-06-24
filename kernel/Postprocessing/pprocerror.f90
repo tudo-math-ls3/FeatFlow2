@@ -52,27 +52,27 @@
 
 module pprocerror
 
-  use fsystem
-  use storage
-  use genoutput
-  use boundary
-  use cubature
   use basicgeometry
-  use triangulation
-  use linearalgebra
-  use dofmapping
-  use element
-  use linearsystemscalar
-  use linearsystemblock
-  use scalarpde
+  use boundary
+  use collection
+  use cubature
   use derivatives
-  use spatialdiscretisation
+  use dofmapping
   use domainintegration
+  use element
   use elementpreprocessing
   use feevaluation
-  use transformation
-  use collection
+  use fsystem
+  use genoutput
+  use linearalgebra
+  use linearsystemblock
+  use linearsystemscalar
   use mprimitives
+  use scalarpde
+  use spatialdiscretisation
+  use storage
+  use transformation
+  use triangulation
 
   implicit none
   
@@ -3673,7 +3673,7 @@ contains
     integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
-    integer :: ibdc,ibdcoffset,iedge,ilocaledge
+    integer :: ibdc,iedge,ilocaledge
     integer :: NEL,NELbdc,iel,i,k
     integer(I32) :: ctrafoType
     
@@ -3733,9 +3733,6 @@ contains
     ! Number of elements on that boundary component?
     NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
     
-    ! Position of the boundary component?
-    ibdcoffset = p_IboundaryCpIdx(ibdc)
-        
     ! In a first step, we figure out the elements on the boundary and their
     ! orientation. Allocate arrays that are large enough to hold
     ! even all elements on the boundary if necessary.
