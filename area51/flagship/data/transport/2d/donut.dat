@@ -115,7 +115,7 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 2
+itargetfunctype = 1
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -126,12 +126,12 @@ stargetfuncname = @weightingFuncInt
 # 2 = surface integral (two components)
 # 3 = mixed volume/surface integral (four components)
 # 4 = analytical target functional
-iexacttargetfunctype = 4
+iexacttargetfunctype = 2
 
 # section name of target functional
 sexacttargetfuncname(2) = 
   @weightingFuncInt
-  @exacttargetfunc
+  @exactsol
 
 #-------------------------------------------------------------------------------
 
