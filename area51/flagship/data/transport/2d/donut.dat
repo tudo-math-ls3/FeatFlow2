@@ -115,7 +115,7 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 2
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -126,12 +126,12 @@ stargetfuncname = @weightingFuncInt
 # 2 = surface integral (two components)
 # 3 = mixed volume/surface integral (four components)
 # 4 = analytical target functional
-iexacttargetfunctype = 2
+iexacttargetfunctype = 4
 
 # section name of target functional
 sexacttargetfuncname(2) = 
   @weightingFuncInt
-  @exactsol
+  @exacttargetfunc
 
 #-------------------------------------------------------------------------------
 
@@ -148,7 +148,7 @@ trifile = grids/2d/rect_2x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -455,7 +455,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 500
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
