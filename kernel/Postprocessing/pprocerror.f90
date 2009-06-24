@@ -3764,24 +3764,24 @@ contains
         
         ! Save the start parameter value of the edge -- in length
         ! parametrisation.
-        dpar1 = p_DvertexParameterValue(iedge)
+        dpar1 = boundary_convertParameter(rdiscretisation%p_rboundary, &
+            ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, &
+            BDR_PAR_LENGTH)
         
         ! Save the end parameter value. Be careful: The last edge
         ! must be treated differently!
         if (iedge .ne. NELbdc) then
-          dpar2 = p_DvertexParameterValue(iedge+1)
+          dpar2 = boundary_convertParameter(rdiscretisation%p_rboundary, &
+              ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
+              BDR_PAR_LENGTH)
+          
         else
           dpar2 = boundary_dgetMaxParVal(&
-            rdiscretisation%p_rboundary,ibdc)
+            rdiscretisation%p_rboundary,ibdc,BDR_PAR_LENGTH)
         end if
         
-        DedgePosition(1,NEL) = &
-          boundary_convertParameter(rdiscretisation%p_rboundary, &
-            ibdc, dpar1, rboundaryRegion%cparType, BDR_PAR_LENGTH)
-            
-        DedgePosition(2,NEL) = &
-          boundary_convertParameter(rdiscretisation%p_rboundary, &
-            ibdc, dpar2, rboundaryRegion%cparType, BDR_PAR_LENGTH)
+        DedgePosition(1,NEL) = dpar1
+        DedgePosition(2,NEL) = dpar2
          
       end if
     end do
