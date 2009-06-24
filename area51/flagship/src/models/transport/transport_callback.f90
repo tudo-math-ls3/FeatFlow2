@@ -3615,15 +3615,6 @@ contains
     integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
 
 
-    do iel = 1,size(Ielements)
-      print *, "IEL=",iel
-      print *, Dpoints(1,:,iel)
-      print *, Dpoints(2,:,iel)
-    end do
-
-    stop
-    
-
     ! Retrieve the function parser
     p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
@@ -3636,9 +3627,6 @@ contains
     ! Evaluate the FE function in the cubature points on the boundary
     call fevl_evaluate_sim1(DER_FUNC, Dvalues, p_rsolution%RvectorBlock(1),&
                             Dpoints, Ielements, DpointsRef)
-
-    !!! DEBUG
-    Dvalues = 1.0_DP
         
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
@@ -3684,8 +3672,6 @@ contains
         call fparser_evalFunction(p_rfparser, icomp2, Dvalue, Dcoefficients(ipoint,iel,5))
       end do
     end do
-
-    Dcoefficients(:,:,3) = 1.0_DP
 
     ! Get the minimum and maximum parameter value. The point with the minimal
     ! parameter value is the start point of the interval, the point with the
@@ -3743,7 +3729,7 @@ contains
                                dny * Dcoefficients(ipoint,iel,2))
       end do
     end do
-    
+
     ! Free temporal memory
     deallocate(Dcoefficients)
 
