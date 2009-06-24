@@ -321,10 +321,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -455,7 +455,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 1000
+nmaxIterations = 10
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
