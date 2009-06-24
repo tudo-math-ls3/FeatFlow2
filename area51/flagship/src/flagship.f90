@@ -15,7 +15,7 @@ program flagship
   use fsystem
   use genoutput
   use paramlist
-  use signal
+  use signals
   use storage
   use transport_application
   use zpinch_application
@@ -146,7 +146,7 @@ function signal_SIGINT(signum) result(sigcount)
 
   use fsystem
   use genoutput
-  use signal
+  use signals
 
 !<description>
   ! This subroutine performs signal handling for SIGINT. In essence,
@@ -194,7 +194,7 @@ function signal_SIGQUIT(signum) result(sigcount)
 
   use fsystem
   use genoutput
-  use signal
+  use signals
 
 !<description>
   ! This subroutine performs signal handling for SIGQUIT.
