@@ -160,6 +160,9 @@ use constant SRCLIST_KERNEL =>
 
     "ContinuousFormulation/boundarycondition.f90 ContinuousFormulation/scalarpde.f90 " .
 
+    "DataStructures/arraylist.f90 DataStructures/binarytree.f90 DataStructures/graph.f90 " .
+    "DataStructures/list.f90 DataStructures/octree.f90 DataStructures/quadtree.f90 DataStructures/stack.f90 " .
+
     "DOFMaintenance/bcassembly.f90 DOFMaintenance/bilinearformevaluation.f90 " .
     "DOFMaintenance/discretebc.f90 DOFMaintenance/discretefbc.f90 DOFMaintenance/dofmapping.f90 " .
     "DOFMaintenance/domainintegration.f90 DOFMaintenance/feevaluation.f90 " .
@@ -167,9 +170,6 @@ use constant SRCLIST_KERNEL =>
     "DOFMaintenance/multileveloperators.f90 DOFMaintenance/multilevelprojection.f90 " .
     "DOFMaintenance/sortstrategy.f90 DOFMaintenance/spatialdiscretisation.f90 " .
     "DOFMaintenance/trilinearformevaluation.f90 DOFMaintenance/vectorfilters.f90 " .
-
-    "DataStructures/arraylist.f90 DataStructures/binarytree.f90 DataStructures/graph.f90 " .
-    "DataStructures/list.f90 DataStructures/octree.f90 DataStructures/quadtree.f90 DataStructures/stack.f90 " .
 
     "ElementCubature/cubature.f90 ElementCubature/derivatives.f90 ElementCubature/element.f90 " .
     "ElementCubature/adaptivecubature.f90 " .
@@ -179,10 +179,14 @@ use constant SRCLIST_KERNEL =>
     "ElementCubature/element_tri2d.f90 ElementCubature/elementbase.f90 " .
     "ElementCubature/elementpreprocessing.f90 ElementCubature/transformation.f90 " .
 
-    "LinearAlgebra/linearalgebra.f90 LinearSolver/coarsegridcorrection.f90 LinearSolver/filtersupport.f90 " .
+    "LinearAlgebra/linearalgebra.f90 " .
+
+    " LinearSolver/coarsegridcorrection.f90 LinearSolver/filtersupport.f90 " .
     "LinearSolver/iluk.f90 LinearSolver/linearsolver.f90 LinearSolver/linearsolverautoinitialise.f90 " .
     "LinearSolver/quicksolver.f90 LinearSolver/vanka.f90 LinearSolver/vanka_bouss2d.f90 " .
-    "LinearSolver/vanka_navst2d.f90 LinearSystem/globalsystem.f90 LinearSystem/linearsystemblock.f90 " .
+    "LinearSolver/vanka_navst2d.f90 " .
+
+    "LinearSystem/globalsystem.f90 LinearSystem/linearsystemblock.f90 " .
     "LinearSystem/linearsystemscalar.f90 LinearSystem/matrixmodification.f90 " .
 
     "Mathematics/adjacency.f90 Mathematics/mprimitives.f90 " .
@@ -202,10 +206,11 @@ use constant SRCLIST_KERNEL =>
     "ProblemSupport/collection.f90 " .
 
     "Projection/analyticprojection.f90 Projection/spdiscprojection.f90 " .
+    "Projection/schurapprox.f90 " .
 
-    "System/afcutil.f90 System/error.f90 System/externalstorage.f90 System/fparser.f90 " .
+    "System/error.f90 System/externalstorage.f90 System/fparser.f90 " .
     "System/fpersistence.f90 System/fsystem.f90 System/genoutput.f90 System/io.f90 " .
-    "System/paramlist.f90 System/signal.f90 System/sort.f90 System/statistics.f90 " .
+    "System/paramlist.f90 System/signals.f90 System/sort.f90 System/statistics.f90 " .
     "System/storage.f90 System/textstream.f90 System/uuid.f90 " .
 
     "TimeDependence/timestepping.f90 " .
