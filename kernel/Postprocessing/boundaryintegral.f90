@@ -189,7 +189,7 @@ contains
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
     integer :: ibdc,ibdcoffset,iedge,ilocaledge,nve
-    integer :: NEL,NELbdc,iel
+    integer :: NEL,NELbdc,iel,i,k
     integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
@@ -327,15 +327,19 @@ contains
     ! Transpose the coordinate array such that we get coordinates
     ! we can work with.
     allocate(DpointsRef(NDIM2D+1,ncubp,NEL))
-    do iel=1,NEL
-      DpointsRef(:,:,iel) = transpose(Dxi2D(:,:,iel))
+    do iel = 1,NEL
+      do i = 1,ncubp
+        do k =1,ubound(DpointsRef,1)
+          DpointsRef(k,i,iel) = Dxi2D(i,k,iel)
+        end do
+      end do
     end do
     
     ! Dxi2D is not needed anymore.
     deallocate(Dxi2D)
     
     ! Calculate the coordinates of the points on world coordinates
-    allocate(Dpoints(ncubp,NDIM2D+1,NEL))
+    allocate(Dpoints(NDIM2D+1,ncubp,NEL))
     
     ! Transformation can be different for all elements
     do iel = 1,NEL
