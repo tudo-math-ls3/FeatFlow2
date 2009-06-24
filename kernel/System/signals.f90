@@ -11,7 +11,7 @@
 !# are used as wrapper for the underlying C routines.
 !# </purpose>
 !##############################################################################
-module signal
+module signals
   implicit none
   
   ! *****************************************************************************
@@ -108,4 +108,4 @@ contains
 #endif
     
   end subroutine fsignal
-end module signal
+end module signals
