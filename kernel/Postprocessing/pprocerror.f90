@@ -3823,7 +3823,7 @@ contains
     allocate(DpointsRef(NDIM2D+1,ncubp,NEL))
     do iel = 1,NEL
       do i = 1,ncubp
-        do k =1,ubound(DpointsRef,1)
+        do k = 1,ubound(DpointsRef,1)
           DpointsRef(k,i,iel) = Dxi2D(i,k,iel)
         end do
       end do
@@ -3852,9 +3852,9 @@ contains
           ! Get the points forming the element
           do ipoint = 1,ubound(p_IverticesAtElement,1)
             Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,Ielements(iel)))
             Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
 
           ! Transform the cubature points
@@ -3870,9 +3870,9 @@ contains
           ! Get the points forming the element
           do ipoint = 1, ubound(p_IverticesAtElement,1)
             Dcoord(1,ipoint) = &
-                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(1, p_IverticesAtElement(ipoint,Ielements(iel)))
             Dcoord(2,ipoint) = &
-                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,iel))
+                p_DvertexCoordinates(2, p_IverticesAtElement(ipoint,Ielements(iel)))
           end do
 
           ! Transform the cubature points

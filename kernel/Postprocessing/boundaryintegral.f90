@@ -347,9 +347,9 @@ contains
       ! Get the points forming the element
       do ipoint = 1,ubound(p_IverticesAtElement,1)
         Dcoord(1,ipoint) = &
-            p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,iel))
+            p_DvertexCoordinates(1,p_IverticesAtElement(ipoint,Ielements(iel)))
         Dcoord(2,ipoint) = &
-            p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,iel))
+            p_DvertexCoordinates(2,p_IverticesAtElement(ipoint,Ielements(iel)))
       end do
 
       ! Transform the cubature points
