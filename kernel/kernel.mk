@@ -27,7 +27,7 @@ KERNELSRC:=fsystem.f90 basicgeometry.f90 geometryaux.f90 afcutil.f90	\
 	bilinearformevaluation.f90 linearformevaluation.f90		\
 	bcassembly.f90 matrixio.f90 vectorio.f90 convection.f90		\
 	nonlinearsolver.f90 matrixrestriction.f90 fparser.f90		\
-	stack.f90 pprocnavierstokes.f90 ucd.f90 signal.f90		\
+	stack.f90 pprocnavierstokes.f90 ucd.f90 signals.f90		\
 	signal_ccode.c timestepping.f90 pprocerror.f90			\
 	trilinearformevaluation.f90 stdoperators.f90 sort.f90		\
 	quadtree.f90 analyticprojection.f90 pprocgradients.f90		\
