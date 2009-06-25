@@ -1556,7 +1556,7 @@ contains
     ! one element
     real(DP), dimension(EL_MAXNBAS) :: DlocalData
   
-    ! Arrays for cubature points
+    ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
     real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
     real(DP), dimension(:,:), allocatable :: DpointsPar
@@ -1696,9 +1696,6 @@ contains
       ! a combined evaluation tag. 
       cevaluationTag = rlocalVectorAssembly%cevaluationTag
       
-      ! In the first loop, calculate the coordinates on the reference element.
-      ! In all later loops, use the precalculated information.
-      !
       ! The cubature points are already initialised by 1D->2D mapping.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
