@@ -54,6 +54,7 @@ module pprocerror
 
   use basicgeometry
   use boundary
+  use boundaryaux
   use collection
   use cubature
   use derivatives
@@ -3673,19 +3674,13 @@ contains
     integer, dimension(:), allocatable :: Ielements
     real(DP), dimension(:,:), allocatable :: DedgePosition
     
-    integer :: ibdc,iedge,ilocaledge
-    integer :: NEL,NELbdc,iel,i,k
+    integer :: NEL,NELbdc,iel,i,k,ibdc
     integer(I32) :: ctrafoType
     
     ! The triangulation structure - to shorten some things...
     type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer, dimension(:), pointer :: p_IedgesAtBoundary
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    real(DP), dimension(:), pointer :: p_DedgeParameterValue
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
     ! Arrays for cubature points
@@ -3698,7 +3693,7 @@ contains
     integer :: ncubp,ipoint
     integer(I32) :: celement
     integer(i32) :: icoordSystem
-    real(DP) :: dlen,dpar1,dpar2
+    real(DP) :: dlen
     
     ! Arrays for element distributions for every element
     integer, dimension(:), pointer :: p_IelementDistr
@@ -3712,20 +3707,10 @@ contains
     
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
         p_IboundaryCpIdx)
-    call storage_getbase_int (p_rtriangulation%h_IedgesAtBoundary,&
-        p_IedgesAtBoundary)
-    call storage_getbase_int (p_rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
-        p_IedgesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
         p_IverticesAtElement)
     call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
         p_DvertexCoordinates)
-    call storage_getbase_double (p_rtriangulation%h_DedgeParameterValue,&
-        p_DedgeParameterValue)
-    call storage_getbase_double (p_rtriangulation%h_DvertexParameterValue,&
-        p_DvertexParameterValue)
         
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -3741,50 +3726,10 @@ contains
     ! Allocate an array saving the start- and end-parameter values
     ! of the edges on the boundary.
     allocate(DedgePosition(2,NELbdc))
-    
-    ! Loop through the edges on the boundary component ibdc.
-    ! If the edge is inside, remember the element number and figure out
-    ! the orientation of the edge.
-    ! NEL counts the total number of elements in the region.
-    NEL = 0
-    do iedge = 1,NELbdc
-      if (boundary_isInRegion(rboundaryRegion, ibdc,&
-          p_DedgeParameterValue(iedge))) then
-        NEL = NEL + 1
-        
-        ! Element number
-        Ielements(NEL) = p_IelementsAtBoundary(iedge)
-        
-        ! Element orientation; i.e. the local number of the boundary edge 
-        do ilocaledge = 1,ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
-              p_IedgesAtBoundary(iedge)) exit
-        end do
-        IelementOrientation(NEL) = ilocaledge
-        
-        ! Save the start parameter value of the edge -- in length
-        ! parametrisation.
-        dpar1 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-            ibdc, p_DvertexParameterValue(iedge), rboundaryRegion%cparType, &
-            BDR_PAR_LENGTH)
-        
-        ! Save the end parameter value. Be careful: The last edge
-        ! must be treated differently!
-        if (iedge .ne. NELbdc) then
-          dpar2 = boundary_convertParameter(rdiscretisation%p_rboundary, &
-              ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
-              BDR_PAR_LENGTH)
-          
-        else
-          dpar2 = boundary_dgetMaxParVal(&
-            rdiscretisation%p_rboundary,ibdc,BDR_PAR_LENGTH)
-        end if
-        
-        DedgePosition(1,NEL) = dpar1
-        DedgePosition(2,NEL) = dpar2
-         
-      end if
-    end do
+
+    ! Compute the elements adjacent to the boundary
+    call bdraux_getElementsAtBoundaryRegion(rboundaryRegion, rdiscretisation,&
+        NEL, Ielements, IelementOrientation, DedgePosition)
     
     ! Get the parameter values of the 1D cubature formula
     ! as well as the number of cubature points ncubp
@@ -3841,9 +3786,11 @@ contains
       allocate (DpointPar(ncubp,NEL))
       
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
+        
         ! All elements with the same transformation
         ctrafoType = elem_igetTrafoType(&
             rdiscretisation%RelementDistr(1)%celement)
+        
         do iel = 1,NEL
 
           ! Get the points forming the element
@@ -3860,10 +3807,16 @@ contains
                 DpointsRef(:,ipoint,iel), Dpoints(:,ipoint,iel))
           end do
         end do
+        
       else
-        ! Transformation can be different for all elements
+        
         do iel = 1,NEL
 
+          ! Transformation can be different for all elements
+          celement = p_RelementDistribution(&
+              p_IelementDistr(Ielements(iel)))%celement
+          ctrafoType = elem_igetTrafoType(celement)
+          
           ! Get the points forming the element
           do ipoint = 1, ubound(p_IverticesAtElement,1)
             Dcoord(1,ipoint) = &
@@ -3874,9 +3827,6 @@ contains
 
           ! Transform the cubature points
           do ipoint = 1,ncubp
-            celement = p_RelementDistribution(&
-                p_IelementDistr(Ielements(iel)))%celement
-            ctrafoType = elem_igetTrafoType(celement)
             call trafo_calcRealCoords (ctrafoType, Dcoord,&
                 DpointsRef(:,ipoint,iel), Dpoints(:,ipoint,iel))
           end do
