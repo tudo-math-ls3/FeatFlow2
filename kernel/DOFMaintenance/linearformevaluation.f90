@@ -132,6 +132,7 @@ contains
     case DEFAULT
       call output_line('Single precision vectors currently not supported!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+      call sys_halt()
     end select
     
   else
@@ -610,8 +611,8 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalarBdr2d (rboundary, rdiscretisation, rform, ccubType,&
-                                          bclear, rvectorScalar, fcoeff_buildVectorScBdr_sim,&
+  subroutine linf_buildVectorScalarBdr2d (rdiscretisation, rform, ccubType, bclear,&
+                                          rvectorScalar, fcoeff_buildVectorScBdr2D_sim,&
                                           rboundaryRegion, rcollection)
   
 !<description>
@@ -626,9 +627,6 @@ contains
 !</description>
 
 !<input>
-  ! A boundary object that specifies the analytical boundary of the domain.
-  type(t_boundary), intent(IN) :: rboundary
-
   ! The underlying discretisation structure which is to be used to
   ! create the vector.
   type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
@@ -654,8 +652,8 @@ contains
   type(t_collection), intent(INOUT), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
-  include 'intf_coefficientVectorScBoundary.inc'
-  optional :: fcoeff_buildVectorScBdr_sim
+  include 'intf_coefficientVectorScBdr2D.inc'
+  optional :: fcoeff_buildVectorScBdr2D_sim
 !</input>
 
 !<inputoutput>
@@ -666,6 +664,7 @@ contains
 !</subroutine>
 
   ! local variables
+  type(t_boundary), pointer :: p_rboundary
   type(t_boundaryRegion) :: rboundaryReg
   integer :: ibdc
 
@@ -682,6 +681,15 @@ contains
     call sys_halt()
   end if
 
+  ! The discretisation must provide a boundary structure
+  if (associated(rdiscretisation%p_rboundary)) then
+    p_rboundary => rdiscretisation%p_rboundary
+  else
+    call output_line('Discretisation does not provide boundary structure!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
+    call sys_halt()
+  end if
+
   ! Do we have a uniform triangulation? Would simplify a lot...
   if ((rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
       (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
@@ -694,23 +702,24 @@ contains
       ! for that boundary region. Otherwise, call linf_buildVecDbleBdr2d_conf
       ! for all possible boundary regions
       if (present(rboundaryRegion)) then
-        call linf_buildVecDbleBdr2d_conf (rboundary, rboundaryRegion, rdiscretisation,&
+        call linf_buildVecDbleBdr2d_conf (rboundaryRegion, rdiscretisation,&
                                           rform, ccubType, bclear, rVectorScalar,&
-                                          fcoeff_buildVectorScBdr_sim, rcollection)
+                                          fcoeff_buildVectorScBdr2D_sim, rcollection)
       else
         ! Create a boundary region for each boundary component and call
         ! the calculation routine for that.
-        do ibdc = 1, boundary_igetNBoundComp(rboundary)
-          call boundary_createRegion (rboundary, ibdc, 0, rboundaryReg)
-          call linf_buildVecDbleBdr2d_conf (rboundary, rboundaryReg, rdiscretisation,&
+        do ibdc = 1, boundary_igetNBoundComp(p_rboundary)
+          call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryReg)
+          call linf_buildVecDbleBdr2d_conf (rboundaryReg, rdiscretisation,&
                                             rform, ccubType, bclear, rVectorScalar,&
-                                            fcoeff_buildVectorScBdr_sim, rcollection)
+                                            fcoeff_buildVectorScBdr2D_sim, rcollection)
         end do
       end if
 
     case DEFAULT
       call output_line('Single precision vectors currently not supported!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
+      call sys_halt()
     end select
     
   else
@@ -725,9 +734,9 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVecDbleBdr2d_conf (rboundary, rboundaryRegion, rdiscretisation,&
+  subroutine linf_buildVecDbleBdr2d_conf (rboundaryRegion, rdiscretisation,&
                                           rform, ccubType, bclear, rVectorScalar,&
-                                          fcoeff_buildVectorScBdr_sim, rcollection)
+                                          fcoeff_buildVectorScBdr2D_sim, rcollection)
 
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
@@ -746,9 +755,6 @@ contains
 !</description>
 
 !<input>
-    ! A boundary object that specifies the analytical boundary of the domain.
-  type(t_boundary), intent(IN) :: rboundary
-
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
   type(t_boundaryRegion), intent(IN) :: rboundaryRegion
@@ -774,8 +780,8 @@ contains
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-  include 'intf_coefficientVectorScBoundary.inc'
-  optional :: fcoeff_buildVectorScBdr_sim
+  include 'intf_coefficientVectorScBdr2D.inc'
+  optional :: fcoeff_buildVectorScBdr2D_sim
 !</input>
 
 !<inputoutput>
@@ -792,7 +798,7 @@ contains
   
   integer :: ibdc,iedge,ilocaledge
   integer :: i1,ICUBP,IALBET,IA
-  integer :: IEL, IELmax, IELset, IDOFE
+  integer :: IEL, IDOFE
   real(DP) :: OM,AUX
   integer :: i,k
   
@@ -813,7 +819,6 @@ contains
   real(DP), dimension(:,:), allocatable :: DpointPar
   real(DP), dimension(CUB_MAXCUBP) :: Domega1D
   real(DP), dimension(:,:,:), allocatable :: Dcoefficients
-  real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcoord
   integer :: ncubp,ipoint
   integer(I32) :: celement
   integer(i32) :: icoordSystem
@@ -846,10 +851,6 @@ contains
   
   ! Number of elements on the current boundary component
   integer :: NELbdc
-
-  ! Number of elements in a block. Normally =BILF_NELEMSIM,
-  ! except if there are less elements in the discretisation.
-  integer :: nelementsPerBlock
 
   ! Number of local degees of freedom for test functions
   integer :: indofTest
@@ -1105,8 +1106,7 @@ contains
 
     ! Allocate memory for the coefficients
     allocate(Dcoefficients(rform%itermCount, ncubp, NEL))
-
-     
+    
     ! Calculate the global DOF's into IdofsTest.
     !
     ! More exactly, we call dof_locGlobMapping_mult to calculate all the
@@ -1151,8 +1151,12 @@ contains
     rintSubset%p_IdofsTrial => IdofsTest
     rintSubset%celement = p_RelementDistribution(1)%celement
         
-    if (present(fcoeff_buildVectorScBdr_sim)) then
-      ! CALL CALLBACK FUNCTION
+    if (present(fcoeff_buildVectorScBdr2D_sim)) then
+      call fcoeff_buildVectorScBdr2D_sim (rdiscretisation, rform, &
+          NEL, ncubp, revalElementSet%p_DpointsReal(:,:,1:NEL), &
+          rboundaryRegion%iboundCompIdx, DpointPar,&
+          IdofsTest, rintSubset, &
+          Dcoefficients(:,:,1:NEL), rcollection)
     else
       Dcoefficients = 1.0_DP
     end if
