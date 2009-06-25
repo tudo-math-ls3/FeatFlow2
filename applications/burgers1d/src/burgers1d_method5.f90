@@ -662,7 +662,7 @@ contains
     integer, intent(IN)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(INOUT), target    :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
