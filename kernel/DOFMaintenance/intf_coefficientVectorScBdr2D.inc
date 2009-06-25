@@ -7,10 +7,10 @@
   
   !<subroutine>
 
-    subroutine fcoeff_buildVectorScBdr2D_sim (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
+    subroutine fcoeff_buildVectorScBdr2D_sim (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, &
+                  Dcoefficients, rcollection)
     
     use fsystem
     use basicgeometry
@@ -35,22 +35,32 @@
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    type(t_linearForm), intent(IN) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(IN) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(IN) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(IN) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
 
     ! An array accepting the DOF's on all elements test in the test space.
     ! DIMENSION(\#local DOF's in test space,Number of elements)
@@ -59,11 +69,11 @@
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(INOUT), optional :: rcollection
     
   !</input>
   
@@ -72,7 +82,7 @@
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
   !</output>
     
   !</subroutine>
