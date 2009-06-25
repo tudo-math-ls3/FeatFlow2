@@ -3495,7 +3495,7 @@ contains
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_refFunctionScBoundary.inc'
+  include 'intf_refFunctionScBdr2D.inc'
   optional :: ffunctionReference
 
   ! OPTIONAL: A callback function that provides the weighting function
@@ -3646,7 +3646,7 @@ contains
 
   ! OPTIONAL: A callback function that provides a coefficient in front
   ! of the FE function. If not specified, a value of 1 is assumed.
-  include 'intf_refFunctionScBoundary.inc'
+  include 'intf_refFunctionScBdr2D.inc'
   optional :: ffunctionReference
 
   ! OPTIONAL: A callback function that provides the weighting function
