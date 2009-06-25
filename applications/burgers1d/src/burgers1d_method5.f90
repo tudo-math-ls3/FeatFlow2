@@ -686,7 +686,7 @@ contains
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN)               :: rx
+    type(t_vectorBlock), intent(IN), target       :: rx
 
     ! Current right hand side of the nonlinear system
     type(t_vectorBlock), intent(IN), target       :: rb
