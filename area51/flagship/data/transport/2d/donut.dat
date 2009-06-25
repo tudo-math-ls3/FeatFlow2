@@ -115,7 +115,7 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 2
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -715,7 +715,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 1
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
