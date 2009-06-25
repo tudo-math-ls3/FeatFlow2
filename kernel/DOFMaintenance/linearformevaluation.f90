@@ -35,7 +35,7 @@
 !#    rform%Idescriptors(1) = DER_FUNC
 !#
 !#  This e.g. initialises a linear form for evaluating a function.
-!#  In the next step, use the linear form to create the matrix entries:
+!#  In the next step, use the linear form to create the vector entries:
 !#
 !#    call bilf_buildVectorScalar (rdiscretisation,rform,.true.,rvector,coeff_RHS)
 !#
@@ -1901,7 +1901,7 @@ contains
 
 !<subroutine>
 
-  subroutine linf_buildVectorScalar2 (rdiscretisation, rform, bclear, rvectorScalar,&
+  subroutine linf_buildVectorScalar2 (rform, bclear, rvectorScalar,&
                                       fcoeff_buildVectorSc_sim, rcollection)
   
 !<description>
@@ -1926,10 +1926,6 @@ contains
 !</description>
 
 !<input>
-  ! The underlying discretisation structure which is to be used to
-  ! create the vector.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
-  
   ! The linear form specifying the underlying PDE of the discretisation.
   type(t_linearForm), intent(IN) :: rform
   
@@ -1949,6 +1945,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
+  ! The vector must exist before being passed to this routine.
   type(t_vectorScalar), intent(INOUT) :: rvectorScalar
 !</inputoutput>
 
@@ -1959,30 +1956,25 @@ contains
   integer :: ielementDistr
   integer, dimension(:), pointer :: p_IelementList
 
-  ! If the vector does not exist, create it.
+  ! If the vector does not exist, stop here.
   if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
-    call lsyssc_createVecByDiscr (rdiscretisation,rvectorScalar,bclear)
-  else
-    ! Otherwise, probably clear the vector.
-    if (bclear) then
-      call lsyssc_clearVector (rvectorScalar)
-
-      ! If the vector is not set up as new vector, it has to be unsorted.
-      ! If it's a new vector, we switch off the sorting.
-      rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
-    end if
+    call output_line('Vector not available!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
   end if
 
   ! The vector must be unsorted, otherwise we can't set up the vector.
   if (rvectorScalar%isortStrategy .gt. 0) then
     call output_line('Vector must be unsorted!',&
-                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     call sys_halt()
   end if
+  
+  ! Clear the vector if necessary.
+  if (bclear) call lsyssc_clearVector (rvectorScalar)
 
   ! Do we have a uniform triangulation? Would simplify a lot...
-  if ((rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
-      (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+  if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+      (rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_CONFORMAL)) then 
     
     select case(rvectorScalar%cdataType)
       
@@ -2009,12 +2001,12 @@ contains
 
     case DEFAULT
       call output_line('Single precision vectors currently not supported!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     end select
     
   else
     call output_line('General discretisation not implemented!',&
-                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     call sys_halt()
   end if
 
