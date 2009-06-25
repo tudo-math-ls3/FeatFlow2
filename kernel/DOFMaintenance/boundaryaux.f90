@@ -340,16 +340,19 @@ contains
 
 !<function>
 
-  function bdraux_getNELAtBoundary(rdiscretisation) result (NELbdc)
+  function bdraux_getNELAtBoundary(rboundary, rtriangulation) result (NELbdc)
 
 !<description>
     ! This function calculates the number of elements which are
-    ! adjacent to the boundary.
+    ! adjacent to the boundary using the given triangulation.
 !</description>
 
 !<input>
-    ! A discretisation structure
-    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+    ! The boundary for which the number of elements is to be calculated
+    type(t_boundary), intent(IN) :: rboundary
+
+    ! The triangulation structure
+    type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
 !<result>
@@ -359,26 +362,16 @@ contains
 !</function>
 
     ! local variables
-    type(t_boundary), pointer :: p_rboundary
     type(t_boundaryRegion) :: rboundaryRegion
     integer :: ibdc
-
-    ! The discretisation must provide a boundary structure
-    if (associated(rdiscretisation%p_rboundary)) then
-      p_rboundary => rdiscretisation%p_rboundary
-    else
-      call output_line('Discretisation does not provide boundary structure!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getNELAtBoundary')
-      call sys_halt()
-    end if
     
     NELbdc = 0
     ! Create a boundary region for each boundary component and call
     ! the calculation routine for that.
-    do ibdc = 1,boundary_igetNBoundComp(p_rboundary)
-      call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
+    do ibdc = 1,boundary_igetNBoundComp(rboundary)
+      call boundary_createRegion (rboundary, ibdc, 0, rboundaryRegion)
       NELbdc = NELbdc+&
-          bdraux_getNELAtRegion(rboundaryRegion, rdiscretisation)
+          bdraux_getNELAtRegion(rboundaryRegion, rtriangulation)
     end do
     
   end function bdraux_getNELAtBoundary
@@ -387,11 +380,11 @@ contains
 
 !<function>
 
-  function bdraux_getNELAtRegion(rboundaryRegion, rdiscretisation) result(NELbdc)
+  function bdraux_getNELAtRegion(rboundaryRegion, rtriangulation) result(NELbdc)
 
 !<description>
     ! This function calculates the number of elements which are
-    ! adjacent to the boundary region.
+    ! adjacent to the boundary using the given triangulation.
 !</description>
 
 !<input>
@@ -399,8 +392,8 @@ contains
     ! to calculate. 
     type(t_boundaryRegion), intent(IN) :: rboundaryRegion
 
-    ! A discretisation structure
-    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+    ! The triangulation structure
+    type(t_triangulation), intent(IN) :: rtriangulation
 !</input>
 
 !<result>
@@ -410,15 +403,11 @@ contains
 !</function>
 
     ! local variables
-    type(t_triangulation), pointer :: p_rtriangulation
     integer, dimension(:), pointer :: p_IboundaryCpIdx
     integer :: ibdc
 
-    ! Get some pointers and arrays for quicker access
-    p_rtriangulation => rdiscretisation%p_rtriangulation
-    
-    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
+    ! Set pointer
+    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
     
     ! Boundary component?
     ibdc = rboundaryRegion%iboundCompIdx
@@ -427,5 +416,5 @@ contains
     NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
     
   end function bdraux_getNELAtRegion
-
+  
 end module boundaryaux
