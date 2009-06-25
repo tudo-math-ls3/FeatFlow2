@@ -1201,7 +1201,7 @@ contains
 
 !<description>
 
-  ! Assembles the vector entries for s submesh-
+  ! Assembles the vector entries for a submesh by integrating over the domain.
 
 !</description>
   
@@ -1488,11 +1488,11 @@ contains
   
   subroutine linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvector,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildVectorScBdr2d_sim, rcollection)
+      fcoeff_buildVectorScBdr2D_sim, rcollection)
 
 !<description>
 
-  ! Assembles the vector entries for s submesh-
+  ! Assembles the vector entries for a submesh by integration over the boundary region.
 
 !</description>
 
