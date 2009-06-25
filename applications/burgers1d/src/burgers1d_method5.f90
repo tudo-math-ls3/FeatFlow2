@@ -545,7 +545,7 @@ contains
     type(t_vectorBlock), intent(IN),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(IN), target       :: rb
   !</input>
                
   !<inputoutput>
