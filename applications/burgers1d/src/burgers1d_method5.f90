@@ -555,7 +555,7 @@ contains
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(INOUT), target    :: rd
   !</inputoutput>
 
       ! local variables
