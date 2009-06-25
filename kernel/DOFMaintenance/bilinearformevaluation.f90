@@ -187,6 +187,7 @@
 
 module bilinearformevaluation
 
+  use basicgeometry
   use boundary
   use boundaryaux
   use collection, only: t_collection
@@ -200,6 +201,7 @@ module bilinearformevaluation
   use genoutput
   use linearalgebra
   use linearsystemscalar
+  use mprimitives
   use scalarpde
   use spatialdiscretisation
   use storage
@@ -2637,11 +2639,11 @@ contains
 !      !
 !      ! We build a quadratic indofTrial*indofTest local matrix:
 !      ! Kentry(1..indofTest,1..indofTrial) receives the position 
-!      !   in the global system matrix, where the corresponding value 
-!      !   has to be added to.
-!      ! (The corresponding contrbutions can be saved separately, 
-!      !  but we directly add them to the global matrix in this 
-!      !  approach.)
+!      ! in the global system matrix, where the corresponding value 
+!      ! has to be added to.
+!      ! (The corresponding contributions can be saved separately, 
+!      ! but we directly add them to the global matrix in this 
+!      ! approach.)
 !      !
 !      ! We build local matrices for all our elements 
 !      ! in the set simultaneously.
@@ -3303,7 +3305,7 @@ contains
 !    !%OMP   p_Djac,p_Ddetj,p_Dcoords, kentry, dentry,DbasTest,DbasTrial, &
 !    !%OMP   IdofsTest,IdofsTrial,bnonparTrial,bnonparTest,p_DcubPtsTrial,&
 !    !%OMP   p_DcubPtsTest,Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-!    !%OMP   p_DbasTrial, BderTrial, BderTest, j, ielmax,IEL, idofe,jdofe,jcol0, &
+!    !%OMP   p_DbasTrial, BderTrial, BderTest, j, IELmax,IEL, idofe,jdofe,jcol0, &
 !    !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
 !    
 !    ! Get from the trial element space the type of coordinate system
@@ -3520,11 +3522,11 @@ contains
 !      !
 !      ! We build a quadratic indofTrial*indofTest local matrix:
 !      ! Kentry(1..indofTrial,1..indofTest) receives the position 
-!      !   in the global system matrix, where the corresponding value 
-!      !   has to be added to.
-!      ! (The corresponding contrbutions can be saved separately, 
-!      !  but we directly add them to the global matrix in this 
-!      !  approach.)
+!      ! in the global system matrix, where the corresponding value 
+!      ! has to be added to.
+!      ! (The corresponding contributions can be saved separately, 
+!      ! but we directly add them to the global matrix in this 
+!      ! approach.)
 !      !
 !      ! We build local matrices for all our elements 
 !      ! in the set simultaneously.
@@ -4207,7 +4209,7 @@ contains
     !%OMP   cevaluationTag, kentry, dentry,DbasTest,DbasTrial, &
     !%OMP   IdofsTest,IdofsTrial,p_Ddetj,&
     !%OMP   Dcoefficients, bIdenticalTrialandTest, p_IdofsTrial, &
-    !%OMP   p_DbasTrial, BderTrial, BderTest, ielmax,IEL, idofe,jdofe,jcol0, &
+    !%OMP   p_DbasTrial, BderTrial, BderTest, IELmax,IEL, idofe,jdofe,jcol0, &
     !%OMP   jcol,JDFG,ICUBP, IALBET,OM,ia,ib,aux, db)
     
     ! Quickly check if one of the specified derivatives is out of the allowed range:
@@ -4385,11 +4387,11 @@ contains
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      !   in the global system matrix, where the corresponding value 
-      !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
-      !  approach.)
+      ! in the global system matrix, where the corresponding value 
+      ! has to be added to.
+      ! (The corresponding contributions can be saved separately, 
+      ! but we directly add them to the global matrix in this 
+      ! approach.)
       !
       ! We build local matrices for all our elements 
       ! in the set simultaneously.
@@ -4841,8 +4843,8 @@ contains
     
       ! That's easy, we can directly calculate the positions
       do iel = 1,nelements
-        do idofe=1,indofTest
-          do jdofe=1,indofTrial
+        do idofe = 1,indofTest
+          do jdofe = 1,indofTrial
             Kentry(jdofe,idofe,iel) = &
                 Irows(idofe,iel) * rmatrix%NCOLS + Icolumns(jdofe,iel)
           end do
@@ -4862,12 +4864,12 @@ contains
       !
       ! Loop through elements in the set and for each element,
       ! loop through the local matrices to initialise them:
-      do iel=1,nelements
+      do iel = 1,nelements
       
         ! For building the local matrices, we have first to
         ! loop through the test functions (the "O"'s), as these
         ! define the rows in the matrix.
-        do idofe=1,indofTest
+        do idofe = 1,indofTest
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
@@ -4883,7 +4885,7 @@ contains
           ! and will therefore give an additive value to the global
           ! matrix.
           
-          do jdofe=1,indofTrial
+          do jdofe = 1,indofTrial
             
             ! Get the global DOF of the "X" which interacts with 
             ! our "O".
@@ -4895,7 +4897,7 @@ contains
             ! the row to find the position of column IDFG.
             ! Jump out of the DO loop if we find the column.
             
-            do jcol=jcol0,na
+            do jcol = jcol0,na
               if (p_Kcol(jcol) .eq. jdfg) exit
             end do
 
@@ -5241,7 +5243,7 @@ contains
     integer :: indofTest,indofTrial,ncubp
     
     ! local data of every processor when using OpenMP
-    integer :: ielset,ielmax
+    integer :: IELset,IELmax
     integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
     real(DP) :: domega,daux,db
     integer(I32) :: cevaluationTag
@@ -5297,14 +5299,14 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !%OMP do schedule(static,1)
-    do ielset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      ielmax = min(size(IelementList),ielset-1+rlocalMatrixAssembly%nelementsPerBlock)
+      IELmax = min(size(IelementList),IELset-1+rlocalMatrixAssembly%nelementsPerBlock)
     
       ! --------------------- DOF SEARCH PHASE ------------------------
     
@@ -5333,12 +5335,12 @@ contains
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
-          IelementList(ielset:ielmax), p_IdofsTest)
+          IelementList(IELset:IELmax), p_IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
-            IelementList(ielset:ielmax), p_IdofsTrial)
+            IelementList(IELset:IELmax), p_IdofsTrial)
       end if
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
@@ -5357,11 +5359,11 @@ contains
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      !   in the global system matrix, where the corresponding value 
-      !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
-      !  approach.)
+      ! in the global system matrix, where the corresponding value 
+      ! has to be added to.
+      ! (The corresponding contributions can be saved separately, 
+      ! but we directly add them to the global matrix in this 
+      ! approach.)
       !
       ! We build local matrices for all our elements 
       ! in the set simultaneously. Get the positions of the local matrices
@@ -5387,13 +5389,13 @@ contains
       ! If the cubature points are already initialised, don't do it again.
       ! We check this by taking a look to iinitialisedElements which
       ! gives the current maximum of initialised elements.
-      if (ielmax .gt. rlocalMatrixAssembly%iinitialisedElements) then
+      if (IELmax .gt. rlocalMatrixAssembly%iinitialisedElements) then
 
         ! (Re-)initialise!
         cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
 
         ! Remember the new number of initialised elements
-        rlocalMatrixAssembly%iinitialisedElements = ielmax
+        rlocalMatrixAssembly%iinitialisedElements = IELmax
 
       else
         ! No need.
@@ -5405,26 +5407,29 @@ contains
       ! on the cells.
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
-          IelementList(ielset:ielmax), rlocalMatrixAssembly%ctrafoType, &
+          IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
           rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => p_revalElementSet%p_Ddetj
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
-        call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = ielset
-        rintSubset%p_Ielements => IelementList(ielset:ielmax)
-        rintSubset%p_IdofsTrial => p_IdofsTrial
-        rintSubset%celement = rlocalMatrixAssembly%celementTrial
-        call fcoeff_buildMatrixSc_sim (&
-                  rmatrix%p_rspatialDiscrTest,rmatrix%p_rspatialDiscrTrial,rlocalMatrixAssembly%rform, &
-                  ielmax-ielset+1,ncubp,&
-                  p_revalElementSet%p_DpointsReal(:,:,1:ielmax-ielset+1),&
-                  p_IdofsTrial,p_IdofsTest,rintSubset, &
-                  p_Dcoefficients(:,:,1:ielmax-ielset+1),&
-                  rcollection)
-        call domint_doneIntegration (rintSubset)
+        if (present(fcoeff_buildMatrixSc_sim)) then
+          call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+          rintSubset%ielementDistribution = 0
+          rintSubset%ielementStartIdx = IELset
+          rintSubset%p_Ielements => IelementList(IELset:IELmax)
+          rintSubset%p_IdofsTrial => p_IdofsTrial
+          rintSubset%celement = rlocalMatrixAssembly%celementTrial
+          call fcoeff_buildMatrixSc_sim (rmatrix%p_rspatialDiscrTest,&
+              rmatrix%p_rspatialDiscrTrial,&
+              rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
+              p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+              p_IdofsTrial, p_IdofsTest, rintSubset, &
+              p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+          call domint_doneIntegration (rintSubset)
+        else
+          p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+        end if
       end if
       
       ! Calculate the values of the basis functions.
@@ -5446,7 +5451,7 @@ contains
       ! to integrate!
 
       ! Clear the local matrices
-      p_Dentry(:,:,1:ielmax-ielset+1) = 0.0_DP
+      p_Dentry(:,:,1:IELmax-IELset+1) = 0.0_DP
       
       ! We have two different versions for the integration - one
       ! with constant coefficients and one with nonconstant coefficients.
@@ -5460,7 +5465,7 @@ contains
         !
         ! Loop over the elements in the current set.
 
-        do iel=1,ielmax-ielset+1
+        do iel = 1,IELmax-IELset+1
           
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
@@ -5500,7 +5505,7 @@ contains
               ! loops through the "O"'s in the above picture,
               ! the test functions:
 
-              do idofe=1,indofTest
+              do idofe = 1,indofTest
               
                 ! Get the value of the (test) basis function 
                 ! phi_i (our "O") in the cubature point:
@@ -5509,7 +5514,7 @@ contains
                 ! Perform an inner loop through the other DOF's
                 ! (the "X"). 
 
-                do jdofe=1,indofTrial
+                do jdofe = 1,indofTrial
                 
                   ! Get the value of the basis function 
                   ! psi_j (our "X") in the cubature point. 
@@ -5545,7 +5550,7 @@ contains
         !
         ! Loop over the elements in the current set.
 
-        do iel=1,ielmax-ielset+1
+        do iel = 1,IELmax-IELset+1
           
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
@@ -5586,7 +5591,7 @@ contains
               ! loops through the "O" in the above picture,
               ! the test functions:
 
-              do idofe=1,indofTest
+              do idofe = 1,indofTest
                 
                 ! Get the value of the (test) basis function 
                 ! phi_i (our "O") in the cubature point:
@@ -5595,7 +5600,7 @@ contains
                 ! Perform an inner loop through the other DOF's
                 ! (the "X"). 
 
-                do jdofe=1,indofTrial
+                do jdofe = 1,indofTrial
               
                   ! Get the value of the basis function 
                   ! psi_j (our "X") in the cubature point. 
@@ -5636,10 +5641,10 @@ contains
       ! are usually small and quickly to handle.
       !
       !%OMP CRITICAL
-      do iel=1,ielmax-ielset+1          
+      do iel = 1,IELmax-IELset+1          
       
-        do idofe=1,indofTest
-          do jdofe=1,indofTrial
+        do idofe = 1,indofTest
+          do jdofe = 1,indofTrial
             p_DA(p_Kentry(jdofe,idofe,iel)) = &
                 p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
           end do
@@ -5648,7 +5653,7 @@ contains
       end do ! iel
       !%OMP END CRITICAL
 
-    end do ! ielset
+    end do ! IELset
     
     ! Release the local matrix assembly structure
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
@@ -5712,25 +5717,35 @@ contains
     integer :: indofTest,indofTrial,ncubp
     
     ! local data of every processor when using OpenMP
-    integer :: ielset,ielmax
+    integer :: IELset,IELmax,ibdc,k
     integer :: iel,icubp,ialbet,ia,ib,idofe,jdofe
-    real(DP) :: domega,daux,db
+    real(DP) :: domega,daux,db,dlen
     integer(I32) :: cevaluationTag
     type(t_bilfMatrixAssembly), target :: rlocalMatrixAssembly
     type(t_domainIntSubset) :: rintSubset
     integer, dimension(:,:,:), pointer :: p_Kentry
     real(DP), dimension(:,:,:), pointer :: p_Dentry
-    real(DP), dimension(:,:), pointer :: p_Ddetj
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
     real(DP), dimension(:), pointer :: p_DcoefficientsBilf
     integer, dimension(:,:), pointer :: p_IdofsTest
     integer, dimension(:,:), pointer :: p_IdofsTrial
     type(t_evalElementSet), pointer :: p_revalElementSet
     integer, dimension(:,:),pointer :: p_Idescriptors
   
+    ! Arrays for cubature points 1D->2D
+    real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
+    real(DP), dimension(:,:,:), allocatable :: Dxi2D,DpointsRef
+    real(DP), dimension(:,:), allocatable :: DpointsPar
+    
+    integer(i32) :: icoordSystem
+
+    ! Boundary component?
+    ibdc = rboundaryRegion%iboundCompIdx
+
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
     indofTest = rmatrixAssembly%indofTest
@@ -5754,12 +5769,33 @@ contains
     p_DbasTest => rlocalMatrixAssembly%p_DbasTest
     p_DbasTrial => rlocalMatrixAssembly%p_DbasTrial
     p_Dcoefficients => rlocalMatrixAssembly%p_Dcoefficients
+    p_DcubPtsRef => rlocalMatrixAssembly%p_DcubPtsRef
     p_Idescriptors => rlocalMatrixAssembly%rform%Idescriptors
     p_IdofsTest => rlocalMatrixAssembly%p_IdofsTest
     p_IdofsTrial => rlocalMatrixAssembly%p_IdofsTrial
     p_revalElementSet => rlocalMatrixAssembly%revalElementSet
     p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
-        
+      
+    ! Transpose the coordinate array such that we get coordinates we
+    ! can work with in the mapping between 1D and 2D.
+    do k = 1, ubound(p_DcubPtsRef,1)
+      do icubp = 1,ncubp
+        Dxi1D(icubp,k) = p_DcubPtsRef(k,icubp)
+      end do
+    end do
+    
+    ! Allocate memory for the cubature points in 2D.
+    allocate(Dxi2D(ncubp,NDIM2D,rlocalMatrixAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the coordinates of the reference points
+    allocate(DpointsRef(NDIM2D,ncubp,rlocalMatrixAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the parameter values of the points on the boundary
+    allocate(DpointsPar(ncubp,rlocalMatrixAssembly%nelementsPerBlock))
+
+    ! Get the type of coordinate system
+    icoordSystem = elem_igetCoordSystem(rlocalMatrixAssembly%celementTrial)
+  
     ! Loop over the elements - blockwise.
     !
     ! Open-MP-Extension: Each loop cycle is executed in a different thread,
@@ -5768,15 +5804,44 @@ contains
     ! The blocks have all the same size, so we can use static scheduling.
     !
     !%OMP do schedule(static,1)
-    do ielset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
+    do IELset = 1, size(IelementList), rlocalMatrixAssembly%nelementsPerBlock
     
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
       ! elements simultaneously.
       
-      ielmax = min(size(IelementList),ielset-1+rlocalMatrixAssembly%nelementsPerBlock)
-    
+      IELmax = min(size(IelementList),IELset-1+rlocalMatrixAssembly%nelementsPerBlock)
+
+      ! Map the 1D cubature points to the edges in 2D.
+      do iel = 1,IELmax-IELset+1
+        call trafo_mapCubPts1Dto2D(icoordSystem, IelementOrientation(IELset+iel-1), &
+            ncubp, Dxi1D, Dxi2D(:,:,iel))
+      end do
+      
+      ! Calculate the parameter values of the points
+      do iel = 1,IELmax-IELset+1
+        do icubp = 1,ncubp
+          ! Dxi1D is in [-1,1] while the current edge has parmeter values
+          ! [DedgePosition(1),DedgePosition(2)]. So do a linear
+          ! transformation to transform Dxi1D into that interval, this 
+          ! gives the parameter values in length parametrisation
+          call mprim_linearRescale(Dxi1D(icubp,1), -1.0_DP, 1.0_DP,&
+              DedgePosition(1,IELset+iel-1), DedgePosition(2,IELset+iel-1),&
+              DpointsPar(icubp,iel))
+        end do
+      end do
+      
+      ! Transpose the coordinate array such that we get coordinates we
+      ! can work with.
+      do iel = 1,IELmax-IELset+1
+        do icubp = 1,ncubp
+          do k = 1,ubound(DpointsRef,1)
+            DpointsRef(k,icubp,iel) = Dxi2D(icubp,k,iel)
+          end do
+        end do
+      end do
+      
       ! --------------------- DOF SEARCH PHASE ------------------------
     
       ! The outstanding feature with finite elements is: A basis
@@ -5804,12 +5869,12 @@ contains
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF's of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
-          IelementList(ielset:ielmax), p_IdofsTest)
+          IelementList(IELset:IELmax), p_IdofsTest)
                                    
       ! If the DOF's for the test functions are different, calculate them, too.
       if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
-            IelementList(ielset:ielmax), p_IdofsTrial)
+            IelementList(IELset:IELmax), p_IdofsTrial)
       end if
       
       ! ------------------- LOCAL MATRIX SETUP PHASE -----------------------
@@ -5828,11 +5893,11 @@ contains
       !
       ! We build a quadratic indofTrial*indofTest local matrix:
       ! Kentry(1..indofTrial,1..indofTest) receives the position 
-      !   in the global system matrix, where the corresponding value 
-      !   has to be added to.
-      ! (The corresponding contrbutions can be saved separately, 
-      !  but we directly add them to the global matrix in this 
-      !  approach.)
+      ! in the global system matrix, where the corresponding value 
+      ! has to be added to.
+      ! (The corresponding contributions can be saved separately, 
+      ! but we directly add them to the global matrix in this 
+      ! approach.)
       !
       ! We build local matrices for all our elements 
       ! in the set simultaneously. Get the positions of the local matrices
@@ -5852,50 +5917,37 @@ contains
       ! a combined evaluation tag. 
       cevaluationTag = rlocalMatrixAssembly%cevaluationTag
       
-      ! In the first loop, calculate the coordinates on the reference element.
-      ! In all later loops, use the precalculated information.
-      !
-      ! If the cubature points are already initialised, don't do it again.
-      ! We check this by taking a look to iinitialisedElements which
-      ! gives the current maximum of initialised elements.
-      if (ielmax .gt. rlocalMatrixAssembly%iinitialisedElements) then
-
-        ! (Re-)initialise!
-        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
-
-        ! Remember the new number of initialised elements
-        rlocalMatrixAssembly%iinitialisedElements = ielmax
-
-      else
-        ! No need.
-        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
-      end if
+      ! The cubature points are already initialised by 1D->2D mapping.
+      cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
       ! Calculate all information that is necessary to evaluate the finite element
       ! on all cells of our subset. This includes the coordinates of the points
       ! on the cells.
       call elprep_prepareSetForEvaluation (p_revalElementSet,&
           cevaluationTag, rmatrix%p_rspatialDiscrTest%p_rtriangulation, &
-          IelementList(ielset:ielmax), rlocalMatrixAssembly%ctrafoType, &
-          rlocalMatrixAssembly%p_DcubPtsRef(:,1:ncubp))
-      p_Ddetj => p_revalElementSet%p_Ddetj
+          IelementList(IELset:IELmax), rlocalMatrixAssembly%ctrafoType, &
+          DpointsRef=DpointsRef)
       
       ! If the matrix has nonconstant coefficients, calculate the coefficients now.
       if (.not. rlocalMatrixAssembly%rform%ballCoeffConstant) then
-        call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
-        rintSubset%ielementDistribution = 0
-        rintSubset%ielementStartIdx = ielset
-        rintSubset%p_Ielements => IelementList(ielset:ielmax)
-        rintSubset%p_IdofsTrial => p_IdofsTrial
-        rintSubset%celement = rlocalMatrixAssembly%celementTrial
-!!$        call fcoeff_buildMatrixSc_sim (&
-!!$                  rmatrix%p_rspatialDiscrTest,rmatrix%p_rspatialDiscrTrial,rlocalMatrixAssembly%rform, &
-!!$                  ielmax-ielset+1,ncubp,&
-!!$                  p_revalElementSet%p_DpointsReal(:,:,1:ielmax-ielset+1),&
-!!$                  p_IdofsTrial,p_IdofsTest,rintSubset, &
-!!$                  p_Dcoefficients(:,:,1:ielmax-ielset+1),&
-!!$                  rcollection)
-        call domint_doneIntegration (rintSubset)
+        if (present(fcoeff_buildMatrixScBdr2d_sim)) then
+          call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+          rintSubset%ielementDistribution = 0
+          rintSubset%ielementStartIdx = IELset
+          rintSubset%p_Ielements => IelementList(IELset:IELmax)
+          rintSubset%p_IdofsTrial => p_IdofsTrial
+          rintSubset%celement = rlocalMatrixAssembly%celementTrial
+          call fcoeff_buildMatrixScBdr2D_sim (rmatrix%p_rspatialDiscrTest,&
+              rmatrix%p_rspatialDiscrTrial,&
+              rlocalMatrixAssembly%rform, IELmax-IELset+1, ncubp,&
+              p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+              ibdc, DpointsPar(:,1:IELmax-IELset+1),&
+              p_IdofsTrial, p_IdofsTest, rintSubset, &
+              p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+          call domint_doneIntegration (rintSubset)
+        else
+          p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+        end if
       end if
       
       ! Calculate the values of the basis functions.
@@ -5917,7 +5969,7 @@ contains
       ! to integrate!
 
       ! Clear the local matrices
-      p_Dentry(:,:,1:ielmax-ielset+1) = 0.0_DP
+      p_Dentry(:,:,1:IELmax-IELset+1) = 0.0_DP
       
       ! We have two different versions for the integration - one
       ! with constant coefficients and one with nonconstant coefficients.
@@ -5931,19 +5983,25 @@ contains
         !
         ! Loop over the elements in the current set.
 
-        do iel=1,ielmax-ielset+1
+        do iel = 1,IELmax-IELset+1
+          
+          ! Get the length of the edge. Let's use the parameter values
+          ! on the boundary for that purpose; this is a more general
+          ! implementation than using simple lines as it will later 
+          ! support isoparametric elements.
+          !
+          ! The length of the current edge serves as a "determinant"
+          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! the unit inverval [-1,1] has length 2.
+          dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
           
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
 
-            ! calculate the current weighting factor in the cubature formula
+            ! Calculate the current weighting factor in the cubature formula
             ! in that cubature point.
-            !
-            ! Take the absolut value of the determinant of the mapping.
-            ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
 
-            domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
+            domega = dlen * p_Domega(icubp)
 
             ! Loop over the additive factors in the bilinear form.
             do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
@@ -5971,7 +6029,7 @@ contains
               ! loops through the "O"'s in the above picture,
               ! the test functions:
 
-              do idofe=1,indofTest
+              do idofe = 1,indofTest
               
                 ! Get the value of the (test) basis function 
                 ! phi_i (our "O") in the cubature point:
@@ -5980,7 +6038,7 @@ contains
                 ! Perform an inner loop through the other DOF's
                 ! (the "X"). 
 
-                do jdofe=1,indofTrial
+                do jdofe = 1,indofTrial
                 
                   ! Get the value of the basis function 
                   ! psi_j (our "X") in the cubature point. 
@@ -6016,19 +6074,25 @@ contains
         !
         ! Loop over the elements in the current set.
 
-        do iel=1,ielmax-ielset+1
+        do iel = 1,IELmax-IELset+1
           
+          ! Get the length of the edge. Let's use the parameter values
+          ! on the boundary for that purpose; this is a more general
+          ! implementation than using simple lines as it will later 
+          ! support isoparametric elements.
+          !
+          ! The length of the current edge serves as a "determinant"
+          ! in the cubature, so we have to divide it by 2 as an edge on 
+          ! the unit inverval [-1,1] has length 2.
+          dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
+
           ! Loop over all cubature points on the current element
           do icubp = 1, ncubp
 
             ! calculate the current weighting factor in the cubature formula
             ! in that cubature point.
-            !
-            ! Take the absolut value of the determinant of the mapping.
-            ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
 
-            domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
+            domega = dlen * p_Domega(icubp)
 
             ! Loop over the additive factors in the bilinear form.
             do ialbet = 1,rlocalMatrixAssembly%rform%itermcount
@@ -6057,7 +6121,7 @@ contains
               ! loops through the "O" in the above picture,
               ! the test functions:
 
-              do idofe=1,indofTest
+              do idofe = 1,indofTest
                 
                 ! Get the value of the (test) basis function 
                 ! phi_i (our "O") in the cubature point:
@@ -6066,7 +6130,7 @@ contains
                 ! Perform an inner loop through the other DOF's
                 ! (the "X"). 
 
-                do jdofe=1,indofTrial
+                do jdofe = 1,indofTrial
               
                   ! Get the value of the basis function 
                   ! psi_j (our "X") in the cubature point. 
@@ -6107,10 +6171,10 @@ contains
       ! are usually small and quickly to handle.
       !
       !%OMP CRITICAL
-      do iel=1,ielmax-ielset+1          
+      do iel = 1,IELmax-IELset+1          
       
-        do idofe=1,indofTest
-          do jdofe=1,indofTrial
+        do idofe = 1,indofTest
+          do jdofe = 1,indofTrial
             p_DA(p_Kentry(jdofe,idofe,iel)) = &
                 p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
           end do
@@ -6119,11 +6183,14 @@ contains
       end do ! iel
       !%OMP END CRITICAL
 
-    end do ! ielset
+    end do ! IELset
     
     ! Release the local matrix assembly structure
     call bilf_releaseAssemblyData(rlocalMatrixAssembly)
   
+    ! Deallocate memory
+    deallocate(Dxi2D, DpointsRef, DpointsPar)
+
   end subroutine
 
   !****************************************************************************
@@ -6388,8 +6455,6 @@ contains
     call sys_halt()
   end if
   
-  stop
-
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
   case (SPDISC_UNIFORM,SPDISC_CONFORMAL) 
