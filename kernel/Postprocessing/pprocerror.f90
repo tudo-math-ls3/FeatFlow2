@@ -3728,7 +3728,7 @@ contains
     allocate(DedgePosition(2,NELbdc))
 
     ! Compute the elements adjacent to the boundary
-    call bdraux_getElementsAtBoundaryRegion(rboundaryRegion, rdiscretisation,&
+    call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
         NEL, Ielements, IelementOrientation, DedgePosition)
     
     ! Get the parameter values of the 1D cubature formula
