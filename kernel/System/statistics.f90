@@ -381,7 +381,7 @@ contains
 
 !</subroutine>
 
-    real(DP), parameter :: dsecPerDay = real(24*60*60,dp)
+    real(DP), parameter :: dsecPerDay = 24.0_DP*60.0_DP*60.0_DP
 
     integer :: icount, irate, icmax, icpudate,icputime
     real(DP) :: dcurrentCpu, dcurrentReal, dtmp, delapsed
