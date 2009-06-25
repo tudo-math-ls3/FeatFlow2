@@ -73,7 +73,7 @@ contains
     ! local variables
     real(DP) :: dalpha1
     logical :: bclear1
-    type(t_spatialDiscretisation), pointer :: p_rdiscr => NULL()
+    type(t_spatialDiscretisation), pointer :: p_rdiscr => null()
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
