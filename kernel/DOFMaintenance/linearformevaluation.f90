@@ -23,7 +23,13 @@
 !# 4.) linf_doneAssembly
 !#     -> Clean up a vector assembly structure.
 !#
-!#  5.) linf_buildVectorScalar2
+!# 5.) linf_assembleSubmeshVector
+!#     -> Assembles the vector entries for a submesh.
+!#
+!# 6.) linf_assembleSubmeshVectorBdr2D
+!#      > Assembles the vector entries for a submesh.
+!#
+!# 7.) linf_buildVectorScalar2
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a volume integral. This subroutine is a 
 !#        replacement of the previous version linf_buildVectorScalar.
@@ -38,13 +44,7 @@
 !#     -> Allocate 'local' memory, needed for assembling vector entries.
 !#
 !# 3.) linf_releaseAssemblyData
-!#     -> Release 'local' memory.
-!#
-!# 4.) linf_assembleSubmeshVector
-!#     -> Assembles the vector entries for a submesh.
-!#
-!# 5.) linf_assembleSubmeshVectorBdr2D
-!#      > Assembles the vector entries for a submesh.
+!#     -> Release 'local' memory, needed for assembling vector entries.
 !#
 !# Frequently asked questions
 !# --------------------------
@@ -1196,7 +1196,6 @@ contains
 
 !<description>
 
-  ! Auxiliary subroutine.
   ! Assembles the vector entries for s submesh-
 
 !</description>
@@ -1488,7 +1487,6 @@ contains
 
 !<description>
 
-  ! Auxiliary subroutine.
   ! Assembles the vector entries for s submesh-
 
 !</description>
