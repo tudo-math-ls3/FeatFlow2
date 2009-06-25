@@ -944,7 +944,7 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalarObsolete (rvectorScalar, cerrortype, derror,&
+  subroutine pperr_scalarObsolete (rvector, cerrortype, derror,&
                                    ffunctionReference, rcollection,&
                                    rdiscretisation, relementError)
 
@@ -975,7 +975,7 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalar
+  type(t_vectorScalar), intent(IN), target :: rvector
   
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
@@ -1014,7 +1014,7 @@ contains
 !</subroutine>
 
   ! Call the new routine with diffenret ordering of parameters
-  call pperr_scalar(cerrortype, derror, rvectorScalar,&
+  call pperr_scalar(cerrortype, derror, rvector,&
                     ffunctionReference, rcollection,&
                     rdiscretisation, relementError)
 
