@@ -4962,7 +4962,7 @@ contains
       
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
         call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
         call sys_halt()
       endif
       
@@ -4973,7 +4973,7 @@ contains
       
       if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
         call output_line ('Invalid descriptor!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
+            OU_CLASS_ERROR,OU_MODE_STD,'bilf_initAssembly')
         call sys_halt()
       endif
       
@@ -5125,6 +5125,7 @@ contains
   
   end subroutine
   
+  !****************************************************************************
   
 !<subroutine>
   
@@ -5214,15 +5215,17 @@ contains
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    real(DP), dimension(:), pointer :: p_DcoefficientsBilf
     integer, dimension(:,:), pointer :: p_IdofsTest
     integer, dimension(:,:), pointer :: p_IdofsTrial
     type(t_evalElementSet), pointer :: p_revalElementSet
+    integer, dimension(:,:),pointer :: p_Idescriptors
   
     ! Get some pointers for faster access
     call lsyssc_getbase_double (rmatrix,p_DA)
     indofTest = rmatrixAssembly%indofTest
     indofTrial = rmatrixAssembly%indofTrial
-    ncubp = rmatrixAssembly%indofTrial
+    ncubp = rmatrixAssembly%ncubp
 
     ! Copy the matrix assembly data to the local matrix assembly data,
     ! where we can allocate memory.
@@ -5241,9 +5244,11 @@ contains
     p_DbasTest => rlocalMatrixAssembly%p_DbasTest
     p_DbasTrial => rlocalMatrixAssembly%p_DbasTrial
     p_Dcoefficients => rlocalMatrixAssembly%p_Dcoefficients
+    p_Idescriptors => rlocalMatrixAssembly%rform%Idescriptors
     p_IdofsTest => rlocalMatrixAssembly%p_IdofsTest
     p_IdofsTrial => rlocalMatrixAssembly%p_IdofsTrial
     p_revalElementSet => rlocalMatrixAssembly%revalElementSet
+    p_DcoefficientsBilf => rlocalMatrixAssembly%rform%Dcoefficients
         
     ! Loop over the elements - blockwise.
     !
@@ -5443,13 +5448,13 @@ contains
               !      =1: first derivative, ...
               !    as defined in the module 'derivative'.
               
-              ia = rlocalMatrixAssembly%rform%Idescriptors(1,ialbet)
-              ib = rlocalMatrixAssembly%rform%Idescriptors(2,ialbet)
+              ia = p_Idescriptors(1,ialbet)
+              ib = p_Idescriptors(2,ialbet)
               
               ! Multiply domega with the coefficient of the form.
               ! This gives the actual value to multiply the
               ! function value with before summing up to the integral.
-              daux = domega * rlocalMatrixAssembly%rform%Dcoefficients(ialbet)
+              daux = domega * p_DcoefficientsBilf(ialbet)
             
               ! Now loop through all possible combinations of DOF's
               ! in the current cubature point. The outer loop

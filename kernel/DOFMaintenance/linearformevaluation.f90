@@ -16,6 +16,92 @@
 !# 2.) linf_buildVectorScalarBdr2d
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a boundary integral.
+!#
+!# Frequently asked questions
+!# --------------------------
+!#
+!# 1.) How to assemble a rhs-vector?
+!#
+!#  To assemble a vector, you first have to specify a linear form, a vector and
+!#  a spatial discretisation structure that defines the FE spaces to use.
+!#
+!#    type(t_linearForm) :: rform
+!#    type(t_vectorScalar) :: rvector
+!#    type(t_spatialDiscretisation) :: rdiscretisation
+!#
+!#  We set up a linear form structure, e.g. for the Laplace operator:
+!#
+!#    rform%itermCount = 1
+!#    rform%Idescriptors(1) = DER_FUNC
+!#
+!#  This e.g. initialises a linear form for evaluating a function.
+!#  In the next step, use the linear form to create the matrix entries:
+!#
+!#    call bilf_buildVectorScalar (rdiscretisation,rform,.true.,rvector,coeff_RHS)
+!#
+!#  where coeff_RHS is a callback routine returning the RHS function. That's it.
+!#
+!# 2.) What is the 'manual matrix assembly'?
+!#
+!#  This is a possibility to assemble parts of the vector by specifying
+!#  an element, a cubature formula and a list of elements where to assemble.
+!#  The call
+!#
+!#    call linf_buildVectorScalar2 (rdiscretisation,rform,.true.,rvector,coeff_RHS)
+!#
+!#  assembles a vectpr just like the call to bilf_buildVectorScalar, but using
+!#  another technique which you can also use if you want to assemble parts
+!#  of the vector on your own. 
+!# 
+!#  To 'manually' assemble parts of the matrix, you can use the
+!#  linf_initAssembly / linf_doneAssembly / linf_assembleSubvector
+!#  subroutines in conjunction with the linf_assembleSubvector structure.
+!#  Assume e.g. that elements 501..750 of a mesh are discretised with Q1
+!#  and the Gauss 2x2 cubature formula in 2D. We now want to assemble a
+!#  RHS on these elements. We start like before, defining
+!#  a linear form, some structures and create the matrix structure:
+!#
+!#    type(t_linearForm) :: rform
+!#    type(t_vectorScalar) :: rvector
+!#    type(t_vectorAssembly) :: rvectorAssembly
+!#    type(t_spatialDiscretisation) :: rdiscretisation
+!#
+!#  We set up a linear form structure, e.g. for the Laplace operator:
+!#
+!#    rform%itermCount = 1
+!#    rform%Idescriptors(1) = DER_FUNC
+!#
+!#  Create the vector:
+!#
+!#    call lsyssc_createVecByDiscr (rdiscretisation,rx,.true.)
+!#
+!#  Initialise the vector assembly structure for the assembly
+!#
+!#    call linf_initAssembly(rvectorAssembly,rform,EL_Q1,CUB_G2_2D)
+!#
+!#  and assemble only on the elements 501..750 which we specify in Ielements:
+!#
+!#    do i=501,750
+!#      Ielements(i-500) = i
+!#    end do
+!#    call linf_assembleSubvector (rvectorAssembly,rvector,IelementList)
+!#
+!#  Finally, we release the assembly structure.
+!#
+!#    call linf_doneAssembly(rvectorAssembly)
+!#
+!#  So the result is a vector with the RHS assembled only in
+!#  the elements 501..750. That way, the user has the ability to
+!#  specify element type, element numbers and cubature formula manually
+!#  without having to specify everything in a discretisation structure;
+!#  that's the reason why this assembly is called 'manual' assembly.
+!#
+!#  This method is extremely useful when one wants to assemble vectors with
+!#  adaptive/summed cubature formulas. Some parts of the domain can that way
+!#  be assembled with a cubature formula which is high enough to capture the
+!#  behaviour of the integral for nonsmooth, nonconstant coefficients, while
+!#  other parts of the domain may be assembled with the standard cubature 
+!#  formula.
 !# </purpose>
 !##############################################################################
 
@@ -45,6 +131,72 @@ module linearformevaluation
   
   private
 
+!<types>
+!<typeblock>
+
+  ! A vector assembly structure that saves crucial data during the vector assembly.
+  type t_linfVectorAssembly
+  
+    ! The bilinear form specifying the underlying PDE of the discretisation.
+    type(t_linearForm) :: rform
+
+    ! Number of local DOF's.
+    integer :: indof
+    
+    ! Array to tell the element which derivatives to calculate.
+    logical, dimension(EL_MAXNDER) :: Bder
+
+    ! Maximum number of elements to handle simultaneously.
+    integer :: nelementsPerBlock
+    
+    ! Number of vertices per element
+    integer :: NVE
+    
+    ! Type of element to evaluate.
+    integer(I32) :: celement
+    
+    ! Type of transformation
+    integer(I32) :: ctrafoType
+    
+    ! Basic evaluation tag of the element spaces
+    integer(I32) :: cevaluationTag
+    
+    ! Type of cubature formula to use.
+    integer(I32) :: ccubType
+    
+    ! Number of cubature points per element
+    integer :: ncubp
+    
+    ! The number of elements in revalElementSet whose cubature points on the
+    ! reference element(s) have already been initialised.
+    integer :: iinitialisedElements
+    
+    ! Cubature weights
+    real(DP), dimension(:), pointer :: p_Domega
+    
+    ! An array that takes coordinates of the cubature formula on the reference element
+    real(DP), dimension(:,:), pointer :: p_DcubPtsRef
+    
+    ! Arrays for the basis function values in the cubature points
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    
+    ! Arrays saving the DOF's in the elements
+    integer, dimension(:,:), pointer :: p_Idofs
+
+    ! Element set used for evaluating elements
+    type(t_evalElementSet) :: revalElementSet
+    
+    ! Pointer to the coefficients that are computed by the callback routine.
+    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+  
+  end type
+  
+!</typeblock>
+
+  public :: t_linfVectorAssembly
+
+!</types>
+
 !<constants>
 !<constantblock description="Constants defining the blocking of the assembly">
 
@@ -56,6 +208,10 @@ module linearformevaluation
 
   public :: linf_buildVectorScalar
   public :: linf_buildVectorScalarBdr2d
+  public :: linf_initAssembly
+  public :: linf_doneAssembly
+  public :: linf_assembleSubvector
+  public :: linf_buildVectorScalar2
 
 contains
 
@@ -1269,5 +1425,598 @@ contains
   end if
 
   end subroutine linf_buildVecDbleBdr2d_conf
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_initAssembly(rvectorAssembly,rform,&
+      celement,ccubType,nelementsPerBlock)
+
+!<description>
+  ! Initialise a vector assembly structure for assembling a linear form.
+!</description>
+
+!<input>
+  ! The bilinear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(in) :: rform
+  
+  ! Type of element in the test space.
+  integer(I32), intent(in) :: celement
+  
+  ! Type of cubature formula to use.
+  integer(I32), intent(in) :: ccubType
+  
+  ! Optional: Maximum number of elements to process simultaneously.
+  ! If not specified, BILF_NELEMSIM is assumed.
+  integer, intent(in), optional :: nelementsPerBlock
+!</input>
+
+!<output>
+  ! A vector assembly structure.
+  type(t_linfVectorAssembly), intent(out) :: rvectorAssembly
+!</output>
+
+!</subroutine>
+  
+    ! local variables
+    integer :: i,i1
+  
+    ! Initialise the structure.
+    rvectorAssembly%rform = rform
+    rvectorAssembly%ccubType = ccubType
+    rvectorAssembly%nelementsPerBlock = LINF_NELEMSIM
+    if (present(nelementsPerBlock)) &
+        rvectorAssembly%nelementsPerBlock = nelementsPerBlock
+    rvectorAssembly%celement = celement
+    
+    ! Get the number of local DOF's for trial and test functions
+    rvectorAssembly%indof = elem_igetNDofLoc(celement)
+    
+    ! Which derivatives of basis functions are needed?
+    ! Check the descriptors of the bilinear form and set BDERxxxx
+    ! according to these.
+    rvectorAssembly%Bder(:) = .false.
+    
+    ! Loop through the additive terms
+    do i=1,rform%itermCount
+      ! The desriptor Idescriptors gives directly the derivative
+      ! which is to be computed! Build template's for BDER.
+      ! We don't compute the actual BDER here, as there might be some special
+      ! processing if trial/test functions are identical!
+      !
+      ! At first build the descriptors for the trial functions
+      I1=rform%Idescriptors(i)
+      
+      if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
+        call output_line ('Invalid descriptor!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'linf_initAssembly')
+        call sys_halt()
+      endif
+      
+      rvectorAssembly%Bder(I1)=.true.
+    end do
+
+    ! Get the number of vertices of the element, specifying the transformation
+    ! form the reference to the real element.
+    rvectorAssembly%NVE = elem_igetNVE(celement)
+    
+      ! Get from the element space the type of coordinate system
+    ! that is used there:
+    rvectorAssembly%ctrafoType = elem_igetTrafoType(celement)
+    
+    ! Get the number of cubature points for the cubature formula
+    rvectorAssembly%ncubp = cub_igetNumPts(ccubType)
+
+    ! Allocate two arrays for the points and the weights
+    allocate(rvectorAssembly%p_Domega(rvectorAssembly%ncubp))
+    allocate(rvectorAssembly%p_DcubPtsRef(&
+        trafo_igetReferenceDimension(rvectorAssembly%ctrafoType),&
+        rvectorAssembly%ncubp))
+    
+    ! Get the cubature formula
+    call cub_getCubature(ccubType,rvectorAssembly%p_DcubPtsRef,rvectorAssembly%p_Domega)
+
+    ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+    ! the elements later. All of them can be combined with OR, what will give
+    ! a combined evaluation tag. 
+    rvectorAssembly%cevaluationTag = elem_getEvaluationTag(rvectorAssembly%celement)
+        
+  end subroutine
+  
+  !****************************************************************************
+
+!<subroutine>
+  
+  subroutine linf_doneAssembly(rvectorAssembly)
+
+!<description>
+  ! Clean up a vector assembly structure.
+!</description>  
+
+!<inputoutput>
+  ! Matrix assembly structure to clean up
+  type(t_linfVectorAssembly), intent(inout) :: rvectorAssembly
+!</inputoutput>  
+
+!</subroutine>
+  
+    deallocate(rvectorAssembly%p_DcubPtsRef)
+    deallocate(rvectorAssembly%p_Domega)
+  
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_allocAssemblyData(rvectorAssembly)
+
+!<description>
+  ! Auxiliary subroutine. Allocate 'local' memory, needed for assembling vector entries.
+!</description>
+
+!<inputoutput>
+  ! A vector assembly structure.
+  type(t_linfVectorAssembly), intent(inout) :: rvectorAssembly
+!</inputoutput>
+
+!</subroutine>
+
+    ! Evaluate real coordinates.
+    rvectorAssembly%cevaluationTag = &
+        ior(rvectorAssembly%cevaluationTag,EL_EVLTAG_REALPOINTS)
+    
+    ! Allocate an array for the coefficients computed by the callback routine.
+    allocate(rvectorAssembly%p_Dcoefficients(rvectorAssembly%rform%itermCount,&
+        rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock))
+
+    ! Allocate arrays for the values of the test functions.
+    allocate(rvectorAssembly%p_Dbas(rvectorAssembly%indof,&
+             elem_getMaxDerivative(rvectorAssembly%celement),&
+             rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock))
+
+    ! Allocate memory for the DOF's of all the elements.
+    allocate(rvectorAssembly%p_Idofs(&
+        rvectorAssembly%indof,rvectorAssembly%nelementsPerBlock))
+
+    ! Initialisation of the element set.
+    call elprep_init(rvectorAssembly%revalElementSet)
+  
+    ! No cubature points initalised up to now.
+    rvectorAssembly%iinitialisedElements = 0
+  
+  end subroutine
+  
+  !****************************************************************************
+  
+!<subroutine>
+  
+  subroutine linf_releaseAssemblyData(rvectorAssembly)
+
+  ! Auxiliary subroutine. Release 'local' memory.
+
+!<inputoutput>
+  ! Vector assembly structure to clean up
+  type(t_linfVectorAssembly), intent(inout) :: rvectorAssembly
+!</inputoutput>
+
+!</subroutine>
+  
+    ! Release all information in the structure.
+    call elprep_releaseElementSet(rvectorAssembly%revalElementSet)
+
+    deallocate(rvectorAssembly%p_Dcoefficients)
+    deallocate(rvectorAssembly%p_Idofs)
+    deallocate(rvectorAssembly%p_Dbas)
+
+  end subroutine
+  
+  !****************************************************************************
+  
+!<subroutine>  
+  
+  subroutine linf_assembleSubvector (rvectorAssembly,rvector,IelementList,&
+      fcoeff_buildVectorSc_sim,rcollection)
+  
+!<inputoutput>
+  
+  ! A vector assembly structure prepared with bilf_initAssembly.
+  type(t_linfVectorAssembly), intent(inout), target :: rvectorAssembly
+  
+  ! A vector where to assemble the contributions to.
+  type(t_vectorScalar), intent(inout) :: rvector
+  
+!</inputoutput>
+  
+!<input>
+  
+  ! List of elements where to assemble the bilinear form.
+  integer, dimension(:), intent(in), target :: IelementList
+  
+  ! A callback routine which is able to calculate the values of the
+  ! function $f$ which is to be discretised.
+  include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
+
+  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(INOUT), target, optional :: rcollection
+  
+!</input>
+  
+!</subroutine>
+  
+    ! local variables, used by all processors
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: indof,ncubp
+    
+    ! local data of every processor when using OpenMP
+    integer :: ielset,ielmax
+    integer :: iel,icubp,ialbet,ia,idofe
+    real(DP) :: domega,daux
+    integer(I32) :: cevaluationTag
+    type(t_linfVectorAssembly), target :: rlocalVectorAssembly
+    type(t_domainIntSubset) :: rintSubset
+    real(DP), dimension(:,:), pointer :: p_Ddetj
+    real(DP), dimension(:), pointer :: p_Domega
+    real(DP), dimension(:,:,:,:), pointer :: p_Dbas
+    real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
+    integer, dimension(:),pointer :: p_Idescriptors
+    integer, dimension(:,:), pointer :: p_Idofs
+    type(t_evalElementSet), pointer :: p_revalElementSet
+
+    ! A small vector holding only the additive controbutions of
+    ! one element
+    real(DP), dimension(EL_MAXNBAS) :: DlocalData
+  
+    ! Get some pointers for faster access
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    indof = rvectorAssembly%indof
+    ncubp = rvectorAssembly%ncubp
+
+    ! Copy the assembly data to the local assembly data,
+    ! where we can allocate memory.
+    ! For single processor machines, this is actually boring and nonsense.
+    ! But using OpenMP, here we get a local copy of the vector
+    ! assembly structure to where we can add some local data which
+    ! is released upon return without changing the original assembly
+    ! stucture or disturbing the data of the other processors.
+    rlocalVectorAssembly = rvectorAssembly
+    call linf_allocAssemblyData(rlocalVectorAssembly)
+    
+    ! Get some more pointers to local data.
+    p_Domega => rlocalVectorAssembly%p_Domega
+    p_Dbas => rlocalVectorAssembly%p_Dbas
+    p_Dcoefficients => rlocalVectorAssembly%p_Dcoefficients
+    p_Idescriptors => rlocalVectorAssembly%rform%Idescriptors
+    p_Idofs => rlocalVectorAssembly%p_Idofs
+    p_revalElementSet => rlocalVectorAssembly%revalElementSet
+        
+    ! Loop over the elements - blockwise.
+    !
+    ! Open-MP-Extension: Each loop cycle is executed in a different thread,
+    ! so nelementsPerBlock local matrices are simultaneously calculated in the
+    ! inner loop(s).
+    ! The blocks have all the same size, so we can use static scheduling.
+    !
+    !%OMP do schedule(static,1)
+    do ielset = 1, size(IelementList), rlocalVectorAssembly%nelementsPerBlock
+    
+      ! We always handle nelementsPerBlock elements simultaneously.
+      ! How many elements have we actually here?
+      ! Get the maximum element number, such that we handle at most BILF_NELEMSIM
+      ! elements simultaneously.
+      
+      ielmax = min(size(IelementList),ielset-1+rlocalVectorAssembly%nelementsPerBlock)
+    
+      ! --------------------- DOF SEARCH PHASE ------------------------
+    
+      ! The outstanding feature with finite elements is: A basis
+      ! function for a DOF on one element has common support only
+      ! with the DOF's on the same element! E.g. for Q1:
+      !
+      !        #. . .#. . .#. . .#
+      !        .     .     .     .
+      !        .  *  .  *  .  *  .
+      !        #-----O-----O. . .#
+      !        |     |     |     .
+      !        |     | iel |  *  .
+      !        #-----X-----O. . .#
+      !        |     |     |     .
+      !        |     |     |  *  .
+      !        #-----#-----#. . .#
+      !
+      ! --> On element iel, the basis function at "X" only interacts
+      !     with the basis functions in "O". Elements in the 
+      !     neighbourhood ("*") have no support, therefore we only have
+      !     to collect all "O" DOF's.
+      !
+      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      !
+      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
+      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
+          IelementList(ielset:ielmax), p_Idofs)
+                                   
+      ! -------------------- ELEMENT EVALUATION PHASE ----------------------
+      
+      ! To calculate the element contributions, we have to evaluate
+      ! the elements to give us the values of the basis functions
+      ! in all the DOF's in all the elements in our set.
+
+      ! Get the element evaluation tag of all FE spaces. We need it to evaluate
+      ! the elements later. All of them can be combined with OR, what will give
+      ! a combined evaluation tag. 
+      cevaluationTag = rlocalVectorAssembly%cevaluationTag
+      
+      ! In the first loop, calculate the coordinates on the reference element.
+      ! In all later loops, use the precalculated information.
+      !
+      ! If the cubature points are already initialised, don't do it again.
+      ! We check this by taking a look to iinitialisedElements which
+      ! gives the current maximum of initialised elements.
+      if (ielmax .gt. rlocalVectorAssembly%iinitialisedElements) then
+
+        ! (Re-)initialise!
+        cevaluationTag = ior(cevaluationTag,EL_EVLTAG_REFPOINTS)
+
+        ! Remember the new number of initialised elements
+        rlocalVectorAssembly%iinitialisedElements = ielmax
+
+      else
+        ! No need.
+        cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
+      end if
+
+      ! Calculate all information that is necessary to evaluate the finite element
+      ! on all cells of our subset. This includes the coordinates of the points
+      ! on the cells.
+      call elprep_prepareSetForEvaluation (p_revalElementSet,&
+          cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+          IelementList(ielset:ielmax), rlocalVectorAssembly%ctrafoType, &
+          rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp))
+      p_Ddetj => p_revalElementSet%p_Ddetj
+      
+      ! Now it's time to call our coefficient function to calculate the
+      ! function values in the cubature points:
+      if (present(fcoeff_buildVectorSc_sim)) then
+        call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
+        rintSubset%ielementDistribution = 0
+        rintSubset%ielementStartIdx = ielset
+        rintSubset%p_Ielements => IelementList(ielset:ielmax)
+        rintSubset%p_IdofsTrial => p_Idofs
+        rintSubset%celement = rlocalVectorAssembly%celement
+        call fcoeff_buildVectorSc_sim (rvector%p_rspatialDiscr,rlocalVectorAssembly%rform, &
+            ielmax-ielset+1,ncubp,&
+            p_revalElementSet%p_DpointsReal(:,:,1:ielmax-ielset+1),&
+            p_Idofs,rintSubset, &
+                  p_Dcoefficients(:,:,1:ielmax-ielset+1),&
+                  rcollection)
+        call domint_doneIntegration (rintSubset)
+      else
+        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+      end if
+      
+      ! Calculate the values of the basis functions.
+      call elem_generic_sim2 (rlocalVectorAssembly%celement, &
+          p_revalElementSet, rlocalVectorAssembly%Bder, &
+          rlocalVectorAssembly%p_Dbas)
+      
+      ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+      ! Values of all basis functions calculated. Now we can start 
+      ! to integrate!
+      !
+      ! Loop through elements in the set and for each element,
+      ! loop through the DOF's and cubature points to calculate the
+      ! integral:
+
+      do iel=1,ielmax-ielset+1
+        
+        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! integral into the vector DlocalData and add them later into
+        ! the large solution vector.
+        
+        ! Clear the output vector.
+        DlocalData(1:indof) = 0.0_DP
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1, ncubp
+
+          ! calculate the current weighting factor in the cubature formula
+          ! in that cubature point.
+          !
+          ! Take the absolut value of the determinant of the mapping.
+          ! In 2D, the determinant is always positive, whereas in 3D,
+          ! the determinant might be negative -- that's normal!
+
+          domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
+
+          ! Loop over the additive factors in the bilinear form.
+          do ialbet = 1,rlocalVectorAssembly%rform%itermcount
+          
+            ! Get from Idescriptors the type of the derivatives for the 
+            ! test and trial functions. The summand we calculate
+            ! here will be:
+            !
+            ! int_...  f * ( phi_i )_IA
+            !
+            ! -> IA=0: function value, 
+            !      =1: first derivative, 
+            !      =2: 2nd derivative,...
+            !    as defined in the module 'derivative'.
+            
+            ia = p_Idescriptors(ialbet)
+            
+            ! Multiply domega with the coefficient of the form.
+            ! This gives the actual value to multiply the
+            ! function value with before summing up to the integral.
+            ! Get the precalculated coefficient from the coefficient array.
+            daux = domega * p_Dcoefficients(ialbet,icubp,iel)
+          
+            ! Now loop through all possible combinations of DOF's
+            ! in the current cubature point. 
+
+            do idofe=1,indof
+              
+              ! Get the value of the basis function 
+              ! phi_o in the cubature point. 
+              ! Them multiply:
+              !    DBAS(..) * AUX
+              ! ~= phi_i * coefficient * cub.weight
+              ! Summing this up gives the integral, so the contribution
+              ! to the vector. 
+              !
+              ! Simply summing up DBAS(..) * AUX would give
+              ! the additive contribution for the vector. We save this
+              ! contribution in the local array.
+              
+              DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,icubp,iel)*daux
+              
+            end do ! jdofe
+            
+          end do ! ialbet
+
+        end do ! icubp 
+        
+        ! Incorporate the local vector into the global one.
+        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+        ! the IdofsTest array.
+        do IDOFE=1,indof
+          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
+        end do
+
+      end do ! iel
+
+    end do ! ielset
+    
+    ! Release the local vector assembly structure
+    call linf_releaseAssemblyData(rlocalVectorAssembly)
+  
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine linf_buildVectorScalar2 (rdiscretisation, rform, bclear, rvectorScalar,&
+                                      fcoeff_buildVectorSc_sim, rcollection)
+  
+!<description>
+  ! This routine assembles the entries of a vector according to a linear form
+  ! (typically used for assembling RHS vectors).
+  !
+  ! If bclear=TRUE, the vector is cleared before the assembly and any 
+  ! sorting of the entries is switched off - the vector is set up unsorted.
+  !
+  ! If bclear=FALSE, the vector must be unsorted when this routine is called, 
+  ! otherwise an error is thrown.
+  !
+  ! IMPLEMENTATIONAL REMARK:
+  ! This is a new implementation of the vector assembly using element subsets.
+  ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
+  ! the element subsets and calls linf_initAssembly/
+  ! linf_assembleSubvector/linf_doneAssembly to assemble subvectors.
+  ! The linf_assembleSubvector interface allows to assemble parts of a
+  ! vector based on an arbitrary element list which is not bound to an
+  ! element distribution.
+!</description>
+
+!<input>
+  ! The underlying discretisation structure which is to be used to
+  ! create the vector.
+  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  
+  ! The linear form specifying the underlying PDE of the discretisation.
+  type(t_linearForm), intent(IN) :: rform
+  
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new entries are added to the existing entries.
+  logical, intent(IN) :: bclear
+  
+  ! OPTIONAL: A collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(INOUT), target, optional :: rcollection
+  
+  ! A callback routine for the function to be discretised.
+  include 'intf_coefficientVectorSc.inc'
+  optional :: fcoeff_buildVectorSc_sim
+!</input>
+
+!<inputoutput>
+  ! The FE vector. Calculated entries are imposed to this vector.
+  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  type(t_linfVectorAssembly) :: rvectorAssembly
+  integer :: ielementDistr
+  integer, dimension(:), pointer :: p_IelementList
+
+  ! If the vector does not exist, create it.
+  if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then  
+    call lsyssc_createVecByDiscr (rdiscretisation,rvectorScalar,bclear)
+  else
+    ! Otherwise, probably clear the vector.
+    if (bclear) then
+      call lsyssc_clearVector (rvectorScalar)
+
+      ! If the vector is not set up as new vector, it has to be unsorted.
+      ! If it's a new vector, we switch off the sorting.
+      rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
+    end if
+  end if
+
+  ! The vector must be unsorted, otherwise we can't set up the vector.
+  if (rvectorScalar%isortStrategy .gt. 0) then
+    call output_line('Vector must be unsorted!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+    call sys_halt()
+  end if
+
+  ! Do we have a uniform triangulation? Would simplify a lot...
+  if ((rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) .or.&
+      (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL)) then 
+    
+    select case(rvectorScalar%cdataType)
+      
+    case(ST_DOUBLE)
+      ! Loop over the element distributions.
+      do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+        call storage_getbase_int(&
+            rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
+            p_IelementList)
+
+        ! Initialise a vector assembly structure for that element distribution
+        call linf_initAssembly(rvectorAssembly,rform,&
+            rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+            rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
+            min(LINF_NELEMSIM,size(p_IelementList)))
+            
+        ! Assemble the data for all elements in this element distribution
+        call linf_assembleSubvector (rvectorAssembly,rvectorScalar,&
+            p_IelementList,fcoeff_buildVectorSc_sim,rcollection)
+        
+        ! Release the assembly structure.
+        call linf_doneAssembly(rvectorAssembly)
+      end do
+
+    case DEFAULT
+      call output_line('Single precision vectors currently not supported!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+    end select
+    
+  else
+    call output_line('General discretisation not implemented!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
+    call sys_halt()
+  end if
+
+  end subroutine  
 
 end module linearformevaluation
