@@ -9843,7 +9843,7 @@ p_InodalPropertyDest = -4711
   subroutine tria_createRawTria1D(rtriangulation, dleft, dright, nintervals)
   
 !<description>
-  ! This routine creates a 'raw' 1D triangulation with ninvervals
+  ! This routine creates a 'raw' 1D triangulation with nintervals
   ! sub-intervals of same length.
 !</description>
 
@@ -9854,7 +9854,7 @@ p_InodalPropertyDest = -4711
   ! The right end of the interval. Must be > dleft.
   real(DP), intent(IN) :: dright
   
-  ! OPTIONAL: The number of sub-intervals to create. If given, ninvervals
+  ! OPTIONAL: The number of sub-intervals to create. If given, nintervals
   ! must be > 0. If not given, one interval is created.
   integer, optional, intent(IN) :: nintervals
 !</input>

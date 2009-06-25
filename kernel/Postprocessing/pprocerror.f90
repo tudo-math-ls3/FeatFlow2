@@ -3916,7 +3916,7 @@ contains
         !
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit inverval [-1,1] has length 2.
+        ! the unit interval [-1,1] has length 2.
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1, ncubp
@@ -3990,7 +3990,7 @@ contains
         !
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit inverval [-1,1] has length 2.
+        ! the unit interval [-1,1] has length 2.
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1,ncubp
@@ -4076,7 +4076,7 @@ contains
         !
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit inverval [-1,1] has length 2.
+        ! the unit interval [-1,1] has length 2.
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1,ncubp
@@ -4150,7 +4150,7 @@ contains
         !
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit inverval [-1,1] has length 2.
+        ! the unit interval [-1,1] has length 2.
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1, ncubp
@@ -4214,7 +4214,7 @@ contains
         !
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
-        ! the unit inverval [-1,1] has length 2.
+        ! the unit interval [-1,1] has length 2.
         dlen = 0.5_DP*(DedgePosition(2,iel)-DedgePosition(1,iel))
       
         do ipoint = 1, ncubp

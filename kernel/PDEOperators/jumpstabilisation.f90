@@ -653,7 +653,7 @@ contains
       ! Now we can start to integrate using this.
       
       ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
+      ! in the cubature, so we have to divide it by 2 as an edge on the unit interval
       ! [-1,1] has length 2.
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
@@ -2152,7 +2152,7 @@ contains
       ! Now we can start to integrate using this.
       
       ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
+      ! in the cubature, so we have to divide it by 2 as an edge on the unit interval
       ! [-1,1] has length 2.
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
@@ -2828,7 +2828,7 @@ contains
       ! Now we can start to integrate using this.
       
       ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
+      ! in the cubature, so we have to divide it by 2 as an edge on the unit interval
       ! [-1,1] has length 2.
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
@@ -3815,7 +3815,7 @@ contains
       ! Now we can start to integrate using this.
       
       ! Get the length of the current edge. It serves as a "determinant"
-      ! in the cubature, so we have to divide it by 2 as an edge on the unit inverval
+      ! in the cubature, so we have to divide it by 2 as an edge on the unit interval
       ! [-1,1] has length 2.
       ivt1 = p_IverticesAtEdge (1,IMT)
       ivt2 = p_IverticesAtEdge (2,IMT)
