@@ -61,6 +61,9 @@ module numbersets
     ! A handle identifying the memory of the set.
     integer :: ihandle
     
+    ! Maximum number of elements in the set.
+    integer :: nmaxEntries
+    
     ! Number of bits in an integer
     integer :: ibitsPerInteger
     
@@ -129,6 +132,8 @@ contains
     call storage_new ('sets_initDASet', 'set', (nelements+bit_size(i)-1)/bit_size(i),&
         ST_INT, rset%ihandle, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(rset%ihandle,rset%p_Idata)
+    
+    rset%nmaxEntries = nelements
   
   end subroutine
   
