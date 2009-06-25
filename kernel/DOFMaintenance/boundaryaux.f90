@@ -8,22 +8,27 @@
 !#
 !# It contains the following set of routines:
 !#
-!# 1.) bdraux_getElementsAtBoundaryRegion
+!# 1.) bdraux_getElementsAtBoundary
+!#     -> Calculates the list of elements at the boundary
+!#
+!# 2.) bdraux_getElementsAtRegion
 !#     -> Calculates the list of elements at a boundary region.
 !# </purpose>
 !##############################################################################
 module boundaryaux
-
+  
   use boundary
   use fsystem
   use genoutput
   use spatialdiscretisation
   use storage
   use triangulation
+  
+  implicit none
 
   private
 
-  public :: bdraux_getElementsAtBoundaryRegion
+  public :: bdraux_getElementsAtRegion
   
 contains
 
@@ -31,14 +36,86 @@ contains
 
 !<subroutine>
 
-  subroutine bdraux_getElementsAtBoundaryRegion(rboundaryRegion, rdiscretisation,&
+  subroutine bdraux_getElementsAtBoundary(rdiscretisation,&
+      NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
+
+!<description>
+    ! This subroutine calculates the list of elements which are
+    ! adjacent to the boundary. If the number of elements
+    ! exceeds the size of the working arrays an error is thrown.
+!</description>
+
+!<input>
+    ! A discretisation structure
+    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+!</input>
+
+!<output>
+    ! The number of elements at the boundary region
+    integer, intent(OUT) :: NELbdc
+
+    ! The list of elements adjacent to the boundary region
+    integer, dimension(:), intent(OUT) :: IelementList
+
+    ! The orientation of elements adjacent to the boundary region
+    integer, dimension(:), intent(OUT) :: IelementOrientation
+
+    ! OPTIOANL: Element type to be considered. If not present, then
+    ! all elements adjacent to the boundary are inserted into the list
+    integer(I32), intent(IN), optional :: celement
+
+    ! OPTIONAL: The start- and end-parameter values of the edges on
+    ! the boundary region
+    real(DP), dimension(:,:), intent(OUT), optional :: DedgePosition
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_boundary), pointer :: p_rboundary
+    type(t_boundaryRegion) :: rboundaryRegion
+    integer :: ibdc,NEL
+
+    ! The discretisation must provide a boundary structure
+    if (associated(rdiscretisation%p_rboundary)) then
+      p_rboundary => rdiscretisation%p_rboundary
+    else
+      call output_line('Discretisation does not provide boundary structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBoundary')
+      call sys_halt()
+    end if
+    
+    NELbdc = 0
+    ! Create a boundary region for each boundary component and call
+    ! the calculation routine for that.
+    do ibdc = 1,boundary_igetNBoundComp(p_rboundary)
+      call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
+
+      if (present(DedgePosition)) then
+        call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
+            NEL, IelementList(NELbdc+1:), IelementOrientation(NELbdc+1:),&
+            DedgePosition(:,NELbdc+1:), celement)
+      else
+        call bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
+            NEL, IelementList(NELbdc+1:), IelementOrientation(NELbdc+1:),&
+            celement=celement)
+      end if
+
+      NELbdc = NELbdc + NEL
+    end do
+    
+  end subroutine bdraux_getElementsAtBoundary
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine bdraux_getElementsAtRegion(rboundaryRegion, rdiscretisation,&
       NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
 
 !<description>
     ! This subroutine calculates the list of elements which are
     ! adjacent to the boundary region. If the number of elements
     ! exceeds the size of the working arrays an error is thrown.
-
 !</description>
 
 !<input>
@@ -120,14 +197,14 @@ contains
     if (NELbdc .gt. ubound(IelementList,1) .or.&
         NELbdc .gt. ubound(IelementOrientation,1)) then
       call output_line('Insufficient memory',&
-          OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBoundaryRegion')
+          OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtRegion')
       call sys_halt()
     end if
 
     if (present(DedgePosition)) then
       if (NELbdc .gt. ubound(DedgePosition,2)) then
         call output_line('Insufficient memory',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtBoundaryRegion')
+            OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getElementsAtRegion')
         call sys_halt()
       end if
     end if
@@ -184,6 +261,6 @@ contains
       end if
     end do
     
-  end subroutine bdraux_getElementsAtBoundaryRegion
+  end subroutine bdraux_getElementsAtRegion
 
 end module boundaryaux
