@@ -9,8 +9,7 @@
 
     subroutine fcoeff_buildVectorScBdr2D_sim (rdiscretisation, rform, &
                   nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
-                  IdofsTest, rdomainIntSubset, &
-                  Dcoefficients, rcollection)
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
     
     use fsystem
     use basicgeometry
