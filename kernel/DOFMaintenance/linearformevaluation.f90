@@ -54,8 +54,8 @@
 !#  of the vector on your own. 
 !# 
 !#  To 'manually' assemble parts of the matrix, you can use the
-!#  linf_initAssembly / linf_doneAssembly / linf_assembleSubvector
-!#  subroutines in conjunction with the linf_assembleSubvector structure.
+!#  linf_initAssembly / linf_doneAssembly / linf_assembleSubmeshVector
+!#  subroutines in conjunction with the linf_assembleSubmeshVector structure.
 !#  Assume e.g. that elements 501..750 of a mesh are discretised with Q1
 !#  and the Gauss 2x2 cubature formula in 2D. We now want to assemble a
 !#  RHS on these elements. We start like before, defining
@@ -84,7 +84,7 @@
 !#    do i=501,750
 !#      Ielements(i-500) = i
 !#    end do
-!#    call linf_assembleSubvector (rvectorAssembly,rvector,IelementList)
+!#    call linf_assembleSubmeshVector (rvectorAssembly,rvector,IelementList)
 !#
 !#  Finally, we release the assembly structure.
 !#
@@ -210,7 +210,7 @@ module linearformevaluation
   public :: linf_buildVectorScalarBdr2d
   public :: linf_initAssembly
   public :: linf_doneAssembly
-  public :: linf_assembleSubvector
+  public :: linf_assembleSubmeshVector
   public :: linf_buildVectorScalar2
 
 contains
@@ -1616,7 +1616,7 @@ contains
   
 !<subroutine>  
   
-  subroutine linf_assembleSubvector (rvectorAssembly,rvector,IelementList,&
+  subroutine linf_assembleSubmeshVector (rvectorAssembly,rvector,IelementList,&
       fcoeff_buildVectorSc_sim,rcollection)
   
 !<inputoutput>
@@ -1918,8 +1918,9 @@ contains
   ! This is a new implementation of the vector assembly using element subsets.
   ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
   ! the element subsets and calls linf_initAssembly/
-  ! linf_assembleSubvector/linf_doneAssembly to assemble subvectors.
-  ! The linf_assembleSubvector interface allows to assemble parts of a
+  ! linf_assembleSubmeshVector/linf_doneAssembly to assemble vector entries of a
+  ! submesh.
+  ! The linf_assembleSubmeshVector interface allows to assemble parts of a
   ! vector based on an arbitrary element list which is not bound to an
   ! element distribution.
 !</description>
@@ -1999,7 +2000,7 @@ contains
             min(LINF_NELEMSIM,size(p_IelementList)))
             
         ! Assemble the data for all elements in this element distribution
-        call linf_assembleSubvector (rvectorAssembly,rvectorScalar,&
+        call linf_assembleSubmeshVector (rvectorAssembly,rvectorScalar,&
             p_IelementList,fcoeff_buildVectorSc_sim,rcollection)
         
         ! Release the assembly structure.

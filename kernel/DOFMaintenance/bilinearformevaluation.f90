@@ -23,7 +23,7 @@
 !# 4.) bilf_doneAssembly
 !#     -> Manual matrix assembly. Clean up a matrix assembly structure.
 !#
-!# 5.) bilf_assembleSubmatrix9
+!# 5.) bilf_assembleSubmeshMatrix9
 !#     -> Manual matrix assembly. Assemble parts of a matrix given in matrix 
 !#        format 9.
 !#
@@ -94,7 +94,7 @@
 !#  of the matrix on your own. 
 !# 
 !#  To 'manually' assemble parts of the matrix, you can use the
-!#  bilf_initAssembly / bilf_doneAssembly / bilf_assembleSubmatrix9
+!#  bilf_initAssembly / bilf_doneAssembly / bilf_assembleSubmeshMatrix9
 !#  subroutines in conjunction with the t_bilfMatrixAssembly structure.
 !#  Assume e.g. that elements 501..750 of a mesh are discretised with Q1
 !#  and the Gauss 2x2 cubature formula in 2D. We now want to assemble the
@@ -133,7 +133,7 @@
 !#    do i=501,750
 !#      Ielements(i-500) = i
 !#    end do
-!#    call bilf_assembleSubmatrix9 (rmatrixAssembly,rmatrix,IelementList)
+!#    call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix,IelementList)
 !#
 !#  Finally, we release the assembly structure.
 !#
@@ -306,7 +306,7 @@ module bilinearformevaluation
   
   public :: bilf_initAssembly
   public :: bilf_doneAssembly
-  public :: bilf_assembleSubmatrix9
+  public :: bilf_assembleSubmeshMatrix9
   public :: bilf_buildMatrixScalar2
 
 contains
@@ -5165,7 +5165,7 @@ contains
   
 !<subroutine>  
   
-  subroutine bilf_assembleSubmatrix9 (rmatrixAssembly,rmatrix,IelementList,&
+  subroutine bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,IelementList,&
       fcoeff_buildMatrixSc_sim,rcollection)
   
 !<inputoutput>
@@ -5641,8 +5641,9 @@ contains
   ! This is a new implementation of the matrix assembly using element subsets.
   ! In contrast to bilf_buildMatrixScalar, this routine loops itself about
   ! the element subsets and calls bilf_initAssembly/
-  ! bilf_assembleSubmatrix9/bilf_doneAssembly to assemble submatrices.
-  ! The bilf_assembleSubmatrix9 interface allows to assemble parts of a
+  ! bilf_assembleSubmeshMatrix9/bilf_doneAssembly to assemble matrix
+  ! contributions of a submesh.
+  ! The bilf_assembleSubmeshMatrix9 interface allows to assemble parts of a
   ! matrix based on an arbitrary element list which is not bound to an
   ! element distribution.
 !</description>
@@ -5726,7 +5727,7 @@ contains
               min(BILF_NELEMSIM,size(p_IelementList)))
               
           ! Assemble the data for all elements in this element distribution
-          call bilf_assembleSubmatrix9 (rmatrixAssembly,rmatrix,&
+          call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
               p_IelementList,fcoeff_buildMatrixSc_sim,rcollection)
           
           ! Release the assembly structure.
