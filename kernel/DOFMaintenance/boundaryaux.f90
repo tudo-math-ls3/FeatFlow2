@@ -32,7 +32,7 @@ contains
 !<subroutine>
 
   subroutine bdraux_getElementsAtBoundaryRegion(rboundaryRegion, rdiscretisation,&
-      NELbdc, IelementList, IelementOrientation, celement, DedgePosition)
+      NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
 
 !<description>
     ! This subroutine calculates the list of elements which are
