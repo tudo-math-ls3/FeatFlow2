@@ -849,6 +849,7 @@ contains
   ! local variables
   type(t_linfVectorAssembly) :: rvectorAssembly
   type(t_boundary), pointer :: p_rboundary
+  type(t_triangulation), pointer :: p_rtriangulation
   type(t_boundaryRegion) :: rboundaryReg
   real(DP), dimension(:,:), pointer :: p_DedgePosition
   integer, dimension(:), pointer :: p_IelementList, p_IelementOrientation
@@ -871,28 +872,29 @@ contains
   if (bclear) call lsyssc_clearVector (rvectorScalar)
 
   ! The vector must provide a discretisation structure
-  if (.not.associated(rvectorScalar%p_rspatialDiscr)) then
-    call output_line('Discretisation structire is not associated!',&
+  if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    call output_line('No discretisation associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
     call sys_halt()
   end if
 
   ! The discretisation must provide a triangulation structure
-  if (.not.associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
-    call output_line('Discretisation does not provide triangulation structure!',&
+  if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rtriangulation)) then
+    call output_line('No triangulation associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
     call sys_halt()
   end if
   
   ! The discretisation must provide a boundary structure
-  if (.not.associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
-    call output_line('Discretisation does not provide boundary structure!',&
+  if (.not. associated(rvectorScalar%p_rspatialDiscr%p_rboundary)) then
+    call output_line('No boundary associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2d')
     call sys_halt()
   end if
 
-  ! Set pointer for quicker access
+  ! Set pointers for quicker access
   p_rboundary => rvectorScalar%p_rspatialDiscr%p_rboundary
+  p_rtriangulation => rvectorScalar%p_rspatialDiscr%p_rtriangulation
     
   ! Do we have a uniform triangulation? Would simplify a lot...
   if ((rvectorScalar%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) .or.&
@@ -908,8 +910,7 @@ contains
         do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
           
           ! Calculate number of elements adjacent to the boundary region
-          NELbdc = bdraux_getNELAtRegion(rboundaryRegion,&
-              rvectorScalar%p_rspatialDiscr%p_rtriangulation)
+          NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
           
           ! Allocate memory for element list, element orientation and
           ! the start- and end-parameter values of edges at the boundary
@@ -934,6 +935,11 @@ contains
           
           ! Release the assembly structure.
           call linf_doneAssembly(rvectorAssembly)
+
+          ! Release memory
+          deallocate(p_IelementList, p_IelementOrientation)
+          deallocate(p_DedgePosition)
+
         end do
 
       else
@@ -952,8 +958,7 @@ contains
             call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryReg)
             
             ! Calculate number of elements adjacent to the boundary region
-            NELbdc = bdraux_getNELAtRegion(rboundaryReg,&
-                rvectorScalar%p_rspatialDiscr%p_rtriangulation)
+            NELbdc = bdraux_getNELAtRegion(rboundaryReg, p_rtriangulation)
             
             ! Allocate memory for element list, element orientation and
             ! the start- and end-parameter values of edges at the boundary
@@ -1908,8 +1913,8 @@ contains
   if (bclear) call lsyssc_clearVector (rvectorScalar)
 
   ! The vector must provide a discretisation structure
-  if (.not.associated(rvectorScalar%p_rspatialDiscr)) then
-    call output_line('Discretisation structire is not associated!',&
+  if (.not. associated(rvectorScalar%p_rspatialDiscr)) then
+    call output_line('No discretisation associated!',&
         OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
     call sys_halt()
   end if
