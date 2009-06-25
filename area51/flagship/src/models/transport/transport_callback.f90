@@ -39,10 +39,11 @@
 !# 10.) transp_calcLinearizedFCT
 !#      -> Calculates the linearized FCT correction
 !#
-!# 11.) transp_buildVectorScalarBdr
-!#      -> Builds the linear form defined in terms of a boundary integral
+!# 11.) transp_coeffVectorAnalytic
+!#      -> Callback routine for the evaluation of linear forms
+!#         using an analytic expression for the load-vector
 !#
-!# 12.) transp_coeffVectorAnalytic
+!# 12.) transp_coeffVectorBdr2dAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using an analytic expression for the load-vector
 !#
@@ -112,8 +113,8 @@ module transport_callback
   public :: transp_calcVelocityField
   public :: transp_setVelocityField
   public :: transp_calcLinearizedFCT
-  public :: transp_buildVectorScalarBdr
   public :: transp_coeffVectorAnalytic
+  public :: transp_coeffVectorBdr2dAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
   public :: transp_refFuncBdrInt2D
@@ -2173,8 +2174,8 @@ contains
     if (present(nlminOpt)) nlmin = nlminOpt
 
     ! Initialize variable values
-    Dvalue = 0.0_DP
-
+    Dvalue           = 0.0_DP
+    Dvalue(NDIM3D+1) = dtime
 
     ! Loop over all problem levels
     p_rproblemLevel => rproblemLevel
@@ -2219,9 +2220,7 @@ contains
 
         ! Loop over all equations of scalar subvector
         do ieq = 1, neq
-          Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
-          Dvalue(NDIM3D+1) = dtime
-          
+          Dvalue(1:ndim) = p_DvertexCoords(:,ieq)
           call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
         end do
       end do
@@ -2615,366 +2614,6 @@ contains
     
   end subroutine transp_calcLinearizedFCT
 
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_buildVectorScalarBdr(rdiscretisation, bclear,&
-                                         rvectorScalar, rboundaryRegion, rcollection)
-
-    use boundary
-
-!<description>
-
-    ! This subroutine builds the discretised vector for the linear
-    ! form defined in terms of a boundary integral.
-
-!</description>
-
-!<input>
-
-    ! The underlying discretisation structure which is to be used to
-    ! create the vector.
-    type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
-
-    ! Whether to clear the vector before calculating the entries.
-    ! If .FALSE., the new entries are added to the existing entries.
-    logical, intent(IN) :: bclear
-
-    ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
-    ! to calculate. If not specified, the computation is done over
-    ! the whole boundary.
-    type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
-
-    ! OPTIONAL: A collection structure. This structure is 
-    ! given to the callback function for calculating the function
-    ! which should be discretised in the linear form.
-    type(t_collection), intent(INOUT), target, optional :: rcollection
-
-!</input>
-
-!<inputoutput>
-    ! The FE vector. Calculated entries are imposed to this vector.
-    type(t_vectorScalar), intent(INOUT) :: rvectorScalar
-!</inputoutput>
-
-!</subroutine>
-
-    
-    ! If the vector is not set up as new vector, it has to be unsorted.
-    ! If it's a new vector, we switch off the sorting.
-    if (bclear) then
-      rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
-    end if
-    
-    ! The vector must be unsorted, otherwise we can't set up the vector.
-    if (rvectorScalar%isortStrategy .gt. 0) then
-      call output_line('Vector must be unsorted!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_buildVectorScalarBdr')
-      call sys_halt()
-    end if
-
-    select case(rvectorScalar%cdataType)
-      
-    case(ST_DOUBLE)
-      call transp_buildVectorBdrDble_conf(rdiscretisation, bclear,&
-                                          rvectorScalar, rboundaryRegion, rcollection)
-
-    case DEFAULT
-      call output_line('Single precision vectors currently not supported!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_buildVectorScalarBdr')
-    end select
-
-  end subroutine transp_buildVectorScalarBdr
-
-!*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_buildVectorBdrDble_conf(rdiscretisation, bclear,&
-                                            rvectorScalar, rboundaryRegion, rcollection)
-
-    use dofmapping
-    use boundary
-    use triangulation
-
-!<description>
-
-    ! This subroutine builds the discretised vector for the linear
-    ! form defined in terms of a boundary integral.
-    !
-    ! Double-precision version.
-
-!</description>
-
-!<input>
-
-    ! The underlying discretisation structure which is to be used to
-    ! create the vector.
-    type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
-    
-    ! Whether to clear the vector before calculating the entries.
-    ! If .FALSE., the new entries are added to the existing entries.
-    logical, intent(IN) :: bclear
-
-    ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
-    ! to calculate. If not specified, the computation is done over
-    ! the whole boundary.
-    type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
-
-    ! OPTIONAL: A collection structure. This structure is 
-    ! given to the callback function for calculating the function
-    ! which should be discretised in the linear form.
-    type(t_collection), intent(INOUT), target, optional :: rcollection
-
-!</input>
-
-!<inputoutput>
-    ! The FE vector. Calculated entries are imposed to this vector.
-    type(t_vectorScalar), intent(INOUT) :: rvectorScalar
-!</inputoutput>
-
-!</subroutine>
-    
-    ! The triangulation structure - to shorten some things...
-    type(t_triangulation), pointer :: p_rtriangulation
-
-    ! The boundary structure - to shorten some things...
-    type(t_boundary), pointer :: p_rboundary
-
-    ! The boundary region used for computing the integral
-    type(t_boundaryRegion) :: rboundaryReg
-
-    ! local variables
-    integer :: ibdc
-
-
-    if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
-      
-      call lsyssc_createVecByDiscr(rdiscretisation, rvectorScalar, .true.)
-      
-    else
-      
-      if (bclear) call lsyssc_clearVector(rvectorScalar)
-      
-    end if
-
-    ! Get a pointer to the triangulation - for easier access.
-    p_rtriangulation => rdiscretisation%p_rtriangulation
-
-    ! Get a pointer to the boundary - for easier access.
-    p_rboundary => rdiscretisation%p_rboundary
-
-
-    ! If the boundary region is specified, call transp_integral2D_conf
-    ! for that boundary region. Otherwise, call transp_integral2D_conf
-    ! for all possible boundary regions.
-    if (present(rboundaryRegion)) then
-      call transp_integral2D_conf(p_rboundary, p_rtriangulation,&
-                                  rboundaryRegion, rvectorScalar, rcollection)
-    else
-      ! Create a boundary region for each boundary component and call
-      ! the calculation routine for that.
-      do ibdc = 1, boundary_igetNBoundComp(p_rboundary)
-        call boundary_createRegion(p_rboundary, ibdc, 0, rboundaryReg)
-        call transp_integral2D_conf(p_rboundary, p_rtriangulation,&
-                                    rboundaryReg, rvectorScalar, rcollection)
-      end do
-    end if
-    
-  end subroutine transp_buildVectorBdrDble_conf
-
-!*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_integral2D_conf(rboundary, rtriangulation,&
-                                    rboundaryRegion, rvectorScalar, rcollection)
-
-    use boundary
-    use triangulation
-
-!<description>
-
-    ! This routine calculates the linear form 
-
-!</description>
-
-!<input>
-    
-    ! A boundary object that specifies the analytical boundary of the domain.
-    type(t_boundary), intent(IN) :: rboundary
-    
-    ! A triangulation object that specifies the mesh in the domain.
-    type(t_triangulation), intent(IN) :: rtriangulation
-    
-    ! A t_boundaryRegion specifying the boundary region where
-    ! to calculate. 
-    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
-    
-    ! OPTIONAL: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
-
-!</input>
-
-!<inputoutput>
-    ! The FE vector. Calculated entries are imposed to this vector.
-    type(t_vectorScalar), intent(INOUT) :: rvectorScalar
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    type(t_fparser), pointer :: rfparser
-    real(DP), dimension(:), pointer :: p_Ddata
-    real(DP), dimension(NDIM3D+1, 4) :: DevalData
-    real(DP), dimension(NDIM2D, 3) :: DvelocityField
-    real(DP), dimension(3) :: DtargetFunc
-    real(DP), dimension(NDIM2D) :: Dnormal
-    real(DP) :: dpar1, dpar2, dpos1, dpos2, dvalue
-    integer :: ibdc, NELbdc, ibdcoffset, iedge, iel, ilocaledge, i1, i2, nve, ipoint
-    integer :: icompVelocity_X, icompVelocity_Y, icompTargetFuncBdrInt
-
-    ! The triangulation structure - to shorten some things...
-    integer, dimension(:), pointer :: p_IboundaryCpIdx
-    integer, dimension(:), pointer :: p_IedgesAtBoundary
-    integer, dimension(:), pointer :: p_IelementsAtBoundary
-    real(DP), dimension(:), pointer :: p_DedgeParameterValue
-    real(DP), dimension(:), pointer :: p_DvertexParameterValue
-    integer, dimension(:,:), pointer :: p_IedgesAtElement
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-
-    ! Get some pointers and arrays for quicker access
-    
-    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx,&
-        p_IboundaryCpIdx)
-    call storage_getbase_int (rtriangulation%h_IedgesAtBoundary,&
-        p_IedgesAtBoundary)
-    call storage_getbase_int (rtriangulation%h_IelementsAtBoundary,&
-        p_IelementsAtBoundary)
-    call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
-        p_IedgesAtElement)
-    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
-        p_IverticesAtElement)
-    call storage_getbase_double (rtriangulation%h_DedgeParameterValue,&
-        p_DedgeParameterValue)
-    call storage_getbase_double (rtriangulation%h_DvertexParameterValue,&
-        p_DvertexParameterValue)
-
-    call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-
-
-    ! This subroutine assumes that the first two quick access string
-    ! values hold the names of the function parsers in the collection.
-    rfparser => collct_getvalue_pars(rcollection, trim(rcollection%SquickAccess(1)))
-
-    icompVelocity_X = fparser_getFunctionNumber(rfparser, 'fp_velocity_x')
-    icompVelocity_Y = fparser_getFunctionNumber(rfparser, 'fp_velocity_y')
-    icompTargetFuncBdrInt = fparser_getFunctionNumber(rfparser, 'fp_targetFuncBdrInt')
-
-    ! Boundary component?
-    ibdc = rboundaryRegion%iboundCompIdx
-
-    ! Number of elements on that boundary component?
-    NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
-    
-    ! Position of the boundary component?
-    ibdcoffset = p_IboundaryCpIdx(ibdc)
-
-    ! Clear auxiliary array for velocity field evaluation
-    DevalData = 0.0_DP
-
-    ! Set simulation time
-    DevalData(NDIM3D+1,:) = rcollection%DquickAccess(1)
-
-
-    ! Loop through the edges on the boundary component ibdc.
-    do iedge = 1, NELbdc
-      if (boundary_isInRegion(rboundaryRegion, ibdc,&
-          p_DedgeParameterValue(iedge))) then
-        
-        ! Element orientation; i.e. the local number of the boundary edge 
-        do ilocaledge = 1, ubound(p_IedgesAtElement,1)
-          if (p_IedgesAtElement(ilocaledge, p_IelementsAtBoundary(iedge)) .eq. &
-              p_IedgesAtBoundary(iedge)) exit
-        end do
-        
-        ! Get global element number
-        iel = p_IelementsAtBoundary(iedge)
-
-        ! Get number of edges per element
-        nve = tria_getNVE(p_IverticesAtElement, iel)
-
-        ! Get global vertex numbers
-        i1 = p_IverticesAtElement(ilocaledge, iel)
-        i2 = p_IverticesAtElement(mod(ilocaledge, nve)+1, iel)
-        
-        ! Save the start parameter value of the edge -- in length
-        ! parametrisation.
-        dpar1 = p_DvertexParameterValue(iedge)
-        
-        ! Save the end parameter value. Be careful: The last edge
-        ! must be treated differently!
-        if (iedge .ne. NELbdc) then
-          dpar2 = p_DvertexParameterValue(iedge+1)
-        else
-          dpar2 = boundary_dgetMaxParVal(rboundary,ibdc)
-        end if
-
-        ! Compute parameter positions
-        dpos1 = boundary_convertParameter(rboundary, &
-                ibdc, dpar1, rboundaryRegion%cparType, BDR_PAR_LENGTH)
-            
-        dpos2 = boundary_convertParameter(rboundary, &
-                ibdc, dpar2, rboundaryRegion%cparType, BDR_PAR_LENGTH)
-
-        ! Compute vertex positions
-        call boundary_getCoords(rboundary, ibdc, dpar1,&
-                                DevalData(1,1), DevalData(2,1))
-        call boundary_getCoords(rboundary, ibdc, 0.5*(dpar1+dpar2),&
-                                DevalData(1,2), DevalData(2,2))
-        call boundary_getCoords(rboundary, ibdc, dpar2,&
-                                DevalData(1,3), DevalData(2,3))
-        
-        ! Compute outward unit normal vector
-        call boundary_getNormalVec2D(rboundary, ibdc, 0.5*(dpar1+dpar2),&
-                                     Dnormal(1), Dnormal(2))
-
-        ! Compute entries of velocity field at cubature points
-        do ipoint = 1, 3
-          call fparser_evalFunction(rfparser, icompVelocity_X, DevalData(:,ipoint), DvelocityField(1,ipoint))
-          call fparser_evalFunction(rfparser, icompVelocity_Y, DevalData(:,ipoint), DvelocityField(2,ipoint))
-        end do
-        
-        ! Compute entries of target functional at cubature points
-        do ipoint = 1, 3
-          call fparser_evalFunction(rfparser, icompTargetFuncBdrInt, DevalData(:,ipoint), DtargetFunc(ipoint))
-        end do
-
-        ! Compute the boundary integral for the first FE-function
-        dvalue =   ( DtargetFunc(1) * sum(DvelocityField(:,1)*Dnormal) +&
-                   2*DtargetFunc(2) * sum(DvelocityField(:,2)*Dnormal) ) *&
-                   abs(dpos2-dpos1) / 6.0_DP
-
-!!!        dvalue = (DtargetFunc(1) + 2*DtargetFunc(2)) * abs(dpos2-dpos1) / 6.0_DP
-
-        p_Ddata(i1) = p_Ddata(i1) + dvalue
-
-        ! Compute the boundary integral for the first FE-function
-        dvalue =   ( DtargetFunc(3) * sum(DvelocityField(:,3)*Dnormal) +&
-                   2*DtargetFunc(2) * sum(DvelocityField(:,2)*Dnormal) ) *&
-                   abs(dpos2-dpos1) / 6.0_DP
-
-!!!        dvalue = (DtargetFunc(3) + 2*DtargetFunc(2)) * abs(dpos2-dpos1) / 6.0_DP
-
-        p_Ddata(i2) = p_Ddata(i2) + dvalue
-
-      end if
-    end do
-
-  end subroutine transp_integral2D_conf
-
   ! ***************************************************************************
 
 !<subroutine>
@@ -3054,7 +2693,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
-    integer :: ipoint, ielement, ndim, icomp
+    integer :: itermCount, ipoint, ielement, ndim, icomp
     
     
     ! This subroutine assumes that the first quick access string
@@ -3062,45 +2701,218 @@ contains
     p_rfparser => collct_getvalue_pars(rcollection,&
                                        trim(rcollection%SquickAccess(1)))
 
-    ! Moreover, this subroutine assumes tht the first quick access integer
-    ! value holds the number of the function to be evaluated
-    icomp = rcollection%IquickAccess(1)
-   
-    ! This subroutine also assumes that the first quick access double
-    ! value holds the simulation time
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
     dtime = rcollection%DquickAccess(1)
 
-    if (dtime < 0.0) then
-
-      ! Evaluate all coefficients using the function parser
-      do ielement = 1, nelements
-        call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,ielement),&
-                                  Dcoefficients(1,:,ielement))
-      end do
-
-    else
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
+    ! Loop over all components of the linear form
+    do itermCount = 1, ubound(Dcoefficients,1)
       
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
+      ! Moreover, this subroutine assumes the quick access integer
+      ! 'itermCount' holds the number of the function to be evaluated
+      icomp = rcollection%IquickAccess(itermCount)
       
-      do ielement = 1, nelements
-        do ipoint = 1, npointsPerElement
-          
-          ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
-          
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dcoefficients(1,ipoint,ielement))
+      if (dtime < 0.0) then
+        
+        ! Evaluate all coefficients using the function parser
+        do ielement = 1, nelements
+          call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,ielement),&
+                                    Dcoefficients(itermCount,:,ielement))
         end do
-      end do
-
-    end if
+        
+      else
+        
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do ielement = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
+                                      Dcoefficients(itermCount,ipoint,ielement))
+          end do
+        end do
+        
+      end if
+      
+    end do ! itermCount
     
   end subroutine transp_coeffVectorAnalytic
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine transp_coeffVectorBdr2DAnalytic(rdiscretisation, rform, nelements,&
+                                             npointsPerElement, Dpoints, ibct, DpointPar,&
+                                             IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fparser
+    use scalarpde
+    use triangulation
+    
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(IN) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(IN) :: DpointPar
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional :: rcollection
+!</inputoutput>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
+    integer :: itermCount, ipoint, ielement, ndim, icomp
+   
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+                                       trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
+    dtime = rcollection%DquickAccess(1)
+
+    ! Loop over all components of the linear form
+    do itermCount = 1, ubound(Dcoefficients,1)
+
+      where (DpointPar .gt. 1 .and.&
+             DpointPar .lt. 2)
+        Dcoefficients(1,:,:) = Dpoints(1,:,:)-1.0
+      elsewhere
+        Dcoefficients(1,:,:) = 0.0_DP
+      end where
+
+    end do
+
+    Dcoefficients=1
+
+!!$    ! local variables
+!!$    type(t_fparser), pointer :: p_rfparser
+!!$    real(DP), dimension(NDIM3D+1) :: Dvalue
+!!$    real(DP) :: dtime
+!!$    integer :: ipoint, ielement, ndim, icomp
+!!$    
+!!$    
+!!$    ! This subroutine assumes that the first quick access string
+!!$    ! value holds the name of the function parser in the collection.
+!!$    p_rfparser => collct_getvalue_pars(rcollection,&
+!!$                                       trim(rcollection%SquickAccess(1)))
+!!$
+!!$    ! Moreover, this subroutine assumes tht the first quick access integer
+!!$    ! value holds the number of the function to be evaluated
+!!$    icomp = rcollection%IquickAccess(1)
+!!$   
+!!$    ! This subroutine also assumes that the first quick access double
+!!$    ! value holds the simulation time
+!!$    dtime = rcollection%DquickAccess(1)
+!!$
+!!$    if (dtime < 0.0) then
+!!$
+!!$      ! Evaluate all coefficients using the function parser
+!!$      do ielement = 1, nelements
+!!$        call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,ielement),&
+!!$                                  Dcoefficients(1,:,ielement))
+!!$      end do
+!!$
+!!$    else
+!!$
+!!$      ! Initialize values
+!!$      Dvalue = 0.0_DP
+!!$      Dvalue(NDIM3D+1) = dtime
+!!$      
+!!$      ! Set number of spatial dimensions
+!!$      ndim = size(Dpoints, 1)
+!!$      
+!!$      do ielement = 1, nelements
+!!$        do ipoint = 1, npointsPerElement
+!!$          
+!!$          ! Set values for function parser
+!!$          Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
+!!$          
+!!$          ! Evaluate function parser
+!!$          call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dcoefficients(1,ipoint,ielement))
+!!$        end do
+!!$      end do
+!!$
+!!$    end if
+    
+  end subroutine transp_coeffVectorBdr2DAnalytic
   
   !*****************************************************************************
 
@@ -3205,7 +3017,7 @@ contains
       do ipoint = 1, npointsPerElement
         
         ! Set values for function parser
-        Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+        Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
         
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,ielement))
@@ -3311,7 +3123,7 @@ contains
       do ipoint = 1, npointsPerElement
         
         ! Set values for function parser
-        Dvalue(1:ndim)   = Dpoints(:, ipoint, ielement)
+        Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
         
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,ielement))
@@ -3415,8 +3227,10 @@ contains
     real(DP) :: dt,dminPar,dmaxPar,dnx,dny,dtime
     integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
 
-    ! Retrieve the function parser
-    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+                                       trim(rcollection%SquickAccess(1)))
         
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
@@ -3455,8 +3269,6 @@ contains
         call fparser_evalFunction(p_rfparser, icomp2, Dvalue, Dcoefficients(ipoint,iel,3))
       end do
     end do
-
-    Dcoefficients(:,:,1) = 1
 
     ! Get the minimum and maximum parameter value. The point with the minimal
     ! parameter value is the start point of the interval, the point with the
@@ -3615,19 +3427,21 @@ contains
     integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
 
 
-    ! Retrieve the function parser
-    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+                                       trim(rcollection%SquickAccess(1)))
 
-    ! Retrieve the primal solution vector
-    p_rsolution => collct_getvalue_vec(rcollection, 'rsolution')
-
-    ! Retrieve the velocity field
-    p_rvelocity => collct_getvalue_vec(rcollection, 'rvelocity')   
+    ! This subroutine assumes that the first quick access vector
+    ! points to the primal solution vector and the second quick access
+    ! vector points to the velocity vector
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+    p_rvelocity => rcollection%p_rvectorQuickAccess2
     
     ! Evaluate the FE function in the cubature points on the boundary
     call fevl_evaluate_sim1(DER_FUNC, Dvalues, p_rsolution%RvectorBlock(1),&
                             Dpoints, Ielements, DpointsRef)
-        
+
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
     
@@ -3840,7 +3654,7 @@ contains
       do ipoint = 1, ubound(Dpoints,2)
         
         ! Set values for function parser
-        Dvalue(1:ndim)   = Dpoints(:, ipoint, iel)
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))

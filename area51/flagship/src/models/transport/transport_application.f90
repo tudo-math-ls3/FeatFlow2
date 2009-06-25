@@ -1485,9 +1485,8 @@ contains
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the discretized right-hand side vector
-      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                  rform, .true., rvector%RvectorBlock(1),&
-                                  transp_coeffVectorAnalytic, rcollection)
+      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
+                                   transp_coeffVectorAnalytic, rcollection)
       
 
     case DEFAULT
@@ -1537,7 +1536,6 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
-    type(t_collection) :: rcollectionTmp
     character(LEN=SYS_STRLEN) :: stargetfuncname
     integer :: itargetfunctype
     integer :: icomp
@@ -1565,30 +1563,20 @@ contains
       ! Get the number of the component used for evaluating the target functional
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
 
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
-      
       ! Set up the corresponding linear form
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the discretized target functional
-      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                  rform, .true., rvector%RvectorBlock(1),&
-                                  transp_coeffVectorAnalytic, rcollectionTmp)
+      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
+                                   transp_coeffVectorAnalytic, rcollection)
 
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
 
-      
     case (TFUNC_SURFINTG)
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, ssectionName,&
@@ -1600,34 +1588,19 @@ contains
       ! Get the number of the component used for evaluating the target functional
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
       
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
-
       ! Set up the corresponding linear form
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the boundary part of the discretized target function
-      call linf_buildVectorScalarBdr2D(rvector%RvectorBlock(1)%p_rspatialDiscr%p_rboundary,&
-                                       rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                       rform, CUB_G3_1D, .true., rvector%RvectorBlock(1))
-
-
-!!$      call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-!!$                                       .true., rvector%RvectorBlock(1),&
-!!$                                       rcollection=rcollectionTmp)
-
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
-      
+      call linf_buildVectorScalarBdr2D(rform, CUB_G3_1D, .true., rvector%RvectorBlock(1),&
+                                       transp_coeffVectorBdr2DAnalytic,&
+                                       rcollection=rcollection)
       
     case (TFUNC_MIXINTG)
       ! Get function parser from collection structure
@@ -1639,25 +1612,18 @@ contains
                                   stargetfuncname, isubstring=1)
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
             
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = dtime
-      rcollectionTmp%IquickAccess(1) = icomp
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
 
       ! Set up the corresponding linear form
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
       ! Build the discretized target functional
-      call linf_buildVectorScalar(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                  rform, .true., rvector%RvectorBlock(1),&
-                                  transp_coeffVectorAnalytic, rcollectionTmp)
+      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
+                                   transp_coeffVectorAnalytic, rcollection)
       
       ! Get the number of the component used for evaluating the
       ! surface integral part of the target functional
@@ -1666,16 +1632,13 @@ contains
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%IquickAccess(1) = icomp
+      rcollection%IquickAccess(1) = icomp
       
-      ! Build the boundary part of the discretized target function
-      call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
-                                       .false., rvector%RvectorBlock(1),&
-                                       rcollection=rcollectionTmp)
+!!$      ! Build the boundary part of the discretized target function
+!!$      call transp_buildVectorScalarBdr(rvector%RvectorBlock(1)%p_rspatialDiscr,&
+!!$                                       .false., rvector%RvectorBlock(1),&
+!!$                                       rcollection=rcollection)
 
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
-      
       
     case DEFAULT
       call output_line('Invalid type of target functional!',&
@@ -1871,7 +1834,7 @@ contains
     type(t_timestep), intent(IN) :: rtimestep
 
     ! primal solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionPrimal
+    type(t_vectorBlock), intent(IN), target :: rsolutionPrimal
 
     ! dual solution vector
     type(t_vectorBlock), intent(IN) :: rsolutionDual
@@ -1914,7 +1877,6 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock) :: rvector
     type(t_matrixScalar) :: rmatrix
-    type(t_collection) :: rcollectionTmp
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
@@ -2029,33 +1991,24 @@ contains
       call parlst_getvalue_string(rparlist, ssectionName,&
                                   'sexacttargetfuncname', sexactsolutionName, isubstring = 2)
       
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-      
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
       
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
-
       ! Compute the exact error of the quantity of interest
       call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
                         rsolutionPrimal%RvectorBlock(1),&
-                        transp_refFuncAnalytic, rcollectionTmp,&
+                        transp_refFuncAnalytic, rcollection,&
                         ffunctionWeight=transp_weightFuncAnalytic)
       
       ! Compute the exact value of the quantity of interest.
       call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
                         ffunctionReference=transp_refFuncAnalytic,&
-                        rcollection=rcollectionTmp,&
+                        rcollection=rcollection,&
                         rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                         ffunctionWeight=transp_weightFuncAnalytic)
-
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2080,44 +2033,36 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName,&
                                'velocityfield', velocityfield)
       
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-      
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
 
       do i = 1, rproblemLevel%rtriangulation%ndim
         call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
                                     svelocityname, isubString=i)
-        rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+        rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
       end do
 
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolution', rsolutionPrimal, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rvelocity',&
-                               rproblemLevel%RvectorBlock(velocityfield), .true.)
+      ! Attach vectors to collection structure
+      rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
+      rcollection%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
 
       ! Compute the exact error of the quantity of interest
       call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
                                   ffunctionReference=transp_errorBdrInt2D,&
-                                  rcollection=rcollectionTmp,&
+                                  rcollection=rcollection,&
                                   rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                                   ffunctionWeight=transp_weightFuncBdrInt2D)
 
       ! Compute the exact value of the quantity of interest
       call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetFunc,&
                                   ffunctionReference=transp_refFuncBdrInt2D,&
-                                  rcollection=rcollectionTmp,&
+                                  rcollection=rcollection,&
                                   rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                                   ffunctionWeight=transp_weightFuncBdrInt2D)
-
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
-
+      
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
@@ -2141,37 +2086,32 @@ contains
       call parlst_getvalue_int(rparlist, ssectionName,&
                                'velocityfield', velocityfield)
 
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-      rcollectionTmp%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, sexactsolutionName)
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
       
       do i = 1, rproblemLevel%rtriangulation%ndim
         call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
                                     svelocityname, isubString=i)
-        rcollectionTmp%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
+        rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
       end do
 
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rsolution', rsolutionPrimal, .true.)
-      call collct_setvalue_vec(rcollectionTmp, 'rvelocity',&
-                               rproblemLevel%RvectorBlock(velocityfield), .true.)
+      ! Attach vectors to collection structure
+      rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
+      rcollection%p_rvectorQuickAccess2 => rproblemLevel%RvectorBlock(velocityfield)
 
       ! Compute the exact error of the quantity of interest
       call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
                         rsolutionPrimal%RvectorBlock(1),&
-                        transp_refFuncAnalytic, rcollectionTmp,&
+                        transp_refFuncAnalytic, rcollection,&
                         ffunctionWeight=transp_weightFuncAnalytic)
       
       ! Compute the exact error of the quantity of interest
       call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
                                   ffunctionReference=transp_errorBdrInt2D,&
-                                  rcollection=rcollectionTmp,&
+                                  rcollection=rcollection,&
                                   rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                                   ffunctionWeight=transp_weightFuncBdrInt2D)
 
@@ -2182,23 +2122,20 @@ contains
       ! Compute the exact value of the quantity of interest.
       call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
                         ffunctionReference=transp_refFuncAnalytic,&
-                        rcollection=rcollectionTmp,&
+                        rcollection=rcollection,&
                         rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                         ffunctionWeight=transp_weightFuncAnalytic)
       
       ! Compute the exact value of the quantity of interest
       call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
                                   ffunctionReference=transp_refFuncBdrInt2D,&
-                                  rcollection=rcollectionTmp,&
+                                  rcollection=rcollection,&
                                   rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
                                   ffunctionWeight=transp_weightFuncBdrInt2D)
 
       ! Add boundary contribution
       dexactTargetFunc = dexactTargetFunc + daux
       
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
-
       call output_lbrk()
       call output_line('Error Analysis')
       call output_line('--------------')
@@ -2227,31 +2164,22 @@ contains
       call fparser_evalFunction(p_rfparser, icomp,&
                                 (/rtimestep%dTime/), dexactTargetFunc)
 
-      ! Create temporal collection structure
-      call collct_init(rcollectionTmp)
-
       ! Prepare quick access arrays of the collection
-      rcollectionTmp%DquickAccess(1) = rtimestep%dTime
-      rcollectionTmp%IquickAccess(1) = 0
-      rcollectionTmp%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
-      rcollectionTmp%SquickAccess(1) = 'rfparser'
-
-      ! Attach data to temporal collection structure
-      call collct_setvalue_pars(rcollectionTmp, 'rfparser', p_rfparser, .true.)
+      rcollection%DquickAccess(1) = rtimestep%dTime
+      rcollection%IquickAccess(1) = 0
+      rcollection%IquickAccess(2) = fparser_getFunctionNumber(p_rfparser, sweightingfuncName)
+      rcollection%SquickAccess(1) = 'rfparser'
 
       ! Compute the approximate target functional
       call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
                         rsolutionPrimal%RvectorBlock(1),&
-                        rcollection=rcollectionTmp,&
+                        rcollection=rcollection,&
                         ffunctionWeight=transp_weightFuncAnalytic)
 
       ! Compute exact error in target functional. Note that the
       ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
       ! have to change the sign to minus
       dexactTargetError = dexactTargetFunc+dtargetFunc
-
-      ! Release temporal collection structure
-      call collct_done(rcollectionTmp)
 
       call output_lbrk()
       call output_line('Error Analysis')
@@ -2272,7 +2200,6 @@ contains
       call output_lbrk()
     end select
 
-    stop
 
     !---------------------------------------------------------------------------
     ! Apply the adaptation strategy
