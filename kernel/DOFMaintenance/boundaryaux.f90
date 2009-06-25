@@ -13,6 +13,12 @@
 !#
 !# 2.) bdraux_getElementsAtRegion
 !#     -> Calculates the list of elements at a boundary region.
+!#
+!# 3.) bdraux_getNELAtBoundary
+!#     -> Calculates the number of element at the boundary
+!#
+!# 4.) bdraux_getNELAtRegion
+!#     -> Calculates the number of element at a boundary region.
 !# </purpose>
 !##############################################################################
 module boundaryaux
@@ -28,7 +34,10 @@ module boundaryaux
 
   private
 
+  public :: bdraux_getElementsAtBoundary
   public :: bdraux_getElementsAtRegion
+  public :: bdraux_getNELAtBoundary
+  public :: bdraux_getNELAtRegion
   
 contains
 
@@ -36,8 +45,8 @@ contains
 
 !<subroutine>
 
-  subroutine bdraux_getElementsAtBoundary(rdiscretisation,&
-      NELbdc, IelementList, IelementOrientation, DedgePosition, celement)
+  subroutine bdraux_getElementsAtBoundary(rdiscretisation, NELbdc,&
+      IelementList, IelementOrientation, DedgePosition, celement)
 
 !<description>
     ! This subroutine calculates the list of elements which are
@@ -48,6 +57,10 @@ contains
 !<input>
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+    
+    ! OPTIOANL: Element type to be considered. If not present, then
+    ! all elements adjacent to the boundary are inserted into the list
+    integer(I32), intent(IN), optional :: celement
 !</input>
 
 !<output>
@@ -59,10 +72,6 @@ contains
 
     ! The orientation of elements adjacent to the boundary region
     integer, dimension(:), intent(OUT) :: IelementOrientation
-
-    ! OPTIOANL: Element type to be considered. If not present, then
-    ! all elements adjacent to the boundary are inserted into the list
-    integer(I32), intent(IN), optional :: celement
 
     ! OPTIONAL: The start- and end-parameter values of the edges on
     ! the boundary region
@@ -125,6 +134,10 @@ contains
 
     ! A discretisation structure
     type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+
+    ! OPTIOANL: Element type to be considered. If not present, then
+    ! all elements adjacent to the boundary are inserted into the list
+    integer(I32), intent(IN), optional :: celement
 !</input>
 
 !<output>
@@ -136,10 +149,6 @@ contains
 
     ! The orientation of elements adjacent to the boundary region
     integer, dimension(:), intent(OUT) :: IelementOrientation
-
-    ! OPTIOANL: Element type to be considered. If not present, then
-    ! all elements adjacent to the boundary are inserted into the list
-    integer(I32), intent(IN), optional :: celement
 
     ! OPTIONAL: The start- and end-parameter values of the edges on
     ! the boundary region
@@ -262,5 +271,97 @@ contains
     end do
     
   end subroutine bdraux_getElementsAtRegion
+
+  !****************************************************************************
+
+!<function>
+
+  function bdraux_getNELAtBoundary(rdiscretisation) result (NELbdc)
+
+!<description>
+    ! This function calculates the number of elements which are
+    ! adjacent to the boundary.
+!</description>
+
+!<input>
+    ! A discretisation structure
+    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+!</input>
+
+!<result>
+    ! The number of elements at the boundary region
+    integer :: NELbdc
+!</result>
+!</function>
+
+    ! local variables
+    type(t_boundary), pointer :: p_rboundary
+    type(t_boundaryRegion) :: rboundaryRegion
+    integer :: ibdc
+
+    ! The discretisation must provide a boundary structure
+    if (associated(rdiscretisation%p_rboundary)) then
+      p_rboundary => rdiscretisation%p_rboundary
+    else
+      call output_line('Discretisation does not provide boundary structure!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'bdraux_getNELAtBoundary')
+      call sys_halt()
+    end if
+    
+    NELbdc = 0
+    ! Create a boundary region for each boundary component and call
+    ! the calculation routine for that.
+    do ibdc = 1,boundary_igetNBoundComp(p_rboundary)
+      call boundary_createRegion (p_rboundary, ibdc, 0, rboundaryRegion)
+      NELbdc = NELbdc+&
+          bdraux_getNELAtRegion(rboundaryRegion, rdiscretisation)
+    end do
+    
+  end function bdraux_getNELAtBoundary
+
+  !****************************************************************************
+
+!<function>
+
+  function bdraux_getNELAtRegion(rboundaryRegion, rdiscretisation) result(NELbdc)
+
+!<description>
+    ! This function calculates the number of elements which are
+    ! adjacent to the boundary region.
+!</description>
+
+!<input>
+    ! A t_boundaryRegion specifying the boundary region where
+    ! to calculate. 
+    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+
+    ! A discretisation structure
+    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+!</input>
+
+!<result>
+    ! The number of elements at the boundary region
+    integer :: NELbdc
+!</result>
+!</function>
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer :: ibdc
+
+    ! Get some pointers and arrays for quicker access
+    p_rtriangulation => rdiscretisation%p_rtriangulation
+    
+    call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    
+    ! Boundary component?
+    ibdc = rboundaryRegion%iboundCompIdx
+
+    ! Number of elements on that boundary component?
+    NELbdc = p_IboundaryCpIdx(ibdc+1)-p_IboundaryCpIdx(ibdc)
+    
+  end function bdraux_getNELAtRegion
 
 end module boundaryaux
