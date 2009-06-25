@@ -30,6 +30,15 @@
 !# 5.) nsets_DASetContains
 !#     -> Checks if a number is in a direct-access set for integer numbers.
 !# 
+!# 6.) nsets_clearDASet
+!#     -> Removes all elements from a direct-access set for integer numbers.
+!#
+!# 7.) nsets_invertDASet
+!#     -> Inverts a direct-access set for integer numbers.
+!#
+!# 8.) nsets_addAllDASet
+!#     -> Adds all possible elements to a direct-access set for integer 
+!#        numbers.
 !# </purpose>
 !##############################################################################
 
@@ -77,6 +86,9 @@ module numbersets
   public :: nsets_addToDASet
   public :: nsets_removeFromDASet
   public :: nsets_DASetContains
+  public :: nsets_clearDASet
+  public :: nsets_invertDASet
+  public :: nsets_addAllDASet
 
 contains
 
@@ -194,7 +206,7 @@ contains
   
   !****************************************************************************
 
-!<subroutine>
+!<function>
   integer function nsets_DASetContains (rset,ielement)
 !<description>
   ! Determines if a set contains the element ielement
@@ -214,12 +226,78 @@ contains
   ! 1, if the element is in the set, 0 otherwise.
 !</returns>
 
-!</subroutine>
+!</function>
 
     nsets_DASetContains = ibits(&
         rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)),&
         iand(ielement,rset%ibitmask)-1,1)
   
   end function
+
+  !****************************************************************************
+
+!<subroutine>
+  subroutine nsets_clearDASet (rset)
+!<description>
+  ! Removes all elements from a direct-access set.
+!</description>
+
+!<inputoutput>
+  ! The set to modify.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    call storage_clear(rset%ihandle)
   
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+  subroutine nsets_invertDASet (rset)
+!<description>
+  ! Inverts a direct-access set. All elements in the set are removed,
+  ! all elements not in the set are added.
+!</description>
+
+!<inputoutput>
+  ! The set to modify.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    
+    do i=1,size(rset%p_Idata)
+      rset%p_Idata(i) = NOT(rset%p_Idata(i))
+    end do
+  
+  end subroutine
+  
+  !****************************************************************************
+
+!<subroutine>
+  subroutine nsets_addAllDASet (rset)
+!<description>
+  ! Adds all possible elements to a a direct-access set.
+!</description>
+
+!<inputoutput>
+  ! The set to modify.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    
+    do i=1,size(rset%p_Idata)
+      rset%p_Idata(i) = NOT(0)
+    end do
+  
+  end subroutine
+
 end module
