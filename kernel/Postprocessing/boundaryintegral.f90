@@ -80,7 +80,7 @@ contains
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_functionScBoundary2D.inc'
+  include 'intf_functionScBdr2D.inc'
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
@@ -169,7 +169,7 @@ contains
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
   ! If not specified, the reference function is assumed to be zero!
-  include 'intf_functionScBoundary2D.inc'
+  include 'intf_functionScBdr2D.inc'
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
