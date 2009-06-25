@@ -159,7 +159,7 @@ contains
   ! with $Phi_i$ being the test functions defined in the discretisation
   ! structure.
   ! In case the array for the vector entries does not exist, the routine
-  ! allocates memory in size of the matrix of the heap for the matrix entries
+  ! allocates memory in size of the vector of the heap for the vector entries
   ! and initialises all necessary variables of the vector according to the
   ! parameters (NEQ, pointer to the discretisation,...)
   !
@@ -174,8 +174,8 @@ contains
   ! The linear form specifying the underlying PDE of the discretisation.
   type(t_linearForm), intent(IN) :: rform
   
-  ! Whether to clear the matrix before calculating the entries.
-  ! If .FALSE., the new matrix entries are added to the existing entries.
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new vector entries are added to the existing entries.
   logical, intent(IN) :: bclear
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
@@ -190,7 +190,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The FE vector. Calculated matrix entries are added to this vector.
+  ! The FE vector. Calculated vector entries are added to this vector.
   type(t_vectorScalar), intent(INOUT) :: rvectorScalar
 !</inputoutput>
 
@@ -293,7 +293,7 @@ contains
   
   if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
   
-    ! Get the size of the vector and put it to the matrix structure.
+    ! Get the size of the vector and put it to the vector structure.
     NEQ = dof_igetNDofGlob(rdiscretisation)
     
     ! Initialise the vector parameters
@@ -440,7 +440,7 @@ contains
       
       ! Ok, we found the positions of the local vector entries
       ! that we have to change.
-      ! To calculate the matrix contributions, we have to evaluate
+      ! To calculate the vector contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
       ! in all the DOF's in all the elements in our set.
 
@@ -747,7 +747,7 @@ contains
   ! with $Phi_i$ being the test functions defined in the discretisation
   ! structure.
   ! In case the array for the vector entries does not exist, the routine
-  ! allocates memory in size of the matrix of the heap for the matrix entries
+  ! allocates memory in size of the vector of the heap for the vector entries
   ! and initialises all necessary variables of the vector according to the
   ! parameters (NEQ, pointer to the discretisation,...)
   !
@@ -769,8 +769,8 @@ contains
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
   integer(I32), intent(IN) :: ccubType
 
-  ! Whether to clear the matrix before calculating the entries.
-  ! If .FALSE., the new matrix entries are added to the existing entries.
+  ! Whether to clear the vector before calculating the entries.
+  ! If .FALSE., the new vector entries are added to the existing entries.
   logical, intent(IN) :: bclear
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
@@ -785,7 +785,7 @@ contains
 !</input>
 
 !<inputoutput>
-  ! The FE vector. Calculated matrix entries are added to this vector.
+  ! The FE vector. Calculated vector entries are added to this vector.
   type(t_vectorScalar), intent(INOUT) :: rvectorScalar
 !</inputoutput>
 
@@ -895,7 +895,7 @@ contains
 
   if (rvectorScalar%h_Ddata .eq. ST_NOHANDLE) then
   
-    ! Get the size of the vector and put it to the matrix structure.
+    ! Get the size of the vector and put it to the vector structure.
     NEQ = dof_igetNDofGlob(rdiscretisation)
     
     ! Initialise the vector parameters
@@ -1110,14 +1110,14 @@ contains
     ! Calculate the global DOF's into IdofsTest.
     !
     ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-    ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+    ! global DOF's of our NEL elements simultaneously.
     call dof_locGlobMapping_mult(rdiscretisation, Ielements, IdofsTest)
     
     ! -------------------- ELEMENT EVALUATION PHASE ----------------------
     
     ! Ok, we found the positions of the local vector entries
     ! that we have to change.
-    ! To calculate the matrix contributions, we have to evaluate
+    ! To calculate the vector contributions, we have to evaluate
     ! the elements to give us the values of the basis functions
     ! in all the DOF's in all the elements in our set.
 
@@ -1262,7 +1262,8 @@ contains
 
   else
 
-    print *, "NOT YET"
+    ! For nonuniform case
+    print *, "NOT IMPLEMENTED YET"
     stop
 
   end if
