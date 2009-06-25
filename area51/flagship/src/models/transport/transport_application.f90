@@ -691,6 +691,7 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
     
+    type(t_bilinearform) :: rform
     
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -910,7 +911,29 @@ contains
                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       end if
       call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                      DER_FUNC, DER_FUNC) 
+                                      DER_FUNC, DER_FUNC)
+      
+
+      
+
+      ! Initialize the bilinear form
+      rform%itermCount = 1
+      rform%Dcoefficients     = 1.0_DP
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff    = .true.
+      rform%Idescriptors(1,1) = DER_FUNC
+      rform%Idescriptors(2,1) = DER_FUNC
+      
+      print *, "AND NOW..."
+      call bilf_buildMatrixScalar2(rform, .true.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix))
+      print *, "...GO..."
+      call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D, .false.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix),&
+          transp_coeffMatrixBdr2DAnalytic, rcollection=rcollection)
+      print *, "DONE"
+      stop
+
       if (lumpedMassMatrix > 0) then
         call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                     rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -1133,7 +1156,6 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = rform%Dcoefficients
         
         ! Initialize the bilinear form
         rform%itermCount = 4
@@ -1205,7 +1227,6 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
-        rform%Dcoefficients     = rform%Dcoefficients
         
         ! Initialize the bilinear form
         rform%itermCount = 9

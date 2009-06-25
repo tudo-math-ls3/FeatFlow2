@@ -44,7 +44,7 @@ algorithm = stationary_primaldual
 # 0 = no mass matrix
 # 1 = consistent mass matrix
 # 2 = lumped mass matrix
-imasstype = 0
+imasstype = 1
 
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
