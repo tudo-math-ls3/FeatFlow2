@@ -5,7 +5,12 @@
 !#
 !# <purpose>
 !# This module contains the basic routines and provides all global vairables
-!# which are required to solve a conservation law for a scalar variable
+!# which are required to solve a conservation law for a scalar variable.
+!#
+!# The following routines are available:
+!#
+!# 1.) transp_hasVelocityVector
+!#     -> Checks if the velocity vector is given as explicit vector
 !#
 !# </purpose>
 !##############################################################################
@@ -19,6 +24,8 @@ module transport_basic
   implicit none
 
   private 
+
+  public :: transp_hasVelocityVector
 
 !<constants>
 
@@ -188,5 +195,40 @@ module transport_basic
 !</constantblock>
   
 !</constants>
+
+contains
+
+  !*****************************************************************************
+
+!<function>
+
+  pure function transp_hasVelocityVector(ivelocityType) result(bvector)
+
+!<description>
+    ! This function returns .true. if the velocity vector is given explicitly.
+    ! If there is no velocity vector, then it returns .false. 
+!</description>
+
+!<input>
+    ! Type of velocity
+    integer, intent(in) :: ivelocityType
+!</input>
+
+!<result>
+    ! .true. if the velocity is given as explicit vector
+    logical :: bvector
+!</result>
+!</function>
+
+    select case(ivelocityType)
+
+    case(VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
+      bvector = .true.
+
+    case default
+      bvector = .false.
+    end select
+
+  end function transp_hasVelocityVector
 
 end module transport_basic
