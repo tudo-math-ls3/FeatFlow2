@@ -73,6 +73,12 @@
 !#         the boundary integral of the target functional for
 !#         goal-oriented error estimation
 !#
+!#
+!# Frequently asked questions?
+!#
+!# 1.) What is the magic behind subroutine  'transp_nlsolverCallback'?
+!#
+!#     
 !# </purpose>
 !##############################################################################
 
@@ -80,8 +86,10 @@ module transport_callback
 
   use afcstabilisation
   use basicgeometry
+  use bilinearformevaluation
   use boundaryfilter
   use collection
+  use cubature
   use derivatives
   use dofmapping
   use flagship_basic
@@ -94,11 +102,13 @@ module transport_callback
   use linearsystemscalar
   use paramlist
   use problem
+  use scalarpde
   use solveraux
   use spatialdiscretisation
   use statistics
   use storage
   use timestepaux
+
   use transport_basic
   use transport_callback1d
   use transport_callback2d
@@ -132,10 +142,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                     rsolution, rsolutionInitial,&
-                                     rrhs, rres, istep, ioperationSpec,&
-                                     rcollection, istatus, rb)
+  subroutine transp_nlsolverCallback(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolutionInitial, rrhs, rres, istep,&
+      ioperationSpec, rcollection, istatus, rb)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is responsible
@@ -196,8 +205,8 @@ contains
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)      .ne. 0) .or.&
         (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
      
-      call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
-                                     rsolution, rcollection)
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
     end if
 
     
@@ -206,8 +215,7 @@ contains
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
       call transp_calcRhs(rproblemLevel, rtimestep, rsolver,&
-                          rsolution, rsolutionInitial,&
-                          rrhs, istep, rcollection)
+          rsolution, rsolutionInitial, rrhs, istep, rcollection)
     end if
           
     
@@ -216,9 +224,9 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                               rsolution, rsolutionInitial,&
-                               rrhs, rres, istep, rcollection, rb)
-     end if
+          rsolution, rsolutionInitial, rrhs, rres, istep,&
+          rcollection, rb)
+    end if
     
     
     ! Do we have to calculate the Jacobian operator?
@@ -226,7 +234,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
       
       call transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
-                               rsolution, rsolutionInitial, rcollection)
+          rsolution, rsolutionInitial, rcollection)
     end if
     
     
@@ -235,7 +243,7 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
       call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                              rsolution, rsolutionInitial, rres, rcollection)
+          rsolution, rsolutionInitial, rres, rcollection)
     end if
     
 
@@ -244,11 +252,13 @@ contains
     if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
 
       p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'jacobianMatrix', jacobianMatrix)
+
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
+
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
-                               rsolution%RvectorBlock(1),&
-                               rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
+          rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
+          1.0_DP)
     end if
     
     
@@ -261,8 +271,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
-                                       rsolution, rcollection)
+  subroutine transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rcollection)
 
 !<description>
     ! This subroutine calculates the nonlinear preconditioner and
@@ -300,6 +310,9 @@ contains
     integer :: imasstype, ivelocitytype, idiffusiontype
     integer :: convectionAFC, diffusionAFC, velocityfield
 
+    !@DEBUG
+    type(t_bilinearForm) :: rform
+    !@DEBUG
     
     ! Check if the preconditioner has to be updated and return otherwise.
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
@@ -416,7 +429,7 @@ contains
     if (convectionAFC > 0) then
 
       ! Check if stabilization should be applied
-      bStabilize = AFCSTAB_GALERKIN .ne. &
+      bStabilize = AFCSTAB_GALERKIN .ne.&
                    rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
       ! Check if stabilization structure should be built
@@ -451,6 +464,31 @@ contains
                                  'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
+        ! @DEBUG Evaluate boundary integrals
+
+        ! Attach velocity vectors to collection structure
+        rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+
+        ! We have no constant coefficients
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff    = .false.
+
+        ! Initialize the bilinear form
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        ! Assemble the bilinear form for the boundary integral
+        call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix),&
+            transp_coeffMatrixBdr2DAnalytic,&
+            rcollection=rcollection)
+
+        ! Perform lumping
+        call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(transportMatrix),&
+            LSYSSC_LUMP_DIAG, .false.)
+        ! @DEBUG
+
         if (bbuildAFC) then
           
           select case(rproblemLevel%rtriangulation%ndim)
@@ -828,7 +866,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
-                                 rsolution, rsolutionInitial, rcollection)
+      rsolution, rsolutionInitial, rcollection)
 
 !<description>
     ! This callback subroutine computes the Jacobian matrix.
@@ -1546,8 +1584,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-                            rsolution, rsolutionInitial,&
-                            rrhs, istep, rcollection)
+      rsolution, rsolutionInitial, rrhs, istep, rcollection)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -1690,8 +1727,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                                 rsolution, rsolutionInitial, rrhs, rres,&
-                                 ite, rcollection, rb)
+      rsolution, rsolutionInitial, rrhs, rres, ite, rcollection, rb)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
@@ -2040,7 +2076,7 @@ contains
 !<subroutine>
 
   subroutine transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-                                rsolution, rsolutionInitial, rres, rcollection)
+      rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
     ! This subroutine imposes the nonlinear boundary conditions.
@@ -2083,7 +2119,7 @@ contains
     
     select case(rsolver%iprecond)
     case (NLSOL_PRECOND_BLOCKD,&
-          NLSOL_PRECOND_DEFCOR, &
+          NLSOL_PRECOND_DEFCOR,&
           NLSOL_PRECOND_NEWTON_FAILED)
 
       call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
@@ -2116,8 +2152,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcVelocityField(rparlist, ssectionName, rproblemLevel,&
-                                      dtime, rcollection, nlminOpt)
+  subroutine transp_calcVelocityField(rparlist, ssectionName,&
+      rproblemLevel, dtime, rcollection, nlminOpt)
 
 !<description>
     ! This subroutine calculates the velocity fields from the function
@@ -2287,7 +2323,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinearizedFCT(rbdrCond, rproblemLevel, rtimestep, rsolution, rcollection)
+  subroutine transp_calcLinearizedFCT(rbdrCond, rproblemLevel,&
+      rtimestep, rsolution, rcollection)
 
 !<description>
     ! This subroutine calculates the linearized FCT correction
@@ -2367,7 +2404,7 @@ contains
     call lsyssc_getbase_double(rflux0, p_flux0)
 
     ! Build the flux
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ, nedge, p_u, &
+    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ, nedge, p_u,&
                      rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
@@ -2390,7 +2427,7 @@ contains
     !***************************************************************************
 
     subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
-                           dscale, MC, ML, Cx, Cy, troc, flux0, flux)
+        dscale, MC, ML, Cx, Cy, troc, flux0, flux)
 
       real(DP), dimension(:), intent(IN) :: MC,ML,Cx,Cy,u
       real(DP), intent(IN) :: dscale
@@ -2491,8 +2528,8 @@ contains
 
     !***************************************************************************
     
-    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
-                               ML, flux, flux0, data, u)
+    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
+        NEDGE, ML, flux, flux0, data, u)
 
       
       real(DP), dimension(:), intent(IN) :: ML,flux0
@@ -2623,9 +2660,10 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVectorAnalytic(rdiscretisation, rform, nelements,&
-                                        npointsPerElement, Dpoints, IdofsTest,&
-                                        rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine transp_coeffVectorAnalytic(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
     use basicgeometry
     use collection
     use domainintegration
@@ -2698,7 +2736,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dtime
-    integer :: itermCount, ipoint, ielement, ndim, icomp
+    integer :: itermCount, ipoint, iel, ndim, icomp
     
     
     ! This subroutine assumes that the first quick access string
@@ -2720,9 +2758,9 @@ contains
       if (dtime < 0.0) then
         
         ! Evaluate all coefficients using the function parser
-        do ielement = 1, nelements
-          call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,ielement),&
-                                    Dcoefficients(itermCount,:,ielement))
+        do iel = 1, nelements
+          call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,iel),&
+                                    Dcoefficients(itermCount,:,iel))
         end do
         
       else
@@ -2734,15 +2772,15 @@ contains
         ! Set number of spatial dimensions
         ndim = size(Dpoints, 1)
         
-        do ielement = 1, nelements
+        do iel = 1, nelements
           do ipoint = 1, npointsPerElement
             
             ! Set values for function parser
-            Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
             
             ! Evaluate function parser
             call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
-                                      Dcoefficients(itermCount,ipoint,ielement))
+                                      Dcoefficients(itermCount,ipoint,iel))
           end do
         end do
         
@@ -2756,14 +2794,18 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVectorBdr2DAnalytic(rdiscretisation, rform, nelements,&
-                                             npointsPerElement, Dpoints, ibct, DpointPar,&
-                                             IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+  subroutine transp_coeffVectorBdr2DAnalytic(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
     use basicgeometry
+    use boundary
     use collection
     use domainintegration
+    use feevaluation
     use fparser
     use scalarpde
+    use spatialdiscretisation
     use triangulation
     
 !<description>
@@ -2839,84 +2881,117 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime
-    integer :: itermCount, ipoint, ielement, ndim, icomp
-   
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
     
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
                                        trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
 
-    ! This subroutine assumes that the first quick access double value
-    ! holds the simulation time
+    ! This subroutine assumes that the first quick access integer
+    ! value holds the Dirichlet value at the boundary
+    icomp  = rcollection%IquickAccess(1)
+    
+    ! This subroutine also assumes that the first quick access double
+    ! value holds the simulation time
     dtime = rcollection%DquickAccess(1)
 
-    ! Loop over all components of the linear form
-    do itermCount = 1, ubound(Dcoefficients,1)
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
-      where (DpointPar .gt. 1 .and.&
-             DpointPar .lt. 2)
-        Dcoefficients(1,:,:) = Dpoints(1,:,:)-1.0
-      elsewhere
-        Dcoefficients(1,:,:) = 0.0_DP
-      end where
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Initialize values
+    Dvalue = 0.0_DP
+    Dvalue(NDIM3D+1) = dtime
+
+    ! Set number of spatial dimensions
+    ndim = size(Dpoints, 1)
+
+    ! Evaluate the function parser for the Dirichlet values in the
+    ! cubature points on the boundary and store the result in
+    ! Dcoefficients(:,:,3).
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        
+        ! Set values for function parser
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,NDIM2D+1))
+      end do
+    end do
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+    
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        if (dnv .lt. -SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = -dnv * Daux(ipoint,iel,3)
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
     end do
 
-    Dcoefficients=1
-
-!!$    ! local variables
-!!$    type(t_fparser), pointer :: p_rfparser
-!!$    real(DP), dimension(NDIM3D+1) :: Dvalue
-!!$    real(DP) :: dtime
-!!$    integer :: ipoint, ielement, ndim, icomp
-!!$    
-!!$    
-!!$    ! This subroutine assumes that the first quick access string
-!!$    ! value holds the name of the function parser in the collection.
-!!$    p_rfparser => collct_getvalue_pars(rcollection,&
-!!$                                       trim(rcollection%SquickAccess(1)))
-!!$
-!!$    ! Moreover, this subroutine assumes tht the first quick access integer
-!!$    ! value holds the number of the function to be evaluated
-!!$    icomp = rcollection%IquickAccess(1)
-!!$   
-!!$    ! This subroutine also assumes that the first quick access double
-!!$    ! value holds the simulation time
-!!$    dtime = rcollection%DquickAccess(1)
-!!$
-!!$    if (dtime < 0.0) then
-!!$
-!!$      ! Evaluate all coefficients using the function parser
-!!$      do ielement = 1, nelements
-!!$        call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:,ielement),&
-!!$                                  Dcoefficients(1,:,ielement))
-!!$      end do
-!!$
-!!$    else
-!!$
-!!$      ! Initialize values
-!!$      Dvalue = 0.0_DP
-!!$      Dvalue(NDIM3D+1) = dtime
-!!$      
-!!$      ! Set number of spatial dimensions
-!!$      ndim = size(Dpoints, 1)
-!!$      
-!!$      do ielement = 1, nelements
-!!$        do ipoint = 1, npointsPerElement
-!!$          
-!!$          ! Set values for function parser
-!!$          Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
-!!$          
-!!$          ! Evaluate function parser
-!!$          call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dcoefficients(1,ipoint,ielement))
-!!$        end do
-!!$      end do
-!!$
-!!$    end if
-    
   end subroutine transp_coeffVectorBdr2DAnalytic
 
   !*****************************************************************************
@@ -2928,13 +3003,15 @@ contains
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
     
-    use fsystem
     use basicgeometry
-    use triangulation
-    use scalarpde
-    use domainintegration
-    use spatialdiscretisation
+    use boundary
     use collection
+    use domainintegration
+    use feevaluation
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
     
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -3011,8 +3088,82 @@ contains
     
 !</subroutine>
   
-    print *, "STOP"
-    stop
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        if (dnv .lt. -SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = dnv
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
+    end do
 
   end subroutine transp_coeffMatrixBdr2DAnalytic
 
@@ -3020,9 +3171,10 @@ contains
 
 !<subroutine>
 
-  subroutine transp_refFuncAnalytic(cderivative, rdiscretisation, nelements,&
-                                    npointsPerElement, Dpoints, IdofsTest,&
-                                    rdomainIntSubset, Dvalues, rcollection)   
+  subroutine transp_refFuncAnalytic(cderivative, rdiscretisation,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dvalues, rcollection)
+
     use basicgeometry
     use collection
     use domainintegration
@@ -3093,7 +3245,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: ipoint, ielement, ndim, icomp
+    integer :: ipoint, iel, ndim, icomp
 
 
     ! Initialize values
@@ -3115,14 +3267,14 @@ contains
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)
 
-    do ielement = 1, nelements
+    do iel = 1, nelements
       do ipoint = 1, npointsPerElement
         
         ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,ielement))
+        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))
       end do
     end do
     
@@ -3133,8 +3285,9 @@ contains
 !<subroutine>
 
   subroutine transp_weightFuncAnalytic(rdiscretisation, nelements,&
-                                       npointsPerElement, Dpoints, IdofsTest,&
-                                       rdomainIntSubset, Dvalues, rcollection)   
+      npointsPerElement, Dpoints, IdofsTest, rdomainIntSubset,&
+      Dvalues, rcollection)
+
     use basicgeometry
     use collection
     use domainintegration
@@ -3199,7 +3352,7 @@ contains
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    integer :: ipoint, ielement, ndim, icomp
+    integer :: ipoint, iel, ndim, icomp
 
 
     ! Initialize values
@@ -3221,14 +3374,14 @@ contains
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)
 
-    do ielement = 1, nelements
+    do iel = 1, nelements
       do ipoint = 1, npointsPerElement
         
         ! Set values for function parser
-        Dvalue(1:ndim) = Dpoints(:, ipoint, ielement)
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,ielement))
+        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))
       end do
     end do
     
@@ -3238,9 +3391,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_refFuncBdrInt2D(cderivative, rdiscretisation, &
-                                    DpointsRef, Dpoints, ibct, DpointPar,&
-                                    Ielements, Dvalues, rcollection)
+  subroutine transp_refFuncBdrInt2D(cderivative, rdiscretisation,&
+      DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
+      rcollection)
 
     use basicgeometry
     use boundary
@@ -3320,7 +3473,6 @@ contains
 !</output>
     
 !</subroutine>
-
     
     ! local variables
     type(t_fparser), pointer :: p_rfparser
@@ -3329,13 +3481,11 @@ contains
     real(DP) :: dt,dminPar,dmaxPar,dnx,dny,dtime
     integer :: iel,ipoint,icomp1,icomp2,icomp,ndim
 
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
                                        trim(rcollection%SquickAccess(1)))
-        
-    ! Allocate temporal memory
-    allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
     
     ! This subroutine assumes that the first quick access integer
     ! value holds the number of the reference function.  Moreover,
@@ -3355,6 +3505,9 @@ contains
 
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)
+
+    ! Allocate temporal memory
+    allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 3))
 
     ! Evaluate the reference function and the exact velocities in the
     ! cubature points on the boundary and store the result in
@@ -3435,9 +3588,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_errorBdrInt2D(cderivative, rdiscretisation, &
-                                  DpointsRef, Dpoints, ibct, DpointPar,&
-                                  Ielements, Dvalues, rcollection)
+  subroutine transp_errorBdrInt2D(cderivative, rdiscretisation,&
+      DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
+      rcollection)
 
     use basicgeometry
     use boundary
@@ -3655,8 +3808,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_weightFuncBdrInt2D(rdiscretisation, DpointsRef, Dpoints,&
-                                       ibct, DpointPar, Ielements, Dvalues, rcollection)
+  subroutine transp_weightFuncBdrInt2D(rdiscretisation, DpointsRef,&
+      Dpoints, ibct, DpointPar, Ielements, Dvalues, rcollection)
+
     use fsystem    
     use basicgeometry
     use triangulation
