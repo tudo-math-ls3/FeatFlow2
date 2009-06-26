@@ -44,7 +44,7 @@ algorithm = stationary_primaldual
 # 0 = no mass matrix
 # 1 = consistent mass matrix
 # 2 = lumped mass matrix
-imasstype = 1
+imasstype = 0
 
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
@@ -86,10 +86,10 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 0
+irhstype = 1
 
 # section name of right-hand side vector
-srhsname =
+srhsname = @rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -115,7 +115,7 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 2
+itargetfunctype = 0
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -132,6 +132,9 @@ iexacttargetfunctype = 2
 sexacttargetfuncname(2) = 
   @weightingFuncInt
   @exactsol
+
+# section name of Dirichlet boundary values
+sdirichletname = @dirichletbdrval
 
 #-------------------------------------------------------------------------------
 
@@ -321,10 +324,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 2
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 2
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -455,13 +458,13 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 500
+nmaxIterations = 1000
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -497,7 +500,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-16
 
 # relative tolerance for residual
 depsRel = 0.0
