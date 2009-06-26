@@ -3308,12 +3308,12 @@ sub create_feastBenchmarkMakefile {
         ".PHONY:\tbenchmark compile compile-libs compile-apps compile-META libs\n" .
         "compile:\tbenchmark\n" .
         "benchmark:\n" .
-        "#\t\@\$(MAKE) compile-libs\n" .
+        "\t\@\$(MAKE) compile-libs\n" .
         "\t\@\$(MAKE) compile-apps\n" .
         "\n" .
-        "#libs:\tcompile-libs\n" .
-        "#compile-libs:\n" .
-        "#\t\@\$(MAKE) -C\$(SRCDIR) libs\n" .
+        "libs:\tcompile-libs\n" .
+        "compile-libs:\n" .
+        "\t\@\$(MAKE) -C\$(SRCDIR) libs\n" .
         "\n" .
         "# Generic rule to build a specific library only\n" .
         ".PHONY:\tamd blas coproc lapack libamd.a libblas.a libcoproc.a \\\n" .
@@ -3329,7 +3329,7 @@ sub create_feastBenchmarkMakefile {
         "# (Make apps phony targets otherwise switching build ID does not necessarily\n" .
         "#  lead to a re-compilation)\n" .
         ".PHONY:\t\$(APPS)\n" .
-        "\$(APPS):\n" .
+        "\$(APPS): compile-libs\n" .
         "\t\@\$(MAKE) APPNAME=\$\@ \\\n" .
         "\t\t SRCDIR=\$(filter \$(\@:\$(APPBASE)-%=kernel_%) \\\n" .
         "\t\t\t\t \$(\@:\$(APPBASE)-%=apps_%) \\\n" .
