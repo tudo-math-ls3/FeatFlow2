@@ -9,7 +9,7 @@
 !# </purpose>
 !##############################################################################
 
-MODULE renum2d_test1
+module renum2d_test1
 
   use fsystem
   use genoutput
@@ -36,38 +36,38 @@ MODULE renum2d_test1
   use statistics
   use sortstrategy
     
-  USE renum2d_callback
+  use renum2d_callback
   
-  IMPLICIT NONE
+  implicit none
 
-  TYPE t_level
+  type t_level
   
     ! An object for saving the triangulation on the domain
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     ! An object specifying the discretisation (structure of the
     ! solution, trial/test functions,...)
-    TYPE(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation
     
     ! A system matrix for that specific level. The matrix will receive the 
     ! discrete Laplace operator.
-    TYPE(t_matrixBlock) :: rmatrix
+    type(t_matrixBlock) :: rmatrix
 
     ! A variable describing the discrete boundary conditions.    
-    TYPE(t_discreteBC) :: rdiscreteBC
+    type(t_discreteBC) :: rdiscreteBC
     
     ! Resorting strategy
-    INTEGER :: h_Ipermutation
+    integer :: h_Ipermutation
   
-  END TYPE
+  end type
 
-CONTAINS
+contains
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  SUBROUTINE renum2d_matvec_mfloptest
+  subroutine renum2d_matvec_mfloptest
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -91,44 +91,44 @@ CONTAINS
     ! We need a couple of variables for this problem. Let's see...
     !
     ! An array of problem levels for the multigrid solver
-    TYPE(t_level), DIMENSION(:), pointer :: Rlevels
+    type(t_level), dimension(:), pointer :: Rlevels
 
     ! An object for saving the domain:
-    TYPE(t_boundary) :: rboundary
+    type(t_boundary) :: rboundary
     
     ! A bilinear and linear form describing the analytic problem to solve
-    TYPE(t_bilinearForm) :: rform
-    TYPE(t_linearForm) :: rlinform
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
     
     ! A couple of block vectors. These will be filled
     ! with data for the linear solver.
-    TYPE(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rtempBlock2
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rtempBlock2
 
     ! A variable that is used to specify a region on the boundary.
-    TYPE(t_boundaryRegion) :: rboundaryRegion
+    type(t_boundaryRegion) :: rboundaryRegion
 
     ! NLMIN receives the level of the coarse grid.
-    INTEGER :: NLMIN,ilevmin
+    integer :: NLMIN,ilevmin
 
     ! NLMAX receives the level where we want to solve.
-    INTEGER :: NLMAX,ilevmax
+    integer :: NLMAX,ilevmax
     
     ! Some temporary variables
-    INTEGER :: i
+    integer :: i
     integer(I32) :: celementtype
-    REAL(DP) :: dmflops
+    real(DP) :: dmflops
     
     ! Sorting strategy counter
-    INTEGER :: isortStrategy, imesh, isortStrategyidx, imeshidx
-    INTEGER, DIMENSION(:), POINTER :: p_Ipermutation
-    TYPE(t_spatialDiscretisation), DIMENSION(:), POINTER :: Rdiscretisation
-    TYPE(t_matrixScalar), POINTER :: p_rmatrix
+    integer :: isortStrategy, imesh, isortStrategyidx, imeshidx
+    integer, dimension(:), pointer :: p_Ipermutation
+    type(t_spatialDiscretisation), dimension(:), pointer :: Rdiscretisation
+    type(t_matrixScalar), pointer :: p_rmatrix
     
-    TYPE(t_timer) :: rtimerSolver
+    type(t_timer) :: rtimerSolver
     
     character(len=SYS_STRLEN) :: sprmfile,strifile,sdatafile,selement
     logical :: bexists
-    TYPE(t_triangulation) :: rtriangulation
+    type(t_triangulation) :: rtriangulation
 
     type(t_parlist) :: rparlist
     integer :: iperform
@@ -160,32 +160,32 @@ CONTAINS
       call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'PRMFILE', sprmfile,'./pre/heat_v77.prm')
       call parlst_getvalue_string (rparlist, 'MFLOPTESTS', 'TRIFILE', strifile,'./pre/heat_v77.tri')
       
-      CALL boundary_read_prm(rboundary, sprmfile)
+      call boundary_read_prm(rboundary, sprmfile)
           
       ! Ok, let's start. 
       
       NLMIN = 1
       
-      DO imeshidx=1,parlst_querysubstrings(rparlist,'MFLOPTESTS','imesh')
+      do imeshidx=1,parlst_querysubstrings(rparlist,'MFLOPTESTS','imesh')
       
         ! Get the mesh to test
         call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'imesh', &
             imesh,iarrayindex=imeshidx)
 
-        DO NLMAX=ilevmin,ilevmax
+        do NLMAX=ilevmin,ilevmax
         
-          DO isortStrategyidx=1,parlst_querysubstrings(rparlist,'MFLOPTESTS','isortStrategy')
+          do isortStrategyidx=1,parlst_querysubstrings(rparlist,'MFLOPTESTS','isortStrategy')
           
             ! Get the sort strategy to test
             call parlst_getvalue_int (rparlist, 'MFLOPTESTS', 'isortstrategy', &
                 isortstrategy,iarrayindex=isortstrategyidx)
         
             ! Allocate memory for all levels
-            ALLOCATE(Rlevels(NLMIN:NLMAX))
+            allocate(Rlevels(NLMIN:NLMAX))
             
-            IF (imesh .EQ. 0) THEN
+            if (imesh .eq. 0) then
               ! Now read in the basic triangulation into our coarse level.
-              CALL tria_readTriFile2D (rtriangulation, strifile, rboundary)
+              call tria_readTriFile2D (rtriangulation, strifile, rboundary)
                                       
               ! In case we have a triangular element, form a tri mesh
               if (elem_igetNVE(celementtype) .eq. 3) then
@@ -193,83 +193,83 @@ CONTAINS
               end if
 
               ! Only macro 1
-              CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+              call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
               
-              CALL tria_generateSubdomain(rtriangulation,(/1/),&
+              call tria_generateSubdomain(rtriangulation,(/1/),&
                   Rlevels(NLMIN)%rtriangulation,rboundary)
              
-              CALL tria_done (rtriangulation)
+              call tria_done (rtriangulation)
 
-            ELSE
+            else
      
-              CALL tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
+              call tria_readTriFile2D (Rlevels(NLMIN)%rtriangulation, &
                                       strifile, rboundary)
-            END IF
+            end if
                                     
             ! Refine it.
-            CALL tria_quickRefine2LevelOrdering (NLMIN-1,&
+            call tria_quickRefine2LevelOrdering (NLMIN-1,&
                 Rlevels(NLMIN)%rtriangulation,rboundary)
             
             ! And create information about adjacencies and everything one needs from
             ! a triangulation.
-            CALL tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
+            call tria_initStandardMeshFromRaw (Rlevels(NLMIN)%rtriangulation,&
                 rboundary)
             
             ! Now refine the grid for the fine levels.
-            DO i = NLMIN+1, NLMAX
+            do i = NLMIN+1, NLMAX
 
               ! Refine the grid using the 2-Level-Ordering algorithm
-              CALL tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
+              call tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
                   Rlevels(i)%rtriangulation,rboundary)
               
               ! Create a standard mesh
-              CALL tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
+              call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
                 rboundary)
             
-            END DO
+            end do
 
             ! Now we can start to initialise the discretisation. At first, set up
             ! a block discretisation structure that specifies the blocks in the
             ! solution vector. In this simple problem, we only have one block.
             ! Do this for all levels
-            DO i = NLMIN, NLMAX
-              CALL spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
+            do i = NLMIN, NLMAX
+              call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 1, &
                                             Rlevels(i)%rtriangulation, rboundary)
-            END DO
+            end do
             
             ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
             ! structures for every component of the solution vector.
             ! Initialise the first element of the list to specify the element
             ! and cubature rule for this solution component:
-            DO i = NLMIN, NLMAX
-              CALL spdiscr_initDiscr_simple (&
+            do i = NLMIN, NLMAX
+              call spdiscr_initDiscr_simple (&
                   Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
                   celementtype,spdiscr_getStdCubature(celementType),&
                   Rlevels(i)%rtriangulation, rboundary)
-            END DO
+            end do
                           
             ! Now as the discretisation is set up, we can start to generate
             ! the structure of the system matrix which is to solve.
             ! We create a scalar matrix, based on the discretisation structure
             ! for our one and only solution component.
-            DO i = NLMIN, NLMAX
+            do i = NLMIN, NLMAX
 
               ! Initialise the block matrix with default values based on
               ! the discretisation.
-              CALL lsysbl_createMatBlockByDiscr (&
+              call lsysbl_createMatBlockByDiscr (&
                   Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)    
 
               ! Now as the discretisation is set up, we can start to generate
               ! the structure of the system matrix which is to solve.
               ! We create that directly in the block (1,1) of the block matrix
               ! using the discretisation structure of the first block.
-              CALL bilf_createMatrixStructure ( &
+              call bilf_createMatrixStructure ( &
                   Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
                   LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
               
               ! Update the structural information of the block matrix, as we manually
               ! changed one of the submatrices:
-              CALL lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
+              call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
 
               ! And now to the entries of the matrix. For assembling of the entries,
               ! we need a bilinear form, which first has to be set up manually.
@@ -282,8 +282,8 @@ CONTAINS
               rform%Idescriptors(2,2) = DER_DERIV_Y
 
               ! In the standard case, we have constant coefficients:
-              rform%ballCoeffConstant = .TRUE.
-              rform%BconstantCoeff = .TRUE.
+              rform%ballCoeffConstant = .true.
+              rform%BconstantCoeff = .true.
               rform%Dcoefficients(1)  = 1.0 
               rform%Dcoefficients(2)  = 1.0 
 
@@ -293,15 +293,15 @@ CONTAINS
               ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
               ! the framework will call the callback routine to get analytical
               ! data.
-              CALL bilf_buildMatrixScalar (rform,.TRUE.,&
+              call bilf_buildMatrixScalar (rform,.true.,&
                   Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
             
-            END DO
+            end do
               
             ! Although we could manually create the solution/RHS vector,
             ! the easiest way to set up the vector structure is
             ! to create it by using our matrix as template:
-            CALL lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .FALSE.)
+            call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rrhsBlock, .false.)
 
             ! The vector structure is ready but the entries are missing. 
             ! So the next thing is to calculate the content of that vector.
@@ -315,42 +315,42 @@ CONTAINS
             ! discretisation structure.
             ! This scalar vector will later be used as the one and only first
             ! component in a block vector.
-            CALL linf_buildVectorScalar (&
+            call linf_buildVectorScalar (&
                 Rlevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
-                rlinform,.TRUE.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
+                rlinform,.true.,rrhsBlock%RvectorBlock(1),coeff_RHS_2D)
             
-            DO i = NLMIN, NLMAX
+            do i = NLMIN, NLMAX
             
               ! Initialise the discrete BC structure
-              CALL bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
+              call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
               ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
-              CALL boundary_createRegion(rboundary,1,1,rboundaryRegion)
-              CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+              call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+              call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
                                         
               ! Now to the edge 2 of boundary component 1 the domain. 
-              CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
-              CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+              call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+              call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
                                         
               ! Edge 3 of boundary component 1.
-              CALL boundary_createRegion(rboundary,1,3,rboundaryRegion)
-              CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+              call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+              call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
               
               ! Edge 4 of boundary component 1. That's it.
-              CALL boundary_createRegion(rboundary,1,4,rboundaryRegion)
-              CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+              call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+              call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
 
               ! Edge 1 of boundary component 2. That's it.
-              CALL boundary_createRegion(rboundary,2,1,rboundaryRegion)
-              CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+              call boundary_createRegion(rboundary,2,1,rboundaryRegion)
+              call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                                 rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                                 getBoundaryValues_2D)
               
@@ -359,9 +359,9 @@ CONTAINS
               Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
           
               ! Also implement the boundary conditions into the matrix.
-              CALL matfil_discreteBC (Rlevels(i)%rmatrix)
+              call matfil_discreteBC (Rlevels(i)%rmatrix)
               
-            END DO
+            end do
 
             ! Our right-hand-side also needs to know the boundary conditions.
             rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
@@ -370,9 +370,9 @@ CONTAINS
             ! need additionally is a block vector for the solution and
             ! temporary data. Create them using the RHS as template.
             ! Fill the solution vector with 0:
-            CALL lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .TRUE.)
-            CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .FALSE.)
-            CALL lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock2, .FALSE.)
+            call lsysbl_createVecBlockIndirect (rrhsBlock, rvectorBlock, .true.)
+            call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
+            call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock2, .false.)
             
             ! Next step is to implement boundary conditions into the RHS,
             ! solution and matrix. This is done using a vector/matrix filter
@@ -380,93 +380,93 @@ CONTAINS
             ! The discrete boundary conditions are already attached to the
             ! vectors/matrix. Call the appropriate vector/matrix filter that
             ! modifies the vectors/matrix according to the boundary conditions.
-            CALL vecfil_discreteBCrhs (rrhsBlock)
-            CALL vecfil_discreteBCsol (rvectorBlock)
+            call vecfil_discreteBCrhs (rrhsBlock)
+            call vecfil_discreteBCsol (rvectorBlock)
             
             ! Resort matrices and vectors
-            ALLOCATE(Rdiscretisation(NLMAX))
-            DO i = NLMIN, NLMAX
+            allocate(Rdiscretisation(NLMAX))
+            do i = NLMIN, NLMAX
             
               ! For stochastic resorting, prepare an array with the discretisation structures.
-              CALL spdiscr_duplicateDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
-                Rdiscretisation(i), .TRUE.)
+              call spdiscr_duplicateDiscrSc (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+                Rdiscretisation(i), .true.)
           
               ! Prepare a permutation
-              CALL storage_new('..', 'Iperm', 2*Rlevels(i)%rmatrix%NEQ, ST_INT, &
+              call storage_new('..', 'Iperm', 2*Rlevels(i)%rmatrix%NEQ, ST_INT, &
                   Rlevels(i)%h_Ipermutation,ST_NEWBLOCK_ORDERED)
-              CALL storage_getbase_int(Rlevels(i)%h_Ipermutation,p_Ipermutation)
+              call storage_getbase_int(Rlevels(i)%h_Ipermutation,p_Ipermutation)
               
               ! Calculate the resorting
-              SELECT CASE (isortStrategy)
-              CASE (0)
+              select case (isortStrategy)
+              case (0)
                 ! Nothing to be done. 2-level ordering
-              CASE (1)
+              case (1)
                 ! Cuthill McKee
-                CALL sstrat_calcCuthillMcKee (Rlevels(i)%rmatrix%RmatrixBlock(1,1),p_Ipermutation)
+                call sstrat_calcCuthillMcKee (Rlevels(i)%rmatrix%RmatrixBlock(1,1),p_Ipermutation)
 
-                CALL lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
                                         SSTRAT_CM,Rlevels(i)%h_Ipermutation)
-                IF (i .EQ. NLMAX) THEN
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                if (i .eq. NLMAX) then
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
-                END IF
-              CASE (2)
+                end if
+              case (2)
                 ! XYZ-Sorting
-                CALL sstrat_calcXYZsorting (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+                call sstrat_calcXYZsorting (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
                     p_Ipermutation)
 
-                CALL lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
                                         SSTRAT_XYZCOORD,Rlevels(i)%h_Ipermutation)
-                IF (i .EQ. NLMAX) THEN
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                if (i .eq. NLMAX) then
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
-                END IF
+                end if
 
-              CASE (3)
+              case (3)
                 ! Stochastic resorting
-                CALL sstrat_calcStochastic (p_Ipermutation)
+                call sstrat_calcStochastic (p_Ipermutation)
 
-                CALL lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
                                         SSTRAT_STOCHASTIC,Rlevels(i)%h_Ipermutation)
-                IF (i .EQ. NLMAX) THEN
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                if (i .eq. NLMAX) then
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
-                END IF
+                end if
 
-              CASE (4)
+              case (4)
                 ! Hierarchical resorting
-                CALL sstrat_calcHierarchical (Rdiscretisation(NLMIN:i),p_Ipermutation)
+                call sstrat_calcHierarchical (Rdiscretisation(NLMIN:i),p_Ipermutation)
 
-                CALL lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.TRUE.,&
+                call lsyssc_sortMatrix (Rlevels(i)%rmatrix%RmatrixBlock(1,1),.true.,&
                                         SSTRAT_HIERARCHICAL,Rlevels(i)%h_Ipermutation)
-                IF (i .EQ. NLMAX) THEN
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                if (i .eq. NLMAX) then
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rrhsBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rvectorBlock%RvectorBlock(1),rtempBlock2%RvectorBLock(1))
-                  CALL lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                  call lsyssc_synchroniseSortMatVec (Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
                       rtempBlock%RvectorBlock(1),rtempBlock2%RvectorBlock(1))
-                END IF
-              END SELECT
+                end if
+              end select
               
-            END DO
+            end do
 
-            DO i = NLMIN, NLMAX
-              CALL spdiscr_releaseDiscr(Rdiscretisation(i))
-            END DO
-            DEALLOCATE(Rdiscretisation)
+            do i = NLMIN, NLMAX
+              call spdiscr_releaseDiscr(Rdiscretisation(i))
+            end do
+            deallocate(Rdiscretisation)
 
 
             
@@ -477,19 +477,19 @@ CONTAINS
             ! we would have to use linsol_precondDefect instead.
             
             p_rmatrix => Rlevels(NLMAX)%rmatrix%RmatrixBlock(1,1)
-            CALL stat_clearTimer(rtimerSolver)
-            CALL stat_startTimer(rtimerSolver)
+            call stat_clearTimer(rtimerSolver)
+            call stat_startTimer(rtimerSolver)
             
             ! Dop a couple of MV-Multiplications
-            DO i=1,100
-              CALL lsyssc_scalarMatVec (p_rmatrix, &
+            do i=1,100
+              call lsyssc_scalarMatVec (p_rmatrix, &
                   rvectorBlock%RvectorBlock(1), rrhsBlock%RvectorBlock(1), -1.0_DP, 1.0_DP)
-            END DO
+            end do
             
-            CALL stat_stopTimer(rtimerSolver)
+            call stat_stopTimer(rtimerSolver)
             
             ! Flops:
-            dmflops = 2.0_DP * REAL(i-1,DP) * REAL(p_rmatrix%NA,DP)
+            dmflops = 2.0_DP * real(i-1,DP) * real(p_rmatrix%NA,DP)
             
             ! MFLOPs:
             if (rtimerSolver%delapsedReal .eq. 0.0_DP) then
@@ -499,27 +499,27 @@ CONTAINS
             end if
             
             ! Release the block matrix/vectors
-            CALL lsysbl_releaseVector (rtempBlock)
-            CALL lsysbl_releaseVector (rtempBlock2)
-            CALL lsysbl_releaseVector (rvectorBlock)
-            CALL lsysbl_releaseVector (rrhsBlock)
-            DO i = NLMAX, NLMIN, -1
-              CALL lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
-              CALL storage_free (Rlevels(i)%h_Ipermutation)
-            END DO
+            call lsysbl_releaseVector (rtempBlock)
+            call lsysbl_releaseVector (rtempBlock2)
+            call lsysbl_releaseVector (rvectorBlock)
+            call lsysbl_releaseVector (rrhsBlock)
+            do i = NLMAX, NLMIN, -1
+              call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
+              call storage_free (Rlevels(i)%h_Ipermutation)
+            end do
 
             ! Release our discrete version of the boundary conditions
-            DO i = NLMAX, NLMIN, -1
-              CALL bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
-            END DO
+            do i = NLMAX, NLMIN, -1
+              call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
+            end do
 
             ! Release the discretisation structure and all spatial discretisation
             ! structures in it.
-            DO i = NLMAX, NLMIN, -1
-              CALL spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
-            END DO
+            do i = NLMAX, NLMIN, -1
+              call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
+            end do
             
-            WRITE (*,'(A,I3,A,I3,A,I3,A,E18.10,A,E18.10,A,F18.10)') &
+            write (*,'(A,I3,A,I3,A,I3,A,E18.10,A,E18.10,A,F18.10)') &
               'Level ',NLMAX,&
               ', Strategy ',isortStrategy,&
               ', imesh ',imesh,&
@@ -527,28 +527,28 @@ CONTAINS
               ', MFLOPS= ',dmflops
             
             ! Release the triangulation. 
-            DO i = NLMAX, NLMIN, -1
-              IF ((NLMAX .EQ. 11) .AND. (isortStrategy .EQ. 4)) THEN
-                CALL tria_infoStatistics (Rlevels(i)%rtriangulation,i .EQ. NLMAX,i)
-              END IF
-              CALL tria_done (Rlevels(i)%rtriangulation)
-            END DO
+            do i = NLMAX, NLMIN, -1
+              if ((NLMAX .eq. 11) .and. (isortStrategy .eq. 4)) then
+                call tria_infoStatistics (Rlevels(i)%rtriangulation,i .eq. NLMAX,i)
+              end if
+              call tria_done (Rlevels(i)%rtriangulation)
+            end do
             
-            DEALLOCATE(Rlevels)
+            deallocate(Rlevels)
             
-          END DO
+          end do
 
-        END DO
+        end do
         
-      END DO
+      end do
 
       ! Finally release the domain, that's it.
-      CALL boundary_release (rboundary)
+      call boundary_release (rboundary)
 
     end if
 
     call parlst_done(rparlist)
 
-  END SUBROUTINE
+  end subroutine
 
-END MODULE
+end module
