@@ -9,13 +9,17 @@
 !#   $$\frac{\partial u}{\partial t}+\nabla\cdot{\bf f}(u)+r(u) = b$$
 !#
 !# for a scalar quantity $u$ in the domain $\Omega$ in 1D, 2D and 3D.
-!# The (possibly nonlinear) flux function ${\bf f}(u)$ can be
+!#
+!#
+!# The flux function ${\bf f}(u)$ can be nonlinear, e.g. for Burgers'
+!# equation or linear as it is the case for linear transport.
+!#
+!# In the linear case, the flux function is typically given by
 !#
 !#   $${\bf f}(u):={\bf v}u-D\nabla u$$
 !#
-!# whereby $\bf v$ denotes an externally given velocity profile.
-!#
-!# The physical diffusion tensor
+!# whereby $\bf v$ denotes an externally defined velocity profile and
+!# $D$ is the vsicosity tensor. It may be anisotropic
 !#
 !#   $$D=\left[\begin{array}{ccc}
 !#       d_{11} & d_{12} & d_{13}\\
@@ -23,20 +27,32 @@
 !#       d_{31} & d_{32} & d_{33}
 !#       \end{array}\right]$$
 !#
-!# may by anisotropic and it can also reduce to the scalar coefficient
+!# or it can also reduce to the scalar coefficient
 !#
 !#   $$D=dI,\quad d_{ij}=0\,\forall j\ne i$$
 !#
-!# Moreover, ${\bf f}(u)$ can also be defined such that
+!#
+!# In the nonlinear case, the flux function depends on the unknown
+!# solution $u$ or its first and/or second derivative:
+!#
+!#   $${\bf f}={\bf f}(u,\nabla u, \Delta u)$$
+!#
+!#
+!# Moreover, this application can handle space-time simulations
+!# in 1D and 2D, whereby the flux function is defined such that
 !#
 !#   $$\nabla\cdot{\bf f}(u):=u_t+\frac{\partial f(u)}{\partial x}$$
 !#
-!# that is, the above equation stands for a 1d or 2d conservation
-!# law which is solved in the space-time domain $\Omega=$.
+!# The above equation stands for a 1D/2D conservation law
+!# which is solved in the 2D/3D space-time domain $\Omega=$.
 !#
-!# The reactive term $r(u)$ is ignored at the moment.
+!#
+!# The reactive term $r(u)$ is ignored at the moment. However, some
+!# proper linearization is required to preserve positivity.
+!#
 !#
 !# The load vector $b$ is constant throughout the simulation.
+!#
 !#
 !# The spatial discretization is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
@@ -53,23 +69,34 @@
 !# The following routines are available:
 !#
 !# 1.) transp_app
-!#     -> The main routine of the application called from the main problem
+!#     -> The main routine of the application called from the main
+!#        program. The routine gets all required information from the
+!#        parameter list which needs to be initialized and filled in
+!#        the main program. It then works black-box, that is, it
+!#        determines the solution algorithm to be used and performs
+!#        the simulation. The user should only have to modify this
+!#        routine if another solution algorithm is implemented.
 !#
 !# 2.) transp_initSolvers
-!#     -> Initializes the solve structures from the parameter list
+!#     -> Initializes the solve structures from the parameter list.
 !#
 !# 3.) transp_initProblem
 !#     -> Initializes the global problem structure based on the
-!#        parameter settings given by the parameter list
+!#        parameter settings given by the parameter list. This routine
+!#        is quite universal, that is, it prepares the internal
+!#        structure of the global problem and generates a linked
+!#        list of problem levels used in the multigrid hierarchy.
 !#
 !# 4.) transp_initProblemLevel
 !#     -> Initializes the individual problem level based on the
-!#        parameter settings given by the application descriptor
+!#        parameter settings given by the application descriptor.
+!#        This routine is called repeatedly by the global
+!#        initialization routine transp_initAllProblemLevels.
 !#
 !# 5.) transp_initAllProblemLevels
-!#     -> Initializes all problem levels attached to the global
+!#     -> Initializes ALL problem levels attached to the global
 !#        problem structure based on the parameter settings
-!#        given by the parameter list
+!#        given by the parameter list.
 !#
 !# 6.) transp_initSolution
 !#     -> Initializes the solution vector based on the parameter
@@ -134,6 +161,19 @@
 !# 1.) How to add a new sub-model, e.g. 1D-Burgers' equation in space time?
 !#
 !#     
+!# 2.) How to add new finite elements in spatial dimension xD?
+!#
+!#     -> This application builds on the group finite element formulation
+!#        suggested by Fletcher. In essence, the solution vector $u$ and
+!#        the flux function ${\bf f}(u)$ is approximated using the same
+!#        basis functions. As a result, the matrices can be assembled
+!#        once at the beginning of the simulation and each time the mesh
+!#        has changed (e.g. due to h-adaptation) so that no expensive
+!#        numerical integration needs to be performed in each step.
+!#        If you want to add a new finite element, then you have to
+!#        modify subroutines transp_initProblemLevel which generates
+!#        the global matrix structure and builds all FE matrices.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -158,7 +198,6 @@ module transport_application
   use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
-  use matrixio
   use paramlist
   use pprocerror
   use pprocgradients
@@ -173,12 +212,13 @@ module transport_application
   use storage
   use timestep
   use timestepaux
+  use ucd
+
   use transport_basic
   use transport_callback
   use transport_callback1d
   use transport_callback2d
   use transport_callback3d
-  use ucd
 
   implicit none
   
@@ -492,7 +532,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
+  subroutine transp_initSolvers(rparlist, ssectionName, rtimestep,&
+      rsolver)
 
 !<description>
     ! This subroutine initializes the time-stepping structure
@@ -530,7 +571,7 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName, 'timestep', stimestepName)
     call parlst_getvalue_string(rparlist, ssectionName, 'solver',   ssolverName)
-
+    
     ! Initialize time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep)
     
@@ -551,7 +592,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax, rproblem)
+  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax,&
+      rproblem)
 
 !<description>
     ! This subroutine initializes the abstract problem structure 
@@ -589,6 +631,7 @@ contains
     integer :: convectionAFC
     integer :: diffusionAFC
     integer :: iconvToTria
+    integer :: ivelocitytype
     
 
     ! Get global configuration from parameter list
@@ -602,44 +645,47 @@ contains
                                 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'ndimension', rproblemDescriptor%ndimension)
-    
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'iconvtotria', iconvToTria, 0)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'diffusionAFC', diffusionAFC)
+
     ! Set additional problem descriptor
-    rproblemDescriptor%ndiscretisation = 1   ! one discretisation
-    rproblemDescriptor%nafcstab        = 2   ! convective and diffusive stabilization
+    rproblemDescriptor%ndiscretisation = 1 ! one discretisation
+    rproblemDescriptor%nafcstab        = 2 ! convective and diffusive stabilization
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = 1   ! velocity field
+    rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) ! velocity field
 
     ! Check if quadrilaterals should be converted to triangles
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'iconvtotria', iconvToTria, 0)
     if (iconvToTria .ne. 0) then
       rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                       + PROBDESC_MSPEC_CONVTRIANGLES
     end if
 
     ! Initialize problem structure
-    call problem_initProblem(rproblemDescriptor, rproblem)
-    
-    ! Initialize the stabilisation structure
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'diffusionAFC', diffusionAFC)
+    call problem_initProblem(rproblemDescriptor, rproblem)   
     
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
+      ! Initialize the stabilisation structure for convection (if required)
       if (convectionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sconvection,&
-                                             p_rproblemLevel%Rafcstab(convectionAFC))
+          p_rproblemLevel%Rafcstab(convectionAFC))
+      
+      ! Initialize the stabilisation structure for diffusion (if required)
       if (diffusionAFC > 0)&
           call afcstab_initFromParameterlist(rparlist, sdiffusion,&
-                                             p_rproblemLevel%Rafcstab(diffusionAFC))
+          p_rproblemLevel%Rafcstab(diffusionAFC))
       
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
@@ -651,7 +697,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initProblemLevel(rparlist, ssectionName, rproblemLevel, rcollection)
+  subroutine transp_initProblemLevel(rparlist, ssectionName,&
+      rproblemLevel, rcollection)
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
@@ -1258,7 +1305,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initAllProblemLevels(rparlist, ssectionName, rproblem, rcollection)
+  subroutine transp_initAllProblemLevels(rparlist, ssectionName,&
+      rproblem, rcollection)
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
@@ -1305,8 +1353,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initSolution(rparlist, ssectionName, rproblemLevel,&
-                                 dtime, rvector, rcollection)
+  subroutine transp_initSolution(rparlist, ssectionName,&
+    rproblemLevel, dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the solution vector
@@ -1423,7 +1471,7 @@ contains
 !<subroutine>
 
   subroutine transp_initRHS(rparlist, ssectionName, rproblemLevel,&
-                            dtime, rvector, rcollection)
+      dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the right-hand side vector.
@@ -1455,9 +1503,8 @@ contains
     ! local variables
     type(t_fparser), pointer :: rfparser
     type(t_linearForm) :: rform
-    character(LEN=SYS_STRLEN) :: srhsname
-    integer :: irhstype
-    integer :: icomp
+    character(LEN=SYS_STRLEN) :: srhsname, sdirichletname
+    integer :: icomp, irhstype, velocityfield
 
     
     ! Get global configuration from parameter list
@@ -1502,14 +1549,47 @@ contains
       call sys_halt()
     end select
 
+    !@DEBUG
+    ! Apply weakly imposed Dirichlet values
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'velocityfield', velocityfield)
+    call parlst_getvalue_string(rparlist, ssectionName,&
+                                'sdirichletname', sdirichletname)
+
+    ! Get function parser from collection structure
+    rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+    ! Get the number of the component used for evaluating the right-hand side
+    icomp = fparser_getFunctionNumber(rfparser, sdirichletname)
+
+    ! Prepare quick access arrays of the collection
+    rcollection%DquickAccess(1) = dtime
+    rcollection%IquickAccess(1) = icomp
+    rcollection%SquickAccess(1) = 'rfparser'
+    
+    ! Attach velocity vectors to collection structure
+    rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+
+    ! Set up the corresponding linear form
+    rform%itermCount      = 1
+    rform%Idescriptors(1) = DER_FUNC
+
+    ! Buill the discretized boundary integral
+    call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D, .false.,&
+        rvector%RvectorBlock(1), transp_coeffVectorBdr2DAnalytic,&
+        rcollection=rcollection)
+    !@DEBUG
+    
   end subroutine transp_initRHS
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_initTargetFunc(rparlist, ssectionName, rproblemLevel,&
-                                   dtime, rvector, rcollection)
+  subroutine transp_initTargetFunc(rparlist, ssectionName,&
+      rproblemLevel, dtime, rvector, rcollection)
 
 !<description>
     ! This subroutine initializes the target functional which serves as
@@ -1659,8 +1739,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_outputSolution(rparlist, ssectionName, rproblemLevel,&
-                                   rsolutionPrimal, rsolutionDual, dtime)
+  subroutine transp_outputSolution(rparlist, ssectionName,&
+    rproblemLevel, rsolutionPrimal, rsolutionDual, dtime)
 
 !<description>
     ! This subroutine exports the solution vector to file in UCD format
@@ -1825,9 +1905,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_estimateTargetFuncError(rparlist, ssectionName, rproblemLevel,&
-                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
-                                            rcollection, rtargetError, dtargetError, rrhs)
+  subroutine transp_estimateTargetFuncError(rparlist, ssectionName,&
+      rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+      rsolutionDual, rcollection, rtargetError, dtargetError, rrhs)
 
 !<description>
     ! This subroutine estimates the error in the quantity of interest
@@ -2275,8 +2355,9 @@ contains
     !**************************************************************
     ! Compute one uniformly distributed protection layer
 
-    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
-                                        dthreshold, Ddata, BisactiveElement)
+    subroutine doProtectionLayerUniform(IverticesAtElement,&
+        IneighboursAtElement, NEL, dthreshold, Ddata,&
+        BisactiveElement)
 
       integer, dimension(:,:), intent(IN) :: IverticesAtElement
       integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
@@ -2331,8 +2412,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
-                                          rsolution, dtime, rerror, derror, rcollection)
+  subroutine transp_estimateRecoveryError(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, rerror, derror, rcollection)
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
@@ -2664,8 +2745,9 @@ contains
     !**************************************************************
     ! Compute one uniformly distributed protection layer
 
-    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
-                                        dthreshold, Ddata, BisactiveElement)
+    subroutine doProtectionLayerUniform(IverticesAtElement,&
+        IneighboursAtElement, NEL, dthreshold, Ddata,&
+        BisactiveElement)
 
       integer, dimension(:,:), intent(IN) :: IverticesAtElement
       integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
@@ -2720,8 +2802,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_adaptTriangulation(rhadapt, rtriangulationSrc, rindicator,&
-                                       rcollection, rtriangulationDest)
+  subroutine transp_adaptTriangulation(rhadapt, rtriangulationSrc,&
+      rindicator, rcollection, rtriangulationDest)
 
 !<description>
     ! This subroutine performs h-adaptation for the given triangulation
@@ -2799,8 +2881,9 @@ contains
 
 !<subroutine>
 
-    subroutine transp_solveTransientPrimal(rparlist, ssectionName, rbdrCond, rproblem,&
-                                           rtimestep, rsolver, rsolution, rcollection)
+    subroutine transp_solveTransientPrimal(rparlist, ssectionName,&
+        rbdrCond, rproblem, rtimestep, rsolver, rsolution,&
+        rcollection)
 
 !<description>
       ! This subroutine solves the transient primal flow problem
@@ -3237,8 +3320,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solvePseudoTransientPrimal(rparlist, ssectionName, rbdrCond, rproblem,&
-                                               rtimestep, rsolver, rsolution, rcollection)
+  subroutine transp_solvePseudoTransientPrimal(rparlist, ssectionName,&
+      rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
+
 !<description>
     ! This subroutine solves the pseudo-transient primal flow problem
     !
@@ -3527,8 +3611,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveSteadyStatePrimal(rparlist, ssectionName, rbdrCond, rproblem,&
-                                           rtimestep, rsolver, rsolution, rcollection)
+  subroutine transp_solveSteadyStatePrimal(rparlist, ssectionName,&
+      rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -3824,9 +3908,9 @@ contains
 
 !<subroutine>
 
-  subroutine transp_solveSteadyStatePrimalDual(rparlist, ssectionName, rbdrCondPrimal, rbdrCondDual,&
-                                               rproblem, rtimestep, rsolver, rsolutionPrimal,&
-                                               rsolutionDual, rcollection)
+  subroutine transp_solveSteadyStatePrimalDual(rparlist, ssectionName,&
+      rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep, rsolver,&
+      rsolutionPrimal, rsolutionDual, rcollection)
 
 !<description>
     ! This subroutine solves the steady-state primal flow problem
@@ -4117,6 +4201,9 @@ contains
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
 
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
                                             rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
@@ -4126,6 +4213,9 @@ contains
         call lsysbl_releaseVector(rrhs)
         
       else
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
 
         ! Compute the error in the quantity of interest
         call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
