@@ -142,28 +142,28 @@ contains
 
 !<input>
   ! Maximum number of elements in each element block.
-  integer, intent(IN) :: nelements
+  integer, intent(in) :: nelements
   
   ! Number of points per element
-  integer, intent(IN) :: npointsPerElement
+  integer, intent(in) :: npointsPerElement
 
   ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
   ! the type of the coordinate system that is used for specifying the coordinates
   ! on the reference element.
-  integer(I32), intent(IN) :: icoordSystem
+  integer(I32), intent(in) :: icoordSystem
   
   ! Number of space dimensions. Either NDIM2D or NDIM3D for 2D or 3D, 
   ! respectively.
-  integer, intent(IN) :: ndimSpace
+  integer, intent(in) :: ndimSpace
   
   ! Number of vertices per element that are necessary to specify the 
   ! transformation from the reference to the real element
-  integer, intent(IN) :: nverticesPerElement
+  integer, intent(in) :: nverticesPerElement
 !</input>
 
 !<output>
   ! An integration subset structure, initialised according to the parameters.
-  type(t_domainIntSubset), intent(OUT) :: rintSubset
+  type(t_domainIntSubset), intent(out) :: rintSubset
 !</output>
 
 !</subroutine>
@@ -239,7 +239,7 @@ contains
 
 !<output>
   ! An integration subset structure, initialised according to the parameters.
-  type(t_domainIntSubset), intent(OUT) :: rintSubset
+  type(t_domainIntSubset), intent(out) :: rintSubset
 !</output>
 
 !</subroutine>
@@ -276,7 +276,7 @@ contains
 
 !<inputoutput>
   ! The integation structure to be cleaned up.
-  type(t_domainIntSubset), intent(INOUT) :: rintSubset
+  type(t_domainIntSubset), intent(inout) :: rintSubset
 !</inputoutput>
 
 !</subroutine>

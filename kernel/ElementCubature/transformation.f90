@@ -360,7 +360,7 @@ contains
 
 !<input>    
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 !</input>
 
 !<result>
@@ -389,7 +389,7 @@ contains
 
 !<input>    
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 !</input>
 
 !<result>
@@ -477,7 +477,7 @@ contains
 
 !<input>    
   ! The transformation code identifier.
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 !</input>
 
 !<result>
@@ -574,13 +574,13 @@ contains
 
 !<input>
   ! ID of transformation 
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Triangulation structure that defines the elements.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Number of the element whose information is to be fetched.
-  integer, intent(IN) :: iel
+  integer, intent(in) :: iel
 !</input>
 
 !<output>
@@ -589,7 +589,7 @@ contains
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE).
   ! NVE depends on the type of transformation and can be determined with
-  real(DP), dimension(:,:), intent(OUT) :: Dcoords
+  real(DP), dimension(:,:), intent(out) :: Dcoords
 !</output>
 
 !</subroutine>
@@ -709,14 +709,14 @@ contains
 
 !<input>
   ! ID of transformation 
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Triangulation structure that defines the elements.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Array with element numbers whose coordinates should be extracted into
   ! Dcoords.
-  integer, dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<output>
@@ -725,7 +725,7 @@ contains
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,size of Ielements)
   ! NVE depends on the type of transformation and can be determined with
-  real(DP), dimension(:,:,:), intent(OUT) :: Dcoords
+  real(DP), dimension(:,:,:), intent(out) :: Dcoords
 !</output>
 
 !</subroutine>
@@ -897,35 +897,35 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Coordinates of the corners of the element
   !  Dcoord(1,i) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 
   ! Coordinates of the point on the reference element 
   !  DpointRef(1) = x-coordinates of point i on an element, 
   !  DpointRef(2) = y-coordinates of point i on an element.
   ! DIMENSION(#space dimension)
-  real(DP), dimension(:), intent(IN) :: DpointRef
+  real(DP), dimension(:), intent(in) :: DpointRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! Jacobian determinant of the mapping.
   ! DIMENSION(npointsPerEl)
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:), intent(OUT), optional :: DpointReal
+  real(DP), dimension(:), intent(out), optional :: DpointReal
 !</output>
 
 !</subroutine>
@@ -1159,40 +1159,40 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Number of points in each element where to calculate the transformation
-  integer, intent(IN) :: npointsPerEl
+  integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
   !  Dcoord(1,i) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 
   ! Coordinates of the points on the reference element for each element 
   ! where to calculate the mapping.
   !  DpointsRef(1,i) = x-coordinates of point i on an element, 
   !  DpointsRef(2,i) = y-coordinates of point i on an element.
   ! ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:,:), intent(IN) :: DpointsRef
+  real(DP), dimension(:,:), intent(in) :: DpointsRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl)
-  real(DP), dimension(:,:), intent(OUT) :: Djac
+  real(DP), dimension(:,:), intent(out) :: Djac
   
   ! Jacobian determinants of the mapping for all the points from the
   ! reference element to the real element.
   ! DIMENSION(npointsPerEl)
-  real(DP), dimension(:), intent(OUT) :: Ddetj
+  real(DP), dimension(:), intent(out) :: Ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:,:), intent(OUT), optional :: DpointsReal
+  real(DP), dimension(:,:), intent(out), optional :: DpointsReal
 !</output>
 
 !</subroutine>
@@ -1550,19 +1550,19 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Number of elements where to calculate the transformation
-  integer, intent(IN) :: nelements
+  integer, intent(in) :: nelements
   
   ! Number of points in each element where to calculate the transformation
-  integer, intent(IN) :: npointsPerEl
+  integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
   !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,nelements)
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
 
   ! Coordinates of the points on the reference element for each element 
   ! where to calculate the mapping.
@@ -1577,24 +1577,24 @@ contains
   !  DpointsRef(1,i,.) = First barycentric coordinate of point i on an element
   !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
   !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
-  real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
+  real(DP), dimension(:,:,:), intent(in) :: DpointsRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
-  real(DP), dimension(:,:,:), intent(OUT) :: Djac
+  real(DP), dimension(:,:,:), intent(out) :: Djac
   
   ! Jacobian determinants of the mapping for all the points from the
   ! reference element to the real element.
   ! DIMENSION(npointsPerEl,nelements)
-  real(DP), dimension(:,:), intent(OUT) :: Ddetj
+  real(DP), dimension(:,:), intent(out) :: Ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimensions,npointsPerEl,nelements)
-  real(DP), dimension(:,:,:), intent(OUT), optional :: DpointsReal
+  real(DP), dimension(:,:,:), intent(out), optional :: DpointsReal
 !</output>
 
 !</subroutine>
@@ -2044,35 +2044,35 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Coordinates of the corners of the element
   !  Dcoord(1,i) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 
   ! Coordinates of the point on the reference element 
   !  DpointRef(1) = x-coordinates of point i on an element, 
   !  DpointRef(2) = y-coordinates of point i on an element.
   ! DIMENSION(#space dimension)
-  real(DP), dimension(:), intent(IN) :: DpointRef
+  real(DP), dimension(:), intent(in) :: DpointRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! Absolute value of the Jacobian determinant of the mapping.
   ! DIMENSION(npointsPerEl)
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:), intent(OUT), optional :: DpointReal
+  real(DP), dimension(:), intent(out), optional :: DpointReal
 !</output>
 
 !</subroutine>
@@ -2110,40 +2110,40 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Number of points in each element where to calculate the transformation
-  integer, intent(IN) :: npointsPerEl
+  integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
   !  Dcoord(1,i) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 
   ! Coordinates of the points on the reference element for each element 
   ! where to calculate the mapping.
   !  DpointsRef(1,i) = x-coordinates of point i on an element, 
   !  DpointsRef(2,i) = y-coordinates of point i on an element.
   ! ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:,:), intent(IN) :: DpointsRef
+  real(DP), dimension(:,:), intent(in) :: DpointsRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl)
-  real(DP), dimension(:,:), intent(OUT) :: Djac
+  real(DP), dimension(:,:), intent(out) :: Djac
   
   ! Absolute values of the Jacobian determinants of the mapping for all
   ! the points from the reference element to the real element.                                            
   ! DIMENSION(npointsPerEl)                                                           
-  real(DP), dimension(:), intent(OUT) :: Ddetj                                        
+  real(DP), dimension(:), intent(out) :: Ddetj                                        
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimension,npointsPerEl)
-  real(DP), dimension(:,:), intent(OUT), optional :: DpointsReal
+  real(DP), dimension(:,:), intent(out), optional :: DpointsReal
 !</output>
 
 !</subroutine>
@@ -2186,19 +2186,19 @@ contains
 
 !<input>
   ! ID of transformation to calculate
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
 
   ! Number of elements where to calculate the transformation
-  integer, intent(IN) :: nelements
+  integer, intent(in) :: nelements
   
   ! Number of points in each element where to calculate the transformation
-  integer, intent(IN) :: npointsPerEl
+  integer, intent(in) :: npointsPerEl
 
   ! Coordinates of the corners of all the elements
   !  Dcoord(1,i,.) = x-coordinates of corner i on an element, 
   !  Dcoord(2,i,.) = y-coordinates of corner i on an element.
   ! DIMENSION(#space dimensions,NVE,nelements)
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
 
   ! Coordinates of the points on the reference element for each element 
   ! where to calculate the mapping.
@@ -2213,24 +2213,24 @@ contains
   !  DpointsRef(1,i,.) = First barycentric coordinate of point i on an element
   !  DpointsRef(2,i,.) = Second barycentric coordinate of point i on an element
   !  DpointsRef(3,i,.) = Third barycentric coordinate of point i on an element
-  real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
+  real(DP), dimension(:,:,:), intent(in) :: DpointsRef
 !</input>
 
 !<output>
   ! The Jacobian matrix of the mapping for each point.
   ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
-  real(DP), dimension(:,:,:), intent(OUT) :: Djac
+  real(DP), dimension(:,:,:), intent(out) :: Djac
   
   ! Absolute values of the Jacobian determinants of the mapping for
   ! all the points from the reference element to the real element.
   ! DIMENSION(npointsPerEl,nelements)
-  real(DP), dimension(:,:), intent(OUT) :: Ddetj
+  real(DP), dimension(:,:), intent(out) :: Ddetj
   
   ! OPTIONAL: Array receiving the coordinates of the points in DpointsRef,
   ! mapped from the reference element to the real element.
   ! If not specified, they are not computed.
   ! DIMENSION(#space dimensions,npointsPerEl,nelements)
-  real(DP), dimension(:,:,:), intent(OUT), optional :: DpointsReal
+  real(DP), dimension(:,:,:), intent(out), optional :: DpointsReal
 !</output>
 
 !</subroutine>
@@ -2324,13 +2324,13 @@ contains
   ! Dcoord(1,.) = x-coordinates, 
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 !</input>
   
 !<output>
   ! Arrays with auxiliary jacobian factors for later computation
   ! DIMENSION(TRAFO_NAUXJAC2D)
-  real(DP), dimension(:), intent(OUT) :: DjacPrep
+  real(DP), dimension(:), intent(out) :: DjacPrep
 !</output>
 
 !</subroutine>
@@ -2373,10 +2373,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary
+  real(DP), intent(in) :: dparx,dpary
   
 !</input>
   
@@ -2387,16 +2387,16 @@ contains
   !  Djac(2) = J(2,1)
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dxreal
+  real(DP), intent(out) :: dxreal
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dyreal
+  real(DP), intent(out) :: dyreal
 !</output>
   
 !</subroutine>
@@ -2443,10 +2443,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary
+  real(DP), intent(in) :: dparx,dpary
 !</input>
   
 !<output>
@@ -2456,10 +2456,10 @@ contains
   !  Djac(2) = J(2,1)
   !  Djac(3) = J(1,2)
   !  Djac(4) = J(2,2)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
 !</output>
   
 !</subroutine>
@@ -2493,18 +2493,18 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare2D.
   ! DIMENSION(TRAFO_NAUXJAC2D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary
+  real(DP), intent(in) :: dparx,dpary
 !</input>
   
 !<output>
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dxreal
+  real(DP), intent(out) :: dxreal
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dyreal
+  real(DP), intent(out) :: dyreal
 !</output>
   
 !</subroutine>
@@ -2531,21 +2531,21 @@ contains
 
 !<input>
   ! Number of the local edge of the element where to map the points to.
-  integer, intent(IN) :: iedge
+  integer, intent(in) :: iedge
 
   ! number of cubature points
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 1D reference interval [-1,1]
   !     Dxi(1..ncubp,1)=coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dxi1D
+  real(DP), dimension(:,:), intent(in) :: Dxi1D
 !</input>
   
 !<output>
   ! Coordinates of the cubature points on the edge in 2D.
   !        Dxi2D(1..ncubp,1)=x-coord, 
   !        Dxi2D(1..ncubp,2)=y-coord
-  real(DP), dimension(:,:), intent(OUT) :: Dxi2D
+  real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
 !</subroutine>    
@@ -2601,14 +2601,14 @@ contains
 
 !<input>
   ! Number of the local edge of the element where to map the points to.
-  integer, intent(IN) :: iedge
+  integer, intent(in) :: iedge
 
   ! number of cubature points
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 1D reference interval [-1,1]
   !     Dxi(1..ncubp,1)=coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dxi1D
+  real(DP), dimension(:,:), intent(in) :: Dxi1D
 !</input>
   
 !<output>
@@ -2616,7 +2616,7 @@ contains
   !        Dxi2D(1..ncubp,1)=1st barycentric coordinate, 
   !        Dxi2D(1..ncubp,2)=2nd barycentric coordinate,
   !        Dxi2D(1..ncubp,3)=3rd barycentric coordinate
-  real(DP), dimension(:,:), intent(OUT) :: Dxi2D
+  real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
 !</subroutine>    
@@ -2675,17 +2675,17 @@ contains
   ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
   ! the type of the coordinate system that is used for specifying the coordinates
   ! on the reference element.
-  integer(I32), intent(IN) :: icoordSystem
+  integer(I32), intent(in) :: icoordSystem
   
   ! Number of the local edge of the element where to map the points to.
-  integer, intent(IN) :: iedge
+  integer, intent(in) :: iedge
 
   ! number of cubature points
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 1D reference interval [-1,1]
   !     Dxi(1..ncubp,1)=coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dxi1D
+  real(DP), dimension(:,:), intent(in) :: Dxi1D
 !</input>
   
 !<output>
@@ -2697,7 +2697,7 @@ contains
   ! For 2D quads with standard coordinates:
   !        Dxi2D(1..ncubp,1)=x-coord, 
   !        Dxi2D(1..ncubp,2)=y-coord.
-  real(DP), dimension(:,:), intent(OUT) :: Dxi2D
+  real(DP), dimension(:,:), intent(out) :: Dxi2D
 !</output>
 
 !</subroutine>    
@@ -2735,15 +2735,15 @@ contains
 
 !<input>
   ! Number of the local face of the element where to map the points to.
-  integer, intent(IN) :: iface
+  integer, intent(in) :: iface
 
   ! number of cubature points
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 2D reference quadrilateral [-1,1]x[-1,1]
   ! Dxi2D(1..ncubp,1)= X-coordinates,
   ! Dxi2D(1..ncubp,2)= Y-coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dxi2D
+  real(DP), dimension(:,:), intent(in) :: Dxi2D
 !</input>
   
 !<output>
@@ -2751,7 +2751,7 @@ contains
   ! Dxi3D(1..ncubp,1)= X-coordinates,
   ! Dxi3D(1..ncubp,2)= Y-coordinates,
   ! Dxi3D(1..ncubp,3)= Z-coordinates
-  real(DP), dimension(:,:), intent(OUT) :: Dxi3D
+  real(DP), dimension(:,:), intent(out) :: Dxi3D
 !</output>
 
 !</subroutine>    
@@ -2852,15 +2852,15 @@ contains
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoord 
+  real(DP), dimension(:,:), intent(in) :: Dcoord 
   
   ! Coordinates of a point on the real element
-  real(DP), intent(IN) :: dxreal,dyreal
+  real(DP), intent(in) :: dxreal,dyreal
 !</input>
   
 !<output>
   ! Coordinates of a point on the reference element
-  real(DP), intent(OUT) :: dparx,dpary
+  real(DP), intent(out) :: dparx,dpary
 !</output>
   
 !</subroutine>
@@ -3067,13 +3067,13 @@ contains
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 !</input>
   
 !<output>
   ! Arrays with auxiliary jacobian factors for later computation
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(OUT) :: DjacPrep
+  real(DP), dimension(:), intent(out) :: DjacPrep
 !</output>
 
 !</subroutine>
@@ -3181,10 +3181,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare3D.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
   
 !</input>
   
@@ -3200,19 +3200,19 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dxreal
+  real(DP), intent(out) :: dxreal
   
   ! Y-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dyreal
+  real(DP), intent(out) :: dyreal
 
   ! Z-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dzreal
+  real(DP), intent(out) :: dzreal
   
 !</output>
   
@@ -3284,10 +3284,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
 !</input>
   
 !<output>
@@ -3302,10 +3302,10 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
 !</output>
   
 !</subroutine>
@@ -3355,13 +3355,13 @@ contains
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 !</input>
   
 !<output>
   ! Arrays with auxiliary jacobian factors for later computation
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(OUT) :: DjacPrep
+  real(DP), dimension(:), intent(out) :: DjacPrep
 !</output>
 
 !</subroutine>
@@ -3427,10 +3427,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare3D.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
   
 !</input>
   
@@ -3446,19 +3446,19 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dxreal
+  real(DP), intent(out) :: dxreal
   
   ! Y-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dyreal
+  real(DP), intent(out) :: dyreal
 
   ! Z-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dzreal
+  real(DP), intent(out) :: dzreal
   
 !</output>
   
@@ -3515,10 +3515,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
 !</input>
   
 !<output>
@@ -3533,10 +3533,10 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
 !</output>
   
 !</subroutine>
@@ -3578,13 +3578,13 @@ contains
   ! Dcoord(2,.) = y-coordinates,
   ! Dcoord(3,.) = y-coordinates.
   ! DIMENSION(#space dimensions,NVE)
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
 !</input>
   
 !<output>
   ! Arrays with auxiliary jacobian factors for later computation
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(OUT) :: DjacPrep
+  real(DP), dimension(:), intent(out) :: DjacPrep
 !</output>
 
 !</subroutine>
@@ -3655,10 +3655,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare3D.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
   
 !</input>
   
@@ -3674,19 +3674,19 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
   
   ! X-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dxreal
+  real(DP), intent(out) :: dxreal
   
   ! Y-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dyreal
+  real(DP), intent(out) :: dyreal
 
   ! Z-Coordinates of a point on the real element
-  real(DP), intent(OUT) :: dzreal
+  real(DP), intent(out) :: dzreal
   
 !</output>
   
@@ -3743,10 +3743,10 @@ contains
   ! coordinates in Dcoord; have to be computed previously
   ! by trafo_calcJacPrepare.
   ! DIMENSION(TRAFO_NAUXJAC3D)
-  real(DP), dimension(:), intent(IN) :: DjacPrep
+  real(DP), dimension(:), intent(in) :: DjacPrep
   
   ! Coordinates of a point on the reference element
-  real(DP), intent(IN) :: dparx,dpary,dparz
+  real(DP), intent(in) :: dparx,dpary,dparz
 !</input>
   
 !<output>
@@ -3761,10 +3761,10 @@ contains
   !  Djac(7) = J(1,3)
   !  Djac(8) = J(2,3)
   !  Djac(9) = J(3,3)
-  real(DP), dimension(:), intent(OUT) :: Djac
+  real(DP), dimension(:), intent(out) :: Djac
   
   ! The determinant of the mapping.
-  real(DP), intent(OUT) :: ddetj
+  real(DP), intent(out) :: ddetj
 !</output>
   
 !</subroutine>
@@ -3802,21 +3802,21 @@ contains
   ! ID of transformation to calculate. This specifies the format of the
   ! destination array DparPoint (dimension, if to use barycentric 
   ! coordinates etc.)
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
   
   ! Coordinates of the points forming the element.
   ! DIMENSION(1..ndim,1..nve)
-  real(DP), dimension(:,:), intent(IN) :: Dcoord
+  real(DP), dimension(:,:), intent(in) :: Dcoord
 
   ! Coordinates of the point in world coordinates.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
 !</input>
   
 !<output>
   ! Coordinates of the point in coordinates on there reference element.
   ! (The format depends on the type of coordinate on the reference element
   !  and is specified via ctrafoType.)
-  real(DP), dimension(:), intent(OUT) :: DparPoint
+  real(DP), dimension(:), intent(out) :: DparPoint
 !</output>
   
 !</subroutine>
@@ -3883,21 +3883,21 @@ contains
   ! ID of transformation to calculate. This specifies the format of the
   ! destination array DparPoint (dimension, if to use barycentric 
   ! coordinates etc.)
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
   
   ! Coordinates of the points forming the element.
   ! DIMENSION(1..ndim,1..nve)
-  real(DP), dimension(:,:), intent(IN) :: Dcoord
+  real(DP), dimension(:,:), intent(in) :: Dcoord
 
   ! Coordinates of the point in coordinates on there reference element.
   ! (The format depends on the type of coordinate on the reference element
   !  and is specified via ctrafoType.)
-  real(DP), dimension(:), intent(IN) :: DpointRef
+  real(DP), dimension(:), intent(in) :: DpointRef
 !</input>
   
 !<output>
   ! Coordinates of the point in world coordinates.
-  real(DP), dimension(:), intent(OUT) :: Dpoint
+  real(DP), dimension(:), intent(out) :: Dpoint
 !</output>
   
 !</subroutine>
@@ -4042,17 +4042,17 @@ contains
 
 !<input>
   ! Number of cubature points for the edge
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 1D reference fine mesh edge [-1,1]
   ! Dfine(1,1:ncubp)= X-coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dfine
+  real(DP), dimension(:,:), intent(in) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates on 1D reference coarse mesh edge [-1,1]
   ! Dcoarse(1,1:*ncubp)= X-coordinates
-  real(DP), dimension(:,:), intent(OUT) :: Dcoarse
+  real(DP), dimension(:,:), intent(out) :: Dcoarse
 !</output>
 
 !</subroutine>
@@ -4082,19 +4082,19 @@ contains
 
 !<input>
   ! Number of cubature points for the triangle
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates for the fine mesh triangle given in 
   ! barycentric coordinates
   ! Dfine(1:3,1:ncubp) = barycentric coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dfine
+  real(DP), dimension(:,:), intent(in) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates for the coarse mesh triangle given in
   ! barycentric coordinates.
   ! Dcoarse(1:3,1..4*ncubp) = barycentric coordinates
-  real(DP), dimension(:,:), intent(OUT) :: Dcoarse
+  real(DP), dimension(:,:), intent(out) :: Dcoarse
 !</output>
 
 !</subroutine>
@@ -4230,19 +4230,19 @@ contains
 
 !<input>
   ! Number of cubature points for the quadrilateral
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 2D reference fine mesh quad [-1,1]x[-1,1]
   ! Dfine(1,1:ncubp) = X-coordinates,
   ! Dfine(2,1:ncubp) = Y-coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dfine
+  real(DP), dimension(:,:), intent(in) :: Dfine
 !</input>
   
 !<output>
   ! Cubature point coordinates on 2D reference coarse mesh quad [-1,1]x[-1,1]
   ! Dcoarse(1,1:4*ncubp) = X-coordinates,
   ! Dcoarse(2,1:4*ncubp) = Y-coordinates
-  real(DP), dimension(:,:), intent(OUT) :: Dcoarse
+  real(DP), dimension(:,:), intent(out) :: Dcoarse
 !</output>
 
 !</subroutine>
@@ -4275,13 +4275,13 @@ contains
 
 !<input>
   ! Number of cubature points for the hexahedron
-  integer , intent(IN) :: ncubp
+  integer , intent(in) :: ncubp
   
   ! Cubature point coordinates on 3D reference fine mesh hexahedron [-1,1]^3
   ! Dfine(1,1:ncubp) = X-coordinates,
   ! Dfine(2,1:ncubp) = Y-coordinates,
   ! Dfine(3,1:ncubp) = Z-coordinates
-  real(DP), dimension(:,:), intent(IN) :: Dfine
+  real(DP), dimension(:,:), intent(in) :: Dfine
 !</input>
   
 !<output>
@@ -4289,7 +4289,7 @@ contains
   ! Dcoarse(1,1:8*ncubp) = X-coordinates,
   ! Dcoarse(2,1:8*ncubp) = Y-coordinates,
   ! Dcoarse(3,1:8*ncubp) = Z-coordinates
-  real(DP), dimension(:,:), intent(OUT) :: Dcoarse
+  real(DP), dimension(:,:), intent(out) :: Dcoarse
 !</output>
 
 !</subroutine>

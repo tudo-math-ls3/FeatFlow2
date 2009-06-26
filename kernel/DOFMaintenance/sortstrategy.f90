@@ -200,7 +200,7 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(out) :: Ipermutation
   !</output>    
 
   !</subroutine>
@@ -245,12 +245,12 @@ contains
     
 !<input>
   ! Matrix which should be used to calculate the renumbering strategy
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
     
 !<output>
   ! A storage handle to the permutation array.
-  integer, intent(OUT) :: h_Ipermutation
+  integer, intent(out) :: h_Ipermutation
 !</output>    
 
 !</subroutine>
@@ -298,12 +298,12 @@ contains
     
 !<input>
   ! Matrix which should be used to calculate the renumbering strategy
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
     
 !<output>
   ! A storage handle to the permutation array.
-  integer, intent(OUT) :: h_Ipermutation
+  integer, intent(out) :: h_Ipermutation
 !</output>    
 
 !</subroutine>
@@ -336,7 +336,7 @@ contains
     
   !<input>
     ! Matrix which should be used to calculate the renumbering strategy
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
   !</input>
     
   !<output>
@@ -344,7 +344,7 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(2*rmatrix%neq), intent(OUT) :: Ipermutation
+    integer, dimension(2*rmatrix%neq), intent(out) :: Ipermutation
   !</output>    
 
   !</subroutine>
@@ -442,29 +442,29 @@ contains
   !<input>
   
     ! Number of equations
-    integer,intent(IN)                    :: neq
+    integer,intent(in)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(IN)                   :: ndeg    
+    integer, intent(in)                   :: ndeg    
    
     ! Row description of matrix
-    integer, dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(in) :: Ild
   
     ! Column description of matrix
-    integer, dimension(:), intent(IN)     :: Icol
+    integer, dimension(:), intent(in)     :: Icol
     
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    integer, dimension(ndeg), intent(INOUT) :: Ideg
+    integer, dimension(ndeg), intent(inout) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    integer, dimension(:), intent(INOUT)  :: Icon
+    integer, dimension(:), intent(inout)  :: Icon
   !</inputoutput>
 
 !</subroutine>
@@ -615,32 +615,32 @@ contains
   !<input>
   
     ! Number of equations
-    integer,intent(IN)                    :: neq
+    integer,intent(in)                    :: neq
 
     ! Maximum number of entries != 0 in every row of the matrix
-    integer, intent(IN)                   :: ndeg    
+    integer, intent(in)                   :: ndeg    
    
     ! Row description of matrix
-    integer, dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(in) :: Ild
   
     ! Column description of matrix
-    integer, dimension(:), intent(IN)     :: Icol
+    integer, dimension(:), intent(in)     :: Icol
     
     ! Incides of diagonal elements in structure 9 matrix
-    integer, dimension(:), intent(IN)     :: Idiag
+    integer, dimension(:), intent(in)     :: Idiag
 
   !</input>
 
   !<inputoutput>
     ! Auxiliary vector; must be at least as long as the
     ! maximum number of entries != 0 in every row of the matrix
-    integer, dimension(ndeg), intent(INOUT) :: Ideg
+    integer, dimension(ndeg), intent(inout) :: Ideg
 
     ! Auxiliary vector; the column numbers of KCOL are assigned to this in
     ! the order of increasing degree. When calling the routine the user
     ! must copy the content of KCOL to this! These values are then
     ! resorted.
-    integer, dimension(:), intent(INOUT)  :: Icon
+    integer, dimension(:), intent(inout)  :: Icon
   !</inputoutput>
 
 !</subroutine>
@@ -799,23 +799,23 @@ contains
     !<input>
     
     ! Number of equations
-    integer, intent(IN)                   :: neq
+    integer, intent(in)                   :: neq
     
     ! Row description of matrix
-    integer, dimension(neq+1), intent(IN) :: Ild
+    integer, dimension(neq+1), intent(in) :: Ild
     
     ! Auxiliary vector, calculated with cmsort_calcColumnNumbering
-    integer, dimension(:), intent(IN)     :: Icon
+    integer, dimension(:), intent(in)     :: Icon
     !</input>
     
     !<output>
     
     ! The permutation vector that describes how the solution vector
     ! has to be restored
-    integer, dimension(neq), intent(OUT) :: Itr1
+    integer, dimension(neq), intent(out) :: Itr1
     
     ! Describes how a resorted vector can be sorted back 
-    integer, dimension(neq), intent(OUT) :: Itr2
+    integer, dimension(neq), intent(out) :: Itr2
 
     !</output>    
 
@@ -975,7 +975,7 @@ contains
   !<input>
     ! Spatial discretisation structure that specifies the DOF's and the
     ! triangulation
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! OPTIONAL: Specifies the sorting direction.
     ! =0: Sort first for X-, then for Y-, then for Z-coordinate.
@@ -983,7 +983,7 @@ contains
     ! =1: Sort first for Z-, then for Y-, then for X-coordinate.
     !     In 2D this is columnwise sorting.
     ! If not specified, idirection=0 is assumed.
-    integer, intent(IN),optional :: idirection
+    integer, intent(in),optional :: idirection
   !</input>
     
   !<output>
@@ -991,7 +991,7 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(out) :: Ipermutation
   !</output>    
 
   !</subroutine>
@@ -1136,9 +1136,9 @@ contains
     ! =1: points are first ordered for Z- (in 3D), then for Y- and at 
     !     the end for the X-coordinate.
     
-    real(DP), dimension(:,:), intent(IN) :: Dcoords
-    integer, dimension(:), intent(OUT) :: Ipermutation
-    integer, intent(IN) :: idirection
+    real(DP), dimension(:,:), intent(in) :: Dcoords
+    integer, dimension(:), intent(out) :: Ipermutation
+    integer, intent(in) :: idirection
     
       ! local variables
       integer, dimension(2) :: Isize
@@ -1218,11 +1218,11 @@ contains
   !<input>
     ! Spatial discretisation structure that specifies the DOF's and the
     ! triangulation
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! OPTIONAL: First vertex (lower left corner) of the domain.
     ! If not specified, ifirstVertex=1 is assumed.
-    integer, intent(IN), optional :: ifirstVertex
+    integer, intent(in), optional :: ifirstVertex
   !</input>
     
   !<output>
@@ -1230,7 +1230,7 @@ contains
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(out) :: Ipermutation
   !</output>    
 
   !</subroutine>
@@ -1311,13 +1311,13 @@ contains
     ! ivt specifies the lower left corner of the macro. iel specifies
     ! the element in the lower left corner that contains ivt.
     
-    integer, dimension(:,:), intent(IN) :: IelementsAtEdge
-    integer, dimension(:,:), intent(IN) :: IverticesAtElement
-    integer, dimension(:,:), intent(IN) :: IedgesAtElement
-    integer, dimension(:), intent(OUT) :: Ipermutation
-    integer, intent(IN) :: ivt
-    integer, intent(IN) :: iel
-    integer, intent(IN) :: NVT
+    integer, dimension(:,:), intent(in) :: IelementsAtEdge
+    integer, dimension(:,:), intent(in) :: IverticesAtElement
+    integer, dimension(:,:), intent(in) :: IedgesAtElement
+    integer, dimension(:), intent(out) :: Ipermutation
+    integer, intent(in) :: ivt
+    integer, intent(in) :: iel
+    integer, intent(in) :: NVT
 
       ! local variables
       integer :: icornervertex,icornerelement,ipermidx
@@ -1580,7 +1580,7 @@ contains
   ! 2-level refinement.
   ! The last element in this array must correspond
   ! to the permutation which is to be computed.
-  type(t_spatialDiscretisation), dimension(:), intent(IN) :: Rdiscretisation
+  type(t_spatialDiscretisation), dimension(:), intent(in) :: Rdiscretisation
   
 !</input>
     
@@ -1589,7 +1589,7 @@ contains
   ! With NEQ=NEQ(matrix):
   !   Ipermutation(1:NEQ)       = permutation,
   !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-  integer, dimension(:), intent(OUT) :: Ipermutation
+  integer, dimension(:), intent(out) :: Ipermutation
 !</output>    
 
 !</subroutine>
@@ -1629,13 +1629,13 @@ contains
     ! 2-level refinement.
     ! The last element in this array must correspond
     ! to the permutation which is to be computed.
-    type(t_spatialDiscretisation), dimension(:), intent(IN), target :: Rdiscretisation
+    type(t_spatialDiscretisation), dimension(:), intent(in), target :: Rdiscretisation
   
     ! The permutation vector for sorting and its inverse.
     ! With NEQ=NEQ(matrix):
     !   Ipermutation(1:NEQ)       = permutation,
     !   Ipermutation(NEQ+1:2*NEQ) = inverse permutation.
-    integer, dimension(:), intent(OUT) :: Ipermutation
+    integer, dimension(:), intent(out) :: Ipermutation
 
       ! local variables      
       integer, dimension(:), pointer :: p_IrefinementPatch
@@ -1820,13 +1820,13 @@ contains
     
   !<input>
     ! A permutation.
-    integer, dimension(:), intent(IN) :: IpermutationSource
+    integer, dimension(:), intent(in) :: IpermutationSource
   !</input>
     
   !<output>
     ! An array of the same size as IpermutationSource. Receives the inverse
     ! permutation.
-    integer, dimension(:), intent(OUT) :: IpermutationDest
+    integer, dimension(:), intent(out) :: IpermutationDest
   !</output>    
 
   !</subroutine>

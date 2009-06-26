@@ -71,38 +71,38 @@ contains
   ! 1 = Multigrid solver, VANKA smoother, VANKA coarse grid solver
   ! 2 = BiCGStab-solver, Multigrid preconditioner, VANKA smoother,
   !     VANKA coarse grid solver
-  integer, intent(IN)               :: isolverType
+  integer, intent(in)               :: isolverType
 
   ! Number of levels
-  integer, intent(IN)               :: nlevels
+  integer, intent(in)               :: nlevels
 
   ! Minimum number of solver iterations
-  integer, intent(IN)               :: niterationsMin
+  integer, intent(in)               :: niterationsMin
 
   ! Maximum number of solver iterations
-  integer, intent(IN)               :: niterationsMax
+  integer, intent(in)               :: niterationsMax
 
   ! If solver conbination is BiCGStab with MG preconditioning, number of
   ! steps multigrid should perform. Otherwise ignored
-  integer, intent(IN)               :: nprecSteps
+  integer, intent(in)               :: nprecSteps
 
   ! Absolute accuracy of the solver
-  real(DP), intent(IN)                   :: daccuracyAbs
+  real(DP), intent(in)                   :: daccuracyAbs
 
   ! Relativew accuracy of the solver
-  real(DP), intent(IN)                   :: daccuracyRel
+  real(DP), intent(in)                   :: daccuracyRel
 
   ! Number of pre- and postsmoothing steps
-  integer, intent(IN)               :: nsmoothingSteps
+  integer, intent(in)               :: nsmoothingSteps
   
   ! Absolute accuracy on the coarse grid
-  real(DP), intent(IN)                   :: dcoarseGridAccuracyAbs
+  real(DP), intent(in)                   :: dcoarseGridAccuracyAbs
 
   ! Relative accuracy on the coarse grid
-  real(DP), intent(IN)                   :: dcoarseGridAccuracyRel
+  real(DP), intent(in)                   :: dcoarseGridAccuracyRel
   
   ! Maximum iterations on the coarse grid
-  integer, intent(IN)               :: nmaxCoarseGridSteps
+  integer, intent(in)               :: nmaxCoarseGridSteps
 
   ! A list of spatial discretisation structures for the three equations
   ! that are supported by CC2D: x-velocity, y-velocity, pressure
@@ -220,21 +220,21 @@ contains
 
 !<input>
   ! The parameter list that contains the whole solver configuration.
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! The name of a section in rparamList that contains the configuration of
   ! the main linear solver.
-  character(LEN=*), intent(IN) :: ssolverName
+  character(LEN=*), intent(in) :: ssolverName
   
   ! Number of levels in the discretisation.
-  integer, intent(IN) :: nlevels
+  integer, intent(in) :: nlevels
 
   ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
   ! iteration. If not, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), intent(IN), target, optional :: RfilterChain
+  type(t_filterChain), dimension(:), intent(in), target, optional :: RfilterChain
 
   ! OPTIONAL: An interlevel projection structure that configures the projection
   ! between the solutions on a finer and a coarser grid. The structure
@@ -593,11 +593,11 @@ contains
 
 !<input>
   ! The parameter list that contains the whole solver configuration.
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! The name of a section in rparamList that contains the configuration of
   ! the linear solver.
-  character(LEN=*), intent(IN) :: ssection
+  character(LEN=*), intent(in) :: ssection
   
   ! OPTIONAL: Type of solver structure that should be initialised.
   ! If unspecified or if set to LINSOL_ALG_UNDEFINED, the parameters in the
@@ -605,13 +605,13 @@ contains
   ! Otherwise, csolverType must be a LINSOL_ALG_xxx constant that specifies
   ! a special solver type whose parameters should be initialised (e.g.
   ! the 'ikrylovDim' parameter of the GMRES method).
-  integer, intent(IN), optional :: csolverType
+  integer, intent(in), optional :: csolverType
 !</input>
 
 !<output>
   ! A linear solver node whose parameters should be changed according to the
   ! parameters in rparamList.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</output>
 
 !</subroutine>

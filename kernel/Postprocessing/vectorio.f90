@@ -71,21 +71,21 @@ contains
     
   !<input>
     ! vector: array [:] of double
-    real(DP), dimension(:), intent(IN) :: Ddata
+    real(DP), dimension(:), intent(in) :: Ddata
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    character(len=*), intent(IN), optional :: sformat
+    character(len=*), intent(in), optional :: sformat
 
     ! OPTIONAL: Permutation for unsorting.
     ! If specified, this permutation tells how to unsort a vector before
@@ -161,10 +161,10 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! OPTIONAL: Format string to use for the input; e.g. '(E20.10)'.
     ! If not specified, data is read from the file unformatted 
@@ -172,7 +172,7 @@ contains
     ! When reading an array written out by vecio_writeArray_Dble,
     ! the format string shall match the setting of the 
     ! format string used there.
-    character(len=*), intent(IN), optional :: sformat
+    character(len=*), intent(in), optional :: sformat
     
     ! OPTIONAL: Permutation for sorting.
     ! If specified, this permutation tells how to unsort a vector before
@@ -182,7 +182,7 @@ contains
   
   !<output>
     ! Array where to write the data to.
-    real(DP), dimension(:), intent(OUT) :: Ddata
+    real(DP), dimension(:), intent(out) :: Ddata
   !</output>
     
 !</subroutine>
@@ -247,29 +247,29 @@ contains
     
   !<input>
     ! The vector to be written out
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
     
     ! Name of the vector
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    logical, intent(IN) :: bunsort
+    logical, intent(in) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    character(len=*), intent(IN), optional :: sformat
+    character(len=*), intent(in), optional :: sformat
   !</input>
     
 !</subroutine>
@@ -369,16 +369,16 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Read unsorted vector.
     ! =TRUE:  Read data and sort it according to the sorting strategy
     !         in the vector (if the vector is sorted)
     ! =FALSE: Read vector as it is.
-    logical, intent(IN) :: bunsort
+    logical, intent(in) :: bunsort
 
     ! Whether to read data formatted or unformatted.
     ! TRUE  = Treat data in input file formatted, i.e. in human readable form.
@@ -388,19 +388,19 @@ contains
     ! sformat being specified shall be read with bformatted=TRUE.
     ! A vector written out by vecio_writeVectorHR without a format specifier
     ! sformat being specified shall be read with bformatted=FALSE.
-    logical, intent(IN) :: bformatted
+    logical, intent(in) :: bformatted
   !</input>
 
   !<inputoutput>
     ! The vector to be read in.
     ! If the vector is not initialised, a new vector is automatically created
     ! with the correct size.
-    type(t_vectorScalar), intent(INOUT) :: rvector
+    type(t_vectorScalar), intent(inout) :: rvector
   !</inputoutput>
 
   !<output>    
     ! Name of the vector
-    character(len=*), intent(OUT) :: sarray
+    character(len=*), intent(out) :: sarray
   !</output>
     
     
@@ -498,29 +498,29 @@ contains
     
   !<input>
     ! The vector to be written out
-    type(t_vectorBlock), intent(IN) :: rvector
+    type(t_vectorBlock), intent(in) :: rvector
     
     ! Name of the vector
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    logical, intent(IN) :: bunsort
+    logical, intent(in) :: bunsort
 
     ! OPTIONAL: Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    character(len=*), intent(IN), optional :: sformat
+    character(len=*), intent(in), optional :: sformat
   !</input>
     
 !</subroutine>
@@ -639,16 +639,16 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Read from channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to read from. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Read unsorted vector.
     ! =TRUE:  Read data and sort it according to the sorting strategy
     !         in the vector (if the vector is sorted)
     ! =FALSE: Read vector as it is.
-    logical, intent(IN) :: bunsorted
+    logical, intent(in) :: bunsorted
 
     ! Whether to read data formatted or unformatted.
     ! TRUE  = Treat data in input file formatted, i.e. in human readable form.
@@ -658,19 +658,19 @@ contains
     ! sformat being specified shall be read with bformatted=TRUE.
     ! A vector written out by vecio_writeBlockVectorHR without a format specifier
     ! sformat being specified shall be read with bformatted=FALSE.
-    logical, intent(IN) :: bformatted
+    logical, intent(in) :: bformatted
   !</input>
 
   !<inputoutput>
     ! The vector to be read in.
     ! If the vector is not initialised, a new vector is automatically created
     ! with the correct size.
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(inout) :: rvector
   !</inputoutput>
 
   !<output>    
     ! Name of the vector
-    character(len=*), intent(OUT) :: sarray
+    character(len=*), intent(out) :: sarray
   !</output>
     
     
@@ -801,29 +801,29 @@ contains
     
   !<input>
     ! The vector to be written out
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
     
     ! Name of the vector
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    logical, intent(IN) :: bunsort
+    logical, intent(in) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
   !</input>
     
 !</subroutine>
@@ -905,29 +905,29 @@ contains
     
   !<input>
     ! The vector to be written out
-    type(t_vectorBlock), intent(IN) :: rvector
+    type(t_vectorBlock), intent(in) :: rvector
     
     ! Name of the vector
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
     ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
     ! =FALSE: Write vector as it is.
-    logical, intent(IN) :: bunsort
+    logical, intent(in) :: bunsort
 
     ! Format string to use for the output; e.g. '(E20.10)'.
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
   !</input>
     
 !</subroutine>
@@ -1020,15 +1020,15 @@ contains
   
 !<input>
   ! vector: array [:] of double
-  real(DP), dimension(:), intent(IN) :: Ddata
+  real(DP), dimension(:), intent(in) :: Ddata
   
   ! output channel to use for output
-  integer, intent(IN) :: ifile
+  integer, intent(in) :: ifile
   
   ! Format string to use for the output; e.g. '(E20.10)'.
   ! If not specified, data is written to the file unformatted 
   ! (i.e. in a computer dependent, not human readable form).
-  character(len=*), intent(IN) :: sformat
+  character(len=*), intent(in) :: sformat
   
   ! OPTIONAL: Permutation for unsorting.
   ! If specified, this permutation tells how to unsort a vector before

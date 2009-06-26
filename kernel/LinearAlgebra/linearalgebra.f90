@@ -507,17 +507,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:), intent(OUT) :: Fy
+  real(SP), dimension(:), intent(out) :: Fy
   
 !</output>
   
@@ -544,16 +544,16 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:), intent(OUT) :: Dy
+  real(DP), dimension(:), intent(out) :: Dy
   
 !</output>
   
@@ -580,16 +580,16 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:), intent(OUT) :: Qy
+  real(QP), dimension(:), intent(out) :: Qy
   
 !</output>
   
@@ -634,17 +634,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:), intent(OUT) :: Dy
+  real(DP), dimension(:), intent(out) :: Dy
   
 !</output>
   
@@ -684,17 +684,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:), intent(OUT) :: Qy
+  real(QP), dimension(:), intent(out) :: Qy
   
 !</output>
   
@@ -734,17 +734,17 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:), intent(OUT) :: Fy
+  real(SP), dimension(:), intent(out) :: Fy
   
 !</output>
   
@@ -784,17 +784,17 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:), intent(OUT) :: Qy
+  real(QP), dimension(:), intent(out) :: Qy
   
 !</output>
   
@@ -834,17 +834,17 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:), intent(OUT) :: Fy
+  real(SP), dimension(:), intent(out) :: Fy
   
 !</output>
   
@@ -884,17 +884,17 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:), intent(OUT) :: Dy
+  real(DP), dimension(:), intent(out) :: Dy
   
 !</output>
   
@@ -934,17 +934,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:), intent(IN) :: Ix
+  integer(I8), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:), intent(OUT) :: Iy
+  integer(I8), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -985,17 +985,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:), intent(IN) :: Ix
+  integer(I8), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:), intent(OUT) :: Iy
+  integer(I16), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1036,17 +1036,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:), intent(IN) :: Ix
+  integer(I8), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:), intent(OUT) :: Iy
+  integer(I32), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1087,17 +1087,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:), intent(IN) :: Ix
+  integer(I8), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:), intent(OUT) :: Iy
+  integer(I64), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1138,17 +1138,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:), intent(IN) :: Ix
+  integer(I16), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:), intent(OUT) :: Iy
+  integer(I16), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1189,17 +1189,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:), intent(IN) :: Ix
+  integer(I16), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:), intent(OUT) :: Iy
+  integer(I8), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1240,17 +1240,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:), intent(IN) :: Ix
+  integer(I16), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:), intent(OUT) :: Iy
+  integer(I32), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1291,17 +1291,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:), intent(IN) :: Ix
+  integer(I16), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:), intent(OUT) :: Iy
+  integer(I64), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1342,17 +1342,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:), intent(IN) :: Ix
+  integer(I32), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:), intent(OUT) :: Iy
+  integer(I32), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1393,17 +1393,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:), intent(IN) :: Ix
+  integer(I32), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:), intent(OUT) :: Iy
+  integer(I8), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1444,17 +1444,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:), intent(IN) :: Ix
+  integer(I32), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:), intent(OUT) :: Iy
+  integer(I16), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1495,17 +1495,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:), intent(IN) :: Ix
+  integer(I32), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:), intent(OUT) :: Iy
+  integer(I64), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1546,17 +1546,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:), intent(IN) :: Ix
+  integer(I64), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:), intent(OUT) :: Iy
+  integer(I64), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1597,17 +1597,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:), intent(IN) :: Ix
+  integer(I64), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:), intent(OUT) :: Iy
+  integer(I8), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1648,17 +1648,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:), intent(IN) :: Ix
+  integer(I64), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:), intent(OUT) :: Iy
+  integer(I16), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1699,17 +1699,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:), intent(IN) :: Ix
+  integer(I64), dimension(:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:), intent(OUT) :: Iy
+  integer(I32), dimension(:), intent(out) :: Iy
   
 !</output>
   
@@ -1750,17 +1750,17 @@ contains
 !<input>
   
   ! Source vector
-  logical, dimension(:), intent(IN) :: Lx
+  logical, dimension(:), intent(in) :: Lx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  logical, dimension(:), intent(OUT) :: Ly
+  logical, dimension(:), intent(out) :: Ly
   
 !</output>
   
@@ -1800,17 +1800,17 @@ contains
 !<input>
   
   ! Source vector
-  character, dimension(:), intent(IN) :: Sx
+  character, dimension(:), intent(in) :: Sx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  character, dimension(:), intent(OUT) :: Sy
+  character, dimension(:), intent(out) :: Sy
   
 !</output>
   
@@ -1850,17 +1850,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:,:), intent(OUT) :: Fy
+  real(SP), dimension(:,:), intent(out) :: Fy
   
 !</output>
   
@@ -1887,17 +1887,17 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
   
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:,:), intent(OUT) :: Dy
+  real(DP), dimension(:,:), intent(out) :: Dy
   
 !</output>
   
@@ -1924,17 +1924,17 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:,:), intent(IN) :: Qx
+  real(QP), dimension(:,:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
   
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:,:), intent(OUT) :: Qy
+  real(QP), dimension(:,:), intent(out) :: Qy
   
 !</output>
   
@@ -1983,17 +1983,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:,:), intent(OUT) :: Dy
+  real(DP), dimension(:,:), intent(out) :: Dy
   
 !</output>
   
@@ -2037,17 +2037,17 @@ contains
 !<input>
   
   ! Source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:,:), intent(OUT) :: Qy
+  real(QP), dimension(:,:), intent(out) :: Qy
   
 !</output>
   
@@ -2091,17 +2091,17 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:,:), intent(OUT) :: Fy
+  real(SP), dimension(:,:), intent(out) :: Fy
   
 !</output>
   
@@ -2145,17 +2145,17 @@ contains
 !<input>
   
   ! Source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(QP), dimension(:,:), intent(OUT) :: Qy
+  real(QP), dimension(:,:), intent(out) :: Qy
   
 !</output>
   
@@ -2199,17 +2199,17 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:,:), intent(IN) :: Qx
+  real(QP), dimension(:,:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(SP), dimension(:,:), intent(OUT) :: Fy
+  real(SP), dimension(:,:), intent(out) :: Fy
   
 !</output>
   
@@ -2253,17 +2253,17 @@ contains
 !<input>
   
   ! Source vector
-  real(QP), dimension(:,:), intent(IN) :: Qx
+  real(QP), dimension(:,:), intent(in) :: Qx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  real(DP), dimension(:,:), intent(OUT) :: Dy
+  real(DP), dimension(:,:), intent(out) :: Dy
   
 !</output>
   
@@ -2307,17 +2307,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:,:), intent(IN) :: Ix
+  integer(I8), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:,:), intent(OUT) :: Iy
+  integer(I8), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2362,17 +2362,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:,:), intent(IN) :: Ix
+  integer(I8), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:,:), intent(OUT) :: Iy
+  integer(I16), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2417,17 +2417,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:,:), intent(IN) :: Ix
+  integer(I8), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:,:), intent(OUT) :: Iy
+  integer(I32), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2472,17 +2472,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I8), dimension(:,:), intent(IN) :: Ix
+  integer(I8), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:,:), intent(OUT) :: Iy
+  integer(I64), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2527,17 +2527,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:,:), intent(IN) :: Ix
+  integer(I16), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:,:), intent(OUT) :: Iy
+  integer(I16), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2582,17 +2582,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:,:), intent(IN) :: Ix
+  integer(I16), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:,:), intent(OUT) :: Iy
+  integer(I8), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2637,17 +2637,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:,:), intent(IN) :: Ix
+  integer(I16), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:,:), intent(OUT) :: Iy
+  integer(I32), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2692,17 +2692,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I16), dimension(:,:), intent(IN) :: Ix
+  integer(I16), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:,:), intent(OUT) :: Iy
+  integer(I64), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2747,17 +2747,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:,:), intent(IN) :: Ix
+  integer(I32), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:,:), intent(OUT) :: Iy
+  integer(I32), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2802,17 +2802,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:,:), intent(IN) :: Ix
+  integer(I32), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:,:), intent(OUT) :: Iy
+  integer(I8), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2857,17 +2857,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:,:), intent(IN) :: Ix
+  integer(I32), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:,:), intent(OUT) :: Iy
+  integer(I16), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2912,17 +2912,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I32), dimension(:,:), intent(IN) :: Ix
+  integer(I32), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:,:), intent(OUT) :: Iy
+  integer(I64), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -2967,17 +2967,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:,:), intent(IN) :: Ix
+  integer(I64), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I64), dimension(:,:), intent(OUT) :: Iy
+  integer(I64), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -3022,17 +3022,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:,:), intent(IN) :: Ix
+  integer(I64), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I8), dimension(:,:), intent(OUT) :: Iy
+  integer(I8), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -3077,17 +3077,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:,:), intent(IN) :: Ix
+  integer(I64), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I16), dimension(:,:), intent(OUT) :: Iy
+  integer(I16), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -3132,17 +3132,17 @@ contains
 !<input>
   
   ! Source vector
-  integer(I64), dimension(:,:), intent(IN) :: Ix
+  integer(I64), dimension(:,:), intent(in) :: Ix
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  integer(I32), dimension(:,:), intent(OUT) :: Iy
+  integer(I32), dimension(:,:), intent(out) :: Iy
   
 !</output>
   
@@ -3187,17 +3187,17 @@ contains
 !<input>
   
   ! Source vector
-  logical, dimension(:,:), intent(IN) :: Lx
+  logical, dimension(:,:), intent(in) :: Lx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  logical, dimension(:,:), intent(OUT) :: Ly
+  logical, dimension(:,:), intent(out) :: Ly
   
 !</output>
   
@@ -3242,17 +3242,17 @@ contains
 !<input>
   
   ! Source vector
-  character, dimension(:,:), intent(IN) :: Sx
+  character, dimension(:,:), intent(in) :: Sx
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n,m
+  integer, intent(in), optional :: n,m
 
 !</input>
 
 !<output>
   
   ! Destination vector
-  character, dimension(:,:), intent(OUT) :: Sy
+  character, dimension(:,:), intent(out) :: Sy
   
 !</output>
   
@@ -3297,17 +3297,17 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(SP), dimension(:), intent(INOUT) :: Fx
+  real(SP), dimension(:), intent(inout) :: Fx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(SP), intent(IN) :: sc
+  real(SP), intent(in) :: sc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
   
@@ -3342,17 +3342,17 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(DP), dimension(:), intent(INOUT) :: Dx
+  real(DP), dimension(:), intent(inout) :: Dx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(DP), intent(IN) :: dc
+  real(DP), intent(in) :: dc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
   
@@ -3387,17 +3387,17 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(QP), dimension(:), intent(INOUT) :: Qx
+  real(QP), dimension(:), intent(inout) :: Qx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(QP), intent(IN) :: qc
+  real(QP), intent(in) :: qc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
   
@@ -3448,14 +3448,14 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(SP), dimension(:,:), intent(INOUT) :: Fx
+  real(SP), dimension(:,:), intent(inout) :: Fx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(SP), intent(IN) :: sc
+  real(SP), intent(in) :: sc
 
 !</input>
   
@@ -3482,14 +3482,14 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(DP), dimension(:,:), intent(INOUT) :: Dx
+  real(DP), dimension(:,:), intent(inout) :: Dx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(DP), intent(IN) :: dc
+  real(DP), intent(in) :: dc
 
 !</input>
   
@@ -3516,14 +3516,14 @@ contains
 !<inputoutput>
   
   ! Source and destination vector
-  real(QP), dimension(:,:), intent(INOUT) :: Qx
+  real(QP), dimension(:,:), intent(inout) :: Qx
   
 !</inputoutput>
 
 !<input>
 
   ! Multiplication factor
-  real(QP), intent(IN) :: qc
+  real(QP), intent(in) :: qc
 
 !</input>
   
@@ -3560,12 +3560,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  real(SP), dimension(:), intent(OUT) :: Fx
+  real(SP), dimension(:), intent(out) :: Fx
 !</output>
   
 !</subroutine>
@@ -3605,12 +3605,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  real(DP), dimension(:), intent(OUT) :: Dx
+  real(DP), dimension(:), intent(out) :: Dx
 !</output>
   
 !</subroutine>
@@ -3650,12 +3650,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  real(QP), dimension(:), intent(OUT) :: Qx
+  real(QP), dimension(:), intent(out) :: Qx
 !</output>
   
 !</subroutine>
@@ -3695,12 +3695,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  integer(I8), dimension(:), intent(OUT) :: Ix
+  integer(I8), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -3740,12 +3740,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  integer(I16), dimension(:), intent(OUT) :: Ix
+  integer(I16), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -3785,12 +3785,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  integer(I32), dimension(:), intent(OUT) :: Ix
+  integer(I32), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -3830,12 +3830,12 @@ contains
 
 !<input>
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be cleared
-  integer(I64), dimension(:), intent(OUT) :: Ix
+  integer(I64), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -3876,7 +3876,7 @@ contains
 !<output>
   
   ! Destination vector to be cleared
-  real(SP), dimension(:,:), intent(OUT) :: Fx
+  real(SP), dimension(:,:), intent(out) :: Fx
   
 !</output>
   
@@ -3907,7 +3907,7 @@ contains
 
 !<output>
   ! Destination vector to be cleared
-  real(DP), dimension(:,:), intent(OUT) :: Dx
+  real(DP), dimension(:,:), intent(out) :: Dx
 !</output>
   
 !</subroutine>
@@ -3937,7 +3937,7 @@ contains
 
 !<output>
   ! Destination vector to be cleared
-  real(QP), dimension(:,:), intent(OUT) :: Qx
+  real(QP), dimension(:,:), intent(out) :: Qx
 !</output>
   
 !</subroutine>
@@ -3968,7 +3968,7 @@ contains
 !<output>
   
   ! Destination vector to be cleared
-  integer(I8), dimension(:,:), intent(OUT) :: Ix
+  integer(I8), dimension(:,:), intent(out) :: Ix
   
 !</output>
   
@@ -4000,7 +4000,7 @@ contains
 !<output>
   
   ! Destination vector to be cleared
-  integer(I16), dimension(:,:), intent(OUT) :: Ix
+  integer(I16), dimension(:,:), intent(out) :: Ix
   
 !</output>
   
@@ -4032,7 +4032,7 @@ contains
 !<output>
   
   ! Destination vector to be cleared
-  integer(I32), dimension(:,:), intent(OUT) :: Ix
+  integer(I32), dimension(:,:), intent(out) :: Ix
   
 !</output>
   
@@ -4064,7 +4064,7 @@ contains
 !<output>
   
   ! Destination vector to be cleared
-  integer(I64), dimension(:,:), intent(OUT) :: Ix
+  integer(I64), dimension(:,:), intent(out) :: Ix
   
 !</output>
   
@@ -4094,15 +4094,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(SP), intent(IN) :: fvalue
+  real(SP), intent(in) :: fvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(SP), dimension(:), intent(OUT) :: Fx
+  real(SP), dimension(:), intent(out) :: Fx
 !</output>
 
 !</subroutine>
@@ -4142,15 +4142,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(DP), intent(IN) :: dvalue
+  real(DP), intent(in) :: dvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(DP), dimension(:), intent(OUT) :: Dx
+  real(DP), dimension(:), intent(out) :: Dx
 !</output>
   
 !</subroutine>
@@ -4190,15 +4190,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(QP), intent(IN) :: qvalue
+  real(QP), intent(in) :: qvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(QP), dimension(:), intent(OUT) :: Qx
+  real(QP), dimension(:), intent(out) :: Qx
 !</output>
   
 !</subroutine>
@@ -4238,15 +4238,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I8), intent(IN) :: ivalue
+  integer(I8), intent(in) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I8), dimension(:), intent(OUT) :: Ix
+  integer(I8), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4286,15 +4286,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I16), intent(IN) :: ivalue
+  integer(I16), intent(in) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I16), dimension(:), intent(OUT) :: Ix
+  integer(I16), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4334,15 +4334,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I32), intent(IN) :: ivalue
+  integer(I32), intent(in) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I32), dimension(:), intent(OUT) :: Ix
+  integer(I32), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4382,15 +4382,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I64), intent(IN) :: ivalue
+  integer(I64), intent(in) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I64), dimension(:), intent(OUT) :: Ix
+  integer(I64), dimension(:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4430,15 +4430,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  logical, intent(IN) :: lvalue
+  logical, intent(in) :: lvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  logical, dimension(:), intent(OUT) :: Lx
+  logical, dimension(:), intent(out) :: Lx
 !</output>
   
 !</subroutine>
@@ -4478,15 +4478,15 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  character, intent(IN) :: svalue
+  character, intent(in) :: svalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! Destination vector to be set
-  character, dimension(:), intent(OUT) :: Sx
+  character, dimension(:), intent(out) :: Sx
 !</output>
   
 !</subroutine>
@@ -4526,12 +4526,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(SP), intent(IN) :: fvalue
+  real(SP), intent(in) :: fvalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(SP), dimension(:,:), intent(OUT) :: Fx
+  real(SP), dimension(:,:), intent(out) :: Fx
 !</output>
 
 !</subroutine>
@@ -4561,12 +4561,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(DP), intent(IN) :: dvalue
+  real(DP), intent(in) :: dvalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(DP), dimension(:,:), intent(OUT) :: Dx
+  real(DP), dimension(:,:), intent(out) :: Dx
 !</output>
   
 !</subroutine>
@@ -4596,12 +4596,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  real(QP), intent(IN) :: qvalue
+  real(QP), intent(in) :: qvalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  real(QP), dimension(:,:), intent(OUT) :: Qx
+  real(QP), dimension(:,:), intent(out) :: Qx
 !</output>
   
 !</subroutine>
@@ -4631,12 +4631,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I8), intent(IN) :: ivalue
+  integer(I8), intent(in) :: ivalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I8), dimension(:,:), intent(OUT) :: Ix
+  integer(I8), dimension(:,:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4666,12 +4666,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I16), intent(IN) :: ivalue
+  integer(I16), intent(in) :: ivalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I16), dimension(:,:), intent(OUT) :: Ix
+  integer(I16), dimension(:,:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4701,12 +4701,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I32), intent(IN) :: ivalue
+  integer(I32), intent(in) :: ivalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I32), dimension(:,:), intent(OUT) :: Ix
+  integer(I32), dimension(:,:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4736,12 +4736,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  integer(I64), intent(IN) :: ivalue
+  integer(I64), intent(in) :: ivalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  integer(I64), dimension(:,:), intent(OUT) :: Ix
+  integer(I64), dimension(:,:), intent(out) :: Ix
 !</output>
   
 !</subroutine>
@@ -4771,12 +4771,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  logical, intent(IN) :: lvalue
+  logical, intent(in) :: lvalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  logical, dimension(:,:), intent(OUT) :: Lx
+  logical, dimension(:,:), intent(out) :: Lx
 !</output>
   
 !</subroutine>
@@ -4806,12 +4806,12 @@ contains
 
 !<input>
   ! The value, the vector should be set to.
-  character, intent(IN) :: svalue
+  character, intent(in) :: svalue
 !</input>
 
 !<output>
   ! Destination vector to be set
-  character, dimension(:,:), intent(OUT) :: Sx
+  character, dimension(:,:), intent(out) :: Sx
 !</output>
   
 !</subroutine>
@@ -4842,23 +4842,23 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)               :: scx
+  real(SP), intent(in)               :: scx
 
   ! Scaling factor for Dy
-  real(SP), intent(IN)               :: scy
+  real(SP), intent(in)               :: scy
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(SP), dimension(:), intent(INOUT) :: Fy
+  real(SP), dimension(:), intent(inout) :: Fy
   
 !</inputoutput>
   
@@ -4910,23 +4910,23 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)               :: dcx
+  real(DP), intent(in)               :: dcx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)               :: dcy
+  real(DP), intent(in)               :: dcy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:), intent(INOUT) :: Dy
+  real(DP), dimension(:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -4978,23 +4978,23 @@ contains
 !<input>
   
   ! First source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! Scaling factor for Dx
-  real(QP), intent(IN)               :: qcx
+  real(QP), intent(in)               :: qcx
 
   ! Scaling factor for Dy
-  real(QP), intent(IN)               :: qcy
+  real(QP), intent(in)               :: qcy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -5108,23 +5108,23 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)               :: scx
+  real(SP), intent(in)               :: scx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)               :: dcy
+  real(DP), intent(in)               :: dcy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:), intent(INOUT) :: Dy
+  real(DP), dimension(:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -5239,23 +5239,23 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)               :: scx
+  real(SP), intent(in)               :: scx
 
   ! Scaling factor for Qy
-  real(QP), intent(IN)               :: qcy
+  real(QP), intent(in)               :: qcy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -5373,23 +5373,23 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)               :: dcx
+  real(DP), intent(in)               :: dcx
 
   ! Scaling factor for Qy
-  real(QP), intent(IN)               :: qcy
+  real(QP), intent(in)               :: qcy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -5507,20 +5507,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)                 :: scx
+  real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Dy
-  real(SP), intent(IN)                 :: scy
+  real(SP), intent(in)                 :: scy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(SP), dimension(:,:), intent(INOUT) :: Fy
+  real(SP), dimension(:,:), intent(inout) :: Fy
   
 !</inputoutput>
   
@@ -5555,20 +5555,20 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)                 :: dcx
+  real(DP), intent(in)                 :: dcx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)                 :: dcy
+  real(DP), intent(in)                 :: dcy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:,:), intent(INOUT) :: Dy
+  real(DP), dimension(:,:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -5603,20 +5603,20 @@ contains
 !<input>
   
   ! First source vector
-  real(QP), dimension(:,:), intent(IN) :: Qx
+  real(QP), dimension(:,:), intent(in) :: Qx
   
   ! Scaling factor for Qx
-  real(QP), intent(IN)                 :: qcx
+  real(QP), intent(in)                 :: qcx
 
   ! Scaling factor for Qy
-  real(QP), intent(IN)                 :: qcy
+  real(QP), intent(in)                 :: qcy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:,:), intent(INOUT) :: Qy
+  real(QP), dimension(:,:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -5648,20 +5648,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)                 :: scx
+  real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)                 :: dcy
+  real(DP), intent(in)                 :: dcy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:,:), intent(INOUT) :: Dy
+  real(DP), dimension(:,:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -5783,20 +5783,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! Scaling factor for Dx
-  real(SP), intent(IN)                 :: scx
+  real(SP), intent(in)                 :: scx
 
   ! Scaling factor for Qy
-  real(QP), intent(IN)                 :: qcy
+  real(QP), intent(in)                 :: qcy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:,:), intent(INOUT) :: Qy
+  real(QP), dimension(:,:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -5923,20 +5923,20 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)                 :: dcx
+  real(DP), intent(in)                 :: dcx
 
   ! Scaling factor for Qy
-  real(QP), intent(IN)                 :: qcy
+  real(QP), intent(in)                 :: qcy
   
 !</input>
 
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:,:), intent(INOUT) :: Qy
+  real(QP), dimension(:,:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -6064,13 +6064,13 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Second source vector
-  real(SP), dimension(:), intent(IN) :: Fy
+  real(SP), dimension(:), intent(in) :: Fy
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
@@ -6104,13 +6104,13 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Second source vector
-  real(DP), dimension(:), intent(IN) :: Dy
+  real(DP), dimension(:), intent(in) :: Dy
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
@@ -6144,13 +6144,13 @@ contains
 !<input>
   
   ! First source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! Second source vector
-  real(QP), dimension(:), intent(IN) :: Qy
+  real(QP), dimension(:), intent(in) :: Qy
   
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
 
@@ -6200,10 +6200,10 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:,:), intent(IN) :: Fx
+  real(SP), dimension(:,:), intent(in) :: Fx
   
   ! Second source vector
-  real(SP), dimension(:,:), intent(IN) :: Fy
+  real(SP), dimension(:,:), intent(in) :: Fy
   
 !</input>
 
@@ -6233,10 +6233,10 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:,:), intent(IN) :: Dx
+  real(DP), dimension(:,:), intent(in) :: Dx
   
   ! Second source vector
-  real(DP), dimension(:,:), intent(IN) :: Dy
+  real(DP), dimension(:,:), intent(in) :: Dy
   
 !</input>
 
@@ -6266,10 +6266,10 @@ contains
 !<input>
   
   ! First source vector
-  real(QP), dimension(:,:), intent(IN) :: Qx
+  real(QP), dimension(:,:), intent(in) :: Qx
   
   ! Second source vector
-  real(QP), dimension(:,:), intent(IN) :: Qy
+  real(QP), dimension(:,:), intent(in) :: Qy
   
 !</input>
 
@@ -6309,20 +6309,20 @@ contains
 
 !<input>
   ! Vector to calculate the norm of.
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<output>
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6391,13 +6391,13 @@ contains
 
 !<input>
   ! Vector to calculate the norm of.
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
@@ -6405,7 +6405,7 @@ contains
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6474,13 +6474,13 @@ contains
 
 !<input>
   ! Vector to calculate the norm of.
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
@@ -6488,7 +6488,7 @@ contains
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6592,13 +6592,13 @@ contains
 
 !<input>
   ! Vectors to calculate the norm of their difference
-  real(SP), dimension(:), intent(IN) :: Fx,Fy
+  real(SP), dimension(:), intent(in) :: Fx,Fy
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
 !</input>
 
@@ -6606,7 +6606,7 @@ contains
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6698,23 +6698,23 @@ contains
 
 !<input>
   ! Vectors to calculate the norm of their difference
-  real(DP), dimension(:), intent(IN) :: Dx,Dy
+  real(DP), dimension(:), intent(in) :: Dx,Dy
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
   ! OPTIONAL: Weighting vector
-  real(DP), dimension(:), intent(IN), optional :: Dw
+  real(DP), dimension(:), intent(in), optional :: Dw
 !</input>
 
 !<output>
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6822,23 +6822,23 @@ contains
 
 !<input>
   ! Vectors to calculate the norm of their difference
-  real(QP), dimension(:), intent(IN) :: Qx,Qy
+  real(QP), dimension(:), intent(in) :: Qx,Qy
   
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 
   ! OPTIONAL: Weighting vector
-  real(QP), dimension(:), intent(IN), optional :: Qw
+  real(QP), dimension(:), intent(in), optional :: Qw
 !</input>
 
 !<output>
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -6944,15 +6944,15 @@ contains
   
 !<input>
   ! Array with permutation of 1..neq
-  integer, dimension(:), intent(IN) :: Itr
+  integer, dimension(:), intent(in) :: Itr
 
   ! Source vector to be sorted
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
 !</input>
   
 !<output>
   ! The resorted vector
-  real(SP), dimension(:), intent(OUT) :: Fd
+  real(SP), dimension(:), intent(out) :: Fd
 !</output>
     
 !</subroutine>
@@ -6980,17 +6980,17 @@ contains
   
 !<input>
   ! Source vector to be sorted
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Array with permutation of 1..neq.
   ! Itr(i) defines the number of the entry in Dx that should
   ! move to position i.
-  integer, dimension(:), intent(IN) :: Itr
+  integer, dimension(:), intent(in) :: Itr
 !</input>
   
 !<output>
   ! The resorted vector
-  real(DP), dimension(:), intent(OUT) :: Dd
+  real(DP), dimension(:), intent(out) :: Dd
 !</output>
     
 !</subroutine>
@@ -7018,17 +7018,17 @@ contains
   
 !<input>
   ! Source vector to be sorted
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! Array with permutation of 1..neq.
   ! Itr(i) defines the number of the entry in Dx that should
   ! move to position i.
-  integer, dimension(:), intent(IN) :: Itr
+  integer, dimension(:), intent(in) :: Itr
 !</input>
   
 !<output>
   ! The resorted vector
-  real(QP), dimension(:), intent(OUT) :: Qd
+  real(QP), dimension(:), intent(out) :: Qd
 !</output>
     
 !</subroutine>
@@ -7056,15 +7056,15 @@ contains
   
 !<input>
   ! Array with permutation of 1..neq
-  integer, dimension(:), intent(IN) :: Itr
+  integer, dimension(:), intent(in) :: Itr
 
   ! Source vector to be sorted
-  integer(I32), dimension(:), intent(IN) :: Ix
+  integer(I32), dimension(:), intent(in) :: Ix
 !</input>
   
 !<output>
   ! The resorted vector
-  integer(I32), dimension(:), intent(OUT) :: Id
+  integer(I32), dimension(:), intent(out) :: Id
 !</output>
     
 !</subroutine>
@@ -7092,15 +7092,15 @@ contains
   
 !<input>
   ! Array with permutation of 1..neq
-  integer, dimension(:), intent(IN) :: Itr
+  integer, dimension(:), intent(in) :: Itr
 
   ! Source vector to be sorted
-  integer(I64), dimension(:), intent(IN) :: Ix
+  integer(I64), dimension(:), intent(in) :: Ix
 !</input>
   
 !<output>
   ! The resorted vector
-  integer(I64), dimension(:), intent(OUT) :: Id
+  integer(I64), dimension(:), intent(out) :: Id
 !</output>
     
 !</subroutine>
@@ -7127,15 +7127,15 @@ contains
 
 !<input>
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Sx
+  real(SP), dimension(:), intent(in) :: Sx
 
   ! Second source vector
-  real(SP), dimension(:), intent(IN) :: Sy
+  real(SP), dimension(:), intent(in) :: Sy
 !</input>
 
 !<output>
   ! Tensor product
-  real(SP), dimension(:,:), intent(OUT) :: Stensor
+  real(SP), dimension(:,:), intent(out) :: Stensor
 !</output>
 !</subroutine>
     
@@ -7165,15 +7165,15 @@ contains
 
 !<input>
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
 
   ! Second source vector
-  real(DP), dimension(:), intent(IN) :: Dy
+  real(DP), dimension(:), intent(in) :: Dy
 !</input>
 
 !<output>
   ! Tensor product
-  real(DP), dimension(:,:), intent(OUT) :: Dtensor
+  real(DP), dimension(:,:), intent(out) :: Dtensor
 !</output>
 !</subroutine>
     
@@ -7203,15 +7203,15 @@ contains
 
 !<input>
   ! First source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
 
   ! Second source vector
-  real(QP), dimension(:), intent(IN) :: Qy
+  real(QP), dimension(:), intent(in) :: Qy
 !</input>
 
 !<output>
   ! Tensor product
-  real(QP), dimension(:,:), intent(OUT) :: Qtensor
+  real(QP), dimension(:,:), intent(out) :: Qtensor
 !</output>
 !</subroutine>
     
@@ -7242,12 +7242,12 @@ contains
   real(SP) :: fvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  real(SP), dimension(:), intent(INOUT) :: Fx
+  real(SP), dimension(:), intent(inout) :: Fx
 !</inputoutput>
 
 !</subroutine>
@@ -7292,12 +7292,12 @@ contains
   real(DP) :: dvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  real(DP), dimension(:), intent(INOUT) :: Dx
+  real(DP), dimension(:), intent(inout) :: Dx
 !</inputoutput>
 
 !</subroutine>
@@ -7343,12 +7343,12 @@ contains
   real(QP) :: qvalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  real(QP), dimension(:), intent(INOUT) :: Qx
+  real(QP), dimension(:), intent(inout) :: Qx
 !</inputoutput>
 
 !</subroutine>
@@ -7395,7 +7395,7 @@ contains
 
 !<inputoutput>
   ! Data array to be modified.
-  real(SP), dimension(:,:), intent(INOUT) :: Fx
+  real(SP), dimension(:,:), intent(inout) :: Fx
 !</inputoutput>
 
 !</subroutine>
@@ -7432,7 +7432,7 @@ contains
 
 !<inputoutput>
   ! Data array to be modified.
-  real(DP), dimension(:,:), intent(INOUT) :: Dx
+  real(DP), dimension(:,:), intent(inout) :: Dx
 !</inputoutput>
 
 !</subroutine>
@@ -7469,7 +7469,7 @@ contains
 
 !<inputoutput>
   ! Data array to be modified.
-  real(QP), dimension(:,:), intent(INOUT) :: Qx
+  real(QP), dimension(:,:), intent(inout) :: Qx
 !</inputoutput>
 
 !</subroutine>
@@ -7504,12 +7504,12 @@ contains
   integer(I8) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  integer(I8), dimension(:), intent(INOUT) :: Ix
+  integer(I8), dimension(:), intent(inout) :: Ix
 !</inputoutput>
 
 !</subroutine>
@@ -7547,12 +7547,12 @@ contains
   integer(I16) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  integer(I16), dimension(:), intent(INOUT) :: Ix
+  integer(I16), dimension(:), intent(inout) :: Ix
 !</inputoutput>
 
 !</subroutine>
@@ -7590,12 +7590,12 @@ contains
   integer(I32) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  integer(I32), dimension(:), intent(INOUT) :: Ix
+  integer(I32), dimension(:), intent(inout) :: Ix
 !</inputoutput>
 
 !</subroutine>
@@ -7633,12 +7633,12 @@ contains
   integer(I64) :: ivalue
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
 !</input>
 
 !<inputoutput>
   ! Data array to be modified.
-  integer(I64), dimension(:), intent(INOUT) :: Ix
+  integer(I64), dimension(:), intent(inout) :: Ix
 !</inputoutput>
 
 !</subroutine>
@@ -7674,20 +7674,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor
-  real(SP), intent(IN)               :: sc
+  real(SP), intent(in)               :: sc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(SP), dimension(:), intent(INOUT) :: Fy
+  real(SP), dimension(:), intent(inout) :: Fy
   
 !</inputoutput>
   
@@ -7729,20 +7729,20 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Scaling factor
-  real(DP), intent(IN)               :: dc
+  real(DP), intent(in)               :: dc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:), intent(INOUT) :: Dy
+  real(DP), dimension(:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -7784,20 +7784,20 @@ contains
 !<input>
   
   ! First source vector
-  real(QP), dimension(:), intent(IN) :: Qx
+  real(QP), dimension(:), intent(in) :: Qx
   
   ! Scaling factor
-  real(QP), intent(IN)               :: qc
+  real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -7839,20 +7839,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor
-  real(DP), intent(IN)               :: dc
+  real(DP), intent(in)               :: dc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(DP), dimension(:), intent(INOUT) :: Dy
+  real(DP), dimension(:), intent(inout) :: Dy
   
 !</inputoutput>
   
@@ -7894,20 +7894,20 @@ contains
 !<input>
   
   ! First source vector
-  real(SP), dimension(:), intent(IN) :: Fx
+  real(SP), dimension(:), intent(in) :: Fx
   
   ! Scaling factor
-  real(QP), intent(IN)               :: qc
+  real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   
@@ -7949,20 +7949,20 @@ contains
 !<input>
   
   ! First source vector
-  real(DP), dimension(:), intent(IN) :: Dx
+  real(DP), dimension(:), intent(in) :: Dx
   
   ! Scaling factor
-  real(QP), intent(IN)               :: qc
+  real(QP), intent(in)               :: qc
 
   ! OPTIONAL: Size of the vector
-  integer, intent(IN), optional :: n
+  integer, intent(in), optional :: n
   
 !</input>
  
 !<inputoutput>
   
   ! Second source vector; also receives the result
-  real(QP), dimension(:), intent(INOUT) :: Qy
+  real(QP), dimension(:), intent(inout) :: Qy
   
 !</inputoutput>
   

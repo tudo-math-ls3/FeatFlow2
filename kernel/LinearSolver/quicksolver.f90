@@ -127,25 +127,25 @@ contains
 
 !<input>
   ! The system matrix.
-  type(t_matrixScalar), intent(IN) :: rmat
+  type(t_matrixScalar), intent(in) :: rmat
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  type(t_vectorScalar), intent(INOUT) :: rvec
+  type(t_vectorScalar), intent(inout) :: rvec
   
   ! Work array. Its length must be at least 3*n.
-  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  real(DP), dimension(:), target, intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -153,7 +153,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -187,34 +187,34 @@ contains
 
 !<input>
   ! The size of the linear system.
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix.
-  integer, dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(in) :: Kld
   
   ! The Kcol array of the matrix.
-  integer, dimension(:), intent(IN) :: Kcol
+  integer, dimension(:), intent(in) :: Kcol
   
   ! The data array of the matrix.
-  real(DP), dimension(:), intent(IN) :: Da
+  real(DP), dimension(:), intent(in) :: Da
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  real(DP), dimension(:), intent(INOUT) :: Dx
+  real(DP), dimension(:), intent(inout) :: Dx
   
   ! Work array. Its length must be at least 3*n.
-  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  real(DP), dimension(:), target, intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -222,7 +222,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -358,29 +358,29 @@ contains
 
 !<input>
   ! The system matrix.
-  type(t_matrixScalar), intent(IN) :: rmat
+  type(t_matrixScalar), intent(in) :: rmat
 
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  type(t_vectorScalar), intent(INOUT) :: rvec
+  type(t_vectorScalar), intent(inout) :: rvec
   
   ! Work array. Its length must be at least 3*n.
-  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  real(DP), dimension(:), target, intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -388,7 +388,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -431,41 +431,41 @@ contains
 
 !<input>
   ! The size of the linear system.
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix.
-  integer, dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(in) :: Kld
   
   ! The Kcol array of the matrix.
-  integer, dimension(:), intent(IN) :: Kcol
+  integer, dimension(:), intent(in) :: Kcol
   
   ! The Kdiagonal array of the matrix.
-  integer, dimension(:), intent(IN) :: Kdiag
+  integer, dimension(:), intent(in) :: Kdiag
   
   ! The data array of the matrix.
-  real(DP), dimension(:), intent(IN) :: Da
+  real(DP), dimension(:), intent(in) :: Da
 
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  real(DP), dimension(:), intent(INOUT) :: Dx
+  real(DP), dimension(:), intent(inout) :: Dx
   
   ! Work array. Its length must be at least 3*n.
-  real(DP), dimension(:), target, intent(INOUT) :: Dwork
+  real(DP), dimension(:), target, intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -473,7 +473,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -656,27 +656,27 @@ contains
 
 !<input>
   ! The size of Dx
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix.
-  integer, dimension(*), intent(IN) :: Kld
+  integer, dimension(*), intent(in) :: Kld
   
   ! The Kcol array of the matrix.
-  integer, dimension(*), intent(IN) :: Kcol
+  integer, dimension(*), intent(in) :: Kcol
 
   ! The DA array of the matrix.
-  real(DP), dimension(*), intent(IN) :: Da
+  real(DP), dimension(*), intent(in) :: Da
   
   ! The input vector that is to be multiplied by the matrix.
-  real(DP), dimension(*), intent(IN) :: Dx
+  real(DP), dimension(*), intent(in) :: Dx
 !</input>
 
 !<output>
   ! The output vector that recieves A*x
-  real(DP), dimension(*), intent(OUT) :: Dy
+  real(DP), dimension(*), intent(out) :: Dy
   
   ! The result of the scalar product < x, A*x >
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
 !</output>
 
 !</subroutine>
@@ -712,29 +712,29 @@ contains
 
 !<input>
   ! The system matrix.
-  type(t_matrixScalar), intent(IN) :: rmat
+  type(t_matrixScalar), intent(in) :: rmat
 
   ! OPTIONAL: The relaxation parameter of the SOR solver.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  type(t_vectorScalar), intent(INOUT) :: rvec
+  type(t_vectorScalar), intent(inout) :: rvec
   
   ! Work array. Its length must be at least n.
-  real(DP), dimension(:), intent(INOUT) :: Dwork
+  real(DP), dimension(:), intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -742,7 +742,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -792,41 +792,41 @@ contains
 
 !<input>
   ! The size of the linear system.
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix.
-  integer, dimension(*), intent(IN) :: Kld
+  integer, dimension(*), intent(in) :: Kld
   
   ! The Kcol array of the matrix.
-  integer, dimension(*), intent(IN) :: Kcol
+  integer, dimension(*), intent(in) :: Kcol
   
   ! The Kdiagonal array of the matrix.
-  integer, dimension(*), intent(IN) :: Kdiag
+  integer, dimension(*), intent(in) :: Kdiag
   
   ! The data array of the matrix.
-  real(DP), dimension(*), intent(IN) :: Da
+  real(DP), dimension(*), intent(in) :: Da
 
   ! OPTIONAL: The relaxation parameter of the SOR solver.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !</input>
 
 !<output>
   ! One of the QSOL_INFO_XXXX constants describing the result.
-  integer, intent(OUT) :: cinfo
+  integer, intent(out) :: cinfo
 !</output>
 
 !<inputoutput>
   ! On entry, the vector containing the right-hand-side of the linear system.
   ! On exit, the vector containing the solution of the linear system.
-  real(DP), dimension(*), intent(INOUT) :: Dx
+  real(DP), dimension(*), intent(inout) :: Dx
   
   ! Work array. Its length must be at least n.
-  real(DP), dimension(*), intent(INOUT) :: Dwork
+  real(DP), dimension(*), intent(inout) :: Dwork
   
   ! On entry, the maximum number of allowed iterations. Must be > 0.
   ! On exit, the total number of performed iterations.
-  integer, intent(INOUT) :: niter
+  integer, intent(inout) :: niter
   
   ! On entry, the absolute tolerance in euclidian norm that is to be reached.
   !   If set to a value <= 0, no residual checks are performed, and the solver
@@ -834,7 +834,7 @@ contains
   ! On exit,
   !   if dtol was  > 0 on entry, the absolute final defect,
   !   if dtol was <= 0 on entry, dtol is left unchanged.
-  real(DP), intent(INOUT) :: dtol
+  real(DP), intent(inout) :: dtol
 !</inputoutput>
 
 !</suboutine>
@@ -946,16 +946,16 @@ contains
 
 !<input>
   ! The system matrix.
-  type(t_matrixScalar), intent(IN) :: rmat
+  type(t_matrixScalar), intent(in) :: rmat
   
   ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !<input>
 
 !<inputoutput>
   ! The vector that is to be preconditioned.
-  type(t_vectorScalar), intent(INOUT) :: rvec
+  type(t_vectorScalar), intent(inout) :: rvec
 !</inputoutput>
 
 !</subroutine>
@@ -997,28 +997,28 @@ contains
 
 !<input>
   ! The dimension of the matrix.
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix
-  integer, dimension(*), intent(IN) :: Kld
+  integer, dimension(*), intent(in) :: Kld
   
   ! The Kcol array of the matrix
-  integer, dimension(*), intent(IN) :: Kcol
+  integer, dimension(*), intent(in) :: Kcol
   
   ! The Kdiagonal array of the matrix
-  integer, dimension(*), intent(IN) :: Kdiag
+  integer, dimension(*), intent(in) :: Kdiag
   
   ! The data array of the matrix
-  real(DP), dimension(*), intent(IN) :: Da
+  real(DP), dimension(*), intent(in) :: Da
   
   ! OPTIONAL: The relaxation parameter of the SOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !<input>
 
 !<inputoutput>
   ! The vector that is to be preconditioned.
-  real(DP), dimension(*), intent(INOUT) :: Dx
+  real(DP), dimension(*), intent(inout) :: Dx
 !</inputoutput>
 
 !</subroutine>
@@ -1074,16 +1074,16 @@ contains
 
 !<input>
   ! The system matrix.
-  type(t_matrixScalar), intent(IN) :: rmat
+  type(t_matrixScalar), intent(in) :: rmat
   
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !<input>
 
 !<inputoutput>
   ! The vector that is to be preconditioned.
-  type(t_vectorScalar), intent(INOUT) :: rvec
+  type(t_vectorScalar), intent(inout) :: rvec
 !</inputoutput>
 
 !</subroutine>
@@ -1125,28 +1125,28 @@ contains
 
 !<input>
   ! The dimension of the matrix.
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The Kld array of the matrix
-  integer, dimension(*), intent(IN) :: Kld
+  integer, dimension(*), intent(in) :: Kld
   
   ! The Kcol array of the matrix
-  integer, dimension(*), intent(IN) :: Kcol
+  integer, dimension(*), intent(in) :: Kcol
   
   ! The Kdiagonal array of the matrix
-  integer, dimension(*), intent(IN) :: Kdiag
+  integer, dimension(*), intent(in) :: Kdiag
   
   ! The data array of the matrix
-  real(DP), dimension(*), intent(IN) :: Da
+  real(DP), dimension(*), intent(in) :: Da
   
   ! OPTIONAL: The relaxation parameter of the SSOR preconditioner.
   ! If given, must be in range (0,2). If not given, 1 is used.
-  real(DP), optional, intent(IN) :: drelax
+  real(DP), optional, intent(in) :: drelax
 !<input>
 
 !<inputoutput>
   ! The vector that is to be preconditioned.
-  real(DP), dimension(*), intent(INOUT) :: Dx
+  real(DP), dimension(*), intent(inout) :: Dx
 !</inputoutput>
 
 !</subroutine>

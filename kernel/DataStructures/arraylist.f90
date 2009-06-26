@@ -331,25 +331,25 @@ contains
 
 !<input>
     ! Total number of tables
-    integer, intent(IN) :: nntable
+    integer, intent(in) :: nntable
 
     ! Total number of items that can be stored in all lists
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 
     ! Format-tag. Type of list format (Double,Single,Integer)
-    integer, intent(IN) :: carraylistFormat
+    integer, intent(in) :: carraylistFormat
 
     ! OPTIONAL: Format-tag. Type of list ordering 
-    integer, intent(IN), optional :: cordering
+    integer, intent(in), optional :: cordering
     
     ! OPTIONAL: Factor by which the list should be enlarged if memory
     ! needs to be reallocated
-    real(DP), intent(IN), optional :: dfactor
+    real(DP), intent(in), optional :: dfactor
 !</input>
 
 !<output>
     ! list
-    type(t_arraylist), intent(OUT) :: rarraylist
+    type(t_arraylist), intent(out) :: rarraylist
 !</output>
 !</subroutine>
 
@@ -429,12 +429,12 @@ contains
 
 !<input>
     ! Number of last table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -467,7 +467,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -503,11 +503,11 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -542,12 +542,12 @@ contains
 
 !<input>
     ! New number of total items that can be stored in the list
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -590,12 +590,12 @@ contains
 
 !<input>
     ! New number of tables
-    integer, intent(IN) :: nntable
+    integer, intent(in) :: nntable
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -627,15 +627,15 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! handle to the data
-    integer, intent(INOUT) :: h_Data
+    integer, intent(inout) :: h_Data
 !</inputoutput>
 !</subroutine>
     
@@ -691,16 +691,16 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
 !</input>
 
 !<inputoutput>
     ! handle to the data
-    integer, intent(INOUT) :: h_Data
+    integer, intent(inout) :: h_Data
 
     ! handle to the table
-    integer, intent(INOUT) :: h_Table
+    integer, intent(inout) :: h_Table
 !</inputoutput>
 !</subroutine>
 
@@ -770,20 +770,20 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! double array
-    real(DP), dimension(:), intent(INOUT) :: p_DData
+    real(DP), dimension(:), intent(inout) :: p_DData
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of data entries
-    integer, intent(OUT), optional :: ndata
+    integer, intent(out), optional :: ndata
 !</output>
 !</subroutine>
 
@@ -828,15 +828,15 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
     ! double array
-    real(DP), dimension(:), intent(INOUT) :: p_DData
+    real(DP), dimension(:), intent(inout) :: p_DData
 
     ! table array
-    integer, dimension(:), intent(INOUT) :: p_Table
+    integer, dimension(:), intent(inout) :: p_Table
 !</inputoutput>
 !</subroutine>
 
@@ -885,20 +885,20 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
     
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! double array
-    real(SP), dimension(:), intent(INOUT) :: p_FData
+    real(SP), dimension(:), intent(inout) :: p_FData
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of data entries
-    integer, intent(OUT), optional :: ndata
+    integer, intent(out), optional :: ndata
 !</output>
 !</subroutine>
 
@@ -943,15 +943,15 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
     ! single array
-    real(SP), dimension(:), intent(INOUT) :: p_FData
+    real(SP), dimension(:), intent(inout) :: p_FData
 
     ! table array
-    integer, dimension(:), intent(INOUT) :: p_Table
+    integer, dimension(:), intent(inout) :: p_Table
 !</inputoutput>
 !</subroutine>
 
@@ -1000,20 +1000,20 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! double array
-    integer, dimension(:), intent(INOUT) :: p_IData
+    integer, dimension(:), intent(inout) :: p_IData
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of data entries
-    integer, intent(OUT), optional :: ndata
+    integer, intent(out), optional :: ndata
 !</output>
 !</subroutine>
 
@@ -1058,15 +1058,15 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
     ! integer array
-    integer, dimension(:), intent(INOUT) :: p_IData
+    integer, dimension(:), intent(inout) :: p_IData
 
     ! table array
-    integer, dimension(:), intent(INOUT) :: p_Table
+    integer, dimension(:), intent(inout) :: p_Table
 !</inputoutput>
 !</subroutine>
 
@@ -1115,15 +1115,15 @@ contains
 
 !<input>
     ! handle to the data
-    integer, intent(IN) :: h_DataSrc
+    integer, intent(in) :: h_DataSrc
      
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1168,15 +1168,15 @@ contains
 
 !<input>
     ! handle to the data
-    integer, intent(IN) :: h_DataSrc
+    integer, intent(in) :: h_DataSrc
 
     ! handle to the table
-    integer, intent(IN) :: h_Table
+    integer, intent(in) :: h_Table
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1223,15 +1223,15 @@ contains
 
 !<input>
     ! pointer to the data
-    real(DP), dimension(:), intent(IN) :: p_DDataSrc
+    real(DP), dimension(:), intent(in) :: p_DDataSrc
 
     ! number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1262,15 +1262,15 @@ contains
 
 !<input>
     ! pointer to the data
-    real(DP), dimension(:), intent(IN) :: p_DDataSrc
+    real(DP), dimension(:), intent(in) :: p_DDataSrc
 
     ! pointer to the table
-    integer, dimension(:), intent(IN) :: p_Table
+    integer, dimension(:), intent(in) :: p_Table
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1304,15 +1304,15 @@ contains
 
 !<input>
     ! pointer to the data
-    real(SP), dimension(:), intent(IN) :: p_FDataSrc
+    real(SP), dimension(:), intent(in) :: p_FDataSrc
 
     ! number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1343,15 +1343,15 @@ contains
 
 !<input>
     ! pointer to the data
-    real(SP), dimension(:), intent(IN) :: p_FDataSrc
+    real(SP), dimension(:), intent(in) :: p_FDataSrc
 
     ! pointer to the table
-    integer, dimension(:), intent(IN) :: p_Table
+    integer, dimension(:), intent(in) :: p_Table
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1385,15 +1385,15 @@ contains
 
 !<input>
     ! pointer to the data
-    integer, dimension(:), intent(IN) :: p_IDataSrc
+    integer, dimension(:), intent(in) :: p_IDataSrc
 
     ! number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1424,15 +1424,15 @@ contains
 
 !<input>
     ! pointer to the data
-    integer, dimension(:), intent(IN) :: p_IDataSrc
+    integer, dimension(:), intent(in) :: p_IDataSrc
 
     ! pointer to the table
-    integer, dimension(:), intent(IN) :: p_Table
+    integer, dimension(:), intent(in) :: p_Table
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
     
@@ -1465,12 +1465,12 @@ contains
 !</description>
     
 !<input>
-    integer, intent(IN) :: itable,jtable
+    integer, intent(in) :: itable,jtable
 !</input>
 
 !<inputoutput>
     ! arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 
@@ -1508,10 +1508,10 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<result>
@@ -1542,10 +1542,10 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 !</input>
 
 !<result>
@@ -1576,15 +1576,15 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Reset list?
-    logical, intent(IN) :: breset
+    logical, intent(in) :: breset
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
@@ -1623,20 +1623,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(DP), intent(IN) :: da
+    real(DP), intent(in) :: da
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1697,20 +1697,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(SP), intent(IN) :: sa
+    real(SP), intent(in) :: sa
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1771,20 +1771,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    integer, intent(IN) :: ia
+    integer, intent(in) :: ia
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1845,20 +1845,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(DP), intent(IN) :: da
+    real(DP), intent(in) :: da
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1920,20 +1920,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
     
     ! Data
-    real(SP), intent(IN) :: sa
+    real(SP), intent(in) :: sa
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1995,20 +1995,20 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    integer, intent(IN) :: ia
+    integer, intent(in) :: ia
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -2070,23 +2070,23 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(DP), intent(IN) :: da
+    real(DP), intent(in) :: da
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -2156,23 +2156,23 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(SP), intent(IN) :: sa
+    real(SP), intent(in) :: sa
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -2242,23 +2242,23 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    integer, intent(IN) :: ia
+    integer, intent(in) :: ia
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -2328,15 +2328,15 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(DP), intent(IN) :: da
+    real(DP), intent(in) :: da
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
@@ -2402,15 +2402,15 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    real(SP), intent(IN) :: sa
+    real(SP), intent(in) :: sa
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
@@ -2476,15 +2476,15 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! Data
-    integer, intent(IN) :: ia
+    integer, intent(in) :: ia
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 
 !<result>
@@ -2552,18 +2552,18 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Data
-    real(DP), intent(IN) :: da
+    real(DP), intent(in) :: da
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2694,18 +2694,18 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Data
-    real(SP), intent(IN) :: sa
+    real(SP), intent(in) :: sa
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2836,18 +2836,18 @@ contains
 
 !<input>
     ! Number of table
-    integer, intent(IN) :: itable
+    integer, intent(in) :: itable
 
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! Data
-    integer, intent(IN) :: ia
+    integer, intent(in) :: ia
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2977,10 +2977,10 @@ contains
 
 !<input>
     ! list
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 
     ! OPTIONAL: number of table
-    integer, intent(IN), optional :: itable
+    integer, intent(in), optional :: itable
 !</input>
 !</subroutine>
 
@@ -3068,7 +3068,7 @@ contains
 
 !<input>
     ! arraylist
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 !</input>
 !</subroutine>
 
@@ -3116,12 +3116,12 @@ contains
 
 !<input>
     ! Source arraylist
-    type(t_arraylist), intent(IN) :: rarraylist
+    type(t_arraylist), intent(in) :: rarraylist
 !</input>
 
 !<inputoutput>
     ! Destination arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylistBackup
+    type(t_arraylist), intent(inout) :: rarraylistBackup
 !</inputoutput>
 !</subroutine>
 
@@ -3186,12 +3186,12 @@ contains
 
 !<input>
     ! Backup of an arraylist
-    type(t_arraylist), intent(IN) :: rarraylistBackup
+    type(t_arraylist), intent(in) :: rarraylistBackup
 !</input>
 
 !<inputoutput>
     ! Destination arraylist
-    type(t_arraylist), intent(INOUT) :: rarraylist
+    type(t_arraylist), intent(inout) :: rarraylist
 !</inputoutput>
 !</subroutine>
 

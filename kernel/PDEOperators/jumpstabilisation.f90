@@ -88,21 +88,21 @@ contains
 
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 2nd stabilisation parametr. Standard=dgamma=0.01
-  real(DP), intent(IN) :: dgammastar
+  real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 1D cubature formula to use for line integration.
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -112,7 +112,7 @@ contains
 
 !<inputoutput>
   ! Scalar matrix to be modified. The stabilisation term is added to rmatrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -187,21 +187,21 @@ contains
   
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 2nd stabilisation parametr. Standard=dgamma=0.01
-  real(DP), intent(IN) :: dgammastar
+  real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -211,7 +211,7 @@ contains
   
 !<inputoutput>
   ! The system matrix to be modified. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+  type(t_matrixScalar), intent(inout), target :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -777,16 +777,16 @@ contains
   
   !<input>
     ! The coordinates of the face's corner vertices.
-    real(DP), dimension(3,4), intent(IN) :: Dvtx
+    real(DP), dimension(3,4), intent(in) :: Dvtx
     
     ! The points for which the 'jacobian determinants' are to be calculated,
     ! given in 2D reference quadrilateral coordinates.
-    real(DP), dimension(:,:), intent(IN) :: Dpts
+    real(DP), dimension(:,:), intent(in) :: Dpts
   !</input>
   
   !<output>
     ! The 'jacobian determinants' of the mapping.
-    real(DP), dimension(:), intent(OUT) :: Ddetj
+    real(DP), dimension(:), intent(out) :: Ddetj
   !</output>
   
   !</subroutine>
@@ -838,19 +838,19 @@ contains
   !<input>
     ! The index of the local face onto which the points are to mapped.
     ! Is silently assumed to be 1 <= iat <= 6.
-    integer, intent(IN) :: iat
+    integer, intent(in) :: iat
     
     ! The twist index of the hexahedron.
-    integer(I32), intent(IN) :: itwist
+    integer(I32), intent(in) :: itwist
     
     ! The points which are to be mapped, given in 2D quadrilateral
     ! reference coordinates.
-    real(DP), dimension(:,:), intent(IN) :: Dpts2D
+    real(DP), dimension(:,:), intent(in) :: Dpts2D
   !</input>
   
   !<output>
     ! The mapped points, given in 3D hexahedron reference coordinates.
-    real(DP), dimension(:,:), intent(OUT) :: Dpts3D
+    real(DP), dimension(:,:), intent(out) :: Dpts3D
   !</output>
   
   !</subroutine>
@@ -954,21 +954,21 @@ contains
   
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 2nd stabilisation parametr. Standard=dgamma=0.01
-  real(DP), intent(IN) :: dgammastar
+  real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 2D cubature formula to use for quadrilateral integration
   ! Standard = CUB_G2_2D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -978,7 +978,7 @@ contains
   
 !<inputoutput>
   ! The system matrix to be modified. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+  type(t_matrixScalar), intent(inout), target :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -1347,17 +1347,17 @@ contains
   
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 2nd stabilisation parametr. Standard=dgamma=0.01
-  real(DP), intent(IN) :: dgammastar
+  real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -1367,7 +1367,7 @@ contains
   
 !<inputoutput>
   ! The system matrix to be modified. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+  type(t_matrixScalar), intent(inout), target :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -1667,17 +1667,17 @@ contains
 !<input>
 
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 2nd stabilisation parametr. Standard=dgamma=0.01
-  real(DP), intent(IN) :: dgammastar
+  real(DP), intent(in) :: dgammastar
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! Template FE matrix. Must be format 7 or 9 and created with an
   ! extended matrix stencil. This matrix is used for all dimensions.
@@ -2277,18 +2277,18 @@ contains
 
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 1D cubature formula to use for line integration.
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -2298,7 +2298,7 @@ contains
 
 !<inputoutput>
   ! Scalar matrix to be modified. The stabilisation term is added to rmatrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2366,18 +2366,18 @@ contains
   
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -2387,7 +2387,7 @@ contains
   
 !<inputoutput>
   ! The system matrix to be modified. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+  type(t_matrixScalar), intent(inout), target :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -2955,18 +2955,18 @@ contains
   
 !<input>
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
-  real(DP), intent(IN) :: dtheta
+  real(DP), intent(in) :: dtheta
   
   ! 2D cubature formula to use for quadrilateral integration
   ! Standard = CUB_G2_2D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -2976,7 +2976,7 @@ contains
   
 !<inputoutput>
   ! The system matrix to be modified. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrixScalar
+  type(t_matrixScalar), intent(inout), target :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -3333,14 +3333,14 @@ contains
 !<input>
 
   ! Stabilisation parameter. Standard=0.01
-  real(DP), intent(IN) :: dgamma
+  real(DP), intent(in) :: dgamma
   
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Viscosity parameter for the matrix if viscosity is constant.
-  real(DP), intent(IN) :: dnu
+  real(DP), intent(in) :: dnu
 
   ! Template FE matrix. Must be format 7 or 9 and created with an
   ! extended matrix stencil. This matrix is used for all dimensions.

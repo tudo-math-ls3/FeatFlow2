@@ -216,7 +216,7 @@ contains
 !<input>
   
   ! The filter chain
-  type(t_filterChain), dimension(:), intent(IN) :: RfilterChain
+  type(t_filterChain), dimension(:), intent(in) :: RfilterChain
   
 !</input>
 
@@ -224,7 +224,7 @@ contains
   
   ! The vector where the filter will be applied to.
   ! This is also the result vector.
-  type(t_vectorBlock), intent(INOUT)            :: rx
+  type(t_vectorBlock), intent(inout)            :: rx
   
 !</inputoutput>
   
@@ -314,7 +314,7 @@ contains
 !<input>
   
   ! The filter chain
-  type(t_filterChain), dimension(:), intent(IN) :: RfilterChain
+  type(t_filterChain), dimension(:), intent(in) :: RfilterChain
   
 !</input>
 
@@ -322,7 +322,7 @@ contains
   
   ! The matrix where the filter will be applied to.
   ! This is also the result matrix.
-  type(t_matrixBlock), intent(INOUT)            :: rmatrix
+  type(t_matrixBlock), intent(inout)            :: rmatrix
   
 !</inputoutput>
   

@@ -150,27 +150,27 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
 
   ! Format of the matrix structure to be created. One of the LSYSSC_xxxx
   ! constants.
-  integer, intent(IN) :: iformat
+  integer, intent(in) :: iformat
 
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
-  integer, intent(IN), optional :: imemGuess
+  integer, intent(in), optional :: imemGuess
   
 !</input>
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation
   ! combination. Memory fo the structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(OUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrixScalar
 !</output>
 
 !</subroutine>
@@ -248,21 +248,21 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -356,25 +356,25 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
-  integer, optional, intent(IN) :: cavrgType
+  integer, optional, intent(in) :: cavrgType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -470,25 +470,25 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above. If not given,
   ! MLOP_AVRG_ARITHMETIC is used.
-  integer, optional, intent(IN) :: cavrgType
+  integer, optional, intent(in) :: cavrgType
 !</input>
 
 !<inputoutput>
   ! The interpolation matrix that is to be assembled.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -587,19 +587,19 @@ contains
   
   ! The underlying discretisation structures which are to be used to
   ! create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscrCoarse
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscrFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscrCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscrFine
   
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer, intent(IN) :: imemGuess
+  integer, intent(in) :: imemGuess
   
 !</input>
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo rthe structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(OUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrixScalar
 !</output>
 
 !</subroutine>
@@ -1335,21 +1335,21 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -1920,24 +1920,24 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
-  integer, intent(IN) :: cavrgType
+  integer, intent(in) :: cavrgType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -2596,24 +2596,24 @@ contains
 !<input>
   ! The underlying discretisation structure defined on the coarse mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationCoarse
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationCoarse
   
   ! The underlying discretisation structure defined on the fine mesh which
   ! is to be used to create the matrix.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationFine
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationFine
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! Specifies which type of averaging is to be used.
   ! One of the MLOP_AVRG_XXXX constants defined above.
-  integer, intent(IN) :: cavrgType
+  integer, intent(in) :: cavrgType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>

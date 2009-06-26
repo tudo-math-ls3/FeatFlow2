@@ -377,13 +377,13 @@ contains
 
 !<input>
   ! The domain which is to be connected to the boundary conditions.
-  type(t_boundary), intent(IN), target :: rboundary
+  type(t_boundary), intent(in), target :: rboundary
   
   ! OPTIONAL: The initial size of the lists saving boundary conditions.
   ! When adding boundary conditions to the rboundaryConditions structure,
   ! if there's not enough space, the lists saving the boundary conditions
   ! are dynamically increased (in terms of BC_LISTBLOCKSIZE). 
-  integer, intent(IN), optional :: ibcRegionsCount
+  integer, intent(in), optional :: ibcRegionsCount
 !</input>
 
 !<output>
@@ -436,7 +436,7 @@ contains
   ! released from memory. If set to FALSE or not existent (the usual setting), 
   ! the structure p_rboundaryConditions will also be removed from the heap after 
   ! cleaning up.
-  logical, intent(IN), optional :: bkeepStructure
+  logical, intent(in), optional :: bkeepStructure
 !</input>
 
 !<inputoutput>
@@ -485,18 +485,18 @@ contains
 !<input>
   ! The type of boundary conditions.
   ! This is a BC_xxxx flag.
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   ! Specifies the type of the boundary where to add boundary conditions.
   ! This is a BC_RTYPE_xxxx flag.
-  integer, intent(IN) :: cbdtype
+  integer, intent(in) :: cbdtype
 
   ! OPTIONAL: A boundary-region object, describing the position 
   ! on the boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
   ! This parameter must be present for boundary conditions on the real
   ! boundary but can be omitted when adding a fictitious boundary condition.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! OPTIONAL: A fictitious-boundary-region object, describing the
   ! fictitious boundary region.
@@ -504,12 +504,12 @@ contains
   ! This parameter must be present for boundary conditions on the fictitious
   ! boundary but can be omitted when adding boundary condition on the real 
   ! boundary.
-  type(t_fictBoundaryRegion), intent(IN), optional :: rfictBoundaryRegion
+  type(t_fictBoundaryRegion), intent(in), optional :: rfictBoundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>
@@ -606,17 +606,17 @@ contains
 
 !<input>
   ! A structure containing all boundary condition regions on the real boundary.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 
   ! The number of the boundary component of the point.
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
 
   ! The parameter value of the point to be checked.
-  real(DP), intent(IN) :: dparam
+  real(DP), intent(in) :: dparam
   
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-  integer, intent(IN), optional :: cparType
+  integer, intent(in), optional :: cparType
 
   ! OPTIONAL: Start index in rboundaryConditions%p_Rregions(:) where to start
   ! the search for the point identified by (iboundCompIndex,dparam).
@@ -627,7 +627,7 @@ contains
   ! This allows to skip some regions: E.g. if the caller assumes a point
   ! to be in multiple regions and one region is found, the caller can
   ! specify the number of the next region here where to continue the search.
-  integer, intent(IN), optional :: istartIndex
+  integer, intent(in), optional :: istartIndex
 !</input>
 
 !<result>
@@ -706,17 +706,17 @@ contains
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
   ! Y-velocity), etc.
-  integer, intent(IN) :: iequation
+  integer, intent(in) :: iequation
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>
@@ -774,17 +774,17 @@ contains
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
   ! Y-velocity), etc.
-  integer, intent(IN) :: iequation
+  integer, intent(in) :: iequation
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>
@@ -839,17 +839,17 @@ contains
 !<input>
   ! A list of identifiers for the velocity equations, this boundary condition
   ! modifies. Usually (1,2) for X- and Y-velocity.
-  integer, dimension(:), intent(IN) :: IvelEqns
+  integer, dimension(:), intent(in) :: IvelEqns
 
   ! A boundary-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>
@@ -904,17 +904,17 @@ contains
 !<input>
   ! A list of identifiers for the velocity equations, this boundary condition
   ! modifies. Usually (1,2) for X- and Y-velocity.
-  integer, dimension(:), intent(IN) :: IvelEqns
+  integer, dimension(:), intent(in) :: IvelEqns
 
   ! A boundary-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>
@@ -971,17 +971,17 @@ contains
   ! An array of identifiers for the equations, this boundary condition 
   ! refers to. Example: Iequations = [1 2] for X-velocity-component (1) and
   ! Y-velocity component (2).
-  integer, dimension(:), intent(IN) :: Iequations
+  integer, dimension(:), intent(in) :: Iequations
 
   ! A fictitious-boundary-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
   ! A copy of this is added to the rboundaryConditions structure.
-  type(t_fictBoundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_fictBoundaryRegion), intent(in) :: rboundaryRegion
 !</input>
 
 !<inputoutput>
   ! The structure where the boundary condition region is to be added.
-  type(t_boundaryConditions), intent(INOUT), target :: rboundaryConditions
+  type(t_boundaryConditions), intent(inout), target :: rboundaryConditions
 !</inputoutput>
 
 !<output>

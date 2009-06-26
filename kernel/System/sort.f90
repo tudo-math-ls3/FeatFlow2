@@ -127,7 +127,7 @@ contains
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    integer, dimension(:), intent(INOUT), target, optional :: Itemp
+    integer, dimension(:), intent(inout), target, optional :: Itemp
 
     !</input>
 
@@ -646,7 +646,7 @@ contains
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    integer, dimension(:), intent(INOUT), target, optional :: Itemp
+    integer, dimension(:), intent(inout), target, optional :: Itemp
 
     !</input>
 
@@ -1339,15 +1339,15 @@ contains
     !<inputoutput>
 
     ! double precision array to be sorted
-    real(dp), dimension(:), intent(INOUT) :: Darray
+    real(dp), dimension(:), intent(inout) :: Darray
 
     !optional mapping vector (if more than 1 vector may be sorted)
-    integer, dimension(:), intent(INOUT), optional :: Imapping
+    integer, dimension(:), intent(inout), optional :: Imapping
 
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    real(DP), dimension(:), intent(INOUT), target, optional :: Dtemp
+    real(DP), dimension(:), intent(inout), target, optional :: Dtemp
 
     !</inputoutput>
 !</subroutine>
@@ -1834,20 +1834,20 @@ contains
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    integer, intent(IN) :: iindex
+    integer, intent(in) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer, optional, intent(IN) :: cmethod
+    integer, optional, intent(in) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Ielem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    integer, dimension(:,:), intent(INOUT), target, optional :: Itemp
+    integer, dimension(:,:), intent(inout), target, optional :: Itemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Ielem(1..nindex,inode)
-    integer, dimension(:,:), intent(INOUT) :: Ielem
+    integer, dimension(:,:), intent(inout) :: Ielem
   !</inputoutput>
 !</subroutine>
 
@@ -1895,7 +1895,7 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer, intent(IN) :: istart, istop
+      integer, intent(in) :: istart, istop
       integer::ielem1, ielem2
       integer::i,j, k, idx
 
@@ -1949,7 +1949,7 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: l, u, i, j, t
       real(DP) :: r
@@ -1992,7 +1992,7 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: i, j, k, idx, t, istop
       
@@ -2019,7 +2019,7 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer, intent(IN) :: ilow, ihigh
+      integer, intent(in) :: ilow, ihigh
       
       integer :: imid, iend_lo, istart_hi, ilo, ihi
       integer :: idx,idest
@@ -2092,7 +2092,7 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Ielem(:,i) and Ielem(:,j)
       
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: idx, t
       
@@ -2106,7 +2106,7 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Ielem(:,j:i) one to the right
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: k, t, idx
       
@@ -2138,20 +2138,20 @@ contains
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    integer, intent(IN) :: iindex
+    integer, intent(in) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer, optional, intent(IN) :: cmethod
+    integer, optional, intent(in) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    real(DP), dimension(:,:), intent(INOUT), target, optional :: Dtemp
+    real(DP), dimension(:,:), intent(inout), target, optional :: Dtemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Delem(1..nindex,inode)
-    real(DP), dimension(:,:), intent(INOUT) :: Delem
+    real(DP), dimension(:,:), intent(inout) :: Delem
   !</inputoutput>
 !</subroutine>
 
@@ -2200,7 +2200,7 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer, intent(IN) :: istart, istop
+      integer, intent(in) :: istart, istop
       real(DP) :: delem1, delem2
       integer :: i,j, k, idx
 
@@ -2254,7 +2254,7 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: l, u, i, j
       real(DP) :: t
@@ -2298,7 +2298,7 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: i, j, k, idx, istop
       real(DP) :: t
@@ -2326,7 +2326,7 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer, intent(IN) :: ilow, ihigh
+      integer, intent(in) :: ilow, ihigh
       
       integer :: imid, iend_lo, istart_hi, ilo, ihi
       integer :: idx,idest
@@ -2399,7 +2399,7 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Delem(:,i) and Delem(:,j)
       
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: idx
       real(DP) :: t
@@ -2414,7 +2414,7 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Delem(:,j:i) one to the right
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: k, idx
       real(DP) :: t
@@ -2447,20 +2447,20 @@ contains
   !<input>
     ! Index number of the entry in Ielem that should be used as
     ! a key for sorting.
-    integer, intent(IN) :: iindex
+    integer, intent(in) :: iindex
     
     ! Method to use for sorting (optional). Defaults to Heapsort
-    integer, optional, intent(IN) :: cmethod
+    integer, optional, intent(in) :: cmethod
     
     ! OPTIONAL: Temporary 2D array containing n nodes 
     ! Delem(1..nindex,inode). If not specified, the array is 
     ! automatically allocated if necessary.
-    real(SP), dimension(:,:), intent(INOUT), target, optional :: Stemp
+    real(SP), dimension(:,:), intent(inout), target, optional :: Stemp
   !</input>
     
   !<inputoutput>
     ! 2D array containing the n nodes Delem(1..nindex,inode)
-    real(SP), dimension(:,:), intent(INOUT) :: Selem
+    real(SP), dimension(:,:), intent(inout) :: Selem
   !</inputoutput>
 !</subroutine>
 
@@ -2508,7 +2508,7 @@ contains
     contains
 
     subroutine reheap(istart, istop)
-      integer, intent(IN) :: istart, istop
+      integer, intent(in) :: istart, istop
       real(SP) :: selem1, selem2
       integer :: i,j, k, idx
 
@@ -2562,7 +2562,7 @@ contains
     end subroutine heapsort
     
     recursive subroutine quicksort (ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: l, u, i, j
       real(SP) :: t
@@ -2606,7 +2606,7 @@ contains
     end subroutine quicksort
     
     subroutine insertSort(ilower, iupper)
-      integer, intent(IN) :: ilower, iupper
+      integer, intent(in) :: ilower, iupper
       
       integer :: i, j, k, idx, istop
       real(SP) :: t
@@ -2634,7 +2634,7 @@ contains
       ! British Columbia.
       ! Porting to F90 by J-P Moreau, Paris.
     
-      integer, intent(IN) :: ilow, ihigh
+      integer, intent(in) :: ilow, ihigh
       
       integer :: imid, iend_lo, istart_hi, ilo, ihi
       integer :: idx,idest
@@ -2707,7 +2707,7 @@ contains
     subroutine swapNode(i,j)
       ! Swaps node Selem(:,i) and Selem(:,j)
       
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: idx
       real(SP) :: t
@@ -2722,7 +2722,7 @@ contains
 
     subroutine circShiftRight(j,i)
       ! Circular shift of Selem(:,j:i) one to the right
-      integer, intent(IN) :: i, j
+      integer, intent(in) :: i, j
       
       integer :: k, idx
       real(SP) :: t

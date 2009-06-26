@@ -851,10 +851,10 @@ contains
 
 !<input>
   ! The first vector
-  type(t_vectorScalar), intent(IN) :: rvector1
+  type(t_vectorScalar), intent(in) :: rvector1
   
   ! The second vector
-  type(t_vectorScalar), intent(IN) :: rvector2
+  type(t_vectorScalar), intent(in) :: rvector2
 !</input>
 
 !<output>
@@ -862,7 +862,7 @@ contains
   ! whether the vectors are compatible or not.
   ! If not given, an error will inform the user if the two vectors are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -928,16 +928,16 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
   
   ! The matrix
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
   
   ! Check for rvector being compatible from the left or from the right
   ! to the matrix rmatrix.
   ! =FALSE: Check whether matrix-vector product $A*x$ is possible
   ! =TRUE : Check whether matrix-vector product $x^T*A = A^T*x$ is possible
-  logical, intent(IN)              :: btransposed
+  logical, intent(in)              :: btransposed
 !</input>
 
 !<output>
@@ -945,7 +945,7 @@ contains
   ! whether vector and matrix are compatible or not.
   ! If not given, an error will inform the user if the vector/matrix are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -1019,10 +1019,10 @@ contains
 
 !<input>
   ! The vector
-  type(t_matrixScalar), intent(IN) :: rmatrix1
+  type(t_matrixScalar), intent(in) :: rmatrix1
   
   ! The matrix
-  type(t_matrixScalar), intent(IN) :: rmatrix2
+  type(t_matrixScalar), intent(in) :: rmatrix2
 !</input>
 
 !<output>
@@ -1030,7 +1030,7 @@ contains
   ! whether vector and matrix are compatible or not.
   ! If not given, an error will inform the user if the vector/matrix are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -1131,10 +1131,10 @@ contains
 
 !<input>
   ! The vector which is to be checked.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 
   ! A scalar discretisation structure to check against the vector.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
 !<output>
@@ -1142,7 +1142,7 @@ contains
   ! whether vector and matrix are compatible or not.
   ! If not given, an error will inform the user if the vector/matrix are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -1179,12 +1179,12 @@ contains
 
 !<input>
   ! Target datatype of the matrix
-  integer, intent(IN) :: cdataType
+  integer, intent(in) :: cdataType
 !</input>
 
 !<inputoutput>
   ! Matrix that should be converted
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -1212,12 +1212,12 @@ contains
 
 !<input>
   ! Target datatype of the vector
-  integer, intent(IN) :: cdataType
+  integer, intent(in) :: cdataType
 !</input>
 
 !<inputoutput>
   ! Vector that should be converted
-  type(t_vectorScalar), intent(INOUT) :: rvector
+  type(t_vectorScalar), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -1246,7 +1246,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -1293,7 +1293,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -1338,7 +1338,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -1386,7 +1386,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<result>
@@ -1424,7 +1424,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1478,7 +1478,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1532,7 +1532,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1586,7 +1586,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1630,7 +1630,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1680,7 +1680,7 @@ contains
 
 !<input>
     ! The matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<output>
@@ -1731,23 +1731,23 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer, intent(IN) :: NEQ
+  integer, intent(in) :: NEQ
 
   ! Whether to fill the vector with zero initially
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
 
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
-  integer, intent(IN), optional :: cdataType  
+  integer, intent(in), optional :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional :: NEQMAX
+  integer, intent(in), optional :: NEQMAX
   
 !</input>
 
 !<output>
   ! Scalar vector structure
-  type(t_vectorScalar), intent(OUT) :: rvector
+  type(t_vectorScalar), intent(out) :: rvector
 !</output>
 
 !</subroutine>
@@ -1760,7 +1760,7 @@ contains
     isize = max(0,NEQ)
     if (present(NEQMAX)) isize=max(isize,NEQMAX)
 
-    ! The INTENT(OUT) already initialises rvector with the most important
+    ! The INTENT(out) already initialises rvector with the most important
     ! information. The rest comes now:
     
     ! Datatype
@@ -1805,26 +1805,26 @@ contains
 !<input>
   
   ! Desired length of the vector
-  integer, intent(IN) :: NEQ
+  integer, intent(in) :: NEQ
 
   ! Desired number of local variables
-  integer, intent(IN) :: NVAR
+  integer, intent(in) :: NVAR
 
   ! Whether to fill the vector with zero initially
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
 
   ! OPTIONAL: Data type of the vector.
   ! If not specified, ST_DOUBLE is assumed.
-  integer, intent(IN), optional :: cdataType  
+  integer, intent(in), optional :: cdataType  
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional :: NEQMAX
+  integer, intent(in), optional :: NEQMAX
   
 !</input>
 
 !<output>
   ! Scalar vector structure
-  type(t_vectorScalar), intent(OUT) :: rvector
+  type(t_vectorScalar), intent(out) :: rvector
 !</output>
 
 !</subroutine>
@@ -1838,7 +1838,7 @@ contains
     if (present(NEQMAX)) isize=max(isize,NEQMAX)
     isize = isize*max(0,NVAR)
 
-    ! The INTENT(OUT) already initialises rvector with the most important
+    ! The INTENT(out) already initialises rvector with the most important
     ! information. The rest comes now:
     
     ! Datatype
@@ -1887,24 +1887,24 @@ contains
 !<input>
   ! A block discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
-  type(t_spatialDiscretisation),intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation),intent(in), target :: rdiscretisation
 
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(IN),optional :: cdataType
+  integer, intent(in),optional :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional :: NEQMAX
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated appropriately.
   ! A pointer to rdiscretisation is saved to r.
-  type(t_vectorScalar),intent(OUT) :: rx
+  type(t_vectorScalar),intent(out) :: rx
 !</output>
   
 !</subroutine>
@@ -1952,27 +1952,27 @@ contains
 !<input>
   ! A block discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
-  type(t_spatialDiscretisation),intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation),intent(in), target :: rdiscretisation
   
   ! Desired number of local variables
-  integer, intent(IN) :: NVAR
+  integer, intent(in) :: NVAR
 
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(IN),optional :: cdataType
+  integer, intent(in),optional :: cdataType
 
   ! OPTIONAL: Maximum length of the vector
-  integer, intent(IN), optional :: NEQMAX
+  integer, intent(in), optional :: NEQMAX
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated appropriately.
   ! A pointer to rdiscretisation is saved to r.
-  type(t_vectorScalar),intent(OUT) :: rx
+  type(t_vectorScalar),intent(out) :: rx
 !</output>
   
 !</subroutine>
@@ -2013,27 +2013,27 @@ contains
 
 !<input>
     ! A template matrix structure
-    type(t_matrixScalar), intent(IN) :: rtemplateMat
+    type(t_matrixScalar), intent(in) :: rtemplateMat
 
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
-    logical, intent(IN), optional :: bclear
+    logical, intent(in), optional :: bclear
     
     ! OPTIONAL: If not specified or set to FALSE, the vector will be
     ! created as 'right' vector of the matrix (so matrix vector multiplication
     ! (A x) is possible).
     ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
     ! vector multiplication (A^T x) is possible.
-    logical, intent(IN), optional :: btransposed
+    logical, intent(in), optional :: btransposed
     
     ! OPTIONAL: Data type identifier for the entries in the vector. 
     ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-    integer, intent(IN),optional :: cdataType
+    integer, intent(in),optional :: cdataType
 !</input>
     
 !<output>
     ! Destination structure. Memory is allocated for each of the blocks.
-    type(t_vectorScalar),intent(OUT) :: rx
+    type(t_vectorScalar),intent(out) :: rx
 !</output>
 
 !</subroutine>
@@ -2116,23 +2116,23 @@ contains
 !<input>
 
     ! Desired length of the vector
-    integer, intent(IN)           :: NEQ  
+    integer, intent(in)           :: NEQ  
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                        :: bclear
+    logical, intent(in)                        :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional              :: bcopy
+    logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer, intent(IN), optional :: NEQMAX
+    integer, intent(in), optional :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Scalar vector structure
-    type(t_vectorScalar), intent(INOUT)         :: rvector
+    type(t_vectorScalar), intent(inout)         :: rvector
 
 !</inputoutput>
 
@@ -2248,20 +2248,20 @@ contains
 !<input>
 
     ! Scalar template vector
-    type(t_vectorScalar), intent(IN)           :: rvectorTemplate
+    type(t_vectorScalar), intent(in)           :: rvectorTemplate
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                        :: bclear
+    logical, intent(in)                        :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional              :: bcopy
+    logical, intent(in), optional              :: bcopy
 
 !</input>
 
 !<inputoutput>
 
     ! Scalar vector structure
-    type(t_vectorScalar), intent(INOUT)         :: rvector
+    type(t_vectorScalar), intent(inout)         :: rvector
 
 !</inputoutput>
 
@@ -2333,20 +2333,20 @@ contains
 !<input>
 
     ! Scalar template matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                        :: bclear
+    logical, intent(in)                        :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional              :: bcopy
+    logical, intent(in), optional              :: bcopy
 
 !</input>
 
 !<inputoutput>
 
     ! Scalar vector structure
-    type(t_vectorScalar), intent(INOUT)         :: rvector
+    type(t_vectorScalar), intent(inout)         :: rvector
 
 !</inputoutput>
 
@@ -2426,38 +2426,38 @@ contains
 !<input>
 
     ! Desired number of equations
-    integer, intent(IN)           :: NEQ
+    integer, intent(in)           :: NEQ
 
     ! Desired number of columns
-    integer, intent(IN)           :: NCOLS
+    integer, intent(in)           :: NCOLS
 
     ! Desired number of elements
-    integer, intent(IN)           :: NA
+    integer, intent(in)           :: NA
 
     ! Whether to fill the matrix with zero initially
-    logical, intent(IN)                        :: bclear
+    logical, intent(in)                        :: bclear
 
     ! OPTIONAL: Whether to copy the content of the matrix to the resized one
-    logical, intent(IN), optional              :: bcopy
+    logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Maximum number of equations
-    integer, intent(IN), optional :: NEQMAX
+    integer, intent(in), optional :: NEQMAX
 
     ! OPTIONAL: Maximum number of columns
-    integer, intent(IN), optional :: NCOLSMAX
+    integer, intent(in), optional :: NCOLSMAX
 
     ! OPTIONAL: Maximum number of elements
-    integer, intent(IN), optional :: NAMAX
+    integer, intent(in), optional :: NAMAX
 
     ! OPTIONAL: Wether to enforce resize even if matrix is copied from another matrix
-    logical, intent(IN), optional              :: bforce
+    logical, intent(in), optional              :: bforce
 
 !</input>
 
 !<inputoutput>
 
     ! Scalar matrix structure
-    type(t_matrixScalar), intent(INOUT)        :: rmatrix
+    type(t_matrixScalar), intent(inout)        :: rmatrix
 
 !</inputoutput>
 
@@ -2951,23 +2951,23 @@ contains
 !<input>
 
     ! Scalar template matrix
-    type(t_matrixScalar), intent(IN)           :: rmatrixTemplate
+    type(t_matrixScalar), intent(in)           :: rmatrixTemplate
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                        :: bclear
+    logical, intent(in)                        :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional              :: bcopy
+    logical, intent(in), optional              :: bcopy
 
     ! OPTIONAL: Whether to enforce resize even if matrix is copied from another matrix
-    logical, intent(IN), optional              :: bforce
+    logical, intent(in), optional              :: bforce
 
 !</input>
 
 !<inputoutput>
 
     ! Scalar matrix structure
-    type(t_matrixScalar), intent(INOUT)        :: rmatrix
+    type(t_matrixScalar), intent(inout)        :: rmatrix
 
 !</inputoutput>
 
@@ -3267,10 +3267,10 @@ contains
   
 !<input>
   ! First vector
-  type(t_vectorScalar), intent(IN)                  :: rx
+  type(t_vectorScalar), intent(in)                  :: rx
 
   ! Second vector
-  type(t_vectorScalar), intent(IN)                  :: ry
+  type(t_vectorScalar), intent(in)                  :: ry
 
 !</input>
 
@@ -3348,10 +3348,10 @@ contains
   
 !<input>
   ! First vector given as diagonal matrix
-  type(t_MatrixScalar), intent(IN)                  :: rx
+  type(t_MatrixScalar), intent(in)                  :: rx
 
   ! Second vector
-  type(t_vectorScalar), intent(IN)                  :: ry
+  type(t_vectorScalar), intent(in)                  :: ry
 
 !</input>
 
@@ -3437,27 +3437,27 @@ contains
 !<input>
   
   ! Scalar matrix
-  type(t_matrixScalar), intent(IN)                  :: rmatrix
+  type(t_matrixScalar), intent(in)                  :: rmatrix
 
   ! Vector to multiply with the matrix.
-  type(t_vectorScalar), intent(IN)                  :: rx
+  type(t_vectorScalar), intent(in)                  :: rx
   
   ! Multiplicative factor for rx
-  real(DP), intent(IN)                              :: cx
+  real(DP), intent(in)                              :: cx
 
   ! Multiplicative factor for ry
-  real(DP), intent(IN)                              :: cy
+  real(DP), intent(in)                              :: cy
   
   ! OPTIONAL: Specifies whether a multiplication with the matrix itself
   ! (.false.) or with its transpose (.true.) should be performed. If not
   ! given, .false. is assumed.
-  logical, optional, intent(IN)                     :: btranspose
+  logical, optional, intent(in)                     :: btranspose
   
 !</input>
 
 !<inputoutput>
   ! Additive vector. Receives the result of the matrix-vector multiplication
-  type(t_vectorScalar), intent(INOUT)               :: ry
+  type(t_vectorScalar), intent(inout)               :: ry
 !</inputoutput>
 
 !</subroutine>
@@ -3710,12 +3710,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
-    integer, intent(IN)                  :: NEQ
+    type(t_matrixScalar), intent(in)                  :: rmatrix
+    type(t_vectorScalar), intent(in)                  :: rx
+    real(DP), intent(in)                              :: cx
+    real(DP), intent(in)                              :: cy
+    type(t_vectorScalar), intent(inout)               :: ry
+    integer, intent(in)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -3827,16 +3827,16 @@ contains
     subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ)
 
     ! The matrix
-    integer, dimension(*), intent(IN) :: KCOL
-    integer, dimension(*), intent(IN) :: KLD
-    real(DP), dimension(*), intent(IN) :: DA
+    integer, dimension(*), intent(in) :: KCOL
+    integer, dimension(*), intent(in) :: KLD
+    real(DP), dimension(*), intent(in) :: DA
     
     ! Size of the vectors
     integer :: NEQ
 
     ! The vectors
-    real(DP), dimension(*), intent(IN) :: Dx
-    real(DP), dimension(*), intent(INOUT) :: Dy
+    real(DP), dimension(*), intent(in) :: Dx
+    real(DP), dimension(*), intent(inout) :: Dy
     
     ! Multiplication factors for the vectors.
     real(DP) :: cx,cy
@@ -3929,12 +3929,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
-    integer, intent(IN)                  :: NEQ
+    type(t_matrixScalar), intent(in)                  :: rmatrix
+    type(t_vectorScalar), intent(in)                  :: rx
+    real(DP), intent(in)                              :: cx
+    real(DP), intent(in)                              :: cy
+    type(t_vectorScalar), intent(inout)               :: ry
+    integer, intent(in)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4072,12 +4072,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
-    integer, intent(IN)                  :: NEQ
+    type(t_matrixScalar), intent(in)                  :: rmatrix
+    type(t_vectorScalar), intent(in)                  :: rx
+    real(DP), intent(in)                              :: cx
+    real(DP), intent(in)                              :: cy
+    type(t_vectorScalar), intent(inout)               :: ry
+    integer, intent(in)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4201,12 +4201,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
-    integer, intent(IN)                  :: NEQ
+    type(t_matrixScalar), intent(in)                  :: rmatrix
+    type(t_vectorScalar), intent(in)                  :: rx
+    real(DP), intent(in)                              :: cx
+    real(DP), intent(in)                              :: cy
+    type(t_vectorScalar), intent(inout)               :: ry
+    integer, intent(in)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     real(DP) :: dtmp
@@ -4317,12 +4317,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(IN)                  :: rmatrix
-    type(t_vectorScalar), intent(IN)                  :: rx
-    real(DP), intent(IN)                              :: cx
-    real(DP), intent(IN)                              :: cy
-    type(t_vectorScalar), intent(INOUT)               :: ry
-    integer, intent(IN)                  :: NEQ
+    type(t_matrixScalar), intent(in)                  :: rmatrix
+    type(t_vectorScalar), intent(in)                  :: rx
+    real(DP), intent(in)                              :: cx
+    real(DP), intent(in)                              :: cy
+    type(t_vectorScalar), intent(inout)               :: ry
+    integer, intent(in)                  :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4420,7 +4420,7 @@ contains
   
 !<input>
   ! Vector to copy
-  type(t_vectorScalar), intent(IN)                :: rx
+  type(t_vectorScalar), intent(in)                :: rx
 
   ! Duplication flag that decides on how to set up the structure
   ! of ry. Not all flags are possible!
@@ -4430,7 +4430,7 @@ contains
   ! LSYSSC_DUP_COPYOVERWRITE or
   ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
   !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of ry. Not all flags are possible!
@@ -4470,12 +4470,12 @@ contains
   ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
   !   same size in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
 !</input>
 
 !<inputoutput>
   ! The new vector which will be a copy of roldvector
-  type(t_vectorScalar), intent(INOUT)               :: ry
+  type(t_vectorScalar), intent(inout)               :: ry
 !</inputoutput>
 
 !</subroutine>
@@ -4597,8 +4597,8 @@ contains
     
     ! Allocates new memory ry in the size of rx. The memory is not initialised.
     
-    type(t_vectorScalar), intent(IN) :: rx
-    type(t_vectorScalar), intent(INOUT) :: ry
+    type(t_vectorScalar), intent(in) :: rx
+    type(t_vectorScalar), intent(inout) :: ry
 
       ! local variables
       integer :: NEQ,NVAR
@@ -4618,8 +4618,8 @@ contains
     
     ! Copies the content of rx to ry. Takes care of the data type
     
-    type(t_vectorScalar), intent(IN) :: rx
-    type(t_vectorScalar), intent(INOUT) :: ry
+    type(t_vectorScalar), intent(in) :: rx
+    type(t_vectorScalar), intent(inout) :: ry
     
       ! local variables
       real(DP), dimension(:), pointer :: p_Dsource,p_Ddest
@@ -4685,7 +4685,7 @@ contains
   
 !<input>
   ! Source matrix.
-  type(t_matrixScalar), intent(IN)               :: rsourceMatrix
+  type(t_matrixScalar), intent(in)               :: rsourceMatrix
   
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
@@ -4728,7 +4728,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies static structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
@@ -4770,12 +4770,12 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies static structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
 !</input>
 
 !<output>
   ! Destination matrix.
-  type(t_matrixScalar), intent(INOUT)            :: rdestMatrix
+  type(t_matrixScalar), intent(inout)            :: rdestMatrix
 !</output>  
 
 !</subroutine>
@@ -5098,11 +5098,11 @@ contains
     subroutine removeStructure(rmatrix, brelease)
     
     ! The matrix to to be processed.
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! Whether to release data from the heap (if it belongs to the matrix)
     ! or simply to overwrite the handles with ST_NOHANDLE
-    logical, intent(IN) :: brelease
+    logical, intent(in) :: brelease
     
       ! This is a matrix-dependent task
       select case (rmatrix%cmatrixFormat)
@@ -5155,10 +5155,10 @@ contains
     subroutine shareStructure(rsourceMatrix, rdestMatrix)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
       ! local variables
       integer(I32) :: iflag,iflag2
@@ -5236,10 +5236,10 @@ contains
     subroutine copyStaticStructure(rsourceMatrix, rdestMatrix)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
       ! local variables
       integer(I32) :: iflag,iflag2
@@ -5273,14 +5273,14 @@ contains
     subroutine copyStructure(rsourceMatrix, rdestMatrix, bignoreOwner)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
     ! Whether to respect the ownership of the arrays and allocate 
     ! memory automatically if a matrix is not the owner of the arrays.
-    logical, intent(IN) :: bignoreOwner
+    logical, intent(in) :: bignoreOwner
 
       ! local variables
       integer(I32) :: iflag,iflag2
@@ -5403,11 +5403,11 @@ contains
     subroutine removeContent(rmatrix, brelease)
     
     ! The matrix to to be processed.
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! Whether to release data from the heap (if it belongs to the matrix)
     ! or simply to overwrite the handles with ST_NOHANDLE
-    logical, intent(IN) :: brelease
+    logical, intent(in) :: brelease
     
       ! This is a matrix-dependent task
       select case (rmatrix%cmatrixFormat)
@@ -5438,10 +5438,10 @@ contains
     subroutine shareContent(rsourceMatrix, rdestMatrix)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
       ! Remove the old content - if there is any.
       call removeContent(rdestMatrix, .true.)
@@ -5480,10 +5480,10 @@ contains
     subroutine copyStaticContent(rsourceMatrix, rdestMatrix)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
       ! Overwrite structural data
       rdestMatrix%dscaleFactor = rsourceMatrix%dscaleFactor
@@ -5497,14 +5497,14 @@ contains
     subroutine copyContent(rsourceMatrix, rdestMatrix, bignoreOwner)
     
     ! The source matrix 
-    type(t_matrixScalar), intent(IN) :: rsourceMatrix
+    type(t_matrixScalar), intent(in) :: rsourceMatrix
 
     ! The destination matrix 
-    type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+    type(t_matrixScalar), intent(inout) :: rdestMatrix
     
     ! Whether to respect the ownership of the arrays and allocate 
     ! memory automatically if a matrix is not the owner of the arrays.
-    logical, intent(IN) :: bignoreOwner
+    logical, intent(in) :: bignoreOwner
     
       ! local variables
       logical :: bremove
@@ -5626,7 +5626,7 @@ contains
 !<inputoutput>
   
   ! Vector to release.
-  type(t_vectorScalar), intent(INOUT)               :: rvector
+  type(t_vectorScalar), intent(inout)               :: rvector
   
 !</inputoutput>
 
@@ -5668,7 +5668,7 @@ contains
 !<inputoutput>
   
   ! Matrix to release.
-  type(t_matrixScalar), intent(INOUT)               :: rmatrix
+  type(t_matrixScalar), intent(inout)               :: rmatrix
   
 !</inputoutput>
 
@@ -5710,7 +5710,7 @@ contains
 !<inputoutput>
   
   ! Matrix to release.
-  type(t_matrixScalar), intent(INOUT)               :: rmatrix
+  type(t_matrixScalar), intent(inout)               :: rmatrix
   
 !</inputoutput>
 
@@ -5777,12 +5777,12 @@ contains
 !<inputoutput>
   
   ! Matrix to clear.
-  type(t_matrixScalar), intent(INOUT)               :: rmatrix
+  type(t_matrixScalar), intent(inout)               :: rmatrix
   
   ! OPTIONAL: Value to write into the matrix.
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
-  real(DP), intent(IN), optional :: dvalue
+  real(DP), intent(in), optional :: dvalue
   
 !</inputoutput>
 
@@ -5836,7 +5836,7 @@ contains
 !<inputoutput>
   
   ! Matrix to release.
-  type(t_matrixScalar), intent(INOUT)               :: rmatrix
+  type(t_matrixScalar), intent(inout)               :: rmatrix
   
 !</inputoutput>
 
@@ -5973,17 +5973,17 @@ contains
   
 !<input>
   ! Destination format of the matrix. One of the LSYSSC_MATRIXx constants.
-  integer, intent(IN)                 :: cmatrixFormat
+  integer, intent(in)                 :: cmatrixFormat
   
   ! OPTIONAL: Whether to convert the entries of the matrix. Standard = TRUE.
   ! If set to FALSE, the entries are not converted, only the structure
   ! is converted (thus leaving the entries to an undefined state).
-  logical, intent(IN), optional       :: bconvertEntries
+  logical, intent(in), optional       :: bconvertEntries
 !</input>
   
 !<inputoutput>
   ! Matrix to convert.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -6610,18 +6610,18 @@ contains
 
 !<input>
   ! Row structure in the matrix
-  integer, dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(in) :: Kld
 
   ! Column structure of the matrix
-  integer, dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(inout) :: Kcol
 
   ! Dimension of the matrix
-  integer, intent(IN) :: neq
+  integer, intent(in) :: neq
 !</input>
 
 !<output>
   ! Pointers to the diagonal entries of the matrix.
-  integer, dimension(:), intent(OUT) :: Kdiagonal
+  integer, dimension(:), intent(out) :: Kdiagonal
 !</output>
 
 !</subroutine>
@@ -6666,29 +6666,29 @@ contains
 
 !<input>
   ! Row pointer in the matrix
-  integer, dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(in) :: Kld
 
   ! Dimension of the matrix
-  integer, intent(IN) :: neq
+  integer, intent(in) :: neq
 
   ! Dimension of the interleaved submatrices (if any)
-  integer, intent(IN), optional :: nintl
+  integer, intent(in), optional :: nintl
 !</input>
 
 !<inputoutput>
   ! OPTIONAL:
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
-  real(DP), dimension(:), intent(INOUT), optional :: Da
+  real(DP), dimension(:), intent(inout), optional :: Da
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  integer, dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(inout) :: Kcol
 !</inputoutput>
 
 !<output>
   ! Pointers to the diagonal entries of the matrix.
-  integer, dimension(:), intent(OUT) :: Kdiagonal
+  integer, dimension(:), intent(out) :: Kdiagonal
 !</output>
 
 !</subroutine>
@@ -6828,27 +6828,27 @@ contains
 
 !<input>
   ! Row pointer in the matrix
-  integer, dimension(:), intent(IN) :: Kld
+  integer, dimension(:), intent(in) :: Kld
 
   ! Dimension of the matrix
-  integer, intent(IN) :: neq
+  integer, intent(in) :: neq
 
   ! Pointers to the diagonal entries of the matrix.
-  integer, dimension(:), intent(IN) :: Kdiagonal
+  integer, dimension(:), intent(in) :: Kdiagonal
 
   ! Dimension of the interleave submatrices (if any)
-  integer, intent(IN), optional :: nintl
+  integer, intent(in), optional :: nintl
 !</input>
 
 !<inputoutput>
   ! OPTIONAL:
   ! On input:  the matrix entries to be resorted,
   ! On output: the resorted matrix entries
-  real(DP), dimension(:), intent(INOUT), optional :: Da
+  real(DP), dimension(:), intent(inout), optional :: Da
   
   ! On input:  the column numbers to be resorted,
   ! On output: the resorted column numbers
-  integer, dimension(:), intent(INOUT) :: Kcol
+  integer, dimension(:), intent(inout) :: Kcol
 !</inputoutput>
 
 !</subroutine>
@@ -6954,18 +6954,18 @@ contains
 
 !<input>
   ! Source vector defining the sorting strategy.
-  type(t_vectorScalar), intent(IN)               :: rvectorSrc
+  type(t_vectorScalar), intent(in)               :: rvectorSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rvectorSrc
   ! or is unsorted, if rvectorSrc is unsorted.
   ! Must have the same size as rvectorSrc.
-  type(t_vectorScalar), intent(INOUT)            :: rvectorDst
+  type(t_vectorScalar), intent(inout)            :: rvectorDst
 
   ! A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
-  type(t_vectorScalar), intent(INOUT)            :: rtemp
+  type(t_vectorScalar), intent(inout)            :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -7015,18 +7015,18 @@ contains
 
 !<input>
   ! Source matrix defining the sorting strategy.
-  type(t_matrixScalar), intent(IN)               :: rmatrixSrc
+  type(t_matrixScalar), intent(in)               :: rmatrixSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rmatrixSrc
   ! or is unsorted, if rmatrixSrc is unsorted.
   ! Must have the same size (NEQ) as rmatrixSrc.
-  type(t_vectorScalar), intent(INOUT)            :: rvectorDst
+  type(t_vectorScalar), intent(inout)            :: rvectorDst
 
   ! A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
-  type(t_vectorScalar), intent(INOUT)            :: rtemp
+  type(t_vectorScalar), intent(inout)            :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -7078,11 +7078,11 @@ contains
   
 !<inputoutput>
   ! Vector to resort
-  type(t_vectorScalar), intent(INOUT)               :: rvector
+  type(t_vectorScalar), intent(inout)               :: rvector
 
   ! A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvector.
-  type(t_vectorScalar), intent(INOUT)               :: rtemp
+  type(t_vectorScalar), intent(inout)               :: rtemp
 !</inputoutput>
 
 !<input>
@@ -7093,7 +7093,7 @@ contains
   !  >0: Resort the vector according to a permutation;
   !      this is either the permutation specified in the vector
   !      or that one identified by h_IsortPermutation
- integer, intent(IN)                                :: isortStrategy
+ integer, intent(in)                                :: isortStrategy
   
   ! OPTIONAL: Handle to permutation to use for resorting the vector.
   ! 
@@ -7112,7 +7112,7 @@ contains
   ! Remark: The memory associated to the previous sorting strategy
   !  in this case is not released automatically; this has to be done by the
   !  application!
-  integer, intent(IN), optional                     :: h_IsortPermutation
+  integer, intent(in), optional                     :: h_IsortPermutation
 !</input> 
 
 !</subroutine>
@@ -7272,20 +7272,20 @@ contains
 !<inputoutput>
   ! Vector to resort. The sorting strategy must have been attached to
   ! rvector before with lsyssc_sortVectorInSitu, otherwise nothing happens.
-  type(t_vectorScalar), intent(INOUT)               :: rvector
+  type(t_vectorScalar), intent(inout)               :: rvector
 
   ! OPTIONAL: A temporary vector. 
   ! Must be of the same data type as rvector. Must be at least as 
   ! large as rvector. If not specified, a temporary vector is created
   ! and released automatically on the heap.
-  type(t_vectorScalar), intent(INOUT), target, optional :: rtemp
+  type(t_vectorScalar), intent(inout), target, optional :: rtemp
 !</inputoutput>
 
 !<input>
   ! Whether to sort or unsort.
   ! =TRUE : Activate sorting (if not activated)
   ! =FALSE: Unsort vector (if sorted)
- logical, intent(IN) :: bsort
+ logical, intent(in) :: bsort
 !</input> 
 
 !</subroutine>
@@ -7347,14 +7347,14 @@ contains
   
 !<inputoutput>
   ! Vector to resort
-  type(t_matrixScalar), intent(INOUT), target       :: rmatrix
+  type(t_matrixScalar), intent(inout), target       :: rmatrix
 !</inputoutput>
 
 !<input>
   ! Sort the entries or only the structure of the matrix.
   ! = FALSE: Only sort the structure of the matrix,
   ! = TRUE : Sort both, entries and structure of the matrix.
-  logical, intent(IN) :: bsortEntries
+  logical, intent(in) :: bsortEntries
 
   ! OPTIONAL: Identifier for the sorting strategy to apply to the matrix.
   ! This is usually one of the SSTRAT_xxxx constants from the module
@@ -7366,7 +7366,7 @@ contains
   ! If not specified, the sorting of the matrix is activated using
   ! the isortStrategy specifier in the matrix -- i.e. this 'activates'
   ! a previously attached sorting.
- integer, intent(IN), optional                      :: isortStrategy
+ integer, intent(in), optional                      :: isortStrategy
   
   ! OPTIONAL: Handle to permutation to use for resorting the matrix.
   ! 
@@ -7385,7 +7385,7 @@ contains
   ! Remark: The memory associated to the previous sorting strategy
   !  in this case is not released automatically; this has to be done by the
   !  application!
-  integer, intent(IN), optional                     :: h_IsortPermutation
+  integer, intent(in), optional                     :: h_IsortPermutation
 !</input> 
 
 !</subroutine>
@@ -7539,17 +7539,17 @@ contains
     subroutine do_matsort (rmatrix,Itr1,Itr2,bsortEntries)
     
     ! The matrix to be resorted
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! The transformation to use
-    integer, dimension(:), intent(IN) :: Itr1
+    integer, dimension(:), intent(in) :: Itr1
     
     ! The inverse transformation
-    integer, dimension(:), intent(IN) :: Itr2
+    integer, dimension(:), intent(in) :: Itr2
     
     ! TRUE  = sort matrix structure + entries
     ! FALSE = sort only matrix structure
-    logical, intent(IN) :: bsortEntries
+    logical, intent(in) :: bsortEntries
     
     ! local variables
     
@@ -7839,35 +7839,35 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(DP), dimension(:), intent(IN) :: DaH
+    real(DP), dimension(:), intent(in) :: DaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(DP), dimension(:), intent(OUT) :: Da
+    real(DP), dimension(:), intent(out) :: Da
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
 !</output>
     
@@ -7967,35 +7967,35 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(SP), dimension(:), intent(IN) :: FaH
+    real(SP), dimension(:), intent(in) :: FaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(SP), dimension(:), intent(OUT) :: Fa
+    real(SP), dimension(:), intent(out) :: Fa
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
 !</output>
     
@@ -8094,35 +8094,35 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    integer, dimension(:), intent(IN) :: IaH
+    integer, dimension(:), intent(in) :: IaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    integer, dimension(:), intent(OUT) :: Ia
+    integer, dimension(:), intent(out) :: Ia
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
 !</output>
     
@@ -8222,29 +8222,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(DP), dimension(:), intent(IN) :: DaH
+    real(DP), dimension(:), intent(in) :: DaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(DP), dimension(:), intent(OUT) :: Da
+    real(DP), dimension(:), intent(out) :: Da
 
 !</output>
     
@@ -8337,29 +8337,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(SP), dimension(:), intent(IN) :: FaH
+    real(SP), dimension(:), intent(in) :: FaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(SP), dimension(:), intent(OUT) :: Fa
+    real(SP), dimension(:), intent(out) :: Fa
 
 !</output>
     
@@ -8451,29 +8451,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    integer, dimension(:), intent(IN) :: IaH
+    integer, dimension(:), intent(in) :: IaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
     
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the sorting back
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    integer, dimension(:), intent(OUT) :: Ia
+    integer, dimension(:), intent(out) :: Ia
 
 !</output>
     
@@ -8564,29 +8564,29 @@ contains
 !<input>
 
     ! Number of equations
-    integer , intent(IN) :: neq
+    integer , intent(in) :: neq
 
     ! Permutation of 1..neq describing how to resort
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing how to sort
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<inputoutput>
 
     ! Column description of matrix
-    integer, dimension(:), intent(INOUT) :: Icol
+    integer, dimension(:), intent(inout) :: Icol
 
     ! Row description of matrix
-    integer, dimension(neq+1), intent(INOUT) :: Ild
+    integer, dimension(neq+1), intent(inout) :: Ild
     
     ! Column structure of source matrix -> resorted matrix
-    integer, dimension(:), intent(INOUT) :: IcolH
+    integer, dimension(:), intent(inout) :: IcolH
     
     ! Row positions of source matrix -> resorted matrix
-    integer, dimension(neq+1), intent(INOUT) :: IldH
+    integer, dimension(neq+1), intent(inout) :: IldH
     
 !</inputoutput>
 !</subroutine>
@@ -8676,38 +8676,38 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(DP), dimension(:), intent(IN) :: DaH
+    real(DP), dimension(:), intent(in) :: DaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(DP), dimension(:), intent(OUT) :: Da
+    real(DP), dimension(:), intent(out) :: Da
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(out) :: Idiag
     
 !</output>
     
@@ -8813,38 +8813,38 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(SP), dimension(:), intent(IN) :: FaH
+    real(SP), dimension(:), intent(in) :: FaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(SP), dimension(:), intent(OUT) :: Fa
+    real(SP), dimension(:), intent(out) :: Fa
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(out) :: Idiag
     
 !</output>
     
@@ -8950,38 +8950,38 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    integer, dimension(:), intent(IN) :: IaH
+    integer, dimension(:), intent(in) :: IaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    integer, dimension(:), intent(OUT) :: Ia
+    integer, dimension(:), intent(out) :: Ia
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(out) :: Idiag
     
 !</output>
     
@@ -9088,29 +9088,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(DP), dimension(:), intent(IN) :: DaH
+    real(DP), dimension(:), intent(in) :: DaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(DP), dimension(:), intent(OUT) :: Da
+    real(DP), dimension(:), intent(out) :: Da
 
 !</output>
     
@@ -9205,29 +9205,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    real(SP), dimension(:), intent(IN) :: FaH
+    real(SP), dimension(:), intent(in) :: FaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Destination matrix
-    real(SP), dimension(:), intent(OUT) :: Fa
+    real(SP), dimension(:), intent(out) :: Fa
 
 !</output>
     
@@ -9322,29 +9322,29 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Source matrix
-    integer, dimension(:), intent(IN) :: IaH
+    integer, dimension(:), intent(in) :: IaH
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
 
 !<output>
 
     ! Destination matrix
-    integer, dimension(:), intent(OUT) :: Ia
+    integer, dimension(:), intent(out) :: Ia
 
 !</output>
     
@@ -9439,32 +9439,32 @@ contains
 !<input>
     
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
     
     ! Column structure of source matrix
-    integer, dimension(:), intent(IN) :: IcolH
+    integer, dimension(:), intent(in) :: IcolH
     
     ! Row positions of source matrix
-    integer, dimension(neq+1), intent(IN) :: IldH
+    integer, dimension(neq+1), intent(in) :: IldH
 
     ! Permutation of 1..neq describing the sorting
-    integer, dimension(neq), intent(IN) :: Itr1
+    integer, dimension(neq), intent(in) :: Itr1
     
     ! Permutation of 1..neq describing the inverse permutation
-    integer, dimension(neq), intent(IN) :: Itr2
+    integer, dimension(neq), intent(in) :: Itr2
 
 !</input>
     
 !<output>
 
     ! Column structure of destination matrix
-    integer, dimension(:), intent(OUT) :: Icol
+    integer, dimension(:), intent(out) :: Icol
     
     ! Row positions of destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Ild
+    integer, dimension(neq+1), intent(out) :: Ild
     
     ! Positions of diagonal elements in the destination matrix
-    integer, dimension(neq+1), intent(OUT) :: Idiag
+    integer, dimension(neq+1), intent(out) :: Idiag
     
 !</output>
     
@@ -9563,10 +9563,10 @@ contains
 !<inputoutput>
       
     ! column vector
-    integer, dimension(:), intent(INOUT) :: Ih1
+    integer, dimension(:), intent(inout) :: Ih1
       
     ! row vector; same size as Ih1
-    integer, dimension(size(Ih1)), intent(INOUT) :: Ih2
+    integer, dimension(size(Ih1)), intent(inout) :: Ih2
       
 !</inputoutput>
 !</subroutine>
@@ -9613,14 +9613,14 @@ contains
   
 !<inputoutput>
   ! Vector to resort
-  type(t_matrixScalar), intent(INOUT), target       :: rmatrix
+  type(t_matrixScalar), intent(inout), target       :: rmatrix
 !</inputoutput>
 
 !<input>
   ! Sort the entries or only the structure of the matrix.
   ! = FALSE: Only sort the structure of the matrix,
   ! = TRUE : Sort both, entries and structure of the matrix.
-  logical, intent(IN) :: bsortEntries
+  logical, intent(in) :: bsortEntries
 
 !</input>
 
@@ -9648,7 +9648,7 @@ contains
   
 !<input>
   ! Handle to an integer data array.
-  integer, intent(IN) :: h_Ix
+  integer, intent(in) :: h_Ix
 
   ! The value to add to every entry.
   integer :: ivalue
@@ -9702,17 +9702,17 @@ contains
   
 !<input>
   ! Vector to calculate the norm of.
-  type(t_vectorScalar), intent(IN)                  :: rx
+  type(t_vectorScalar), intent(in)                  :: rx
 
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 !</input>
 
 !<output>
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -9771,18 +9771,18 @@ contains
   
 !<input>
   ! The matrix. 
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 
   ! The source vector.
-  type(t_vectorScalar), intent(IN) :: rvectorSrc
+  type(t_vectorScalar), intent(in) :: rvectorSrc
 
   ! A multiplication factor. Standard value is 1.0_DP
-  real(DP), intent(IN) :: dscale
+  real(DP), intent(in) :: dscale
 !</input>
 
 !<inputoutput>
   ! The destination vector which receives the result.
-  type(t_vectorScalar), intent(INOUT) :: rvectorDst
+  type(t_vectorScalar), intent(inout) :: rvectorDst
 !</inputoutput>
 
 !</subroutine>
@@ -10177,12 +10177,12 @@ contains
 
 !<input>
   ! Source vector
-  type(t_vectorScalar),intent(IN) :: rx
+  type(t_vectorScalar),intent(in) :: rx
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  type(t_vectorScalar),intent(INOUT) :: ry
+  type(t_vectorScalar),intent(inout) :: ry
 !</inputoutput>
   
 !</subroutine>
@@ -10204,12 +10204,12 @@ contains
   
 !<inputoutput>
   ! Source and destination vector
-  type(t_vectorScalar), intent(INOUT) :: rx
+  type(t_vectorScalar), intent(inout) :: rx
 !</inputoutput>
 
 !<input>
   ! Multiplication factor
-  real(DP), intent(IN) :: c
+  real(DP), intent(in) :: c
 !</input>
   
 !</subroutine>
@@ -10249,12 +10249,12 @@ contains
   
 !<inputoutput>
   ! Destination vector to be cleared
-  type(t_vectorScalar), intent(INOUT) :: rx
+  type(t_vectorScalar), intent(inout) :: rx
 
   ! OPTIONAL: Value to write into the matrix.
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
-  real(DP), intent(IN), optional :: dvalue
+  real(DP), intent(in), optional :: dvalue
 !</inputoutput>
   
 !</subroutine>
@@ -10304,21 +10304,21 @@ contains
   
 !<input>
   ! First source vector
-  type(t_vectorScalar), intent(IN)   :: rx
+  type(t_vectorScalar), intent(in)   :: rx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)               :: cx
+  real(DP), intent(in)               :: cx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)               :: cy
+  real(DP), intent(in)               :: cy
 !</input>
 
 !<inputoutput>
   ! Second source vector; also receives the result if rdest is not specified.
-  type(t_vectorScalar), intent(INOUT), target :: ry
+  type(t_vectorScalar), intent(inout), target :: ry
 
   ! OPTIONAL: Destination vector. If not specified, ry will be overwritten.
-  type(t_vectorScalar), intent(INOUT), optional, target :: rdest
+  type(t_vectorScalar), intent(inout), optional, target :: rdest
 !</inputoutput>
   
 !</subroutine>
@@ -10400,12 +10400,12 @@ contains
   
 !<input>
   ! Source vector
-  type(t_matrixScalar),intent(IN) :: rsourceMatrix
+  type(t_matrixScalar),intent(in) :: rsourceMatrix
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  type(t_matrixScalar),intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar),intent(inout) :: rdestMatrix
 !</inputoutput>
   
 !</subroutine>
@@ -10568,30 +10568,30 @@ contains
     
 !<input>
     ! Number of rows in the source matrix
-    integer, intent(IN) :: nrow
+    integer, intent(in) :: nrow
     
     ! Number of columns in the source matrix
-    integer, intent(IN) :: ncol
+    integer, intent(in) :: ncol
     
     ! Column structure of the source matrix
-    integer, dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(in) :: Icol
     
     ! Row structure of the source matrix
-    integer, dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(in) :: Irow
 !</input>
     
 !<output>
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    integer, dimension(:), intent(OUT) :: IcolDest
+    integer, dimension(:), intent(out) :: IcolDest
 
     ! Row structure of the destination matrix
-    integer, dimension(ncol+1), intent(OUT) :: IrowDest
+    integer, dimension(ncol+1), intent(out) :: IrowDest
 !</output>
     
 !<inputoutput>
     ! Auxiliary array of size ncol
-    integer, dimension(ncol), intent(INOUT) :: Itmp
+    integer, dimension(ncol), intent(inout) :: Itmp
 !</inputoutput>
 !</subroutine>
     
@@ -10659,40 +10659,40 @@ contains
     
 !<input>
     ! Number of rows in the source matrix
-    integer, intent(IN) :: nrow
+    integer, intent(in) :: nrow
     
     ! Number of columns in the source matrix
-    integer, intent(IN) :: ncol
+    integer, intent(in) :: ncol
     
     ! The entries of the source matrix
-    real(DP), dimension(:), intent(IN) :: Da
+    real(DP), dimension(:), intent(in) :: Da
     
     ! Column structure of the source matrix
-    integer, dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(in) :: Icol
     
     ! Row structure of the source matrix.
     ! DIMENSION(nrow+1)
-    integer, dimension(:), intent(IN) :: Irow
+    integer, dimension(:), intent(in) :: Irow
 !</input>
     
 !<output>
     ! The entries of the destination matrix
     ! The array must be of the same size as Da or Icol
-    real(DP), dimension(:), intent(OUT) :: DaDest
+    real(DP), dimension(:), intent(out) :: DaDest
     
     ! Column structure of the destination matrix
     ! The array must be of the same size as Icol!
-    integer, dimension(:), intent(OUT) :: IcolDest
+    integer, dimension(:), intent(out) :: IcolDest
 
     ! Row structure of the destination matrix.
     ! DIMENSION(ncol+1)
-    integer, dimension(:), intent(OUT) :: IrowDest
+    integer, dimension(:), intent(out) :: IrowDest
 !</output>
     
 !<inputoutput>
     ! Auxiliary array.
     ! DIMENSION(ncol)
-    integer, dimension(:), intent(INOUT) :: Itmp
+    integer, dimension(:), intent(inout) :: Itmp
 !</inputoutput>
   
 !</subroutine>
@@ -10777,24 +10777,24 @@ contains
     
 !<input>
     ! Number of rows/columns/equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
 !</input>
   
 !<output>
     ! If .TRUE. a diagonal element was not found
-    logical, optional, intent(OUT) :: berror
+    logical, optional, intent(out) :: berror
 !</output>
         
 !<inputoutput>
     ! OPTIONAL: Matrix entries.
     ! If not specified, only the matrix structure is pivotised.
-    real(DP), dimension(:), intent(INOUT), optional :: Da
+    real(DP), dimension(:), intent(inout), optional :: Da
     
     ! Matrix column structure
-    integer, dimension(:), intent(INOUT) :: Icol
+    integer, dimension(:), intent(inout) :: Icol
     
     ! Matrix row structure
-    integer, dimension(neq+1), intent(INOUT) :: Irow
+    integer, dimension(neq+1), intent(inout) :: Irow
 !</inputoutput>
 !</subroutine>
     
@@ -10895,12 +10895,12 @@ contains
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
   !     So afterwards, rmatrix is an independent, virtually transposed matrix.
-  integer, intent(IN), optional :: itransFlag
+  integer, intent(in), optional :: itransFlag
 !</input>
 
 !<inputoutput>
   ! The matrix to be transposed.
-  type(t_matrixScalar),intent(INOUT) :: rmatrix
+  type(t_matrixScalar),intent(inout) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -11018,10 +11018,10 @@ contains
   ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
   !     creates a duplicate of the source matrix in memory, thus resulting
   !     in rtransposedMatrix being a totally independent matrix.
-  integer, intent(IN), optional :: itransFlag
+  integer, intent(in), optional :: itransFlag
   
   ! The matrix to be transposed.
-  type(t_matrixScalar),intent(IN) :: rmatrix
+  type(t_matrixScalar),intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
@@ -11031,7 +11031,7 @@ contains
   !   it's overwritten.
   ! If the structure exists and structural data does not match rmatrix, 
   !   an error is thrown.
-  type(t_matrixScalar),intent(INOUT) :: rtransposedMatrix
+  type(t_matrixScalar),intent(inout) :: rtransposedMatrix
 !</inputoutput>
   
 !</subroutine>
@@ -11415,12 +11415,12 @@ contains
 
 !<input>
   ! Source matrix
-  type(t_matrixScalar), intent(IN) :: rsourceMatrix
+  type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
  
 !<inputoutput>
   ! Destination matrix
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -11478,12 +11478,12 @@ contains
   
 !<input>
   ! Source matrix
-  type(t_matrixScalar), intent(IN) :: rsourceMatrix
+  type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
  
 !<inputoutput>
   ! Destination matrix
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
   
 !</subroutine>
@@ -11522,12 +11522,12 @@ contains
   
 !<input>
   ! Source matrix
-  type(t_matrixScalar), intent(IN) :: rsourceMatrix
+  type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
  
 !<inputoutput>
   ! Destination matrix
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -11576,12 +11576,12 @@ contains
   
 !<input>
   ! Source matrix
-  type(t_matrixScalar), intent(IN) :: rsourceMatrix
+  type(t_matrixScalar), intent(in) :: rsourceMatrix
 !</input>
  
 !<inputoutput>
   ! Destination matrix
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
 !</inputoutput>
   
 !</subroutine>
@@ -11634,7 +11634,7 @@ contains
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
-  integer, intent(IN) :: iclear
+  integer, intent(in) :: iclear
   
   ! OPTIONAL: If set to TRUE, existing matrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
@@ -11643,12 +11643,12 @@ contains
   ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
   ! If not present, the standard data type cdataType-variable in the matrix
   ! is used (usually ST_DOUBLE).
-  integer, intent(IN), optional :: cdataType
+  integer, intent(in), optional :: cdataType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -11786,15 +11786,15 @@ contains
 
 !<input>
   ! Matrix type, e.g. LSYSSC_MATRIXD or LSYSSC_MATRIX9,...
-  integer, intent(IN) :: cmatrixFormat
+  integer, intent(in) :: cmatrixFormat
   
   ! Number of equations, the matrix should hold.
-  integer, intent(IN) :: NEQ
+  integer, intent(in) :: NEQ
 !</input>
 
 !<inputoutput>
   ! The FE matrix to be initialised.
-  type(t_matrixScalar), intent(OUT) :: rmatrix
+  type(t_matrixScalar), intent(out) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -11847,23 +11847,23 @@ contains
 
 !<input>
   ! Number of rows in the matrix
-  integer, intent(IN) :: NEQ
+  integer, intent(in) :: NEQ
   
   ! Whether to initialise the matrix with zero or not.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: Number of columns in the matrix. If not specified, NEQ=nrows
   ! is assumed.
-  integer, intent(IN), optional :: ncols
+  integer, intent(in), optional :: ncols
   
   ! OPTIONAL: Data type of the entries. A ST_xxxx constant. 
   ! Default is ST_DOUBLE.
-  integer, intent(IN), optional :: cdataType
+  integer, intent(in), optional :: cdataType
 !</input>
 
 !<inputoutput>
   ! The matrix to be initialised.
-  type(t_matrixScalar), intent(OUT) :: rmatrix
+  type(t_matrixScalar), intent(out) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -11911,18 +11911,18 @@ contains
   ! Type of lumping to perform. One of the LSYSSC_LUMP_xxxx constants.
   ! LSYSSC_LUMP_STD:  Perform standard lumping.
   ! LSYSSC_LUMP_DIAG: Perform diagonal lumping.
-  integer, intent(IN) :: clumpType
+  integer, intent(in) :: clumpType
   
   ! OPTIONAL: Whether to convert the matrix structure to a diagonal matrix.
   ! TRUE:  Convert the matrix to a diagonal matrix. This is the default case
   !        if the parameter is not present.
   ! FALSE: Matrix structure stays unchanged.
-  logical, intent(IN), optional :: bconvertToDiag
+  logical, intent(in), optional :: bconvertToDiag
 !</input>
 
 !<inputoutput>
   ! The matrix to be lumped. Will be overwritten by a diagonal matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -12061,7 +12061,7 @@ contains
 
 !<inputoutput>
   ! The matrix which is to be modified.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -12088,7 +12088,7 @@ contains
     
     subroutine removeOffdiags_format9 (rmatrix)
     
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! local variables
     integer :: irow
@@ -12152,7 +12152,7 @@ contains
     
     subroutine removeOffdiags_format7 (rmatrix)
     
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! local variables
     integer :: irow
@@ -12201,7 +12201,7 @@ contains
     
     subroutine removeOffdiags_format1 (rmatrix)
     
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
     
     ! local variables
     integer :: irow,icol
@@ -12275,12 +12275,12 @@ contains
   
 !<inputoutput>
   ! Source and destination matrix
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !<input>
   ! Multiplication factor
-  real(DP), intent(IN) :: c
+  real(DP), intent(in) :: c
 !</input>
   
 !</subroutine>
@@ -12337,7 +12337,7 @@ contains
 
 !<input>
     ! source matrices
-    type(t_matrixScalar), intent(IN) :: rmatrixA,rmatrixB
+    type(t_matrixScalar), intent(in) :: rmatrixA,rmatrixB
 
     ! BMEMORY = FALSE: Do not allocate required memory for C=A*B.
     ! BMEMORY = TRUE:  Generate all required structures for C=A*B 
@@ -12364,7 +12364,7 @@ contains
 !</input>
 
 !<inputoutput>
-    type(t_matrixScalar), intent(INOUT) :: rmatrixC
+    type(t_matrixScalar), intent(inout) :: rmatrixC
 !</inputoutput>
 
 !</subroutine>
@@ -13214,10 +13214,10 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer, intent(IN) :: n,m,k
-      real(DP), dimension(m,n), intent(IN)    :: Da1
-      real(DP), dimension(k,m), intent(IN)    :: Da2
-      real(DP), dimension(k,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m,k
+      real(DP), dimension(m,n), intent(in)    :: Da1
+      real(DP), dimension(k,m), intent(in)    :: Da2
+      real(DP), dimension(k,n), intent(inout) :: Da3
 
       ! Remark: The tuned BLAS3 routine performs much better than the
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
@@ -13238,10 +13238,10 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer, intent(IN) :: n,m,k
-      real(DP), dimension(m,n), intent(IN)    :: Da1
-      real(SP), dimension(k,m), intent(IN)    :: Fa2
-      real(DP), dimension(k,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m,k
+      real(DP), dimension(m,n), intent(in)    :: Da1
+      real(SP), dimension(k,m), intent(in)    :: Fa2
+      real(DP), dimension(k,n), intent(inout) :: Da3
 
       call DGEMM('N','N',k,n,m,1.0_DP,real(Fa2,DP),k,Da1,m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Fa2,Da1)
@@ -13259,10 +13259,10 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer, intent(IN) :: n,m,k
-      real(SP), dimension(m,n), intent(IN)    :: Fa1
-      real(DP), dimension(k,m), intent(IN)    :: Da2
-      real(DP), dimension(k,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m,k
+      real(SP), dimension(m,n), intent(in)    :: Fa1
+      real(DP), dimension(k,m), intent(in)    :: Da2
+      real(DP), dimension(k,n), intent(inout) :: Da3
  
       call DGEMM('N','N',k,n,m,1.0_DP,Da2,k,real(Fa1,DP),m,0.0_DP,Da3,k)
 !!$      Da3=MATMUL(Da2,Fa1)
@@ -13280,10 +13280,10 @@ contains
       !         MATMUL requires the matrix to be stored columnwise
       !         Hence, compute C = A*B = (B'*A')'
       
-      integer, intent(IN) :: n,m,k
-      real(SP), dimension(m,n), intent(IN)    :: Fa1
-      real(SP), dimension(k,m), intent(IN)    :: Fa2
-      real(SP), dimension(k,n), intent(INOUT) :: Fa3
+      integer, intent(in) :: n,m,k
+      real(SP), dimension(m,n), intent(in)    :: Fa1
+      real(SP), dimension(k,m), intent(in)    :: Fa2
+      real(SP), dimension(k,n), intent(inout) :: Fa3
       
       ! Remark: The tuned BLAS3 routine performs much better than the
       ! intrinsic MATMUL Fortran90 routine. Hence, the BLAS routine
@@ -13300,10 +13300,10 @@ contains
 
     subroutine do_matDmat1mul_doubledouble(n,m,Da1,Da2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(DP), dimension(n), intent(IN)    :: Da1
-      real(DP), dimension(m,n), intent(IN)    :: Da2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(DP), dimension(n), intent(in)    :: Da1
+      real(DP), dimension(m,n), intent(in)    :: Da2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
       
@@ -13324,10 +13324,10 @@ contains
 
     subroutine do_matDmat1mul_singledouble(n,m,Fa1,Da2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(SP), dimension(n), intent(IN)    :: Fa1
-      real(DP), dimension(m,n), intent(IN)    :: Da2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(SP), dimension(n), intent(in)    :: Fa1
+      real(DP), dimension(m,n), intent(in)    :: Da2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
       
@@ -13348,10 +13348,10 @@ contains
 
     subroutine do_matDmat1mul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(DP), dimension(n), intent(IN)    :: Da1
-      real(SP), dimension(m,n), intent(IN)    :: Fa2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(DP), dimension(n), intent(in)    :: Da1
+      real(SP), dimension(m,n), intent(in)    :: Fa2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
 
@@ -13372,10 +13372,10 @@ contains
 
     subroutine do_matDmat1mul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      integer, intent(IN) :: n,m
-      real(SP), dimension(n), intent(IN)    :: Fa1
-      real(SP), dimension(m,n), intent(IN)    :: Fa2
-      real(SP), dimension(m,n), intent(INOUT) :: Fa3
+      integer, intent(in) :: n,m
+      real(SP), dimension(n), intent(in)    :: Fa1
+      real(SP), dimension(m,n), intent(in)    :: Fa2
+      real(SP), dimension(m,n), intent(inout) :: Fa3
 
       integer :: i
 
@@ -13396,10 +13396,10 @@ contains
 
     subroutine do_mat1matDmul_doubledouble(n,m,Da1,Da2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(DP), dimension(m,n), intent(IN)    :: Da1
-      real(DP), dimension(m),   intent(IN)    :: Da2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(DP), dimension(m,n), intent(in)    :: Da1
+      real(DP), dimension(m),   intent(in)    :: Da2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
 
@@ -13420,10 +13420,10 @@ contains
 
     subroutine do_mat1matDmul_singledouble(n,m,Fa1,Da2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(SP), dimension(m,n), intent(IN)    :: Fa1
-      real(DP), dimension(m),   intent(IN)    :: Da2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(SP), dimension(m,n), intent(in)    :: Fa1
+      real(DP), dimension(m),   intent(in)    :: Da2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
 
@@ -13444,10 +13444,10 @@ contains
 
     subroutine do_mat1matDmul_doublesingle(n,m,Da1,Fa2,Da3)
       
-      integer, intent(IN) :: n,m
-      real(DP), dimension(m,n), intent(IN)    :: Da1
-      real(SP), dimension(m),   intent(IN)    :: Fa2
-      real(DP), dimension(m,n), intent(INOUT) :: Da3
+      integer, intent(in) :: n,m
+      real(DP), dimension(m,n), intent(in)    :: Da1
+      real(SP), dimension(m),   intent(in)    :: Fa2
+      real(DP), dimension(m,n), intent(inout) :: Da3
 
       integer :: i
 
@@ -13468,10 +13468,10 @@ contains
 
     subroutine do_mat1matDmul_singlesingle(n,m,Fa1,Fa2,Fa3)
       
-      integer, intent(IN) :: n,m
-      real(SP), dimension(m,n), intent(IN)    :: Fa1
-      real(SP), dimension(m),   intent(IN)    :: Fa2
-      real(SP), dimension(m,n), intent(INOUT) :: Fa3
+      integer, intent(in) :: n,m
+      real(SP), dimension(m,n), intent(in)    :: Fa1
+      real(SP), dimension(m),   intent(in)    :: Fa2
+      real(SP), dimension(m,n), intent(inout) :: Fa3
 
       integer :: i
 
@@ -13493,14 +13493,14 @@ contains
     subroutine do_matDmat79mul_doubledouble(Da1,Da2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
-      real(DP), dimension(:), intent(IN)    :: Da1
-      real(DP), dimension(:), intent(IN)    :: Da2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(DP), dimension(:), intent(in)    :: Da1
+      real(DP), dimension(:), intent(in)    :: Da2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13538,14 +13538,14 @@ contains
     subroutine do_matDmat79mul_singledouble(Fa1,Da2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
-      real(SP), dimension(:), intent(IN)    :: Fa1
-      real(DP), dimension(:), intent(IN)    :: Da2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(SP), dimension(:), intent(in)    :: Fa1
+      real(DP), dimension(:), intent(in)    :: Da2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13583,14 +13583,14 @@ contains
     subroutine do_matDmat79mul_doublesingle(Da1,Fa2,Kld2,Kcol2&
         &,neq,Da3,Kld3,Kcol3)
 
-      real(DP), dimension(:), intent(IN)    :: Da1
-      real(SP), dimension(:), intent(IN)    :: Fa2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(DP), dimension(:), intent(in)    :: Da1
+      real(SP), dimension(:), intent(in)    :: Fa2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13628,14 +13628,14 @@ contains
     subroutine do_matDmat79mul_singlesingle(Fa1,Fa2,Kld2,Kcol2&
         &,neq,Fa3,Kld3,Kcol3)
 
-      real(SP), dimension(:), intent(IN)    :: Fa1
-      real(SP), dimension(:), intent(IN)    :: Fa2
-      real(SP), dimension(:), intent(INOUT) :: Fa3
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(SP), dimension(:), intent(in)    :: Fa1
+      real(SP), dimension(:), intent(in)    :: Fa2
+      real(SP), dimension(:), intent(inout) :: Fa3
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild2,ild3,ildend3
       
@@ -13673,14 +13673,14 @@ contains
     subroutine do_mat79matDmul_doubledouble(Da1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
-      real(DP), dimension(:), intent(IN)    :: Da1
-      real(DP), dimension(:), intent(IN)    :: Da2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld1
-      integer, dimension(:), intent(IN) :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(DP), dimension(:), intent(in)    :: Da1
+      real(DP), dimension(:), intent(in)    :: Da2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld1
+      integer, dimension(:), intent(in) :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
       
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13718,14 +13718,14 @@ contains
     subroutine do_mat79matDmul_singledouble(Fa1,Kld1,Kcol1,neq,Da2&
         &,Da3,Kld3,Kcol3)
 
-      real(SP), dimension(:), intent(IN)    :: Fa1
-      real(DP), dimension(:), intent(IN)    :: Da2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld1
-      integer, dimension(:), intent(IN) :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(SP), dimension(:), intent(in)    :: Fa1
+      real(DP), dimension(:), intent(in)    :: Da2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld1
+      integer, dimension(:), intent(in) :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
       
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13763,14 +13763,14 @@ contains
     subroutine do_mat79matDmul_doublesingle(Da1,Kld1,Kcol1,neq,Fa2&
         &,Da3,Kld3,Kcol3)
 
-      real(DP), dimension(:), intent(IN)    :: Da1
-      real(SP), dimension(:), intent(IN)    :: Fa2
-      real(DP), dimension(:), intent(INOUT) :: Da3
-      integer, dimension(:), intent(IN) :: Kld1
-      integer, dimension(:), intent(IN) :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(DP), dimension(:), intent(in)    :: Da1
+      real(SP), dimension(:), intent(in)    :: Fa2
+      real(DP), dimension(:), intent(inout) :: Da3
+      integer, dimension(:), intent(in) :: Kld1
+      integer, dimension(:), intent(in) :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild1,ild3,ildend3
       
@@ -13808,14 +13808,14 @@ contains
     subroutine do_mat79matDmul_singlesingle(Fa1,Kld1,Kcol1,neq,Fa2&
         &,Fa3,Kld3,Kcol3)
 
-      real(SP), dimension(:), intent(IN)    :: Fa1
-      real(SP), dimension(:), intent(IN)    :: Fa2
-      real(SP), dimension(:), intent(INOUT) :: Fa3
-      integer, dimension(:), intent(IN) :: Kld1
-      integer, dimension(:), intent(IN) :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      integer, intent(IN) :: neq
+      real(SP), dimension(:), intent(in)    :: Fa1
+      real(SP), dimension(:), intent(in)    :: Fa2
+      real(SP), dimension(:), intent(inout) :: Fa3
+      integer, dimension(:), intent(in) :: Kld1
+      integer, dimension(:), intent(in) :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      integer, intent(in) :: neq
 
       integer :: ieq,ild1,ild3,ildend3
 
@@ -13859,9 +13859,9 @@ contains
     function do_mat79mat79mul_computeNA(KldA,KcolA,neq,KldB,KcolB&
         &,Kaux) result(NA)
 
-      integer, dimension(:), intent(IN) :: KldA,KcolA,KldB,KcolB
-      integer, dimension(:), intent(INOUT) :: Kaux
-      integer, intent(IN) :: neq
+      integer, dimension(:), intent(in) :: KldA,KcolA,KldB,KcolB
+      integer, dimension(:), intent(inout) :: Kaux
+      integer, intent(in) :: neq
       integer :: NA
 
       integer :: ieq,jeq,ild,irow,icol,idg,ndg,last
@@ -13920,12 +13920,12 @@ contains
     subroutine do_mat79mat79mul_symb(n,m,l,KldA,KcolA,KldB,KcolB,KldC&
         &,KcolC,Kindex,KdiagonalC)
 
-      integer, intent(IN) :: n,m,l
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC,Kindex
-      integer, dimension(:), intent(INOUT) :: KcolC
-      integer, dimension(:), intent(INOUT), optional :: KdiagonalC
+      integer, intent(in) :: n,m,l
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC,Kindex
+      integer, dimension(:), intent(inout) :: KcolC
+      integer, dimension(:), intent(inout), optional :: KdiagonalC
 
       integer :: i,j,k,istart,ilength,jj,jk,kaux,ioff
 
@@ -14048,14 +14048,14 @@ contains
     subroutine do_mat79mat79mul_numb_dbledble(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      integer, intent(IN) :: n,m,l
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC
-      integer, dimension(:), intent(INOUT) :: KcolC
-      real(DP), dimension(:), intent(IN)    :: DaA
-      real(DP), dimension(:), intent(IN)    :: DaB
-      real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
+      integer, intent(in) :: n,m,l
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC
+      integer, dimension(:), intent(inout) :: KcolC
+      real(DP), dimension(:), intent(in)    :: DaA
+      real(DP), dimension(:), intent(in)    :: DaB
+      real(DP), dimension(:), intent(inout) :: DaC,Dtemp
 
       integer :: i,j,k,jj,jk
       real(DP) :: daux
@@ -14103,14 +14103,14 @@ contains
     subroutine do_mat79mat79mul_numb_sngldble(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,DaB,KldC,KcolC,DaC,Dtemp)
 
-      integer, intent(IN) :: n,m,l
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC
-      integer, dimension(:), intent(INOUT) :: KcolC
-      real(SP), dimension(:), intent(IN)    :: FaA
-      real(DP), dimension(:), intent(IN)    :: DaB
-      real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
+      integer, intent(in) :: n,m,l
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC
+      integer, dimension(:), intent(inout) :: KcolC
+      real(SP), dimension(:), intent(in)    :: FaA
+      real(DP), dimension(:), intent(in)    :: DaB
+      real(DP), dimension(:), intent(inout) :: DaC,Dtemp
 
       integer :: i,j,k,jj,jk
       real(DP) :: daux
@@ -14158,14 +14158,14 @@ contains
     subroutine do_mat79mat79mul_numb_dblesngl(n,m,l,KldA,KcolA&
         &,DaA,KldB,KcolB,FaB,KldC,KcolC,DaC,Dtemp)
 
-      integer, intent(IN) :: n,m,l
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC
-      integer, dimension(:), intent(INOUT) :: KcolC
-      real(DP), dimension(:), intent(IN)    :: DaA
-      real(SP), dimension(:), intent(IN)    :: FaB
-      real(DP), dimension(:), intent(INOUT) :: DaC,Dtemp
+      integer, intent(in) :: n,m,l
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC
+      integer, dimension(:), intent(inout) :: KcolC
+      real(DP), dimension(:), intent(in)    :: DaA
+      real(SP), dimension(:), intent(in)    :: FaB
+      real(DP), dimension(:), intent(inout) :: DaC,Dtemp
 
       integer :: i,j,k,jj,jk
       real(DP) :: daux
@@ -14213,14 +14213,14 @@ contains
     subroutine do_mat79mat79mul_numb_snglsngl(n,m,l,KldA,KcolA&
         &,FaA,KldB,KcolB,FaB,KldC,KcolC,FaC,Ftemp)
 
-      integer, intent(IN) :: n,m,l
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC
-      integer, dimension(:), intent(INOUT) :: KcolC
-      real(SP), dimension(:), intent(IN)    :: FaA
-      real(SP), dimension(:), intent(IN)    :: FaB
-      real(SP), dimension(:), intent(INOUT) :: FaC,Ftemp
+      integer, intent(in) :: n,m,l
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC
+      integer, dimension(:), intent(inout) :: KcolC
+      real(SP), dimension(:), intent(in)    :: FaA
+      real(SP), dimension(:), intent(in)    :: FaB
+      real(SP), dimension(:), intent(inout) :: FaC,Ftemp
 
       integer :: i,j,k,jj,jk
       real(SP) :: faux
@@ -14278,14 +14278,14 @@ contains
 
 !<input>
     ! source matrices
-    type(t_matrixScalar), intent(IN) :: rmatrixA,rmatrixB
+    type(t_matrixScalar), intent(in) :: rmatrixA,rmatrixB
 
     ! scaling factors
-    real(DP), intent(IN) :: cA,cB
+    real(DP), intent(in) :: cA,cB
 
     ! BMEMORY = FALSE: Do not allocate required memory for C=A+B.
     ! BMEMORY = TRUE:  Generate all required structures for C=A+B 
-    logical, intent(IN) :: bmemory
+    logical, intent(in) :: bmemory
 
     ! Compute symbolic matrix-matrix-addition
     ! BSYMB = FALSE: Do not generate the required matrix structures.
@@ -14293,24 +14293,24 @@ contains
     !                need to be added several times, but the
     !                sparsity patterns do not change
     ! BSYMN = TRUE:  Generate all required matrix structures for C=A+B
-    logical, intent(IN) :: bsymb
+    logical, intent(in) :: bsymb
 
     ! Compute numerical matrix-matrix-addition
     ! BNUMB = FALSE: Do not perform the numerical addition
     ! BNUMB = TRUE:  Perform numerical addition
-    logical, intent(IN) :: bnumb
+    logical, intent(in) :: bnumb
     
     ! OPTIONAL: Indicates whether the resulting matrix C has the
     ! required symbolic structure or is a superset of the symbolic
     ! matrix-matrix product. In some cases, this may allow for much
     ! more efficient implementation.
     ! Standard: FALSE
-    logical, intent(IN), optional :: bisExactStructure
+    logical, intent(in), optional :: bisExactStructure
 !</input>
 
 !<inputoutput>
     ! Output matrix. May coincode with rmatrixB.
-    type(t_matrixScalar), intent(INOUT) :: rmatrixC
+    type(t_matrixScalar), intent(inout) :: rmatrixC
 !</inputoutput>
 
 !</subroutine>
@@ -15982,11 +15982,11 @@ contains
 
     subroutine do_mat1matDadd_doubledouble(neq,ncols,Da1,c1,Da2,c2,Da3)
 
-      integer, intent(IN)              :: neq,ncols
-      real(DP), intent(IN)                          :: c1,c2
-      real(DP), dimension(ncols,neq), intent(IN)    :: Da1
-      real(DP), dimension(neq), intent(IN)          :: Da2
-      real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
+      integer, intent(in)              :: neq,ncols
+      real(DP), intent(in)                          :: c1,c2
+      real(DP), dimension(ncols,neq), intent(in)    :: Da1
+      real(DP), dimension(neq), intent(in)          :: Da2
+      real(DP), dimension(ncols,neq), intent(inout) :: Da3
       integer                          :: ieq
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
@@ -15999,8 +15999,8 @@ contains
       end do
 !%OMP  end parallel do
 
-!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
 !!$      CALL lalg_scaleVectorDble(Da3,c1)
 !!$      DO i=0,n-1
@@ -16016,11 +16016,11 @@ contains
 
     subroutine do_mat1matDadd_singledouble(neq,ncols,Fa1,c1,Da2,c2,Da3)
 
-      integer, intent(IN)              :: neq,ncols
-      real(DP), intent(IN)                          :: c1,c2
-      real(SP), dimension(ncols,neq), intent(IN)    :: Fa1
-      real(DP), dimension(neq), intent(IN)          :: Da2
-      real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
+      integer, intent(in)              :: neq,ncols
+      real(DP), intent(in)                          :: c1,c2
+      real(SP), dimension(ncols,neq), intent(in)    :: Fa1
+      real(DP), dimension(neq), intent(in)          :: Da2
+      real(DP), dimension(ncols,neq), intent(inout) :: Da3
       integer                          :: ieq,icols
 
 !%OMP  parallel do &
@@ -16041,8 +16041,8 @@ contains
       end do
 !%OMP  end parallel do
 
-!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_scaleVectorDble(Da3,c1)
 !!$      DO i=0,n-1
 !!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
@@ -16057,11 +16057,11 @@ contains
 
     subroutine do_mat1matDadd_doublesingle(neq,ncols,Da1,c1,Fa2,c2,Da3)
 
-      integer, intent(IN)              :: neq,ncols
-      real(DP), intent(IN)                          :: c1,c2
-      real(DP), dimension(ncols,neq), intent(IN)    :: Da1
-      real(SP), dimension(neq), intent(IN)          :: Fa2
-      real(DP), dimension(ncols,neq), intent(INOUT) :: Da3
+      integer, intent(in)              :: neq,ncols
+      real(DP), intent(in)                          :: c1,c2
+      real(DP), dimension(ncols,neq), intent(in)    :: Da1
+      real(SP), dimension(neq), intent(in)          :: Fa2
+      real(DP), dimension(ncols,neq), intent(inout) :: Da3
       integer :: ieq
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
@@ -16074,8 +16074,8 @@ contains
       end do
 !%OMP  end parallel do
 
-!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
 !!$      CALL lalg_scaleVectorDble(Da3,c1)
 !!$      DO i=0,n-1
@@ -16091,11 +16091,11 @@ contains
 
     subroutine do_mat1matDadd_singlesingle(neq,ncols,Fa1,c1,Fa2,c2,Fa3)
 
-      integer, intent(IN) :: neq,ncols
-      real(DP), intent(IN) :: c1,c2
-      real(SP), dimension(ncols,neq), intent(IN)    :: Fa1
-      real(SP), dimension(neq), intent(IN)      :: Fa2
-      real(SP), dimension(ncols,neq), intent(INOUT) :: Fa3
+      integer, intent(in) :: neq,ncols
+      real(DP), intent(in) :: c1,c2
+      real(SP), dimension(ncols,neq), intent(in)    :: Fa1
+      real(SP), dimension(neq), intent(in)      :: Fa2
+      real(SP), dimension(ncols,neq), intent(inout) :: Fa3
       integer :: ieq
 
       call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
@@ -16108,8 +16108,8 @@ contains
       end do
 !%OMP  end parallel do
 
-!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-!!$      REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
+!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
+!!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
 !!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
 !!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
 !!$      DO i=0,n-1
@@ -16130,13 +16130,13 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer, intent(IN)               :: neq,ncols
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      real(DP), intent(IN)                           :: c1,c2
-      real(DP), dimension(ncols,neq), intent(IN)     :: Da1
-      real(DP), dimension(:), intent(IN)             :: Da2
-      real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
+      integer, intent(in)               :: neq,ncols
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      real(DP), intent(in)                           :: c1,c2
+      real(DP), dimension(ncols,neq), intent(in)     :: Da1
+      real(DP), dimension(:), intent(in)             :: Da2
+      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
       integer :: ild,ieq,icol
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
@@ -16149,8 +16149,8 @@ contains
         end do
       end do
 
-!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
 !!$      CALL lalg_scaleVectorDble(Da3,c1)
 !!$      
@@ -16175,13 +16175,13 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer, intent(IN)               :: neq,ncols
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      real(DP), intent(IN)                           :: c1,c2
-      real(SP), dimension(ncols,neq), intent(IN)     :: Fa1
-      real(DP), dimension(:), intent(IN)             :: Da2
-      real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
+      integer, intent(in)               :: neq,ncols
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      real(DP), intent(in)                           :: c1,c2
+      real(SP), dimension(ncols,neq), intent(in)     :: Fa1
+      real(DP), dimension(:), intent(in)             :: Da2
+      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
       integer :: ild,ieq,icol
 
 !%OMP  parallel do &
@@ -16215,13 +16215,13 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer, intent(IN)               :: neq,ncols
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      real(DP), intent(IN)                           :: c1,c2
-      real(DP), dimension(ncols,neq), intent(IN)     :: Da1
-      real(SP), dimension(:), intent(IN)             :: Fa2
-      real(DP), dimension(ncols,neq), intent(INOUT)  :: Da3
+      integer, intent(in)               :: neq,ncols
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      real(DP), intent(in)                           :: c1,c2
+      real(DP), dimension(ncols,neq), intent(in)     :: Da1
+      real(SP), dimension(:), intent(in)             :: Fa2
+      real(DP), dimension(ncols,neq), intent(inout)  :: Da3
       integer :: ild,ieq,icol
 
       call DCOPY(int(neq*ncols),Da1,1,Da3,1)
@@ -16234,8 +16234,8 @@ contains
         end do
       end do
       
-!!$      REAL(DP), DIMENSION(m*n), INTENT(IN)    :: Da1
-!!$      REAL(DP), DIMENSION(m*n), INTENT(INOUT) :: Da3
+!!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
+!!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
 !!$      CALL lalg_scaleVectorDble(Da3,c1)
 !!$
@@ -16260,13 +16260,13 @@ contains
       ! the row and column indices IEQ and ICOL are swapped when the
       ! contribution of matrix B is applied to matrix C.
 
-      integer, intent(IN)               :: neq,ncols
-      integer, dimension(:), intent(IN) :: Kld2
-      integer, dimension(:), intent(IN) :: Kcol2
-      real(DP), intent(IN)                           :: c1,c2
-      real(SP), dimension(ncols,neq), intent(IN)     :: Fa1
-      real(SP), dimension(:), intent(IN)             :: Fa2
-      real(SP), dimension(ncols,neq), intent(INOUT)  :: Fa3
+      integer, intent(in)               :: neq,ncols
+      integer, dimension(:), intent(in) :: Kld2
+      integer, dimension(:), intent(in) :: Kcol2
+      real(DP), intent(in)                           :: c1,c2
+      real(SP), dimension(ncols,neq), intent(in)     :: Fa1
+      real(SP), dimension(:), intent(in)             :: Fa2
+      real(SP), dimension(ncols,neq), intent(inout)  :: Fa3
       integer :: ild,ieq,icol
       
       call SCOPY(int(neq*ncols),Fa1,1,Fa3,1)
@@ -16279,8 +16279,8 @@ contains
         end do
       end do
       
-!!$      REAL(SP), DIMENSION(m*n), INTENT(IN)    :: Fa1
-!!$      REAL(SP), DIMENSION(m*n), INTENT(INOUT) :: Fa3
+!!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
+!!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
 !!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
 !!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
 !!$      
@@ -16301,17 +16301,17 @@ contains
     subroutine do_mat79matDadd_doubledouble(Kld1,Kcol1,nvar,mvar,neq,&
         Da1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      integer, intent(IN)                         :: neq
-      integer, intent(IN)                                      :: nvar,mvar
-      integer, intent(IN), optional               :: na
-      integer, dimension(:), intent(IN)           :: Kld1
-      integer, dimension(:), intent(IN)           :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      real(DP), intent(IN)                                     :: c1,c2
-      real(DP), dimension(nvar,mvar,*), intent(IN)             :: Da1
-      real(DP), dimension(:), intent(IN)                       :: Da2
-      real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
+      integer, intent(in)                         :: neq
+      integer, intent(in)                                      :: nvar,mvar
+      integer, intent(in), optional               :: na
+      integer, dimension(:), intent(in)           :: Kld1
+      integer, dimension(:), intent(in)           :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      real(DP), intent(in)                                     :: c1,c2
+      real(DP), dimension(nvar,mvar,*), intent(in)             :: Da1
+      real(DP), dimension(:), intent(in)                       :: Da2
+      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
       
       integer :: ieq
       integer :: ild1,ild3,ildend3
@@ -16423,17 +16423,17 @@ contains
     subroutine do_mat79matDadd_singledouble(Kld1,Kcol1,nvar,mvar,neq,&
         Fa1,c1,Da2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
       
-      integer, intent(IN)                         :: neq
-      integer, intent(IN)                                      :: nvar,mvar
-      integer, intent(IN), optional               :: na
-      integer, dimension(:), intent(IN)           :: Kld1
-      integer, dimension(:), intent(IN)           :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      real(DP), intent(IN)                                     :: c1,c2
-      real(SP), dimension(nvar,mvar,*), intent(IN)             :: Fa1
-      real(DP), dimension(:), intent(IN)                       :: Da2
-      real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
+      integer, intent(in)                         :: neq
+      integer, intent(in)                                      :: nvar,mvar
+      integer, intent(in), optional               :: na
+      integer, dimension(:), intent(in)           :: Kld1
+      integer, dimension(:), intent(in)           :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      real(DP), intent(in)                                     :: c1,c2
+      real(SP), dimension(nvar,mvar,*), intent(in)             :: Fa1
+      real(DP), dimension(:), intent(in)                       :: Da2
+      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
 
       integer :: ieq
       integer :: ild1,ild3,ildend3
@@ -16550,17 +16550,17 @@ contains
     subroutine do_mat79matDadd_doublesingle(Kld1,Kcol1,nvar,mvar,neq,&
         Da1,c1,Fa2,c2,Da3,Kld3,Kcol3,Kdiag3,na)
 
-      integer, intent(IN)                         :: neq
-      integer, intent(IN)                                      :: nvar,mvar
-      integer, intent(IN), optional               :: na
-      integer, dimension(:), intent(IN)           :: Kld1
-      integer, dimension(:), intent(IN)           :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      real(DP), intent(IN)                                     :: c1,c2
-      real(DP), dimension(nvar,mvar,*), intent(IN)             :: Da1
-      real(SP), dimension(:), intent(IN)                       :: Fa2
-      real(DP), dimension(nvar,mvar,*), intent(INOUT)          :: Da3
+      integer, intent(in)                         :: neq
+      integer, intent(in)                                      :: nvar,mvar
+      integer, intent(in), optional               :: na
+      integer, dimension(:), intent(in)           :: Kld1
+      integer, dimension(:), intent(in)           :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      real(DP), intent(in)                                     :: c1,c2
+      real(DP), dimension(nvar,mvar,*), intent(in)             :: Da1
+      real(SP), dimension(:), intent(in)                       :: Fa2
+      real(DP), dimension(nvar,mvar,*), intent(inout)          :: Da3
 
       integer :: ieq
       integer :: ild1,ild3,ildend3
@@ -16674,17 +16674,17 @@ contains
     subroutine do_mat79matDadd_singlesingle(Kld1,Kcol1,nvar,mvar,neq,&
         Fa1,c1,Fa2,c2,Fa3,Kld3,Kcol3,Kdiag3,na)
 
-      integer, intent(IN)                         :: neq
-      integer, intent(IN)                                      :: nvar,mvar
-      integer, intent(IN), optional               :: na
-      integer, dimension(:), intent(IN)           :: Kld1
-      integer, dimension(:), intent(IN)           :: Kcol1
-      integer, dimension(:), intent(IN), optional :: Kld3,Kdiag3
-      integer, dimension(:), intent(IN), optional :: Kcol3
-      real(DP), intent(IN)                                     :: c1,c2
-      real(SP), dimension(nvar,mvar,*), intent(IN)             :: Fa1
-      real(SP), dimension(:), intent(IN)                       :: Fa2
-      real(SP), dimension(nvar,mvar,*), intent(INOUT)          :: Fa3
+      integer, intent(in)                         :: neq
+      integer, intent(in)                                      :: nvar,mvar
+      integer, intent(in), optional               :: na
+      integer, dimension(:), intent(in)           :: Kld1
+      integer, dimension(:), intent(in)           :: Kcol1
+      integer, dimension(:), intent(in), optional :: Kld3,Kdiag3
+      integer, dimension(:), intent(in), optional :: Kcol3
+      real(DP), intent(in)                                     :: c1,c2
+      real(SP), dimension(nvar,mvar,*), intent(in)             :: Fa1
+      real(SP), dimension(:), intent(in)                       :: Fa2
+      real(SP), dimension(nvar,mvar,*), intent(inout)          :: Fa3
 
       integer :: ieq
       integer :: ild1,ild3,ildend3
@@ -16798,10 +16798,10 @@ contains
     function do_mat79mat79add_computeNA(neq,ncols,KldA,KcolA,KldB&
         &,KcolB,Kaux) result(NA)
 
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolB,KcolA
-      integer, dimension(:), intent(INOUT) :: Kaux
-      integer, intent(IN) :: neq,ncols
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolB,KcolA
+      integer, dimension(:), intent(inout) :: Kaux
+      integer, intent(in) :: neq,ncols
       integer :: NA
       
       integer :: ieq,jeq,ild,icol,idg,ndg,last
@@ -16867,13 +16867,13 @@ contains
     subroutine do_mat79mat79add_symb(neq,ncols,KldA,KcolA,cmatrixFormatA,&
         &KldB,KcolB,cmatrixFormatB,KldC,KcolC,Kdiagonal)
 
-      integer, intent(IN) :: neq,ncols
-      integer, intent(IN) :: cmatrixFormatA,cmatrixFormatB
-      integer, dimension(:), intent(IN) :: KldA,KldB
-      integer, dimension(:), intent(IN) :: KcolA,KcolB
-      integer, dimension(:), intent(INOUT) :: KldC
-      integer, dimension(:), intent(INOUT) :: KcolC
-      integer, dimension(:), intent(INOUT), optional :: Kdiagonal
+      integer, intent(in) :: neq,ncols
+      integer, intent(in) :: cmatrixFormatA,cmatrixFormatB
+      integer, dimension(:), intent(in) :: KldA,KldB
+      integer, dimension(:), intent(in) :: KcolA,KcolB
+      integer, dimension(:), intent(inout) :: KldC
+      integer, dimension(:), intent(inout) :: KcolC
+      integer, dimension(:), intent(inout), optional :: Kdiagonal
       
       integer :: ieq,ildA,ildB,ildC,ildendA,ildendB,icolA,icolB,icolC
 
@@ -16991,14 +16991,14 @@ contains
     subroutine do_mat79mat79add_numb_dbledble(isizeIntl,neq,ncols,&
         KldA,KcolA,DaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer, intent(IN)               :: neq,ncols
-      integer, intent(IN)                            :: isizeIntl
-      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
-      real(DP), intent(IN)                           :: cA,cB
-      real(DP), dimension(isizeIntl,*), intent(IN)   :: DaA
-      real(DP), dimension(isizeIntl,*), intent(IN)   :: DaB
-      real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
+      integer, intent(in)               :: neq,ncols
+      integer, intent(in)                            :: isizeIntl
+      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
+      real(DP), intent(in)                           :: cA,cB
+      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
+      real(DP), dimension(isizeIntl,*), intent(in)   :: DaB
+      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
       
       integer :: ieq
       integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
@@ -17165,14 +17165,14 @@ contains
     subroutine do_mat79mat79add_numb_dblesngl(isizeIntl,neq,ncols,&
         KldA,KcolA,DaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer, intent(IN)               :: neq,ncols
-      integer, intent(IN)                            :: isizeIntl
-      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
-      real(DP), intent(IN)                           :: cA,cB
-      real(DP), dimension(isizeIntl,*), intent(IN)   :: DaA
-      real(SP), dimension(isizeIntl,*), intent(IN)   :: FaB
-      real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
+      integer, intent(in)               :: neq,ncols
+      integer, intent(in)                            :: isizeIntl
+      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
+      real(DP), intent(in)                           :: cA,cB
+      real(DP), dimension(isizeIntl,*), intent(in)   :: DaA
+      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
+      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
       
       integer :: ieq
       integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
@@ -17339,14 +17339,14 @@ contains
     subroutine do_mat79mat79add_numb_sngldble(isizeIntl,neq,ncols,&
         KldA,KcolA,FaA,cA,KldB,KcolB,DaB,cB,KldC,KcolC,KdiagC,DaC)
       
-      integer, intent(IN)               :: neq,ncols
-      integer, intent(IN)                            :: isizeIntl
-      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
-      real(DP), intent(IN)                           :: cA,cB
-      real(SP), dimension(isizeIntl,*), intent(IN)   :: FaA
-      real(DP), dimension(isizeIntl,*), intent(IN)   :: DaB
-      real(DP), dimension(isizeIntl,*), intent(INOUT):: DaC
+      integer, intent(in)               :: neq,ncols
+      integer, intent(in)                            :: isizeIntl
+      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
+      real(DP), intent(in)                           :: cA,cB
+      real(SP), dimension(isizeIntl,*), intent(in)   :: FaA
+      real(DP), dimension(isizeIntl,*), intent(in)   :: DaB
+      real(DP), dimension(isizeIntl,*), intent(inout):: DaC
 
       integer :: ieq
       integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
@@ -17513,14 +17513,14 @@ contains
     subroutine do_mat79mat79add_numb_snglsngl(isizeIntl,neq,ncols,&
         KldA,KcolA,FaA,cA,KldB,KcolB,FaB,cB,KldC,KcolC,KdiagC,FaC)
       
-      integer, intent(IN)               :: neq,ncols
-      integer, intent(IN)                            :: isizeIntl
-      integer, dimension(:), intent(IN) :: KldA,KldB,KldC,KdiagC
-      integer, dimension(:), intent(IN) :: KcolA,KcolB,KcolC
-      real(DP), intent(IN)                           :: cA,cB
-      real(SP), dimension(isizeIntl,*), intent(IN)   :: FaA
-      real(SP), dimension(isizeIntl,*), intent(IN)   :: FaB
-      real(SP), dimension(isizeIntl,*), intent(INOUT):: FaC
+      integer, intent(in)               :: neq,ncols
+      integer, intent(in)                            :: isizeIntl
+      integer, dimension(:), intent(in) :: KldA,KldB,KldC,KdiagC
+      integer, dimension(:), intent(in) :: KcolA,KcolB,KcolC
+      real(DP), intent(in)                           :: cA,cB
+      real(SP), dimension(isizeIntl,*), intent(in)   :: FaA
+      real(SP), dimension(isizeIntl,*), intent(in)   :: FaB
+      real(SP), dimension(isizeIntl,*), intent(inout):: FaC
       
       integer :: ieq
       integer :: ildA,ildB,ildC,ildendA,ildendB,ildendC
@@ -17679,10 +17679,10 @@ contains
 
 !<inputoutput>
     ! first scalar vector
-    type(t_vectorScalar), intent(INOUT) :: rvector1
+    type(t_vectorScalar), intent(inout) :: rvector1
 
     ! second scalar vector
-    type(t_vectorScalar), intent(INOUT) :: rvector2
+    type(t_vectorScalar), intent(inout) :: rvector2
 !</inputoutput>
 !</subroutine>
 
@@ -17712,16 +17712,16 @@ contains
   
 !<input>
   ! Discretisation structure for trial functions.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscrTrial
+  type(t_spatialDiscretisation), intent(in), target :: rdiscrTrial
 
   ! OPTIONAL: Discretisation structure for test functions.
   ! If not specified, trial and test functions coincide.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscrTest
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscrTest
 !</input>
 
 !<inputoutput>
   ! Destination matrix.
-  type(t_matrixScalar),intent(INOUT) :: rmatrix
+  type(t_matrixScalar),intent(inout) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
@@ -17774,7 +17774,7 @@ contains
 
 !<input>
     ! scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 !</subroutine>
 
@@ -17846,7 +17846,7 @@ contains
 
 !<input>
     ! scalar vector
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
 !</input>
 !</subroutine>
 
@@ -17887,14 +17887,14 @@ contains
 
 !<input>
   ! A scalar matrix to be checked.
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
   
   ! OPTIONAL: A second matrix to be compared with rmatrix.
   ! If not specified, lsyssc_isMatrixStructureShared checks if rmatrix
   !   shares its structure with any other matrix.
   ! If specified, lsyssc_isMatrixStructureShared checks if rmatrix
   !   shares its entries with rmatrix2.
-  type(t_matrixScalar), intent(IN), optional :: rmatrix2
+  type(t_matrixScalar), intent(in), optional :: rmatrix2
 !</input>
 
 !<result>
@@ -17953,14 +17953,14 @@ contains
 
 !<input>
   ! A scalar matrix
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 
   ! OPTIONAL: A second matrix to be compared with rmatrix.
   ! If not specified, lsyssc_isMatrixContentShared checks if rmatrix
   !   shares its content with any other matrix.
   ! If specified, lsyssc_isMatrixStructureShared checks if rmatrix
   !   shares its content with rmatrix2.
-  type(t_matrixScalar), intent(IN), optional :: rmatrix2
+  type(t_matrixScalar), intent(in), optional :: rmatrix2
 !</input>
 
 !<result>
@@ -18004,13 +18004,13 @@ contains
   
 !<input>
   ! The matrix to be checked
-  type(t_matrixScalar), intent(IN)               :: rmatrix
+  type(t_matrixScalar), intent(in)               :: rmatrix
   
   ! OPTIONAL: Whether to check the scaling factor.
   ! FALSE: A scaling factor of 0.0 disables a submatrix. 
   !        This is the standard setting.
   ! TRUE: The scaling factor is ignored.
-  logical, intent(IN), optional :: bignoreScaleFactor
+  logical, intent(in), optional :: bignoreScaleFactor
 !</input>
 
 !<output>
@@ -18045,7 +18045,7 @@ contains
   
 !<input>
   ! Matrix to check
-  type(t_matrixScalar), intent(IN)                  :: rmatrix
+  type(t_matrixScalar), intent(in)                  :: rmatrix
 !</input>
 
 !<result>
@@ -18070,7 +18070,7 @@ contains
   
 !<input>
   ! Vector to check
-  type(t_vectorScalar), intent(IN)                  :: rvector
+  type(t_vectorScalar), intent(in)                  :: rvector
 !</input>
 
 !<result>
@@ -18099,7 +18099,7 @@ contains
   
 !<input>
   ! Matrix to check
-  type(t_matrixScalar), intent(IN)                  :: rmatrix
+  type(t_matrixScalar), intent(in)                  :: rmatrix
 !</input>
 
 !<result>
@@ -18126,7 +18126,7 @@ contains
   
 !<input>
   ! Matrix to check
-  type(t_matrixScalar), intent(IN)                  :: rmatrix
+  type(t_matrixScalar), intent(in)                  :: rmatrix
 !</input>
 
 !<result>
@@ -18153,12 +18153,12 @@ contains
 
 !<input>
     ! Scalar source vector
-    type(t_vectorScalar), intent(IN)    :: rvector1
+    type(t_vectorScalar), intent(in)    :: rvector1
 !</input>
 
 !<inputoutput>
     ! Scalar destination vector in interleave format
-    type(t_vectorScalar), intent(INOUT) :: rvector2
+    type(t_vectorScalar), intent(inout) :: rvector2
 !</inputoutput>
 !</subroutine>
 
@@ -18237,10 +18237,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadDble(Ddata1, NVAR, NEQ, Ddata2)
-      real(DP), dimension(:), intent(IN)         :: Ddata1
-      integer, intent(IN)                        :: NVAR
-      integer, intent(IN)           :: NEQ
-      real(DP), dimension(NVAR,NEQ), intent(OUT) :: Ddata2
+      real(DP), dimension(:), intent(in)         :: Ddata1
+      integer, intent(in)                        :: NVAR
+      integer, intent(in)           :: NEQ
+      real(DP), dimension(NVAR,NEQ), intent(out) :: Ddata2
 
       integer :: ieq
 
@@ -18252,10 +18252,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadSngl(Fdata1, NVAR, NEQ, Fdata2)
-      real(SP), dimension(:), intent(IN)         :: Fdata1
-      integer, intent(IN)                        :: NVAR
-      integer, intent(IN)           :: NEQ
-      real(SP), dimension(NVAR,NEQ), intent(OUT) :: Fdata2
+      real(SP), dimension(:), intent(in)         :: Fdata1
+      integer, intent(in)                        :: NVAR
+      integer, intent(in)           :: NEQ
+      real(SP), dimension(NVAR,NEQ), intent(out) :: Fdata2
 
       integer :: ieq
 
@@ -18267,10 +18267,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadInt(Idata1, NVAR, NEQ, Idata2)
-      integer, dimension(:), intent(IN)         :: Idata1
-      integer, intent(IN)                            :: NVAR
-      integer, intent(IN)               :: NEQ
-      integer, dimension(NVAR,NEQ), intent(OUT) :: Idata2
+      integer, dimension(:), intent(in)         :: Idata1
+      integer, intent(in)                            :: NVAR
+      integer, intent(in)               :: NEQ
+      integer, dimension(NVAR,NEQ), intent(out) :: Idata2
 
       integer :: ieq
 
@@ -18293,12 +18293,12 @@ contains
 
 !<input>
     ! Scalar source matrix
-    type(t_matrixScalar), intent(IN)    :: rmatrix1
+    type(t_matrixScalar), intent(in)    :: rmatrix1
 !</input>
 
 !<inputoutput>
     ! Scalar destination matrix in interleave format
-    type(t_matrixScalar), intent(INOUT) :: rmatrix2
+    type(t_matrixScalar), intent(inout) :: rmatrix2
 !</inputoutput>
 !</subroutine>
 
@@ -18390,10 +18390,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadDble(Ddata1, NVAR, MVAR, NA, Ddata2)
-      real(DP), dimension(:), intent(IN)             :: Ddata1
-      integer, intent(IN)                            :: NVAR,MVAR
-      integer, intent(IN)                            :: NA
-      real(DP), dimension(NVAR,MVAR,NA), intent(OUT) :: Ddata2
+      real(DP), dimension(:), intent(in)             :: Ddata1
+      integer, intent(in)                            :: NVAR,MVAR
+      integer, intent(in)                            :: NA
+      real(DP), dimension(NVAR,MVAR,NA), intent(out) :: Ddata2
 
       integer :: ia
 
@@ -18405,10 +18405,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadSngl(Fdata1, NVAR, MVAR, NA, Fdata2)
-      real(SP), dimension(:), intent(IN)             :: Fdata1
-      integer, intent(IN)                            :: NVAR,MVAR
-      integer, intent(IN)                            :: NA
-      real(SP), dimension(NVAR,MVAR,NA), intent(OUT) :: Fdata2
+      real(SP), dimension(:), intent(in)             :: Fdata1
+      integer, intent(in)                            :: NVAR,MVAR
+      integer, intent(in)                            :: NA
+      real(SP), dimension(NVAR,MVAR,NA), intent(out) :: Fdata2
 
       integer :: ia
 
@@ -18420,10 +18420,10 @@ contains
     !**************************************************************
 
     subroutine do_spreadInt(Idata1, NVAR, MVAR, NA, Idata2)
-      integer, dimension(:), intent(IN)     :: Idata1
-      integer, intent(IN)                   :: NVAR,MVAR
-      integer, intent(IN)                   :: NA
-      integer, dimension(NVAR,MVAR,NA), intent(OUT) :: Idata2
+      integer, dimension(:), intent(in)     :: Idata1
+      integer, intent(in)                   :: NVAR,MVAR
+      integer, intent(in)                   :: NA
+      integer, dimension(NVAR,MVAR,NA), intent(out) :: Idata2
 
       integer :: ia
 
@@ -18446,15 +18446,15 @@ contains
 
 !<input>
     ! Scalar source vector in interleave format
-    type(t_vectorScalar), intent(IN)    :: rvector1
+    type(t_vectorScalar), intent(in)    :: rvector1
 
     ! Number of the variable to pack
-    integer, intent(IN)                 :: ivar
+    integer, intent(in)                 :: ivar
 !</input>
 
 !<inputoutput>
     ! Scalar destination vector
-    type(t_vectorScalar), intent(INOUT) :: rvector2
+    type(t_vectorScalar), intent(inout) :: rvector2
 !</inputoutput>
 !</subroutine>
 
@@ -18540,11 +18540,11 @@ contains
     !**************************************************************
 
     subroutine do_packDble(Ddata1, NVAR, NEQ, ivar, Ddata2)
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: Ddata1
-      integer, intent(IN)                       :: NVAR
-      integer, intent(IN)          :: NEQ
-      integer, intent(IN)                       :: ivar
-      real(DP), dimension(:), intent(OUT)       :: Ddata2
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Ddata1
+      integer, intent(in)                       :: NVAR
+      integer, intent(in)          :: NEQ
+      integer, intent(in)                       :: ivar
+      real(DP), dimension(:), intent(out)       :: Ddata2
 
       integer :: ieq
 
@@ -18556,11 +18556,11 @@ contains
     !**************************************************************
 
     subroutine do_packSngl(Fdata1, NVAR, NEQ, ivar, Fdata2)
-      real(SP), dimension(NVAR,NEQ), intent(IN) :: Fdata1
-      integer, intent(IN)                       :: NVAR
-      integer, intent(IN)          :: NEQ
-      integer, intent(IN)                       :: ivar
-      real(SP), dimension(:), intent(OUT)       :: Fdata2
+      real(SP), dimension(NVAR,NEQ), intent(in) :: Fdata1
+      integer, intent(in)                       :: NVAR
+      integer, intent(in)          :: NEQ
+      integer, intent(in)                       :: ivar
+      real(SP), dimension(:), intent(out)       :: Fdata2
 
       integer :: ieq
 
@@ -18572,11 +18572,11 @@ contains
     !**************************************************************
 
     subroutine do_packInt(Idata1, NVAR, NEQ, ivar, Idata2)
-      integer, dimension(NVAR,NEQ), intent(IN)      :: Idata1
-      integer, intent(IN)                           :: NVAR
-      integer, intent(IN)                           :: NEQ
-      integer, intent(IN)                           :: ivar
-      integer, dimension(:), intent(OUT)            :: Idata2
+      integer, dimension(NVAR,NEQ), intent(in)      :: Idata1
+      integer, intent(in)                           :: NVAR
+      integer, intent(in)                           :: NEQ
+      integer, intent(in)                           :: ivar
+      integer, dimension(:), intent(out)            :: Idata2
 
       integer :: ieq
 
@@ -18599,15 +18599,15 @@ contains
 
 !<input>
     ! The full qualified name of the object
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 !</input>
 
 !<inputoutput>
     ! The ObjectItem  that is created
-    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
     ! The scalar vector
-    type(t_vectorScalar), intent(INOUT), target :: rvector
+    type(t_vectorScalar), intent(inout), target :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -18711,15 +18711,15 @@ contains
 
 !<input>
     ! The full qualified name of the object
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 !</input>
 
 !<inputoutput>
     ! The ObjectItem  that is created
-    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
     ! The scalar matrix
-    type(t_matrixScalar), intent(INOUT), target :: rmatrix
+    type(t_matrixScalar), intent(inout), target :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -18880,12 +18880,12 @@ contains
 
 !<input>
     ! The object item that is created
-    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
 !</input>
 
 !<output>
     ! The scalar vector
-    type(t_vectorScalar), intent(OUT), target :: rvector
+    type(t_vectorScalar), intent(out), target :: rvector
 !</output>
 !</subroutine>
 
@@ -19057,12 +19057,12 @@ contains
 
 !<input>
     ! The object item that is created
-    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
 !</input>
 
 !<output>
     ! The scalar matrix
-    type(t_matrixScalar), intent(OUT), target :: rmatrix
+    type(t_matrixScalar), intent(out), target :: rmatrix
 !</output>
 !</subroutine>
 

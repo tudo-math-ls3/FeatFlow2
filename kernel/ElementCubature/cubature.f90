@@ -541,7 +541,7 @@ contains
 
 !<input>
   ! Cubature type identifier of ad adaptive cubature formula.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 !</input>
   
 !</function>
@@ -600,7 +600,7 @@ contains
 
 !<input>
   ! Cubature type identifier of ad adaptive cubature formula.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 !</input>
   
 !</function>
@@ -628,7 +628,7 @@ contains
 
 !<input>
   ! Cubature type identifier of ad adaptive cubature formula.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 !</input>
   
 !</function>
@@ -668,7 +668,7 @@ contains
 
 !<input>
   ! Cubature type identifier
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 !</input>
   
 !</function>
@@ -923,11 +923,11 @@ contains
   ! The dimension is assumed to be at least Dpoints(1:NDIM,1:NPTS), where:
   ! NDIM is the dimension of a point, which is returned by cub_igetCoordDim.
   ! NPTS is the number of cubatue points, which is returned by cub_igetNumPts.
-  real(DP), dimension(:,:), intent(OUT) :: Dpoints
+  real(DP), dimension(:,:), intent(out) :: Dpoints
   
   ! For every cubature point the corresponding cubature weight.
   ! The dimension is assumed to be at least Domega(1:NPTS) (see Dpoints).
-  real(DP), dimension(:), intent(OUT) :: Domega
+  real(DP), dimension(:), intent(out) :: Domega
 !</output>
 
 !</subroutine>
@@ -1248,8 +1248,8 @@ contains
   ! -------------------------------------------------------
   
     pure subroutine cub_auxGaussLegendre(n,Dv,Dw)
-    integer, intent(IN) :: n
-    real(DP), dimension(:), intent(OUT) :: Dv, Dw
+    integer, intent(in) :: n
+    real(DP), dimension(:), intent(out) :: Dv, Dw
     
     real(DP) :: daux
     
@@ -1340,7 +1340,7 @@ contains
   
 !<output>
   ! number of cubature points; =0: error, unknown cubature formula
-  integer , intent(OUT) :: ncubp
+  integer , intent(out) :: ncubp
   
   ! Coordinates of the cubature points.
   ! 1D: Dxi(1..ncubp,1)=coordinates,
@@ -1360,10 +1360,10 @@ contains
   !        Dxi(1..ncubp,2)=2nd barycentric coordinate, 
   !        Dxi(1..ncubp,3)=3rd barycentric coordinate, 
   !        Dxi(1..ncubp,4)=4th barycentric coordinate
-  real(DP), dimension(:,:), intent(OUT) :: Dxi
+  real(DP), dimension(:,:), intent(out) :: Dxi
   
   ! For every cubature point the corresponding cubature weight
-  real(DP), dimension(:), intent(OUT) :: Domega
+  real(DP), dimension(:), intent(out) :: Domega
   
 !</output>
 

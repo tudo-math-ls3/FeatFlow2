@@ -786,7 +786,7 @@ contains
 !<intputoutput>
 
     ! The section to initialise
-    type(t_collctLevel), intent(INOUT) :: rcollctLevel
+    type(t_collctLevel), intent(inout) :: rcollctLevel
 
 !</inputoutput>
 !</subroutine>
@@ -818,7 +818,7 @@ contains
 !<inputoutput>
 
     ! The section to release
-    type(t_collctLevel), intent(INOUT) :: rcollctLevel
+    type(t_collctLevel), intent(inout) :: rcollctLevel
 
 !</inputoutput>
 !</subroutine>
@@ -861,14 +861,14 @@ contains
 
     ! The new 'size' of the section, i.e. the new number of parameters,
     ! the level should be able to handle.
-    integer, intent(IN) :: inewsize
+    integer, intent(in) :: inewsize
 
 !</input>
 
 !<inputoutput>  
 
     ! The section to reallocate.
-    type(t_collctLevel), intent(INOUT) :: rcollctLevel
+    type(t_collctLevel), intent(inout) :: rcollctLevel
 
 !</inputoutput>
 !</subroutine>
@@ -914,23 +914,23 @@ contains
 !<input>
 
     ! The name of the section; '' identifies the unnamed section
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
     
     ! The name of the value to add. Must be <> ''!
-    character(LEN=*), intent(IN) :: sparamName
+    character(LEN=*), intent(in) :: sparamName
     
     ! The type of the parameter
-    integer, intent(IN) :: itype
+    integer, intent(in) :: itype
 
     ! The level where to add; 0=level independent part
-    integer, intent(IN) :: ilevel
+    integer, intent(in) :: ilevel
 
 !</input>
 
 !<inputoutput>
 
     ! The collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 
 !</inputoutput>
 
@@ -1044,14 +1044,14 @@ contains
 !<input>
 
     ! The name for the new section
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
 !</intput>
 
 !<inputoutput>
 
     ! The section to initialise
-    type(t_collctSection), intent(INOUT) :: rcollctSection
+    type(t_collctSection), intent(inout) :: rcollctSection
 
 !</inputoutput>
 !</subroutine>
@@ -1086,7 +1086,7 @@ contains
 !<inputoutput>
 
     ! The section to release
-    type(t_collctSection), intent(INOUT) :: rcollctSection
+    type(t_collctSection), intent(inout) :: rcollctSection
 
 !</inputoutput>
 !</subroutine>
@@ -1128,14 +1128,14 @@ contains
 
     ! The new 'size' of the section, i.e. the new number of levels,
     ! the section should be able to handle.
-    integer, intent(IN) :: inewsize
+    integer, intent(in) :: inewsize
 
 !</input>
 
 !<inputoutput>
 
     ! The section to reallocate.
-    type(t_collctSection), intent(INOUT) :: rcollctSection
+    type(t_collctSection), intent(inout) :: rcollctSection
     
 !</inputoutput>
 !</subroutine>
@@ -1181,14 +1181,14 @@ contains
 
     ! The new 'size' of the section, i.e. the new number of parameters,
     ! the section should be able to handle.
-    integer, intent(IN) :: inewsize
+    integer, intent(in) :: inewsize
 
 !</input>
 
 !<inputoutput>
 
     ! The section list to reallocate.
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine
@@ -1232,17 +1232,17 @@ contains
 !<input>
 
     ! The level where to search
-    type(t_collctLevel), intent(IN) :: rlevel
+    type(t_collctLevel), intent(in) :: rlevel
     
     ! The parameter name to look for. 
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 
 !</input>
   
 !<output>
 
     ! The number of the parameter in the list or 0 if it does not exist.
-    integer, intent(OUT) :: iparamnum
+    integer, intent(out) :: iparamnum
 
 !</output>
 !<subroutine>
@@ -1293,16 +1293,16 @@ contains
 !<input>
 
     ! The collection where to search
-    type(t_collection), intent(IN) :: rcollection
+    type(t_collection), intent(in) :: rcollection
     
     ! The section name where to search - '' identifies the unnamed section
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
     
     ! The level where to search; maybe 0 for level-independent parameters
-    integer, intent(IN) :: ilevel
+    integer, intent(in) :: ilevel
     
     ! The parameter name to look for. 
-    character(LEN=*), intent(IN) :: sparameter
+    character(LEN=*), intent(in) :: sparameter
 
 !</input>
   
@@ -1375,10 +1375,10 @@ contains
 !<input>
 
     ! The section.
-    type(t_collection), intent(IN) :: rcollection
+    type(t_collection), intent(in) :: rcollection
     
     ! The parameter name to look for. 
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 
 !</input>
 
@@ -1388,7 +1388,7 @@ contains
     type(t_collctSection), pointer :: p_rsection
     
     ! OPTIONAL: Index of the section in the section array.
-    integer, intent(OUT), optional :: isectionIndex
+    integer, intent(out), optional :: isectionIndex
 
 !</output>
 !</subroutine>
@@ -1436,13 +1436,13 @@ contains
 !<input>
 
     ! The section.
-    type(t_collection), intent(IN) :: rcollection
+    type(t_collection), intent(in) :: rcollection
     
     ! The section name to look for. 
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
     
     ! The level number where to search for
-    integer, intent(IN) :: ilevel
+    integer, intent(in) :: ilevel
 
 !</input>
 
@@ -1493,7 +1493,7 @@ contains
 !<inputoutput>
   
   ! The parameter list to initialise.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
   
@@ -1525,7 +1525,7 @@ contains
 !<inputoutput>
   
   ! The parameter list to release.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
   
@@ -1567,10 +1567,10 @@ contains
 !<input>
 
   ! The collection
-  type(t_collection), intent(IN) :: rcollection
+  type(t_collection), intent(in) :: rcollection
   
   ! The name of the section
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
   
 !</input>
   
@@ -1610,7 +1610,7 @@ contains
 !<input>
 
   ! The collection
-  type(t_collctsection), intent(IN) :: rsection
+  type(t_collctsection), intent(in) :: rsection
   
 !</input>
   
@@ -1638,14 +1638,14 @@ contains
 !<inputoutput>
   
   ! The section where to add the level
-  type(t_collctSection), intent(INOUT) :: rsection
+  type(t_collctSection), intent(inout) :: rsection
   
 !</inputoutput>
   
 !<output>
   
   ! OPTIONAL: The id of the newly added level.
-  integer, intent(OUT), optional :: ilevelid
+  integer, intent(out), optional :: ilevelid
   
 !</output>
 
@@ -1681,7 +1681,7 @@ contains
 !<inputoutput>
   
   ! The collection where to add the level
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
   
@@ -1689,14 +1689,14 @@ contains
 
   ! OPTIONAL: The section name where to add the level. If ='' or not
   ! given, the level is added to the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>  
   
 !<output>
   
   ! The id of the newly added level.
-  integer, intent(OUT) :: ilevelid
+  integer, intent(out) :: ilevelid
   
 !</output>
 
@@ -1742,7 +1742,7 @@ contains
 !<inputoutput>
   
   ! The collection where to add the level
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
   
@@ -1778,14 +1778,14 @@ contains
 !<inputoutput>
   
   ! The parameter list where to add the section.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
   
   ! The name of the section. Must not be ''!
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
   
 !</input>
   
@@ -1832,14 +1832,14 @@ contains
 !<inputoutput>
   
   ! The parameter list where to add the section.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
   
   ! The name of the section. Must not be ''!
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
   
 !</input>
   
@@ -1948,21 +1948,21 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 !</input>
   
 !</subroutine>
@@ -2020,7 +2020,7 @@ contains
   
 !<input>
   ! The parameter list.
-  type(t_collection), intent(IN) :: rcollection
+  type(t_collection), intent(in) :: rcollection
 !</input>
 
 !</subroutine>
@@ -2051,10 +2051,10 @@ contains
     subroutine printlevel (ilevel,rlevel)
       
       ! Number of the level; 0=level 0
-      integer, intent(IN) :: ilevel
+      integer, intent(in) :: ilevel
       
       ! The level structure
-      type(t_collctLevel), intent(IN) :: rlevel
+      type(t_collctLevel), intent(in) :: rlevel
       
       ! local variables
       integer :: ivalue
@@ -2109,14 +2109,14 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collctSection), intent(IN), target :: rsection
+  type(t_collctSection), intent(in), target :: rsection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
   
 !</input>
   
@@ -2175,18 +2175,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(IN) :: rcollection
+  type(t_collection), intent(in) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2241,18 +2241,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(IN) :: rcollection
+  type(t_collection), intent(in) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2260,7 +2260,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2323,27 +2323,27 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! Expected type for that parameter.
   ! =COLLCT_UNDEFINED: suppress type check.
-  integer, intent(IN) :: itype
+  integer, intent(in) :: itype
   
   ! Whether to add the parameter if it does not exists.
   ! =TRUE: add the parameter if necessary.
   ! =FALSE: throw an error that the parameter does not exist.
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2351,7 +2351,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
   ! A pointer to the structure with name sparameter.
   ! Points to NULL() if the value does not exist.
@@ -2436,18 +2436,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2455,7 +2455,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2491,18 +2491,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2513,7 +2513,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
 !</output>
 
@@ -2559,18 +2559,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2578,7 +2578,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2618,31 +2618,31 @@ contains
   ! The value of the parameter an array. The destination array must have the
   ! same length as the array in the collection!
   ! A standard value if the value does not exist.
-  integer(I32), dimension(:), intent(INOUT) :: value
+  integer(I32), dimension(:), intent(inout) :: value
 !</inputoutput>
 
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
 !<output>
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 !</output>
 
 !</subroutine>
@@ -2687,18 +2687,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2706,7 +2706,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2746,24 +2746,24 @@ contains
   ! The value of the parameter an array. The destination array must have the
   ! same length as the array in the collection!
   ! A standard value if the value does not exist.
-  real(DP), dimension(:), intent(INOUT) :: value
+  real(DP), dimension(:), intent(inout) :: value
 !</inputoutput>
 
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2771,7 +2771,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2820,18 +2820,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2839,7 +2839,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2884,18 +2884,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2903,7 +2903,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -2948,18 +2948,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -2967,7 +2967,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3012,18 +3012,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3031,7 +3031,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3076,18 +3076,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3095,7 +3095,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3139,18 +3139,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3158,7 +3158,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3202,18 +3202,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3221,7 +3221,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3265,18 +3265,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3284,7 +3284,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3328,18 +3328,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3347,7 +3347,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3392,18 +3392,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3411,7 +3411,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3456,18 +3456,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3475,7 +3475,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3519,18 +3519,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3538,7 +3538,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3583,18 +3583,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3602,7 +3602,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3647,18 +3647,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3666,7 +3666,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3710,18 +3710,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3729,7 +3729,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3773,18 +3773,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3792,7 +3792,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3836,18 +3836,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3855,7 +3855,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3899,18 +3899,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3918,7 +3918,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -3962,18 +3962,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -3981,7 +3981,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4025,18 +4025,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4044,7 +4044,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4088,18 +4088,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4107,7 +4107,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4151,18 +4151,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4170,7 +4170,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4214,18 +4214,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4233,7 +4233,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4277,18 +4277,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4296,7 +4296,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4340,18 +4340,18 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4359,7 +4359,7 @@ contains
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
   ! There's no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
 
 !</output>
 
@@ -4400,30 +4400,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  character, intent(IN) :: value
+  character, intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4461,30 +4461,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  character(LEN=*), intent(IN) :: value
+  character(LEN=*), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4526,30 +4526,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  integer, intent(IN) :: value
+  integer, intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4590,30 +4590,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  integer, dimension(:), intent(IN) :: value
+  integer, dimension(:), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4659,30 +4659,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  real(DP), intent(IN) :: value
+  real(DP), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4723,30 +4723,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  real(DP), dimension(:),intent(IN) :: value
+  real(DP), dimension(:),intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4792,30 +4792,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_spatialDiscretisation), intent(IN), target :: value
+  type(t_spatialDiscretisation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4853,30 +4853,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_blockDiscretisation), intent(IN), target :: value
+  type(t_blockDiscretisation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4914,30 +4914,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_triangulation), intent(IN), target :: value
+  type(t_triangulation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -4975,30 +4975,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_boundary), intent(IN), target :: value
+  type(t_boundary), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5036,30 +5036,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_boundaryConditions), intent(IN), target :: value
+  type(t_boundaryConditions), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5097,30 +5097,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_vectorScalar), intent(IN), target :: value
+  type(t_vectorScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5158,30 +5158,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_matrixScalar), intent(IN), target :: value
+  type(t_matrixScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5219,30 +5219,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_vectorBlock), intent(IN), target :: value
+  type(t_vectorBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5280,30 +5280,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_matrixBlock), intent(IN), target :: value
+  type(t_matrixBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5341,30 +5341,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_parlist), intent(IN), target :: value
+  type(t_parlist), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5402,30 +5402,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_linsolNode), intent(IN), target :: value
+  type(t_linsolNode), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5463,30 +5463,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_discreteBC), intent(IN), target :: value
+  type(t_discreteBC), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5524,30 +5524,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_interlevelProjectionScalar), intent(IN), target :: value
+  type(t_interlevelProjectionScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5585,30 +5585,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_interlevelProjectionBlock), intent(IN), target :: value
+  type(t_interlevelProjectionBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5646,30 +5646,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_collection), intent(IN), target :: value
+  type(t_collection), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5707,30 +5707,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_fparser), intent(IN), target :: value
+  type(t_fparser), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5768,30 +5768,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_geometryObject), intent(IN), target :: value
+  type(t_geometryObject), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5829,30 +5829,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_filterChain), dimension(:), intent(IN), target :: value
+  type(t_filterChain), dimension(:), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5890,30 +5890,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_hadapt), intent(IN), target :: value
+  type(t_hadapt), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -5951,30 +5951,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_afcstab), intent(IN), target :: value
+  type(t_afcstab), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -6012,30 +6012,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_timer), intent(IN), target :: value
+  type(t_timer), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -6073,30 +6073,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_list), intent(IN), target :: value
+  type(t_list), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -6134,30 +6134,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_arraylist), intent(IN), target :: value
+  type(t_arraylist), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -6195,30 +6195,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_btree), intent(IN), target :: value
+  type(t_btree), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   
@@ -6256,30 +6256,30 @@ contains
 !<inputoutput>
   
   ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
   
 !</inputoutput>
 
 !<input>
     
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
   ! The value of the parameter.
-  type(t_graph), intent(IN), target :: value
+  type(t_graph), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
   ! =false: don't add the variable, throw an error
   ! =true : add the variable
-  logical, intent(IN) :: badd
+  logical, intent(in) :: badd
 
   ! OPTIONAL: The level where to search.
   ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 
   ! OPTIONAL: The section name where to search.
   ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
+  character(LEN=*), intent(in), optional :: ssectionName
 
 !</input>
   

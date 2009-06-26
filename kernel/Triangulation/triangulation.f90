@@ -1635,7 +1635,7 @@ contains
 
 !<input>
   ! The "source" discretisation structure that provides the information.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Bitfield that decides which handles are a copy of another
   ! structure, thus which arrays are shared between the new
@@ -1647,7 +1647,7 @@ contains
   ! rtriangulation in memory, while TR_SHARE_ALL will copy
   ! nothing, but will hare everything between rtriangulation
   ! and rbackupTriangulation.
-  integer(I32), intent(IN)          :: iduplicationFlag
+  integer(I32), intent(in)          :: iduplicationFlag
   
   ! OPTIONAL. Defines how to create the backup.
   ! = .FALSE.: Treat rbackupTriangulation as empty destination structure.
@@ -1672,14 +1672,14 @@ contains
   !          duplicates. Arrays corresponding to flags which
   !          are set or where the handles in rtriangulation and
   !          rbackupTriangulation coincide are not touched.
-  logical, intent(IN), optional     :: bupdate
+  logical, intent(in), optional     :: bupdate
 !</input>
 
 !<inputoutput>
   ! The "destination" discretisation structure receives the information.
   ! Depending on iduplicationFlag, the arrays are duplicated or shared
   ! between rtriangulation and rbackupTriangulation
-  type(t_triangulation), intent(INOUT), target :: rbackupTriangulation
+  type(t_triangulation), intent(inout), target :: rbackupTriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -1923,10 +1923,10 @@ contains
     ! Otherwise, the memory behind isourcehandle is duplicated in memory
     ! and idesthandle receives the handle to the new memory block.
     
-    integer(I32), intent(IN) :: ibitfield
-    integer(I32), intent(IN) :: idupFlag
-    integer, intent(IN) :: isourcehandle
-    integer, intent(INOUT) :: idesthandle
+    integer(I32), intent(in) :: ibitfield
+    integer(I32), intent(in) :: idupFlag
+    integer, intent(in) :: isourcehandle
+    integer, intent(inout) :: idesthandle
     
       if (iand(idupFlag,ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
@@ -1954,14 +1954,14 @@ contains
 
 !<input>
   ! Backup of a triangulation structure.
-  type(t_triangulation), intent(IN) :: rbackupTriangulation
+  type(t_triangulation), intent(in) :: rbackupTriangulation
 !</input>
 
 !<inputoutput>
   ! Destination triangulation.
   ! All arrays where a duplicates exist in rtriangulation are copied
   ! to rtriangulation, overwriting the old information arrays.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -2159,10 +2159,10 @@ contains
     ! If not, the memory behind isourcehandle is copied to idesthandle
     ! overwriting all previous information.
     
-    integer(I32), intent(IN) :: ibitfield
-    integer(I32), intent(IN) :: idupFlag
-    integer, intent(IN) :: isourcehandle
-    integer, intent(INOUT) :: idesthandle
+    integer(I32), intent(in) :: ibitfield
+    integer(I32), intent(in) :: idupFlag
+    integer, intent(in) :: isourcehandle
+    integer, intent(inout) :: idesthandle
     
       if (iand(idupFlag,ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
@@ -2189,7 +2189,7 @@ contains
 
 !<inputoutput>
   ! The triangulation structure to be cleaned up.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -2376,9 +2376,9 @@ contains
     ! Otherwise, ihandle is set to ST_NOHANDLE.    
     subroutine checkAndRelease (idupFlag,ibitfield,ihandle)
     
-    integer(I32), intent(IN) :: ibitfield
-    integer(I32), intent(IN) :: idupFlag
-    integer, intent(INOUT) :: ihandle
+    integer(I32), intent(in) :: ibitfield
+    integer(I32), intent(in) :: idupFlag
+    integer, intent(inout) :: ihandle
     
       if (iand(idupFlag,ibitfield) .ne. ibitfield) then
         if (ihandle .ne. ST_NOHANDLE) call storage_free(ihandle)
@@ -2403,12 +2403,12 @@ contains
 
 !<inputoutput>
   ! The triangulation structure to be resetted.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
   
   ! OPTIONAL: If not specified or set to TRUE, arrays of the extended
   ! raw mesh are not removed. When set to FALSE, the mesh is reset to pure
   ! RAW state.
-  logical, intent(IN), optional :: bkeepExtendedRaw
+  logical, intent(in), optional :: bkeepExtendedRaw
 !</inputoutput>
   
 !</subroutine>
@@ -2572,9 +2572,9 @@ contains
     ! Otherwise, ihandle is set to ST_NOHANDLE.    
     subroutine checkAndRelease (idupFlag,ibitfield,ihandle)
     
-    integer(I32), intent(IN) :: ibitfield
-    integer(I32), intent(IN) :: idupFlag
-    integer, intent(INOUT) :: ihandle
+    integer(I32), intent(in) :: ibitfield
+    integer(I32), intent(in) :: idupFlag
+    integer, intent(inout) :: ihandle
     
       if (iand(idupFlag,ibitfield) .ne. ibitfield) then
         if (ihandle .ne. ST_NOHANDLE) call storage_free(ihandle)
@@ -2655,17 +2655,17 @@ contains
   ! OPTIONAL: Boundary structure that defines the domain.
   ! If not specified, information about boundary vertices (e.g. 
   ! parameter values of edge midpoints in 2D) are not initialised.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 
   ! OPTIONAL: Flags which can be used to prevent the creation of some structure.
   ! Note that this routine does not check whether arrays already exist,
   ! but regenerates all information indicated by this flags.
-  integer(I32), intent(IN), optional     :: igenflag
+  integer(I32), intent(in), optional     :: igenflag
 !</input>
 
 !<inputoutput>
   ! Triangulation structure to be initialised.
-  type(t_triangulation), intent(INOUT)   :: rtriangulation
+  type(t_triangulation), intent(inout)   :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -2828,8 +2828,8 @@ contains
     function checkGen (igenFlag,ibitfield)
       
       ! Checks if igenFlag has all bits ibitfield set.
-      integer(I32), intent(IN) :: igenFlag
-      integer(I32), intent(IN) :: ibitfield
+      integer(I32), intent(in) :: igenFlag
+      integer(I32), intent(in) :: ibitfield
       
       logical                  :: checkGen
       
@@ -2916,17 +2916,17 @@ contains
   ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
   ! If specified, the coordinates of the new boundary vertices are
   ! recomputed according to the analytic boundary.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
   
   ! OPTIONAL: Bitfield of TRIA_R2LV_xxxx constants that allow to specify
   ! options for the refinement. If not specified, TRIA_R2LV_STANDARD
   ! is used as default.
-  integer(I32), intent(IN), optional :: cflags
+  integer(I32), intent(in), optional :: cflags
 !</input>
 
 !<inputoutput>
   ! The source triangulation to be refined; must be a 'standard' mesh.
-  type(t_triangulation), intent(INOUT) :: rsourceTriangulation
+  type(t_triangulation), intent(inout) :: rsourceTriangulation
 !</inputoutput>
 
 !<output>
@@ -2934,7 +2934,7 @@ contains
   ! The refined mesh will be a 'raw' mesh as being read from a .TRI file e.g..
   ! If not specified, the source triangulation rsourceTriangulation is replaced
   ! by the refined mesh.
-  type(t_triangulation), intent(OUT), optional :: rdestTriangulation
+  type(t_triangulation), intent(out), optional :: rdestTriangulation
 !</output>
   
 !</subroutine>
@@ -3012,10 +3012,10 @@ contains
     ! vertices. Boundary parameter values are not handled here!
 
     ! The source triangulation to be refined
-    type(t_triangulation), intent(IN) :: rsourceTriangulation
+    type(t_triangulation), intent(in) :: rsourceTriangulation
 
     ! Destination triangulation structure that receives the refined mesh. 
-    type(t_triangulation), intent(OUT) :: rdestTriangulation
+    type(t_triangulation), intent(out) :: rdestTriangulation
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DcoordSource
@@ -3227,10 +3227,10 @@ contains
     ! vertices. Boundary parameter values are not handled here!
 
     ! The source triangulation to be refined
-    type(t_triangulation), intent(IN) :: rsourceTriangulation
+    type(t_triangulation), intent(in) :: rsourceTriangulation
 
     ! Destination triangulation structure that receives the refined mesh
-    type(t_triangulation), intent(OUT) :: rdestTriangulation
+    type(t_triangulation), intent(out) :: rdestTriangulation
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DcoordSource
@@ -3685,19 +3685,19 @@ contains
     ! parameter value!
 
     ! The source triangulation to be refined
-    type(t_triangulation), intent(IN) :: rsourceTriangulation
+    type(t_triangulation), intent(in) :: rsourceTriangulation
 
     ! Destination triangulation structure that receives the refined mesh
-    type(t_triangulation), intent(INOUT) :: rdestTriangulation
+    type(t_triangulation), intent(inout) :: rdestTriangulation
     
     ! Recalculate the coordinates of all boundary vertices according to
     ! their parameter value.
-    logical, intent(IN) :: brecalcBoundaryCoords
+    logical, intent(in) :: brecalcBoundaryCoords
     
     ! OPTIONAL: Defintion of analytic boundary.
     ! If specified, the coordinates of the new boundary vertices are
     ! recomputed according to the analytic boundary.
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
     
       ! local variables
       real(DP), dimension(:), pointer :: p_DvertParamsSource
@@ -3890,11 +3890,11 @@ contains
     ! average of the four edge midpoints that arise from natural refinement.
 
     ! The source triangulation specifying the coarse mesh
-    type(t_triangulation), intent(IN) :: rsourceTriangulation
+    type(t_triangulation), intent(in) :: rsourceTriangulation
 
     ! Destination triangulation that specifies the fine mesh after
     ! 2-level refinement
-    type(t_triangulation), intent(INOUT) :: rdestTriangulation
+    type(t_triangulation), intent(inout) :: rdestTriangulation
 
       ! local variables
       integer :: i
@@ -3991,10 +3991,10 @@ contains
       ! Boundary parameter values are not handled here!
       
       ! The source triangulation to be refined
-      type(t_triangulation), intent(IN) :: rsourceTriangulation
+      type(t_triangulation), intent(in) :: rsourceTriangulation
 
       ! Destination triangulation structure that receives the refined mesh
-      type(t_triangulation), intent(OUT) :: rdestTriangulation
+      type(t_triangulation), intent(out) :: rdestTriangulation
   
       ! local variables
       
@@ -5093,15 +5093,15 @@ p_InodalPropertyDest = -4711
       ! IverticesAtBoundary. 
       
       ! The source triangulation to be refined
-      type(t_triangulation), intent(IN) :: rsourceTriangulation
+      type(t_triangulation), intent(in) :: rsourceTriangulation
       
       ! Destination triangulation structure that receives the refined mesh
-      type(t_triangulation), intent(INOUT) :: rdestTriangulation
+      type(t_triangulation), intent(inout) :: rdestTriangulation
       
       ! OPTIONAL: Defintion of analytic boundary.
       ! If specified, the coordinates of the new boundary vertices are
       ! recomputed according to the analytic boundary.
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
 
       ! local variables
@@ -5232,12 +5232,12 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Fine grid triangulation.
-  type(t_triangulation), intent(IN) :: rtriangulationFine
+  type(t_triangulation), intent(in) :: rtriangulationFine
 !</input>
 
 !<inputoutput>
   ! Coarse grid triangulation where redundant data should be removed from.
-  type(t_triangulation), intent(INOUT) :: rtriangulationCoarse
+  type(t_triangulation), intent(inout) :: rtriangulationCoarse
 !</inputoutput>
   
 !</subroutine>
@@ -5280,23 +5280,23 @@ p_InodalPropertyDest = -4711
 !<input>
   ! Number of refinements that should be applied to rtriangulation. > 0.
   ! For a value .le. 0, nothing will happen.
-  integer, intent(IN) :: nfine
+  integer, intent(in) :: nfine
 
   ! OPTIONAL: Boundary structure that defines the parametrisation of the boundary.
   ! If specified, the coordinates of the new boundary vertices are
   ! recomputed according to the analytic boundary.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 
   ! OPTIONAL: Bitfield of TRIA_R2LV_xxxx constants that allow to specify
   ! options for the refinement. If not specified, TRIA_R2LV_STANDARD
   ! is used as default.
-  integer(I32), intent(IN), optional :: cflags
+  integer(I32), intent(in), optional :: cflags
 !</input>
 
 !<inputoutput>
   ! The triangulation to be refined; can be a 'raw' or a 'standard' mesh.
   ! Is overwritten by the refined mesh.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -5438,7 +5438,7 @@ p_InodalPropertyDest = -4711
     ! Reallocates the InodalProperty-array in rtriangulation such that
     ! is provides enough space for the refined mesh.
     
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
     ! Return value: whether the memory was reallocated or not.
     
@@ -5498,17 +5498,17 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! OPTIONAL: Print out a headline above the statistical data.
   ! =FALSE: don't print = standard.
   ! =TRUE: print a headline.
-  logical, intent(IN), optional :: bheadline
+  logical, intent(in), optional :: bheadline
   
   ! OPTIONAL: Level identifier.
   ! If specified, an additional column 'Level' is added to the front of
   ! the statistics table. ilevel is printed to this column.
-  integer, intent(IN), optional :: ilevel
+  integer, intent(in), optional :: ilevel
 !</input>
 
 !</subroutine>
@@ -5602,10 +5602,10 @@ p_InodalPropertyDest = -4711
 
 !<input>
     ! Triangulation structure, to be exported
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 
     ! The name of the .tri file to write.
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
     
     ! OPTIONAL: Format tag of the TRI file to export.
     ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
@@ -5615,7 +5615,7 @@ p_InodalPropertyDest = -4711
     !    vertex coordinates are exported 'as they are', not as parameter
     !    values.
     ! If not specified, TRI_FMT_STANDARD is assumed.
-    integer(I32), intent(IN), optional :: ctriFormat
+    integer(I32), intent(in), optional :: ctriFormat
 !</input>
 !</subroutine>
 
@@ -5650,10 +5650,10 @@ p_InodalPropertyDest = -4711
       ! Auxiliary routine. This routine exports a 2D triangulation into a .TRI file.
       
       ! Triangulation structure, to be exported
-      type(t_triangulation), intent(INOUT) :: rtriangulation
+      type(t_triangulation), intent(inout) :: rtriangulation
       
       ! The name of the .tri file to write.
-      character(LEN=*), intent(IN) :: sfilename
+      character(LEN=*), intent(in) :: sfilename
       
       ! OPTIONAL: Format tag of the TRI file to export.
       ! TRI_FMT_STANDARD: Standard TRI file format, compatible to FEAT1.
@@ -5663,7 +5663,7 @@ p_InodalPropertyDest = -4711
       !    vertex coordinates are exported 'as they are', not as parameter
       !    values.
       ! If not specified, TRI_FMT_STANDARD is assumed.
-      integer(I32), intent(IN), optional :: ctriFormat
+      integer(I32), intent(in), optional :: ctriFormat
 
       ! Local variables
       real(DP), dimension(:,:), pointer     :: p_Ddata2D
@@ -5802,34 +5802,34 @@ p_InodalPropertyDest = -4711
 !<input>
 
   ! The triangulation that is to be exported. Must be a 2D mesh.
-  type(t_triangulation), intent(IN) :: rtria
+  type(t_triangulation), intent(in) :: rtria
   
   ! The filename of the PostScript file that is to be written.
-  character(len=*), intent(IN) :: sfilename
+  character(len=*), intent(in) :: sfilename
   
   ! OPTIONAL:
   ! The dimensions of the drawing box into which the mesh is to be exported.
   ! Dbox(1) = width of drawing box in millimeters (default: 100 mm)
   ! Dbox(2) = height of drawing box in millimeters (default: 100 mm)
-  real(DP), dimension(2), optional, intent(IN) :: Dbox
+  real(DP), dimension(2), optional, intent(in) :: Dbox
   
   ! OPTIONAL:
   ! A transformation matrix that the vertice coordinates are to be multiplied
   ! with. This matrix can be used to e.g. rotate a mesh by 90 degrees by
   ! setting Dtrafo to the corresponding rotation matrix.
   ! If not given, the transformation matrix is the identity matrix.
-  real(DP), dimension(2,2), optional, intent(IN) :: Dtrafo
+  real(DP), dimension(2,2), optional, intent(in) :: Dtrafo
   
   ! OPTIONAL:
   ! The line width for the PostScript file in millimeters.
   ! If not given, 0.1 mm is used.
-  real(DP), optional, intent(IN) :: dlineWidth
+  real(DP), optional, intent(in) :: dlineWidth
   
   ! OPTIONAL:
   ! If set to .true. (default), the aspect ratio of the mesh is kept.
   ! If set to .false., the mesh is stretched such that the bounding box of
   ! the mesh is equal to the drawing box.
-  logical, optional, intent(IN) :: bkeepAR
+  logical, optional, intent(in) :: bkeepAR
   
 !</input>
 
@@ -6061,17 +6061,17 @@ p_InodalPropertyDest = -4711
   ! The boundary node to search for. A node number 1..NVT will search for
   ! a boundary vertex. A boundary node number NVT+1..NVT+NMT will search
   ! for boundary edges.
-  integer, intent(IN) :: inode
+  integer, intent(in) :: inode
 
   ! The triangulation structure where to search the boundary node.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<output>
   ! If inode is a boundary vertex: The index of the inode in IboundaryVertexPos.
   ! If inode is a boundary edge: The index of the inode in IboundaryEdgePos.
   ! =0 if inode was not found (e.g. because inode is not on the boundary e.g.).
-  integer, intent(OUT) :: iindex
+  integer, intent(out) :: iindex
 !</output>
 
 !</subroutine>
@@ -6147,19 +6147,19 @@ p_InodalPropertyDest = -4711
 !<input>
   ! Source triangulation; provides the 'parent' domain. A subdomain will
   ! be extracted from this.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! A list of elements in rtriangulation that form the subdomain.
-  integer, dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(in) :: Ielements
   
   ! OPTIONAL: A boundary structure that defines the parametrisation of the boumdary.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 !</input>
 
 !<output>
   ! Destination triangulation structure. Receives the subdomain that consists
   ! only of the elements in Ielements. This will be a 'raw' mesh!
-  type(t_triangulation), intent(OUT) :: rtriaDest
+  type(t_triangulation), intent(out) :: rtriaDest
 !</output>
 
 !</subroutine>
@@ -6633,7 +6633,7 @@ p_InodalPropertyDest = -4711
     !    to IboundaryCpIdx but not ordered for their parameter value.
     
     ! Triangulation to be initialised with basic data.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -6784,26 +6784,26 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! A mesh which is to be extended.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
   
   ! A set of cells which is to be attached to rtriangulation.
   ! At least, IverticesAtElement in this structure must be defined to create
   ! a valid mesh. If DvertexCoords is undefined, all new vertices are set to
   ! the origin. If InodalProperty is undefined, new vertices are treated
   ! as 'inner' vertices.
-  type(t_cellSet), intent(IN) :: rcellSet
+  type(t_cellSet), intent(in) :: rcellSet
   
   ! A vertex mapping. This mapping defines for every vertex in rcellSet
   ! the number of that vertex in rtriangulation which coincides with it.
   ! If a vertex in rcellSet is not related to a vertex in rtriangulation,
   ! i.e. the vertex is a new vertex, the corresponding entry in IvertexMapping
   ! must be =0.
-  integer, dimension(:), intent(IN) :: IvertexMapping
+  integer, dimension(:), intent(in) :: IvertexMapping
 !</input>
 
 !<output>
   ! Receives the extended mesh.
-  type(t_triangulation), intent(OUT) :: rtriaDest
+  type(t_triangulation), intent(out) :: rtriaDest
 !</output>
 
 !</subroutine>
@@ -7097,7 +7097,7 @@ p_InodalPropertyDest = -4711
     !    to IboundaryCpIdx but not ordered for their parameter value.
     
     ! Triangulation to be initialised with basic data.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -7594,10 +7594,10 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Triangulation structure
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Number of the element whose NAE should be calculated
-  integer, intent(IN) :: iel
+  integer, intent(in) :: iel
 !</input>
 
 !<result>
@@ -7650,10 +7650,10 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! This is the IverticesAtElement array of a triangulation
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
   
   ! Number of the element whose NAE should be calculated
-  integer, intent(IN) :: iel
+  integer, intent(in) :: iel
 !</input>
 
 !<result>
@@ -7702,10 +7702,10 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Triangulation structure
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Number of the element whose NVE should be calculated
-  integer, intent(IN) :: iel
+  integer, intent(in) :: iel
 !</input>
 
 !<result>
@@ -7742,10 +7742,10 @@ p_InodalPropertyDest = -4711
 !<input>
   ! This may be either the IverticesAtElement or the IedgesAtElement
   ! array of a triangulation
-  integer, dimension(:,:), intent(IN) :: IvertEdgAtElement
+  integer, dimension(:,:), intent(in) :: IvertEdgAtElement
   
   ! Number of the element whose NVE should be calculated
-  integer, intent(IN) :: iel
+  integer, intent(in) :: iel
 !</input>
 
 !<result>
@@ -7789,10 +7789,10 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Number of points per edge to generate
-  integer, intent(IN) :: npointsPerEdge
+  integer, intent(in) :: npointsPerEdge
   
   ! OPTIONAL: Array with parameter values of the points on the edge.
   ! DIMENSION(npointsPerEdge). DparValue is a value in the range [0,1]
@@ -7804,13 +7804,13 @@ p_InodalPropertyDest = -4711
   ! DparValue=/(0.333333,0.666666)/.
   ! If specified, the caller can specify the exact parameter values of
   ! the three points on the edge, e.g. DparValue=/(0.25,0.75)/.
-  real(DP), dimension(:), intent(IN), optional :: DparValue
+  real(DP), dimension(:), intent(in), optional :: DparValue
   
   ! OPTIONAL: Definition of the domain.
   ! If specified, the routine will calculate the points on the boundary
   ! edges using the definition on the boundary. If not specified, the routine
   ! calculates the points on the edges based only on the triangulation.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 !</input>
 
 !<output>
@@ -7820,7 +7820,7 @@ p_InodalPropertyDest = -4711
   ! Here, Dcoords(:,1..npointsPerEdge) receives the coordinates of the 
   ! points on the first edge, Dcoords(:,npointsPerEdge+1:2*npointsPerEdge)
   ! the coordinates on edge number 2 etc.
-  real(DP), dimension(:,:), intent(OUT) :: Dcoords
+  real(DP), dimension(:,:), intent(out) :: Dcoords
 !</output>
 
 !</subroutine>
@@ -7974,18 +7974,18 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Vertex number. Either ivt1 or ivt2.
-  integer, intent(IN) :: ivertex
+  integer, intent(in) :: ivertex
   
   ! Vertex number of one vertex adjacent to an edge.
-  integer, intent(IN) :: ivt1
+  integer, intent(in) :: ivt1
 
   ! Vertex number of the other vertex adjacent to that edge.
-  integer, intent(IN) :: ivt2
+  integer, intent(in) :: ivt2
 !</input>
 
 !<output>
   ! Vertex number of the neighbour of ivertex.
-  integer, intent(OUT) :: ineighbour
+  integer, intent(out) :: ineighbour
 !</output>
 
 !</subroutine>
@@ -8026,7 +8026,7 @@ p_InodalPropertyDest = -4711
   ! of IsubmeshElements are found, TRI_NEIGH_EDGENEIGHBOURS will find all
   ! edge adjacent elements and TRI_NEIGH_FACENEIGHBOURS all face
   ! adjacent elements.
-  integer(I32), intent(IN) :: cneighbourhood
+  integer(I32), intent(in) :: cneighbourhood
 !</input>
 
 !<output>
@@ -8380,7 +8380,7 @@ p_InodalPropertyDest = -4711
   
 !<inputoutput>
     ! The triangulation structure to be updated.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -8422,7 +8422,7 @@ p_InodalPropertyDest = -4711
     ! ---------------------------------------------------------------
     
     subroutine genTwistIndex2D(rtriangulation)
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
     ! local variables
     integer, dimension(:,:), pointer :: p_IedgesAtElement, &
@@ -8481,7 +8481,7 @@ p_InodalPropertyDest = -4711
     ! ---------------------------------------------------------------
     
     subroutine genTwistIndex3D(rtriangulation)
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtElement, &
@@ -8701,7 +8701,7 @@ p_InodalPropertyDest = -4711
 !    ! Generate the twist index for 2D meshes
 !    
 !    ! The triangulation where the twist index should be generated.
-!    type(t_triangulation), intent(INOUT) :: rtriangulation
+!    type(t_triangulation), intent(inout) :: rtriangulation
 !    
 !      ! local variables
 !      integer(I32), dimension(:,:), pointer :: p_IneighboursAtElement
@@ -8751,7 +8751,7 @@ p_InodalPropertyDest = -4711
 !    ! Generate the twist index for 3D meshes
 !
 !    ! The triangulation where the twist index should be generated.
-!    type(t_triangulation), intent(INOUT) :: rtriangulation
+!    type(t_triangulation), intent(inout) :: rtriangulation
 !    
 !    ! Implementation must be done again.
 !    ! The calculation works, but the target array is not properly installed
@@ -9236,7 +9236,7 @@ p_InodalPropertyDest = -4711
   ! OPTIONAL: Boundary structure that defines the domain.
   ! If not specified, information about boundary vertices (e.g. 
   ! parameter values of edge midpoints in 2D) are not initialised.
-  !TYPE(t_boundary), INTENT(IN), OPTIONAL :: rboundary
+  !TYPE(t_boundary), INTENT(in), OPTIONAL :: rboundary
 !</input>
 
 !<output>
@@ -9849,19 +9849,19 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! The left end of the interval. Must be < dright.
-  real(DP), intent(IN) :: dleft
+  real(DP), intent(in) :: dleft
   
   ! The right end of the interval. Must be > dleft.
-  real(DP), intent(IN) :: dright
+  real(DP), intent(in) :: dright
   
   ! OPTIONAL: The number of sub-intervals to create. If given, nintervals
   ! must be > 0. If not given, one interval is created.
-  integer, optional, intent(IN) :: nintervals
+  integer, optional, intent(in) :: nintervals
 !</input>
 
 !<output>
   ! The triangulation.
-  type(t_triangulation), intent(OUT) :: rtriangulation
+  type(t_triangulation), intent(out) :: rtriangulation
 !</output>
 
 !</subroutine>
@@ -10008,7 +10008,7 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! The name of the .tri file to read.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
   ! an 'extended raw' mesh will be created that provides a proper numbering
@@ -10019,7 +10019,7 @@ p_InodalPropertyDest = -4711
   
 !<output>
   ! Triangulation structure, to be filled with data
-  type(t_triangulation), intent(OUT) :: rtriangulation
+  type(t_triangulation), intent(out) :: rtriangulation
 !</output>
   
 !</subroutine>
@@ -10071,12 +10071,12 @@ p_InodalPropertyDest = -4711
   
 !<input>
   ! Unit number of the file to be read
-  integer, intent(IN) :: iunit
+  integer, intent(in) :: iunit
 !</input>
   
 !<inputoutput> 
   ! Triangulation to be initialised with basic data.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -10180,7 +10180,7 @@ p_InodalPropertyDest = -4711
   
 !<inputoutput>
   ! Triangulation to be initialised with basic data.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -10317,7 +10317,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -10418,7 +10418,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -10541,14 +10541,14 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! The name of the .tri file to read.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
 
   ! OPTIONAL: An rboundary object specifying the underlying domain.
   ! If not specified, the routine assumes that the TRI file does not specify
   ! boundary parameter values, i.e. the point coordinates in the TRI file
   ! are all real coordinates. The array DvertexParameterValue is not
   ! generated in this case.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
   
   ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
   ! an 'extended raw' mesh will be created that provides a proper numbering
@@ -10559,7 +10559,7 @@ p_InodalPropertyDest = -4711
   
 !<output>
   ! Triangulation structure, to be filled with data
-  type(t_triangulation), intent(OUT) :: rtriangulation
+  type(t_triangulation), intent(out) :: rtriangulation
 !</output>
   
 !</subroutine>
@@ -10611,12 +10611,12 @@ p_InodalPropertyDest = -4711
   
 !<input>
   ! Unit number of the file to be read
-  integer, intent(IN) :: iunit
+  integer, intent(in) :: iunit
 !</input>
   
 !<inputoutput> 
   ! Triangulation to be initialised with basic data.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -10745,12 +10745,12 @@ p_InodalPropertyDest = -4711
   ! If specified, DvertexParameterValue is generated from DvertexCoords
   ! and the coordinates of boundary vertices are (re-)generated
   ! by DvertexParameterValue.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 !</input>
   
 !<inputoutput>
   ! Triangulation to be initialised with basic data.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -10949,7 +10949,7 @@ p_InodalPropertyDest = -4711
 !<inputoutput>
   ! The triangulation structure to be converted.
   ! Is replaced by a triangular mesh.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -11020,20 +11020,20 @@ p_InodalPropertyDest = -4711
 
   !<input>
     ! Number of elements in the old grid
-    integer,intent(IN) :: nel
+    integer,intent(in) :: nel
 
     ! Number of quads in the old grid
-    integer,intent(IN) :: nelquad
+    integer,intent(in) :: nelquad
 
     ! KVERT structure of the old mesh
     ! array [1..4,1..nel] of integer
-    integer, dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(in) :: IverticesAtElement
   !</input>
 
   !<output>
     ! KVERT structure of the tri mesh
     ! array [1..4,1..nel+nelquad] of integer
-    integer, dimension(:,:), intent(OUT)  :: Kvert_triang
+    integer, dimension(:,:), intent(out)  :: Kvert_triang
   !</output>
   
       ! local variables
@@ -11085,7 +11085,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11225,7 +11225,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11418,7 +11418,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11540,7 +11540,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11653,7 +11653,7 @@ p_InodalPropertyDest = -4711
   
 !<inputoutput>
   ! The triangulation.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -11739,7 +11739,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11904,7 +11904,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -11991,7 +11991,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12117,7 +12117,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12233,7 +12233,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12363,7 +12363,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12494,12 +12494,12 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Boundary structure that defines the parametrisation of the boundary.
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 !</input>
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12687,7 +12687,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12769,7 +12769,7 @@ p_InodalPropertyDest = -4711
   
 !<inputoutput>
     ! The triangulation structure to be updated.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -12965,14 +12965,14 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! The name of the .tri file to read.
-  character(len=*), intent(IN) :: sfilename
+  character(len=*), intent(in) :: sfilename
 
   ! OPTIONAL: An rboundary object specifying the underlying domain.
   ! If not specified, the routine assumes that the TRI file does not specify
   ! boundary parameter values, i.e. the point coordinates in the TRI file
   ! are all real coordinates. The array DvertexParameterValue is not
   ! generated in this case.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 
   ! OPTIONAL: Prevent creation of an extended raw mesh. If set to .false.,
   ! an 'extended raw' mesh will be created that provides a proper numbering
@@ -12984,7 +12984,7 @@ p_InodalPropertyDest = -4711
   
 !<output>
   ! Triangulation structure, to be filled with data
-  type(t_triangulation), intent(OUT) :: rtriangulation
+  type(t_triangulation), intent(out) :: rtriangulation
 !</output>
   
 !</subroutine>
@@ -13037,12 +13037,12 @@ p_InodalPropertyDest = -4711
   
 !<input>
   ! Unit number of the file to be read
-  integer, intent(IN) :: iunit
+  integer, intent(in) :: iunit
 !</input>
   
 !<output>
   ! Triangulation structure, to be filled with data
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</output>
 
 !</subroutine>
@@ -13179,12 +13179,12 @@ p_InodalPropertyDest = -4711
   ! If specified, DvertexParameterValue is generated from DvertexCoords
   ! and the coordinates of boundary vertices are (re-)generated
   ! by DvertexParameterValue.
-  type(t_boundary), intent(IN), optional :: rboundary
+  type(t_boundary), intent(in), optional :: rboundary
 !</input>
   
 !<inputoutput>
   ! Triangulation to be initialised with basic data.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -13299,7 +13299,7 @@ p_InodalPropertyDest = -4711
     
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
     
 !</subroutine>
@@ -13445,7 +13445,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -13553,7 +13553,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -13977,7 +13977,7 @@ p_InodalPropertyDest = -4711
 !</description>
   
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
   
 !</subroutine>  
@@ -14093,7 +14093,7 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
     
 !</subroutine>  
@@ -14259,7 +14259,7 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
     
 !</subroutine>  
@@ -14455,7 +14455,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -14571,7 +14571,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -14690,7 +14690,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -14953,7 +14953,7 @@ p_InodalPropertyDest = -4711
 
 !<inputoutput>
   ! The triangulation structure to be updated.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
   
 !</subroutine>
@@ -15102,7 +15102,7 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
 
 !</subroutine>
@@ -15230,7 +15230,7 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
 
 !</subroutine>
@@ -15360,7 +15360,7 @@ p_InodalPropertyDest = -4711
 !</description>
   
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
   
 !</subroutine>
@@ -15647,7 +15647,7 @@ p_InodalPropertyDest = -4711
 !</description>
   
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
 
 !</subroutine>
@@ -15758,7 +15758,7 @@ p_InodalPropertyDest = -4711
 !</description>
   
 !<inputoutput>  
-  type(t_triangulation), intent(INOUT) :: rtriangulation  
+  type(t_triangulation), intent(inout) :: rtriangulation  
 !</inputoutput>
   
 !</subroutine>    
@@ -16075,23 +16075,23 @@ p_InodalPropertyDest = -4711
 
 !<input>
   ! Local face number (1..NAE=6 usually).
-  integer, intent(IN) :: iface
+  integer, intent(in) :: iface
   
   ! Maximum number of vertices per face. 3 for 3D tetraheral meshes,
   ! 4 for 3D hexahedral meshes. 
-  integer, intent(IN) :: nva
+  integer, intent(in) :: nva
 
   ! Array containing the vertices on the current element
-  integer, dimension(:), intent(IN) :: IverticesAtElement
+  integer, dimension(:), intent(in) :: IverticesAtElement
   
   ! TRUE=return the vertices in mathematically positive sense.
   ! FALSE=return the vertices in mathematically negative sense.
-  logical, intent(IN) :: bpositive
+  logical, intent(in) :: bpositive
 !</input>
   
 !<output>
   ! Array receiving the vertices on local face iface.
-  integer, dimension(:), intent(OUT) :: IverticesAtFace
+  integer, dimension(:), intent(out) :: IverticesAtFace
 !</output>
   
 !</subroutine>
@@ -16219,12 +16219,12 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<input>
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 !</input>
     
 !<output>    
   ! the list of connectors this routine is supposed to build
-  type(t_connector3D), dimension(:), intent(OUT) :: IConnectList    
+  type(t_connector3D), dimension(:), intent(out) :: IConnectList    
 !</output>  
   
 !</subroutine>    
@@ -16585,11 +16585,11 @@ p_InodalPropertyDest = -4711
 !</description>
 
 !<input>    
-  integer, intent(IN) :: iElements
+  integer, intent(in) :: iElements
 !</input>  
 
 !<inputoutput>        
-  type(t_connector3D), dimension(:), intent(INOUT) :: IConnectList
+  type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
 !</subroutine>
@@ -16617,11 +16617,11 @@ p_InodalPropertyDest = -4711
   ! parameter values
 
 !<input>    
-  integer, intent(IN) :: iElements
+  integer, intent(in) :: iElements
 !</input>
 
 !<inputoutput>        
-  type(t_connector3D), dimension(:), intent(INOUT) :: IConnectList
+  type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>          
         
 !</subroutine>
@@ -16678,12 +16678,12 @@ p_InodalPropertyDest = -4711
 !<input>
   ! the array positions l...r will be sorted
   ! the sorting key is element 'pos' of the connector
-  integer, intent(IN) :: l,r,pos
+  integer, intent(in) :: l,r,pos
 !</input>
   
 !<inputoutput>
   ! the list of connectors    
-  type(t_connector3D), dimension(:), intent(INOUT) :: IConnectList
+  type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
 !</subroutine>      
@@ -16718,12 +16718,12 @@ p_InodalPropertyDest = -4711
 !<input> 
   ! the array positions l...r will be sorted
   ! the sorting key is element 'pos' of the connector
-  integer, intent(IN) :: l,r,m,pos
+  integer, intent(in) :: l,r,m,pos
 !</input>
 
 !<inputoutput>
   ! the list of connectors     
-  type(t_connector3D), dimension(:), intent(INOUT) :: IConnectList
+  type(t_connector3D), dimension(:), intent(inout) :: IConnectList
 !</inputoutput>
 
 !</subroutine>     
@@ -16821,13 +16821,13 @@ p_InodalPropertyDest = -4711
   
 !<input>
     ! The integer array to search in
-    integer, dimension(:),intent(IN) :: p_Iarray
+    integer, dimension(:),intent(in) :: p_Iarray
 
     ! The integer to search for
-    integer, intent(IN) :: Ivalue
+    integer, intent(in) :: Ivalue
 
     ! The lower and uppers bounds used in the array
-    integer, intent(IN) :: Ilbound, Iubound
+    integer, intent(in) :: Ilbound, Iubound
 !</input>
 
 !<result>

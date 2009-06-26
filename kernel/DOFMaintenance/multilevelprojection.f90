@@ -400,13 +400,13 @@ contains
   ! An array of discretisation structures. Each discretisation structure
   ! corresponds to one scalar equation. The projection structure will be
   ! prepared to according to this discretisation list.
-  type(t_spatialDiscretisation), dimension(:), intent(IN) :: RspatialDiscr
+  type(t_spatialDiscretisation), dimension(:), intent(in) :: RspatialDiscr
 !</input>
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
   ! about the projection of all the equations described by RspatialDiscr.
-  type(t_interlevelProjectionBlock), intent(OUT) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(out) :: rprojection 
 !</output>
   
 !</subroutine>
@@ -446,13 +446,13 @@ contains
 
 !<input>
   ! A block discretisation structure specifying the discretisation
-  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
 !</input>
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
   ! about the projection of all the equations described by RspatialDiscr.
-  type(t_interlevelProjectionBlock), intent(OUT) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(out) :: rprojection 
 !</output>
   
 !</subroutine>
@@ -492,13 +492,13 @@ contains
 !<input>
   ! A vector containing information about the spatial discretisation of
   ! the given PDE.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
   ! about the projection of all the equations described by RspatialDiscr.
-  type(t_interlevelProjectionBlock), intent(OUT) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(out) :: rprojection 
 !</output>
   
 !</subroutine>
@@ -546,13 +546,13 @@ contains
 !<input>
   ! A matrix containing information about the spatial discretisation of
   ! the given PDE.
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
   
 !<output>
   ! A t_interlevelProjectionBlock structure that will be filled with data
   ! about the projection of all the equations described by RspatialDiscr.
-  type(t_interlevelProjectionBlock), intent(OUT) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(out) :: rprojection 
 !</output>
   
 !</subroutine>
@@ -603,7 +603,7 @@ contains
   
 !<inputoutput>
   ! The t_interlevelProjectionBlock structure which is to be cleaned up.
-  type(t_interlevelProjectionBlock), intent(INOUT) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(inout) :: rprojection 
 !</inputoutput>
   
 !</subroutine>
@@ -669,19 +669,19 @@ contains
   
 !<input>
   ! The t_interlevelProjectionScalar structure which is used as a template
-  type(t_interlevelProjectionScalar), intent(IN) :: rprojection 
+  type(t_interlevelProjectionScalar), intent(in) :: rprojection 
   
   ! One element distribution structure on the coarse grid
-  type(t_elementDistribution), intent(IN) :: releDistrCoarse
+  type(t_elementDistribution), intent(in) :: releDistrCoarse
 
   ! One element distribution structure on the fine grid
-  type(t_elementDistribution), intent(IN) :: releDistrFine
+  type(t_elementDistribution), intent(in) :: releDistrFine
 !</input>
 
 !<output>
   ! The t_interlevelProjectionScalar structure which configures the actual
   ! grid transfer between rdiscrCoarse and rdiscrFine.
-  type(t_interlevelProjectionScalar), intent(OUT) :: ractProjection 
+  type(t_interlevelProjectionScalar), intent(out) :: ractProjection 
 !</output>
   
 !</subroutine>
@@ -753,13 +753,13 @@ contains
   ! The t_interlevelProjectionScalar structure which configures
   ! the projection between rdiscrCoarse and rdiscrFine
   ! for each of the element distributions in rdiscrCoarse /rdiscrFine
-  type(t_interlevelProjectionScalar), dimension(:), intent(IN) :: RprojectionScalar
+  type(t_interlevelProjectionScalar), dimension(:), intent(in) :: RprojectionScalar
   
   ! The element distribution structure of the equation on the coarse grid.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscrCoarse
+  type(t_spatialDiscretisation), intent(in) :: rdiscrCoarse
 
   ! The element distribution structure of the equation on the fine grid.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscrFine
+  type(t_spatialDiscretisation), intent(in) :: rdiscrFine
 !</input>
 
 !<result>
@@ -829,13 +829,13 @@ contains
 !<input>
   ! Projection structure that configures the grid transfer for all equations
   ! and all element distributions in each equation.
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
   
   ! List of disretisation structures for the equations on the Coarse grid 
-  type(t_spatialDiscretisation), dimension(:), intent(IN) :: RdiscrCoarse
+  type(t_spatialDiscretisation), dimension(:), intent(in) :: RdiscrCoarse
 
   ! List of disretisation structures for the equations on the Fine grid 
-  type(t_spatialDiscretisation), dimension(:), intent(IN) :: RdiscrFine
+  type(t_spatialDiscretisation), dimension(:), intent(in) :: RdiscrFine
 !</input>
 
 !<result>
@@ -894,15 +894,15 @@ contains
 !<input>
   ! Projection structure that configures the grid transfer for all equations
   ! and all element distributions in each equation.
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
   
   ! Coarse grid vector. Must have the discretisation structure of the
   ! coarse grid attached.
-  type(t_vectorBlock), intent(IN) :: rvectorCoarse
+  type(t_vectorBlock), intent(in) :: rvectorCoarse
 
   ! Fine grid vector. Must have the discretisation structure of the
   ! Fine grid attached.
-  type(t_vectorBlock), intent(IN) :: rvectorFine
+  type(t_vectorBlock), intent(in) :: rvectorFine
 !</input>
 
 !<result>
@@ -958,15 +958,15 @@ contains
 !<input>
   ! Projection structure that configures the grid transfer for all equations
   ! and all element distributions in each equation.
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
   
   ! Coarse grid matrix. Must have the discretisation structure of the
   ! coarse grid attached.
-  type(t_matrixBlock), intent(IN) :: rmatrixCoarse
+  type(t_matrixBlock), intent(in) :: rmatrixCoarse
 
   ! Fine grid matrix. Must have the discretisation structure of the
   ! Fine grid attached.
-  type(t_matrixBlock), intent(IN) :: rmatrixFine
+  type(t_matrixBlock), intent(in) :: rmatrixFine
 !</input>
 
 !<result>
@@ -1055,10 +1055,10 @@ contains
   
 !<input>
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
 
   ! Coarse grid vector
-  type(t_vectorBlock), intent(INOUT) :: rcoarseVector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
 !</input>
   
 !<inputoutput>
@@ -1069,12 +1069,12 @@ contains
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  type(t_vectorScalar), intent(INOUT) :: rtempVector
+  type(t_vectorScalar), intent(inout) :: rtempVector
 !</inputoutput>
 
 !<output>
   ! Fine grid vector
-  type(t_vectorBlock), intent(INOUT) :: rfineVector
+  type(t_vectorBlock), intent(inout) :: rfineVector
 !</output>
   
 !</subroutine>
@@ -1531,10 +1531,10 @@ contains
   
 !<input>
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
   
   ! Fine grid vector
-  type(t_vectorBlock), intent(INOUT) :: rfineVector
+  type(t_vectorBlock), intent(inout) :: rfineVector
 !</input>
   
 !<inputoutput>
@@ -1545,10 +1545,10 @@ contains
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  type(t_vectorScalar), intent(INOUT) :: rtempVector
+  type(t_vectorScalar), intent(inout) :: rtempVector
 
   ! Coarse grid vector
-  type(t_vectorBlock), intent(INOUT) :: rcoarseVector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
 !</inputoutput>
   
 !</subroutine>
@@ -2018,10 +2018,10 @@ contains
 !<input>
   
   ! The t_interlevelProjectionBlock structure that configures the grid transfer
-  type(t_interlevelProjectionBlock), intent(IN) :: rprojection 
+  type(t_interlevelProjectionBlock), intent(in) :: rprojection 
   
   ! Fine grid vector
-  type(t_vectorBlock), intent(IN) :: rfineVector
+  type(t_vectorBlock), intent(in) :: rfineVector
 !</input>
   
 !<inputoutput>
@@ -2032,10 +2032,10 @@ contains
   ! The vector does not have to be connected to a discretisation structure
   ! or something similar; the content is undefined at entry and will be
   ! undefined when leaving this routine.
-  type(t_vectorScalar), intent(INOUT) :: rtempVector
+  type(t_vectorScalar), intent(inout) :: rtempVector
 
   ! Coarse grid vector
-  type(t_vectorBlock), intent(INOUT) :: rcoarseVector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
 !</inputoutput>
   
 !</subroutine>
@@ -2312,21 +2312,21 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemFine
+  integer, dimension(:,:), intent(in) :: IvertsAtElemFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -2372,21 +2372,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
 
   ! IverticesAtElement array (KVERT) on the caorse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemFine
+  integer, dimension(:,:), intent(in) :: IvertsAtElemFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2432,15 +2432,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2469,21 +2469,21 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
 
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -2537,21 +2537,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
 
   ! IverticesAtElement array (KVERT) on the caorse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2607,18 +2607,18 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2650,30 +2650,30 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemFine
+  integer, dimension(:,:), intent(in) :: IvertsAtElemFine
   
   ! DvertexCoords array (DCORVG) on the coarse grid
-  real(DP), dimension(:,:), intent(IN) :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in) :: DvertexCoordsCoarse
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
   
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -2740,30 +2740,30 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
 
   ! IverticesAtElement array (KVERT) on the caorse grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemCoarse
+  integer, dimension(:,:), intent(in) :: IvertsAtElemCoarse
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IvertsAtElemFine
+  integer, dimension(:,:), intent(in) :: IvertsAtElemFine
   
   ! DvertexCoords array (DCORVG) on the coarse grid
-  real(DP), dimension(:,:), intent(IN) :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in) :: DvertexCoordsCoarse
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
   
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2831,18 +2831,18 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
   
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -2951,24 +2951,24 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -3020,24 +3020,24 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3082,15 +3082,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3122,36 +3122,36 @@ contains
   
 !<input>  
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! IedgesAtElement array (KMID) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
 
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
   
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -3409,37 +3409,37 @@ contains
   
 !<input>  
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! IedgesAtElement array (KMID) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
 
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
   
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3677,18 +3677,18 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3719,18 +3719,18 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -3778,18 +3778,18 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3833,18 +3833,18 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -3896,36 +3896,36 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtEdge array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtEdgeCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtEdgeCoarse
 
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
 !  ! IverticesAtElement array (KVERT) on the fine grid
-!  INTEGER, DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+!  INTEGER, DIMENSION(:,:), INTENT(in) :: IverticesAtElementFine
 !  
 !  ! IneighboursAtElement array on the coarse grid
-!  INTEGER, DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementCoarse
+!  INTEGER, DIMENSION(:,:), INTENT(in) :: IneighboursAtElementCoarse
 !  
 !  ! IneighboursAtElement array on the fine grid
-!  INTEGER, DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+!  INTEGER, DIMENSION(:,:), INTENT(in) :: IneighboursAtElementFine
 
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -4021,37 +4021,37 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtEdge array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtEdgeCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtEdgeCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
 ! 'old' parameters
 !  ! IverticesAtElement array (KVERT) on the fine grid
-!  INTEGER, DIMENSION(:,:), INTENT(IN) :: IverticesAtElementFine
+!  INTEGER, DIMENSION(:,:), INTENT(in) :: IverticesAtElementFine
 !  
 !  ! IneighboursAtElement array on the coarse grid
-!  INTEGER, DIMENSION(:,:), INTENT(IN) :: IneighboursAtElementFine
+!  INTEGER, DIMENSION(:,:), INTENT(in) :: IneighboursAtElementFine
 !  
 !  ! Number of elements in the fine grid
-!  INTEGER, INTENT(IN) :: NELfine
+!  INTEGER, INTENT(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4146,30 +4146,30 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -4263,21 +4263,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4334,30 +4334,30 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4433,15 +4433,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4470,30 +4470,30 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtElement array (KVERT) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
+  integer, dimension(:,:), intent(in) :: IverticesAtElementFine
 
   ! IedgesAtElement array (KMID) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of vertices on the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 
   ! Number of edges in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -4575,39 +4575,39 @@ contains
 
 !<input>  
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
 
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array (KMID) on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of vertices in the fine grid
-  integer, intent(IN) :: NVTfine
+  integer, intent(in) :: NVTfine
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4732,21 +4732,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4776,21 +4776,21 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -4887,21 +4887,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -4959,21 +4959,21 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -5031,27 +5031,27 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -5191,31 +5191,31 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
 
   ! DvertexCoords array on the coarse grid
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
-  real(DP), dimension(:), intent(IN)                  :: DelementAreaCoarse
+  real(DP), dimension(:), intent(in)                  :: DelementAreaCoarse
 
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
   
   ! Type of the averaging on the element edges
   ! <=0: standard averaging of both contributions by 1/2,        
@@ -5225,23 +5225,23 @@ contains
   !  =2: weighted averaging of the interpolated function values:
   !      The area of the neightbour element of the coarse grid 
   !      the weight. 
-  integer, intent(IN)  :: iweightingType
+  integer, intent(in)  :: iweightingType
   
   ! Upper bound aspect ratio; for all elements with higher AR
   ! the prolongation is switched to constant prolongation 
-  real(DP), intent(IN) :: daspectRatioBound
+  real(DP), intent(in) :: daspectRatioBound
   
   ! Aspect-ratio indicator.
   ! Controls switching to constant prolongation.
   ! <=1: switch depending on aspect ratio of current element,
   !  =2: switch depending on aspect ratio of current element and
   !      neighbour element
-  integer, intent(IN)  :: iarIndicator
+  integer, intent(in)  :: iarIndicator
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -5519,27 +5519,27 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
 
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -5706,31 +5706,31 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! DvertexCoords array on the coarse grid
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
-  real(DP), dimension(:), intent(IN)                  :: DelementAreaCoarse
+  real(DP), dimension(:), intent(in)                  :: DelementAreaCoarse
 
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
 
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Type of the averaging on the element edges
   ! <=0: standard averaging of both contributions by 1/2,        
@@ -5740,23 +5740,23 @@ contains
   !  =2: weighted averaging of the interpolated function values:
   !      The area of the neightbour element of the coarse grid 
   !      the weight. 
-  integer, intent(IN)  :: iweightingType
+  integer, intent(in)  :: iweightingType
   
   ! Upper bound aspect ratio; for all elements with higher AR
   ! the prolongation is switched to constant prolongation 
-  real(DP), intent(IN) :: daspectRatioBound
+  real(DP), intent(in) :: daspectRatioBound
   
   ! Aspect-ratio indicator.
   ! Controls switching to constant prolongation.
   ! <=1: switch depending on aspect ratio of current element,
   !  =2: switch depending on aspect ratio of current element and
   !      neighbour element
-  integer, intent(IN)  :: iarIndicator
+  integer, intent(in)  :: iarIndicator
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -6023,27 +6023,27 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
 
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -6186,27 +6186,27 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -6346,31 +6346,31 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
 
   ! DvertexCoords array on the coarse grid
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
-  real(DP), dimension(:), intent(IN)                  :: DelementAreaCoarse
+  real(DP), dimension(:), intent(in)                  :: DelementAreaCoarse
 
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
   
   ! Type of the averaging on the element edges
   ! <=0: standard averaging of both contributions by 1/2,        
@@ -6380,23 +6380,23 @@ contains
   !  =2: weighted averaging of the interpolated function values:
   !      The area of the neightbour element of the coarse grid 
   !      the weight. 
-  integer, intent(IN)  :: iweightingType
+  integer, intent(in)  :: iweightingType
   
   ! Upper bound aspect ratio; for all elements with higher AR
   ! the prolongation is switched to constant prolongation 
-  real(DP), intent(IN) :: daspectRatioBound
+  real(DP), intent(in) :: daspectRatioBound
   
   ! Aspect-ratio indicator.
   ! Controls switching to constant prolongation.
   ! <=1: switch depending on aspect ratio of current element,
   !  =2: switch depending on aspect ratio of current element and
   !      neighbour element
-  integer, intent(IN)  :: iarIndicator
+  integer, intent(in)  :: iarIndicator
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -6673,27 +6673,27 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
 
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -6860,31 +6860,31 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! DvertexCoords array on the coarse grid
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoordsCoarse
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoordsCoarse
 
   ! IverticesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
   
   ! DelementArea array on the coarse grid
-  real(DP), dimension(:), intent(IN)                  :: DelementAreaCoarse
+  real(DP), dimension(:), intent(in)                  :: DelementAreaCoarse
 
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
 
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Type of the averaging on the element edges
   ! <=0: standard averaging of both contributions by 1/2,        
@@ -6894,23 +6894,23 @@ contains
   !  =2: weighted averaging of the interpolated function values:
   !      The area of the neightbour element of the coarse grid 
   !      the weight. 
-  integer, intent(IN)  :: iweightingType
+  integer, intent(in)  :: iweightingType
   
   ! Upper bound aspect ratio; for all elements with higher AR
   ! the prolongation is switched to constant prolongation 
-  real(DP), intent(IN) :: daspectRatioBound
+  real(DP), intent(in) :: daspectRatioBound
   
   ! Aspect-ratio indicator.
   ! Controls switching to constant prolongation.
   ! <=1: switch depending on aspect ratio of current element,
   !  =2: switch depending on aspect ratio of current element and
   !      neighbour element
-  integer, intent(IN)  :: iarIndicator
+  integer, intent(in)  :: iarIndicator
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -7176,15 +7176,15 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -7229,15 +7229,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -7286,15 +7286,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -7347,33 +7347,33 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IverticesAtEdge array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtEdgeCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtEdgeCoarse
   
   ! IverticesAtFace array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtFaceCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtFaceCoarse
 
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of faces in the coarse grid
-  integer, intent(IN) :: NATcoarse
+  integer, intent(in) :: NATcoarse
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -7436,33 +7436,33 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IverticesAtEdge array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtEdgeCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtEdgeCoarse
   
   ! IverticesAtFace array on the coarse grid.
-  integer, dimension(:,:), intent(IN) :: IverticesAtFaceCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtFaceCoarse
 
   ! IverticesAtElement array (KVERT) on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
 
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 
   ! Number of edges in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of faces in the coarse grid
-  integer, intent(IN) :: NATcoarse
+  integer, intent(in) :: NATcoarse
   
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -7545,15 +7545,15 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! Number of vertices in the coarse grid
-  integer, intent(IN) :: NVTcoarse
+  integer, intent(in) :: NVTcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -7583,30 +7583,30 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IfacesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IfacesAtElementCoarse
   
   ! IfacesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementFine
+  integer, dimension(:,:), intent(in) :: IfacesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
   
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: celement
+  integer(I32), intent(in) :: celement
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -7837,30 +7837,30 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IfacesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IfacesAtElementCoarse
   
   ! IfacesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementFine
+  integer, dimension(:,:), intent(in) :: IfacesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
 
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: celement
+  integer(I32), intent(in) :: celement
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -8061,30 +8061,30 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IfacesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IfacesAtElementCoarse
   
   ! IfacesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IfacesAtElementFine
+  integer, dimension(:,:), intent(in) :: IfacesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
 
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Element type to use for prolongation
-  integer(I32), intent(IN) :: celement
+  integer(I32), intent(in) :: celement
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -8265,39 +8265,39 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -8469,39 +8469,39 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -8664,39 +8664,39 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -8861,42 +8861,42 @@ contains
   
 !<input>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(IN) :: DuCoarse
+  real(DP), dimension(:), intent(in) :: DuCoarse
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Fine grid vector
-  real(DP), dimension(:), intent(OUT) :: DuFine
+  real(DP), dimension(:), intent(out) :: DuFine
 !</output>
   
 !</subroutine>
@@ -9099,42 +9099,42 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -9330,42 +9330,42 @@ contains
   
 !<input>
   ! Fine grid vector
-  real(DP), dimension(:), intent(IN) :: DuFine
+  real(DP), dimension(:), intent(in) :: DuFine
   
   ! IedgesAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IedgesAtElementCoarse
   
   ! IedgesAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IedgesAtElementFine
+  integer, dimension(:,:), intent(in) :: IedgesAtElementFine
 
   ! IneighboursAtElement array on the coarse grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
   
   ! IneighboursAtElement array on the fine grid
-  integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
+  integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
   
   ! ItwistIndexEdges array on the coarse grid
-  integer(I32), dimension(:), intent(IN) :: ItwistCoarse
+  integer(I32), dimension(:), intent(in) :: ItwistCoarse
 
   ! ItwistIndexEdges array on the fine grid
-  integer(I32), dimension(:), intent(IN) :: ItwistFine
+  integer(I32), dimension(:), intent(in) :: ItwistFine
   
   ! Number of egdes in the coarse grid
-  integer, intent(IN) :: NMTcoarse
+  integer, intent(in) :: NMTcoarse
   
   ! Number of egdes in the fine grid
-  integer, intent(IN) :: NMTfine
+  integer, intent(in) :: NMTfine
 
   ! Number of elements in the coarse grid
-  integer, intent(IN) :: NELcoarse
+  integer, intent(in) :: NELcoarse
 
   ! Number of elements in the fine grid
-  integer, intent(IN) :: NELfine
+  integer, intent(in) :: NELfine
 !</input>
   
 !<output>
   ! Coarse grid vector
-  real(DP), dimension(:), intent(OUT) :: DuCoarse
+  real(DP), dimension(:), intent(out) :: DuCoarse
 !</output>
   
 !</subroutine>
@@ -9544,15 +9544,15 @@ contains
   
 !<input>
   ! The 2-Level-Mass matrix
-  type(t_matrixScalar), intent(IN) :: r2LvlMass
+  type(t_matrixScalar), intent(in) :: r2LvlMass
 
   ! The mass matrix of the fine grid
-  type(t_matrixScalar), intent(IN) :: rmass
+  type(t_matrixScalar), intent(in) :: rmass
 !</input>
 
 !<inputoutput>
   ! The scalar projection structure for which the matrices are to be set.
-  type(t_interlevelProjectionScalar), intent(INOUT) :: rprojection 
+  type(t_interlevelProjectionScalar), intent(inout) :: rprojection 
 !</inputout>
 
 !</subroutine>
@@ -9614,18 +9614,18 @@ contains
   
 !<input>
   ! The t_interlevelProjectionScalar structure that configures the grid transfer
-  type(t_interlevelProjectionScalar), intent(IN) :: rprojection 
+  type(t_interlevelProjectionScalar), intent(in) :: rprojection 
 
   ! Coarse grid vector
-  type(t_vectorScalar), intent(INOUT) :: rcoarseVector
+  type(t_vectorScalar), intent(inout) :: rcoarseVector
   
   ! Temporary vector
-  type(t_vectorScalar), intent(INOUT) :: rtempVector
+  type(t_vectorScalar), intent(inout) :: rtempVector
 !</input>
 
 !<output>
   ! Fine grid vector
-  type(t_vectorScalar), intent(INOUT) :: rfineVector
+  type(t_vectorScalar), intent(inout) :: rfineVector
 !</output>
   
 !</subroutine>
@@ -9679,18 +9679,18 @@ contains
   
 !<input>
   ! The t_interlevelProjectionScalar structure that configures the grid transfer
-  type(t_interlevelProjectionScalar), intent(IN) :: rprojection 
+  type(t_interlevelProjectionScalar), intent(in) :: rprojection 
 
   ! Fine grid vector
-  type(t_vectorScalar), intent(INOUT) :: rfineVector
+  type(t_vectorScalar), intent(inout) :: rfineVector
   
   ! Temporary vector
-  type(t_vectorScalar), intent(INOUT) :: rtempVector
+  type(t_vectorScalar), intent(inout) :: rtempVector
 !</input>
 
 !<output>
   ! Coarse grid vector
-  type(t_vectorScalar), intent(INOUT) :: rcoarseVector
+  type(t_vectorScalar), intent(inout) :: rcoarseVector
 !</output>
   
 !</subroutine>
@@ -9789,16 +9789,16 @@ contains
   
 !<input>
   ! The prolongation matrix
-  type(t_matrixScalar), intent(IN) :: rmatrixProl
+  type(t_matrixScalar), intent(in) :: rmatrixProl
   
   ! OPTIONAL: The interpolation matrix. If given, the interpolation matrix
   ! is assumed to be stored transposed!
-  type(t_matrixScalar), optional, intent(IN) :: rmatrixInterp
+  type(t_matrixScalar), optional, intent(in) :: rmatrixInterp
 !</input>
 
 !<inputoutput>
   ! The scalar projection structure for which the matrix is to be set.
-  type(t_interlevelProjectionScalar), intent(INOUT) :: rprojection 
+  type(t_interlevelProjectionScalar), intent(inout) :: rprojection 
 !</inputout>
 
 !</subroutine>

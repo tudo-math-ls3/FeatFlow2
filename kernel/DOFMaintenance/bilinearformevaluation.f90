@@ -364,31 +364,31 @@ contains
   ! If rdiscretisationTest is not specified, this also specifies
   ! the discretisation of the test functions, this test and trial
   ! functions coincide.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
   
   ! Format of the matrix structure to be created. One of the LSYSSC_xxxx
   ! constants.
-  integer, intent(IN) :: iformat
+  integer, intent(in) :: iformat
 
   ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
-  integer, intent(IN), optional      :: cconstrType
+  integer, intent(in), optional      :: cconstrType
 
   ! OPTIONAL: The underlying discretisation structure for the test functions.
   ! If not specified, the trial functions coincide with the test functions.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisationTest
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationTest
 
   ! OPTIONAL: An initial guess about how much memory the matrix needs. If set 
   ! to 0 or not given, an initial guess of 16*NEQ (but at least 10000 matrix 
   ! entries) is assumed.
-  integer, intent(IN), optional :: imemGuess
+  integer, intent(in), optional :: imemGuess
 !</input>
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo the structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(OUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrixScalar
 !</output>
 
 !</subroutine>
@@ -514,16 +514,16 @@ contains
 
 !<input>
   ! The bilinear form specifying the underlying PDE of the discretisation.
-  type(t_bilinearForm), intent(IN) :: rform
+  type(t_bilinearForm), intent(in) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -533,7 +533,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -682,22 +682,22 @@ contains
   ! If rdiscretisationTrial is not specified, this also specifies
   ! the discretisation of the trial functions, this test and trial
   ! functions coincide.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
   
   ! OPTIONAL: The underlying discretisation structure for the trial functions.
   ! If not specified, the trial functions coincide with the test functions.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisationTest
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationTest
 
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer, intent(IN) :: imemGuess
+  integer, intent(in) :: imemGuess
   
 !</input>
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo rthe structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(OUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrixScalar
 !</output>
 
 !</subroutine>
@@ -1426,22 +1426,22 @@ contains
   ! If rdiscretisationTest is not specified, this also specifies
   ! the discretisation of the test functions, this test and trial
   ! functions coincide.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisationTrial
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisationTrial
   
   ! OPTIONAL: The underlying discretisation structure for the test functions.
   ! If not specified, the trial functions coincide with the test functions.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisationTest
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationTest
   
   ! An initial guess about how much memory the matrix needs. If set to 0,
   ! an initial guess of 16*NEQ (but at least 10000 matrix entries) is assumed.
-  integer, intent(IN) :: imemGuess
+  integer, intent(in) :: imemGuess
 
 !</input>
 
 !<output>
   ! The structure of a scalar matrix, fitting to the given discretisation.
   ! Memory fo rthe structure is allocated dynamically on the heap.
-  type(t_matrixScalar), intent(OUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(out) :: rmatrixScalar
 !</output>
 
 !</subroutine>
@@ -2222,19 +2222,19 @@ contains
 !!<input>
 !  ! The underlying discretisation structure which is to be used to
 !  ! create the matrix.
-!  TYPE(t_spatialDiscretisation), INTENT(IN), TARGET :: rdiscretisation
+!  TYPE(t_spatialDiscretisation), INTENT(in), TARGET :: rdiscretisation
 !  
 !  ! The bilinear form specifying the underlying PDE of the discretisation.
-!  TYPE(t_bilinearForm), INTENT(IN) :: rform
+!  TYPE(t_bilinearForm), INTENT(in) :: rform
 !  
 !  ! Whether to clear the matrix before calculating the entries.
 !  ! If .FALSE., the new matrix entries are added to the existing entries.
-!  LOGICAL, INTENT(IN) :: bclear
+!  LOGICAL, INTENT(in) :: bclear
 !  
 !  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
 !  ! callback function for nonconstant coefficients to provide additional
 !  ! information. 
-!  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+!  TYPE(t_collection), INTENT(inout), TARGET, OPTIONAL :: rcollection
 !  
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
@@ -2244,7 +2244,7 @@ contains
 !
 !!<inputoutput>
 !  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-!  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrixScalar
 !!</inputoutput>
 !
 !!</subroutine>
@@ -3042,16 +3042,16 @@ contains
 !
 !!<input>
 !  ! The bilinear form specifying the underlying PDE of the discretisation.
-!  TYPE(t_bilinearForm), INTENT(IN) :: rform
+!  TYPE(t_bilinearForm), INTENT(in) :: rform
 !  
 !  ! Whether to clear the matrix before calculating the entries.
 !  ! If .FALSE., the new matrix entries are added to the existing entries.
-!  LOGICAL, INTENT(IN) :: bclear
+!  LOGICAL, INTENT(in) :: bclear
 !  
 !  ! OPTIONAL: A pointer to a collection structure. This structure is given to the
 !  ! callback function for nonconstant coefficients to provide additional
 !  ! information. 
-!  TYPE(t_collection), INTENT(INOUT), TARGET, OPTIONAL :: rcollection
+!  TYPE(t_collection), INTENT(inout), TARGET, OPTIONAL :: rcollection
 !  
 !  ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
 !  ! Must be present if the matrix has nonconstant coefficients!
@@ -3061,7 +3061,7 @@ contains
 !
 !!<inputoutput>
 !  ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-!  TYPE(t_matrixScalar), INTENT(INOUT) :: rmatrixScalar
+!  TYPE(t_matrixScalar), INTENT(inout) :: rmatrixScalar
 !!</inputoutput>
 !
 !!</subroutine>
@@ -3955,16 +3955,16 @@ contains
 
 !<input>
   ! The bilinear form specifying the underlying PDE of the discretisation.
-  type(t_bilinearForm), intent(IN) :: rform
+  type(t_bilinearForm), intent(in) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -3974,7 +3974,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -5241,7 +5241,7 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
 !</inputoutput>
   
@@ -5716,7 +5716,7 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
   
@@ -6238,16 +6238,16 @@ contains
 
 !<input>
   ! The bilinear form specifying the underlying PDE of the discretisation.
-  type(t_bilinearForm), intent(IN) :: rform
+  type(t_bilinearForm), intent(in) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -6257,7 +6257,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -6376,24 +6376,24 @@ contains
 
 !<input>
   ! The bilinear form specifying the underlying PDE of the discretisation.
-  type(t_bilinearForm), intent(IN) :: rform
+  type(t_bilinearForm), intent(in) :: rform
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -6403,7 +6403,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>

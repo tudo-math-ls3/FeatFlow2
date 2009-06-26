@@ -278,7 +278,7 @@ contains
 !<input>
 
   !boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
 !</input>
   
@@ -307,16 +307,16 @@ contains
   !<input>
 
   ! boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   ! boundary index
   integer :: iboundCompIdx
 
   !start parameter value
-  real(DP), intent(IN) :: dt1
+  real(DP), intent(in) :: dt1
 
   !end parameter value
-  real(DP), intent(IN) :: dt2
+  real(DP), intent(in) :: dt2
   
   !</input>
   
@@ -407,14 +407,14 @@ contains
 !<input>
 
   ! boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   ! index of boundary component
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
   
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-  integer, intent(IN), optional :: cparType
+  integer, intent(in), optional :: cparType
   
 !</input>
   
@@ -471,10 +471,10 @@ contains
 !<input>
 
   !boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   !index of boundary component
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
   
 !</input>
   
@@ -514,12 +514,12 @@ contains
 
 !<input>
   ! The name of the .prm file to read.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
 ! </input>
   
 !<output>
   ! Boundary structure, to be filled with data
-  type(t_boundary), intent(OUT) :: rboundary
+  type(t_boundary), intent(out) :: rboundary
 !</output>
   
 !</subroutine>
@@ -804,7 +804,7 @@ contains
 
 !<inputoutput>
   ! Boundary structure, to be released.
-  type(t_boundary), intent(INOUT) :: rboundary
+  type(t_boundary), intent(inout) :: rboundary
 !</inputoutput>
   
 !</subroutine>
@@ -865,22 +865,22 @@ contains
 
 !<input>
   ! Segment-count array
-  integer, dimension(:), intent(IN) :: IsegCount
+  integer, dimension(:), intent(in) :: IsegCount
 
   ! Array wirth maximum parameter values for all BC's
-  real(DP), dimension(:), intent(IN) :: DmaxPar
+  real(DP), dimension(:), intent(in) :: DmaxPar
   
   ! Number of the boundary component that is under consideration
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
   
   ! Type of parametrisation, format of dpar (0-1, length par.,...)
-  integer, intent(IN) :: cpar
+  integer, intent(in) :: cpar
 !</input>
 
 !<inputoutput>
   ! Parameter value to be normalised. Is replaced by the normalised
   ! parameter value.
-  real(DP), intent(INOUT) :: dpar
+  real(DP), intent(inout) :: dpar
 !</inputoutput>
 
 !</subroutine>
@@ -921,55 +921,55 @@ contains
 
 !<input>
     ! Integer segment array for segment counter
-    integer, dimension(:), intent(IN) :: IsegCount
+    integer, dimension(:), intent(in) :: IsegCount
 
     ! Double precision array defining the maximum parameter values
     ! of each boundary component
-    real(DP), dimension(:), intent(IN) :: DmaxPar
+    real(DP), dimension(:), intent(in) :: DmaxPar
 
     ! Integer segment info array
-    integer, dimension(:), intent(IN) :: IsegInfo
+    integer, dimension(:), intent(in) :: IsegInfo
     
     ! Double precision segment info array
-    real(DP), dimension(:), intent(IN) :: DsegInfo
+    real(DP), dimension(:), intent(in) :: DsegInfo
     
     ! Number of the boundary component
-    integer, intent(IN) :: iboundCompIdx
+    integer, intent(in) :: iboundCompIdx
     
     ! Parameter value of the point of interest
-    real(DP), intent(IN) :: dpar
+    real(DP), intent(in) :: dpar
     
     ! Type of parametrisation of dpar (BDR_PAR_01, BDR_PAR_LENGTH,...)
-    integer, intent(IN) :: cparType
+    integer, intent(in) :: cparType
     
     ! How to orient if the boundary segment is not unique (e.g. on
     ! corner points of the discretisation).
     ! =0: return the segment following the point
     ! =1: return the segment previous to the point
-    integer, intent(IN) :: iorientation
+    integer, intent(in) :: iorientation
 !</input>
 
 !<output>
     ! Segment number (0,1,2,...) of the segment that contains dpar
-    integer, intent(OUT) :: iseg
+    integer, intent(out) :: iseg
 
     ! Start index of the segment in IsegInfo that contains dpar
-    integer, intent(OUT) :: istartidx
+    integer, intent(out) :: istartidx
     
     ! Start parameter value of the segment that contains dpar
-    real(DP), intent(OUT) :: dcurrentpar
+    real(DP), intent(out) :: dcurrentpar
 
     ! End parameter value of the segment that contains dpar
-    real(DP), intent(OUT) :: dendpar
+    real(DP), intent(out) :: dendpar
     
     ! Segment length of the segment that contains dpar
-    real(DP), intent(OUT) :: dseglength
+    real(DP), intent(out) :: dseglength
     
     ! Local parameter value of dpar inside of the segment
-    real(DP), intent(OUT) :: dparloc
+    real(DP), intent(out) :: dparloc
 
     ! Type of the segment
-    integer, intent(OUT) :: isegtype
+    integer, intent(out) :: isegtype
 !</output>
 
 !</subroutine>
@@ -1089,27 +1089,27 @@ contains
 !<input>
 
   !boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   !index of boundary component
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
 
   !parametric value of boundary point
-  real(DP), intent(IN) :: dt
+  real(DP), intent(in) :: dt
   
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-  integer, intent(IN), optional :: cparType
+  integer, intent(in), optional :: cparType
   
 !</input>
 
 !<output>
 
   !x-coordinate of boundary point
-  real(DP), intent(OUT) :: dx
+  real(DP), intent(out) :: dx
 
   !y-coordinate of boundary point
-  real(DP), intent(OUT) :: dy
+  real(DP), intent(out) :: dy
     
 !</output>
 
@@ -1229,21 +1229,21 @@ contains
 !<input>
 
   ! boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   ! index of boundary component
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
 
   ! parameter value of boundary point
-  real(DP), intent(IN) :: dt
+  real(DP), intent(in) :: dt
   
   ! Type of parametrisation of DT.
   ! One of the BDR_PAR_xxxx constants. 
-  integer, intent(IN) :: cparTypeSource
+  integer, intent(in) :: cparTypeSource
 
   ! Type of parametrisation, DT should be converted to.
   ! One of the BDR_PAR_xxxx constants. 
-  integer, intent(IN) :: cparTypeDest
+  integer, intent(in) :: cparTypeDest
   
 !</input>
 
@@ -1394,30 +1394,30 @@ contains
 !<input>
 
   ! boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   ! index of boundary component
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
 
   ! An array with parameter values of boundary points that should be converted.
   ! Parameter values < 0 are not converted. Parameter values > maximum parameter
   ! value are mapped to the range 0..maximum parameter value.
-  real(DP), dimension(:), intent(IN) :: DparSource
+  real(DP), dimension(:), intent(in) :: DparSource
 
   ! Type of parametrisation of DparSource.
   ! One of the BDR_PAR_xxxx constants. 
-  integer, intent(IN) :: cparTypeSource
+  integer, intent(in) :: cparTypeSource
 
   ! Type of parametrisation, DT should be converted to.
   ! One of the BDR_PAR_xxxx constants. 
-  integer, intent(IN) :: cparTypeDest
+  integer, intent(in) :: cparTypeDest
   
 !</input>
 
 !<inputoutput>
   ! Destinatino array where to write the converted parameter values to.
   ! May coincide with DparSource.
-  real(DP), dimension(:), intent(INOUT) :: DparDest
+  real(DP), dimension(:), intent(inout) :: DparDest
 !</inputoutput>
 
 !</subroutine>
@@ -1574,25 +1574,25 @@ contains
 !<input>
 
   ! boundary structure
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
 
   ! Index of boundary component.
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
 
   ! Index of the boundary segment.
   ! =0: Create a boundary region that covers the whole boundary component.
-  integer, intent(IN) :: iboundSegIdx
+  integer, intent(in) :: iboundSegIdx
   
 !</input>
 
 !<output>
 
   ! Boundary region that is characterised by the boundary segment
-  type(t_boundaryRegion), intent(OUT) :: rregion
+  type(t_boundaryRegion), intent(out) :: rregion
   
   ! OPTIONAL: Type of parametrisation to use.
   ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-  integer, intent(IN), optional :: cparType
+  integer, intent(in), optional :: cparType
 
 !</output>
   
@@ -1707,17 +1707,17 @@ contains
 
 !<input>
   ! A boundary region structure describing a part of a boundary
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
 
   ! The number of the boundary component of the point.
-  integer, intent(IN) :: iboundCompIdx
+  integer, intent(in) :: iboundCompIdx
   
   ! The parameter value of the point to be checked.
   ! Must be in the range 0..max. par. value.
   ! Points with negative parameer values are not in the region by definition.
   ! The parametrisation type (0-1 or length parametrisation) must match 
   ! the parametrisation in the boundary region rregion!
-  real(DP), intent(IN) :: dparam
+  real(DP), intent(in) :: dparam
 !</input>
 
 !<result>
@@ -1814,10 +1814,10 @@ contains
 
 !<input>
   ! Boundary structure, the boundary region should refer to
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
   ! The boundary reg8ion structure which length is to be computed
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
 !</input>
 
 !<result>
@@ -1872,13 +1872,13 @@ contains
 !<input>
 
     ! boundary structure
-    type(t_boundary), intent(IN) :: rboundary
+    type(t_boundary), intent(in) :: rboundary
 
     ! index of boundary component
-    integer, intent(IN) :: iboundCompIdx
+    integer, intent(in) :: iboundCompIdx
     
     ! parametric value of boundary point
-    real(DP), intent(IN) :: dt
+    real(DP), intent(in) :: dt
     
     ! OPTIONAL: For points with non-unique normal vectors, this decides
     ! how to calculate the normal vector. One of the BDR_NORMAL_xxxx
@@ -1889,21 +1889,21 @@ contains
     !   in the limit when appoximating dt by 0->dt).
     ! BDR_NORMAL_RIGHT calculates the 'right' normal vector (which arises
     !   in the limit when approximating dt by dtmax->dt).
-    integer, intent(IN), optional :: cnormalMean
+    integer, intent(in), optional :: cnormalMean
     
     ! OPTIONAL: Type of parametrisation to use.
     ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-    integer, intent(IN), optional :: cparType
+    integer, intent(in), optional :: cparType
   
 !</input>
 
 !<output>
 
     !x-coordinate of normal vector
-    real(DP), intent(OUT) :: dnx
+    real(DP), intent(out) :: dnx
     
     !y-coordinate of normal vector
-    real(DP), intent(OUT) :: dny
+    real(DP), intent(out) :: dny
     
 !</output>
 
@@ -2018,29 +2018,29 @@ contains
     !<input>
     
     ! Segment type
-    integer, intent(IN) :: isegType
+    integer, intent(in) :: isegType
     
     ! Type of the parameter value (0-1, length par.,...)
-    integer, intent(IN) :: cpar
+    integer, intent(in) :: cpar
     
     ! Local parameter value of the point in the boundary segment
-    real(DP), intent(IN) :: dparLoc
+    real(DP), intent(in) :: dparLoc
     
     ! Length of the segment
-    real(DP), intent(IN) :: dseglength
+    real(DP), intent(in) :: dseglength
     
     ! Start index of the segment in DsegInfo
-    integer, intent(IN) :: istartIdx
+    integer, intent(in) :: istartIdx
     
     ! Double precision segment info array
-    real(DP), dimension(:), intent(IN) :: DsegInfo
+    real(DP), dimension(:), intent(in) :: DsegInfo
     
     !</input>
     
     !<output>
     
     ! Normal vector
-    real(DP), intent(OUT) :: dnx,dny
+    real(DP), intent(out) :: dnx,dny
     
     !</output>
     

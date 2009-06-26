@@ -312,17 +312,17 @@ contains
 
 !<input>
     ! Total number of vertices that should be stored in the octree
-    integer, intent(IN) :: nnvt
+    integer, intent(in) :: nnvt
 
     ! Total number of nodes that should be stored in the octree
-    integer, intent(IN) :: nnnode
+    integer, intent(in) :: nnnode
 
     ! Dimensions of the initial bounding box
-    real(DP), intent(IN) :: xmin,ymin,zmin,xmax,ymax,zmax
+    real(DP), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
 
     ! OPTIONAL: Factor by which the octree should be enlarged if
     ! new storage has to be allocated
-    real(DP), intent(IN), optional :: dfactor
+    real(DP), intent(in), optional :: dfactor
 
     ! OPTIONAL: Number of data items stored per node
     integer, optional :: ndata
@@ -330,7 +330,7 @@ contains
 
 !<output>
     ! Octree structure
-    type(t_octree), intent(OUT) :: roctree
+    type(t_octree), intent(out) :: roctree
 !</output>
 !</subroutine>
     
@@ -400,7 +400,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
     
@@ -435,12 +435,12 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
     ! Handle to the coordinate vector
-    integer, intent(INOUT) :: h_Ddata
+    integer, intent(inout) :: h_Ddata
 !</inputoutput>
 !</subroutine>
 
@@ -482,12 +482,12 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
     ! Coordinate vector
-    real(DP), dimension(:,:), intent(INOUT) :: p_Ddata
+    real(DP), dimension(:,:), intent(inout) :: p_Ddata
 !</inputoutput>
 !</subroutine>
 
@@ -519,12 +519,12 @@ contains
 
 !<input>
     ! Handle to the coordinate vector
-    integer, intent(IN) :: h_Ddata
+    integer, intent(in) :: h_Ddata
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
     
@@ -551,12 +551,12 @@ contains
 
 !<input>
     ! Coordinate vector
-    real(DP), dimension(:,:), intent(IN) :: p_Ddata
+    real(DP), dimension(:,:), intent(in) :: p_Ddata
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -599,21 +599,21 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    real(DP), dimension(3), intent(IN) :: Ddata
+    real(DP), dimension(3), intent(in) :: Ddata
 
     ! OPTIONAL: Number of the node to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
-    integer, intent(IN), optional :: inode
+    integer, intent(in), optional :: inode
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
     ! Number of the inserted vertex
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -668,7 +668,7 @@ contains
     
     recursive function insert(ivt, inode) result(iresult)
 
-      integer, intent(IN) :: ivt,inode
+      integer, intent(in) :: ivt,inode
       integer :: iresult
 
       ! local variables
@@ -834,17 +834,17 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    real(DP), dimension(3), intent(IN) :: Ddata
+    real(DP), dimension(3), intent(in) :: Ddata
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
     ! Number of the vertex that is deleted
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -865,8 +865,8 @@ contains
 
     recursive function delete(inode, ivt) result(iresult)
       
-      integer, intent(IN) :: inode
-      integer, intent(OUT) :: ivt
+      integer, intent(in) :: inode
+      integer, intent(out) :: ivt
       integer :: iresult
       
       ! local variables
@@ -1016,17 +1016,17 @@ contains
 
 !<input>
     ! Number of the vertex to be deleted
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 
 !<output>
     ! Number of the vertex that replaces the deleted vertex
-    integer, intent(OUT) :: ivtReplace
+    integer, intent(out) :: ivtReplace
 !</output>
 
 !<result>
@@ -1067,21 +1067,21 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
     
     ! Coordinates that should be searched for
-    real(DP), dimension(3), intent(IN) :: Ddata
+    real(DP), dimension(3), intent(in) :: Ddata
 !</input>
 
 !<output>
     ! Number of the node in which the given coordinates are
-    integer, intent(OUT) :: inode
+    integer, intent(out) :: inode
 
     ! Position of the coordinates in the node
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 
     ! Number of the vertex the coordinates correspond to
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -1105,7 +1105,7 @@ contains
 
     recursive function search(inode, ipos, ivt) result(iresult)
       
-      integer, intent(INOUT) :: inode,ipos,ivt
+      integer, intent(inout) :: inode,ipos,ivt
       integer :: iresult
       
       
@@ -1170,13 +1170,13 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
     
     ! Coordinates
-    real(DP), dimension(3), intent(IN) :: Ddata
+    real(DP), dimension(3), intent(in) :: Ddata
 
     ! Number of node
-    integer, intent(IN) :: inode
+    integer, intent(in) :: inode
 !</input>
 
 !<result>
@@ -1246,10 +1246,10 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 
     ! filename of the output file
-    character(LEN=*), intent(IN) :: cfilename
+    character(LEN=*), intent(in) :: cfilename
 !</input>
 !</subroutine>
     
@@ -1274,8 +1274,8 @@ contains
     ! Here, the recursive print routine follows
     
     recursive subroutine print(xmin, ymin, zmin, xmax, ymax, zmax, inode)
-      real(DP), intent(IN) :: xmin,ymin,zmin,xmax,ymax,zmax
-      integer, intent(IN) :: inode
+      real(DP), intent(in) :: xmin,ymin,zmin,xmax,ymax,zmax
+      integer, intent(in) :: inode
       real(DP) :: xmid,ymid,zmid
       integer :: i,j
 
@@ -1336,7 +1336,7 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 !</input>
 !</subroutine>
 
@@ -1372,7 +1372,7 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 !</input>
 
 !<result>
@@ -1398,10 +1398,10 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 
     ! OPTIONAL: number of node for which bounding box should be returned
-    integer, intent(IN), optional :: inode
+    integer, intent(in), optional :: inode
 !</input>
 
 !<result>
@@ -1435,10 +1435,10 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 
     ! position in the octree
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<result>
@@ -1462,10 +1462,10 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 
     ! position in the octree
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<result>
@@ -1489,10 +1489,10 @@ contains
 
 !<input>
     ! Octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 
     ! position in the octree
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<result>
@@ -1519,12 +1519,12 @@ contains
 
 !<input>
     ! Source octree
-    type(t_octree), intent(IN) :: roctree
+    type(t_octree), intent(in) :: roctree
 !</input>
 
 !<inputoutput>
     ! Destination octree
-    type(t_octree), intent(INOUT) :: roctreeBackup
+    type(t_octree), intent(inout) :: roctreeBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1572,12 +1572,12 @@ contains
 
 !<input>
     ! Backup of an octree
-    type(t_octree), intent(IN) :: roctreeBackup
+    type(t_octree), intent(in) :: roctreeBackup
 !</input>
 
 !<inputoutput>
     ! Destination octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -1601,7 +1601,7 @@ contains
 
 !<inputoutput>
     ! Octree
-    type(t_octree), intent(INOUT) :: roctree
+    type(t_octree), intent(inout) :: roctree
 !</inputoutput>
 !</subroutine>
 
@@ -1650,7 +1650,7 @@ contains
     
     recursive subroutine rebuild(inode, istart, iend)
 
-      integer, intent(IN) :: inode,istart, iend
+      integer, intent(in) :: inode,istart, iend
       
       ! local variables
       real(DP) :: xmin,ymin,zmin,xmax,ymax,zmax,xmid,ymid,zmid
@@ -1821,8 +1821,8 @@ contains
 
     function partition(istart, iend, idim, dmid) result(imid)
 
-      real(DP), intent(IN) :: dmid
-      integer, intent(IN) :: istart, iend, idim
+      real(DP), intent(in) :: dmid
+      integer, intent(in) :: istart, iend, idim
       integer :: imid
 
       ! local variables
@@ -1864,7 +1864,7 @@ contains
 
     recursive subroutine quicksort(istart, iend, idim)
 
-      integer, intent(IN) :: istart, iend, idim
+      integer, intent(in) :: istart, iend, idim
 
       ! local variables
       integer :: isplit
@@ -1882,7 +1882,7 @@ contains
 
     function split(istart, iend, idim) result(isplit)
 
-      integer, intent(IN) :: istart, iend, idim
+      integer, intent(in) :: istart, iend, idim
       integer :: isplit
 
       ! local variables
@@ -1936,7 +1936,7 @@ contains
 
 !<input>
     ! New number of vertices that should be stored in the octree
-    integer, intent(IN) :: nnvt
+    integer, intent(in) :: nnvt
 !</input>
 
 !<inputoutput>
@@ -1966,7 +1966,7 @@ contains
 
 !<input>
     ! New number of nodes that should be stored in the octree
-    integer, intent(IN) :: nnnode
+    integer, intent(in) :: nnnode
 !</input>
 
 !<inputoutput>

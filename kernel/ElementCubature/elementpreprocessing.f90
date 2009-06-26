@@ -98,7 +98,7 @@ contains
 !<output>
   ! The element set that is to be initialised. If this is already initialised,
   ! previous information is overwritten.
-  type(t_evalElementSet), intent(OUT) :: revalElementSet
+  type(t_evalElementSet), intent(out) :: revalElementSet
 !</output>
 
 ! </subroutine>
@@ -135,16 +135,16 @@ contains
   ! in that case. This can be used to calculate this information only once
   ! in a first call while then using the same set of reference coordinates
   ! for all subsequent calls.
-  integer(I32), intent(IN) :: cevaluationTag
+  integer(I32), intent(in) :: cevaluationTag
 
   ! Underlying triangulation of the domain
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! List of elements in the mesh where the integration is to be performed.
-  integer, dimension(:), intent(IN) :: IelementList
+  integer, dimension(:), intent(in) :: IelementList
   
   ! Type of transformation from the reference element to the real element.
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
   
   ! OPTIONAL: A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the 
   ! points where to evaluate. These coordinates define on the reference element 
@@ -190,7 +190,7 @@ contains
 !<inputoutput>
   ! The element set that is to be initialised. If this is already initialised,
   ! previous information is overwritten.
-  type(t_evalElementSet), intent(INOUT) :: revalElementSet
+  type(t_evalElementSet), intent(inout) :: revalElementSet
 !</inputoutput>
 
 ! </subroutine>
@@ -459,18 +459,18 @@ contains
     
     ! Array with coordinates of points on the reference element.
     ! To be initialised.
-    real(DP), dimension(:,:,:), intent(INOUT) :: DpointsRef
+    real(DP), dimension(:,:,:), intent(inout) :: DpointsRef
     
     ! A set of npointsPerElement tuples (x,y) (or (x,y,z) in 3D) of the points 
     ! where to evaluate. These coordinates define on the reference the coordinates
     ! of the cubature points where to evaluate the element.
-    real(DP), dimension(:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
     
     ! Number of points per element
-    integer, intent(IN) :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! Number of elements
-    integer, intent(IN) :: nelements
+    integer, intent(in) :: nelements
     
       ! local variables
       integer :: iel,ipt,idim
@@ -501,7 +501,7 @@ contains
 
 !<inputoutput>
   ! The element set that is to be released.
-  type(t_evalElementSet), intent(INOUT) :: revalElementSet
+  type(t_evalElementSet), intent(inout) :: revalElementSet
 !</inputoutput>
 
 ! </subroutine>
@@ -570,16 +570,16 @@ contains
   ! in that case. This can be used to calculate this information only once
   ! in a first call while then using the same set of reference coordinates
   ! for all subsequent calls.
-  integer(I32), intent(IN) :: cevaluationTag
+  integer(I32), intent(in) :: cevaluationTag
 
   ! Underlying triangulation of the domain
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! Element where to evaluate the basis functions
-  integer, intent(IN) :: ielement
+  integer, intent(in) :: ielement
   
   ! Type of transformation from the reference element to the real element.
-  integer(I32), intent(IN) :: ctrafoType
+  integer(I32), intent(in) :: ctrafoType
   
   ! OPTIONAL: A tuple (x,y) (or (x,y,z) in 3D) of the point where to evaluate.
   ! These coordinates define on the reference the coordinates of the cubature
@@ -604,7 +604,7 @@ contains
 !<inputoutput>
   ! The element set that is to be initialised. If this is already initialised,
   ! previous information is overwritten.
-  type(t_evalElement), intent(INOUT) :: revalElement
+  type(t_evalElement), intent(inout) :: revalElement
 !</inputoutput>
 
 ! </subroutine>

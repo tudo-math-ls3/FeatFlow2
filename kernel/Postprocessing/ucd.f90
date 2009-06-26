@@ -527,15 +527,15 @@ contains
 
 !<input>
   ! Specification of the underlying triangulation.
-  type(t_triangulation), intent(IN) :: rtria
+  type(t_triangulation), intent(in) :: rtria
   
   ! Bitfield that specifies the output.
-  integer(I32), intent(IN) :: cflags
+  integer(I32), intent(in) :: cflags
 !</input>
 
 !<output>
   ! A mesh refinement
-  type(t_ucdRefine), intent(OUT) :: rrefine
+  type(t_ucdRefine), intent(out) :: rrefine
 !</output>
 
 !</subroutine>
@@ -777,25 +777,25 @@ contains
  
 !<input>
   ! Filename of the GMV file
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
-  integer(I32), intent(IN) :: cflags
+  integer(I32), intent(in) :: cflags
   
   ! Specification of the underlying triangulation. A pointer to this
   ! object is saved until the otput is finished.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
 !</input>
   
 !<output>
   ! An UCD export structure which collects information about the output.
   ! Must be passed to all export subroutines.
-  type(t_ucdExport), intent(OUT) :: rexport
+  type(t_ucdExport), intent(out) :: rexport
 !</output>
  
 !</subroutine>
 
-    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! Most of the things in rexport is initialised by INTENT(out) with standard
     ! values automatically. We only have to initialise minor things.
     
     rexport%coutputFormat = UCD_FORMAT_GMV
@@ -839,25 +839,25 @@ contains
  
 !<input>
   ! Filename of the GMV file
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
-  integer(I32), intent(IN) :: cflags
+  integer(I32), intent(in) :: cflags
   
   ! Specification of the underlying triangulation. A pointer to this
   ! object is saved until the otput is finished.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
 !</input>
   
 !<output>
   ! An UCD export structure which collects information about the output.
   ! Must be passed to all export subroutines.
-  type(t_ucdExport), intent(OUT) :: rexport
+  type(t_ucdExport), intent(out) :: rexport
 !</output>
  
 !</subroutine>
 
-    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! Most of the things in rexport is initialised by INTENT(out) with standard
     ! values automatically. We only have to initialise minor things.
     
     rexport%coutputFormat = UCD_FORMAT_BGMV
@@ -901,25 +901,25 @@ contains
  
 !<input>
   ! Filename of the AVS file
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
-  integer(I32), intent(IN) :: cflags
+  integer(I32), intent(in) :: cflags
   
   ! Specification of the underlying triangulation. A pointer to this
   ! object is saved until the otput is finished.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
 !</input>
   
 !<output>
   ! An UCD export structure which collects information about the output.
   ! Must be passed to all export subroutines.
-  type(t_ucdExport), intent(OUT) :: rexport
+  type(t_ucdExport), intent(out) :: rexport
 !</output>
  
 !</subroutine>
 
-    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! Most of the things in rexport is initialised by INTENT(out) with standard
     ! values automatically. We only have to initialise minor things.
     
     rexport%coutputFormat = UCD_FORMAT_AVS
@@ -964,28 +964,28 @@ contains
  
 !<input>
   ! Filename of the VTK file
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! Bitfield that specifies the output. Standard value is UCD_FLAG_STANDARD.
-  integer(I32), intent(IN) :: cflags
+  integer(I32), intent(in) :: cflags
   
   ! Specification of the underlying triangulation. A pointer to this
   ! object is saved until the otput is finished.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
   
   ! OPTIONAL: Parameters for the VTK exporter
-  integer, optional, intent(IN) :: cparam
+  integer, optional, intent(in) :: cparam
 !</input>
   
 !<output>
   ! An UCD export structure which collects information about the output.
   ! Must be passed to all export subroutines.
-  type(t_ucdExport), intent(OUT) :: rexport
+  type(t_ucdExport), intent(out) :: rexport
 !</output>
  
 !</subroutine>
 
-    ! Most of the things in rexport is initialised by INTENT(OUT) with standard
+    ! Most of the things in rexport is initialised by INTENT(out) with standard
     ! values automatically. We only have to initialise minor things.
     
     rexport%coutputFormat = UCD_FORMAT_VTK
@@ -1033,7 +1033,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure that is to be released.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -1122,17 +1122,17 @@ contains
  
 !<input>
   ! Filename of the alternative input file
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! Bitfield. Combination if UCD_ASRC_xxxx constants that specify which
   ! parts of the mesh are to be found in sfilename. UCD_ASRC_ALL specifies
   ! that the whole mesh is to be found in sfilename.
-  integer(I32), intent(IN) :: caltFlags
+  integer(I32), intent(in) :: caltFlags
 !</input>
   
 !<inputoutput>
   ! The ucd export structure that specifies the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -1194,18 +1194,18 @@ contains
 !<input>
   ! Array with strings for the cell materials.
   ! The i'th string specifies a material id of material i.
-  character(LEN=SYS_NAMELEN), dimension(:), intent(IN) :: SmaterialsCells
+  character(LEN=SYS_NAMELEN), dimension(:), intent(in) :: SmaterialsCells
   
   ! OPTIONAL: Array with strings for the vertex/node materials.
   ! The i'th string specifies a material id of material i.
   ! If not specified, the same material names will be used for both,
   ! cells and vertices.
-  character(LEN=SYS_NAMELEN), dimension(:), intent(IN), optional :: SmaterialsVert
+  character(LEN=SYS_NAMELEN), dimension(:), intent(in), optional :: SmaterialsVert
 !</input>
   
 !<inputoutput>
   ! The ucd export structure that specifies the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -1249,12 +1249,12 @@ contains
   ! Array with as many elements as NEL in the triangulation. For every
   ! element i, Imaterials(i) specifies the element material id that
   ! should be assigned to that cell.
-  integer, intent(IN), dimension(:) :: Imaterials
+  integer, intent(in), dimension(:) :: Imaterials
 !</input>
   
 !<inputoutput>
   ! The ucd export structure that specifies the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -1307,19 +1307,19 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Array with as many elements as NVT in the triangulation. For every
   ! vertex i, ImaterialsVert(i) specifies the vertex material id that
   ! should be assigned to that vertex.
-  integer, intent(IN), dimension(:) :: ImaterialsVert
+  integer, intent(in), dimension(:) :: ImaterialsVert
 
   ! OPTIONAL: Array with as many elements as NMT in the triangulation. 
   ! For every edge i, ImaterialsMid(i) specifies the material id
   ! that should be assigned to the corresponding edge midpoint.
-  integer, intent(IN), dimension(:), optional :: ImaterialsMid
+  integer, intent(in), dimension(:), optional :: ImaterialsMid
 
   ! OPTIONAL: Array with as many elements as NEL in the triangulation. 
   ! For every element i, ImaterialsElem(i) specifies the material id
@@ -1327,7 +1327,7 @@ contains
   ! Note: The material of the element midpoint need not to coincide
   !  with the material of the element -- which is specified
   !  in ucd_setCellMaterial!
-  integer, intent(IN), dimension(:), optional :: ImaterialsElem
+  integer, intent(in), dimension(:), optional :: ImaterialsElem
 
 !</input>
 
@@ -1421,7 +1421,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure that specifies the output.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -1476,7 +1476,7 @@ contains
     ! subroutine before.
     
     ! The export structure with all information
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
     ! local variables
     integer :: mfile,i,j,k,icoor
@@ -2340,7 +2340,7 @@ contains
     ! subroutine before.
     
     ! The export structure with all information
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
     ! local variables
     integer :: i,j,k,icoor
@@ -3410,7 +3410,7 @@ contains
     ! subroutine before.
     
     ! The export structure with all information
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
     ! local variables
     integer :: mfile,i,j,k, num_ndata, num_cdata, ncells, nverts, &
@@ -3701,7 +3701,7 @@ contains
     ! subroutine before.
     
     ! The export structure with all information
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
     ! local variables
     integer :: mfile,i,j,k,jy,jz,num_ndata,num_cdata,ncls,nverts,ncells
@@ -4148,7 +4148,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -4205,7 +4205,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -4247,7 +4247,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -4290,7 +4290,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure which is to be tackled.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -4333,28 +4333,28 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Name of the variable.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! Specification bitfield for the variable. A combination of the 
   ! UCD_VAR_xxxx flags for special-type variables (like x-/y-velocity).
   ! Standard value=UCD_VAR_STANDARD.
-  integer(I32), intent(IN) :: cvarSpec
+  integer(I32), intent(in) :: cvarSpec
   
   ! DdataVert(I) is the value of the variable in vertex I of the triangulation.
-  real(DP), dimension(:), intent(IN) :: DdataVert
+  real(DP), dimension(:), intent(in) :: DdataVert
 
   ! OPTIONAL: DdataMid(I) is the value of the variable in edge midpoint I of 
   ! the triangulation. Must be specified if DdataElem is specified!
-  real(DP), dimension(:), intent(IN), optional :: DdataMid
+  real(DP), dimension(:), intent(in), optional :: DdataMid
 
   ! OPTIONAL: DdataElem(I) is the value of the variable in element midpoint I of 
   ! the triangulation.
-  real(DP), dimension(:), intent(IN), optional :: DdataElem
+  real(DP), dimension(:), intent(in), optional :: DdataElem
 !</input>
 
 !</subroutine>
@@ -4449,34 +4449,34 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Name of the vector.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! The variable for the X-component of the velocities.
-  real(DP), dimension(:), intent(IN) :: DdataVert_X
+  real(DP), dimension(:), intent(in) :: DdataVert_X
   
   ! OPTIONAL: The data array for the Y-component of the velocities.
-  real(DP), dimension(:), intent(IN), optional :: DdataVert_Y
+  real(DP), dimension(:), intent(in), optional :: DdataVert_Y
 
   ! OPTIONAL: The data array for the Z-component of the velocities.
-  real(DP), dimension(:), intent(IN), optional :: DdataVert_Z
+  real(DP), dimension(:), intent(in), optional :: DdataVert_Z
 
   ! OPTIONAL: DdataMid_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
   ! edge midpoint I of the triangulation. Must be specified if DdataElem
   ! is specified!
-  real(DP), dimension(:), intent(IN), optional :: DdataMid_X
-  real(DP), dimension(:), intent(IN), optional :: DdataMid_Y
-  real(DP), dimension(:), intent(IN), optional :: DdataMid_Z
+  real(DP), dimension(:), intent(in), optional :: DdataMid_X
+  real(DP), dimension(:), intent(in), optional :: DdataMid_Y
+  real(DP), dimension(:), intent(in), optional :: DdataMid_Z
 
   ! OPTIONAL: DdataElem_X/Y/Z(I) is the X/Y/Z-coordinate of the variable in
   ! element midpoint I of the triangulation.
-  real(DP), dimension(:), intent(IN), optional :: DdataElem_X
-  real(DP), dimension(:), intent(IN), optional :: DdataElem_Y
-  real(DP), dimension(:), intent(IN), optional :: DdataElem_Z
+  real(DP), dimension(:), intent(in), optional :: DdataElem_X
+  real(DP), dimension(:), intent(in), optional :: DdataElem_Y
+  real(DP), dimension(:), intent(in), optional :: DdataElem_Z
 !</input>
 
 !</subroutine>
@@ -4550,21 +4550,21 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Name of the vector.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! The variable for the X-component of the velocities.
-  real(DP), dimension(:), intent(IN) :: Ddata_X
+  real(DP), dimension(:), intent(in) :: Ddata_X
   
   ! OPTIONAL: The data array for the Y-component of the velocities.
-  real(DP), dimension(:), intent(IN), optional :: Ddata_Y
+  real(DP), dimension(:), intent(in), optional :: Ddata_Y
 
   ! OPTIONAL: The data array for the Z-component of the velocities.
-  real(DP), dimension(:), intent(IN), optional :: Ddata_Z
+  real(DP), dimension(:), intent(in), optional :: Ddata_Z
 
 !</input>
 
@@ -4639,19 +4639,19 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Name of the variable.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! Specification bitfield for the variable. A combination of the 
   ! UCD_VAR_xxxx flags.
-  integer(I32), intent(IN) :: cvarSpec
+  integer(I32), intent(in) :: cvarSpec
   
   ! DdataVert(I) os the value of the variable in element I of the triangulation.
-  real(DP), dimension(:), intent(IN) :: Ddata
+  real(DP), dimension(:), intent(in) :: Ddata
 !</input>
 
 !</subroutine>
@@ -4738,18 +4738,18 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! A list of 2D (X,Y) or 3D (X,Y,Z) coordinates specifying the
   ! points which form the polygon.
-  real(DP), dimension(:,:), intent(IN) :: DpolygonCoords
+  real(DP), dimension(:,:), intent(in) :: DpolygonCoords
   
   ! OPTIONAL: A material identifier for the polygon. Whether polygons can have
   ! a material associated depends on the output file format.
   ! If not specified, a default material is assumed.
-  integer, intent(IN), optional :: ipolygonMaterial
+  integer, intent(in), optional :: ipolygonMaterial
 !</input>
 
 !</subroutine>
@@ -4810,13 +4810,13 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! A list of 2D (X,Y) or 3D (X,Y,Z) coordinates specifying the
   ! position of all the tracers.
-  real(DP), dimension(:,:), intent(IN) :: DtracerCoordinates
+  real(DP), dimension(:,:), intent(in) :: DtracerCoordinates
 !</input>
 
 !</subroutine>
@@ -4864,7 +4864,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -4900,16 +4900,16 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Name of the tracer variable.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! array [1..#Tracers] of double. For every tracer I, Ddata(I) is the
   ! value of the variable that should be associated to that tracer.
-  real(DP), dimension(:), intent(IN) :: Ddata
+  real(DP), dimension(:), intent(in) :: Ddata
 !</input>
 
 !</subroutine>
@@ -4974,18 +4974,18 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! Simulation time. Is written to the output file.
-  real(DP), intent(IN) :: dtime
+  real(DP), intent(in) :: dtime
   
   ! OPTIONAL: Fortran format string, e.g. "(F20.5)"
   ! Allows to specify an output format of the simulation time. Whether or
   ! not this is used for writing to the file depends on the type of
   ! output format (GMV, AVS,...).
-  character(LEN=*), intent(IN), optional :: ssimTimeFormat
+  character(LEN=*), intent(in), optional :: ssimTimeFormat
 !</input>
 
 !</subroutine>
@@ -5029,7 +5029,7 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
@@ -5037,7 +5037,7 @@ contains
   ! Specifies an output format of double precision numbers. Whether or
   ! not and where this is used for writing to the file depends on the 
   ! type of output format (GMV, AVS,...).
-  character(LEN=*), intent(IN), optional :: sformat
+  character(LEN=*), intent(in), optional :: sformat
 !</input>
 
 !</subroutine>
@@ -5079,12 +5079,12 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! The comment to be added to the output.
-  character(LEN=*), intent(IN) :: scomment
+  character(LEN=*), intent(in) :: scomment
 !</input>
 
 !</subroutine>
@@ -5136,12 +5136,12 @@ contains
 
 !<inputoutput>
   ! The ucd export structure identifying the output file.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !<input>
   ! A parameter list containing all configuration parameters of a simulation.
-  type(t_parlist), intent(IN) :: rparList
+  type(t_parlist), intent(in) :: rparList
 !</input>
 
 !</subroutine>
@@ -5210,14 +5210,14 @@ contains
 
 !<input>
   ! Name of the GMV file.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
 !</input>
 
 !<output>
   ! The export structure where the GMV data is saved to.
   ! The structure can be used to attach more data. The filename for the
   ! export can be changed by ucd_setFilename.
-  type(t_ucdExport), intent(OUT) :: rexport
+  type(t_ucdExport), intent(out) :: rexport
 !</output>
 
 !<inputoutput>
@@ -5227,7 +5227,7 @@ contains
   ! If this contains a valid mesh, the mesh is assumed to correspond to
   ! the one in the GMV file and based on that, vector data is read.
   ! The mesh in the GMV file is skipped.
-  type(t_triangulation), intent(INOUT), target :: rtriangulation
+  type(t_triangulation), intent(inout), target :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -5353,13 +5353,13 @@ contains
     ! Reads data about tracers from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Command line in the GMV file with information about the tracers
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where tracer data is saved to.
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
       integer :: ilinelen,ios,ntracers
@@ -5411,13 +5411,13 @@ contains
     ! Reads data about polygons from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Last command line in the GMV file 
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
       integer :: ilinelen,ios,npoints,imaterial
@@ -5483,13 +5483,13 @@ contains
     ! Reads data about variables from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Last command line in the GMV file 
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
       integer :: iel,ivt
@@ -5562,13 +5562,13 @@ contains
     ! Reads data about materials from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Last read command line in the GMV file 
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where tracer data is saved to.
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
       integer :: ilinelen,ios,nmats,itype,i
@@ -5635,13 +5635,13 @@ contains
     ! Reads data about velocity from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Last command line in the GMV file 
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! UCD structure where data is saved to.
-    type(t_ucdExport), intent(INOUT) :: rexport
+    type(t_ucdExport), intent(inout) :: rexport
     
       ! Local variables
       integer :: ilinelen,ios,itype
@@ -5740,16 +5740,16 @@ contains
     ! Reads data about tracers from the GMV file mfile.
     
     ! Handle to the GMV file
-    integer, intent(IN) :: mfile
+    integer, intent(in) :: mfile
     
     ! Last read command line in the GMV file
-    character(LEN=*), intent(IN) :: scommand
+    character(LEN=*), intent(in) :: scommand
     
     ! Triangulation structure. If this contains a valid triangulation,
     ! the mesh data in the GMV file is skipped.
     ! If rtriangulation is empty, a new triangulation with mesh data
     ! from the GMV file is set up.
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
     
       ! Local variables
       integer :: ilinelen,ios,ntracers,n,i,nve,ive
@@ -5927,7 +5927,7 @@ contains
       
       ! Triangulation structure. InodalProperty and NBCT are initialised here.
       ! InodalProperty must be allocated and initialised with 0.
-      type(t_triangulation), intent(INOUT) :: rtriangulation
+      type(t_triangulation), intent(inout) :: rtriangulation
     
       ! local variables
       integer, dimension(:), pointer :: p_InodalProperty
@@ -6137,12 +6137,12 @@ contains
 
 !<input>
   ! New filename for output file.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
 !</input>
 
 !<inputoutput>
   ! The ucd export structure that specifies the output.
-  type(t_ucdExport), intent(INOUT) :: rexport
+  type(t_ucdExport), intent(inout) :: rexport
 !</inputoutput>
 
 !</subroutine>
@@ -6174,10 +6174,10 @@ contains
 
 !<input>
   ! The ucd export structure containing data.
-  type(t_ucdExport), intent(IN) :: rexport
+  type(t_ucdExport), intent(in) :: rexport
 
   ! Name of the variable whose data should be retrieved.
-  character(LEN=*), intent(IN) :: svarName
+  character(LEN=*), intent(in) :: svarName
 !</input>
 
 !<output>
@@ -6185,7 +6185,7 @@ contains
   ! The data of variable svarName is transferred to Ddata.
   !
   ! If the variable is unknown, Ddata is not changed.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddata
+  real(DP), dimension(:), intent(inout), optional :: Ddata
   
   ! OPTIONAL: Length qualifier.
   ! If specified, nlength is set to the number of elements in
@@ -6193,14 +6193,14 @@ contains
   ! have to accept the data of the variable.
   !
   ! If the variable is unknown, -1 is returned.
-  integer, intent(OUT), optional :: nlength
+  integer, intent(out), optional :: nlength
   
   ! OPTIONAL: Type of data. One of the UCD_BASE_xxxx flags.
   ! =UCD_BASE_ELEMENT: element based data.
   ! =UCD_BASE_VERTEX: vertex based data.
   !
   ! Is set to -1 if the variable is unknown.
-  integer, intent(OUT), optional :: itype
+  integer, intent(out), optional :: itype
 !</output>
 
 !</subroutine>
@@ -6249,7 +6249,7 @@ contains
 
 !<input>
   ! The ucd export structure containing data.
-  type(t_ucdExport), intent(IN) :: rexport
+  type(t_ucdExport), intent(in) :: rexport
 !</input>
 
     integer :: i

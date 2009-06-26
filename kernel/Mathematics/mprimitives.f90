@@ -150,13 +150,13 @@ contains
 !<input>
   
   ! Position on the line segment where to calculate the velocity
-  real(DP), intent(IN) :: dpos
+  real(DP), intent(in) :: dpos
   
   ! Length of the line segment
-  real(DP), intent(IN) :: dlength
+  real(DP), intent(in) :: dlength
   
   ! Maximum value of the profile 
-  real(DP), intent(IN) :: dmaxvalue
+  real(DP), intent(in) :: dmaxvalue
   
 !</input>
 
@@ -182,7 +182,7 @@ contains
   
 !<input>
   ! Value to be checked
-  real(DP), intent(IN) :: dval
+  real(DP), intent(in) :: dval
 !</input>
 
 !<result>
@@ -213,7 +213,7 @@ contains
   
 !<input>
   ! Value to be checked
-  real(SP), intent(IN) :: fval
+  real(SP), intent(in) :: fval
 !</input>
 
 !<result>
@@ -244,7 +244,7 @@ contains
   
 !<input>
   ! Value to be checked
-  integer(I32), intent(IN) :: ival
+  integer(I32), intent(in) :: ival
 !</input>
 
 !<result>
@@ -282,10 +282,10 @@ contains
 
 !<input>
     ! dimension of the matrix
-    integer, intent(IN) :: ndim
+    integer, intent(in) :: ndim
 
     ! source right-hand side vector
-    real(DP), dimension(ndim), intent(IN) :: Df
+    real(DP), dimension(ndim), intent(in) :: Df
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
@@ -294,18 +294,18 @@ contains
     !            and return x = inv(A)*f
     ! IPAR = 2 : invert matrix and apply it to the right-hand side
     !            vector. Return x = inv(A)*f
-    integer, intent(IN) :: ipar
+    integer, intent(in) :: ipar
 !</input>
 
 !<inputoutput> 
     ! source square matrix to be inverted
-    real(DP), dimension(ndim,ndim), intent(INOUT) :: Da
+    real(DP), dimension(ndim,ndim), intent(inout) :: Da
 !</inputoutput>
 
 !<output>
     ! destination vector containing inverted matrix times right-hand
     ! side vector
-    real(DP), dimension(ndim), intent(OUT) :: Dx
+    real(DP), dimension(ndim), intent(out) :: Dx
 !</output>
 
 !</subroutine>
@@ -461,12 +461,12 @@ contains
 
 !<input>
   ! source square matrix to be inverted
-  real(DP), dimension(2,2), intent(IN) :: Da
+  real(DP), dimension(2,2), intent(in) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  real(DP), dimension(2,2), intent(OUT) :: Db
+  real(DP), dimension(2,2), intent(out) :: Db
 !</output>
 
 !</subroutine>
@@ -500,12 +500,12 @@ contains
 
 !<input>
   ! source square matrix to be inverted
-  real(DP), dimension(3,3), intent(IN) :: Da
+  real(DP), dimension(3,3), intent(in) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  real(DP), dimension(3,3), intent(OUT) :: Db
+  real(DP), dimension(3,3), intent(out) :: Db
 !</output>
 
 !</subroutine>
@@ -547,12 +547,12 @@ contains
 
 !<input>
   ! source square matrix to be inverted
-  real(DP), dimension(4,4), intent(IN) :: Da
+  real(DP), dimension(4,4), intent(in) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  real(DP), dimension(4,4), intent(OUT) :: Db
+  real(DP), dimension(4,4), intent(out) :: Db
 !</output>
 
 !</subroutine>
@@ -693,12 +693,12 @@ contains
 
 !<input>
   ! source square matrix to be inverted
-  real(DP), dimension(5,5), intent(IN) :: Da
+  real(DP), dimension(5,5), intent(in) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  real(DP), dimension(5,5), intent(OUT) :: Db
+  real(DP), dimension(5,5), intent(out) :: Db
 !</output>
 
 !</subroutine>
@@ -821,12 +821,12 @@ contains
 
 !<input>
   ! source square matrix to be inverted
-  real(DP), dimension(6,6), intent(IN) :: Da
+  real(DP), dimension(6,6), intent(in) :: Da
 !</input>
 
 !<output>
   ! destination square matrix; receives $A^{-1}$.
-  real(DP), dimension(6,6), intent(OUT) :: Db
+  real(DP), dimension(6,6), intent(out) :: Db
 !</output>
 
 !</subroutine>
@@ -1048,12 +1048,12 @@ contains
 
 !<input>
   ! Dimension of the matrix Da.
-  integer, intent(IN) :: ndim
+  integer, intent(in) :: ndim
 !</input>
 
 !<inputoutput>
   ! source square matrix to be inverted
-  real(DP), dimension(ndim,ndim), intent(INOUT) :: Da
+  real(DP), dimension(ndim,ndim), intent(inout) :: Da
 !</inputoutput>
 
 !</subroutine>
@@ -1161,10 +1161,10 @@ contains
 
 !<input>
     ! dimension of the matrix
-    integer, intent(IN) :: ndim
+    integer, intent(in) :: ndim
 
     ! source right-hand side vector
-    real(SP), dimension(ndim), intent(IN) :: Ff
+    real(SP), dimension(ndim), intent(in) :: Ff
 
     ! What to do?
     ! IPAR = 0 : invert matrix by means of Gaussian elimination with
@@ -1173,18 +1173,18 @@ contains
     !            and return x = inv(A)*f
     ! IPAR = 2 : invert matrix and apply it to the right-hand side
     !            vector. Return x = inv(A)*f
-    integer, intent(IN) :: ipar
+    integer, intent(in) :: ipar
 !</input>
 
 !<inputoutput> 
     ! source square matrix to be inverted
-    real(SP), dimension(ndim,ndim), intent(INOUT) :: Fa
+    real(SP), dimension(ndim,ndim), intent(inout) :: Fa
 !</inputoutput>
 
 !<output>
     ! destination vector containing inverted matrix times right-hand
     ! side vector
-    real(SP), dimension(ndim), intent(OUT) :: Fx
+    real(SP), dimension(ndim), intent(out) :: Fx
 !</output>
 !</subroutine>
 
@@ -1405,7 +1405,7 @@ contains
 
 !<input>
     ! Evaluation points I and J
-    integer, intent(IN) :: i,j
+    integer, intent(in) :: i,j
 !</input>
 
 !<result>
@@ -1430,18 +1430,18 @@ contains
 
 !<input>
   ! coordinate to be rescaled
-  real(DP), intent(IN) :: dx
+  real(DP), intent(in) :: dx
   
   ! [a,b] - source interval
-  real(DP), intent(IN) :: da,db
+  real(DP), intent(in) :: da,db
   
   ! [c,d] - destination interval
-  real(DP), intent(IN) :: dc,dd
+  real(DP), intent(in) :: dc,dd
 !</input>
 
 !<output>
   ! Rescaled coordinate
-  real(DP), intent(OUT) :: dy
+  real(DP), intent(out) :: dy
 !</output>
 
 !</subroutine>
@@ -1479,21 +1479,21 @@ contains
   
 !<input>
   ! The parameter value in the range $[-1,1]$ where the polynomial should be evaluated.
-  real(DP), intent(IN) :: dx
+  real(DP), intent(in) :: dx
   
   ! The value $p(-1)$.
-  real(DP), intent(IN) :: d1
+  real(DP), intent(in) :: d1
 
   ! The value $p(0)$.
-  real(DP), intent(IN) :: d2
+  real(DP), intent(in) :: d2
 
   ! The value $p(1)$.
-  real(DP), intent(IN) :: d3
+  real(DP), intent(in) :: d3
 !</input>
 
 !<output>
   ! The value $p(dx)$.
-  real(DP), intent(OUT) :: dy
+  real(DP), intent(out) :: dy
 !</output>
   
 !</subroutine>
@@ -1533,24 +1533,24 @@ contains
 
 !<input>
     ! Dimensions of the rectangular matrix
-    integer, intent(IN)                           :: ndim,mdim
+    integer, intent(in)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(IN), optional                 :: btransposedOpt
+    logical, intent(in), optional                 :: btransposedOpt
 !</input>
     
 !<inputoutput>
     ! Matrix that should be factorized on input.
     ! Matrix U on output.
-    real(DP), dimension(mdim,ndim), intent(INOUT) :: Da
+    real(DP), dimension(mdim,ndim), intent(inout) :: Da
 !</inputoutput>
 
 !<output>
     ! Diagonal matrix
-    real(DP), dimension(:), intent(OUT)           :: Dd
+    real(DP), dimension(:), intent(out)           :: Dd
 
     ! Square matrix
-    real(DP), dimension(:,:), intent(OUT)         :: Db
+    real(DP), dimension(:,:), intent(out)         :: Db
 !</output>
 !</subroutine>
 
@@ -2087,27 +2087,27 @@ contains
 
 !<input>
     ! Dimensions of the rectangular matrix
-    integer, intent(IN)                           :: ndim,mdim
+    integer, intent(in)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(IN), optional                 :: btransposedOpt
+    logical, intent(in), optional                 :: btransposedOpt
 
     ! Factorised matrix U
-    real(DP), dimension(mdim,ndim), intent(IN)    :: Da
+    real(DP), dimension(mdim,ndim), intent(in)    :: Da
 
     ! Diagonal matrix D
-    real(DP), dimension(:), intent(IN)            :: Dd
+    real(DP), dimension(:), intent(in)            :: Dd
 
     ! Square matrix B
-    real(DP), dimension(:,:), intent(IN)          :: Db
+    real(DP), dimension(:,:), intent(in)          :: Db
 
     ! Right-hand side vector
-    real(DP), dimension(:), intent(IN)            :: Df
+    real(DP), dimension(:), intent(in)            :: Df
 !</input>
 
 !<output>
     ! Solution vector
-    real(DP), dimension(:), intent(OUT)           :: Dx
+    real(DP), dimension(:), intent(out)           :: Dx
 !</output>
 !</subroutine>
 
@@ -2174,27 +2174,27 @@ contains
 
 !<input>
     ! Dimensions of the rectangular matrix
-    integer, intent(IN)                           :: ndim,mdim
+    integer, intent(in)                           :: ndim,mdim
 
     ! OPTIONAL: Flag to indicate if the matrix A is transposed
-    logical, intent(IN), optional                 :: btransposedOpt
+    logical, intent(in), optional                 :: btransposedOpt
 
     ! Factorised matrix U
-    real(DP), dimension(mdim,ndim), intent(IN)    :: Da
+    real(DP), dimension(mdim,ndim), intent(in)    :: Da
 
     ! Diagonal matrix D
-    real(DP), dimension(:), intent(IN)            :: Dd
+    real(DP), dimension(:), intent(in)            :: Dd
 
     ! Square matrix B
-    real(DP), dimension(:,:), intent(IN)          :: Db
+    real(DP), dimension(:,:), intent(in)          :: Db
 
     ! Right-hand side vector
-    real(DP), dimension(:,:), intent(IN)          :: Df
+    real(DP), dimension(:,:), intent(in)          :: Df
 !</input>
 
 !<output>
     ! Solution vector
-    real(DP), dimension(:), intent(OUT)           :: Dx
+    real(DP), dimension(:), intent(out)           :: Dx
 !</output>
 !</subroutine>
 
@@ -2255,7 +2255,7 @@ contains
 
 !<input>
     ! double data
-    real(DP), dimension(:), intent(IN) :: Dval
+    real(DP), dimension(:), intent(in) :: Dval
 !</input>
 
 !<result>
@@ -2300,7 +2300,7 @@ contains
 
 !<input>
     ! single data
-    real(SP), dimension(:), intent(IN) :: Fval
+    real(SP), dimension(:), intent(in) :: Fval
 !</input>
 
 !<result>
@@ -2345,7 +2345,7 @@ contains
 
 !<input>
     ! integer data
-    integer, dimension(:), intent(IN) :: Ival
+    integer, dimension(:), intent(in) :: Ival
 !</input>
 
 !<result>
@@ -2390,7 +2390,7 @@ contains
 
 !<input>
     ! double data
-    real(DP), dimension(:), intent(IN) :: Dval
+    real(DP), dimension(:), intent(in) :: Dval
 !</input>
 
 !<result>
@@ -2435,7 +2435,7 @@ contains
 
 !<input>
     ! single data
-    real(SP), dimension(:), intent(IN) :: Fval
+    real(SP), dimension(:), intent(in) :: Fval
 !</input>
 
 !<result>
@@ -2480,7 +2480,7 @@ contains
 
 !<input>
     ! integer data
-    integer, dimension(:), intent(IN) :: Ival
+    integer, dimension(:), intent(in) :: Ival
 !</input>
 
 !<result>
@@ -2525,7 +2525,7 @@ contains
 
 !<input>
     ! double data
-    real(DP), dimension(:), intent(IN) :: Dval
+    real(DP), dimension(:), intent(in) :: Dval
 !</input>
 
 !<result>
@@ -2559,7 +2559,7 @@ contains
 
 !<input>
     ! single data
-    real(SP), dimension(:), intent(IN) :: Fval
+    real(SP), dimension(:), intent(in) :: Fval
 !</input>
 
 !<result>
@@ -2593,7 +2593,7 @@ contains
 
 !<input>
     ! integer data
-    integer, dimension(:), intent(IN) :: Ival
+    integer, dimension(:), intent(in) :: Ival
 !</input>
 
 !<result>
@@ -2627,7 +2627,7 @@ contains
 
 !<input>
     ! DEG
-    real(DP), intent(IN) :: d
+    real(DP), intent(in) :: d
 !</input>
 
 !<result>
@@ -2651,7 +2651,7 @@ contains
 
 !<input>
     ! RAD
-    real(DP), intent(IN) :: r
+    real(DP), intent(in) :: r
 !</input>
 
 !<result>

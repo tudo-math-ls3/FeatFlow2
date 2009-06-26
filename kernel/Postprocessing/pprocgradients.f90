@@ -138,17 +138,17 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! OPTIONAL: Identifier for the method to use for calculating the gradient.
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_INTERPOL is taken as default.
-  integer, intent(IN), optional :: cgradType
+  integer, intent(in), optional :: cgradType
 
   ! OPTIONAL: Identifier for the submethod to use for calculating the gradient.
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_NODEPATCH is taken as default.
-  integer, intent(IN), optional :: cgradSubtype
+  integer, intent(in), optional :: cgradSubtype
 !</input>
 
 !<inputoutput>
@@ -158,7 +158,7 @@ contains
   ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
   ! The vector must be prepared with a discretisation structure that defines
   ! the destination finite element space for the gradient field.
-  type(t_vectorBlock), intent(INOUT) :: rvectorGradient
+  type(t_vectorBlock), intent(inout) :: rvectorGradient
 !</inputoutput>
 
 !</subroutine>
@@ -238,27 +238,27 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! OPTIONAL: Identifier for the method to use for calculating the gradient.
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_INTERPOL is taken as default.
-  integer, intent(IN), optional :: cgradType
+  integer, intent(in), optional :: cgradType
 
   ! OPTIONAL: Identifier for the submethod to use for calculating the gradient.
   ! One of the PPGRD_xxxx constants.
   ! If not specified, PPGRD_NODEPATCH is taken as default.
-  integer, intent(IN), optional :: cgradSubtype
+  integer, intent(in), optional :: cgradSubtype
 !</input>
 
 !<inputoutput>
   ! OPTIONAL
-  type(t_vectorScalar), intent(INOUT), optional :: rerror
+  type(t_vectorScalar), intent(inout), optional :: rerror
 !</inputoutput>
 
 !<output>
   ! The calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 !</subroutine>
 
@@ -546,7 +546,7 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
 !</input>
 
 !<inputoutput>
@@ -556,7 +556,7 @@ contains
   ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
   ! The vector must be prepared with a discretisation structure that defines
   ! the destination finite element space for the gradient field.
-  type(t_vectorBlock), intent(INOUT) :: rvectorGradient
+  type(t_vectorBlock), intent(inout) :: rvectorGradient
 !</inputoutput>
 
 !</subroutine>
@@ -1205,10 +1205,10 @@ contains
 
 !<input>
     ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN) :: rvectorScalar
+    type(t_vectorScalar), intent(in) :: rvectorScalar
     
     ! The type of patch used to recover the gradient values
-    integer, intent(IN) :: cpatchType
+    integer, intent(in) :: cpatchType
 !</input>
 
 !<inputoutput>
@@ -1218,7 +1218,7 @@ contains
     ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
     ! The vector must be prepared with a discretisation structure that defines
     ! the destination finite element space for the gradient field.
-    type(t_vectorBlock), intent(INOUT) :: rvectorGradient
+    type(t_vectorBlock), intent(inout) :: rvectorGradient
 !</inputoutput>
 
 !</subroutine>
@@ -3142,19 +3142,19 @@ contains
         npatches, IelemNVE, DpointsReal, DpointsBound)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
+      integer, dimension(:), intent(in) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN) :: npatches
+      integer, intent(in) :: npatches
 
       ! Array with numbers of corners per element
-      integer, dimension(:), intent(IN) :: IelemNVE
+      integer, dimension(:), intent(in) :: IelemNVE
 
       ! Physical coordinates of the corner nodes of all elements in the patch
-      real(DP), dimension(:,:,:), intent(INOUT) :: DpointsReal
+      real(DP), dimension(:,:,:), intent(inout) :: DpointsReal
 
       ! Physical coordinates of the bounds of all "patch" elements
-      real(DP), dimension(:,:,:), intent(OUT) :: DpointsBound
+      real(DP), dimension(:,:,:), intent(out) :: DpointsBound
 
       ! local variables
       integer :: ipatch,idx,idxFirst,idxLast
@@ -3370,19 +3370,19 @@ contains
         npatches, NVE, DpointsReal, DpointsBound)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
+      integer, dimension(:), intent(in) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN) :: npatches
+      integer, intent(in) :: npatches
 
       ! Number of vertices per element
-      integer, intent(IN) :: NVE
+      integer, intent(in) :: NVE
 
       ! Physical coordinates of the corner nodes of all elements in the patch
-      real(DP), dimension(:,:,:), intent(INOUT) :: DpointsReal
+      real(DP), dimension(:,:,:), intent(inout) :: DpointsReal
 
       ! Physical coordinates of the bounds of all "patch" elements
-      real(DP), dimension(:,:,:), intent(OUT) :: DpointsBound
+      real(DP), dimension(:,:,:), intent(out) :: DpointsBound
 
       ! local variables
       integer :: ipatch,idxFirst,idxLast
@@ -3696,27 +3696,27 @@ contains
         npatches, NVE, DpointsReal, DpointsBound, DpointsRef)
 
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
+      integer, dimension(:), intent(in) :: IelementsInPatchIdx
 
       ! Coordinate system identifier. One of the TRAFO_CS_xxxx constants. Defines
       ! the type of the coordinate system that is used for specifying the coordinates
       ! on the reference element.
-      integer(I32), intent(IN) :: icoordSystem
+      integer(I32), intent(in) :: icoordSystem
       
       ! Number of elements in patch
-      integer, intent(IN) :: npatches
+      integer, intent(in) :: npatches
 
       ! Number of vertices per element
-      integer, intent(IN) :: NVE
+      integer, intent(in) :: NVE
       
       ! Coordinates of the points on the physical element.
-      real(DP), dimension(:,:,:), intent(IN) :: DpointsReal
+      real(DP), dimension(:,:,:), intent(in) :: DpointsReal
 
       ! Coordinates of the bounding group of each patch
-      real(DP), dimension(:,:,:), intent(IN) :: DpointsBound
+      real(DP), dimension(:,:,:), intent(in) :: DpointsBound
 
       ! Coordinates of the points on the reference elements.
-      real(DP), dimension(:,:,:), intent(OUT) :: DpointsRef
+      real(DP), dimension(:,:,:), intent(out) :: DpointsRef
       
       ! local variables
       integer :: ipatch,idxFirst,idxLast
@@ -3848,25 +3848,25 @@ contains
         Inpoints, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
       
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
+      integer, dimension(:), intent(in) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN) :: npatches
+      integer, intent(in) :: npatches
 
       ! Array with numbers of sampling points per patch
-      integer, dimension(:), intent(IN) :: Inpoints
+      integer, dimension(:), intent(in) :: Inpoints
 
       ! Number of local degrees of freedom for test functions
-      integer, intent(IN) :: indofTrial
+      integer, intent(in) :: indofTrial
 
       ! Vector with consistent gradient values
-      real(DP), dimension(:,:), intent(IN) :: Dcoefficients
+      real(DP), dimension(:,:), intent(in) :: Dcoefficients
 
       ! Vector with aligned polynomial interpolants
-      real(DP), dimension(:), intent(INOUT) :: Dpolynomials
+      real(DP), dimension(:), intent(inout) :: Dpolynomials
 
       ! Smoothe gradient values
-      real(DP), dimension(:,:,:), intent(OUT) :: Dderivatives
+      real(DP), dimension(:,:,:), intent(out) :: Dderivatives
 
       ! local variables
       integer :: i,ipatch,icoeffFirst,icoeffLast,ipolyFirst,ipolyLast
@@ -3918,34 +3918,34 @@ contains
         ncubp, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
 
       ! Index vector and list of elements in patch
-      integer, dimension(:), intent(IN) :: IelementsInPatchIdx
+      integer, dimension(:), intent(in) :: IelementsInPatchIdx
 
       ! Number of elements in patch
-      integer, intent(IN) :: npatches
+      integer, intent(in) :: npatches
 
       ! Number of cubature points
-      integer, intent(IN) :: ncubp
+      integer, intent(in) :: ncubp
 
       ! Number of local degrees of freedom for test functions
-      integer, intent(IN) :: indofTrial
+      integer, intent(in) :: indofTrial
 
       ! Vector with consistent gradient values
       !
       !   Dcoefficients(ncubp, nelemPerBlock, ndim)
       !
-      real(DP), dimension(:,:,:), intent(IN) :: Dcoefficients
+      real(DP), dimension(:,:,:), intent(in) :: Dcoefficients
 
       ! Rectangular matrix with polynomial interpolants
       !
       !   Dpolynomials(indofTrial, 1, ncubp, nelemPerBlock)
       !
-      real(DP), dimension(:,:,:,:), intent(INOUT) :: Dpolynomials
+      real(DP), dimension(:,:,:,:), intent(inout) :: Dpolynomials
 
       ! Smoothed gradient values
       !
       !   Derivatives(indofTrial, npatches, ndim)
       !
-      real(DP), dimension(:,:,:), intent(OUT) :: Dderivatives
+      real(DP), dimension(:,:,:), intent(out) :: Dderivatives
 
       ! local variables
       integer :: i,ipatch,idxFirst,idxLast,npoints
@@ -3980,16 +3980,16 @@ contains
     subroutine calc_cubatureDest(celement,ncubp, Dxi, Domega)
       
       ! Element type identifier.
-      integer(I32), intent(IN) :: celement
+      integer(I32), intent(in) :: celement
 
       ! Number of cubature points
-      integer, intent(OUT) :: ncubp
+      integer, intent(out) :: ncubp
 
       ! Coordinates of the cubature points
-      real(DP), dimension(:,:), intent(OUT) :: Dxi
+      real(DP), dimension(:,:), intent(out) :: Dxi
       
       ! Cubature weights of the cubature points
-      real(DP), dimension(:), intent(OUT) :: Domega
+      real(DP), dimension(:), intent(out) :: Domega
       
       select case (celement)
       case (EL_P0)
@@ -4086,7 +4086,7 @@ contains
 
 !<input>
     ! The FE solution vector. Represents a scalar FE function.
-    type(t_vectorScalar), intent(IN) :: rvectorScalar
+    type(t_vectorScalar), intent(in) :: rvectorScalar
 !</input>
 
 !<inputoutput>
@@ -4096,7 +4096,7 @@ contains
     ! In 3D discretisations, the 3rd subvector receives the Z-gradient.
     ! The vector must be prepared with a discretisation structure that defines
     ! the destination finite element space for the gradient field.
-    type(t_vectorBlock), intent(INOUT) :: rvectorGradient
+    type(t_vectorBlock), intent(inout) :: rvectorGradient
 !</inputoutput>
 
 !</subroutine>

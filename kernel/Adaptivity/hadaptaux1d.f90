@@ -125,12 +125,12 @@ contains
 
 !<input>
     ! Indicator vector for refinement
-    type(t_vectorScalar), intent(IN) :: rindicator
+    type(t_vectorScalar), intent(in) :: rindicator
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -244,12 +244,12 @@ contains
 
 !<input>
     ! Indicator vector for refinement
-    type(t_vectorScalar), intent(IN) :: rindicator
+    type(t_vectorScalar), intent(in) :: rindicator
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -353,7 +353,7 @@ contains
     
     function lockElement(iel) result (blockElement)
       
-      integer, intent(IN) :: iel
+      integer, intent(in) :: iel
       logical :: blockElement
       
       ! Check if element marker is available for this element
@@ -378,7 +378,7 @@ contains
 
 !<input>
     ! adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<result>
@@ -423,10 +423,10 @@ contains
 
 !<inputoutput>
     ! adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -499,10 +499,10 @@ contains
 
 !<inputoutput>
     ! adativity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
     
     ! OPTIONAL Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -635,10 +635,10 @@ contains
 
 !<input>
     ! First point of edge on which new vertex will be added
-    integer, intent(IN) :: i1
+    integer, intent(in) :: i1
 
     ! Second point of edge on which new vertex will be added
-    integer, intent(IN) :: i2
+    integer, intent(in) :: i2
 
     ! Callback routines
     include 'intf_hadaptcallback.inc'
@@ -647,15 +647,15 @@ contains
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
     ! Number of the new vertex located between i1 and i2
-    integer, intent(OUT) :: i12
+    integer, intent(out) :: i12
 !</output>
 !</subroutine>
 
@@ -716,19 +716,19 @@ contains
 
 !<input>
     ! Number of the vertex to be deleted
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 
     
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 
 !<output>
     ! Number of the vertex to replace the deleted one
-    integer, intent(OUT) :: ivtReplace
+    integer, intent(out) :: ivtReplace
 !</output>
 !</subroutine>
     
@@ -778,18 +778,18 @@ contains
 
 !<input>
     ! number of the element
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 
     ! numbers of the element nodes
-    integer, intent(IN) :: i1,i2
+    integer, intent(in) :: i1,i2
 
     ! numbers of the surrounding elements
-    integer, intent(IN) :: e1,e2
+    integer, intent(in) :: e1,e2
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -811,15 +811,15 @@ contains
 
 !<input>
     ! numbers of the element nodes
-    integer, intent(IN) :: i1,i2
+    integer, intent(in) :: i1,i2
 
     ! numbers of the surrounding elements
-    integer, intent(IN) :: e1,e2
+    integer, intent(in) :: e1,e2
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
     
@@ -846,17 +846,17 @@ contains
 
 !<input>
     ! Number of the element that should be removed
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 
 !<output>
     ! Former number of the replacement element
-    integer, intent(OUT) :: ielReplace
+    integer, intent(out) :: ielReplace
 !</output>
 !</subroutine>
 
@@ -949,18 +949,18 @@ contains
 
 !<input>
     ! Number of the neighboring element
-    integer, intent(IN) :: jel
+    integer, intent(in) :: jel
 
     ! Number of the updated macro-element
-    integer, intent(IN) :: iel0
+    integer, intent(in) :: iel0
 
     ! Number of the new neighboring element
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -997,15 +997,15 @@ contains
 
 !<input>
     ! Number of the element to be updated
-    integer, intent(IN) :: iel0
+    integer, intent(in) :: iel0
 
     ! New value of the element
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 !</input>
 
 !<inputoutput>
     ! Adaptive data structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1065,7 +1065,7 @@ contains
 
 !<input>
     ! Number of element to be refined
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 
     ! Callback function
     include 'intf_hadaptcallback.inc'
@@ -1074,10 +1074,10 @@ contains
 
 !<inputoutput>
     ! adativity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1159,10 +1159,10 @@ contains
 
 !<input>
     ! Element number of one line
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 
     ! Identifier for element marker
-    integer, intent(IN) :: imarker
+    integer, intent(in) :: imarker
 
     ! callback routines
     include 'intf_hadaptcallback.inc'
@@ -1171,10 +1171,10 @@ contains
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 

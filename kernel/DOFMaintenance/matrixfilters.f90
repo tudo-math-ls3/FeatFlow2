@@ -101,7 +101,7 @@ contains
 !<input>
   
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteBCDirichlet), intent(IN), target  :: rdbcStructure
+  type(t_discreteBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it's assumed that the matrix is not
@@ -116,7 +116,7 @@ contains
 !<inputoutput>
 
   ! The scalar matrix where the boundary conditions should be imposed.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
 !</inputoutput>
   
@@ -229,10 +229,10 @@ contains
   !         the slip-nodes are cleared.
   !         The matrix therefore is prepared to act as 
   !         Jacobi-preconditioner for all slip-nodes.
-  logical, intent(IN) :: bforprec
+  logical, intent(in) :: bforprec
   
   ! The t_discreteBCSlip that describes the discrete Slip BC's
-  type(t_discreteBCSlip), intent(IN), target  :: rslipBCStructure
+  type(t_discreteBCSlip), intent(in), target  :: rslipBCStructure
   
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it's assumed that the matrix is not
@@ -240,13 +240,13 @@ contains
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
   ! boundary conditions are implemented into the matrix.
-  logical, intent(IN) :: boffDiag
+  logical, intent(in) :: boffDiag
 !</input>
 
 !<inputoutput>
 
   ! The scalar matrix where the boundary conditions should be imposed.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
 !</inputoutput>
   
@@ -361,7 +361,7 @@ contains
 !<input>
   
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteFBCDirichlet), intent(IN), target  :: rdbcStructure
+  type(t_discreteFBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it's assumed that the matrix is not
@@ -376,7 +376,7 @@ contains
 !<inputoutput>
 
   ! The scalar matrix where the boundary conditions should be imposed.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
 !</inputoutput>
   
@@ -486,17 +486,17 @@ contains
   ! OPTIONAL: Start column in the matrix.
   ! This parameter can specify where to start the vector sum.
   ! If not specified, 1 is assumed.
-  integer, intent(IN), optional :: istartColumn
+  integer, intent(in), optional :: istartColumn
 
   ! OPTIONAL: End column in the matrix.
   ! This parameter can specify where to end the vector sum.
   ! If not specified, rmatrix%NCOLS is assumed.
-  integer, intent(IN), optional :: iendColumn
+  integer, intent(in), optional :: iendColumn
 !</input>
 
 !<inputoutput>
   ! The matrix which is to be modified.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
@@ -628,7 +628,7 @@ contains
 !<input>
   
   ! The t_discreteBCfeastMirror that describes the discrete FEAST mirror BC's
-  type(t_discreteBCfeastMirror), intent(IN), target  :: rfmbcStructure
+  type(t_discreteBCfeastMirror), intent(in), target  :: rfmbcStructure
   
   ! Off-diagonal matrix.
   ! If this is present and set to TRUE, it's assumed that the matrix is not
@@ -643,7 +643,7 @@ contains
 !<inputoutput>
 
   ! The scalar matrix where the boundary conditions should be imposed.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
 !</inputoutput>
   
@@ -804,12 +804,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the matrix.
   ! If not specified, the default boundary conditions associated to the
   ! matrix rmatrix are imposed to the matrix.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
   
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
-  type(t_matrixBlock), intent(INOUT),target :: rmatrix
+  type(t_matrixBlock), intent(inout),target :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -940,17 +940,17 @@ contains
   !         the slip-nodes are cleared.
   !         The matrix therefore is prepared to act as 
   !         Jacobi-preconditioner for all slip-nodes.
-  logical, intent(IN) :: bforprec
+  logical, intent(in) :: bforprec
 
   ! OPTIONAL: boundary conditions to impose into the matrix.
   ! If not specified, the default boundary conditions associated to the
   ! matrix rmatrix are imposed to the matrix.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
   
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
-  type(t_matrixBlock), intent(INOUT),target :: rmatrix
+  type(t_matrixBlock), intent(inout),target :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -1019,12 +1019,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the matrix.
   ! If not specified, the default boundary conditions associated to the
   ! matrix rmatrix are imposed to the matrix.
-  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
   
 !<inputoutput>
   ! The block matrix where the boundary conditions should be imposed.
-  type(t_matrixBlock), intent(INOUT),target :: rmatrix
+  type(t_matrixBlock), intent(inout),target :: rmatrix
 !</inputoutput>
 
 !</subroutine>

@@ -547,10 +547,10 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 
     ! Number of the element
-    integer, intent(IN) :: iel
+    integer, intent(in) :: iel
 !</input>
 
 !<result>
@@ -606,15 +606,15 @@ contains
 
 !<input>
     ! Handle to the vertex coordinates
-    integer, intent(IN) :: h_DvertexCoords
+    integer, intent(in) :: h_DvertexCoords
 
     ! Number of vertices
-    integer, intent(IN) :: nvt
+    integer, intent(in) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -660,20 +660,20 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    integer, intent(INOUT) :: h_DvertexCoords
+    integer, intent(inout) :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    integer, intent(OUT), optional :: nvt
+    integer, intent(out), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
-    integer, intent(OUT), optional :: ndim
+    integer, intent(out), optional :: ndim
 !</output>
 !</subroutine>
 
@@ -743,15 +743,15 @@ contains
 
 !<input>
     ! Handle to the vertex coordinates
-    integer, intent(IN) :: h_DvertexCoords
+    integer, intent(in) :: h_DvertexCoords
 
     ! Number of vertices
-    integer, intent(IN) :: nvt
+    integer, intent(in) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -815,20 +815,20 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    integer, intent(INOUT) :: h_DvertexCoords
+    integer, intent(inout) :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    integer, intent(OUT), optional :: nvt
+    integer, intent(out), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
-    integer, intent(OUT), optional :: ndim
+    integer, intent(out), optional :: ndim
 !</output>
 !</subroutine>
 
@@ -869,15 +869,15 @@ contains
 
 !<input>
     ! Handle to the vertex coordinates
-    integer, intent(IN) :: h_DvertexCoords
+    integer, intent(in) :: h_DvertexCoords
 
     ! Number of vertices
-    integer, intent(IN) :: nvt
+    integer, intent(in) :: nvt
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT)    :: rhadapt
+    type(t_hadapt), intent(inout)    :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -943,20 +943,20 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handlt to the vertex coordinate vector
-    integer, intent(INOUT) :: h_DvertexCoords
+    integer, intent(inout) :: h_DvertexCoords
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of vertices
-    integer, intent(OUT), optional :: nvt
+    integer, intent(out), optional :: nvt
 
     ! OPTIONAL: number of spatial dimensions
-    integer, intent(OUT), optional :: ndim
+    integer, intent(out), optional :: ndim
 !</output>
 !</subroutine>
 
@@ -996,15 +996,15 @@ contains
 
 !<input>
     ! Handle to p_IverticesAtElement
-    integer, intent(IN) :: h_IverticesAtElement
+    integer, intent(in) :: h_IverticesAtElement
 
     ! Total number of elements
-    integer, intent(IN) :: nel
+    integer, intent(in) :: nel
 !</input>
 
 !<inputoutput>
     ! adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1039,17 +1039,17 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_IverticesAtElement
-    integer, intent(INOUT) :: h_IverticesAtElement
+    integer, intent(inout) :: h_IverticesAtElement
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of elements
-    integer, intent(OUT), optional :: nel
+    integer, intent(out), optional :: nel
 !</output>
 !</subroutine>
 
@@ -1086,12 +1086,12 @@ contains
 
 !<input>
     ! Handle to p_IneighboursAtElement
-    integer, intent(IN) :: h_IneighboursAtElement
+    integer, intent(in) :: h_IneighboursAtElement
 !</input>
 
 !<inputoutput>
     ! adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1146,17 +1146,17 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_IneighboursAtElement
-    integer, intent(INOUT) :: h_IneighboursAtElement
+    integer, intent(inout) :: h_IneighboursAtElement
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: number of elements
-    integer, intent(OUT), optional :: nel
+    integer, intent(out), optional :: nel
 !</output>
 !</subroutine>
 
@@ -1193,12 +1193,12 @@ contains
 
 !<input>
     ! Number of elements with a defined number of vertices per element.
-    integer, dimension(TRIA_MAXNVE), intent(IN) :: InelOfType
+    integer, dimension(TRIA_MAXNVE), intent(in) :: InelOfType
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1221,12 +1221,12 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<output>
     ! Number of elements with a defined number of vertices per element.
-    integer, dimension(TRIA_MAXNVE), intent(OUT) :: InelOfType
+    integer, dimension(TRIA_MAXNVE), intent(out) :: InelOfType
 !</output>
 !</subroutine>
 
@@ -1255,24 +1255,24 @@ contains
 
 !<input>
     ! Handle to p_IboundaryCpIdx
-    integer, intent(IN) :: h_IboundaryCpIdx
+    integer, intent(in) :: h_IboundaryCpIdx
 
     ! Handle to p_IverticesAtBoundary
-    integer, intent(IN) :: h_IverticesAtBoundary
+    integer, intent(in) :: h_IverticesAtBoundary
 
     ! Handle to p_DvertexParameterValue
-    integer, intent(IN) :: h_DvertexParameterValue
+    integer, intent(in) :: h_DvertexParameterValue
 
     ! Number of boundary components
-    integer, intent(IN) :: nbct
+    integer, intent(in) :: nbct
 
     ! Number of vertices at the boundary 
-    integer, intent(IN) :: nvbd
+    integer, intent(in) :: nvbd
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
     
@@ -1364,8 +1364,8 @@ contains
     ! The convertion routine 1D -> 2D
     
     subroutine convert_pointer(isize, ptr_1d, ptr_2d)
-      integer, intent(IN)                 :: isize
-      real(DP), dimension(1,isize), intent(IN), target :: ptr_1d
+      integer, intent(in)                 :: isize
+      real(DP), dimension(1,isize), intent(in), target :: ptr_1d
       real(DP), dimension(:,:), pointer                :: ptr_2d
       
       ptr_2d => ptr_1d
@@ -1388,24 +1388,24 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Handle to p_IboundaryCpIdx
-    integer, intent(INOUT) :: h_IboundaryCpIdx
+    integer, intent(inout) :: h_IboundaryCpIdx
     
     ! Handle to p_IverticesAtBoundary
-    integer, intent(INOUT) :: h_IverticesAtBoundary
+    integer, intent(inout) :: h_IverticesAtBoundary
 
     ! Handle to p_DvertexParameterValue
-    integer, intent(INOUT) :: h_DvertexParameterValue
+    integer, intent(inout) :: h_DvertexParameterValue
 
     ! OPTIONAL: number of vertices at the boundary
-    integer, intent(OUT), optional :: nvbd
+    integer, intent(out), optional :: nvbd
 
     ! OPTIONAL: number of boundary components
-    integer, intent(OUT), optional :: nbct
+    integer, intent(out), optional :: nbct
 !</inputoutput>
 !</subroutine>
 
@@ -1518,12 +1518,12 @@ contains
 
 !<input>
     ! Handle to p_InodalProperty
-    integer, intent(IN) :: h_InodalProperty
+    integer, intent(in) :: h_InodalProperty
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -1555,12 +1555,12 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 
 !<inputoutput>
     ! Hande to p_InodalProperty
-    integer, intent(INOUT) :: h_InodalProperty
+    integer, intent(inout) :: h_InodalProperty
 !</inputoutput>
 !</subroutine>
 
@@ -1595,7 +1595,7 @@ contains
 
 !<inputoutput>
     ! Adaptivity structur
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 

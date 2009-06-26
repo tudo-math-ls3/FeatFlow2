@@ -61,19 +61,19 @@ contains
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    integer, intent(IN) :: ichannel
+    integer, intent(in) :: ichannel
     
     ! Point set that should be written out. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    real(DP), dimension(:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    character(len=*), intent(IN) :: sname
+    character(len=*), intent(in) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    integer, intent(IN), optional :: iindex
+    integer, intent(in), optional :: iindex
   !</input>
     
 !</subroutine>
@@ -124,19 +124,19 @@ contains
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    integer, intent(IN) :: ichannel
+    integer, intent(in) :: ichannel
     
     ! Polygon that should be created. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    real(DP), dimension(:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    character(len=*), intent(IN) :: sname
+    character(len=*), intent(in) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    integer, intent(IN), optional :: iindex
+    integer, intent(in), optional :: iindex
   !</input>
     
 !</subroutine>
@@ -188,18 +188,18 @@ contains
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    integer, intent(IN) :: ichannel
+    integer, intent(in) :: ichannel
     
     ! Point that should be written out.
-    real(DP), dimension(:), intent(IN) :: Dpoint
+    real(DP), dimension(:), intent(in) :: Dpoint
     
     ! Name of the variable to be used by MAPLE.
-    character(len=*), intent(IN) :: sname
+    character(len=*), intent(in) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    integer, intent(IN), optional :: iindex
+    integer, intent(in), optional :: iindex
   !</input>
     
 !</subroutine>
@@ -241,19 +241,19 @@ contains
     
   !<input>
     ! Output channel number where to write the MAPLE output to.
-    integer, intent(IN) :: ichannel
+    integer, intent(in) :: ichannel
     
     ! Polygon that should be created. This is a list of (2D or 2D)
     ! point coordinates that form the polygon.
-    real(DP), dimension(:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:), intent(in) :: Dpoints
     
     ! Name of the variable to be used by MAPLE.
-    character(len=*), intent(IN) :: sname
+    character(len=*), intent(in) :: sname
     
     ! OPTIONAL: Index of the variable (if sname should be treated as
     ! an array of polygons). If present, the variable gets the name
     ! 'sname(iindex)'.
-    integer, intent(IN), optional :: iindex
+    integer, intent(in), optional :: iindex
   !</input>
     
 !</subroutine>

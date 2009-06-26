@@ -409,19 +409,19 @@ contains
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecPrimary
+  type(t_vectorBlock), intent(in), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecSecondary
+  type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  real(DP), intent(IN) :: dprimWeight
+  real(DP), intent(in) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  real(DP), intent(IN) :: dsecWeight
+  real(DP), intent(in) :: dsecWeight
   
   ! Configuration block for the upwind scheme
-  type(t_convUpwind), intent(IN) :: rconfig
+  type(t_convUpwind), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -430,11 +430,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
@@ -443,7 +443,7 @@ contains
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
   ! optional: 
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
@@ -453,7 +453,7 @@ contains
   ! If not present, IvelocityComp=(/1,2/) is assumed, thus the X-velocity
   ! must be in rsolution\%RvectorBlock(1) and the Y-velocity in
   ! rsolution\%RvectorBlock(2).
-  integer, dimension(2), intent(IN), optional :: IvelocityComp
+  integer, dimension(2), intent(in), optional :: IvelocityComp
 !</input>
 
 !<inputoutput>
@@ -461,14 +461,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -690,16 +690,16 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -708,59 +708,59 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
       
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! Triangulation structure specifying the underlying mesh.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 
   ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du2
+  real(DP), dimension(:), intent(in), optional :: Du2
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
   ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
   
   ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
+  real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -1298,13 +1298,13 @@ contains
 
     ! Auxiliary function 1
     elemental real(DP) function PHIP(x)
-    real(DP), intent(IN) :: x
+    real(DP), intent(in) :: x
       PHIP = (0.5_DP+x)/(1.0_DP+x)
     end function
     
     ! Auxiliary function 2
     elemental real(DP) function PHIM(x)
-    real(DP), intent(IN) :: x
+    real(DP), intent(in) :: x
       PHIM = 0.5_DP/(1.0_DP-x)
     end function
 
@@ -1357,19 +1357,19 @@ contains
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecPrimary
+  type(t_vectorBlock), intent(in), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecSecondary
+  type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  real(DP), intent(IN) :: dprimWeight
+  real(DP), intent(in) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  real(DP), intent(IN) :: dsecWeight
+  real(DP), intent(in) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -1378,11 +1378,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
@@ -1391,7 +1391,7 @@ contains
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 !</input>
 
 !<inputoutput>
@@ -1399,14 +1399,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -1630,16 +1630,16 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -1648,38 +1648,38 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(in) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  real(DP), intent(IN) :: dbeta
+  real(DP), intent(in) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  real(DP), intent(IN) :: ddelta
+  real(DP), intent(in) :: ddelta
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
   
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
@@ -1687,21 +1687,21 @@ contains
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! optional: velocity vector $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
   ! optional: defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
 !</inputoutput>
 
 !</subroutine>
@@ -2596,16 +2596,16 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -2614,38 +2614,38 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(in) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  real(DP), intent(IN) :: dbeta
+  real(DP), intent(in) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  real(DP), intent(IN) :: ddelta
+  real(DP), intent(in) :: ddelta
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
   
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
@@ -2653,29 +2653,29 @@ contains
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du2
+  real(DP), dimension(:), intent(in), optional :: Du2
   
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
   ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
   
   ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
+  real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -3546,19 +3546,19 @@ contains
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecPrimary
+  type(t_vectorBlock), intent(in), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecSecondary
+  type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  real(DP), intent(IN) :: dprimWeight
+  real(DP), intent(in) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  real(DP), intent(IN) :: dsecWeight
+  real(DP), intent(in) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -3567,11 +3567,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
@@ -3580,7 +3580,7 @@ contains
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
 !</input>
 
@@ -3591,14 +3591,14 @@ contains
   ! The nonlinear operator is added to the matrix.
   ! The blocks A11,A12,A21 and A22 of this matrix are tackled by streamline
   ! diffusion.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -3873,16 +3873,16 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -3891,53 +3891,53 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(in) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  real(DP), intent(IN) :: dbeta
+  real(DP), intent(in) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  real(DP), intent(IN) :: ddelta
+  real(DP), intent(in) :: ddelta
 
   
   
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
-  real(DP), intent(IN) :: dnewton
+  real(DP), intent(in) :: dnewton
 
   ! Weighting factor of the transposed convection matrix. A value of 0.0 deactivates
   ! this operator.
-  real(DP), intent(IN) :: ddeltaTransposed
+  real(DP), intent(in) :: ddeltaTransposed
   
   ! Weighting factor of the transposed Newton matrix. A value of 0.0 deactivates
   ! this operator.
-  real(DP), intent(IN) :: dnewtonTransposed
+  real(DP), intent(in) :: dnewtonTransposed
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
       
   ! Method how to compute the local h
   integer, intent(in) :: clocalh
@@ -3945,15 +3945,15 @@ contains
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
   ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du2
+  real(DP), dimension(:), intent(in), optional :: Du2
   
 !</input>
 
@@ -3962,15 +3962,15 @@ contains
   ! A11, A12, A21 and A22 and must be in matrix format 7 or 9.
   ! A11 and A22 must have the same structure. A12 and A21 must have
   ! the same structure.
-  type(t_matrixBlock), intent(INOUT), target :: rmatrix
+  type(t_matrixBlock), intent(inout), target :: rmatrix
   
   ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
   
   ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
+  real(DP), dimension(:), intent(inout), optional :: Ddef2
 !</inputoutput>
 
 !</subroutine>
@@ -5619,44 +5619,44 @@ contains
   integer, intent(in) :: clocalH 
   
   ! Main velocity field.
-  real(DP), dimension(*), intent(IN) :: du1x,du1y
+  real(DP), dimension(*), intent(in) :: du1x,du1y
   
   ! Secondary velocity field. 
-  real(DP), dimension(*), intent(IN) :: du2x,du2y
+  real(DP), dimension(*), intent(in) :: du2x,du2y
   
   ! weighting factor for Du1
-  real(DP), intent(IN) :: da1
+  real(DP), intent(in) :: da1
   
   ! weighting factor for Du2
-  real(DP), intent(IN) :: da2
+  real(DP), intent(in) :: da2
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  real(DP), intent(IN) :: duMaxR
+  real(DP), intent(in) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  real(DP), intent(IN) :: dnuRec
+  real(DP), intent(in) :: dnuRec
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! List of elements where the Ddelta should be calculated
-  integer, dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(in) :: Ielements
   
   ! Array with global degrees of freedom on the elements
-  integer, dimension(:,:), intent(IN) :: Idofs
+  integer, dimension(:,:), intent(in) :: Idofs
   
   ! Triangulation that defines the mesh.
   type(t_triangulation), intent(in) :: rtriangulation
 
   ! Out: local Ddelta on all elements
-  real(DP), dimension(:), intent(OUT) :: ddelta
+  real(DP), dimension(:), intent(out) :: ddelta
 
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc
@@ -5828,19 +5828,19 @@ contains
   ! triangulation.
   
   ! Element where the local h should be calculated
-  integer, intent(IN)               :: JEL
+  integer, intent(in)               :: JEL
   
-  integer, dimension(TRIA_MAXNVE2D,*), intent(IN) :: Kvert
-  real(DP), dimension(NDIM2D,*), intent(IN)          :: Dcorvg
+  integer, dimension(TRIA_MAXNVE2D,*), intent(in) :: Kvert
+  real(DP), dimension(NDIM2D,*), intent(in)          :: Dcorvg
   
   ! norm ||u||_T = mean velocity through element T=JEL
-  real(DP), intent(IN)  :: dunorm
+  real(DP), intent(in)  :: dunorm
   
   ! mean velocity u_T = (xbeta1,xbeta2) through element T=JEL
-  real(DP), intent(IN)  :: XBETA1, XBETA2
+  real(DP), intent(in)  :: XBETA1, XBETA2
   
   ! local mesh width
-  real(DP), intent(OUT) :: dlocalH
+  real(DP), intent(out) :: dlocalH
   
   ! local variables
   real(DP) :: dlambda
@@ -5974,22 +5974,22 @@ contains
   ! Intersect two lines in R^2
 
   ! Origin of line 1
-  real(DP), intent(IN) :: XO,YO
+  real(DP), intent(in) :: XO,YO
   
   ! Direction of line 1
-  real(DP), intent(IN) :: BETA1,BETA2
+  real(DP), intent(in) :: BETA1,BETA2
   
   ! One point on the second line
-  real(DP), intent(IN) :: XA,YA
+  real(DP), intent(in) :: XA,YA
   
   ! Another point on the second line
-  real(DP), intent(IN) :: XB,YB
+  real(DP), intent(in) :: XB,YB
   
   ! Parameter value of the intersection point on line 1.
   ! =0.0, if there is no intersection point
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
   
-  real(DP), intent(OUT) :: dlambda
+  real(DP), intent(out) :: dlambda
   
   ! local variables
   double precision :: dsp
@@ -6088,19 +6088,19 @@ contains
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecPrimary
+  type(t_vectorBlock), intent(in), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecSecondary
+  type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  real(DP), intent(IN) :: dprimWeight
+  real(DP), intent(in) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  real(DP), intent(IN) :: dsecWeight
+  real(DP), intent(in) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -6109,11 +6109,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
@@ -6124,7 +6124,7 @@ contains
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
   ! optional: 
   ! Index block that specifies which component in rvecPrimary / rvecSecondary /
@@ -6133,7 +6133,7 @@ contains
   !  IvelocityComp(2) gives the number of the Y-velocity (usually = 2).
   !  IvelocityComp(3) gives the number of the Z-velocity (usually = 3).
   ! If not present, IvelocityComp=(/1,2,3/) is assumed.
-  integer, dimension(3), intent(IN), optional :: IvelocityComp
+  integer, dimension(3), intent(in), optional :: IvelocityComp
 !</input>
 
 !<inputoutput>
@@ -6141,14 +6141,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -6371,22 +6371,22 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Primary Z-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Zvel
+  real(DP), dimension(:), intent(in) :: u1Zvel
 
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Secondary Z-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Zvel
+  real(DP), dimension(:), intent(in) :: u2Zvel
 
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -6395,76 +6395,76 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(in) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  real(DP), intent(IN) :: dbeta
+  real(DP), intent(in) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  real(DP), intent(IN) :: ddelta
+  real(DP), intent(in) :: ddelta
   
   ! How to calculate local H?
-  integer, intent(IN) :: clocalH
+  integer, intent(in) :: clocalH
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
       
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
   ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du2
+  real(DP), dimension(:), intent(in), optional :: Du2
   
   ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du3
+  real(DP), dimension(:), intent(in), optional :: Du3
 
 !</input>
 
 !<inputoutput>
   ! The system matrix. Must be format 7 or 9.
-  type(t_matrixScalar), intent(INOUT), target :: rmatrix
+  type(t_matrixScalar), intent(inout), target :: rmatrix
   
   ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
   
   ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
+  real(DP), dimension(:), intent(inout), optional :: Ddef2
 
   ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef3
+  real(DP), dimension(:), intent(inout), optional :: Ddef3
 !</inputoutput>
 
 !</subroutine>
@@ -7358,19 +7358,19 @@ contains
 !<input>
 
   ! Primary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecPrimary
+  type(t_vectorBlock), intent(in), target :: rvecPrimary
   
   ! Secondary velocity field for the computation of $u_1$
-  type(t_vectorBlock), intent(IN), target :: rvecSecondary
+  type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
-  real(DP), intent(IN) :: dprimWeight
+  real(DP), intent(in) :: dprimWeight
   
   ! Weighting factor for rvecSecondary.
-  real(DP), intent(IN) :: dsecWeight
+  real(DP), intent(in) :: dsecWeight
   
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamlineDiffusion), intent(IN) :: rconfig
+  type(t_convStreamlineDiffusion), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -7379,11 +7379,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! optional: Mesh velocity field.
   ! DmeshVelocity(1,ivt) gives the X-velocity of the mesh, i.e. the X-velocity
@@ -7394,7 +7394,7 @@ contains
   !   of the corner vertex ivt.
   ! The parameter must be present if ALE is activated in the
   ! configuration parameter block by bALE=true.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity
 
 
 
@@ -7407,14 +7407,14 @@ contains
   ! The nonlinear operator is added to the matrix.
   ! The blocks A11,A12,A21 and A22 of this matrix are tackled by streamline
   ! diffusion.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -7722,22 +7722,22 @@ contains
 !<input>
 
   ! Primary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Xvel
+  real(DP), dimension(:), intent(in) :: u1Xvel
   
   ! Primary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Yvel
+  real(DP), dimension(:), intent(in) :: u1Yvel
   
   ! Primary Z-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u1Zvel
+  real(DP), dimension(:), intent(in) :: u1Zvel
   
   ! Secondary X-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Xvel
+  real(DP), dimension(:), intent(in) :: u2Xvel
   
   ! Secondary Y-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Yvel
+  real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Secondary Z-velocity of $u_1$
-  real(DP), dimension(:), intent(IN) :: u2Zvel
+  real(DP), dimension(:), intent(in) :: u2Zvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -7746,66 +7746,66 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! Weighting factor for u1Xvel/u1Yvel.
-  real(DP), intent(IN) :: dweight1
+  real(DP), intent(in) :: dweight1
   
   ! Weighting factor for u2Xvel/u2Yvel.
-  real(DP), intent(IN) :: dweight2
+  real(DP), intent(in) :: dweight2
   
   ! dupsam  - control parameter.
   !          -1: simple upwind,
   !          =0: Samarskji upwind
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
   
   ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
-  real(DP), intent(IN) :: dnu 
+  real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
-  real(DP), intent(IN) :: dalpha
+  real(DP), intent(in) :: dalpha
 
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
-  real(DP), intent(IN) :: dbeta
+  real(DP), intent(in) :: dbeta
 
   ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
   ! For time-dependent problems, this can be set to the step size
   ! in the $\Theta$-scheme.
-  real(DP), intent(IN) :: dtheta 
+  real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
-  real(DP), intent(IN) :: ddelta
+  real(DP), intent(in) :: ddelta
 
   
   
   ! Weighting factor of the Newton matrix. A value of 0.0 deactivates the
   ! Newton part. A value != 0.0 activates Newton; in this case the submatrices
   ! A12 and A21 must be present in rmatrix.
-  real(DP), intent(IN) :: dnewton
+  real(DP), intent(in) :: dnewton
   
   ! How to calculate the local H?
-  integer, intent(IN) :: clocalH
+  integer, intent(in) :: clocalH
       
   ! Whether or not to use the ALE method
-  logical, intent(IN) :: bALE
+  logical, intent(in) :: bALE
       
   ! optional: Mesh velocity field. Must be present if bALE=TRUE.
   ! DmeshVelocity(1,:) gives the X-velocity of all the corner points of the mesh,
   ! DmeshVelocity(2,:) gives the Y-velocity,
   ! DmeshVelocity(3,:) gives the Z-velocity.
-  real(DP), dimension(:,:), intent(IN), optional :: DmeshVelocity(:,:)
+  real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
   ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du1
+  real(DP), dimension(:), intent(in), optional :: Du1
   
   ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du2
+  real(DP), dimension(:), intent(in), optional :: Du2
   
   ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
-  real(DP), dimension(:), intent(IN), optional :: Du3
+  real(DP), dimension(:), intent(in), optional :: Du3
   
 !</input>
 
@@ -7814,19 +7814,19 @@ contains
   ! A11, A12, A21 and A22 and must be in matrix format 7 or 9.
   ! A11 and A22 must have the same structure. A12 and A21 must have
   ! the same structure.
-  type(t_matrixBlock), intent(INOUT), target :: rmatrix
+  type(t_matrixBlock), intent(inout), target :: rmatrix
   
   ! optional: X-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef1
+  real(DP), dimension(:), intent(inout), optional :: Ddef1
   
   ! optional: Y-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef2
+  real(DP), dimension(:), intent(inout), optional :: Ddef2
 
   ! optional: Z-defect vector. Must be present if cdef=CONV_MODDEFECT
   ! or =CONV_MODBOTH.
-  real(DP), dimension(:), intent(INOUT), optional :: Ddef3
+  real(DP), dimension(:), intent(inout), optional :: Ddef3
 !</inputoutput>
 
 !</subroutine>
@@ -9334,53 +9334,53 @@ contains
 
 !<input>
   ! Main velocity field.
-  real(DP), dimension(:), intent(IN) :: U1L1,U1L2,U1L3
+  real(DP), dimension(:), intent(in) :: U1L1,U1L2,U1L3
   
   ! Secondary velocity field. 
-  real(DP), dimension(:), intent(IN) :: U2L1,U2L2,U2L3
+  real(DP), dimension(:), intent(in) :: U2L1,U2L2,U2L3
   
   ! weighting factor for U1L1/U1L2
-  real(DP), intent(IN) :: A1L
+  real(DP), intent(in) :: A1L
   
   ! weighting factor for U2L1/U2L2
-  real(DP), intent(IN) :: A2L
+  real(DP), intent(in) :: A2L
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  real(DP), intent(IN) :: duMaxR
+  real(DP), intent(in) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  real(DP), intent(IN) :: NUREC
+  real(DP), intent(in) :: NUREC
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  real(DP), intent(IN) :: UPSAM
+  real(DP), intent(in) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  integer, intent(IN) :: IEL
+  integer, intent(in) :: IEL
   
   ! Number of degrees of freedom on element IEL
-  integer, intent(IN) :: IDFL
+  integer, intent(in) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  integer, dimension(:), intent(IN) :: KDFG
+  integer, dimension(:), intent(in) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  integer, dimension(:,:), intent(IN) :: Kvert
+  integer, dimension(:,:), intent(in) :: Kvert
   
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(IN) :: Dcorvg
+  real(DP), dimension(:,:), intent(in) :: Dcorvg
 !</input>
 
 !<output>
   ! The local delta for this quadrilateral
-  real(DP), intent(OUT) :: ddelta
+  real(DP), intent(out) :: ddelta
 
 !</output>
 !</subroutine>
@@ -9474,53 +9474,53 @@ contains
 
 !<input>
   ! Main velocity field.
-  real(DP), dimension(:), intent(IN) :: U1L1,U1L2,U1L3
+  real(DP), dimension(:), intent(in) :: U1L1,U1L2,U1L3
   
   ! Secondary velocity field. 
-  real(DP), dimension(:), intent(IN) :: U2L1,U2L2,U2L3
+  real(DP), dimension(:), intent(in) :: U2L1,U2L2,U2L3
   
   ! weighting factor for U1L1/U1L2
-  real(DP), intent(IN) :: A1L
+  real(DP), intent(in) :: A1L
   
   ! weighting factor for U2L1/U2L2
-  real(DP), intent(IN) :: A2L
+  real(DP), intent(in) :: A2L
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  real(DP), intent(IN) :: duMaxR
+  real(DP), intent(in) :: duMaxR
   
   ! Reciprocal value 1/NU of coefficient NU in front of the
   ! Laplacian term of the Navier-Stokes equation
   !   NU * Laplace(u) + u*grad(u) + ...
-  real(DP), intent(IN) :: NUREC
+  real(DP), intent(in) :: NUREC
   
   ! user defined parameter for configuring the streamline diffusion.
   ! < 0: Simple calculation of ddelta, using 
   !      ddelta = |UPSAM| * h_T.
   ! > 0: usually UPSAM = 0.1 .. 2; Samarskji-like calculation of ddelta using:
   !      ddelta = UPSAM * h_t/||u||_T * 2*Re_T/(1+Re_T)
-  real(DP), intent(IN) :: UPSAM
+  real(DP), intent(in) :: UPSAM
   
   ! Element where the ddelta should be calculated
-  integer, intent(IN) :: IEL
+  integer, intent(in) :: IEL
   
   ! Number of degrees of freedom on element IEL
-  integer, intent(IN) :: IDFL
+  integer, intent(in) :: IDFL
   
   ! Array with global degrees of freedom, corresponding to
   ! local degrees of freedom 1..IDFL on element IEL.
-  integer, dimension(:), intent(IN) :: KDFG
+  integer, dimension(:), intent(in) :: KDFG
   
   ! The IverticesAtElement array from the triangulation
-  integer, dimension(:,:), intent(IN) :: Kvert
+  integer, dimension(:,:), intent(in) :: Kvert
   
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(IN) :: Dcorvg
+  real(DP), dimension(:,:), intent(in) :: Dcorvg
 !</input>
 
 !<output>
   ! The local delta for this quadrilateral
-  real(DP), intent(OUT) :: ddelta
+  real(DP), intent(out) :: ddelta
 
 !</output>
 !</subroutine>
@@ -9587,24 +9587,24 @@ contains
 
 !<input>
   ! mean velocity u_T through element T=iel
-  real(DP), dimension(3), intent(IN)                  :: Du
+  real(DP), dimension(3), intent(in)                  :: Du
   
   ! norm ||u||_T = mean velocity through element T=JEL
-  real(DP), intent(IN)                                :: dunorm
+  real(DP), intent(in)                                :: dunorm
 
   ! Element where the local h should be calculated
-  integer, intent(IN)                :: iel
+  integer, intent(in)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoords
 !</input>
 
 !<output>
   ! The local mesh width for the hexahedron
-  real(DP), intent(OUT) :: dlocalH
+  real(DP), intent(out) :: dlocalH
 !</output>
 
   ! local variables
@@ -9802,18 +9802,18 @@ contains
 
 !<input>
   ! Element where the local h should be calculated
-  integer, intent(IN)                :: iel
+  integer, intent(in)                :: iel
   
   ! The IverticesAtElement array from the triangulation
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
   
   ! The DvertexCoords array from the triangulation
-  real(DP), dimension(:,:), intent(IN)                :: DvertexCoords
+  real(DP), dimension(:,:), intent(in)                :: DvertexCoords
 !</input>
 
 !<output>
   ! The local mesh width for the hexahedron
-  real(DP), intent(OUT) :: dlocalH
+  real(DP), intent(out) :: dlocalH
 !</output>
 
   ! local variables
@@ -9865,7 +9865,7 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_jumpStabilisation), intent(IN) :: rconfig
+  type(t_jumpStabilisation), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -9874,11 +9874,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -9891,14 +9891,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -10036,7 +10036,7 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_jumpStabilisation), intent(IN) :: rconfig
+  type(t_jumpStabilisation), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -10045,11 +10045,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -10062,14 +10062,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -10199,7 +10199,7 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_jumpStabilisation), intent(IN) :: rconfig
+  type(t_jumpStabilisation), intent(in) :: rconfig
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
   ! CONV_MODMATRIX: Set up the nonlinear matrix. rmatrix must be present, the 
@@ -10208,11 +10208,11 @@ contains
   !                 present.
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
-  integer, intent(IN) :: cdef
+  integer, intent(in) :: cdef
 
   ! OPTIONAL: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
-  type(t_vectorBlock), intent(IN), target, optional :: rsolution
+  type(t_vectorBlock), intent(in), target, optional :: rsolution
   
   ! OPTIONAL: Alternative discretisation structure to use for setting up
   ! the jump stabilisaton. This allows to use a different FE pair for
@@ -10225,14 +10225,14 @@ contains
   ! The content of the matrix must be present if cdef=CONV_MODMATRIX or 
   ! =CONV_MODBOTH, otherwise only the structure is used.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
   
   ! optional: Defect vector.
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
   ! $r = r - \theta * u_1*grad(u_2)$
-  type(t_vectorBlock), intent(INOUT), optional, target :: rdefect
+  type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
 !</subroutine>
@@ -10370,11 +10370,11 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamDiff2), intent(IN) :: rconfig
+  type(t_convStreamDiff2), intent(in) :: rconfig
   
   ! OPTIONAL: Velocity field where to evaluate the nonlinearity.
   ! Can be omitted if there is no nonlinearity to be assembled.
-  type(t_vectorBlock), intent(IN), target, optional :: rvelocity
+  type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
@@ -10387,11 +10387,11 @@ contains
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
   ! System block matrix.
   ! The nonlinear operator is added to the matrix.
-  type(t_matrixBlock), intent(INOUT), target :: rmatrix
+  type(t_matrixBlock), intent(inout), target :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -10445,7 +10445,7 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamDiff2), intent(IN) :: rconfig
+  type(t_convStreamDiff2), intent(in) :: rconfig
   
   ! Block matrix specifying the structure of the velocoity submatrices.
   type(t_matrixBlock), intent(in) :: rmatrix
@@ -10455,7 +10455,7 @@ contains
 
   ! OPTIONAL: Velocity field where to evaluate the nonlinearity.
   ! Can be omitted if there is no nonlinearity to be assembled.
-  type(t_vectorBlock), intent(IN), target, optional :: rvelocity
+  type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
@@ -10468,10 +10468,10 @@ contains
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
   ! Defect vector where to incorporate the defect
-  type(t_vectorBlock), intent(INOUT), target :: rd
+  type(t_vectorBlock), intent(inout), target :: rd
 !</inputoutput>
 
 !</subroutine>
@@ -10529,7 +10529,7 @@ contains
 
 !<input>
   ! Configuration block for the streamline diffusion scheme
-  type(t_convStreamDiff2), intent(IN) :: rconfig
+  type(t_convStreamDiff2), intent(in) :: rconfig
   
   ! Callback routine that incorporates local element matrices in
   ! a defect vector or a matrix.
@@ -10580,7 +10580,7 @@ contains
 
   ! OPTIONAL: Velocity field where to evaluate the nonlinearity.
   ! Can be omitted if there is no nonlinearity to be assembled.
-  type(t_vectorBlock), intent(IN), target, optional :: rvelocity
+  type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
   ! OPTIONAL: A callback routine for a nonconstant $\nu$.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
@@ -10593,7 +10593,7 @@ contains
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -11843,11 +11843,11 @@ contains
   ! Array with the values of the velocity field in all cubature points
   ! on all the elements.
   ! dimension(ndim2d, #cubature points per element, #elements)
-  real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
+  real(DP), dimension(:,:,:), intent(in) :: Dvelocity
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  real(DP), intent(IN) :: duMaxR
+  real(DP), intent(in) :: duMaxR
   
   ! Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in) :: Dnu
@@ -11860,7 +11860,7 @@ contains
   integer :: cstabilType
   
   ! user defined parameter for configuring the streamline diffusion.
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
 
   ! List of elements where to calculate the local delta.
   integer, dimension(:), intent(in) :: Ielements
@@ -11869,7 +11869,7 @@ contains
   type(t_triangulation), intent(in) :: rtriangulation
 
   ! Out: local Ddelta on all elements
-  real(DP), dimension(:), intent(OUT) :: Ddelta
+  real(DP), dimension(:), intent(out) :: Ddelta
 
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec
@@ -11971,11 +11971,11 @@ contains
   ! Array with the values of the velocity field in all cubature points
   ! on all the elements.
   ! dimension(ndim2d, #cubature points per element, #elements)
-  real(DP), dimension(:,:,:), intent(IN) :: Dvelocity
+  real(DP), dimension(:,:,:), intent(in) :: Dvelocity
   
   ! Reciprocal of the maximum norm of velocity in the domain:
   ! 1/duMaxR = 1/||u||_Omega
-  real(DP), intent(IN) :: duMaxR
+  real(DP), intent(in) :: duMaxR
   
   ! Viscosity coefficient in all cubature points on all selement
   real(DP), dimension(:,:), intent(in) :: Dnu
@@ -11988,7 +11988,7 @@ contains
   integer :: cstabilType
   
   ! user defined parameter for configuring the streamline diffusion.
-  real(DP), intent(IN) :: dupsam
+  real(DP), intent(in) :: dupsam
 
   ! List of elements where to calculate the local delta.
   integer, dimension(:), intent(in) :: Ielements
@@ -11997,7 +11997,7 @@ contains
   type(t_triangulation), intent(in) :: rtriangulation
 
   ! Out: local Ddelta on all elements
-  real(DP), dimension(:), intent(OUT) :: Ddelta
+  real(DP), dimension(:), intent(out) :: Ddelta
 
   ! local variables
   real(DP) :: dlocalH,du1,du2,dunorm,dreLoc,dnuRec

@@ -190,7 +190,7 @@ contains
 !<inputoutput>
   ! A t_schurApprox structure that contains the information of how the
   ! Schur-complement matrix approximation is to be assembled.
-  type(t_schurApprox), intent(INOUT) :: rschur
+  type(t_schurApprox), intent(inout) :: rschur
 !</inputoutput>
 
 !</subroutine>
@@ -499,39 +499,39 @@ contains
 
 !<input>
   ! The number of rows of S (= #DOFs in pressure space)
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The diagonal pointer array of A
-  integer, dimension(*), intent(IN) :: p_IdiagA
+  integer, dimension(*), intent(in) :: p_IdiagA
   
   ! The data arrays of A11 and A22
-  real(DP), dimension(*), intent(IN) :: p_DA11, p_DA22
+  real(DP), dimension(*), intent(in) :: p_DA11, p_DA22
   
   ! The matrix structure of B
-  integer, dimension(*), intent(IN) :: p_IrowB, p_IcolB
+  integer, dimension(*), intent(in) :: p_IrowB, p_IcolB
   
   ! The data arrays of B1 and B2
-  real(DP), dimension(*), intent(IN) :: p_DB1, p_DB2
+  real(DP), dimension(*), intent(in) :: p_DB1, p_DB2
   
   ! The matrix structure of D
-  integer, dimension(*), intent(IN) :: p_IrowD, p_IcolD
+  integer, dimension(*), intent(in) :: p_IrowD, p_IcolD
   
   ! The data arrays of D1 and D2
-  real(DP), dimension(*), intent(IN) :: p_DD1, p_DD2
+  real(DP), dimension(*), intent(in) :: p_DD1, p_DD2
   
   ! The matrix structure of S
-  integer, dimension(*), intent(IN) :: p_IrowS, p_IcolS
+  integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
   ! The scaling factor for D1 * A11^-1 * B1
-  real(DP), intent(IN) :: dsf1
+  real(DP), intent(in) :: dsf1
 
   ! The scaling factor for D2 * A22^-1 * B2
-  real(DP), intent(IN) :: dsf2
+  real(DP), intent(in) :: dsf2
 !</input>
 
 !<inputoutput>
   ! The data array of S
-  real(DP), dimension(*), intent(INOUT) :: p_DS
+  real(DP), dimension(*), intent(inout) :: p_DS
 !</inputoutput>
 
 !</subroutine>
@@ -631,39 +631,39 @@ contains
 
 !<input>
   ! The number of rows of S (= #DOFs in pressure space)
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The row-pointer array of A
-  integer, dimension(*), intent(IN) :: p_IrowA
+  integer, dimension(*), intent(in) :: p_IrowA
   
   ! The data arrays of A11 and A22
-  real(DP), dimension(*), intent(IN) :: p_DA11, p_DA22
+  real(DP), dimension(*), intent(in) :: p_DA11, p_DA22
   
   ! The matrix structure of B
-  integer, dimension(*), intent(IN) :: p_IrowB, p_IcolB
+  integer, dimension(*), intent(in) :: p_IrowB, p_IcolB
   
   ! The data arrays of B1 and B2
-  real(DP), dimension(*), intent(IN) :: p_DB1, p_DB2
+  real(DP), dimension(*), intent(in) :: p_DB1, p_DB2
   
   ! The matrix structure of D
-  integer, dimension(*), intent(IN) :: p_IrowD, p_IcolD
+  integer, dimension(*), intent(in) :: p_IrowD, p_IcolD
   
   ! The data arrays of D1 and D2
-  real(DP), dimension(*), intent(IN) :: p_DD1, p_DD2
+  real(DP), dimension(*), intent(in) :: p_DD1, p_DD2
   
   ! The matrix structure of S
-  integer, dimension(*), intent(IN) :: p_IrowS, p_IcolS
+  integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
   ! The scaling factor for D1 * A11^-1 * B1
-  real(DP), intent(IN) :: dsf1
+  real(DP), intent(in) :: dsf1
 
   ! The scaling factor for D2 * A22^-1 * B2
-  real(DP), intent(IN) :: dsf2
+  real(DP), intent(in) :: dsf2
 !</input>
 
 !<inputoutput>
   ! The data array of S
-  real(DP), dimension(*), intent(INOUT) :: p_DS
+  real(DP), dimension(*), intent(inout) :: p_DS
 !</inputoutput>
 
 !</subroutine>
@@ -756,42 +756,42 @@ contains
 
 !<input>
   ! The number of rows of S (= #DOFs in pressure space)
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
   ! The degree of the matrix D.
-  integer, intent(IN) :: ndegree
+  integer, intent(in) :: ndegree
   
   ! The matrix structure of A
-  integer, dimension(*), intent(IN) :: p_IrowA, p_IcolA
+  integer, dimension(*), intent(in) :: p_IrowA, p_IcolA
   
   ! The data arrays of A11 and A22
-  real(DP), dimension(*), intent(IN) :: p_DA11, p_DA22
+  real(DP), dimension(*), intent(in) :: p_DA11, p_DA22
   
   ! The matrix structure of B
-  integer, dimension(*), intent(IN) :: p_IrowB, p_IcolB
+  integer, dimension(*), intent(in) :: p_IrowB, p_IcolB
   
   ! The data arrays of B1 and B2
-  real(DP), dimension(*), intent(IN) :: p_DB1, p_DB2
+  real(DP), dimension(*), intent(in) :: p_DB1, p_DB2
   
   ! The matrix structure of D
-  integer, dimension(*), intent(IN) :: p_IrowD, p_IcolD
+  integer, dimension(*), intent(in) :: p_IrowD, p_IcolD
   
   ! The data arrays of D1 and D2
-  real(DP), dimension(*), intent(IN) :: p_DD1, p_DD2
+  real(DP), dimension(*), intent(in) :: p_DD1, p_DD2
   
   ! The matrix structure of S
-  integer, dimension(*), intent(IN) :: p_IrowS, p_IcolS
+  integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
   ! The scaling factor for D1 * A11^-1 * B1
-  real(DP), intent(IN) :: dsf1
+  real(DP), intent(in) :: dsf1
 
   ! The scaling factor for D2 * A22^-1 * B2
-  real(DP), intent(IN) :: dsf2
+  real(DP), intent(in) :: dsf2
 !</input>
 
 !<inputoutput>
   ! The data array of S
-  real(DP), dimension(*), intent(INOUT) :: p_DS
+  real(DP), dimension(*), intent(inout) :: p_DS
 !</inputoutput>
 
 !</subroutine>

@@ -2034,12 +2034,12 @@ contains
   ! Array of system matrices on all levels of the discretisation.
   ! This is passed through all initialisation routines, but actually used 
   ! only by the multigrid initialisation routine.
-  type(t_matrixBlock), dimension(:), intent(IN) :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in) :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)             :: rsolverNode
+  type(t_linsolNode), intent(inout)             :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -2125,21 +2125,21 @@ contains
   
 !<input>
   ! Array of system matrices on all levels of the discretisation.
-  type(t_matrixBlock), dimension(:), intent(IN) :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in) :: Rmatrices
 
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 !</input>
 
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
   
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -2218,12 +2218,12 @@ contains
   
 !<input>
   ! System matrices of the discretisation.
-  type(t_matrixBlock), intent(IN),target :: rmatrix
+  type(t_matrixBlock), intent(in),target :: rmatrix
 !</input>
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -2261,7 +2261,7 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
 
 !<input>
@@ -2271,14 +2271,14 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are initialised.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !</subroutine>
@@ -2340,7 +2340,7 @@ contains
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -2350,12 +2350,12 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are initialised.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -2410,14 +2410,14 @@ contains
   
 !<inputoutput>
   ! The solver node which should be reinitialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -2427,7 +2427,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -2463,12 +2463,12 @@ contains
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<inputoutput>
   ! The solver node containing the solver confuguration
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -2478,7 +2478,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
   
 !</subroutine>
@@ -2515,7 +2515,7 @@ contains
 !<inputoutput>
   
   ! The solver node containing the solver confuguration
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
   
 !</inputoutput>
   
@@ -2527,7 +2527,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 
 !</input>
 
@@ -2580,7 +2580,7 @@ contains
   
 !<inputoutput>
   ! The solver node which should be reinitialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -2590,7 +2590,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
   
 !</subroutine>
@@ -2647,7 +2647,7 @@ contains
   ! cleaning up.
   ! Remark: The subnodes of the solver (if there are any) are always
   ! removed from the heap!
-  logical, intent(IN), optional :: bkeepSolverNode
+  logical, intent(in), optional :: bkeepSolverNode
 !</input>
 
 !<inputoutput>
@@ -2741,11 +2741,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that is passed to all solvers in the
   ! solver tree identified by rsolverNode.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -2799,13 +2799,13 @@ contains
   
 !<input>
   ! The solver node that contains the convergence criterion
-  type(t_linsolNode), intent(IN) :: rsolverNode
+  type(t_linsolNode), intent(in) :: rsolverNode
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
   ! If not existent, the routine assumes that dvecNrm is the norm
   ! of the vector and checks convergence depending on dvecNorm.
-  type(t_vectorBlock), intent(IN), optional :: rdef
+  type(t_vectorBlock), intent(in), optional :: rdef
 !</input>
 
 !<inputoutput>
@@ -2814,7 +2814,7 @@ contains
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
   ! vector and convergence is tested using dvecNorm.
-  real(DP), intent(INOUT) :: dvecNorm
+  real(DP), intent(inout) :: dvecNorm
 !</inputoutput>
   
 !</function>
@@ -2898,13 +2898,13 @@ contains
   
 !<input>
   ! The solver node that contains the divergence criterion
-  type(t_linsolNode), intent(IN) :: rsolverNode
+  type(t_linsolNode), intent(in) :: rsolverNode
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the vector is returned in dvecNorm.
   ! If not existent, the routine assumes that dvecNrm is the norm
   ! of the vector and checks divergence depending on dvecNorm.
-  type(t_vectorBlock), intent(IN), optional :: rdef
+  type(t_vectorBlock), intent(in), optional :: rdef
 !</input>
 
 !<inputoutput>
@@ -2913,7 +2913,7 @@ contains
   ! it in dvecNorm.
   ! If rdef is not present, dvecNorm is assumed to be a valid norm of a
   ! vector and divergence is tested using dvecNorm.
-  real(DP), intent(INOUT) :: dvecNorm
+  real(DP), intent(inout) :: dvecNorm
 !</inputoutput>
 
 !</function>
@@ -2968,11 +2968,11 @@ contains
   
 !<inputoutput>
   ! The solver node containing the solver configuration
-  type(t_linsolNode), intent(INOUT)                :: rsolverNode
+  type(t_linsolNode), intent(inout)                :: rsolverNode
   
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)               :: rd
+  type(t_vectorBlock), intent(inout)               :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -3037,18 +3037,18 @@ contains
   
 !<input>
   ! The RHS vector of the system
-  type(t_vectorBlock), intent(IN), target            :: rb
+  type(t_vectorBlock), intent(in), target            :: rb
 !</input>
   
 !<inputoutput>
   ! The solver node containing the solver configuration
-  type(t_linsolNode), intent(INOUT)                  :: rsolverNode
+  type(t_linsolNode), intent(inout)                  :: rsolverNode
   
   ! The initial solution vector; receives the solution of the system
-  type(t_vectorBlock), intent(INOUT)                 :: rx
+  type(t_vectorBlock), intent(inout)                 :: rx
   
   ! A temporary vector of the same size and structure as rx.
-  type(t_vectorBlock), intent(INOUT)                 :: rtemp
+  type(t_vectorBlock), intent(inout)                 :: rtemp
 !</inputoutput>
   
 !</subroutine>
@@ -3096,17 +3096,17 @@ contains
   
 !<input>
   ! Number of steps the smoother should perform
-  integer, intent(IN)          :: nsmoothingSteps
+  integer, intent(in)          :: nsmoothingSteps
   
   ! OPTIONAL: Damping parameter.
   ! The parameter rsolverNode%domega is set to this value in order
   ! to set up the damping.
-  real(DP), intent(IN), optional :: domega
+  real(DP), intent(in), optional :: domega
 !</input>
   
 !<inputoutput>
   ! Solver node which should be configured as smoother.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -3242,11 +3242,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -3273,7 +3273,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -3307,22 +3307,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -3354,12 +3354,12 @@ contains
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -3386,14 +3386,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -3403,7 +3403,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -3462,14 +3462,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -3479,7 +3479,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -3525,7 +3525,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -3535,7 +3535,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -3578,7 +3578,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -3588,7 +3588,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -3642,11 +3642,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -4021,22 +4021,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -4118,11 +4118,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Jacobi solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -4298,7 +4298,7 @@ contains
   
 !<input>
   ! OPTIONAL: Relaxation parameter. If not given, 1.0 is used.
-  real(DP), intent(IN), optional :: drelax
+  real(DP), intent(in), optional :: drelax
 
 !</input>
   
@@ -4346,22 +4346,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -4443,7 +4443,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of SOR which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -4471,11 +4471,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the SOR solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 
   ! On entry: The defect vector d to be preconditioned.
   ! On exit: The preconditioned defect vector x.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -4572,29 +4572,29 @@ contains
     subroutine performSOR9_dd (DA,Kcol,Kld,Kdiagonal,domega,drelax,Dx,dscale)
     
     ! input: Matrix array
-    real(DP), dimension(:), intent(IN) :: DA
+    real(DP), dimension(:), intent(in) :: DA
     
     ! input: column structure
-    integer, dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(in) :: Kcol
     
     ! input: row structure
-    integer, dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(in) :: Kld
     
     ! input: position of diagonal entries in the matrix
-    integer, dimension(:), intent(IN) :: Kdiagonal
+    integer, dimension(:), intent(in) :: Kdiagonal
     
     ! input: Damping parameter; standard value is 1.0.
-    real(DP), intent(IN) :: domega
+    real(DP), intent(in) :: domega
     
     ! input: Relaxation parameter;
-    real(DP), intent(IN) :: drelax
+    real(DP), intent(in) :: drelax
     
     ! Scaling factor of the matrix; usually = 1.0
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
     
     ! input: vector to be preconditioned.
     ! output: preconditioned vector
-    real(DP), dimension(:), intent(INOUT) :: Dx
+    real(DP), dimension(:), intent(inout) :: Dx
     
     ! local variables
     integer :: i,j,k
@@ -4670,13 +4670,13 @@ contains
   
 !<input>
   ! OPTIONAL: Relaxation parameter. If not given, 1.0 is used.
-  real(DP), intent(IN), optional :: drelax
+  real(DP), intent(in), optional :: drelax
 
   ! OPTIONAL: If set to TRUE, the solution is scaled by 1/(drelax*(2-drelax))
   ! which gives the SSOR preconditioner in the literature. If not existent
   ! or set to FALSE, no scaling is performed; this is the original 
   ! implementation of SSOR in FEAT.
-  logical, intent(IN), optional :: bscale
+  logical, intent(in), optional :: bscale
 !</input>
   
 !<output>
@@ -4725,22 +4725,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
   
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -4822,7 +4822,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of SSOR which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -4850,11 +4850,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the SSOR solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 
   ! On entry: The defect vector d to be preconditioned.
   ! On exit: The preconditioned defect vector x.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -4941,33 +4941,33 @@ contains
                                 drelax,bscale,Dx,dscale)
     
     ! input: Matrix array
-    real(DP), dimension(:), intent(IN) :: DA
+    real(DP), dimension(:), intent(in) :: DA
     
     ! input: column structure
-    integer, dimension(:), intent(IN) :: Kcol
+    integer, dimension(:), intent(in) :: Kcol
     
     ! input: row structure
-    integer, dimension(:), intent(IN) :: Kld
+    integer, dimension(:), intent(in) :: Kld
     
     ! input: position of diagonal entries in the matrix
-    integer, dimension(:), intent(IN) :: Kdiagonal
+    integer, dimension(:), intent(in) :: Kdiagonal
     
     ! input: Damping parameter; standard value is 1.0
-    real(DP), intent(IN) :: domega
+    real(DP), intent(in) :: domega
     
     ! input: Relaxation parameter
-    real(DP), intent(IN) :: drelax
+    real(DP), intent(in) :: drelax
 
     ! input: Scaling factor of the matrix; usually = 1.0
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
     
     ! input: Whether the solution should be scaled as suggested in 
     ! the literature
-    logical, intent(IN) :: bscale
+    logical, intent(in) :: bscale
     
     ! input: vector to be preconditioned.
     ! output: preconditioned vector
-    real(DP), dimension(:), intent(INOUT) :: Dx
+    real(DP), dimension(:), intent(inout) :: Dx
     
     ! local variables
     integer :: i,j,k,n
@@ -5159,7 +5159,7 @@ contains
   ! If not present, the standard VANKA solver is used.
   ! If present, this is one of the LINSOL_VANKA_xxxx flags that indicate a 
   ! special VANKA variant for higher performance.
-  integer, intent(IN), optional       :: csubtypeVANKA
+  integer, intent(in), optional       :: csubtypeVANKA
 !</input>  
   
 !<output>
@@ -5209,11 +5209,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -5250,22 +5250,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN),target   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in),target   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -5364,14 +5364,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -5381,7 +5381,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -5426,14 +5426,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
 !</inputoutput>
 
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
   
@@ -5444,7 +5444,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -5583,7 +5583,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -5593,7 +5593,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -5627,7 +5627,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -5637,7 +5637,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -5673,7 +5673,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of VANKA which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -5710,11 +5710,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the VANKA solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -5851,22 +5851,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -5893,14 +5893,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -5910,7 +5910,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6070,14 +6070,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
 !</inputoutput>
 
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
   
@@ -6088,7 +6088,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6265,7 +6265,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -6275,7 +6275,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6311,7 +6311,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -6321,7 +6321,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6363,7 +6363,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -6401,11 +6401,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -6517,12 +6517,12 @@ contains
 !<input>
   ! Fill-in level for factorisation.
   ! 0=ILU(0), 1=ILU(1),...
-  integer, intent(IN) :: ifill
+  integer, intent(in) :: ifill
   
   ! Relaxation parameter.
   ! 0.0=ILU(s), 1.0=MILU(s), between 0.0 and 1.0=multiplier to use before
   ! adding discarded fill to the diagonal.
-  real(DP), intent(IN) :: drelax
+  real(DP), intent(in) :: drelax
 !</input>
   
 !<output>
@@ -6578,22 +6578,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -6627,14 +6627,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT),target  :: rsolverNode
+  type(t_linsolNode), intent(inout),target  :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -6644,7 +6644,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6769,7 +6769,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -6779,7 +6779,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -6816,7 +6816,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of UMFPACK4 which is to be cleaned up.
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -6853,11 +6853,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the (M)ILU(s) solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -6986,11 +6986,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -7019,22 +7019,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -7076,12 +7076,12 @@ contains
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -7110,14 +7110,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -7127,7 +7127,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -7185,14 +7185,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -7202,7 +7202,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -7246,7 +7246,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -7256,7 +7256,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -7297,7 +7297,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -7307,7 +7307,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -7400,11 +7400,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the CG solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -7879,11 +7879,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -7912,22 +7912,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -7969,12 +7969,12 @@ contains
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -8003,14 +8003,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -8020,7 +8020,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -8077,14 +8077,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -8094,7 +8094,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -8138,7 +8138,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -8148,7 +8148,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -8189,7 +8189,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the UMFPACK4 solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -8199,7 +8199,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -8297,11 +8297,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the BiCGStab solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -8807,11 +8807,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -8840,22 +8840,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -8896,12 +8896,12 @@ contains
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -8930,14 +8930,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -8947,7 +8947,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -9051,14 +9051,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -9068,7 +9068,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -9112,7 +9112,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -9122,7 +9122,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -9163,7 +9163,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES(m) solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -9173,7 +9173,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -9291,11 +9291,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the GMRES solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -9864,12 +9864,12 @@ contains
   type(t_linsolNode), pointer :: p_rsolverS
   
   ! An array of Schur-complement matrices.
-  type(t_matrixBlock), dimension(:), target, intent(IN) :: RmatrixS
+  type(t_matrixBlock), dimension(:), target, intent(in) :: RmatrixS
   
   ! OPTIONAL: One of the LINSOL_SCHUR_TYPE_XXXX constants which specifies
   ! which type of preconditioner is to be used.
   ! If not given, LINSOL_SCHUR_TYPE_DIAG is used.
-  integer, optional, intent(IN) :: ctype
+  integer, optional, intent(in) :: ctype
 !</input>
   
 !<output>
@@ -9923,22 +9923,22 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
   ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -9992,12 +9992,12 @@ contains
 !<input>
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -10076,14 +10076,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -10093,7 +10093,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -10129,14 +10129,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -10146,7 +10146,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -10182,7 +10182,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -10192,7 +10192,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -10225,7 +10225,7 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<input>
@@ -10235,7 +10235,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -10333,11 +10333,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the CG solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -10508,7 +10508,7 @@ contains
   ! that the coarse grid solver on the previous lowest level is removed!
   ! (i.e. removed from the p_rlevelInfo node corresponding to the lowest
   ! level!)
-  integer, intent(IN), optional                  :: iappend
+  integer, intent(in), optional                  :: iappend
 !</input>
   
 !<output>  
@@ -10657,7 +10657,7 @@ contains
   ! that the coarse grid solver on the previous lowest level is removed!
   ! (i.e. removed from the p_rlevelInfo node corresponding to the lowest
   ! level!)
-  integer, intent(IN), optional                  :: iappend
+  integer, intent(in), optional                  :: iappend
 !</input>
   
 !<output>  
@@ -10764,14 +10764,14 @@ contains
   
 !<inputoutput>
   ! The solver structure of the multigrid solver.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !<input>
   ! OPTIONAL: Defines which level to delete.
   ! .TRUE. = Delete the coarse level.
   ! .FALSE. or not defined = Delete the finest level.
-  logical, intent(IN), optional :: bcoarseLevel
+  logical, intent(in), optional :: bcoarseLevel
 !</input>  
   
 !</subroutine>
@@ -10936,7 +10936,7 @@ contains
   
 !<inputoutput>
   ! The solver structure of the multigrid solver.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -10962,12 +10962,12 @@ contains
   
 !<inputoutput>
   ! The solver structure of the multigrid solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !<input>
   ! Number of the level to fetch.
-  integer, intent(IN) :: ilevel
+  integer, intent(in) :: ilevel
 !</input>  
   
 !<output>
@@ -11008,7 +11008,7 @@ contains
   
 !<input>
   ! The solver structure of the multigrid solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</input>
 
 !<return>
@@ -11101,11 +11101,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT)                     :: rsolverNode
+  type(t_linsolNode), intent(inout)                     :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -11157,14 +11157,14 @@ contains
   
   ! An array of system matrices on all levels.
   ! Each level in multigrid is initialised separately.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 
 !</input>
   
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -11257,11 +11257,11 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
@@ -11269,12 +11269,12 @@ contains
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   ! More precisely, ccompatible returns always the status of the highest
   ! level where there is an error -- or LINSOL_COMP_OK if there is no error.
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -11406,14 +11406,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -11423,7 +11423,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -11614,14 +11614,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -11631,7 +11631,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -11707,7 +11707,7 @@ contains
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -11719,7 +11719,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 
 !</input>
 
@@ -11788,7 +11788,7 @@ contains
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -11800,7 +11800,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 
 !</input>
 
@@ -11918,7 +11918,7 @@ contains
   
 !<inputoutput>
   ! A pointer to a t_linsolNode structure of the Multigrid solver.
-  type(t_linsolNode), intent(INOUT)                :: rsolverNode
+  type(t_linsolNode), intent(inout)                :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -12004,10 +12004,10 @@ contains
   
 !<input>
   ! The RHS vector of the system
-  type(t_vectorBlock), intent(IN), target            :: rb
+  type(t_vectorBlock), intent(in), target            :: rb
 
   ! The system matrix on the current level.
-  type(t_matrixBlock), intent(IN)                    :: rmatrix
+  type(t_matrixBlock), intent(in)                    :: rmatrix
   
   ! Pointer to the filter chain to use if rsolverNode is a direct
   ! solver. NULL() if no filtering is active.
@@ -12016,13 +12016,13 @@ contains
   
 !<inputoutput>
   ! The solver node containing the solver configuration
-  type(t_linsolNode), intent(INOUT)                  :: rsolverNode
+  type(t_linsolNode), intent(inout)                  :: rsolverNode
   
   ! The initial solution vector; receives the solution of the system
-  type(t_vectorBlock), intent(INOUT)                 :: rx
+  type(t_vectorBlock), intent(inout)                 :: rx
   
   ! A temporary vector of the same size and structure as rx.
-  type(t_vectorBlock), intent(INOUT)                 :: rtemp
+  type(t_vectorBlock), intent(inout)                 :: rtemp
 !</inputoutput>
   
 !</subroutine>
@@ -12221,11 +12221,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -13058,7 +13058,7 @@ contains
   
 !<input>
   ! The solver structure of the multigrid solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</input>
 
 !<return>
@@ -13085,12 +13085,12 @@ contains
   
 !<inputoutput>
   ! The solver structure of the multigrid solver
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !<input>
   ! Number of the level to fetch.
-  integer, intent(IN) :: ilevel
+  integer, intent(in) :: ilevel
 !</input>  
   
 !<output>
@@ -13128,7 +13128,7 @@ contains
   
 !<inputoutput>
   ! The t_levelInfo structure to clean up.
-  type(t_linsolMG2LevelInfo), intent(INOUT)     :: rlevelInfo
+  type(t_linsolMG2LevelInfo), intent(inout)     :: rlevelInfo
 !</inputoutput>
 
 !</subroutine>
@@ -13184,7 +13184,7 @@ contains
   
 !<inputoutput>
   ! The solver structure of the multigrid solver.
-  type(t_linsolNode), intent(INOUT) :: rsolverNode
+  type(t_linsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -13410,7 +13410,7 @@ contains
 !<input>
 
   ! Number of levels supported by this solver.
-  integer, intent(IN) :: nlevels
+  integer, intent(in) :: nlevels
   
   ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
@@ -13476,11 +13476,11 @@ contains
   
 !<inputoutput>
   ! The solver node which should be initialised
-  type(t_linsolNode), intent(INOUT), target             :: rsolverNode
+  type(t_linsolNode), intent(inout), target             :: rsolverNode
 
   ! A command/configuration block that specifies a command which is given
   ! to the solver.
-  type(t_linsol_alterSolverConfig), intent(INOUT)       :: ralterConfig
+  type(t_linsol_alterSolverConfig), intent(inout)       :: ralterConfig
 !</inputoutput>
 
 !</subroutine>
@@ -13533,14 +13533,14 @@ contains
   
   ! An array of system matrices on all levels.
   ! Each level in multigrid is initialised separately.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 
 !</input>
   
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -13617,11 +13617,11 @@ contains
   
 !<input>
   ! The solver node which should be checked against the matrices
-  type(t_linsolNode), intent(IN)             :: rsolverNode
+  type(t_linsolNode), intent(in)             :: rsolverNode
 
   ! An array of system matrices which is simply passed to the initialisation 
   ! routine of the preconditioner.
-  type(t_matrixBlock), dimension(:), intent(IN)   :: Rmatrices
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
 !</input>
   
 !<output>
@@ -13629,12 +13629,12 @@ contains
   ! compatible (which is the case if LINSOL_COMP_OK is returned).
   ! More precisely, ccompatible returns always the status of the highest
   ! level where there is an error -- or LINSOL_COMP_OK if there is no error.
-  integer, intent(OUT) :: ccompatible
+  integer, intent(out) :: ccompatible
 
   ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
   ! the matrices on that level are ok or not. Must have the same size
   ! as Rmatrices!
-  integer, dimension(:), intent(INOUT), optional :: CcompatibleDetail
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
 !</output>
   
 !</subroutine>
@@ -13754,14 +13754,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
 
 !<input>
@@ -13771,7 +13771,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -13953,14 +13953,14 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
 !</inputoutput>
   
 !<output>
   ! One of the LINSOL_ERR_XXXX constants. A value different to 
   ! LINSOL_ERR_NOERROR indicates that an error happened during the
   ! initialisation phase.
-  integer, intent(OUT) :: ierror
+  integer, intent(out) :: ierror
 !</output>
   
 !<input>
@@ -13970,7 +13970,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 !</input>
 
 !</subroutine>
@@ -14046,7 +14046,7 @@ contains
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -14058,7 +14058,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 
 !</input>
 
@@ -14132,7 +14132,7 @@ contains
 !<inputoutput>
   
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT)         :: rsolverNode
+  type(t_linsolNode), intent(inout)         :: rsolverNode
    
 !</inputoutput>
   
@@ -14144,7 +14144,7 @@ contains
   ! solvers in other solver subgroups are ignored.
   ! If isolverSubgroup != 0, only the solvers belonging to subgroup
   ! isolverSubgroup are processed.
-  integer, optional, intent(IN)                    :: isolverSubgroup
+  integer, optional, intent(in)                    :: isolverSubgroup
 
 !</input>
 
@@ -14269,7 +14269,7 @@ contains
   
 !<inputoutput>
   ! A pointer to a t_linsolNode structure of the Multigrid solver.
-  type(t_linsolNode), intent(INOUT)                :: rsolverNode
+  type(t_linsolNode), intent(inout)                :: rsolverNode
 !</inputoutput>
   
 !</subroutine>
@@ -14320,11 +14320,11 @@ contains
   
 !<inputoutput>
   ! The t_linsolNode structure of the Multigrid solver
-  type(t_linsolNode), intent(INOUT), target :: rsolverNode
+  type(t_linsolNode), intent(inout), target :: rsolverNode
    
   ! On call to this routine: The defect vector to be preconditioned.
   ! Will be overwritten by the preconditioned defect.
-  type(t_vectorBlock), intent(INOUT)        :: rd
+  type(t_vectorBlock), intent(inout)        :: rd
 !</inputoutput>
   
 !</subroutine>

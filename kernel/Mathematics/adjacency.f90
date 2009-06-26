@@ -110,15 +110,15 @@ contains
 !<input>
   ! A storage handle to the permutation that is to be applied onto the
   ! adjacency graph.
-  integer, intent(IN) :: h_Ipermute
+  integer, intent(in) :: h_Ipermute
 !</input>
 
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(INOUT) :: h_Iptr
+  integer, intent(inout) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(INOUT) :: h_Iidx
+  integer, intent(inout) :: h_Iidx
 !</inputoutput>
 
 !</subroutine>
@@ -195,20 +195,20 @@ contains
   ! A storage handle to the permutation that is to be applied onto the pointer
   ! array of the adjacency graph. May be ST_NOHANDLE if the pointer array
   ! is not to be permuted.
-  integer, intent(IN) :: h_IpermutePtr
+  integer, intent(in) :: h_IpermutePtr
 
   ! A storage handle to the permutation that is to be applied onto the index
   ! array of the adjacency graph. May be ST_NOHANDLE if the index array
   ! is not to be permuted.
-  integer, intent(IN) :: h_IpermuteIdx
+  integer, intent(in) :: h_IpermuteIdx
 !</input>
 
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(INOUT) :: h_Iptr
+  integer, intent(inout) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(INOUT) :: h_Iidx
+  integer, intent(inout) :: h_Iidx
 !</inputoutput>
 
 !</subroutine>
@@ -332,10 +332,10 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(IN) :: h_Iptr
+  integer, intent(in) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(IN) :: h_Iidx
+  integer, intent(in) :: h_Iidx
 !</input>
 
   integer, dimension(:), pointer :: p_Iptr, p_Iidx
@@ -394,25 +394,25 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(IN) :: h_Iptr
+  integer, intent(in) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(IN) :: h_Iidx
+  integer, intent(in) :: h_Iidx
   
   ! OPTIONAL: A storage handle to an array holding the order in which the
   ! colouring algorithm should proceed through the nodes. If not given,
   ! canonical order is used.
-  integer, optional, intent(IN) :: h_InodeOrder
+  integer, optional, intent(in) :: h_InodeOrder
 !</input>
 
 !<output>
   ! A storage handle to the permutation that has to be applied to
   ! get a coloured partitioning.
-  integer, intent(OUT) :: h_Ipermute
+  integer, intent(out) :: h_Ipermute
 
   ! A storage handle to the colour partition table.
   ! The number of colours used is implicitly given by UBOUND(Icpt,1)-1.
-  integer, intent(OUT) :: h_Icpt
+  integer, intent(out) :: h_Icpt
 !</output>
 
 !</subroutine>
@@ -624,20 +624,20 @@ contains
 
 !<input>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(IN) :: h_Iptr
+  integer, intent(in) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(IN) :: h_Iidx
+  integer, intent(in) :: h_Iidx
   
   ! OPTIONAL: A combination ADJ_CMK_FLAG_XXXX constants defined at the top
   ! of this module specifying the flags for the algorithm. If not given,
   ! only the ADJ_CMK_FLAG_ROOT_MIN flag is set.
-  integer(I32), optional, intent(IN) :: cflags
+  integer(I32), optional, intent(in) :: cflags
 !</input>
 
 !<output>
   ! A storage handle to the (reverse) Cuthill-McKee permutation.
-  integer, intent(OUT) :: h_Ipermute
+  integer, intent(out) :: h_Ipermute
 !</output>
 
 !</subroutine>
@@ -828,8 +828,8 @@ contains
   contains
   
     pure subroutine adj_cmk_aux_sort_min(m,n,Iperm,Iaux)
-    integer, intent(IN) :: m,n
-    integer, dimension(:), intent(INOUT) :: Iperm, Iaux
+    integer, intent(in) :: m,n
+    integer, dimension(:), intent(inout) :: Iperm, Iaux
     
     integer :: i,j,k
     
@@ -856,8 +856,8 @@ contains
     end subroutine ! adj_cmk_aux_sort_min
   
     pure subroutine adj_cmk_aux_sort_max(m,n,Iperm,Iaux)
-    integer, intent(IN) :: m,n
-    integer, dimension(:), intent(INOUT) :: Iperm, Iaux
+    integer, intent(in) :: m,n
+    integer, dimension(:), intent(inout) :: Iperm, Iaux
     
     integer :: i,j,k
     

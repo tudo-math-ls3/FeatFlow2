@@ -69,13 +69,13 @@ contains
 
 !<input>
   ! A boundary object that specifies the analytical boundary of the domain.
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
   ! A triangulation object that specifies the mesh in the domain.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -85,16 +85,16 @@ contains
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  type(t_collection), intent(IN), target, optional :: rcollection
+  type(t_collection), intent(in), target, optional :: rcollection
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
 !</output>
 
 !</subroutine>
@@ -154,17 +154,17 @@ contains
 
 !<input>
   ! A boundary object that specifies the analytical boundary of the domain.
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
   ! A triangulation object that specifies the mesh in the domain.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN)                     :: ccubType
+  integer(I32), intent(in)                     :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 
   ! A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -173,12 +173,12 @@ contains
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
 !</output>
 
 !</subroutine>
@@ -454,20 +454,20 @@ contains
 
 !<input>
   ! A scalar FE function to compute a boundary integral of.
-  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
 !</output>
 
 !</subroutine>
@@ -531,34 +531,34 @@ contains
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: DpointsRef
+    real(DP), dimension(:,:,:), intent(in)  :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(IN) :: ibct
+    integer, intent(in) :: ibct
     
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(in) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(inout), optional      :: rcollection
   !</input>
   
   !<output>
@@ -566,7 +566,7 @@ contains
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(out)                      :: Dvalues
   !</output>
     
   !</subroutine>
@@ -604,20 +604,20 @@ contains
 
 !<input>
   ! A scalar FE function to compute a boundary integral of.
-  type(t_vectorScalar), intent(IN) :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
 !</input>
 
 !<output>
   ! The calculated value of the integral.
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
 !</output>
 
 !</subroutine>
@@ -681,34 +681,34 @@ contains
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(IN) :: ibct
+    integer, intent(in) :: ibct
     
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(in) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
   !</input>
   
   !<output>
@@ -716,7 +716,7 @@ contains
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT) :: Dvalues
+    real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>

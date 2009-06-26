@@ -241,12 +241,12 @@ contains
 
 !<input>
     ! template block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrixBlockTemplate
+    type(t_matrixBlock), intent(in) :: rmatrixBlockTemplate
 !</input>
 
 !<inputoutput>
     ! discrete operator structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -346,12 +346,12 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixScalar), intent(IN) :: rmatrixTemplate
+    type(t_matrixScalar), intent(in) :: rmatrixTemplate
 !</input>
 
 !<inputoutput>
     ! discrete operator structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -429,10 +429,10 @@ contains
 
 !<input>
     ! block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrixBlock
+    type(t_matrixBlock), intent(in) :: rmatrixBlock
 
     ! stabilisation structure
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -440,7 +440,7 @@ contains
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -506,10 +506,10 @@ contains
 
 !<input>
     ! scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! stabilisation structure
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -517,7 +517,7 @@ contains
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -553,10 +553,10 @@ contains
 
 !<input>
     ! block vector
-    type(t_vectorBlock), intent(IN) :: rvectorBlock
+    type(t_vectorBlock), intent(in) :: rvectorBlock
 
     ! stabilisation structure
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -564,7 +564,7 @@ contains
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -605,10 +605,10 @@ contains
 
 !<input>
     ! scalar vector
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
 
     ! stabilisation structure
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -616,7 +616,7 @@ contains
     ! whether matrix and stabilisation are compatible or not.
     ! If not given, an error will inform the user if the matrix/operator are
     ! not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -653,18 +653,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local Roe matrix and
     ! local dissipation matrix
@@ -673,7 +673,7 @@ contains
 
 !<inputoutput>
     ! global transport operator
-    type(t_matrixBlock), intent(INOUT) :: rdivMatrix
+    type(t_matrixBlock), intent(inout) :: rdivMatrix
 !</inputoutput>
 !</subroutine>
     
@@ -854,14 +854,14 @@ contains
     subroutine doOperatorMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                      Cx, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -926,14 +926,14 @@ contains
     subroutine doOperatorMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                      Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -999,14 +999,14 @@ contains
     subroutine doOperatorMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                      Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1073,14 +1073,14 @@ contains
     subroutine doOperatorMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                      Cx, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1145,14 +1145,14 @@ contains
     subroutine doOperatorMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                      Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -1218,14 +1218,14 @@ contains
     subroutine doOperatorMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                      Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1292,14 +1292,14 @@ contains
     subroutine doOperatorMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1371,14 +1371,14 @@ contains
     subroutine doOperatorMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -1451,14 +1451,14 @@ contains
     subroutine doOperatorMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1532,14 +1532,14 @@ contains
     subroutine doOperatorMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1611,14 +1611,14 @@ contains
     subroutine doOperatorMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, K)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -1691,14 +1691,14 @@ contains
     subroutine doOperatorMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      type(t_array), dimension(:,:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      type(t_array), dimension(:,:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1781,18 +1781,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
     
     ! scalar solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local Roe matrix and
     ! local dissipation matrix
@@ -1801,7 +1801,7 @@ contains
 
 !<inputoutput>
     ! scalar transport operator
-    type(t_matrixScalar), intent(INOUT) :: rdivMatrix
+    type(t_matrixScalar), intent(inout) :: rdivMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -1985,14 +1985,14 @@ contains
     subroutine doOperatorMat7Diag_1D(Kld, Kcol, Ksep, NEQ, NA, NVAR, &
                                      Cx, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2047,14 +2047,14 @@ contains
     subroutine doOperatorMat7Diag_2D(Kld, Kcol, Ksep, NEQ, NA, NVAR,&
                                      Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2110,14 +2110,14 @@ contains
     subroutine doOperatorMat7Diag_3D(Kld, Kcol, Ksep, NEQ, NA, NVAR,&
                                      Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2174,14 +2174,14 @@ contains
     subroutine doOperatorMat9Diag_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                      Cx, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2236,14 +2236,14 @@ contains
     subroutine doOperatorMat9Diag_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                      Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2299,14 +2299,14 @@ contains
     subroutine doOperatorMat9Diag_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                      Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2363,14 +2363,14 @@ contains
     subroutine doOperatorMat7_1D(Kld, Kcol, Ksep, NEQ, NA, NVAR,&
                                  Cx, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2425,14 +2425,14 @@ contains
     subroutine doOperatorMat7_2D(Kld, Kcol, Ksep, NEQ, NA, NVAR,&
                                  Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2488,14 +2488,14 @@ contains
     subroutine doOperatorMat7_3D(Kld, Kcol, Ksep, NEQ, NA, NVAR,&
                                  Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2552,14 +2552,14 @@ contains
     subroutine doOperatorMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                  Cx, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2614,14 +2614,14 @@ contains
     subroutine doOperatorMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                  Cx, Cy, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2677,14 +2677,14 @@ contains
     subroutine doOperatorMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NA, NVAR,&
                                  Cx, Cy, Cz, u, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NA,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NA,NVAR
 
-      real(DP), dimension(NVAR*NVAR,NA), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR*NVAR,NA), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2748,18 +2748,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -2767,7 +2767,7 @@ contains
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 !</inputoutput>
 !</subroutine>
 
@@ -2897,14 +2897,14 @@ contains
     subroutine doResidualMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2948,14 +2948,14 @@ contains
     subroutine doResidualMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, res)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3000,14 +3000,14 @@ contains
     subroutine doResidualMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, res)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -3053,14 +3053,14 @@ contains
     subroutine doResidualMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, res)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3104,14 +3104,14 @@ contains
     subroutine doResidualMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, res)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3156,14 +3156,14 @@ contains
     subroutine doResidualMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, res)
       
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -3216,18 +3216,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -3235,7 +3235,7 @@ contains
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 !</inputoutput>
 !</subroutine>
   
@@ -3358,14 +3358,14 @@ contains
     subroutine doResidualMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3406,14 +3406,14 @@ contains
     subroutine doResidualMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, res)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3455,14 +3455,14 @@ contains
     subroutine doResidualMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, res)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -3505,14 +3505,14 @@ contains
     subroutine doResidualMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, res)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3553,14 +3553,14 @@ contains
     subroutine doResidualMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, res)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3601,14 +3601,14 @@ contains
     subroutine doResidualMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, res)
       
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale  
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale  
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -3659,18 +3659,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -3678,10 +3678,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 !</inputoutput>
 !</subroutine>
     
@@ -3836,15 +3836,15 @@ contains
     subroutine doLimitTVDMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3980,15 +3980,15 @@ contains
     subroutine doLimitTVDMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -4216,15 +4216,15 @@ contains
     subroutine doLimitTVDMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -4543,15 +4543,15 @@ contains
     subroutine doLimitTVDMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -4687,15 +4687,15 @@ contains
     subroutine doLimitTVDMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -4922,15 +4922,15 @@ contains
     subroutine doLimitTVDMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NEQ,NVAR), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -5255,18 +5255,18 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! scaling factor
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! Switch for vector assembly
     ! TRUE  : clear vector before assembly
     ! FLASE : assemble vector in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -5274,10 +5274,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
     
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 !</inputoutput>
 !</subroutine>
 
@@ -5423,15 +5423,15 @@ contains
     subroutine doLimitTVDMat7_1D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -5561,15 +5561,15 @@ contains
     subroutine doLimitTVDMat7_2D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -5788,15 +5788,15 @@ contains
     subroutine doLimitTVDMat7_3D(Kld, Kcol, Ksep, NEQ, NVAR, Cx, Cy, Cz, u,&
                                  dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -6103,15 +6103,15 @@ contains
     subroutine doLimitTVDMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -6241,15 +6241,15 @@ contains
     subroutine doLimitTVDMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -6468,15 +6468,15 @@ contains
     subroutine doLimitTVDMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
                                  Cx, Cy, Cz, u, dscale, pp, pm, qp, qm, rp, rm, res)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: res
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -6790,10 +6790,10 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -6801,10 +6801,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! correction vector
-    type(t_vectorBlock), intent(INOUT) :: rcorr
+    type(t_vectorBlock), intent(inout) :: rcorr
 !</inputoutput>
 !</subroutine>
 
@@ -6823,10 +6823,10 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! callback functions to compute local matrices
     include 'intf_gfsyscallback.inc'
@@ -6834,10 +6834,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! correction vector
-    type(t_vectorScalar), intent(INOUT) :: rcorr
+    type(t_vectorScalar), intent(inout) :: rcorr
 !</inputoutput>
 !</subroutine>
 
@@ -6863,15 +6863,15 @@ contains
 
 !<input>
     ! The block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<output>
     ! The array
-    type(t_array), dimension(:,:), intent(OUT) :: rarray
+    type(t_array), dimension(:,:), intent(out) :: rarray
 
     ! OPTIONAL: indicator for full block matrix
-    logical, intent(OUT), optional :: bisFullMatrix
+    logical, intent(out), optional :: bisFullMatrix
 !</output>
 !</subroutine>
     
@@ -6921,15 +6921,15 @@ contains
 
 !<input>
     ! The block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<output>
     ! The array
-    type(t_array), dimension(:,:), intent(OUT) :: rarray
+    type(t_array), dimension(:,:), intent(out) :: rarray
 
     ! OPTIONAL: indicator for full block matrix
-    logical, intent(OUT), optional :: bisFullMatrix
+    logical, intent(out), optional :: bisFullMatrix
 !</output>
 !</subroutine>
     
@@ -6979,15 +6979,15 @@ contains
 
 !<input>
     ! The block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<output>
     ! The array
-    type(t_array), dimension(:,:), intent(OUT) :: rarray
+    type(t_array), dimension(:,:), intent(out) :: rarray
 
     ! OPTIONAL: indicator for full block matrix
-    logical, intent(OUT), optional :: bisFullMatrix
+    logical, intent(out), optional :: bisFullMatrix
 !</output>
 !</subroutine>
     

@@ -521,10 +521,10 @@ contains
 
 !<input>
   ! The first vector
-  type(t_vectorBlock), intent(IN) :: rvector1
+  type(t_vectorBlock), intent(in) :: rvector1
   
   ! The second vector
-  type(t_vectorBlock), intent(IN) :: rvector2
+  type(t_vectorBlock), intent(in) :: rvector2
 !</input>
 
 !<output>
@@ -532,7 +532,7 @@ contains
   ! whether the vectors are compatible or not.
   ! If not given, an error will inform the user if the two vectors are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -629,16 +629,16 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! The matrix
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 
   ! Check for rvector being compatible from the left or from the right
   ! to the matrix rmatrix.
   ! =FALSE: Check whether matrix-vector product $A*x$ is possible
   ! =TRUE : Check whether matrix-vector product $x^T*A = A^T*x$ is possible
-  logical, intent(IN)              :: btransposed
+  logical, intent(in)              :: btransposed
 !</input>
 
 !<output>
@@ -646,7 +646,7 @@ contains
   ! whether vector and matrix are compatible or not.
   ! If not given, an error will inform the user if the vector/matrix are
   ! not compatible and the program will halt.
-  logical, intent(OUT), optional :: bcompatible
+  logical, intent(out), optional :: bcompatible
 !</output>
 
 !</subroutine>
@@ -818,7 +818,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -862,7 +862,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -906,7 +906,7 @@ contains
 
 !<input>
   ! The vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !<output>
@@ -954,20 +954,20 @@ contains
 
 !<input>
   ! An array with length-tags for the different blocks
-  integer, dimension(:), intent(IN)         :: Isize
+  integer, dimension(:), intent(in)         :: Isize
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
-  logical, intent(IN), optional             :: bclear
+  logical, intent(in), optional             :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(IN),optional              :: cdataType
+  integer, intent(in),optional              :: cdataType
 !</input>
 
 !<output>
   
   ! Destination structure. Memory is allocated for each of the blocks.
-  type(t_vectorBlock),intent(OUT) :: rx
+  type(t_vectorBlock),intent(out) :: rx
   
 !</output>
   
@@ -980,7 +980,7 @@ contains
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
   
-  ! rx is initialised by INTENT(OUT) with the most common data.
+  ! rx is initialised by INTENT(out) with the most common data.
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
@@ -1045,23 +1045,23 @@ contains
 
 !<input>
   ! An integer describing the length of each block
-  integer, intent(IN) :: isize
+  integer, intent(in) :: isize
 
   ! An integer describing the number of vector blocks
-  integer, intent(IN) :: iblocks
+  integer, intent(in) :: iblocks
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
-  logical, intent(IN), optional             :: bclear
+  logical, intent(in), optional             :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(IN),optional              :: cdataType
+  integer, intent(in),optional              :: cdataType
 !</input>
 
 !<output>
   
   ! Destination structure. Memory is allocated for each of the blocks.
-  type(t_vectorBlock),intent(OUT) :: rx
+  type(t_vectorBlock),intent(out) :: rx
   
 !</output>
   
@@ -1074,7 +1074,7 @@ contains
   cdata = ST_DOUBLE
   if (present(cdataType)) cdata = cdataType
   
-  ! rx is initialised by INTENT(OUT) with the most common data.
+  ! rx is initialised by INTENT(out) with the most common data.
   ! What is missing is the data array.
   !
   ! Allocate one large vector holding all data.
@@ -1138,22 +1138,22 @@ contains
   
 !<input>
   ! A template vector structure
-  type(t_vectorBlock),intent(IN) :: rtemplate
+  type(t_vectorBlock),intent(in) :: rtemplate
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional             :: bclear
+  logical, intent(in), optional             :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, the new vector will
   ! receive the same data type as rtemplate.
-  integer, intent(IN),optional              :: cdataType
+  integer, intent(in),optional              :: cdataType
 !</input>
 
 !<output>
   
   ! Destination structure. Memory is allocated for each of the blocks.
-  type(t_vectorBlock),intent(OUT) :: rx
+  type(t_vectorBlock),intent(out) :: rx
   
 !</output>
   
@@ -1235,21 +1235,21 @@ contains
 !<input>
   ! A block discretisation structure specifying the spatial discretisations
   ! for all the subblocks in rx.
-  type(t_blockDiscretisation),intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation),intent(in), target :: rblockDiscretisation
   
   ! Optional: If set to YES, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional             :: bclear
+  logical, intent(in), optional             :: bclear
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is used.
-  integer, intent(IN),optional              :: cdataType
+  integer, intent(in),optional              :: cdataType
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated for each of the blocks.
   ! A pointer to rblockDiscretisation is saved to rx.
-  type(t_vectorBlock),intent(OUT) :: rx
+  type(t_vectorBlock),intent(out) :: rx
 !</output>
   
 !</subroutine>
@@ -1307,17 +1307,17 @@ contains
   ! If rblockDiscretisationTest is not specified, this also specifies
   ! the discretisation of the trial functions, this test and trial
   ! functions coincide.
-  type(t_blockDiscretisation),intent(IN), target :: rblockDiscretisationTrial
+  type(t_blockDiscretisation),intent(in), target :: rblockDiscretisationTrial
 
   ! A block discretisation structure specifying the spatial discretisations
   ! for the test functions in all the subblocks in rmatrix.
-  type(t_blockDiscretisation),intent(IN), target, optional :: rblockDiscretisationTest
+  type(t_blockDiscretisation),intent(in), target, optional :: rblockDiscretisationTest
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated for each of the blocks.
   ! A pointer to rblockDiscretisation is saved to rx.
-  type(t_matrixBlock),intent(OUT) :: rmatrix
+  type(t_matrixBlock),intent(out) :: rmatrix
 !</output>
   
 !</subroutine>
@@ -1346,7 +1346,7 @@ contains
     NEQ = NCOLS
   end if
   
-  ! The 'INTENT(OUT)' already initialised the structure with the most common
+  ! The 'INTENT(out)' already initialised the structure with the most common
   ! values. What is still missing, we now initialise:
   
   ! Initialise a pointer to the block discretisation
@@ -1404,16 +1404,16 @@ contains
 
 !<input>
   ! Number of blocks per column in the matrix
-  integer, intent(IN) :: nblocksPerCol
+  integer, intent(in) :: nblocksPerCol
   
   ! OPTIONAL: Number of blocks per row in the matrix. If not given, 
   ! nblocksPerCol is used.
-  integer, optional, intent(IN) :: nblocksPerRow
+  integer, optional, intent(in) :: nblocksPerRow
 !</input>
 
 !<output>
   ! Block matrix structure to be initialised.
-  type(t_matrixBlock), intent(OUT) :: rmatrix
+  type(t_matrixBlock), intent(out) :: rmatrix
 !</output>
 
 !</subroutine>
@@ -1462,27 +1462,27 @@ contains
   
 !<input>
   ! A template vector structure
-  type(t_matrixBlock), intent(IN) :: rtemplateMat
+  type(t_matrixBlock), intent(in) :: rtemplateMat
   
   ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
   ! Otherwise the content of rx is undefined.
-  logical, intent(IN), optional   :: bclear
+  logical, intent(in), optional   :: bclear
   
   ! OPTIONAL: If not specified or set to FALSE, the vector will be
   ! created as 'right' vector of the matrix (so matrix vector multiplication
   ! (A x) is possible).
   ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
   ! vector multiplication (A^T x) is possible.
-  logical, intent(IN), optional :: btransposed
+  logical, intent(in), optional :: btransposed
   
   ! OPTIONAL: Data type identifier for the entries in the vector. 
   ! Either ST_SINGLE or ST_DOUBLE. If not present, ST_DOUBLE is assumed.
-  integer, intent(IN),optional :: cdataType
+  integer, intent(in),optional :: cdataType
 !</input>
 
 !<output>
   ! Destination structure. Memory is allocated for each of the blocks.
-  type(t_vectorBlock),intent(OUT) :: rx
+  type(t_vectorBlock),intent(out) :: rx
 !</output>
   
 !</subroutine>
@@ -1647,13 +1647,13 @@ contains
   
 !<input>
   ! A template vector structure
-  type(t_vectorBlock),intent(IN) :: rtemplate
+  type(t_vectorBlock),intent(in) :: rtemplate
 !</input>
 
 !<inputoutput>
   ! Destination structure. Discretisation-related information of rtemplate
   ! is assigned to rx.
-  type(t_vectorBlock),intent(INOUT) :: rx
+  type(t_vectorBlock),intent(inout) :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -1696,21 +1696,21 @@ contains
   
 !<input>
   ! A template vector structure
-  type(t_matrixBlock),intent(IN) :: rtemplateMat
+  type(t_matrixBlock),intent(in) :: rtemplateMat
 
   ! OPTIONAL: If not specified or set to FALSE, the vector will be
   ! created as 'right' vector of the matrix (so matrix vector multiplication
   ! (A x) is possible).
   ! If set to TRUE, the vector will be a 'left' vector, i.e. matrix
   ! vector multiplication (A^T x) is possible.
-  logical, intent(IN), optional :: btransposed
+  logical, intent(in), optional :: btransposed
   
 !</input>
 
 !<inputoutput>
   ! Destination structure. Discretisation-related information of rtemplate
   ! is assigned to rx.
-  type(t_vectorBlock),intent(INOUT) :: rx
+  type(t_vectorBlock),intent(inout) :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -1802,16 +1802,16 @@ contains
   
 !<input>
   ! Discretisation structure for trial functions.
-  type(t_blockDiscretisation), intent(IN), target :: rdiscrTrial
+  type(t_blockDiscretisation), intent(in), target :: rdiscrTrial
 
   ! OPTIONAL: Discretisation structure for test functions.
   ! If not specified, trial and test functions coincide.
-  type(t_blockDiscretisation), intent(IN), target, optional :: rdiscrTest
+  type(t_blockDiscretisation), intent(in), target, optional :: rdiscrTest
 !</input>
 
 !<inputoutput>
   ! Destination matrix.
-  type(t_matrixBlock),intent(INOUT) :: rmatrix
+  type(t_matrixBlock),intent(inout) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
@@ -1915,12 +1915,12 @@ contains
   
 !<input>
   ! Discretisation structure for trial functions.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscr
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscr
 !</input>
 
 !<inputoutput>
   ! Destination vector.
-  type(t_vectorBlock),intent(INOUT) :: rvector
+  type(t_vectorBlock),intent(inout) :: rvector
 !</inputoutput>
   
 !</subroutine>
@@ -1967,7 +1967,7 @@ contains
 !<inputoutput>
   
   ! Vector structure that is to be released.
-  type(t_vectorBlock),intent(INOUT) :: rx
+  type(t_vectorBlock),intent(inout) :: rx
   
 !</inputoutput>
   
@@ -2014,7 +2014,7 @@ contains
   
 !<inputoutput>
   ! Block matrix to be released
-  type(t_matrixBlock), intent(INOUT)                :: rMatrix
+  type(t_matrixBlock), intent(inout)                :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2061,12 +2061,12 @@ contains
   
 !<input>
   ! Matrix row which should be released.
-  integer, intent(IN)                               :: irow
+  integer, intent(in)                               :: irow
 !</input>
   
 !<inputoutput>
   ! Block matrix to be released (partially)
-  type(t_matrixBlock), intent(INOUT)                :: rMatrix
+  type(t_matrixBlock), intent(inout)                :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2096,12 +2096,12 @@ contains
   
 !<input>
   ! Matrix column which should be released.
-  integer, intent(IN)                               :: icolumn
+  integer, intent(in)                               :: icolumn
 !</input>
   
 !<inputoutput>
   ! Block matrix to be released (partially)
-  type(t_matrixBlock), intent(INOUT)                :: rMatrix
+  type(t_matrixBlock), intent(inout)                :: rMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -2135,27 +2135,27 @@ contains
 !<input>
   
   ! Block matrix
-  type(t_matrixBlock), intent(IN)                   :: rmatrix
+  type(t_matrixBlock), intent(in)                   :: rmatrix
 
   ! Block vector to multiply with the matrix.
-  type(t_vectorBlock), intent(IN)                   :: rx
+  type(t_vectorBlock), intent(in)                   :: rx
   
   ! Multiplicative factor for rx
-  real(DP), intent(IN)                              :: cx
+  real(DP), intent(in)                              :: cx
 
   ! Multiplicative factor for ry
-  real(DP), intent(IN)                              :: cy
+  real(DP), intent(in)                              :: cy
   
   ! OPTIONAL: Specifies whether a multiplication with the matrix itself
   ! (.false.) or with its transpose (.true.) should be performed. If not
   ! given, .false. is assumed.
-  logical, optional, intent(IN)                     :: btransposed
+  logical, optional, intent(in)                     :: btransposed
 !</input>
 
 !<inputoutput>
   
   ! Additive vector. Receives the result of the matrix-vector multiplication
-  type(t_vectorBlock), intent(INOUT)                :: ry
+  type(t_vectorBlock), intent(inout)                :: ry
   
 !</inputoutput>
 
@@ -2248,18 +2248,18 @@ contains
   
 !<input>
   ! The matrix. 
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 
   ! The source vector.
-  type(t_vectorBlock), intent(IN) :: rvectorSrc
+  type(t_vectorBlock), intent(in) :: rvectorSrc
 
   ! A multiplication factor. Standard value is 1.0_DP
-  real(DP), intent(IN) :: dscale
+  real(DP), intent(in) :: dscale
 !</input>
 
 !<inputoutput>
   ! The destination vector which receives the result.
-  type(t_vectorBlock), intent(INOUT) :: rvectorDst
+  type(t_vectorBlock), intent(inout) :: rvectorDst
 !</inputoutput>
 
 !</subroutine>
@@ -2302,12 +2302,12 @@ contains
 
 !<input>
   ! Source vector
-  type(t_vectorBlock),intent(IN) :: rx
+  type(t_vectorBlock),intent(in) :: rx
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  type(t_vectorBlock),intent(INOUT) :: ry
+  type(t_vectorBlock),intent(inout) :: ry
 !</inputoutput>
   
 !</subroutine>
@@ -2403,12 +2403,12 @@ contains
 
 !<input>
   ! Source vector
-  type(t_vectorBlock),intent(IN) :: rx
+  type(t_vectorBlock),intent(in) :: rx
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  type(t_vectorBlock),intent(INOUT) :: ry
+  type(t_vectorBlock),intent(inout) :: ry
 !</inputoutput>
   
 !</subroutine>
@@ -2486,12 +2486,12 @@ contains
   
 !<input>
   ! Source vector
-  type(t_matrixBlock),intent(IN) :: rsourceMatrix
+  type(t_matrixBlock),intent(in) :: rsourceMatrix
 !</input>
 
 !<inputoutput>
   ! Destination vector
-  type(t_matrixBlock),intent(INOUT) :: rdestMatrix
+  type(t_matrixBlock),intent(inout) :: rdestMatrix
 !</inputoutput>
   
 !</subroutine>
@@ -2513,12 +2513,12 @@ contains
   
 !<inputoutput>
   ! Source and destination vector
-  type(t_vectorBlock), intent(INOUT) :: rx
+  type(t_vectorBlock), intent(inout) :: rx
 !</inputoutput>
 
 !<input>
   ! Multiplication factor
-  real(DP), intent(IN) :: c
+  real(DP), intent(in) :: c
 !</input>
   
 !</subroutine>
@@ -2558,12 +2558,12 @@ contains
 
 !<inputoutput>
   ! Destination vector to be cleared
-  type(t_vectorBlock), intent(INOUT) :: rx
+  type(t_vectorBlock), intent(inout) :: rx
 
   ! OPTIONAL: Value to write into the matrix.
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
-  real(DP), intent(IN), optional :: dvalue
+  real(DP), intent(in), optional :: dvalue
 !</inputoutput>
   
 !</subroutine>
@@ -2615,21 +2615,21 @@ contains
   
 !<input>
   ! First source vector
-  type(t_vectorBlock), intent(IN)    :: rx
+  type(t_vectorBlock), intent(in)    :: rx
   
   ! Scaling factor for Dx
-  real(DP), intent(IN)               :: cx
+  real(DP), intent(in)               :: cx
 
   ! Scaling factor for Dy
-  real(DP), intent(IN)               :: cy
+  real(DP), intent(in)               :: cy
 !</input>
 
 !<inputoutput>
   ! Second source vector; also receives the result if rdest is not given.
-  type(t_vectorBlock), intent(INOUT) :: ry
+  type(t_vectorBlock), intent(inout) :: ry
   
   ! OPTIONAL: Destination vector. If not given, ry is overwritten.
-  type(t_vectorBlock), intent(INOUT), optional :: rdest
+  type(t_vectorBlock), intent(inout), optional :: rdest
 !</inputoutput>
   
 !</subroutine>
@@ -2697,10 +2697,10 @@ contains
   
 !<input>
   ! First vector
-  type(t_vectorBlock), intent(IN)                  :: rx
+  type(t_vectorBlock), intent(in)                  :: rx
 
   ! Second vector
-  type(t_vectorBlock), intent(IN)                  :: ry
+  type(t_vectorBlock), intent(in)                  :: ry
 
 !</input>
 
@@ -2780,17 +2780,17 @@ contains
   
 !<input>
   ! Vector to calculate the norm of.
-  type(t_vectorBlock), intent(IN)                  :: rx
+  type(t_vectorBlock), intent(in)                  :: rx
 
   ! Identifier for the norm to calculate. One of the LINALG_NORMxxxx constants.
-  integer, intent(IN) :: cnorm
+  integer, intent(in) :: cnorm
 !</input>
 
 !<output>
   ! OPTIONAL: If the MAX norm is to calculate, this returns the
   ! position of the largest element. If another norm is to be
   ! calculated, the result is undefined.
-  integer, intent(OUT), optional :: iposMax
+  integer, intent(out), optional :: iposMax
 !</output>
 
 !<result>
@@ -2846,18 +2846,18 @@ contains
   
 !<input>
   ! Vector to calculate the norm of.
-  type(t_vectorBlock), intent(IN)                   :: rx
+  type(t_vectorBlock), intent(in)                   :: rx
 
   ! Identifier list. For every subvector in rx, this identifies the norm 
   ! to calculate. Each entry is a LINALG_NORMxxxx constants.
-  integer, dimension(:), intent(IN)                 :: Cnorms
+  integer, dimension(:), intent(in)                 :: Cnorms
 !</input>
 
 !<output>
   ! OPTIONAL: For each subvector: if the MAX norm is to calculate, 
   ! this returns the position of the largest element in that subvector. 
   ! If another norm is to be calculated, the result is undefined.
-  integer, dimension(:), intent(OUT), optional :: IposMax
+  integer, dimension(:), intent(out), optional :: IposMax
 !</output>
 
 !<result>
@@ -2905,21 +2905,21 @@ contains
   
 !<input>
   ! The scalar matrix which should provide the data
-  type(t_matrixScalar), intent(IN) :: rscalarMat
+  type(t_matrixScalar), intent(in) :: rscalarMat
   
   ! OPTIONAL: A block discretisation structure specifying the trial functions.
   ! A pointer to this will be saved to the matrix.
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscrTrial
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscrTrial
 
   ! OPTIONAL: A block discretisation structure specifying the test functions.
   ! A pointer to this will be saved to the matrix.
   ! If not specified, the trial functions coincide with the test functions.
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscrTest
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscrTest
 !</input>
 
 !<output>
   ! The 1x1 block matrix, created from rscalarMat.
-  type(t_matrixBlock), intent(OUT) :: rmatrix
+  type(t_matrixBlock), intent(out) :: rmatrix
 !</output>
   
 !</subroutine>
@@ -2976,22 +2976,22 @@ contains
   
 !<input>
   ! The scalar vector which should provide the data
-  type(t_vectorScalar), intent(IN) :: rscalarVec
+  type(t_vectorScalar), intent(in) :: rscalarVec
 
   ! OPTIONAL: A block discretisation structure specifying the trial functions.
   ! A pointer to this will be saved to the vector.
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscretisation
   
   ! OPTIONAL: Number of blocks to reserve.
   ! Normally, the created scalar vector has only one block. If nblocks
   ! is specified, the resulting vector will have more blocks while only
   ! the first block vector is used.
-  integer, intent(IN), optional :: nblocks
+  integer, intent(in), optional :: nblocks
 !</input>
 
 !<output>
   ! The block vector, created from rscalarVec.
-  type(t_vectorBlock), intent(OUT) :: rvector
+  type(t_vectorBlock), intent(out) :: rvector
 !</output>
   
 !</subroutine>
@@ -3056,7 +3056,7 @@ contains
   
 !<input>
   ! The block vector which should provide the data
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! OPTIONAL: Whether to share data.
   ! = FALSE: Create a new vector, copy all data.
@@ -3067,7 +3067,7 @@ contains
 
 !<output>
   ! Scalar vector created from rvector.
-  type(t_vectorScalar), intent(OUT) :: rscalarVec
+  type(t_vectorScalar), intent(out) :: rscalarVec
 !</output>
   
 !</subroutine>
@@ -3153,12 +3153,12 @@ contains
   
 !<input>
   ! A template vector specifying structural data
-  type(t_vectorBlock), intent(IN) :: rtemplateVec
+  type(t_vectorBlock), intent(in) :: rtemplateVec
 !</input>
 
 !<inputoutput>
   ! The vector which structural data should be overwritten
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
   
 !</subroutine>
@@ -3254,12 +3254,12 @@ contains
 !<input>
   ! An array with size definitions. Isize(j) specifies the length of the j'th
   ! subvector.
-  integer, dimension(:), intent(IN) :: Isize
+  integer, dimension(:), intent(in) :: Isize
 !</input>
 
 !<inputoutput>
   ! The vector which structural data should be overwritten
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
   
 !</subroutine>
@@ -3327,12 +3327,12 @@ contains
 !<input>
   ! Destination structure. Discretisation-related information of rdiscretisation
   ! is assigned to rx.
-  type(t_blockDiscretisation),intent(IN), target :: rdiscretisation
+  type(t_blockDiscretisation),intent(in), target :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! Destination vector which structure should be changed.
-  type(t_vectorBlock),intent(INOUT) :: rx
+  type(t_vectorBlock),intent(inout) :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -3391,7 +3391,7 @@ contains
   
 !<inputoutput>
   ! The block matrix which is to be updated.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -3445,12 +3445,12 @@ contains
   
 !<inputoutput>
   ! The block matrix which is to be updated.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 
   ! OPTIONAL: Value to write into the matrix.
   ! If not specified, all matrix entries are set to 0.0.
   ! If specified, all matrix entries are set to dvalue.
-  real(DP), intent(IN), optional :: dvalue
+  real(DP), intent(in), optional :: dvalue
 !</inputoutput>
 
 !</subroutine>
@@ -3501,7 +3501,7 @@ contains
   
 !<input>
   ! Source matrix.
-  type(t_matrixBlock), intent(IN)               :: rsourceMatrix
+  type(t_matrixBlock), intent(in)               :: rsourceMatrix
   
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -3536,7 +3536,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -3570,12 +3570,12 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
 !</input>
 
 !<output>
   ! Destination matrix.
-  type(t_matrixBlock), intent(INOUT)            :: rdestMatrix
+  type(t_matrixBlock), intent(inout)            :: rdestMatrix
 !</output>  
 
 !</subroutine>
@@ -3661,7 +3661,7 @@ contains
 
 !<input>
   ! Source vector.
-  type(t_vectorBlock), intent(IN) :: rx
+  type(t_vectorBlock), intent(in) :: rx
 
   ! Duplication flag that decides on how to set up the structure
   ! of ry. Not all flags are possible!
@@ -3671,7 +3671,7 @@ contains
   ! LSYSSC_DUP_COPYOVERWRITE or
   ! LSYSSC_DUP_TEMPLATE   : Structural data is copied from rx
   !   to ry (NEQ, sorting strategy, pointer to discretisation structure).
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of ry. Not all flags are possible!
@@ -3711,12 +3711,12 @@ contains
   ! LSYSSC_DUP_EMPTY      : New memory is allocated for the content in the
   !   same size in rsourceMatrix but no data is copied;
   !   the arrays are left uninitialised.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
 !</input>
 
 !<inputoutput>
   ! Destination vector.
-  type(t_vectorBlock), intent(INOUT) :: ry
+  type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 
 !</subroutine>
@@ -3933,11 +3933,11 @@ contains
     ! Creates memory in ry for a vector in the same size and data type as rx.
     
     ! Source vector that specifies the structure
-    type(t_vectorBlock), intent(IN) :: rx
+    type(t_vectorBlock), intent(in) :: rx
     
     ! Destination vector. Memory is allocated here. Block structure is
     ! not changed.
-    type(t_vectorBlock), intent(INOUT) :: ry
+    type(t_vectorBlock), intent(inout) :: ry
 
       integer :: ioffset,i
 
@@ -3965,10 +3965,10 @@ contains
     ! and the existing structure in ry.
     
     ! Vector whose subvectors should be corrected
-    type(t_vectorBlock), intent(INOUT) :: ry
+    type(t_vectorBlock), intent(inout) :: ry
     
     ! New first position of the first subvector in the global data array.
-    integer, intent(IN) :: iidxFirstEntry
+    integer, intent(in) :: iidxFirstEntry
 
       integer :: ioffset,i
 
@@ -4008,16 +4008,16 @@ contains
 !<input>
   ! Whether to sort the vector (TRUE) or sort it back to unsorted state
   ! (FALSE).
-  logical, intent(IN) :: bsort
+  logical, intent(in) :: bsort
 !</input>
   
 !<inputoutput>
   ! The vector which is to be resorted
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A scalar temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as the longest subvector in rvector.
-  type(t_vectorScalar), intent(INOUT) :: rtemp
+  type(t_vectorScalar), intent(inout) :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -4059,18 +4059,18 @@ contains
 
 !<input>
   ! Source vector defining the sorting strategy.
-  type(t_vectorBlock), intent(IN)               :: rvectorSrc
+  type(t_vectorBlock), intent(in)               :: rvectorSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rvectorSrc
   ! or is unsorted, if rvectorSrc is unsorted.
   ! Must have the same size as rvectorSrc.
-  type(t_vectorBlock), intent(INOUT)            :: rvectorDst
+  type(t_vectorBlock), intent(inout)            :: rvectorDst
 
   ! A scalar temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as the longest subvector in rvector.
-  type(t_vectorScalar), intent(INOUT) :: rtemp
+  type(t_vectorScalar), intent(inout) :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -4104,18 +4104,18 @@ contains
 
 !<input>
   ! Source matrix defining the sorting strategy.
-  type(t_matrixBlock), intent(IN)               :: rmatrixSrc
+  type(t_matrixBlock), intent(in)               :: rmatrixSrc
 !</input>
 
 !<inputoutput>
   ! Destination vector; is resorted according to the sort strategy in rmatrixSrc
   ! or is unsorted, if rmatrixSrc is unsorted.
   ! Must have the same size (NEQ) as rmatrixSrc.
-  type(t_vectorBlock), intent(INOUT)            :: rvectorDst
+  type(t_vectorBlock), intent(inout)            :: rvectorDst
 
   ! A temporary vector. Must be of the same data type as rvector.
   ! Must be at least as large as rvectorDst.
-  type(t_vectorScalar), intent(INOUT)            :: rtemp
+  type(t_vectorScalar), intent(inout)            :: rtemp
 !</inputoutput>
 
 !</subroutine>
@@ -4162,7 +4162,7 @@ contains
 
 !<inputoutput>
   ! The vector which is to be resorted
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !<input>
@@ -4171,7 +4171,7 @@ contains
   ! The negative value of this identifier is saved to the corresponding
   ! subvector.
   ! DIMENSION(rvector\%nblocks)
-  integer, dimension(:), intent(IN) :: IsortStrategy
+  integer, dimension(:), intent(in) :: IsortStrategy
   
   ! An array of handles. Each handle corresponds to a subvector and
   ! defines a permutation how to resort the subvector.
@@ -4180,7 +4180,7 @@ contains
   ! with entries (1..NEQ)       = permutation
   ! and  entries (NEQ+1..2*NEQ) = inverse permutation.
   ! DIMENSION(rvector\%nblocks)
-  integer, dimension(:), intent(IN) :: Hpermutations
+  integer, dimension(:), intent(in) :: Hpermutations
 
 !</input>
   
@@ -4208,7 +4208,7 @@ contains
   
 !<input>
   ! Block matrix to check
-  type(t_matrixBlock), intent(IN)                  :: rmatrix
+  type(t_matrixBlock), intent(in)                  :: rmatrix
 !</input>
 
 !<result>
@@ -4248,7 +4248,7 @@ contains
   
 !<input>
   ! Block vector to check
-  type(t_vectorBlock), intent(IN)                  :: rvector
+  type(t_vectorBlock), intent(in)                  :: rvector
 !</input>
 
 !<result>
@@ -4284,10 +4284,10 @@ contains
 
 !<inputoutput>
     ! first block vector
-    type(t_vectorBlock), intent(INOUT) :: rvector1
+    type(t_vectorBlock), intent(inout) :: rvector1
 
     ! second block vector
-    type(t_vectorBlock), intent(INOUT) :: rvector2
+    type(t_vectorBlock), intent(inout) :: rvector2
 !</inputoutput>
 !</subroutine>
 
@@ -4363,28 +4363,28 @@ contains
 
 !<input>
   ! Source block vector
-  type(t_vectorBlock), intent(IN) :: rvectorSrc
+  type(t_vectorBlock), intent(in) :: rvectorSrc
 
   ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as first 
   ! subvector in rvectorDest. Default value is =1.
-  integer, intent(IN), optional :: ifirstSubvector
+  integer, intent(in), optional :: ifirstSubvector
 
   ! OPTIONAL: Number of the subvector of rvectorSrc that should be used as 
   ! last subvector in rvectorDest. Default value is the number of blocks
   ! in rvectorSrc.
-  integer, intent(IN), optional :: ilastSubvector
+  integer, intent(in), optional :: ilastSubvector
 
   ! OPTIONAL: Whether to share the content between rvectorSrc and rvectorDest.
   ! = TRUE: Create a 'virtual' copy of rvectorSrc in rvectorDest that uses
   !         the same memory.
   ! =FALSE: Copy the sub-content of rvectorSrc to rvectorDest.
-  logical, intent(IN), optional :: bshare
+  logical, intent(in), optional :: bshare
 !</input>
 
 !<inputoutput>
     ! Destination block vector. Any previous data is discarded, so the
     ! application must take care of that no allocated handles are inside here!
-    type(t_vectorBlock), intent(OUT) :: rvectorDest
+    type(t_vectorBlock), intent(out) :: rvectorDest
 !</inputoutput>
 
 !</subroutine>
@@ -4545,29 +4545,29 @@ contains
   
 !<input>
   ! Source matrix.
-  type(t_matrixBlock), intent(IN)               :: rsourceMatrix
+  type(t_matrixBlock), intent(in)               :: rsourceMatrix
   
   ! OPTIONAL: X-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is =1.
   ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
   ! to (1,1) of rdestMatrix.
-  integer, intent(IN), optional :: ifirstBlock
+  integer, intent(in), optional :: ifirstBlock
 
   ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
   ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
   ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
-  integer, intent(IN), optional :: ilastBlock
+  integer, intent(in), optional :: ilastBlock
 
   ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
-  integer, intent(IN), optional :: ifirstBlockCol
+  integer, intent(in), optional :: ifirstBlockCol
 
   ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is ilastBlock.
-  integer, intent(IN), optional :: ilastBlockCol
+  integer, intent(in), optional :: ilastBlockCol
 
   ! OPTIONAL: Ignore the scaling factors in the source matrix.
   ! TRUE: Submatrices of the source matrix will be copied regardless of
@@ -4609,7 +4609,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -4643,7 +4643,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
 !</input>
 
 !<inputoutput>
@@ -4653,7 +4653,7 @@ contains
   ! as specified by cdupStructure/cdubContent.
   ! If the matrix exists but the block count does not match, the matrix
   ! is released and recreated in the correct size.
-  type(t_matrixBlock), intent(INOUT)            :: rdestMatrix
+  type(t_matrixBlock), intent(inout)            :: rdestMatrix
 !</inputoutput>  
 
 !</subroutine>
@@ -4805,22 +4805,22 @@ contains
   ! If ifirstBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ifirstBlock,ifirstBlockY) is put
   ! to (1,1) of rdestMatrix.
-  integer, intent(IN), optional :: ifirstBlock
+  integer, intent(in), optional :: ifirstBlock
 
   ! OPTIONAL: X-coordinate of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is the number of blocks in rsourceMatrix.
   ! If ilastBlockY is not specified, this also specifies the Y-coordinate,
   ! thus the diagonal block rsourceMatrix (ilastBlock,ilastBlock) is put
   ! to (ndiagBlocks,ndiagblocks) of rdestMatrix.
-  integer, intent(IN), optional :: ilastBlock
+  integer, intent(in), optional :: ilastBlock
 
   ! OPTIONAL: Y-coordinate of the block in rsourceMatrix that should be put to 
   ! position (1,1) into rdestMatrix. Default value is ifirstBlock.
-  integer, intent(IN), optional :: ifirstBlockCol
+  integer, intent(in), optional :: ifirstBlockCol
 
   ! OPTIONAL: Number of the last block in rsourceMatrix that should be put to 
   ! rdestMatrix. Default value is ilastBlock.
-  integer, intent(IN), optional :: ilastBlockCol
+  integer, intent(in), optional :: ilastBlockCol
 
   ! OPTIONAL: Ignore the scaling factors in the source matrix.
   ! TRUE: Submatrices of the source matrix will be copied regardless of
@@ -4966,19 +4966,19 @@ contains
   
 !<input>
   ! The block matrix.
-  type(t_matrixBlock), intent(IN)               :: rmatrix
+  type(t_matrixBlock), intent(in)               :: rmatrix
   
   ! Submatrix row to be checked
-  integer, intent(IN) :: irow
+  integer, intent(in) :: irow
   
   ! Submatrix column to be checked
-  integer, intent(IN) :: icolumn
+  integer, intent(in) :: icolumn
   
   ! OPTIONAL: Whether to check the scaling factor.
   ! FALSE: A scaling factor of 0.0 disables a submatrix. 
   !        This is the standard setting.
   ! TRUE: The scaling factor is ignored.
-  logical, intent(IN), optional :: bignoreScaleFactor
+  logical, intent(in), optional :: bignoreScaleFactor
 !</input>
 
 !<output>
@@ -5034,23 +5034,23 @@ contains
 !<input>
     
     ! An array with desired length-tags for the different blocks
-    integer, dimension(:), intent(IN) :: Isize
+    integer, dimension(:), intent(in) :: Isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)               :: bclear
+    logical, intent(in)               :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional     :: bcopy
+    logical, intent(in), optional     :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer, intent(IN), optional     :: NEQMAX
+    integer, intent(in), optional     :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(INOUT)             :: rx
+    type(t_vectorBlock), intent(inout)             :: rx
 
 !</inputoutput>
 
@@ -5236,23 +5236,23 @@ contains
 !<input>
     
     ! Integer with desired length of all vector blocks
-    integer, intent(IN)               :: isize
+    integer, intent(in)               :: isize
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)               :: bclear
+    logical, intent(in)               :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional     :: bcopy
+    logical, intent(in), optional     :: bcopy
 
     ! OPTIONAL: Maximum length of the vector
-    integer, intent(IN), optional     :: NEQMAX
+    integer, intent(in), optional     :: NEQMAX
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(INOUT)             :: rx
+    type(t_vectorBlock), intent(inout)             :: rx
 
 !</inputoutput>
 
@@ -5298,20 +5298,20 @@ contains
 !<input>
 
     ! Template block vector structure
-    type(t_vectorBlock), intent(IN)                :: rTemplate
+    type(t_vectorBlock), intent(in)                :: rTemplate
 
     ! Whether to fill the vector with zero initially
-    logical, intent(IN)                            :: bclear
+    logical, intent(in)                            :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional                  :: bcopy
+    logical, intent(in), optional                  :: bcopy
 
 !</input>
 
 !<inputoutput>
 
     ! Block vector structure
-    type(t_vectorBlock), intent(INOUT)             :: rx
+    type(t_vectorBlock), intent(inout)             :: rx
 
 !</inputoutput>
 
@@ -5385,19 +5385,19 @@ contains
 
 !<input>
     ! A template matrix structure
-    type(t_matrixBlock), intent(IN)    :: rtemplateMat
+    type(t_matrixBlock), intent(in)    :: rtemplateMat
 
     ! OPTIONAL: If set to TRUE, the vector will be filled with zero initially.
     ! Otherwise the content of rx is undefined.
-    logical, intent(IN), optional      :: bclear
+    logical, intent(in), optional      :: bclear
 
     ! OPTIONAL: Whether to copy the content of the vector to the resized one
-    logical, intent(IN), optional      :: bcopy
+    logical, intent(in), optional      :: bcopy
 !</input>
 
 !<inputoutput>
     ! Block vector structure
-    type(t_vectorBlock), intent(INOUT) :: rx
+    type(t_vectorBlock), intent(inout) :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -5579,7 +5579,7 @@ contains
 
 !<input>
     ! block vector
-    type(t_vectorBlock), intent(IN) :: rvector
+    type(t_vectorBlock), intent(in) :: rvector
 !</input>
 !</subroutine>
 
@@ -5658,23 +5658,23 @@ contains
 !<input>
   ! OPTIONAL: A block discretisation structure.
   ! A pointer to this will be saved to the vector.
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscretisation
   
   ! OPTIONAL: Number of blocks to reserve.
   ! Normally, the created scalar vector has only one block. If nblocks
   ! is specified, the resulting vector will have more blocks while only
   ! the first block vector is used.
-  integer, intent(IN), optional :: nblocks
+  integer, intent(in), optional :: nblocks
 !</input>
 
 !<inputoutput>
   ! The scalar vector which should provide the data
-  type(t_vectorScalar), intent(INOUT) :: rscalarVec
+  type(t_vectorScalar), intent(inout) :: rscalarVec
 !</inputoutput>
 
 !<output>
   ! The block vector, created from rscalarVec.
-  type(t_vectorBlock), intent(OUT) :: rvector
+  type(t_vectorBlock), intent(out) :: rvector
 !</output>
   
 !</subroutine>
@@ -5739,22 +5739,22 @@ contains
 !<input>
   ! OPTIONAL: A block discretisation structure specifying the test functions.
   ! A pointer to this will be saved to the matrix.
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscrTest
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscrTest
 
   ! OPTIONAL: A block discretisation structure specifying the trial functions.
   ! A pointer to this will be saved to the matrix.
   ! If not specified, the trial functions coincide with the test functions
-  type(t_blockDiscretisation), intent(IN), optional, target :: rblockDiscrTrial
+  type(t_blockDiscretisation), intent(in), optional, target :: rblockDiscrTrial
 !</input>
 
 !<inputoutput>
   ! The scalar matrix which should provide the data
-  type(t_matrixScalar), intent(INOUT) :: rscalarMat
+  type(t_matrixScalar), intent(inout) :: rscalarMat
 !</inputoutput>
 
 !<output>
   ! The 1x1 block matrix, created from rscalarMat.
-  type(t_matrixBlock), intent(OUT) :: rmatrix
+  type(t_matrixBlock), intent(out) :: rmatrix
 !</output>
   
 !</subroutine>
@@ -5809,7 +5809,7 @@ contains
 !</description>
 
   ! The source matrix to put into the destination matrix.
-  type(t_matrixBlock), intent(IN) :: rsourceMatrix
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
   
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -5844,7 +5844,7 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupStructure
+  integer, intent(in)                            :: cdupStructure
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. This duplication flag is applied to all submatrices
@@ -5878,16 +5878,16 @@ contains
   ! LSYSSC_DUP_TEMPLATE   : Copies statis structural information about the
   !   structure (NEQ, NCOLS,...) to the destination matrix. Dynamic information
   !   is removed from the destination matrix, all handles are reset.
-  integer, intent(IN)                            :: cdupContent
+  integer, intent(in)                            :: cdupContent
   
   ! X- and Y-position in the destination matrix where rsourceMatrix
   ! should be put to.
-  integer, intent(IN)                            :: iy,ix
+  integer, intent(in)                            :: iy,ix
 !</input>
 
 !<inputoutput>
   ! Destination matrix where the source matrix should be put into. 
-  type(t_matrixBlock), intent(INOUT)             :: rdestMatrix
+  type(t_matrixBlock), intent(inout)             :: rdestMatrix
 !</inputoutput>  
   
 !</subroutine>
@@ -5921,15 +5921,15 @@ contains
 
 !<input>
     ! The full qualified name of the object
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 !</input>
 
 !<inputoutput>
     ! The ObjectItem  that is created
-    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
     ! The block vector
-    type(t_vectorBlock), intent(INOUT), target :: rvector
+    type(t_vectorBlock), intent(inout), target :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -6079,15 +6079,15 @@ contains
 
 !<input>
     ! The full qualified name of the object
-    character(LEN=*), intent(IN) :: sname
+    character(LEN=*), intent(in) :: sname
 !</input>
 
 !<inputoutput>
     ! The ObjectItem  that is created
-    type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 
     ! The block matrix
-    type(t_matrixBlock), intent(INOUT), target :: rmatrix
+    type(t_matrixBlock), intent(inout), target :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -6253,12 +6253,12 @@ contains
 
 !<input>
     ! The object item that is created
-    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
 !</input>
 
 !<inputoutput>
     ! The block vector
-    type(t_vectorBlock), intent(OUT), target :: rvector
+    type(t_vectorBlock), intent(out), target :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -6486,12 +6486,12 @@ contains
 
 !<input>
     ! The object item that is created
-    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
 !</input>
 
 !<inputoutput>
     ! The block matrix
-    type(t_matrixBlock), intent(OUT), target :: rmatrix
+    type(t_matrixBlock), intent(out), target :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -6852,7 +6852,7 @@ contains
 !<input>
   ! X- and Y-position in the destination matrix where rsourceMatrix
   ! should be put to. If not specified, 1 is assumed.
-  integer, intent(IN), optional :: itop,ileft
+  integer, intent(in), optional :: itop,ileft
 
   ! OPTIONAL: Ignore the scaling factors in the source matrix.
   ! TRUE: Submatrices of the source matrix will be copied regardless of
@@ -6866,10 +6866,10 @@ contains
   ! The source matrix to put into the destination matrix.
   ! All ownership flags change to the destination matrix, the source
   ! matrix remains as 'shared copy' of the destination.
-  type(t_matrixBlock), intent(INOUT) :: rsourceMatrix
+  type(t_matrixBlock), intent(inout) :: rsourceMatrix
 
   ! Destination matrix where the source matrix should be put into. 
-  type(t_matrixBlock), intent(INOUT) :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</inputoutput>  
   
 !</subroutine>
@@ -6978,7 +6978,7 @@ contains
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
   !                         matrix for symbolic factorisation.)
-  integer, intent(IN) :: iclear
+  integer, intent(in) :: iclear
   
   ! OPTIONAL: If set to TRUE, existing submatrices are ignored.
   ! Standard value is FALSE which stops the application with an error.
@@ -6987,12 +6987,12 @@ contains
   ! OPTIONAL: Data type of the matrix (ST_SINGLE, ST_DOUBLE)
   ! If not present, the standard data type cdataType-variable in the matrix
   ! is used (usually ST_DOUBLE).
-  integer, intent(IN), optional :: cdataType
+  integer, intent(in), optional :: cdataType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>

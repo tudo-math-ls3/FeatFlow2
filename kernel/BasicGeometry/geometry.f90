@@ -584,24 +584,24 @@ contains
 
 !<input>
   ! The number of sub-objects. Must be positive.
-  integer,                     intent(IN)  :: nsubObjects
+  integer,                     intent(in)  :: nsubObjects
   
   ! The type of the composed object. One of the GEOM_COMP_TYPE_XXXX constants.
-  integer,                     intent(IN)  :: ccomposedType
+  integer,                     intent(in)  :: ccomposedType
   
   ! OPTIONAL: A boolean telling whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
   ! OPTIONAL: The dimension of the composed object. May be NDIM2D or NDIM3D.
   ! If not given, the dimension is set to NDIM2D.
-  integer, optional,           intent(IN)  :: ndim
+  integer, optional,           intent(in)  :: ndim
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -659,16 +659,16 @@ end subroutine
 !<input>
   ! The index of the child node of the composed geometry object, where
   ! the geometry object is to be attached.
-  integer, intent(IN) :: nindex
+  integer, intent(in) :: nindex
   
 !</input>
 
 !<inputoutput>
   ! The composed geometry object
-  type(t_geometryObject), intent(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(inout) :: rgeomObject
   
   ! The sub-object
-  type(t_geometryObject), intent(INOUT) :: rsubObject
+  type(t_geometryObject), intent(inout) :: rsubObject
 
 !</inputoutput>
 
@@ -712,16 +712,16 @@ end subroutine
 
 !<input>
   ! The object against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -795,12 +795,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -808,7 +808,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -880,16 +880,16 @@ end subroutine
 
 !<input>
   ! The composed object
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the object's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -964,15 +964,15 @@ end subroutine
 
 !<input>
   ! The composed object
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -1035,18 +1035,18 @@ end subroutine
 
 !<input>
   ! The composed
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -1208,12 +1208,12 @@ end subroutine
 !<input>
   ! OPTIONAL: The tolerance for the boundary approximation.
   ! If not present, 10e-2 is used.
-  real(DP), optional, intent(IN) :: dtolerance  
+  real(DP), optional, intent(in) :: dtolerance  
 !</input>
 
 !<input>
   ! The composed object
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
 !</input>
 
 !</subroutine>
@@ -1320,20 +1320,20 @@ end subroutine
 
 !<input>
   ! A 2D coordinate system for the circle.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
   
   ! A radius for the circle.
-  real(DP),                    intent(IN)  :: dradius
+  real(DP),                    intent(in)  :: dradius
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -1375,29 +1375,29 @@ end subroutine
 
 !<input>
   ! A radius for the circle.
-  real(DP),                          intent(IN)  :: dradius
+  real(DP),                          intent(in)  :: dradius
   
   ! OPTIONAL: The origin of the circle.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the circle.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the circle.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,                 intent(IN)  :: binverted
+  logical, optional,                 intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),            intent(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(out) :: rgeomObject
 
 !</output>
 
@@ -1443,16 +1443,16 @@ end subroutine
 
 !<input>
   ! The circle against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -1504,12 +1504,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -1517,7 +1517,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -1564,16 +1564,16 @@ end subroutine
 
 !<input>
   ! The circle against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the circle's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -1612,19 +1612,19 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The desired number of vertices for the produced polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
   ! If not given, 32 vertices are generated.
-  integer, intent(IN) :: ndesiredVerticeCount
+  integer, intent(in) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -1681,15 +1681,15 @@ end subroutine
 
 !<input>
   ! The circle
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -1718,18 +1718,18 @@ end subroutine
 
 !<input>
   ! The circle
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -1780,20 +1780,20 @@ end subroutine
 
 !<input>
   ! A 2D coordinate system for the square.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
   
   ! The edge length for the square.
-  real(DP),                    intent(IN)  :: dlength
+  real(DP),                    intent(in)  :: dlength
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -1835,29 +1835,29 @@ end subroutine
 
 !<input>
   ! The edge length for the square.
-  real(DP),                          intent(IN)  :: dlength
+  real(DP),                          intent(in)  :: dlength
   
   ! OPTIONAL: The origin of the square.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the square.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the square.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,                 intent(IN)  :: binverted
+  logical, optional,                 intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),            intent(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(out) :: rgeomObject
 
 !</output>
 
@@ -1903,15 +1903,15 @@ end subroutine
 
 !<input>
   ! The square against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
     ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -1963,12 +1963,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -1976,7 +1976,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -2063,16 +2063,16 @@ end subroutine
 
 !<input>
   ! The square against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
 
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the square's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -2158,13 +2158,13 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -2210,15 +2210,15 @@ end subroutine
 
 !<input>
   ! The square
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -2247,18 +2247,18 @@ end subroutine
 
 !<input>
   ! The square
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -2324,20 +2324,20 @@ end subroutine
 
 !<input>
   ! A 2D coordinate system for the ellipse.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
   
   ! An array holding the X- and Y-radii for the ellipse.
-  real(DP), dimension(:),      intent(IN)  :: Dradii
+  real(DP), dimension(:),      intent(in)  :: Dradii
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -2379,29 +2379,29 @@ end subroutine
 
 !<input>
   ! A array holding the X- and Y-radii for the ellipse.
-  real(DP), dimension(:),            intent(IN)  :: Dradii
+  real(DP), dimension(:),            intent(in)  :: Dradii
   
   ! OPTIONAL: The origin of the ellipse.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the ellipse.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the ellipse.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,                 intent(IN)  :: binverted
+  logical, optional,                 intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),            intent(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(out) :: rgeomObject
 
 !</output>
 
@@ -2448,16 +2448,16 @@ end subroutine
 
 !<input>
   ! The ellipse against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -2516,12 +2516,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -2529,7 +2529,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -2776,16 +2776,16 @@ end subroutine
 
 !<input>
   ! The ellipse against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the ellipse's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -2837,18 +2837,18 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The desired number of vertices for the produced polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
-  integer, intent(IN) :: ndesiredVerticeCount
+  integer, intent(in) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -2908,18 +2908,18 @@ end subroutine
 
 !<input>
   ! The ellipse
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
   
   ! OPTIONAL: An approximation of the ellipse's circumference.
-  real(DP), optional, intent(OUT) :: dcircumference
+  real(DP), optional, intent(out) :: dcircumference
 !</output>
 
 !</subroutine>
@@ -2981,18 +2981,18 @@ end subroutine
 
 !<input>
   ! The ellipse
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -3051,20 +3051,20 @@ end subroutine
 
 !<input>
   ! A 2D coordinate system for the rectangle.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
   
   ! The edge length for the rectangle.
-  real(DP), dimension(:),      intent(IN)  :: Dlength
+  real(DP), dimension(:),      intent(in)  :: Dlength
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -3106,29 +3106,29 @@ end subroutine
 
 !<input>
   ! The edge lengths for the rectangle.
-  real(DP), dimension(:),            intent(IN)  :: Dlength
+  real(DP), dimension(:),            intent(in)  :: Dlength
   
   ! OPTIONAL: The origin of the rectangle.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the rectangle.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the rectangle.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,                 intent(IN)  :: binverted
+  logical, optional,                 intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),            intent(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(out) :: rgeomObject
 
 !</output>
 
@@ -3174,16 +3174,16 @@ end subroutine
 
 !<input>
   ! The rectangle against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -3237,12 +3237,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -3250,7 +3250,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -3337,16 +3337,16 @@ end subroutine
 
 !<input>
   ! The rectangle against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
 
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the rectangle's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -3402,13 +3402,13 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -3455,15 +3455,15 @@ end subroutine
 
 !<input>
   ! The rectangle
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -3493,18 +3493,18 @@ end subroutine
 
 !<input>
   ! The rectangle
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -3575,24 +3575,24 @@ end subroutine
 
 !<input>
   ! A 2D coordinate system for the polygon.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
   
   ! An 2D array for the vertices of the polygon
-  real(DP), dimension(:,:), target, intent(IN)     :: Dvertices
+  real(DP), dimension(:,:), target, intent(in)     :: Dvertices
   
   ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
   ! Is set to GEOM_POLYGON_GENERAL if not given.
-  integer, optional, intent(IN)            :: npolyType
+  integer, optional, intent(in)            :: npolyType
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>  
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -3642,33 +3642,33 @@ end subroutine
 
 !<input>
   ! An 2D array for the vertices of the polygon
-  real(DP), dimension(:,:), target, intent(IN)     :: Dvertices
+  real(DP), dimension(:,:), target, intent(in)     :: Dvertices
   
   ! OPTIONAL: One of the GEOM_POLYGON_XXXX constants.
   ! Is set to GEOM_POLYGON_GENERAL if not given.
-  integer, optional, intent(IN)            :: npolyType
+  integer, optional, intent(in)            :: npolyType
   
   ! OPTIONAL: The origin of the polygon.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the polygon.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the polygon.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>  
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -3725,16 +3725,16 @@ end subroutine
 
 !<input>
   ! The polygon against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -3791,16 +3791,16 @@ end subroutine
 
 !<input>
   ! The polygon against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -3899,12 +3899,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -3912,15 +3912,15 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
   ! OPTIONAL: The distance between the given point and the projection.
   ! Note: This distance is absolute, not signed!
-  real(DP), optional, intent(OUT) :: ddistance
+  real(DP), optional, intent(out) :: ddistance
   
   ! OPTIONAL: A boolean deciding whether the point is inside or outside the
   ! polygon.
-  logical, optional, intent(OUT) :: bisInside
+  logical, optional, intent(out) :: bisInside
   
 !</output>
 
@@ -4131,16 +4131,16 @@ end subroutine
 
 !<input>
   ! The polygon against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The shortest signed distance between the point and the circle's boundary.
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
 !</output>
 
 !</subroutine>
@@ -4179,13 +4179,13 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -4231,15 +4231,15 @@ end subroutine
 
 !<input>
   ! The rectangle
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The number of vertices needed.
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -4295,18 +4295,18 @@ end subroutine
 
 !<input>
   ! The polygon
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -4400,13 +4400,13 @@ end subroutine
 
 !<input>
   ! The new origin of the geometric object.
-  real(DP), dimension(:), intent(IN)    :: DnewOrigin
+  real(DP), dimension(:), intent(in)    :: DnewOrigin
   
 !</input>
 
 !<inputoutput>
   ! The geometry object that is to be moved.
-  type(t_geometryObject), intent(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(inout) :: rgeomObject
   
 !</inputoutput>
 
@@ -4438,16 +4438,16 @@ end subroutine
 
 !<input>
   ! A new rotation angle, range: 0..2*PI
-  real(DP),               intent(IN)  :: dnewRotation
+  real(DP),               intent(in)  :: dnewRotation
   
   ! OPTIONAL: A new scaling factor
-  real(DP), optional,     intent(IN)  :: dscalingFactor
+  real(DP), optional,     intent(in)  :: dscalingFactor
   
 !</input>
 
 !<inputoutput>
   ! The geometry object that is to be rotated and/or scaled.
-  type(t_geometryObject), intent(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(inout) :: rgeomObject
   
 !</inputoutput>
 
@@ -4494,19 +4494,19 @@ end subroutine
 
 !<input>
   ! The geometry object against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer storing the number of objects where the point is inside
   ! the object's geometry.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
@@ -4548,10 +4548,10 @@ end subroutine
 
 !<input>
   ! The geometry object against that the points are to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! An array holding the coordinates of the points that are to be tested.
-  real(DP), dimension(:,:), intent(IN)  :: Dcoords
+  real(DP), dimension(:,:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -4560,7 +4560,7 @@ end subroutine
   ! the object's geometry.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
-  integer, dimension(:), intent(OUT) :: IisInObject
+  integer, dimension(:), intent(out) :: IisInObject
 !</output>
 
 !</subroutine>
@@ -4594,12 +4594,12 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -4607,7 +4607,7 @@ end subroutine
   ! The coordinates of the boundary projection.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(OUT) :: Dproj
+  real(DP), dimension(:), intent(out) :: Dproj
   
 !</output>
 
@@ -4651,18 +4651,18 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
   ! The array must hold at least 2 entries for a 2D object, and at least 3
   ! entries for a 3D object.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! The calculated signed distance
-  real(DP),               intent(OUT) :: ddistance
+  real(DP),               intent(out) :: ddistance
   
 !</output>
 
@@ -4703,10 +4703,10 @@ end subroutine
 
 !<input>
   ! The geometry object to calculate the distance from.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! An array holding the coordinates of the points that are to be tested.
-  real(DP), dimension(:,:), intent(IN)  :: Dcoords
+  real(DP), dimension(:,:), intent(in)  :: Dcoords
   
 !</input>
 
@@ -4714,7 +4714,7 @@ end subroutine
   ! An array holding the calculated signed distances.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
-  real(DP), dimension(:), intent(OUT) :: Ddistance
+  real(DP), dimension(:), intent(out) :: Ddistance
   
 !</output>
 
@@ -4767,25 +4767,25 @@ end subroutine
 
 !<input>
   ! The geometry object to polygonise.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! OPTIONAL: Decides whether the coordinates of the polygon should be world
   ! coordinates or coordinates relative to the geometry object's local
   ! coordinate system. If not given, the coordinates are given in world
   ! coordinates.
-  logical, optional, intent(IN) :: bconvertToWorld
+  logical, optional, intent(in) :: bconvertToWorld
   
   ! OPTIONAL: The desired number of vertices for the generated polygon.
   ! Is only used for circles and ellipses, and is ignored for all other
   ! geometry objects.
   ! If not given, 64 vertices are generated.
-  integer, optional, intent(IN) :: ndesiredVerticeCount
+  integer, optional, intent(in) :: ndesiredVerticeCount
   
 !</input>
 
 !<output>
   ! Handle to a 2D array holding the vertices of the polygon.
-  integer, intent(OUT) :: hpolyHandle
+  integer, intent(out) :: hpolyHandle
   
 !</output>
 
@@ -4873,7 +4873,7 @@ end subroutine
 
 !<inputoutput>
   ! The geometry object that is to be destroyed
-  type(t_geometryObject), intent(INOUT) :: rgeomObject
+  type(t_geometryObject), intent(inout) :: rgeomObject
 
 !</inputoutput>
 
@@ -4929,16 +4929,16 @@ end subroutine
 
 !<input>
   ! The geometry object
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The tolerance. Must be > EPS
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
   
 !</input>
 
 !<output>
   ! The number of vertices for the boundary approximation
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
   
 !</output>
 
@@ -4976,18 +4976,18 @@ end subroutine
 
 !<input>
   ! The composed object
-  type(t_geometryObject), intent(IN) :: rgeomObject
+  type(t_geometryObject), intent(in) :: rgeomObject
   
   ! The desired tolerance. Must be > SYS_EPS.
-  real(DP), intent(IN) :: dtolerance
+  real(DP), intent(in) :: dtolerance
 !</input>
 
 !<output>
   ! The vertice array.
-  real(DP), dimension(:,:), intent(OUT) :: Dverts
+  real(DP), dimension(:,:), intent(out) :: Dverts
   
   ! Number of vertices created
-  integer, intent(OUT) :: nverts
+  integer, intent(out) :: nverts
 !</output>
 
 !</subroutine>
@@ -5026,20 +5026,20 @@ end subroutine
 
 !<input>
   ! A 3D coordinate system for the sphere.
-  type(t_coordinateSystem3D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem3D),  intent(in)  :: rcoordSys
   
   ! A radius for the sphere.
-  real(DP),                    intent(IN)  :: dradius
+  real(DP),                    intent(in)  :: dradius
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,           intent(IN)  :: binverted
+  logical, optional,           intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),      intent(OUT) :: rgeomObject
+  type(t_geometryObject),      intent(out) :: rgeomObject
 
 !</output>
 
@@ -5081,29 +5081,29 @@ end subroutine
 
 !<input>
   ! A radius for the sphere.
-  real(DP),                          intent(IN)  :: dradius
+  real(DP),                          intent(in)  :: dradius
   
   ! OPTIONAL: The origin of the sphere.
   ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,  intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation of the sphere.
   ! Is set to 0.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: drotation
+  real(DP), optional,                intent(in)  :: drotation
   
   ! OPTIONAL: The scaling factor of the sphere.
   ! Is set to 1.0_DP if not given.
-  real(DP), optional,                intent(IN)  :: dscalingFactor
+  real(DP), optional,                intent(in)  :: dscalingFactor
   
   ! OPTIONAL: A boolean telling us whether the object is inverted.
   ! Is set to .FALSE. if not given.
-  logical, optional,                 intent(IN)  :: binverted
+  logical, optional,                 intent(in)  :: binverted
 
 !</input>
 
 !<output>
   ! A t_geometryObject structure to be written.
-  type(t_geometryObject),            intent(OUT) :: rgeomObject
+  type(t_geometryObject),            intent(out) :: rgeomObject
 
 !</output>
 
@@ -5149,16 +5149,16 @@ end subroutine
 
 !<input>
   ! The circle against that the point is to be tested.
-  type(t_geometryObject), intent(IN)  :: rgeomObject
+  type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! The coordinates of the point that is to be tested.
-  real(DP), dimension(:), intent(IN)  :: Dcoords
+  real(DP), dimension(:), intent(in)  :: Dcoords
   
 !</input>
 
 !<output>
   ! An integer for the return value.
-  integer,           intent(OUT) :: iisInObject
+  integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>

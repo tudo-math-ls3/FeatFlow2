@@ -116,36 +116,36 @@ contains
 !<input>
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvectorScalar
+  type(t_vectorScalar), intent(in)              :: rvectorScalar
   
   ! A list of points where to evaluate.
   ! DIMENSION(1..ndim,1..npoints)
-  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:), intent(in) :: Dpoints
   
   ! OPTIONAL: A list of elements containing the points Dpoints.
   ! If this is not specified, the element numbers containing the points
   ! are determined automatically.
-  integer, dimension(:), intent(IN), optional :: Ielements
+  integer, dimension(:), intent(in), optional :: Ielements
 
   ! OPTIONAL: A list of elements that are near the points in Dpoints.
   ! This gives only a hint where to start searching for the actual elements
   ! containing the points. This is ignored if Ielements is specified!
-  integer, dimension(:), intent(IN), optional :: IelementsHint
+  integer, dimension(:), intent(in), optional :: IelementsHint
   
   ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
   ! if a point is located outside of the domain. May happen e.g. in
   ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
   ! parameter if cnonmeshPoints is not specified. 
-  integer, intent(IN), optional :: cnonmeshPoints
+  integer, intent(in), optional :: cnonmeshPoints
   
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  real(DP), dimension(:), intent(OUT) :: Dvalues
+  real(DP), dimension(:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -374,31 +374,31 @@ contains
 !<input>
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvectorScalar
+  type(t_vectorScalar), intent(in)              :: rvectorScalar
   
   ! The element number containing the points in Dpoints.
-  integer, intent(IN) :: ielement
+  integer, intent(in) :: ielement
   
   ! OPTIONAL: Coordinates of the points on the reference element.
   ! If not specified, the coordinates are automatically calculated.
   ! Either Dpoints or DpointsRef must be specified!
   ! DIMENSION(1..ndim,1..npoints)
-  real(DP), dimension(:,:), intent(IN), optional :: DpointsRef
+  real(DP), dimension(:,:), intent(in), optional :: DpointsRef
   
   ! OPTIONAL: A list of points where to evaluate. All points must be inside
   ! of element ielement. 
   ! If not specified, the coordinates are automatically calculated.
   ! Either Dpoints or DpointsRef must be specified!
   ! DIMENSION(1..ndim,1..npoints)
-  real(DP), dimension(:,:), intent(IN), optional :: Dpoints
+  real(DP), dimension(:,:), intent(in), optional :: Dpoints
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
-  real(DP), dimension(:), intent(OUT) :: Dvalues
+  real(DP), dimension(:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -572,35 +572,35 @@ contains
 
 !<input>
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)               :: rvectorScalar
+  type(t_vectorScalar), intent(in)               :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
 
   ! A list of the corner vertices of the element.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D] of double
-  real(DP), dimension(:,:), intent(IN)           :: Dcoords
+  real(DP), dimension(:,:), intent(in)           :: Dcoords
   
   ! The Jacobian matrix of the mapping between the reference and the
   ! real element, for all points on the element.
   ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement]
-  real(DP), dimension(:,:),intent(IN)            :: Djac
+  real(DP), dimension(:,:),intent(in)            :: Djac
   
   ! The Jacobian determinant of the mapping of each point from the
   ! reference element to the real element.
   ! array [1..npointsPerElement]
-  real(DP), dimension(:), intent(IN)             :: Ddetj
+  real(DP), dimension(:), intent(in)             :: Ddetj
   
   ! An array accepting the DOF's on the element in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space)
-  integer, dimension(:), intent(IN)              :: IdofsTrial
+  integer, dimension(:), intent(in)              :: IdofsTrial
   
   ! Number of points on the element where to evalate the function
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints).
@@ -614,23 +614,23 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:), intent(IN)           :: Dpoints
+  real(DP), dimension(:,:), intent(in)           :: Dpoints
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 
   ! OPTIONAL: Twist index bitfield of the element. Defines for every edge its
   ! orientation.
   ! Can be omitted if the element does not need this information.
-  integer(I32), intent(IN), optional             :: itwistIndex
+  integer(I32), intent(in), optional             :: itwistIndex
 
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(npoints).
-  real(DP), dimension(:), intent(OUT)            :: Dvalues
+  real(DP), dimension(:), intent(out)            :: Dvalues
 !</output>
 
 !</subroutine>
@@ -722,30 +722,30 @@ contains
 !!<input>
 !  ! Type of function value to evaluate. One of the DER_xxxx constants,
 !  ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-!  INTEGER, INTENT(IN)                            :: iderType
+!  INTEGER, INTENT(in)                            :: iderType
 !
 !  ! The scalar solution vector that is to be evaluated.
-!  TYPE(t_vectorScalar), INTENT(IN)              :: rvectorScalar
+!  TYPE(t_vectorScalar), INTENT(in)              :: rvectorScalar
 !  
 !  ! A list of points where to evaluate. All points must be inside
 !  ! of element ielement.
 !  ! DIMENSION(1..ndim,1..npoints,1..nelements)
-!  REAL(DP), DIMENSION(:,:,:), INTENT(IN) :: Dpoints
+!  REAL(DP), DIMENSION(:,:,:), INTENT(in) :: Dpoints
 !  
 !  ! A list of elements containing the points in Dpoints.
 !  ! All elements in this list must be of the same type!!!
-!  INTEGER, DIMENSION(:), INTENT(IN) :: Ielements
+!  INTEGER, DIMENSION(:), INTENT(in) :: Ielements
 !  
 !  ! OPTIONAL: Coordinates of the points on the reference element.
 !  ! If not specified, the coordinates are automatically calculated.
 !  ! DIMENSION(1..ndim,1..npoints,1..nelements)
-!  REAL(DP), DIMENSION(:,:,:), INTENT(IN), TARGET, OPTIONAL :: DpointsRef
+!  REAL(DP), DIMENSION(:,:,:), INTENT(in), TARGET, OPTIONAL :: DpointsRef
 !!</input>
 !
 !!<output>
 !  ! Values of the FE function at the points specified by Dpoints.
 !  ! DIMENSION(1..npoints,1..nelements)
-!  REAL(DP), DIMENSION(:,:), INTENT(OUT) :: Dvalues
+!  REAL(DP), DIMENSION(:,:), INTENT(out) :: Dvalues
 !!</output>
 !
 !!</subroutine>
@@ -990,30 +990,30 @@ contains
 !<input>
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvectorScalar
+  type(t_vectorScalar), intent(in)              :: rvectorScalar
   
   ! A list of points where to evaluate. All points must be inside
   ! of element ielement.
   ! DIMENSION(1..ndim,1..npoints,1..nelements)
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
   ! A list of elements containing the points in Dpoints.
   ! All elements in this list must be of the same type!!!
-  integer, dimension(:), intent(IN) :: Ielements
+  integer, dimension(:), intent(in) :: Ielements
   
   ! OPTIONAL: Coordinates of the points on the reference element.
   ! If not specified, the coordinates are automatically calculated.
   ! DIMENSION(1..ndim,1..npoints,1..nelements)
-  real(DP), dimension(:,:,:), intent(IN), target, optional :: DpointsRef
+  real(DP), dimension(:,:,:), intent(in), target, optional :: DpointsRef
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(1..npoints,1..nelements)
-  real(DP), dimension(:,:), intent(OUT) :: Dvalues
+  real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -1248,38 +1248,38 @@ contains
 
 !<input>
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvectorScalar
+  type(t_vectorScalar), intent(in)              :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                      :: celement
+  integer(I32), intent(in)                      :: celement
 
   ! A list of the corner vertices of all elements in progress.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D,1..Number of elements] of double
-  real(DP), dimension(:,:,:), intent(IN)        :: Dcoords
+  real(DP), dimension(:,:,:), intent(in)        :: Dcoords
   
   ! The Jacobian matrix of the mapping between the reference and each
   ! real element, for all points on all elements in progress.
   ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement,1..Number of elements]
-  real(DP), dimension(:,:,:),intent(IN)         :: Djac
+  real(DP), dimension(:,:,:),intent(in)         :: Djac
   
   ! The Jacobian determinant of the mapping of each point from the
   ! reference element to each real element in progress.
   ! array [1..npointsPerElement,1..Number of elements]
-  real(DP), dimension(:,:), intent(IN)          :: Ddetj
+  real(DP), dimension(:,:), intent(in)          :: Ddetj
   
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space,nelements)
-  integer, dimension(:,:), intent(IN)           :: IdofsTrial
+  integer, dimension(:,:), intent(in)           :: IdofsTrial
   
   ! Number of points on every element where to evalate the function
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Number of elements, the function is evaluated at
-  integer, intent(IN)  :: nelements
+  integer, intent(in)  :: nelements
   
   ! Array with coordinates of the points where to evaluate.
   ! DIMENSION(NDIM2D,npoints,nelements).
@@ -1293,23 +1293,23 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 
   ! OPTIONAL: List of twist indices. Defines for every element the
   ! orgientation of the edges.
   ! Can be omitted if the element does not need it.
   ! Array with DIMENSION(1:NVE/NVA,nelements)
-  integer(I32), dimension(:), intent(IN), optional :: ItwistIndexEdges
+  integer(I32), dimension(:), intent(in), optional :: ItwistIndexEdges
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(npoints,nelements).
-  real(DP), dimension(:,:), intent(OUT) :: Dvalues
+  real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -1414,31 +1414,31 @@ contains
 !<input>
   ! Element evaluation set that contains all information necessary
   ! for the evaluation (coordinates of the points, transformation,...)
-  type(t_evalElementSet), intent(IN) :: revalElementSet
+  type(t_evalElementSet), intent(in) :: revalElementSet
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvectorScalar
+  type(t_vectorScalar), intent(in)              :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(IN)                      :: celement
+  integer(I32), intent(in)                      :: celement
 
   ! An array accepting the DOF's on all elements in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF's in trial space,nelements)
-  integer, dimension(:,:), intent(IN) :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTrial
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(npoints,nelements).
-  real(DP), dimension(:,:), intent(OUT) :: Dvalues
+  real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -1551,14 +1551,14 @@ contains
 !<input>
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being evaluated.
-  type(t_domainIntSubset), intent(IN)            :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)            :: rdomainIntSubset
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)               :: rvectorScalar
+  type(t_vectorScalar), intent(in)               :: rvectorScalar
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
   
   ! Number of the subarray in Dvalues where the result is written to.
   ! The routine writes the resulting values to Dvalues(iterm,:,:).
@@ -1568,7 +1568,7 @@ contains
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(#possible terms,npoints,nelements).
-  real(DP), dimension(:,:,:), intent(OUT) :: Dvalues
+  real(DP), dimension(:,:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -1695,20 +1695,20 @@ contains
 !<input>
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being evaluated.
-  type(t_domainIntSubset), intent(IN)            :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)            :: rdomainIntSubset
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)               :: rvectorScalar
+  type(t_vectorScalar), intent(in)               :: rvectorScalar
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(IN)                            :: iderType
+  integer, intent(in)                            :: iderType
 !</input>
 
 !<output>
   ! Values of the FE function at the points specified by Dpoints.
   ! DIMENSION(npoints,nelements).
-  real(DP), dimension(:,:), intent(OUT) :: Dvalues
+  real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
@@ -1822,7 +1822,7 @@ contains
 
 !<input>
   ! A given finite element vector field. May be e.g. a velocity field.
-  type(t_vectorBlock), intent(IN)            :: rvector
+  type(t_vectorBlock), intent(in)            :: rvector
 !</input>
 
 !<output>

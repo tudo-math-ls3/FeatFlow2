@@ -56,26 +56,26 @@ contains
 
 !<input>
     ! A discretisation structure
-    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialdiscretisation), intent(in) :: rdiscretisation
     
     ! OPTIOANL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
-    integer(I32), intent(IN), optional :: celement
+    integer(I32), intent(in), optional :: celement
 !</input>
 
 !<output>
     ! The number of elements at the boundary region
-    integer, intent(OUT) :: NELbdc
+    integer, intent(out) :: NELbdc
 
     ! The list of elements adjacent to the boundary region
-    integer, dimension(:), intent(OUT) :: IelementList
+    integer, dimension(:), intent(out) :: IelementList
 
     ! The orientation of elements adjacent to the boundary region
-    integer, dimension(:), intent(OUT) :: IelementOrientation
+    integer, dimension(:), intent(out) :: IelementOrientation
 
     ! OPTIONAL: The start- and end-parameter values of the edges on
     ! the boundary region
-    real(DP), dimension(:,:), intent(OUT), optional :: DedgePosition
+    real(DP), dimension(:,:), intent(out), optional :: DedgePosition
 !</output>
 !</subroutine>
 
@@ -130,29 +130,29 @@ contains
 !<input>
     ! A t_boundaryRegion specifying the boundary region where
     ! to calculate. 
-    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+    type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
     ! A discretisation structure
-    type(t_spatialdiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialdiscretisation), intent(in) :: rdiscretisation
 
     ! OPTIOANL: Element type to be considered. If not present, then
     ! all elements adjacent to the boundary are inserted into the list
-    integer(I32), intent(IN), optional :: celement
+    integer(I32), intent(in), optional :: celement
 !</input>
 
 !<output>
     ! The number of elements at the boundary region
-    integer, intent(OUT) :: NELbdc
+    integer, intent(out) :: NELbdc
 
     ! The list of elements adjacent to the boundary region
-    integer, dimension(:), intent(OUT) :: IelementList
+    integer, dimension(:), intent(out) :: IelementList
 
     ! The orientation of elements adjacent to the boundary region
-    integer, dimension(:), intent(OUT) :: IelementOrientation
+    integer, dimension(:), intent(out) :: IelementOrientation
 
     ! OPTIONAL: The start- and end-parameter values of the edges on
     ! the boundary region
-    real(DP), dimension(:,:), intent(OUT), optional :: DedgePosition
+    real(DP), dimension(:,:), intent(out), optional :: DedgePosition
 !</output>
 !</subroutine>
 
@@ -349,10 +349,10 @@ contains
 
 !<input>
     ! The boundary for which the number of elements is to be calculated
-    type(t_boundary), intent(IN) :: rboundary
+    type(t_boundary), intent(in) :: rboundary
 
     ! The triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<result>
@@ -390,10 +390,10 @@ contains
 !<input>
     ! A t_boundaryRegion specifying the boundary region where
     ! to calculate. 
-    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+    type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
     ! The triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<result>

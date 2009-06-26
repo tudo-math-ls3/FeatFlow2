@@ -341,13 +341,13 @@ contains
   !<input>
 
     ! Name of the file to overwrite.
-    character(*), intent(IN) :: sfilename
+    character(*), intent(in) :: sfilename
 
   !</input>
 
   !<output>
     !unit of the opened file
-    integer, intent(OUT) :: iunit
+    integer, intent(out) :: iunit
   !</output>
   
 !</subroutine>
@@ -411,7 +411,7 @@ contains
 
   ! Name of a log file for standard messages. If "" is specified, 
   ! output messages are written to the standard output.
-  character(LEN=*), intent(IN) :: slogFilename
+  character(LEN=*), intent(in) :: slogFilename
   
 !</input>
 
@@ -442,17 +442,17 @@ contains
 
   ! Name of a log file for standard messages. If ""
   ! is specified, output messages are written to the standard output.
-  character(LEN=*), intent(IN) :: slogFilename
+  character(LEN=*), intent(in) :: slogFilename
   
   ! Name of an log file for error messages. If ""
   ! is specified, errors are written to the standard log file. The name of 
   ! the file may also coincide with slogFilename.
-  character(LEN=*), intent(IN) :: serrorFilename
+  character(LEN=*), intent(in) :: serrorFilename
 
   ! OPTIONAL: Name of an log file for deterministic benchmark messages. If 
   ! not present or set to "", benchmark messages are not written out. The 
   ! name of the file may also coincide with slogFilename.
-  character(LEN=*), intent(IN), optional :: sbenchLogfile
+  character(LEN=*), intent(in), optional :: sbenchLogfile
   
 !</input>
 
@@ -546,14 +546,14 @@ contains
 
 !<input>
   ! The message to reformat.
-  character(LEN=*), intent(IN) :: smessage
+  character(LEN=*), intent(in) :: smessage
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
 
   ! OPTIONAL: Name of a subroutine to include in the message; may be "".
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
 !</input>
 
 !<result>
@@ -638,28 +638,28 @@ contains
 
 !<input>
   ! The message to be written out.
-  character(LEN=*), intent(IN) :: smessage
+  character(LEN=*), intent(in) :: smessage
   
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer(I32), intent(IN), optional :: coutputMode
+  integer(I32), intent(in), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
   
   ! OPTIONAL: When specifying bnolinebreak=TRUE, the output routine will
   ! not perform a line break after printing.
-  logical, intent(IN), optional :: bnolinebreak
+  logical, intent(in), optional :: bnolinebreak
 
   ! OPTIONAL: When specifying bnotrim=TRUE, the output routine will
   ! not trim the string when printing. This does only work for 
   ! coutputClass=OU_CLASS_MSG and coutputClass=OU_CLASS_ERROR
   ! (or if coutputClass is not specified)!
-  logical, intent(IN), optional :: bnotrim
+  logical, intent(in), optional :: bnotrim
 !</input>
 
 !</subroutine>
@@ -785,13 +785,13 @@ contains
 !<input>
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN) :: coutputClass
+  integer, intent(in) :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN) :: ssubroutine
+  character(LEN=*), intent(in) :: ssubroutine
   
   ! The message to be written out.
-  character(LEN=*), intent(IN) :: smsg
+  character(LEN=*), intent(in) :: smsg
   
 !</input>
 
@@ -825,17 +825,17 @@ contains
 !<input>
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer(I32), intent(IN), optional :: coutputMode
+  integer(I32), intent(in), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
   
   ! OPTIONAL: Number of linebreaks
-  integer, intent(IN), optional :: nlbrk
+  integer, intent(in), optional :: nlbrk
 !</input>
 
 !</subroutine>
@@ -876,18 +876,18 @@ contains
 !<input>
   ! Type of the separator line. One of the OU_SEP_xxxx constants
   ! (OU_SEP_MINUS, OU_SEP_STAR, OU_SEP_EQUAL,...).
-  integer, intent(IN) :: csepType
+  integer, intent(in) :: csepType
 
   ! OPTIONAL: Output mode. One of the OU_MODE_xxxx constants. If not specified,
   ! OU_MODE_STD is assumed.
-  integer(I32), intent(IN), optional :: coutputMode
+  integer(I32), intent(in), optional :: coutputMode
 
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
   
   ! OPTIONAL: Name
 !</input>
@@ -953,17 +953,17 @@ contains
   ! <=0: No output,
   !  =1: write to log file.
   ! >=2: write to log file and terminal.
-  integer, intent(IN) :: ioutputLevel
+  integer, intent(in) :: ioutputLevel
 
   ! OPTIONAL: The message to be written out.
-  character(LEN=*), intent(IN), optional :: smsg
+  character(LEN=*), intent(in), optional :: smsg
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
   
 !</input>
 
@@ -1009,18 +1009,18 @@ contains
   ! <=0: No output,
   !  =1: write to log file.
   ! >=2: write to log file and terminal.
-  integer, intent(IN) :: ioutputLevel
+  integer, intent(in) :: ioutputLevel
 
   ! Type of the separator line. One of the OU_SEP_xxxx constants
   ! (OU_SEP_MINUS, OU_SEP_STAR or OU_SEP_EQUAL).
-  integer, intent(IN) :: csepType
+  integer, intent(in) :: csepType
   
   ! OPTIONAL: Output classification. One of the OU_CLASS_xxxx constants.
   ! If not specified, OU_CLASS_MSG is assumed.
-  integer, intent(IN), optional :: coutputClass
+  integer, intent(in), optional :: coutputClass
   
   ! OPTIONAL: Name of the subroutine that calls this function
-  character(LEN=*), intent(IN), optional :: ssubroutine
+  character(LEN=*), intent(in), optional :: ssubroutine
   
 !</input>
 

@@ -253,12 +253,12 @@ contains
 
 !<input>
     ! The template matrix
-    type(t_matrixScalar), intent(IN) :: rmatrixTemplate
+    type(t_matrixScalar), intent(in) :: rmatrixTemplate
 !</input>
 
 !<inputoutput>
     ! The stabilisation structure
-    type(t_afcstab), intent(INOUT)   :: rafcstab
+    type(t_afcstab), intent(inout)   :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -381,10 +381,10 @@ contains
 
 !<input>
     ! The scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! The stabilisation structure
-    type(t_afcstab), intent(IN)      :: rafcstab
+    type(t_afcstab), intent(in)      :: rafcstab
 !</input>
 
 !<output>
@@ -392,7 +392,7 @@ contains
     ! depending on whether matrix and stabilisation are compatible or
     ! not.  If not given, an error will inform the user if the
     ! matrix/operator are not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -425,10 +425,10 @@ contains
 
 !<input>
     ! The scalar vector
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
 
     ! Teh stabilisation structure
-    type(t_afcstab), intent(IN)      :: rafcstab
+    type(t_afcstab), intent(in)      :: rafcstab
 !</input>
 
 !<output>
@@ -436,7 +436,7 @@ contains
     ! depending on whether matrix and stabilisation are compatible or
     ! not. If not given, an error will inform the user if the
     ! matrix/operator are not compatible and the program will halt.
-    logical, intent(OUT), optional :: bcompatible
+    logical, intent(out), optional :: bcompatible
 !</output>
 !</subroutine>
 
@@ -475,27 +475,27 @@ contains
 
 !<input>
     ! The array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
     
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN) :: bStabilise
+    logical, intent(in) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for (non-)conservative matrix assembly
     ! TRUE  : assemble conservative convection operator (default)
     ! FALSE : assemble non-conservative convection operator
-    logical, intent(IN), optional :: bisConservative
+    logical, intent(in), optional :: bisConservative
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -503,10 +503,10 @@ contains
 
 !<inputoutput>
     ! The transport operator
-    type(t_matrixScalar), intent(INOUT) :: rconvMatrix
+    type(t_matrixScalar), intent(inout) :: rconvMatrix
     
     ! OPTIONAL: the stabilisation structure
-    type(t_afcstab), intent(INOUT), optional :: rafcstab
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -569,27 +569,27 @@ contains
 
 !<input>
     ! The array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! The solution vector
     ! Note that this vector is only required for nonlinear
     ! problems which require the evaluation of the velocity
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN) :: bStabilise
+    logical, intent(in) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for (non-)conservative matrix assembly
     ! TRUE  : assemble conservative convection operator (default)
     ! FALSE : assemble non-conservative convection operator
-    logical, intent(IN), optional :: bisConservative
+    logical, intent(in), optional :: bisConservative
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -597,10 +597,10 @@ contains
 
 !<inputoutput>
     ! The transport operator
-    type(t_matrixScalar), intent(INOUT) :: rconvMatrix
+    type(t_matrixScalar), intent(inout) :: rconvMatrix
     
     ! OPTIONAL: the stabilisation structure
-    type(t_afcstab), intent(INOUT), optional :: rafcstab
+    type(t_afcstab), intent(inout), optional :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -1116,12 +1116,12 @@ contains
     
     subroutine doGalerkinMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -1173,12 +1173,12 @@ contains
     
     subroutine doGalerkinMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1223,12 +1223,12 @@ contains
     
     subroutine doGalerkinMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -1281,12 +1281,12 @@ contains
     
     subroutine doGalerkinMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -1333,12 +1333,12 @@ contains
     
     subroutine doGalerkinMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -1392,12 +1392,12 @@ contains
     
     subroutine doGalerkinMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1444,12 +1444,12 @@ contains
     
     subroutine doGalerkinMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -1501,12 +1501,12 @@ contains
     
     subroutine doGalerkinMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1551,12 +1551,12 @@ contains
     
     subroutine doGalerkinMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -1609,12 +1609,12 @@ contains
     
     subroutine doGalerkinMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -1660,12 +1660,12 @@ contains
     
     subroutine doGalerkinMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -1719,12 +1719,12 @@ contains
     
     subroutine doGalerkinMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, K)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: K
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: K
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -1771,12 +1771,12 @@ contains
     
     subroutine doUpwindMat7Cons1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -1834,12 +1834,12 @@ contains
     
     subroutine doUpwindMat7Nonc1D(Kld, Kcol, Ksep, NEQ, Cx, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -1888,12 +1888,12 @@ contains
     
     subroutine doUpwindMat7Cons2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -1952,12 +1952,12 @@ contains
     
     subroutine doUpwindMat7Nonc2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2007,12 +2007,12 @@ contains
     
     subroutine doUpwindMat7Cons3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -2072,12 +2072,12 @@ contains
     
     subroutine doUpwindMat7Nonc3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2128,12 +2128,12 @@ contains
     
     subroutine doUpwindMat9Cons1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -2191,12 +2191,12 @@ contains
     
     subroutine doUpwindMat9Nonc1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2245,12 +2245,12 @@ contains
     
     subroutine doUpwindMat9Cons2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -2309,12 +2309,12 @@ contains
     
     subroutine doUpwindMat9Nonc2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2364,12 +2364,12 @@ contains
     
     subroutine doUpwindMat9Cons3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -2429,12 +2429,12 @@ contains
     
     subroutine doUpwindMat9Nonc3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, L)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2488,16 +2488,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -2574,16 +2574,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2652,16 +2652,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -2739,16 +2739,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2817,16 +2817,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
             
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -2905,16 +2905,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
             
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2984,16 +2984,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -3070,16 +3070,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3147,16 +3147,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -3234,16 +3234,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3312,16 +3312,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -3400,16 +3400,16 @@ contains
                                      IsuperdiagonalEdgesIdx,&
                                      IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -3479,16 +3479,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -3570,16 +3570,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -3652,16 +3652,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -3744,16 +3744,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -3827,16 +3827,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -3920,16 +3920,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -4004,16 +4004,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ii,C_ij,C_ji
@@ -4095,16 +4095,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -4177,16 +4177,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
@@ -4269,16 +4269,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -4352,16 +4352,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
       
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ii,C_ij,C_ji
@@ -4445,16 +4445,16 @@ contains
                                       IsuperdiagonalEdgesIdx,&
                                       IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
       
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -4551,23 +4551,23 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN) :: bStabilise
+    logical, intent(in) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 !</input>
 
 !<inputoutput>
     ! (anisotropic) diffusion operator
-    type(t_matrixScalar), intent(INOUT) :: rcoeffMatrix
+    type(t_matrixScalar), intent(inout) :: rcoeffMatrix
 
     ! diffusion operator
-    type(t_matrixScalar), intent(INOUT) :: rdiffMatrix
+    type(t_matrixScalar), intent(inout) :: rdiffMatrix
 
     ! OPTIONAL: stabilisation structure
-    type(t_afcstab), intent(INOUT), optional :: rafcstab    
+    type(t_afcstab), intent(inout), optional :: rafcstab    
 !</inputoutput>
 !</subroutine>
 
@@ -4726,12 +4726,12 @@ contains
     
     subroutine doLoworderMat7(Kld, Kcol, Ksep, NEQ, S, L)
 
-      real(DP), dimension(:), intent(IN) :: S
-      integer, dimension(:), intent(IN) :: Kld, Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: S
+      integer, dimension(:), intent(in) :: Kld, Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP) :: d_ij
@@ -4770,12 +4770,12 @@ contains
     
     subroutine doLoworderMat9(Kld, Kcol, Kdiagonal, Ksep, NEQ, S, L)
 
-      real(DP), dimension(:), intent(IN) :: S
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: S
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
       
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP) :: d_ij
@@ -4816,16 +4816,16 @@ contains
                                   IsuperdiagonalEdgesIdx,&
                                   IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: S
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: S
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
       
       ! local variables
       real(DP) :: d_ij,s_ij
@@ -4883,16 +4883,16 @@ contains
                                   IsuperdiagonalEdgesIdx,&
                                   IverticesAtEdge, DcoefficientsAtEdge)
 
-      real(DP), dimension(:), intent(IN) :: S
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: S
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: L
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: L
+      integer, dimension(:), intent(inout) :: Ksep
 
-      real(DP), dimension(:,:), intent(OUT) :: DcoefficientsAtEdge
-      integer, dimension(:,:), intent(OUT) :: IverticesAtEdge
-      integer, dimension(:), intent(OUT) :: IsuperdiagonalEdgesIdx
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      integer, dimension(:,:), intent(out) :: IverticesAtEdge
+      integer, dimension(:), intent(out) :: IsuperdiagonalEdgesIdx
 
       ! local variable
       real(DP) :: d_ij,s_ij
@@ -4960,32 +4960,32 @@ contains
 
 !<input>
     ! lumped mass matrix
-    type(t_matrixScalar), intent(IN) :: rlumpedMassMatrix
+    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
     
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    logical, intent(IN) :: binit
+    logical, intent(in) :: binit
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -5069,32 +5069,32 @@ contains
 
 !<input>
     ! lumped mass matrix
-    type(t_matrixScalar), intent(IN) :: rlumpedMassMatrix
+    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
     
     ! Switch for residual
     ! TRUE  : build the initial residual
     ! FALSE : build an intermediate residual
-    logical, intent(IN) :: binit
+    logical, intent(in) :: binit
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -5329,14 +5329,14 @@ contains
                                     ML, u, ulow, theta, tstep, NEDGE,&
                                     pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: ML
-      real(DP), dimension(:), intent(IN) :: u,ulow
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), dimension(:), intent(in) :: u,ulow
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
+      real(DP), dimension(:), intent(inout):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
 
       ! local variables
       real(DP) :: d_ij,f_ij,diff
@@ -5410,14 +5410,14 @@ contains
                                          MC, ML, u, ulow, theta, tstep, NEDGE,&
                                          pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,ML
-      real(DP), dimension(:), intent(IN) :: u,ulow
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,ML
+      real(DP), dimension(:), intent(in) :: u,ulow
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
+      real(DP), dimension(:), intent(inout):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
 
       ! local variables
       real(DP) :: d_ij,f_ij,m_ij,diff
@@ -5488,13 +5488,13 @@ contains
     subroutine doLimit_implFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge, u,&
                                      fluxImpl, fluxExpl, theta, tstep, NEDGE, res)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,fluxImpl,fluxExpl
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,fluxImpl,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: res
+      real(DP), dimension(:), intent(inout) :: res
       
       ! local variables
       real(DP) :: d_ij,f_ij
@@ -5536,13 +5536,13 @@ contains
     subroutine doLimit_implFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge, MC, u,&
                                           fluxImpl, fluxExpl, theta, tstep, NEDGE, res)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,fluxImpl,fluxExpl
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,fluxImpl,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: res
+      real(DP), dimension(:), intent(inout) :: res
       
       ! local variables
       real(DP) :: d_ij,f_ij,m_ij
@@ -5584,13 +5584,13 @@ contains
     subroutine doInit_explFCTnoMass(IverticesAtEdge, DcoefficientsAtEdge,&
                                     u, theta, tstep, NEDGE, fluxExpl)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: fluxExpl
+      real(DP), dimension(:), intent(inout) :: fluxExpl
       
       ! local variables
       real(DP) :: d_ij,diff
@@ -5634,13 +5634,13 @@ contains
     subroutine doInit_explFCTconsMass(IverticesAtEdge, DcoefficientsAtEdge,&
                                          MC, u, theta, tstep, NEDGE, fluxExpl)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: fluxExpl
+      real(DP), dimension(:), intent(inout) :: fluxExpl
       
       ! local variables
       real(DP) :: d_ij,m_ij,diff
@@ -5700,13 +5700,13 @@ contains
                                      ML, u, ulow, fluxExpl, theta, tstep, NEDGE,&
                                      pp, pm, qp, qm, rp, rm, fluxImpl, res)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: ML,u,ulow,fluxExpl
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
 
       ! local variables
       real(DP) :: diff,d_ij,f_ij
@@ -5781,13 +5781,13 @@ contains
                                           MC, ML, u, ulow, fluxExpl, theta, tstep, NEDGE,&
                                           pp, pm, qp, qm, rp, rm, fluxImpl, res)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,ML,u,ulow,fluxExpl
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
 
       ! local variables
       real(DP) :: diff,d_ij,f_ij,m_ij
@@ -5870,18 +5870,18 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -5930,18 +5930,18 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -5994,13 +5994,13 @@ contains
     subroutine doLimit_TVD(IverticesAtEdge, DcoefficientsAtEdge, u, tstep,&
                            NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u
-      real(DP), intent(IN) :: tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u
+      real(DP), intent(in) :: tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,flux,res
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,flux,res
 
       ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff
@@ -6080,27 +6080,27 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -6149,27 +6149,27 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorScalar), intent(IN) :: ru0
+    type(t_vectorScalar), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -6229,14 +6229,14 @@ contains
                           fluxImpl, fluxExpl, res)
 
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,u0
-      real(DP), intent(IN) :: theta,tstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,u0
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(:), intent(INOUT) :: fluxImpl,fluxExpl,res
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm
+      real(DP), dimension(:), intent(inout) :: fluxImpl,fluxExpl,res
       
       ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,m_ij,p_ij,pf_ij,df_ij,q_ij,q_ji
@@ -6347,18 +6347,18 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -6394,18 +6394,18 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 !</input>
 
 !<inputoutput>
     ! residual vector
-    type(t_vectorScalar), intent(INOUT) :: rres
+    type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -6458,13 +6458,13 @@ contains
     subroutine doLimit_Symmetric(IverticesAtEdge, DcoefficientsAtEdge, u, dscale,&
                                  NEDGE, pp, pm, qp, qm, rp, rm, flux, res)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT) :: pp,pm,qp,qm,rp,rm,flux,res
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,flux,res
 
       ! local variables
       real(DP) :: d_ij,f_ij,s_ij,diff
@@ -6547,23 +6547,23 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
     
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN) :: bStabilise
+    logical, intent(in) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -6571,7 +6571,7 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -6606,23 +6606,23 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
     
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(IN) :: bStabilise
+    logical, intent(in) :: bStabilise
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -6630,7 +6630,7 @@ contains
 
 !<inputoutput>
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -6786,12 +6786,12 @@ contains
 
     subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -6907,12 +6907,12 @@ contains
 
     subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -7029,12 +7029,12 @@ contains
 
     subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables     
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -7152,12 +7152,12 @@ contains
 
     subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -7273,12 +7273,12 @@ contains
 
     subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -7395,12 +7395,12 @@ contains
 
     subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -7518,12 +7518,12 @@ contains
 
     subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -7639,12 +7639,12 @@ contains
 
     subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -7761,12 +7761,12 @@ contains
 
     subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables     
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -7884,12 +7884,12 @@ contains
 
     subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -8005,12 +8005,12 @@ contains
 
     subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -8127,12 +8127,12 @@ contains
 
     subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
 
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -8263,32 +8263,32 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -8322,32 +8322,32 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -8451,14 +8451,14 @@ contains
                                         Kdiagonal, u, fluxImpl, fluxExpl,&
                                         theta, tstep, hstep, NEDGE, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,fluxImpl,fluxExpl
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,fluxImpl,fluxExpl
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
       
       ! local variables
       real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,diff,diff_i,diff_j
@@ -8528,14 +8528,14 @@ contains
                                              Kdiagonal, MC, u, fluxImpl, fluxExpl,&
                                              theta, tstep, hstep, NEDGE, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,fluxImpl,fluxExpl
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,fluxImpl,fluxExpl
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
       
       ! local variables
       real(DP) :: f_i,f_j,f_ij,d_ij,a_ij,diff,diff_i,diff_j
@@ -8618,31 +8618,31 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -8675,31 +8675,31 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -8828,10 +8828,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -8857,10 +8857,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
       
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -8887,19 +8887,19 @@ contains
                                         u, flux, pp, pm, qp, qm, tstep, hstep,&
                                         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,flux,pp,pm,qp,qm
-      real(DP), intent(IN) :: tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,flux,pp,pm,qp,qm
+      real(DP), intent(in) :: tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
@@ -9004,15 +9004,15 @@ contains
                                             iedge, iloc, k, pploc, pmloc,&
                                             qploc, qmloc, fluxloc, Kloc)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm
-      real(DP), intent(IN) :: tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: iedge,k,iloc
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,pp,pm,qp,qm
+      real(DP), intent(in) :: tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: iedge,k,iloc
       
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
-      integer, dimension(:), intent(INOUT) :: Kloc
+      real(DP), dimension(:,0:), intent(inout) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:), intent(inout) :: Kloc
 
       ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff,dsign
@@ -9119,16 +9119,16 @@ contains
                                               flux, Kloc, rploc, rmloc, fluxloc,&
                                               hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:), intent(IN) :: flux
-      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
-      real(DP), intent(IN) :: hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal,Kloc
-      integer, intent(IN) :: iedge,k,l,iloc
-      logical, intent(IN) :: bisExtended
+      real(DP), dimension(:), intent(in) :: flux
+      real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc
+      real(DP), intent(in) :: hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal,Kloc
+      integer, intent(in) :: iedge,k,l,iloc
+      logical, intent(in) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
 
       ! local variables
@@ -9257,40 +9257,40 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -9326,40 +9326,40 @@ contains
 
 !<input>
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorScalar), intent(IN) :: ru0
+    type(t_vectorScalar), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -9493,10 +9493,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -9522,10 +9522,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
       
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -9552,19 +9552,19 @@ contains
                                   theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
                                   bisExtended, bisMat7, Ksep, Jac)
     
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
@@ -9671,15 +9671,15 @@ contains
                                       pploc, pmloc, qploc, qmloc,&
                                       fluxloc, fluxloc0, Kloc)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, intent(IN) :: iedge,k,iloc
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,u0,flux,flux0,pp,pm,qp,qm
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: iedge,k,iloc
       
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
-      integer, dimension(:), intent(INOUT)    :: Kloc
+      real(DP), dimension(:,0:), intent(inout) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
+      integer, dimension(:), intent(inout)    :: Kloc
 
       ! local variables
       real(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji,diff,diff1,diff0,dsign
@@ -9855,16 +9855,16 @@ contains
                                         hstep, iedge, iloc, k, l,&
                                         bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc,fluxloc0
-      real(DP), dimension(:), intent(IN) :: rp,rm,flux,flux0
-      real(DP), intent(IN) :: hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal,Kloc
-      integer, intent(IN) :: iedge,iloc,k,l
-      logical, intent(IN) :: bisExtended
+      real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(:), intent(in) :: rp,rm,flux,flux0
+      real(DP), intent(in) :: hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal,Kloc
+      integer, intent(in) :: iedge,iloc,k,l
+      logical, intent(in) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP) :: f_ij,pf_ij,df_ij
@@ -10039,38 +10039,38 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
     
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
 
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -10109,38 +10109,38 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
     
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
     
     ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(IN), optional :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -10313,14 +10313,14 @@ contains
                                            Kdiagonal, Cx, u, flux, flux0,&
                                            theta, tstep, hstep, NEDGE, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -10447,14 +10447,14 @@ contains
                                                 Kdiagonal, Cx, MC, u, flux, flux0,&
                                                 theta, tstep, hstep, NEDGE, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,MC,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,MC,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -10580,14 +10580,14 @@ contains
                                            Kdiagonal, Cx, Cy, u, flux, flux0,&
                                            theta, tstep, hstep, NEDGE, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN)   :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in)   :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -10714,14 +10714,14 @@ contains
                                              Kdiagonal, Cx, Cy, MC, u, flux, flux0,&
                                              theta, tstep, hstep, NEDGE, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN)   :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,MC,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in)   :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -10848,14 +10848,14 @@ contains
                                            Kdiagonal, Cx, Cy, Cz, u, flux, flux0,&
                                            theta, tstep, hstep, NEDGE, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -10984,14 +10984,14 @@ contains
                                                 Kdiagonal, Cx, Cy, Cz, MC, u, flux, flux0,&
                                                 theta, tstep, hstep, NEDGE, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,MC,u,flux,flux0
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: NEDGE
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,MC,u,flux,flux0
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
+      real(DP), dimension(:), intent(inout) :: Jac
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -11132,26 +11132,26 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
     
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -11159,10 +11159,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -11199,26 +11199,26 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
     
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
     
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -11226,10 +11226,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -11415,10 +11415,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -11444,10 +11444,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -11474,19 +11474,19 @@ contains
                                       Cx, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,u,flux,pp,pm,qp,qm
-      real(DP), intent(IN) :: tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,u,flux,pp,pm,qp,qm
+      real(DP), intent(in) :: tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
@@ -11617,19 +11617,19 @@ contains
                                       Cx, Cy, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,u,flux,pp,pm,qp,qm
-      real(DP), intent(IN) :: tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,u,flux,pp,pm,qp,qm
+      real(DP), intent(in) :: tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
@@ -11760,19 +11760,19 @@ contains
                                       Cx, Cy, Cz, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,u,flux,pp,pm,qp,qm
-      real(DP), intent(IN) :: tstep,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u,flux,pp,pm,qp,qm
+      real(DP), intent(in) :: tstep,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
@@ -11902,14 +11902,14 @@ contains
                                        i, j, ij, ji, iloc, k,&
                                        pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm,C_ij,C_ji
-      real(DP), intent(IN) :: tstep,hstep
-      integer, intent(IN) :: iedge,i,j,k,ij,ji,iloc
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,pp,pm,qp,qm,C_ij,C_ji
+      real(DP), intent(in) :: tstep,hstep
+      integer, intent(in) :: iedge,i,j,k,ij,ji,iloc
       
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
-      integer, dimension(:,:), intent(INOUT) :: Kloc
+      real(DP), dimension(:,0:), intent(inout) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:,:), intent(inout) :: Kloc
 
       ! local variables
       real(DP) :: d_ij,f_ij,l_ij,l_ji,diff,hstep_ik,hstep_jk,dsign
@@ -12065,16 +12065,16 @@ contains
                                          Kloc, rploc, rmloc, fluxloc, hstep,&
                                          iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
-      real(DP), dimension(:), intent(IN) :: flux
-      real(DP), intent(IN) :: hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge,Kloc
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: iedge,iloc,k,l
-      logical, intent(IN) :: bisExtended
+      real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc
+      real(DP), dimension(:), intent(in) :: flux
+      real(DP), intent(in) :: hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: iedge,iloc,k,l
+      logical, intent(in) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP) :: f_ij
@@ -12203,35 +12203,35 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: ru0
+    type(t_vectorBlock), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 
      ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -12239,10 +12239,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -12282,35 +12282,35 @@ contains
 
 !<input>
     ! array of coefficient matrices C = (phi_i,D phi_j)
-    type(t_matrixScalar), dimension(:), intent(IN) :: RcoeffMatrices
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! consistent mass matrix
-    type(t_matrixScalar), intent(IN) :: rconsistentMassMatrix
+    type(t_matrixScalar), intent(in) :: rconsistentMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! initial solution vector
-    type(t_vectorScalar), intent(IN) :: ru0
+    type(t_vectorScalar), intent(in) :: ru0
 
     ! implicitness parameter
-    real(DP), intent(IN) :: theta
+    real(DP), intent(in) :: theta
 
     ! time step size
-    real(DP), intent(IN) :: tstep
+    real(DP), intent(in) :: tstep
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 
     ! callback functions to compute velocity
     include 'intf_gfsccallback.inc'
@@ -12318,10 +12318,10 @@ contains
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -12517,10 +12517,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -12546,10 +12546,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -12577,19 +12577,19 @@ contains
                                      qp, qm, rp, rm, theta, tstep, hstep,&
                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(in) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
@@ -12727,19 +12727,19 @@ contains
                                      qp, qm, rp, rm, theta, tstep, hstep,&
                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(in) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
@@ -12877,19 +12877,19 @@ contains
                                      qp, qm, rp, rm, theta, tstep, hstep,&
                                      NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: Cx,Cy,Cz,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN) :: theta,tstep,hstep  
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
+      real(DP), intent(in) :: theta,tstep,hstep  
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
       
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc,fluxloc0
@@ -13026,14 +13026,14 @@ contains
                                            iloc, k, pploc, pmloc, qploc, qmloc,&
                                            fluxloc, fluxloc0, Kloc)
       
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,C_ij,C_ji
-      real(DP), intent(IN) :: theta,tstep,hstep
-      integer, intent(IN) :: iedge,i,j,k,ij,ji,iloc
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,C_ij,C_ji
+      real(DP), intent(in) :: theta,tstep,hstep
+      integer, intent(in) :: iedge,i,j,k,ij,ji,iloc
       
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
-      integer, dimension(:,:), intent(INOUT)  :: Kloc
+      real(DP), dimension(:,0:), intent(inout) :: pploc,pmloc,qploc,qmloc,fluxloc,fluxloc0
+      integer, dimension(:,:), intent(inout)  :: Kloc
 
       ! local variables
       real(DP) :: m_ij,d_ij,df_ij,f_ij,l_ij,l_ji,p_ij,pf_ij,q_ij,q_ji
@@ -13263,16 +13263,16 @@ contains
                                              fluxloc, fluxloc0, hstep, iedge,&
                                              iloc, k, l, bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc,fluxloc0
-      real(DP), dimension(:), intent(IN) :: flux,flux0,rp,rm
-      real(DP), intent(IN) :: hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge,Kloc
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: iedge,iloc,k,l
-      logical, intent(IN) :: bisExtended
+      real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc,fluxloc0
+      real(DP), dimension(:), intent(in) :: flux,flux0,rp,rm
+      real(DP), intent(in) :: hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: iedge,iloc,k,l
+      logical, intent(in) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP) :: f_ij,pf_ij,df_ij
@@ -13454,31 +13454,31 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: ru
+    type(t_vectorBlock), intent(in) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -13510,31 +13510,31 @@ contains
 
 !<input>
     ! solution vector
-    type(t_vectorScalar), intent(IN) :: ru
+    type(t_vectorScalar), intent(in) :: ru
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! perturbation parameter
-    real(DP), intent(IN) :: hstep
+    real(DP), intent(in) :: hstep
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
     ! FLASE : assemble matrix in an additive way
-    logical, intent(IN) :: bclear
+    logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
     ! TRUE  : assemble the Jacobian matrix with extended sparsity pattern (default)
     ! FALSE : assemble the Jacobian matrix with standard sparsity pattern
-    logical, intent(IN), optional :: bextendedSparsity
+    logical, intent(in), optional :: bextendedSparsity
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 
     ! Jacobian matrix
-    type(t_matrixScalar), intent(INOUT) :: rjacobianMatrix   
+    type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
 !</inputoutput>
 !</subroutine>
 
@@ -13664,10 +13664,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -13693,10 +13693,10 @@ contains
     ! is "moved" to the given column "k". For efficiency reasons, only
     ! those entries are considered which are present in column "k".
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
-      integer, dimension(:), intent(IN) :: Kld,Kcol
-      integer, intent(IN) :: k
+      integer, dimension(:), intent(in) :: Kld,Kcol
+      integer, intent(in) :: k
 
-      integer, dimension(:), intent(INOUT) :: Ksep
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       integer :: ild,isep,l,iloc
@@ -13722,19 +13722,19 @@ contains
                                     u, flux, pp, pm, qp, qm, rp, rm, dscale, hstep,&
                                     NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,flux,pp,pm,qp,qm,rp,rm
-      real(DP), intent(IN) :: dscale,hstep
-      integer, dimension(:,:), intent(IN) :: IverticesAtEdge
-      integer, dimension(:), intent(IN) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(IN) :: IsubdiagonalEdges
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NEDGE,NNVEDGE
-      logical, intent(IN) :: bisExtended,bisMat7
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,flux,pp,pm,qp,qm,rp,rm
+      real(DP), intent(in) :: dscale,hstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE,NNVEDGE
+      logical, intent(in) :: bisExtended,bisMat7
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(2,0:NNVEDGE) :: pploc,pmloc,qploc,qmloc,rploc,rmloc,fluxloc
@@ -13845,14 +13845,14 @@ contains
                                         hstep, iedge, i, j, iloc, k,&
                                         pploc, pmloc, qploc, qmloc, fluxloc, Kloc)
 
-      real(DP), dimension(:,:), intent(IN) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(IN) :: u,pp,pm,qp,qm
-      real(DP), intent(IN) :: hstep
-      integer, intent(IN) :: iedge,i,j,k,iloc
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u,pp,pm,qp,qm
+      real(DP), intent(in) :: hstep
+      integer, intent(in) :: iedge,i,j,k,iloc
       
       ! We actually know, that all local quantities start at index zero
-      real(DP), dimension(:,0:), intent(INOUT) :: pploc,pmloc,qploc,qmloc,fluxloc
-      integer, dimension(:,:), intent(INOUT) :: Kloc
+      real(DP), dimension(:,0:), intent(inout) :: pploc,pmloc,qploc,qmloc,fluxloc
+      integer, dimension(:,:), intent(inout) :: Kloc
 
       ! local variables
       real(DP) :: d_ij,f_ij,s_ij,diff,hstep_ik,hstep_jk,dsign
@@ -13989,16 +13989,16 @@ contains
                                           dscale, hstep, iedge, iloc, k, l,&
                                           bisExtended, Ksep, Jac)
 
-      real(DP), dimension(:,0:), intent(IN) :: rploc,rmloc,fluxloc
-      real(DP), dimension(:), intent(IN) :: rp,rm,flux
-      real(DP), intent(IN) :: dscale,hstep
-      integer, dimension(:,:), intent(IN)  :: IverticesAtEdge,Kloc
-      integer, dimension(:), intent(IN) :: Kdiagonal,Kcol
-      integer, intent(IN) :: iedge,iloc,k,l
-      logical, intent(IN) :: bisExtended
+      real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc
+      real(DP), dimension(:), intent(in) :: rp,rm,flux
+      real(DP), intent(in) :: dscale,hstep
+      integer, dimension(:,:), intent(in)  :: IverticesAtEdge,Kloc
+      integer, dimension(:), intent(in) :: Kdiagonal,Kcol
+      integer, intent(in) :: iedge,iloc,k,l
+      logical, intent(in) :: bisExtended
 
-      real(DP), dimension(:), intent(INOUT) :: Jac
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(:), intent(inout) :: Jac
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP) :: f_ij
@@ -14138,7 +14138,7 @@ contains
 
 !<input>
     ! stabilisation structure
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<result>

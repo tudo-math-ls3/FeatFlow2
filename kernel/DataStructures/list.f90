@@ -341,35 +341,35 @@ contains
 
 !<input>
     ! Total number of items that can be stored in list
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 
     ! Format-tag. Type of list format (Double,Single,Integer)
-    integer, intent(IN) :: clistFormat
+    integer, intent(in) :: clistFormat
 
     ! Dimension of the auxiliary Integer values to be stored
-    integer, intent(IN) :: isizeInt
+    integer, intent(in) :: isizeInt
 
     ! Dimension of the auxiliary Double values to be stored
-    integer, intent(IN) :: isizeDble
+    integer, intent(in) :: isizeDble
 
     ! Dimension of the auxiliary Single values to be stored
-    integer, intent(IN) :: isizeSngl
+    integer, intent(in) :: isizeSngl
 
     ! OPTIONAL: Format-tag. Type of list ordering 
-    integer, intent(IN), optional :: cordering
+    integer, intent(in), optional :: cordering
 
     ! OPTIONAL: Factor by which the list should be enlarged if memory
     ! needs to be reallocated
-    real(DP), intent(IN), optional :: dfactor
+    real(DP), intent(in), optional :: dfactor
 
     ! OPTIONAL: Type of linking (single/double). If not specified
     ! then a single-linked list is generated
-    integer, intent(IN), optional :: clinkType
+    integer, intent(in), optional :: clinkType
 !</input>
 
 !<output>
     ! list
-    type(t_list), intent(OUT) :: rlist
+    type(t_list), intent(out) :: rlist
 !</output>
 !</subroutine>
     
@@ -470,7 +470,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
 
@@ -511,12 +511,12 @@ contains
 
 !<input>
     ! New number of total items that can be stored in the list
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
@@ -586,12 +586,12 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! handle to the data
-    integer, intent(INOUT) :: h_Key
+    integer, intent(inout) :: h_Key
 !</inputoutput>
 !</subroutine>
     
@@ -659,12 +659,12 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! double array
-    real(DP), dimension(:), intent(INOUT) :: p_DKey
+    real(DP), dimension(:), intent(inout) :: p_DKey
 !</inputoutput>
 !</subroutine>
 
@@ -700,12 +700,12 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! double array
-    real(SP), dimension(:), intent(INOUT) :: p_SKey
+    real(SP), dimension(:), intent(inout) :: p_SKey
 !</inputoutput>
 !</subroutine>
 
@@ -741,12 +741,12 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<inputoutput>
     ! double array
-    integer, dimension(:), intent(INOUT) :: p_IKey
+    integer, dimension(:), intent(inout) :: p_IKey
 !</inputoutput>
 !</subroutine>
 
@@ -781,12 +781,12 @@ contains
 
 !<input>
     ! handle to the data
-    integer, intent(IN) :: h_KeySrc
+    integer, intent(in) :: h_KeySrc
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
@@ -832,12 +832,12 @@ contains
 
 !<input>
     ! handle to the data
-    real(DP), dimension(:), intent(IN) :: p_DKeySrc
+    real(DP), dimension(:), intent(in) :: p_DKeySrc
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
@@ -867,12 +867,12 @@ contains
 
 !<input>
     ! handle to the data
-    real(SP), dimension(:), intent(IN) :: p_SKeySrc
+    real(SP), dimension(:), intent(in) :: p_SKeySrc
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
@@ -902,12 +902,12 @@ contains
 
 !<input>
     ! handle to the data
-    integer, dimension(:), intent(IN) :: p_IKeySrc
+    integer, dimension(:), intent(in) :: p_IKeySrc
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 !</subroutine>
     
@@ -937,10 +937,10 @@ contains
     
 !<inputoutput>
     ! First list
-    type(t_list), intent(INOUT) :: rlist1
+    type(t_list), intent(inout) :: rlist1
 
     ! Second list
-    type(t_list), intent(INOUT) :: rlist2
+    type(t_list), intent(inout) :: rlist2
 !</inputoutput>
 !</subroutine>
 
@@ -1037,7 +1037,7 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<result>
@@ -1061,7 +1061,7 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 
 !<result>
@@ -1088,12 +1088,12 @@ contains
 
 !<input>
     ! Reset list?
-    logical, intent(IN) :: breset
+    logical, intent(in) :: breset
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
@@ -1125,12 +1125,12 @@ contains
 
 !<input>
     ! Reset list?
-    logical, intent(IN) :: breset
+    logical, intent(in) :: breset
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
@@ -1168,26 +1168,26 @@ contains
 
 !<input>
     ! Double key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1270,26 +1270,26 @@ contains
 
 !<input>
     ! Single key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1371,26 +1371,26 @@ contains
 
 !<input>
     ! Integer key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1473,26 +1473,26 @@ contains
 
 !<input>
     ! Double key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1576,26 +1576,26 @@ contains
 
 !<input>
     ! Single key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1679,26 +1679,26 @@ contains
 
 !<input>
     ! Integer key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the appended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
     
@@ -1783,29 +1783,29 @@ contains
 
 !<input>
     ! Double key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -1898,29 +1898,29 @@ contains
 
 !<input>
     ! Single key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -2013,29 +2013,29 @@ contains
 
 !<input>
     ! Integer key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 
     ! Position of predecessor
-    integer, intent(IN) :: ipred
+    integer, intent(in) :: ipred
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: SData
+    real(SP), dimension(:), intent(in), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<output>
     ! Position of the prepended item
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 !</subroutine>
 
@@ -2127,12 +2127,12 @@ contains
 
 !<input>
     ! Data
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
@@ -2178,12 +2178,12 @@ contains
 
 !<input>
     ! Data
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
@@ -2229,12 +2229,12 @@ contains
 
 !<input>
     ! Data
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 !</input>
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</inputoutput>
 
 !<result>
@@ -2280,15 +2280,15 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Data
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2378,15 +2378,15 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Data
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2476,15 +2476,15 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Data
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 !</input>
 
 !<output>
     ! Position of the predecessor of the found item
-    integer, intent(OUT) :: ipred
+    integer, intent(out) :: ipred
 !</output>
 
 !<result>
@@ -2574,7 +2574,7 @@ contains
 
 !<input>
     ! list
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 !</input>
 !</subroutine>
 
@@ -2622,7 +2622,7 @@ contains
 
 !<inputoutput>
     ! list
-    type(t_list), intent(INOUT) :: rlist
+    type(t_list), intent(inout) :: rlist
 !</input>
 !</subroutine>
 
@@ -2647,24 +2647,24 @@ contains
 
 !<input>
     ! List
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Position of the data
-    integer, intent(IN) :: ipos
+    integer, intent(in) :: ipos
 !</input>
 
 !<output>
     ! Double key
-    real(DP), intent(OUT) :: dkey
+    real(DP), intent(out) :: dkey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(OUT), optional :: DData
+    real(DP), dimension(:), intent(out), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(OUT), optional :: SData
+    real(SP), dimension(:), intent(out), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(OUT), optional :: IData
+    integer, dimension(:), intent(out), optional :: IData
 !</output>
 !</subroutine>
 
@@ -2709,24 +2709,24 @@ contains
 
 !<input>
     ! List
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Position of the data
-    integer, intent(IN) :: ipos
+    integer, intent(in) :: ipos
 !</input>
 
 !<output>
     ! Single key
-    real(SP), intent(OUT) :: skey
+    real(SP), intent(out) :: skey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(OUT), optional :: DData
+    real(DP), dimension(:), intent(out), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(OUT), optional :: SData
+    real(SP), dimension(:), intent(out), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(OUT), optional :: IData
+    integer, dimension(:), intent(out), optional :: IData
 !</output>
 !</subroutine>
 
@@ -2771,24 +2771,24 @@ contains
 
 !<input>
     ! List
-    type(t_list), intent(IN) :: rlist
+    type(t_list), intent(in) :: rlist
 
     ! Position of the data
-    integer, intent(IN) :: ipos
+    integer, intent(in) :: ipos
 !</input>
 
 !<output>
     ! Integer key
-    integer, intent(OUT) :: ikey
+    integer, intent(out) :: ikey
 
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(OUT), optional :: DData
+    real(DP), dimension(:), intent(out), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(OUT), optional :: SData
+    real(SP), dimension(:), intent(out), optional :: SData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(OUT), optional :: IData
+    integer, dimension(:), intent(out), optional :: IData
 !</output>
 !</subroutine>
 

@@ -267,19 +267,19 @@ contains
 !<input>
   ! The underlying discretisation structure which is to be used to
   ! create the vector.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
   
   ! The linear form specifying the underlying PDE of the discretisation.
-  type(t_linearForm), intent(IN) :: rform
+  type(t_linearForm), intent(in) :: rform
   
   ! Whether to clear the vector before calculating the entries.
   ! If .FALSE., the new entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
@@ -288,7 +288,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>
@@ -356,19 +356,19 @@ contains
 !<input>
   ! The underlying discretisation structure which is to be used to
   ! create the vector.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
   
   ! The linear form specifying the underlying PDE of the discretisation.
-  type(t_linearForm), intent(IN) :: rform
+  type(t_linearForm), intent(in) :: rform
   
   ! Whether to clear the vector before calculating the entries.
   ! If .FALSE., the new vector entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -378,7 +378,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated vector entries are added to this vector.
-  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>
@@ -815,24 +815,24 @@ contains
 
 !<input>
   ! The linear form specifying the underlying PDE of the discretisation.
-  type(t_linearForm), intent(IN) :: rform
+  type(t_linearForm), intent(in) :: rform
 
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! Whether to clear the vector before calculating the entries.
   ! If .FALSE., the new entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorScBdr2D.inc'
@@ -841,7 +841,7 @@ contains
 
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>
@@ -1228,7 +1228,7 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
 !</inputoutput>
 
@@ -1528,7 +1528,7 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 !</inputoutput>
   
 !</subroutine>
@@ -1864,16 +1864,16 @@ contains
 
 !<input>
   ! The linear form specifying the underlying PDE of the discretisation.
-  type(t_linearForm), intent(IN) :: rform
+  type(t_linearForm), intent(in) :: rform
   
   ! Whether to clear the vector before calculating the entries.
   ! If .FALSE., the new entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
   include 'intf_coefficientVectorSc.inc'
@@ -1883,7 +1883,7 @@ contains
 !<inputoutput>
   ! The FE vector. Calculated entries are imposed to this vector.
   ! The vector must exist before being passed to this routine.
-  type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
 !</inputoutput>
 
 !</subroutine>

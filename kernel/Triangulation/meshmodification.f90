@@ -45,7 +45,7 @@ contains
 !<input>
   ! Amount of stochastical grid disturbance to be applied to rtriangulation.
   ! Range 0..1; e.g. 0.2 = 20%.
-  real(DP), intent(IN) :: damount
+  real(DP), intent(in) :: damount
   
   ! OPTIONAL: Nodal property of the points, specifying which points should
   ! be disturbed and which not.
@@ -54,13 +54,13 @@ contains
   ! If not specified, the nodal property array from rtriangulation is used,
   ! thus all points in the inner are disturbed while all points on the
   ! boundary are kept as they are.
-  integer, dimension(:), intent(IN), optional, target :: InodalProperty
+  integer, dimension(:), intent(in), optional, target :: InodalProperty
 !</input>
 
 !<inputoutput>
   ! Mesh whose grid points should be disturbed.
   ! THe grid point coordinates are modified by this routine.
-  type(t_triangulation), intent(INOUT) :: rtriangulation
+  type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 
 !</subroutine>

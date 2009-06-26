@@ -101,20 +101,20 @@ contains
 !<input>
 
   ! The trilinear form specifying the underlying PDE of the discretisation.
-  type(t_trilinearForm), intent(IN) :: rform
+  type(t_trilinearForm), intent(in) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! A finite element function $u$ to be used as multiplier in the trilinear form.
   ! Must be a double precision vector.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -124,7 +124,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>
@@ -245,20 +245,20 @@ contains
 
 !<input>
   ! The trilinear form specifying the underlying PDE of the discretisation.
-  type(t_trilinearForm), intent(IN) :: rform
+  type(t_trilinearForm), intent(in) :: rform
   
   ! Whether to clear the matrix before calculating the entries.
   ! If .FALSE., the new matrix entries are added to the existing entries.
-  logical, intent(IN) :: bclear
+  logical, intent(in) :: bclear
   
   ! A finite element function $u$ to be used as multiplier in the trilinear form.
   ! Must be a double precision vector.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
 
   ! OPTIONAL: A pointer to a collection structure. This structure is given to the
   ! callback function for nonconstant coefficients to provide additional
   ! information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -268,7 +268,7 @@ contains
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
-  type(t_matrixScalar), intent(INOUT) :: rmatrixScalar
+  type(t_matrixScalar), intent(inout) :: rmatrixScalar
 !</inputoutput>
 
 !</subroutine>

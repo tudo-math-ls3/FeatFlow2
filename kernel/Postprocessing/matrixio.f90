@@ -80,30 +80,30 @@ contains
     
   !<input>
     ! The matrix to be written out
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
     
     ! Name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Suppress zeroes in output: yes/no
-    logical, intent(IN) :: bnoZero
+    logical, intent(in) :: bnoZero
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Format string to use for the output; e.g. '(E20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, values are not replaced (i.e. the default value is 0.0).
-    real(DP), intent(IN), optional :: dthreshold
+    real(DP), intent(in), optional :: dthreshold
   !</input>
     
 !</subroutine>
@@ -136,30 +136,30 @@ contains
     
   !<input>
     ! The matrix to be written out
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
     
     ! Name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Suppress zeroes in output: yes/no
-    logical, intent(IN) :: bnoZero
+    logical, intent(in) :: bnoZero
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Format string to use for the output; e.g. '(E20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
     ! If not present, values are not replaced (i.e. the default value is 0.0).
-    real(DP), intent(IN), optional :: dthreshold
+    real(DP), intent(in), optional :: dthreshold
 
   !</input>
     
@@ -222,35 +222,35 @@ contains
     
   !<input>
     ! number of rows
-    integer, intent(IN) :: nrow
+    integer, intent(in) :: nrow
     
     ! number of columns
-    integer, intent(IN) :: ncol
+    integer, intent(in) :: ncol
     
     ! matrix: array [1..nrow,1..ncol] of double
-    real(DP), dimension(nrow,ncol), intent(IN) :: Da
+    real(DP), dimension(nrow,ncol), intent(in) :: Da
     
     ! name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! suppress zeroes in output: yes/no
-    logical, intent(IN) :: bnoZero
+    logical, intent(in) :: bnoZero
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! format string to use for the output; e.g. '(D20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
-    real(DP), intent(IN) :: dthreshold
+    real(DP), intent(in) :: dthreshold
 
   !</input>
     
@@ -327,41 +327,41 @@ contains
     
   !<input>
     ! number of rows
-    integer, intent(IN) :: nrow
+    integer, intent(in) :: nrow
     
     ! number of columns; must be =nrow for structure-7 matrices
-    integer, intent(IN) :: ncol
+    integer, intent(in) :: ncol
     
     ! matrix: array [1..na] of double
-    real(DP), dimension(:), intent(IN) :: Da
+    real(DP), dimension(:), intent(in) :: Da
     
     ! Column structure of the matrix
-    integer, dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(in) :: Icol
     
     ! Row structure of the matrix
-    integer, dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(in) :: Irow
     
     ! name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! suppress zeroes in output: yes/no
-    logical, intent(IN) :: bnoZero
+    logical, intent(in) :: bnoZero
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! format string to use for the output; e.g. '(D20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
     ! Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for better visualisation.
-    real(DP), intent(IN) :: dthreshold
+    real(DP), intent(in) :: dthreshold
 
   !</input>
     
@@ -465,22 +465,22 @@ contains
     
   !<input>
     ! The matrix to be written out
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
     
     ! Name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Format string to use for the output; e.g. '(E20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
   !</input>
     
@@ -538,34 +538,34 @@ contains
     
   !<input>
     ! number of rows
-    integer, intent(IN) :: nrow
+    integer, intent(in) :: nrow
     
     ! number of columns; must be =nrow for structure-7 matrices
-    integer, intent(IN) :: ncol
+    integer, intent(in) :: ncol
     
     ! matrix: array [1..na] of double
-    real(DP), dimension(:), intent(IN) :: Da
+    real(DP), dimension(:), intent(in) :: Da
     
     ! Column structure of the matrix
-    integer, dimension(:), intent(IN) :: Icol
+    integer, dimension(:), intent(in) :: Icol
     
     ! Row structure of the matrix
-    integer, dimension(nrow+1), intent(IN) :: Irow
+    integer, dimension(nrow+1), intent(in) :: Irow
     
     ! name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! format string to use for the output; e.g. '(D20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
   !</input>
     
 !</subroutine>
@@ -633,27 +633,27 @@ contains
     
   !<input>
     ! The matrix to be written out
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
     
     ! Name of the matrix
-    character(len=*), intent(IN) :: sarray
+    character(len=*), intent(in) :: sarray
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer, intent(IN) :: ifile
+    integer, intent(in) :: ifile
     
     ! Name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
     
     ! Format string to use for the output; e.g. '(E20.10)'
-    character(len=*), intent(IN) :: sformat
+    character(len=*), intent(in) :: sformat
     
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for beter visualisation.
     ! If not present, a default of 1E-12 is assumed.
-    real(DP), intent(IN), optional :: dthreshold
+    real(DP), intent(in), optional :: dthreshold
   !</input>
     
 !</subroutine>
@@ -703,26 +703,26 @@ contains
 
 !<input>
     ! File name of the MATLAB file without fileextension. A ".m" is appended.
-    character(LEN=*), intent(IN) :: sfileName
+    character(LEN=*), intent(in) :: sfileName
     
     ! Name of the matrix in MATLAB file. This will be the name of the
     ! variable containing the matrix data when reading the file into matlab.
-    character(LEN=*), intent(IN) :: smatrixName
+    character(LEN=*), intent(in) :: smatrixName
 
     ! Source matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
     
     ! Whether to spy the real data of the matrix or only its sparsity
     ! pattern
-    logical, intent(IN) :: bdata
+    logical, intent(in) :: bdata
 
     ! OPTIONAL: status of file
-    integer, intent(IN), optional :: cstatus
+    integer, intent(in), optional :: cstatus
 
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for beter visualisation.
     ! If not present, a default of 1E-12 is assumed.
-    real(DP), intent(IN), optional :: dthreshold
+    real(DP), intent(in), optional :: dthreshold
 !</input>
 !</subroutine>
 
@@ -760,26 +760,26 @@ contains
 
 !<input>
     ! File name of the MATLAB file without fileextension. A ".m" is appended.
-    character(LEN=*), intent(IN) :: sfileName
+    character(LEN=*), intent(in) :: sfileName
     
     ! Name of the matrix in MATLAB file. This will be the name of the
     ! variable containing the matrix data when reading the file into matlab.
-    character(LEN=*), intent(IN) :: smatrixName
+    character(LEN=*), intent(in) :: smatrixName
 
     ! Source matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
     
     ! Whether to spy the real data of the matrix or only its sparsity
     ! pattern
-    logical, intent(IN) :: bdata
+    logical, intent(in) :: bdata
 
     ! OPTIONAL: status of file
-    integer, intent(IN), optional :: cstatus
+    integer, intent(in), optional :: cstatus
 
     ! OPTIONAL: Threshold parameter for the entries. Entries whose absolute
     ! value is below this threshold are replaced by 0.0 for beter visualisation.
     ! If not present, a default of 1E-12 is assumed.
-    real(DP), intent(IN), optional :: dthreshold
+    real(DP), intent(in), optional :: dthreshold
 !</input>
 !</subroutine>
     
@@ -1017,12 +1017,12 @@ contains
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79matD_double(neq,ncols,nvar,Kld,Kcol,Da,dthres)
-      integer, dimension(:), intent(IN)  :: Kld
-      integer, dimension(:), intent(IN)  :: Kcol
-      integer, intent(IN)                :: neq,ncols
-      integer, intent(IN)                             :: nvar
-      real(DP), dimension(nvar,*), intent(IN), optional :: Da
-      real(DP), intent(IN), optional :: dthres
+      integer, dimension(:), intent(in)  :: Kld
+      integer, dimension(:), intent(in)  :: Kcol
+      integer, intent(in)                :: neq,ncols
+      integer, intent(in)                             :: nvar
+      real(DP), dimension(nvar,*), intent(in), optional :: Da
+      real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
       integer :: ieq,ild,ivar
       
@@ -1054,12 +1054,12 @@ contains
     ! SPY CSR matrix in single precision
     
     subroutine do_spy_mat79matD_single(neq,ncols,nvar,Kld,Kcol,Fa,dthres)
-      integer, dimension(:), intent(IN)  :: Kld
-      integer, dimension(:), intent(IN)  :: Kcol
-      integer, intent(IN)                :: neq,ncols
-      integer, intent(IN)                             :: nvar
-      real(SP), dimension(nvar,*), intent(IN), optional :: Fa
-      real(DP), intent(IN), optional :: dthres
+      integer, dimension(:), intent(in)  :: Kld
+      integer, dimension(:), intent(in)  :: Kcol
+      integer, intent(in)                :: neq,ncols
+      integer, intent(in)                             :: nvar
+      real(SP), dimension(nvar,*), intent(in), optional :: Fa
+      real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
       integer :: ieq,ild,ivar
 
@@ -1091,12 +1091,12 @@ contains
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79mat1_double(neq,ncols,nvar,mvar,Kld,Kcol,Da,dthres)
-      integer, dimension(:), intent(IN)  :: Kld
-      integer, dimension(:), intent(IN)  :: Kcol
-      integer, intent(IN)                :: neq,ncols
-      integer, intent(IN)                             :: nvar,mvar
-      real(DP), dimension(nvar,mvar,*), intent(IN), optional :: Da
-      real(DP), intent(IN), optional :: dthres
+      integer, dimension(:), intent(in)  :: Kld
+      integer, dimension(:), intent(in)  :: Kcol
+      integer, intent(in)                :: neq,ncols
+      integer, intent(in)                             :: nvar,mvar
+      real(DP), dimension(nvar,mvar,*), intent(in), optional :: Da
+      real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
       integer :: ieq,ild,ivar,jvar
 
@@ -1132,12 +1132,12 @@ contains
     ! SPY CSR matrix in double precision
     
     subroutine do_spy_mat79mat1_single(neq,ncols,nvar,mvar,Kld,Kcol,Fa,dthres)
-      integer, dimension(:), intent(IN)  :: Kld
-      integer, dimension(:), intent(IN)  :: Kcol
-      integer, intent(IN)                :: neq,ncols
-      integer, intent(IN)                             :: nvar,mvar
-      real(SP), dimension(nvar,mvar,*), intent(IN), optional :: Fa
-      real(DP), intent(IN), optional :: dthres
+      integer, dimension(:), intent(in)  :: Kld
+      integer, dimension(:), intent(in)  :: Kcol
+      integer, intent(in)                :: neq,ncols
+      integer, intent(in)                             :: nvar,mvar
+      real(SP), dimension(nvar,mvar,*), intent(in), optional :: Fa
+      real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
       integer :: ieq,ild,ivar,jvar
 
@@ -1173,9 +1173,9 @@ contains
     ! SPY full matrix in double precision
     
     subroutine do_spy_mat1_double(neq,ncols,Da,dthres)
-      integer, intent(IN) :: neq,ncols
-      real(DP), dimension(:), intent(IN), optional :: Da
-      real(DP), intent(IN), optional :: dthres
+      integer, intent(in) :: neq,ncols
+      real(DP), dimension(:), intent(in), optional :: Da
+      real(DP), intent(in), optional :: dthres
       real(DP) :: ddata
       integer :: ieq,icol
 
@@ -1203,9 +1203,9 @@ contains
     ! SPY full matrix in single precision
     
     subroutine do_spy_mat1_single(neq,ncols,Fa,dthres)
-      integer, intent(IN) :: neq,ncols
-      real(SP), dimension(:), intent(IN), optional :: Fa
-      real(DP), intent(IN), optional :: dthres
+      integer, intent(in) :: neq,ncols
+      real(SP), dimension(:), intent(in), optional :: Fa
+      real(DP), intent(in), optional :: dthres
       real(SP) :: fdata
       integer :: ieq,icol
 

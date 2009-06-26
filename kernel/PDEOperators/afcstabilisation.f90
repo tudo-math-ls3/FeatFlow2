@@ -272,15 +272,15 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN)    :: rparlist
+    type(t_parlist), intent(in)    :: rparlist
 
     ! Section name of the parameter list
-    character(LEN=*), intent(IN)   :: ssectionName
+    character(LEN=*), intent(in)   :: ssectionName
 !</input>
 
 !<inputoutput>
     ! Stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -329,7 +329,7 @@ contains
 
 !<inputoutput>
     ! Stabilisation structure
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -401,15 +401,15 @@ contains
 
 !<input>
     ! number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
 
     ! number of edges
-    integer, intent(IN) :: nedge   
+    integer, intent(in) :: nedge   
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)   :: rafcstab
+    type(t_afcstab), intent(inout)   :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -510,12 +510,12 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixScalar), intent(IN) :: rmatrixTemplate
+    type(t_matrixScalar), intent(in) :: rmatrixTemplate
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)   :: rafcstab
+    type(t_afcstab), intent(inout)   :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -547,12 +547,12 @@ contains
 
 !<input>
     ! template matrix
-    type(t_matrixBlock), intent(IN) :: rmatrixBlockTemplate
+    type(t_matrixBlock), intent(in) :: rmatrixBlockTemplate
 !</input>
 
 !<inputoutput>
     ! stabilisation structure
-    type(t_afcstab), intent(INOUT)   :: rafcstab
+    type(t_afcstab), intent(inout)   :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -593,7 +593,7 @@ contains
 
 !<input>
     ! discrete operator
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -627,7 +627,7 @@ contains
 
 !<input>
     ! discrete operator
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -662,7 +662,7 @@ contains
 
 !<input>
     ! discrete operator
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -697,7 +697,7 @@ contains
 
 !<input>
     ! discrete operator
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -731,7 +731,7 @@ contains
 
 !<input>
     ! discrete operator
-    type(t_afcstab), intent(IN) :: rafcstab
+    type(t_afcstab), intent(in) :: rafcstab
 !</input>
 
 !<output>
@@ -766,7 +766,7 @@ contains
 
 !<inputoutput>
     ! discrete operator
-    type(t_afcstab), intent(INOUT) :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
 !</inputoutput>
 !</subroutine>
 
@@ -909,11 +909,11 @@ contains
 !</description>
 
 !<input>
-    type(t_matrixScalar), intent(IN)    :: rmatrixSrc
+    type(t_matrixScalar), intent(in)    :: rmatrixSrc
 !</input>
 
 !<inputoutput>
-    type(t_matrixScalar), intent(INOUT) :: rmatrixExtended
+    type(t_matrixScalar), intent(inout) :: rmatrixExtended
 !</inputoutput>
 !</subroutine>
     
@@ -943,10 +943,10 @@ contains
 
 !<input>
     ! (de)nominator
-    real(DP), intent(IN) :: p,q
+    real(DP), intent(in) :: p,q
 
     ! default value
-    real(DP), intent(IN) :: default
+    real(DP), intent(in) :: default
 !</input>
 
 !<result>
@@ -976,13 +976,13 @@ contains
 
 !<input>
     ! (de)nominator
-    real(DP), intent(IN) :: p,q
+    real(DP), intent(in) :: p,q
     
     ! default value
-    real(DP), intent(IN) :: default
+    real(DP), intent(in) :: default
 
     ! upper bound
-    real(DP), intent(IN) :: dbound
+    real(DP), intent(in) :: dbound
 !</input>
 
 !<result>

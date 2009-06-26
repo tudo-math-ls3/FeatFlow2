@@ -66,7 +66,7 @@ contains
 
 !<inputoutput>
     ! The matrix which is to be modified.
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -92,8 +92,8 @@ contains
     
     subroutine replaceLines_format9 (rmatrix,Irows)
       
-      integer, intent(IN), dimension(:) :: Irows
-      type(t_matrixScalar), intent(INOUT) :: rmatrix
+      integer, intent(in), dimension(:) :: Irows
+      type(t_matrixScalar), intent(inout) :: rmatrix
       
       ! local variables
       integer :: irow
@@ -160,8 +160,8 @@ contains
     
     subroutine replaceLines_format7 (rmatrix,Irows)
       
-      integer, intent(IN), dimension(:) :: Irows
-      type(t_matrixScalar), intent(INOUT) :: rmatrix
+      integer, intent(in), dimension(:) :: Irows
+      type(t_matrixScalar), intent(inout) :: rmatrix
       
       ! local variables
       integer :: irow
@@ -239,12 +239,12 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer, intent(IN), dimension(:) :: Irows
+    integer, intent(in), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>
     ! The matrix which is to be modified.
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -270,8 +270,8 @@ contains
     
     subroutine removeOffdiags_format9 (rmatrix,Irows)
       
-      integer, intent(IN), dimension(:) :: Irows
-      type(t_matrixScalar), intent(INOUT) :: rmatrix
+      integer, intent(in), dimension(:) :: Irows
+      type(t_matrixScalar), intent(inout) :: rmatrix
       
       ! local variables
       integer :: irow
@@ -335,8 +335,8 @@ contains
     
     subroutine removeOffdiags_format7 (rmatrix,Irows)
       
-      integer, intent(IN), dimension(:) :: Irows
-      type(t_matrixScalar), intent(INOUT) :: rmatrix
+      integer, intent(in), dimension(:) :: Irows
+      type(t_matrixScalar), intent(inout) :: rmatrix
       
       ! local variables
       integer :: irow
@@ -396,12 +396,12 @@ contains
 !<input>
     ! A list of row numbers of all the rows which are to be replaced
     ! by unit vectors.
-    integer, intent(IN), dimension(:) :: Irows
+    integer, intent(in), dimension(:) :: Irows
 !</input>
 
 !<inputoutput>
     ! The matrix which is to be modified.
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -425,8 +425,8 @@ contains
     
     subroutine replaceLinesZero_format97 (rmatrix,Irows)
       
-      integer, intent(IN), dimension(:) :: Irows
-      type(t_matrixScalar), intent(INOUT) :: rmatrix
+      integer, intent(in), dimension(:) :: Irows
+      type(t_matrixScalar), intent(inout) :: rmatrix
     
       ! local variables
       integer :: irow
@@ -484,15 +484,15 @@ contains
 
 !<input>
     ! A list of row numbers of all the rows which are to be merged.
-    integer, intent(IN), dimension(:,:) :: Irows
+    integer, intent(in), dimension(:,:) :: Irows
     
     ! OPTIONAL: If bsymmetric=.TRUE. the sparsity pattern will be symmetric
-    logical, intent(IN), optional                    :: bsymmetric
+    logical, intent(in), optional                    :: bsymmetric
 !</input>
 
 !<inputoutput>
     ! The matrix which is to be modified.
-    type(t_matrixScalar), intent(INOUT)              :: rmatrix
+    type(t_matrixScalar), intent(inout)              :: rmatrix
 !</inputoutput>
 
 !</subroutine>
@@ -619,8 +619,8 @@ contains
     ! The row merging routine for format 7
 
     subroutine mergeLines_format7(rmatrix, ImergeWithRow)
-      type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer, intent(IN), dimension(:) :: ImergeWithRow
+      type(t_matrixScalar), intent(inout)            :: rmatrix
+      integer, intent(in), dimension(:) :: ImergeWithRow
       
       ! local variables
       integer, dimension(:), pointer :: p_Kld
@@ -786,8 +786,8 @@ contains
     ! The row merging routine for format 9
 
     subroutine mergeLines_format9(rmatrix, ImergeWithRow)
-      type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer, intent(IN), dimension(:) :: ImergeWithRow
+      type(t_matrixScalar), intent(inout)            :: rmatrix
+      integer, intent(in), dimension(:) :: ImergeWithRow
       
       ! local variables
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
@@ -939,8 +939,8 @@ contains
     ! The column merging routine for format 7
 
     subroutine mergeColumns_format7(rmatrix, ImergeWithRow)
-      type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer, intent(IN), dimension(:) :: ImergeWithRow
+      type(t_matrixScalar), intent(inout)            :: rmatrix
+      integer, intent(in), dimension(:) :: ImergeWithRow
       
       ! local variables
       integer, dimension(:), pointer :: p_Kld
@@ -1080,8 +1080,8 @@ contains
     ! The column merging routine for format 9
 
     subroutine mergeColumns_format9(rmatrix, ImergeWithRow)
-      type(t_matrixScalar), intent(INOUT)            :: rmatrix
-      integer, intent(IN), dimension(:) :: ImergeWithRow
+      type(t_matrixScalar), intent(inout)            :: rmatrix
+      integer, intent(in), dimension(:) :: ImergeWithRow
       
       ! local variables
       integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
@@ -1240,12 +1240,12 @@ contains
     ! to be replaced by unit vectors. These numbers are not global DOF's 
     ! but the starting indices relative to the block row iblockRow
     ! (e.g. "1" identifies the first row in the block row iblockrow).
-    integer, intent(IN), dimension(:) :: Irows
+    integer, intent(in), dimension(:) :: Irows
   !</input>
 
   !<inputoutput>
     ! The matrix which is to be modified.
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
   !</inputoutput>
 
   !</subroutine>

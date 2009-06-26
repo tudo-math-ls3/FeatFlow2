@@ -84,7 +84,7 @@ contains
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-  real(DP), dimension(2,4), intent(IN) :: Dpoints
+  real(DP), dimension(2,4), intent(in) :: Dpoints
 !</input>
 
 !<result>
@@ -132,7 +132,7 @@ contains
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-    real(DP), dimension(2,3), intent(IN) :: Dpoints
+    real(DP), dimension(2,3), intent(in) :: Dpoints
 !</input>
 
 !<result>
@@ -162,7 +162,7 @@ contains
   ! counterclockwise.
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates
-    real(DP), dimension(2,4), intent(IN) :: Dpoints
+    real(DP), dimension(2,4), intent(in) :: Dpoints
 !</input>
 
 !<result>
@@ -294,7 +294,7 @@ contains
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates,
   ! Dpoints(3,.) = z-coordinates
-  real(DP), dimension(3,4), intent(IN) :: Dpoints
+  real(DP), dimension(3,4), intent(in) :: Dpoints
 !</input>
 
 !<result>
@@ -333,7 +333,7 @@ contains
   ! Dv(1,.) = x-coordinates,
   ! Dv(2,.) = y-coordinates,
   ! Dv(3,.) = z-coordinates
-  real(DP), dimension(3,8), intent(IN) :: Dv
+  real(DP), dimension(3,8), intent(in) :: Dv
 !</input>
 
 !<result>
@@ -390,21 +390,21 @@ contains
 
 !<input>
   ! First point on ray 1.
-  real(DP), intent(IN) :: dx1,dy1
+  real(DP), intent(in) :: dx1,dy1
   
   ! A second point on ray 1. Must be different to (dx1,dy1)
-  real(DP), intent(IN) :: dx2,dy2
+  real(DP), intent(in) :: dx2,dy2
   
   ! First point on ray 2.
-  real(DP), intent(IN) :: dx3,dy3
+  real(DP), intent(in) :: dx3,dy3
   
   ! A second point on ray 2. Must be different to (dx3,dy3)
-  real(DP), intent(IN) :: dx4,dy4
+  real(DP), intent(in) :: dx4,dy4
 !</input>
 
 !<result>
   ! TRUE if the two rays intersect. FALSE otherwise.
-  logical, intent(OUT) :: bintersect
+  logical, intent(out) :: bintersect
 !</result>
 
 !</subroutine>
@@ -449,28 +449,28 @@ contains
 
 !<input>
   ! First point on ray 1.
-  real(DP), intent(IN) :: dx0,dy0
+  real(DP), intent(in) :: dx0,dy0
   
   ! A second point on ray 1. Must be different to (dx1,dy1)
-  real(DP), intent(IN) :: dx1,dy1
+  real(DP), intent(in) :: dx1,dy1
   
   ! First point on ray 2.
-  real(DP), intent(IN) :: dx2,dy2
+  real(DP), intent(in) :: dx2,dy2
   
   ! A second point on ray 2. Must be different to (dx3,dy3)
-  real(DP), intent(IN) :: dx3,dy3
+  real(DP), intent(in) :: dx3,dy3
 !</input>
 
 !<result>
   ! Intersection point.
   ! If the two rays do not intersect or are identical, this is set to (0,0).
-  real(DP), intent(OUT) :: dx,dy
+  real(DP), intent(out) :: dx,dy
 
   ! Returns the type of intersection between the rays.
   ! =-1: The rays are the same
   ! = 0: The rays don't intersect.
   ! = 1: The rays intersect in exactly one point.
-  integer, intent(OUT) :: iintersect
+  integer, intent(out) :: iintersect
 !</result>
 
 !</subroutine>
@@ -550,7 +550,7 @@ contains
 
 !<input>
   ! Point to check
-  real(DP), intent(IN) :: dx,dy
+  real(DP), intent(in) :: dx,dy
   
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
@@ -559,12 +559,12 @@ contains
   !   explicit array of dimension (2,4). As this deactivates array
   !   checking in Fortran, the caller must take care to specify exactly
   !   this type of array here!
-  real(DP), dimension(2,4), intent(IN) :: DcornerCoords
+  real(DP), dimension(2,4), intent(in) :: DcornerCoords
 !</input>
 
 !<result>
   ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
-  logical, intent(OUT) :: binside
+  logical, intent(out) :: binside
 !</result>
 
 !</subroutine>
@@ -634,17 +634,17 @@ contains
 
 !<input>
   ! Point in real coordinates
-  real(DP), intent(IN) :: dx,dy
+  real(DP), intent(in) :: dx,dy
   
   ! Array with coordinates of the three corner points of the element.
   ! The corners must be ordered in counterclockwise order.
-  real(DP), dimension(:,:), intent(IN) :: DcornerCoords
+  real(DP), dimension(:,:), intent(in) :: DcornerCoords
 !</input>
 
 !<result>
   ! The barycentric coordinates of (dx,dy) relative to the element
   ! specified by DcornerCoords.
-  real(DP), intent(OUT) :: dxi1,dxi2,dxi3
+  real(DP), intent(out) :: dxi1,dxi2,dxi3
 !</result>
 
 !</subroutine>
@@ -682,7 +682,7 @@ contains
 
 !<input>
   ! Point to check
-  real(DP), intent(IN) :: dx,dy
+  real(DP), intent(in) :: dx,dy
   
   ! Array with coordinates of the four corner points of the element.
   ! The corners must be ordered in counterclockwise order.
@@ -691,12 +691,12 @@ contains
   !   explicit array of dimension (2,4). As this deactivates array
   !   checking in Fortran, the caller must take care to specify exactly
   !   this type of array here!
-  real(DP), dimension(2,4), intent(IN) :: DcornerCoords
+  real(DP), dimension(2,4), intent(in) :: DcornerCoords
 !</input>
 
 !<result>
   ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
-  logical, intent(OUT) :: binside
+  logical, intent(out) :: binside
 !</result>
 
 !</subroutine>
@@ -733,7 +733,7 @@ contains
   ! Dpoints(1,.) = x-coordinates,
   ! Dpoints(2,.) = y-coordinates,
   ! Dpoints(3,.) = z-coordinates
-  real(DP), dimension(3,8), intent(IN) :: Dpoints
+  real(DP), dimension(3,8), intent(in) :: Dpoints
 !</input>
 
 !<result>

@@ -391,8 +391,8 @@ contains
   
   subroutine parlst_initsection (rparlstSection,sname)
   
-  type(t_parlstSection), intent(INOUT) :: rparlstSection
-  character(LEN=*), intent(IN) :: sname
+  type(t_parlstSection), intent(inout) :: rparlstSection
+  character(LEN=*), intent(in) :: sname
   
   ! Simply allocate the pointers with an empty list
   allocate(rparlstSection%p_Sparameters(PARLST_NPARSPERBLOCK))
@@ -412,11 +412,11 @@ contains
   subroutine parlst_reallocsection (rparlstSection, inewsize)
   
   ! The section to reallocate.
-  type(t_parlstSection), intent(INOUT) :: rparlstSection
+  type(t_parlstSection), intent(inout) :: rparlstSection
   
   ! The new 'size' of the section, i.e. the new number of parameters,
   ! the section should be able to handle.
-  integer, intent(IN) :: inewsize
+  integer, intent(in) :: inewsize
   
   ! local variables
   
@@ -456,7 +456,7 @@ contains
   subroutine parlst_releasesection (rparlstSection)
   
   ! The section to release.
-  type(t_parlstSection), intent(INOUT) :: rparlstSection
+  type(t_parlstSection), intent(inout) :: rparlstSection
   
   ! local variables
   integer :: i
@@ -485,11 +485,11 @@ contains
   subroutine parlst_realloclist (rparlist, inewsize)
   
   ! The section list to reallocate.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
   ! The new 'size' of the section, i.e. the new number of parameters,
   ! the section should be able to handle.
-  integer, intent(IN) :: inewsize
+  integer, intent(in) :: inewsize
   
   ! local variables
   
@@ -521,13 +521,13 @@ contains
   subroutine parlst_fetchparameter(rsection, sname, iparamnum) 
 
   ! The section.
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
   
   ! The parameter name to look for. Must be uppercase.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! The number of the parameter in the list or 0 if it does not exist.
-  integer, intent(OUT) :: iparamnum
+  integer, intent(out) :: iparamnum
   
   ! local variables
   integer :: i
@@ -563,7 +563,7 @@ contains
 !<inputoutput>
   
   ! The parameter list to initialise.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
   
@@ -593,7 +593,7 @@ contains
   
 !<inputoutput>
   ! The parameter list to clean up.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
   
 !</subroutine>
@@ -620,7 +620,7 @@ contains
 !<inputoutput>
   
   ! The parameter list to release.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
   
@@ -661,10 +661,10 @@ contains
 !<input>
 
   ! The parameter list to scan for the section.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name to look for. 
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
 !</input>
   
@@ -723,14 +723,14 @@ contains
 !<inputoutput>
   
   ! The parameter list where to add the section.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
 
 !<input>
   
   ! The section name to add - without brackets in front and at the end!
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
 !</input>
   
@@ -780,10 +780,10 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
 !</input>
   
@@ -829,13 +829,13 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
 !</input>
   
@@ -884,10 +884,10 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
 !</input>
   
@@ -939,13 +939,13 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
   
 !</input>
   
@@ -1007,26 +1007,26 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  character(LEN=*), intent(IN), optional :: sdefault
+  character(LEN=*), intent(in), optional :: sdefault
   
   ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
   
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  character(LEN=*), intent(OUT) :: svalue
+  character(LEN=*), intent(out) :: svalue
   
 !</output>
 
@@ -1101,27 +1101,27 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The number of the parameter.
-  integer, intent(IN) :: iparameter
+  integer, intent(in) :: iparameter
 
   ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  character(LEN=*), intent(OUT) :: svalue
+  character(LEN=*), intent(out) :: svalue
   
   ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
 !</output>
 
@@ -1190,29 +1190,29 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  character(LEN=*), intent(IN), optional :: sdefault
+  character(LEN=*), intent(in), optional :: sdefault
   
   ! OPTIONAL: The number of the substring to be returned.
   ! =0: returns the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  character(LEN=*), intent(OUT) :: svalue
+  character(LEN=*), intent(out) :: svalue
   
 !</output>
 
@@ -1272,26 +1272,26 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  real(SP), intent(IN), optional :: fdefault
+  real(SP), intent(in), optional :: fdefault
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(SP), intent(OUT) :: fvalue
+  real(SP), intent(out) :: fvalue
   
 !</output>
 
@@ -1345,27 +1345,27 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The number of the parameter.
-  integer, intent(IN) :: iparameter
+  integer, intent(in) :: iparameter
   
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(SP), intent(OUT) :: fvalue
+  real(SP), intent(out) :: fvalue
   
   ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
 !</output>
 
@@ -1407,29 +1407,29 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  real(SP), intent(IN), optional :: fdefault
+  real(SP), intent(in), optional :: fdefault
   
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(SP), intent(OUT) :: fvalue
+  real(SP), intent(out) :: fvalue
   
 !</output>
 
@@ -1479,26 +1479,26 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  real(DP), intent(IN), optional :: ddefault
+  real(DP), intent(in), optional :: ddefault
   
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
   
 !</output>
 
@@ -1552,27 +1552,27 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The number of the parameter.
-  integer, intent(IN) :: iparameter
+  integer, intent(in) :: iparameter
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
   
   ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
 !</output>
 
@@ -1615,29 +1615,29 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  real(DP), intent(IN), optional :: ddefault
+  real(DP), intent(in), optional :: ddefault
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  real(DP), intent(OUT) :: dvalue
+  real(DP), intent(out) :: dvalue
   
 !</output>
 
@@ -1686,26 +1686,26 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  integer, intent(IN), optional :: idefault
+  integer, intent(in), optional :: idefault
   
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  integer, intent(OUT) :: ivalue
+  integer, intent(out) :: ivalue
   
 !</output>
 
@@ -1757,27 +1757,27 @@ contains
 !<input>
     
   ! The section where to search for the parameter
-  type(t_parlstSection), intent(IN) :: rsection
+  type(t_parlstSection), intent(in) :: rsection
 
   ! The number of the parameter.
-  integer, intent(IN) :: iparameter
+  integer, intent(in) :: iparameter
 
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  integer, intent(OUT) :: ivalue
+  integer, intent(out) :: ivalue
   
   ! OPTIONAL: Parameter existance check
   ! Is set to TRUE/FALSE, depending on whether the parameter exists.
-  logical, intent(OUT), optional :: bexists
+  logical, intent(out), optional :: bexists
   
 !</output>
 
@@ -1819,29 +1819,29 @@ contains
 !<input>
     
   ! The parameter list.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
   
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! OPTIONAL: A default value
-  integer, intent(IN), optional :: idefault
+  integer, intent(in), optional :: idefault
   
   ! OPTIONAL: The number of the arrayindex to be returned.
   ! =0: returns the integer directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: returns array index  iarrayindex.
-  integer, intent(IN), optional :: iarrayindex
+  integer, intent(in), optional :: iarrayindex
 
 !</input>
   
 !<output>
 
   ! The value of the parameter
-  integer, intent(OUT) :: ivalue
+  integer, intent(out) :: ivalue
   
 !</output>
 
@@ -1880,22 +1880,22 @@ contains
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  type(t_parlstSection), intent(INOUT) :: rsection
+  type(t_parlstSection), intent(inout) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! The value of the parameter
-  character(LEN=*), intent(IN) :: svalue
+  character(LEN=*), intent(in) :: svalue
   
   ! OPTIONAL: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
-  integer, intent(IN), optional :: nsubstrings
+  integer, intent(in), optional :: nsubstrings
   
 !</input>
 
@@ -1973,25 +1973,25 @@ contains
 !<inputoutput> 
     
   ! The parameter list.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
 
 !<input>
 
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! The value of the parameter
-  character(LEN=*), intent(IN) :: svalue
+  character(LEN=*), intent(in) :: svalue
   
   ! OPTIONAL: Number of substrings. This allows a parameter to have
   ! multiple substrings, which can be accessed via the 'isubstring'
   ! parameter in the GET-routines.
-  integer, intent(IN), optional :: nsubstrings
+  integer, intent(in), optional :: nsubstrings
 
 !</input>
 
@@ -2047,23 +2047,23 @@ contains
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  type(t_parlstSection), intent(INOUT) :: rsection
+  type(t_parlstSection), intent(inout) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  integer, intent(IN) :: iparameter
+  integer, intent(in) :: iparameter
 
   ! The new value of the parameter
-  character(LEN=*), intent(IN) :: svalue
+  character(LEN=*), intent(in) :: svalue
   
   ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
 
 !</input>
 
@@ -2071,7 +2071,7 @@ contains
 
   ! Optional parameter. Is set to YES/NO, depending on whether
   ! the parameter exists.
-  integer, intent(OUT), optional :: iexists
+  integer, intent(out), optional :: iexists
 
 !</output>
 
@@ -2133,23 +2133,23 @@ contains
 !<inputoutput> 
     
   ! The section where to arr the parameter
-  type(t_parlstSection), intent(INOUT) :: rsection
+  type(t_parlstSection), intent(inout) :: rsection
   
 !</inputoutput>
 
 !<input>
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! The new value of the parameter
-  character(LEN=*), intent(IN) :: svalue
+  character(LEN=*), intent(in) :: svalue
   
   ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
 
 !</input>
 
@@ -2209,26 +2209,26 @@ contains
 !<inputoutput> 
     
   ! The parameter list.
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
 
 !<input>
 
   ! The section name - '' identifies the unnamed section.
-  character(LEN=*), intent(IN) :: ssectionName
+  character(LEN=*), intent(in) :: ssectionName
 
   ! The parameter name.
-  character(LEN=*), intent(IN) :: sparameter
+  character(LEN=*), intent(in) :: sparameter
 
   ! The new value of the parameter
-  character(LEN=*), intent(IN) :: svalue
+  character(LEN=*), intent(in) :: svalue
   
   ! OPTIONAL: The number of the substring to be changed.
   ! =0: changes the string directly behind the '=' sign in the line
   !     'name=value'.
   ! >0: changes substring isubstring.
-  integer, intent(IN), optional :: isubstring
+  integer, intent(in), optional :: isubstring
 
 !</input>
 
@@ -2265,17 +2265,17 @@ contains
   subroutine parlst_readlinefromfile (iunit, sdata, ilinelen, ios)
   
   ! The unit where to read from; must be connected to a file.
-  integer, intent(IN) :: iunit
+  integer, intent(in) :: iunit
   
   ! The string where to write data to
-  character(LEN=*), intent(OUT) :: sdata
+  character(LEN=*), intent(out) :: sdata
   
   ! Length of the output
-  integer, intent(OUT) :: ilinelen
+  integer, intent(out) :: ilinelen
   
   ! Status of the reading process. Set to a value <> 0 if the end
   ! of the file is reached.
-  integer, intent(OUT) :: ios
+  integer, intent(out) :: ios
   
   ! local variables
   integer :: eol,isize
@@ -2341,10 +2341,10 @@ contains
                                ssecname, sparamname, svalue, sfilename)
   
   ! The line to be parsed
-  character(LEN=*), intent(IN) :: sdata
+  character(LEN=*), intent(in) :: sdata
   
   ! The typ of the line
-  integer, intent(OUT) :: ityp
+  integer, intent(out) :: ityp
 
   ! input: =0: parse line as parameter. isubstring is changed to a value > 0
   !            is the parameter has multiple values attached.
@@ -2353,23 +2353,23 @@ contains
   ! output: If the 'headline' of a multi-valued parameter is read, isubstring is
   !         changed to the number of substrings (the k in 'name(k)=...').
   !         Otherwise unchanged.
-  integer, intent(INOUT) :: isubstring
+  integer, intent(inout) :: isubstring
 
   ! Line number
-  integer, intent(IN) :: ilinenum
+  integer, intent(in) :: ilinenum
   
   ! Section name, if it's a section
-  character(LEN=*), intent(INOUT) :: ssecname
+  character(LEN=*), intent(inout) :: ssecname
   
   ! Parameter name, if it's a parameter
-  character(LEN=*), intent(INOUT) :: sparamname
+  character(LEN=*), intent(inout) :: sparamname
   
   ! Parameter value, if it's a parameter
-  character(LEN=*), intent(INOUT) :: svalue
+  character(LEN=*), intent(inout) :: svalue
   
   ! OPTIONAL: Filename of the file to be parsed.
   ! Will be printed out in error messages if present.
-  character(LEN=*), intent(IN), optional :: sfilename
+  character(LEN=*), intent(in), optional :: sfilename
   
   ! local variables
   integer :: i,j1,j2,ltr
@@ -2524,10 +2524,10 @@ contains
     subroutine linelength (sdata, l)
     
     ! The string to parse. Must not be ''!
-    character(LEN=*), intent(IN) :: sdata
+    character(LEN=*), intent(in) :: sdata
     
     ! The index of the last character without any comment at the end.
-    integer, intent(OUT) :: l
+    integer, intent(out) :: l
     
     ! local variables
     logical :: bflag   ! Set to true if we are in apostroph mode
@@ -2602,18 +2602,18 @@ contains
 !<inputoutput> 
     
   ! The parameter list which is filled with data from the file
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
   
 !<input>
   
   ! The filename of the file to read.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! OPTIONAL: Directory containing other data files in case
   ! the main file sfilename contains references to subfiles.
-  character(LEN=*), intent(IN), optional :: sdirectory
+  character(LEN=*), intent(in), optional :: sdirectory
   
 !</input>
 
@@ -2822,14 +2822,14 @@ contains
 !<inputoutput> 
     
   ! The parameter list which is filled with data from the file
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
   
 !</inputoutput>
   
 !<input>
   
   ! The filename of the file to read.
-  character(LEN=*), intent(IN) :: sfilename
+  character(LEN=*), intent(in) :: sfilename
   
   ! TRUE: Import all sections in the DAT file.
   ! FALSE: Import only the main (unnamed) section and ignore all other
@@ -2953,7 +2953,7 @@ contains
   
 !<input> 
   ! The parameter list which is filled with data from the file
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
 !</input>
 
 !<output>
@@ -3040,7 +3040,7 @@ contains
     subroutine assumeBufSize(p_sconfig,nsize)
     
     character, dimension(:), pointer :: p_sconfig
-    integer, intent(IN) :: nsize
+    integer, intent(in) :: nsize
     
     character, dimension(:), pointer :: p_sconfignew
     
@@ -3064,10 +3064,10 @@ contains
     
     ! In: Current length of data stream in p_sconfig.
     ! Out: New length of data stream in p_sconfig
-    integer, intent(INOUT) :: iconfigLength
+    integer, intent(inout) :: iconfigLength
     
     ! The string to be added.
-    character(LEN=*), intent(IN) :: sstring
+    character(LEN=*), intent(in) :: sstring
     
       integer :: nblocks,nblocksneeded,i
     
@@ -3109,7 +3109,7 @@ contains
   
 !<input> 
   ! The parameter list which is to be printed to the terminal.
-  type(t_parlist), intent(IN) :: rparlist
+  type(t_parlist), intent(in) :: rparlist
 !</input>
 
 !</subroutine>
@@ -3184,7 +3184,7 @@ contains
   
 !<inputoutput> 
   ! The parameter list which is filled with data from the file
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 
 !</subroutine>
@@ -3318,7 +3318,7 @@ contains
   
 !<inputoutput> 
   ! The parameter list which is filled with data from the file
-  type(t_parlist), intent(INOUT) :: rparlist
+  type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 
 !</subroutine>

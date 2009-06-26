@@ -81,15 +81,15 @@ contains
     !  = 0: Get temporary channel for file 'sfile'
     ! <> 0: Write to channel ifile. Don't close the channel afterwards.
     !       'sfile' is ignored.
-    integer(I32), intent(IN)     :: ifile
+    integer(I32), intent(in)     :: ifile
     
     ! name of the file where to write to. Only relevant for ifile=0!
-    character(len=*), intent(IN) :: sfile
+    character(len=*), intent(in) :: sfile
 !</input>
 
 !<output>
     ! portable graymap
-    type(t_pgm), intent(OUT)     :: rpgm
+    type(t_pgm), intent(out)     :: rpgm
 !</output>
 !</subroutine>
     
@@ -159,7 +159,7 @@ contains
 
     subroutine getNextEntryASCII(cbuffer)
       
-      character(LEN=*), intent(INOUT) :: cbuffer
+      character(LEN=*), intent(inout) :: cbuffer
 
       character(LEN=1) :: c
       integer          :: ipos
@@ -214,7 +214,7 @@ contains
 
 !<inputoutput>
     ! portable graymap image
-    type(t_pgm), intent(INOUT) :: rpgm
+    type(t_pgm), intent(inout) :: rpgm
 !</inputoutput>
 !</subroutine>
 
@@ -238,15 +238,15 @@ contains
 
 !<input>
     ! portable graymap image
-    type(t_pgm), intent(IN)              :: rpgm
+    type(t_pgm), intent(in)              :: rpgm
 
     ! vertex coordinates of 2D array
-    real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+    real(DP), dimension(:,:), intent(in) :: DvertexCoords
 !</input>
 
 !<output>
     ! double data array
-    real(DP), dimension(:), intent(OUT)  :: Ddata
+    real(DP), dimension(:), intent(out)  :: Ddata
 !</output>
 !</subroutine>
 
@@ -300,15 +300,15 @@ contains
 
 !<input>
     ! portable graymap image
-    type(t_pgm), intent(IN)              :: rpgm
+    type(t_pgm), intent(in)              :: rpgm
 
     ! vertex coordinates of 2D array
-    real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+    real(DP), dimension(:,:), intent(in) :: DvertexCoords
 !</input>
 
 !<output>
     ! single data array
-    real(SP), dimension(:), intent(OUT)  :: Fdata
+    real(SP), dimension(:), intent(out)  :: Fdata
 !</output>
 !</subroutine>
 

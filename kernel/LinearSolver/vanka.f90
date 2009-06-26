@@ -759,20 +759,20 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN), target :: rmatrix
+  type(t_matrixBlock), intent(in), target :: rmatrix
   
   ! The problem class that should be handled with this VANKA. One of the
   ! VANKAPC_xxxx constants, e.g. VANKAPC_2DNAVIERSTOKES
-  integer, intent(IN) :: cproblemClass
+  integer, intent(in) :: cproblemClass
   
   ! The VANKA solver subtype that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
-  integer, intent(IN) :: csubtype
+  integer, intent(in) :: csubtype
 !</input>
 
 !<output>
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vanka), intent(OUT) :: rvanka
+  type(t_vanka), intent(out) :: rvanka
 !</output>
 
 !</subroutine>
@@ -825,7 +825,7 @@ contains
   
 !<inputoutput>
   ! The VANKA structure to be cleaned up.
-  type(t_vanka), intent(INOUT)       :: rvanka
+  type(t_vanka), intent(inout)       :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -873,18 +873,18 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vanka), intent(INOUT) :: rvanka
+  type(t_vanka), intent(inout) :: rvanka
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(INOUT)      :: rvector
+  type(t_vectorBlock), intent(inout)      :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -952,12 +952,12 @@ contains
   ! Remark: VANKA saves a pointer to this matrix, so the structure must exist
   !  until the system is solved! (Usually this points to the system matrix in
   !  the corresponding solver structure of the underlying linear solver...)
-  type(t_matrixBlock), intent(IN), target :: rmatrix
+  type(t_matrixBlock), intent(in), target :: rmatrix
 !</input>
   
 !<output>
   ! VANKA spiecific structure. Contains internal data and allocated memory.
-  type(t_vankaGeneral), intent(OUT)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(out)       :: rvankaGeneral
 !</output>
 
 !</subroutine>
@@ -1095,7 +1095,7 @@ contains
   
 !<inputoutput>
   ! The general-VANKA structure to be cleaned up.
-  type(t_vankaGeneral), intent(INOUT)       :: rvankaGeneral
+  type(t_vankaGeneral), intent(inout)       :: rvankaGeneral
 !</inputoutput>
 
 !</subroutine>
@@ -1132,19 +1132,19 @@ contains
 !<input>
   
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The general-VANKA structure. Must have been initialised with 
   ! vanka_initGeneralVanka before.
-  type(t_vankaGeneral), intent(INOUT)     :: rvankaGeneral
+  type(t_vankaGeneral), intent(inout)     :: rvankaGeneral
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1251,43 +1251,43 @@ contains
 
 !<input>
   ! The (block) RHS vector, given as one large array.
-  real(DP), dimension(:), intent(IN)             :: Drhs
+  real(DP), dimension(:), intent(in)             :: Drhs
   
   ! A relaxation parameter. Standard = 1.0_DP.
-  real(DP), intent(IN)                           :: domega
+  real(DP), intent(in)                           :: domega
   
   ! A list of matrices to handle; directly specified by pointers
   ! to the substructures (data/columns/rows).
   type(t_matrixPointer79Vanka), dimension(:,:),&
-                                intent(IN)       :: Rmatrices
+                                intent(in)       :: Rmatrices
 
   ! Number of elements that should be processed in this sweep.
-  integer, intent(IN)           :: nelements
+  integer, intent(in)           :: nelements
   
   ! Number of blocks in the vectors
-  integer, intent(IN)                            :: nblocks
+  integer, intent(in)                            :: nblocks
   
   ! Offset position of the blocks in the vector.
   ! Block i starts at position IblockOffset(i)+1 in Dvector / Drhs.
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
-  integer, dimension(:), intent(IN) :: IblockOffset
+  integer, dimension(:), intent(in) :: IblockOffset
   
   ! Number of local DOF's in each block.
-  integer, dimension(:), intent(IN)   :: InDofsLocal
+  integer, dimension(:), intent(in)   :: InDofsLocal
   
   ! Total number of local DOF's per element
-  integer, intent(IN)                                    :: ndofsPerElement
+  integer, intent(in)                                    :: ndofsPerElement
   
   ! List of DOF's on every element for every block.
   ! DIMENSION(nmaxDOFs,nelements,nblocks)
-  integer, dimension(:,:,:), intent(IN)     :: IelementDOFs
+  integer, dimension(:,:,:), intent(in)     :: IelementDOFs
   
 !</input>
 
 !<inputoutput>
   ! The initial (block) solution vector. Is overwritten by the new (block) 
   ! solution vector.
-  real(DP), dimension(:), intent(INOUT) :: Dvector
+  real(DP), dimension(:), intent(inout) :: Dvector
 !</inputoutput>
 
 !</subroutine>
@@ -1631,15 +1631,15 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN), target :: rmatrix
+  type(t_matrixBlock), intent(in), target :: rmatrix
 
   ! Desired subtype
-  integer, intent(IN) :: csubtype  
+  integer, intent(in) :: csubtype  
 !</input>
 
 !<inputoutput>
   ! t_vankaPointer2DSPNavSt structure that saves algorithm-specific parameters.
-  type(t_vanka), intent(INOUT) :: rvanka
+  type(t_vanka), intent(inout) :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -1869,7 +1869,7 @@ contains
 
 !<inputoutput>
   ! t_vanka structure that to be cleaned up.
-  type(t_vankaPointer2DNavSt), intent(INOUT) :: rvanka2DNavSt
+  type(t_vankaPointer2DNavSt), intent(inout) :: rvanka2DNavSt
 !</inputoutput>
 
 !</subroutine>
@@ -1905,10 +1905,10 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -1923,10 +1923,10 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(INOUT)         :: rvector
+  type(t_vectorBlock), intent(inout)         :: rvector
 
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(INOUT) :: rvanka2DNavSt
+  type(t_vankaPointer2DNavSt), intent(inout) :: rvanka2DNavSt
 !</inputoutput>
 
 !</subroutine>
@@ -2151,12 +2151,12 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<output>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(OUT) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(out) :: rvanka
 !</output>
 
 !</subroutine>
@@ -2272,18 +2272,18 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -2679,21 +2679,21 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(INOUT)         :: rvector
+  type(t_vectorBlock), intent(inout)         :: rvector
   
   ! A temporary vector in the size and structure of rvector
-  type(t_vectorBlock), intent(INOUT)         :: rtempVector
+  type(t_vectorBlock), intent(inout)         :: rtempVector
 !</inputoutput>
 
 !</subroutine>
@@ -3086,13 +3086,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -3100,7 +3100,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -3470,29 +3470,29 @@ contains
 
 !<input>
   ! Diagonal elements of the local system matrix.
-  real(DP), dimension(4), intent(IN) :: AA
+  real(DP), dimension(4), intent(in) :: AA
   
   ! Entries in the submatrix B1.
-  real(DP), dimension(4), intent(IN) :: BB1
+  real(DP), dimension(4), intent(in) :: BB1
 
   ! Entries in the submatrix B2.
-  real(DP), dimension(4), intent(IN) :: BB2
+  real(DP), dimension(4), intent(in) :: BB2
   
   ! Entries in the submatrix D1.
-  real(DP), dimension(4), intent(IN) :: DD1
+  real(DP), dimension(4), intent(in) :: DD1
 
   ! Entries in the submatrix D2.
-  real(DP), dimension(4), intent(IN) :: DD2
+  real(DP), dimension(4), intent(in) :: DD2
 
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  real(DP), dimension(9), intent(IN) :: FF
+  real(DP), dimension(9), intent(in) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  real(DP), dimension(9), intent(OUT) :: UU
+  real(DP), dimension(9), intent(out) :: UU
 !</output>
 
 !</subroutine>
@@ -3654,37 +3654,37 @@ contains
 
 !<input>
   ! Diagonal elements of the local system matrix A11
-  real(DP), dimension(4), intent(IN) :: AA1
+  real(DP), dimension(4), intent(in) :: AA1
 
   ! Diagonal elements of the local system matrix A22
-  real(DP), dimension(4), intent(IN) :: AA2
+  real(DP), dimension(4), intent(in) :: AA2
   
   ! Entries in the submatrix B1.
-  real(DP), dimension(4), intent(IN) :: BB1
+  real(DP), dimension(4), intent(in) :: BB1
 
   ! Entries in the submatrix B2.
-  real(DP), dimension(4), intent(IN) :: BB2
+  real(DP), dimension(4), intent(in) :: BB2
   
   ! Entries in the submatrix D1.
-  real(DP), dimension(4), intent(IN) :: DD1
+  real(DP), dimension(4), intent(in) :: DD1
 
   ! Entries in the submatrix D2.
-  real(DP), dimension(4), intent(IN) :: DD2
+  real(DP), dimension(4), intent(in) :: DD2
   
   ! Entry in the submatrix I (usually =0).
   ! This is the matrix in the diagonal block of the pressure, which is usually
   ! zero in saddle point problems.
-  real(DP), intent(IN) :: di
+  real(DP), intent(in) :: di
   
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  real(DP), dimension(9), intent(IN) :: FF
+  real(DP), dimension(9), intent(in) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  real(DP), dimension(9), intent(OUT) :: UU
+  real(DP), dimension(9), intent(out) :: UU
 !</output>
 
 !</subroutine>
@@ -3875,13 +3875,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -3889,7 +3889,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -4282,29 +4282,29 @@ contains
 
 !<input>
   ! Diagonal elements of the local system matrix. (Blocks A11 and A22)
-  real(DP), dimension(2*4), intent(IN) :: AA
+  real(DP), dimension(2*4), intent(in) :: AA
   
   ! Entries in the submatrix B1.
-  real(DP), dimension(4), intent(IN) :: BB1
+  real(DP), dimension(4), intent(in) :: BB1
 
   ! Entries in the submatrix B2.
-  real(DP), dimension(4), intent(IN) :: BB2
+  real(DP), dimension(4), intent(in) :: BB2
   
   ! Entries in the submatrix D1.
-  real(DP), dimension(4), intent(IN) :: DD1
+  real(DP), dimension(4), intent(in) :: DD1
 
   ! Entries in the submatrix D2.
-  real(DP), dimension(4), intent(IN) :: DD2
+  real(DP), dimension(4), intent(in) :: DD2
 
   ! Local RHS vector; FF(1..4)=X-velocity, FF(5..8)=Y-velocity,
   ! FF(9)=pressure.
-  real(DP), dimension(9), intent(IN) :: FF
+  real(DP), dimension(9), intent(in) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..4)=X-velocity, UU(5..8)=Y-velocity,
   ! UU(9)=pressure.
-  real(DP), dimension(9), intent(OUT) :: UU
+  real(DP), dimension(9), intent(out) :: UU
 !</output>
 
 !</subroutine>
@@ -4486,13 +4486,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -4500,7 +4500,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -4927,13 +4927,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -4941,7 +4941,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -5396,18 +5396,18 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -5852,13 +5852,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -5866,7 +5866,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -6310,18 +6310,18 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -6771,13 +6771,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -6785,7 +6785,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -7258,13 +7258,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -7272,7 +7272,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -7778,12 +7778,12 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN), target :: rmatrix
+  type(t_matrixBlock), intent(in), target :: rmatrix
   !</input>
 
 !<inputoutput>
   ! t_vankaPointer2DSPNavSt structure that saves algorithm-specific parameters.
-  type(t_vanka), intent(INOUT) :: rvanka
+  type(t_vanka), intent(inout) :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -8184,13 +8184,13 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -8200,7 +8200,7 @@ contains
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavStOptC), intent(INOUT) :: rvanka2DNavStOptC
+  type(t_vankaPointer2DNavStOptC), intent(inout) :: rvanka2DNavStOptC
 !</inputoutput>
 
 !</subroutine>
@@ -8337,13 +8337,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -8351,7 +8351,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -8849,13 +8849,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -8863,7 +8863,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -9711,13 +9711,13 @@ contains
 
 !<input>
   ! t_vankaPointer2DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer2DNavStOptC), intent(IN) :: rvanka
+  type(t_vankaPointer2DNavStOptC), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -9727,13 +9727,13 @@ contains
   ! =0: apply VANKA to the whole primal-dual-coupled system
   ! =1: apply VANKA only to the primal system, take the dual one as constant
   ! =2: apply VANKA only to the dual system, take the primal one as constant
-  integer, intent(IN) :: csystemPart
+  integer, intent(in) :: csystemPart
   
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -11136,12 +11136,12 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN), target :: rmatrix
+  type(t_matrixBlock), intent(in), target :: rmatrix
   !</input>
 
 !<inputoutput>
   ! t_vankaPointer3DSPNavSt structure that saves algorithm-specific parameters.
-  type(t_vanka), intent(INOUT) :: rvanka
+  type(t_vanka), intent(inout) :: rvanka
 !</inputoutput>
 
 !</subroutine>
@@ -11400,13 +11400,13 @@ contains
 
 !<input>
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 
   ! The subtype of VANKA that should handle the above problem class.
   ! One of the VANKATP_xxxx constants, e.g. VANKATP_DIAGONAL.
@@ -11421,7 +11421,7 @@ contains
 
 !<inputoutput>
   ! t_vanka structure that saves algorithm-specific parameters.
-  type(t_vankaPointer3DNavSt), intent(INOUT) :: rvanka3DNavSt
+  type(t_vankaPointer3DNavSt), intent(inout) :: rvanka3DNavSt
 !</inputoutput>
 
 !</subroutine>
@@ -11571,12 +11571,12 @@ contains
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<output>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer3DNavSt), intent(OUT) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(out) :: rvanka
 !</output>
 
 !</subroutine>
@@ -11701,18 +11701,18 @@ contains
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 !</input>
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -11988,13 +11988,13 @@ contains
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
   
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -12002,7 +12002,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -12273,35 +12273,35 @@ contains
 
 !<input>
   ! Diagonal elements of the local system matrix.
-  real(DP), dimension(6), intent(IN) :: AA
+  real(DP), dimension(6), intent(in) :: AA
   
   ! Entries in the submatrix B1.
-  real(DP), dimension(6), intent(IN) :: BB1
+  real(DP), dimension(6), intent(in) :: BB1
 
   ! Entries in the submatrix B2.
-  real(DP), dimension(6), intent(IN) :: BB2
+  real(DP), dimension(6), intent(in) :: BB2
 
   ! Entries in the submatrix B3.
-  real(DP), dimension(6), intent(IN) :: BB3
+  real(DP), dimension(6), intent(in) :: BB3
   
   ! Entries in the submatrix D1.
-  real(DP), dimension(6), intent(IN) :: DD1
+  real(DP), dimension(6), intent(in) :: DD1
 
   ! Entries in the submatrix D2.
-  real(DP), dimension(6), intent(IN) :: DD2
+  real(DP), dimension(6), intent(in) :: DD2
 
   ! Entries in the submatrix D3.
-  real(DP), dimension(6), intent(IN) :: DD3
+  real(DP), dimension(6), intent(in) :: DD3
 
   ! Local RHS vector; FF(1..6)=X-velocity, FF(7..12)=Y-velocity,
   ! FF(13..18)=Y-velocity, FF(19)=pressure.
-  real(DP), dimension(19), intent(IN) :: FF
+  real(DP), dimension(19), intent(in) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..6)=X-velocity, UU(7..12)=Y-velocity,
   ! UU(13..18)=Y-velocity, UU(19)=pressure.
-  real(DP), dimension(19), intent(OUT) :: UU
+  real(DP), dimension(19), intent(out) :: UU
 !</output>
 
 !</subroutine>
@@ -12459,46 +12459,46 @@ contains
 
 !<input>
   ! Diagonal elements of the local system matrix A11
-  real(DP), dimension(6), intent(IN) :: AA1
+  real(DP), dimension(6), intent(in) :: AA1
 
   ! Diagonal elements of the local system matrix A22
-  real(DP), dimension(6), intent(IN) :: AA2
+  real(DP), dimension(6), intent(in) :: AA2
   
   ! Diagonal elements of the local system matrix A33
-  real(DP), dimension(6), intent(IN) :: AA3
+  real(DP), dimension(6), intent(in) :: AA3
 
   ! Entries in the submatrix B1.
-  real(DP), dimension(6), intent(IN) :: BB1
+  real(DP), dimension(6), intent(in) :: BB1
 
   ! Entries in the submatrix B2.
-  real(DP), dimension(6), intent(IN) :: BB2
+  real(DP), dimension(6), intent(in) :: BB2
   
   ! Entries in the submatrix B3.
-  real(DP), dimension(6), intent(IN) :: BB3
+  real(DP), dimension(6), intent(in) :: BB3
 
   ! Entries in the submatrix D1.
-  real(DP), dimension(6), intent(IN) :: DD1
+  real(DP), dimension(6), intent(in) :: DD1
 
   ! Entries in the submatrix D2.
-  real(DP), dimension(6), intent(IN) :: DD2
+  real(DP), dimension(6), intent(in) :: DD2
 
   ! Entries in the submatrix D3.
-  real(DP), dimension(6), intent(IN) :: DD3
+  real(DP), dimension(6), intent(in) :: DD3
   
   ! Entry in the submatrix I (usually =0).
   ! This is the matrix in the diagonal block of the pressure, which is usually
   ! zero in saddle point problems.
-  real(DP), intent(IN) :: di
+  real(DP), intent(in) :: di
   
   ! Local RHS vector; FF(1..6)=X-velocity, FF(7..12)=Y-velocity,
   ! FF(13..18)=Y-velocity, FF(19)=pressure.
-  real(DP), dimension(19), intent(IN) :: FF
+  real(DP), dimension(19), intent(in) :: FF
 !</input>
 
 !<output>
   ! Update vector u with Cu=FF. UU(1..6)=X-velocity, UU(7..12)=Y-velocity,
   ! UU(13..18)=Y-velocity, UU(19)=pressure.
-  real(DP), dimension(19), intent(OUT) :: UU
+  real(DP), dimension(19), intent(out) :: UU
 !</output>
 
 !</subroutine>
@@ -12689,13 +12689,13 @@ contains
 
 !<input>
   ! t_vankaPointer3DNavSt structure that saves algorithm-specific parameters.
-  type(t_vankaPointer3DNavSt), intent(IN) :: rvanka
+  type(t_vankaPointer3DNavSt), intent(in) :: rvanka
 
   ! The right-hand-side vector of the system
-  type(t_vectorBlock), intent(IN)         :: rrhs
+  type(t_vectorBlock), intent(in)         :: rrhs
   
   ! Relaxation parameter. Standard=1.0_DP.
-  real(DP), intent(IN)                    :: domega
+  real(DP), intent(in)                    :: domega
 
   ! A list of element numbers where VANKA should be applied to.
   integer, dimension(:)     :: IelementList
@@ -12703,7 +12703,7 @@ contains
 
 !<inputoutput>
   ! The initial solution vector. Is replaced by a new iterate.
-  type(t_vectorBlock), intent(IN)         :: rvector
+  type(t_vectorBlock), intent(in)         :: rvector
 !</inputoutput>
 
 !</subroutine>

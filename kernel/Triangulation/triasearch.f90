@@ -85,19 +85,19 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Vertex coordinates of the triangulation
-  real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer, intent(OUT) :: iel
+  integer, intent(out) :: iel
 !</output>
   
 !</subroutine>
@@ -153,16 +153,16 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer, intent(OUT) :: iel
+  integer, intent(out) :: iel
 !</output>
   
 !</subroutine>
@@ -194,18 +194,18 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Vertex coordinates of the triangulation
-  real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+  real(DP), dimension(:,:), intent(in) :: DvertexCoords
   
   ! Vertices Adjacent to the elements in the triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 !</input>
   
 !<output>
   ! Number of the element which midpoint is closest to Dpoint.
-  integer, intent(OUT) :: iel
+  integer, intent(out) :: iel
 !</output>
   
 !</subroutine>
@@ -264,16 +264,16 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
 !</input>
   
 !<output>
   ! Number of the element containing the point Dpoint.
   ! =0 if no element contains the point.
-  integer, intent(OUT) :: iel
+  integer, intent(out) :: iel
 !</output>
   
 !</subroutine>
@@ -309,13 +309,13 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
-  integer, intent(IN), optional :: imaxIterations
+  integer, intent(in), optional :: imaxIterations
 
   ! Vertex coordinates of the mesh
   real(DP), dimension(:,:) :: DvertexCoords
@@ -336,7 +336,7 @@ contains
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  integer, intent(INOUT) :: iel
+  integer, intent(inout) :: iel
 !</inputoutput>
   
 !<output>
@@ -345,7 +345,7 @@ contains
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
   ! =-2: The maximum number of iterations was exceeded
-  integer, intent(OUT), optional :: iresult
+  integer, intent(out), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
   ! If iresult= 1: ilastElement = iel
@@ -354,7 +354,7 @@ contains
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
   ! If iresult=-2: Number of the last element in the raytracing search
-  integer, intent(OUT), optional :: ilastElement
+  integer, intent(out), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
   ! If iresult= 1: ilastEdge=0
@@ -362,7 +362,7 @@ contains
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
   ! If iresult=-2: Number of the last edge 
-  integer, intent(OUT), optional :: ilastEdge
+  integer, intent(out), optional :: ilastEdge
 !</output>
   
 !</subroutine>
@@ -506,13 +506,13 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! Triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
-  integer, intent(IN), optional :: imaxIterations
+  integer, intent(in), optional :: imaxIterations
 !</input>
 
 !<inputoutput>
@@ -520,7 +520,7 @@ contains
   !           =0: Choose element automatically.
   ! On output: Number of the element containing the point Dpoint.
   !            =0 if the element was not found.
-  integer, intent(INOUT) :: iel
+  integer, intent(inout) :: iel
 !</inputoutput>
   
 !<output>
@@ -528,7 +528,7 @@ contains
   ! =1 : The element was found successfully.
   ! =0 : The raytracing search broke down inside of the domain. 
   ! =-1: The search broke down because the domain was left.
-  integer, intent(OUT), optional :: iresult
+  integer, intent(out), optional :: iresult
   
   ! OPTIONAL: Last analysed element.
   ! If iresult= 1: ilastElement = iel
@@ -536,14 +536,14 @@ contains
   !                was stopped.
   ! If iresult=-1: Number of the element through which the
   !                domain was left. 
-  integer, intent(OUT), optional :: ilastElement
+  integer, intent(out), optional :: ilastElement
 
   ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
   ! If iresult= 1: ilastEdge=0
   ! If iresult= 0: Number of the last analysed edge before the search
   !                was stopped.
   ! If iresult=-1: Number of the edge through which the domain was left. 
-  integer, intent(OUT), optional :: ilastEdge
+  integer, intent(out), optional :: ilastEdge
 !</output>
   
 !</subroutine>
@@ -587,17 +587,17 @@ contains
 !<input>
   ! The coordinate of a point where the routine should check which element
   ! contains the point.
-  real(DP), dimension(:), intent(IN) :: Dpoint
+  real(DP), dimension(:), intent(in) :: Dpoint
   
   ! A sequence of triangulation structures that should stem from starndard
   ! 2-level-ordered refinement. 
-  type(t_triangulation), dimension(:), intent(IN) :: Rtriangulation
+  type(t_triangulation), dimension(:), intent(in) :: Rtriangulation
 !</input>
 
 !<inputoutput>
   ! Number of the element on the finest mesh containing the point Dpoint.
   ! =0 if the element was not found.
-  integer, intent(OUT) :: iel
+  integer, intent(out) :: iel
 !</inputoutput>
   
 !</subroutine>

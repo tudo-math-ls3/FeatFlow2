@@ -48,18 +48,18 @@ contains
 
 !<input>
     ! FE solution vector
-    type(t_vectorScalar), intent(IN) :: rvectorScalar
+    type(t_vectorScalar), intent(in) :: rvectorScalar
 
     ! parameter for noise filtering
-    real(DP), intent(IN) :: dnoiseFilter
+    real(DP), intent(in) :: dnoiseFilter
 
     ! parameter for absolute filtering
-    real(DP), intent(IN) :: dabsFilter
+    real(DP), intent(in) :: dabsFilter
 !</input>
 
 !<output>
     ! indicator vector
-    type(t_vectorScalar), intent(OUT) :: rindicator
+    type(t_vectorScalar), intent(out) :: rindicator
 !</output>
 !</subroutine>
 
@@ -199,17 +199,17 @@ contains
                                        dweight, dfilter, NEL, NVT, Dcoefficients,&
                                        DnodalIndicator, Dindicator)
       
-      real(DP), dimension(:), intent(IN) :: Ddata
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
-      integer, dimension(:,:), intent(IN) :: IverticesAtElement
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElement
-      integer, dimension(:), intent(IN) :: InodalProperty
-      real(DP), intent(IN) :: dweight,dfilter
-      integer, intent(IN) :: NEL,NVT
+      real(DP), dimension(:), intent(in) :: Ddata
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      integer, dimension(:,:), intent(in) :: IverticesAtElement
+      integer, dimension(:,:), intent(in) :: IneighboursAtElement
+      integer, dimension(:), intent(in) :: InodalProperty
+      real(DP), intent(in) :: dweight,dfilter
+      integer, intent(in) :: NEL,NVT
 
-      real(DP), dimension(:,:), intent(OUT) :: Dcoefficients
-      real(DP), dimension(:), intent(OUT) :: DnodalIndicator
-      real(DP), dimension(:), intent(OUT) :: Dindicator
+      real(DP), dimension(:,:), intent(out) :: Dcoefficients
+      real(DP), dimension(:), intent(out) :: DnodalIndicator
+      real(DP), dimension(:), intent(out) :: Dindicator
 
       ! local variables
       real(DP), dimension(2) :: DabsDeriv,Dderiv,Dfunc

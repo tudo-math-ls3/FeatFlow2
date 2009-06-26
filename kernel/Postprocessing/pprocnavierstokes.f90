@@ -111,23 +111,23 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)    :: rvector
+  type(t_vectorBlock), intent(in)    :: rvector
   
   ! Boundary region where to calculate the boundary forces.
   ! Can be created e.g. by boundary_createRegion.
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer(I32), intent(IN)            :: ccub
+  integer(I32), intent(in)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
   ! OPTIONAL: Type of tensor to use for the computation.
   ! May be either PPNAVST_GRADIENTTENSOR_XXXX for the gradient tensor or
@@ -139,7 +139,7 @@ contains
 
 !<output>
   ! Array receiving the forces acting on the boundary specified by rregion.
-  real(DP), dimension(:), intent(OUT) :: Dforces
+  real(DP), dimension(:), intent(out) :: Dforces
 !</output>
 
 !</subroutine>
@@ -206,23 +206,23 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)    :: rvector
+  type(t_vectorBlock), intent(in)    :: rvector
   
   ! Boundary region where to calculate the boundary forces.
   ! Can be created e.g. by boundary_createRegion.
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer(I32), intent(IN)           :: ccub
+  integer(I32), intent(in)           :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
   ! OPTIONAL: Type of tensor to use for the computation.
   ! May be either PPNAVST_GRADIENTTENSOR_XXXX for the gradient tensor or
@@ -235,7 +235,7 @@ contains
 !<output>
   ! Array receiving the forces acting on the boundary specified by rregion.
   ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
-  real(DP), dimension(:), intent(OUT) :: Dforces
+  real(DP), dimension(:), intent(out) :: Dforces
 !</output>
 
 !</subroutine>
@@ -756,30 +756,30 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)    :: rvector
+  type(t_vectorBlock), intent(in)    :: rvector
   
   ! Boundary region where to calculate the boundary forces.
   ! Can be created e.g. by boundary_createRegion.
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
   
   ! 2D Cubature formula identifier to use for the volume integration.
   ! One of the CUB_xxxx constants in the cubature.f90.
-  integer(I32), intent(IN)            :: ccub
+  integer(I32), intent(in)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
 !</input>
 
 !<output>
   ! Array receiving the forces acting on the boundary specified by rregion.
   ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
-  real(DP), dimension(:), intent(OUT) :: Dforces
+  real(DP), dimension(:), intent(out) :: Dforces
 !</output>
 
 !</subroutine>
@@ -1236,23 +1236,23 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)    :: rvector
+  type(t_vectorBlock), intent(in)    :: rvector
   
   ! Boundary region where to calculate the boundary forces.
   ! Can be created e.g. by boundary_createRegion.
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
   
   ! 1D Cubature formula identifier to use for the line integration.
   ! One of the CUB_xxxx_1D constants in the cubature.f90.
-  integer(I32), intent(IN)            :: ccub
+  integer(I32), intent(in)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
   ! OPTIONAL: Type of tensor to use for the computation.
   ! May be either PPNAVST_GRADIENTTENSOR_XXXX for the gradient tensor or
@@ -1268,13 +1268,13 @@ contains
   optional :: ffunctionReference
 
   ! OPTIONAL: A collection structure that is passed to ffunctionRefSimple.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<output>
   ! Array receiving the forces acting on the boundary specified by rregion.
   ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
-  real(DP), dimension(:), intent(OUT) :: Dforces
+  real(DP), dimension(:), intent(out) :: Dforces
 !</output>
 
 !</subroutine>
@@ -1885,29 +1885,29 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)     :: rvector
+  type(t_vectorBlock), intent(in)     :: rvector
   
   ! Mesh region where to calculate the boundary forces.
-  type(t_meshRegion), intent(IN)      :: rregion
+  type(t_meshRegion), intent(in)      :: rregion
   
   ! 2D Cubature formula identifier to use for the quad integration.
   ! One of the CUB_xxxx constants in the cubature.f90.
-  integer(I32), intent(IN)            :: ccub
+  integer(I32), intent(in)            :: ccub
 
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
 !</input>
 
 !<output>
   ! Array receiving the forces acting on the boundary specified by rregion.
   ! Note: These are the drag-/lift-FORCES, not the coefficients!!!
-  real(DP), dimension(:), intent(OUT) :: Dforces
+  real(DP), dimension(:), intent(out) :: Dforces
 !</output>
 
 !</subroutine>
@@ -2252,21 +2252,21 @@ contains
     
 !<input>
     ! The coordinates of the eight corner vertices of the hexahedron
-    real(DP), dimension(:,:), intent(IN) :: Dcoords
+    real(DP), dimension(:,:), intent(in) :: Dcoords
     
     ! The index of the face onto which the points are mapped
-    integer, intent(IN) :: iface
+    integer, intent(in) :: iface
     
     ! The 2D coordinates of the points that are to be mapped
-    real(DP), dimension(:,:), intent(IN) :: Dcub
+    real(DP), dimension(:,:), intent(in) :: Dcub
     
     ! The number of points which are to be mapped
-    integer, intent(IN) :: ncubp
+    integer, intent(in) :: ncubp
 !</input>
 
 !<output>
     ! The jacobian determinants of the mapping
-    real(DP), dimension(:), intent(OUT) :: Ddetj
+    real(DP), dimension(:), intent(out) :: Ddetj
 !</output>
 
 !</subroutine>
@@ -2377,14 +2377,14 @@ contains
 
 !<input>
   ! The FE solution vector.
-  type(t_vectorBlock), intent(IN)    :: rvector
+  type(t_vectorBlock), intent(in)    :: rvector
 !</input>
 
 !<inputoutput>
   ! An empty vector that is prepared with a discretisation structure to
   ! represent the streamfunction. The values in the vector are overwritten
   ! with the FE representation of the streamfunction.
-  type(t_vectorScalar), intent(INOUT),target    :: rdestVector
+  type(t_vectorScalar), intent(inout),target    :: rdestVector
 !</inputoutput>
 
 !</subroutine>
@@ -2627,31 +2627,31 @@ contains
     ! Dx is the destination vector and is creatd as Q1-vector.
     
     ! Point coordinates
-    real(DP), dimension(:,:), intent(IN)               :: DvertexCoords
+    real(DP), dimension(:,:), intent(in)               :: DvertexCoords
     
     ! Vertices at the element
-    integer, dimension(:,:), intent(IN) :: IverticesAtElement
+    integer, dimension(:,:), intent(in) :: IverticesAtElement
 
     ! Edges at the element
-    integer, dimension(:,:), intent(IN) :: IedgesAtElement
+    integer, dimension(:,:), intent(in) :: IedgesAtElement
     
     ! Element number where to calculate the streamfunction
-    integer, intent(IN)               :: iel
+    integer, intent(in)               :: iel
     
     ! Local number (1..NVE) of any of the vertices on the element iel
     ! where the streamfunction is already calculated. This will be used
     ! as 'base' to calculate the others.
-    integer, intent(IN)                                :: ibaseIdx
+    integer, intent(in)                                :: ibaseIdx
     
     ! Marker array of length NVT. All vertices where streamfunction
     ! values are calculated are marked as 1.
-    integer, intent(INOUT), dimension(:)          :: Imarkers
+    integer, intent(inout), dimension(:)          :: Imarkers
     
     ! X/Y-velocity.
-    real(DP), dimension(:), intent(IN)                 :: Du, Dv
+    real(DP), dimension(:), intent(in)                 :: Du, Dv
     
     ! Vector of size NVT; receives the values of the streamfunction
-    real(DP), dimension(:), intent(INOUT)              :: Dx
+    real(DP), dimension(:), intent(inout)              :: Dx
   
     ! local variables
     integer, parameter :: NVE = 4

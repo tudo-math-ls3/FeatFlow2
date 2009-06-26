@@ -245,13 +245,13 @@ contains
 
 !<input>
     ! Year
-    integer, intent(IN) :: year
+    integer, intent(in) :: year
     
     ! Month
-    integer, intent(IN) :: month
+    integer, intent(in) :: month
     
     ! Day
-    integer, intent(IN) :: day
+    integer, intent(in) :: day
 
     integer             :: ivalue
 !</function>

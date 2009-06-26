@@ -85,7 +85,7 @@ contains
 
 !<input>    
   ! The discretisation structure that specifies the (scalar) discretisation.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
 !<result>
@@ -161,10 +161,10 @@ contains
     integer function NDFG_uniform1D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: celement
+    integer(I32), intent(in) :: celement
     
     ! OUT: number of global DOF's.
     
@@ -199,10 +199,10 @@ contains
     integer function NDFG_uniform2D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: celement
+    integer(I32), intent(in) :: celement
     
     ! OUT: number of global DOF's.
     
@@ -253,11 +253,11 @@ contains
     integer function NDFG_conformal2D_2el (rtriangulation, Celements)
     
     ! IN: The underlying triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
     
     ! IN: List of element types in the discretisation. Celements(1) is one element
     ! type identifier, Celements(2) the other one.
-    integer(I32), dimension(:), intent(IN) :: Celements
+    integer(I32), dimension(:), intent(in) :: Celements
     
     ! OUT: number of global DOF's.
     
@@ -313,10 +313,10 @@ contains
     integer function NDFG_uniform3D (rtriangulation, celement)
     
     ! IN: The underlying triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
     
     ! IN: The element type of the discretisation
-    integer(I32), intent(IN) :: celement
+    integer(I32), intent(in) :: celement
     
     ! OUT: number of global DOF's.
     
@@ -360,7 +360,7 @@ contains
 
 !<input>    
   ! The discretisation structure that specifies the (block) discretisation.
-  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
 !<result>
@@ -403,17 +403,17 @@ contains
 !<input>
 
   ! The discretisation structure that specifies the (scalar) discretisation.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 
   ! Element index, where the mapping should be computed.
-  integer, intent(IN) :: ielIdx
+  integer, intent(in) :: ielIdx
 
 !</input>
     
 !<output>
 
   ! array of global DOF numbers
-  integer, dimension(:), intent(OUT) :: IdofGlob
+  integer, dimension(:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -455,10 +455,10 @@ contains
 !<input>
 
   ! The discretisation structure that specifies the (scalar) discretisation.
-  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -466,7 +466,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -765,7 +765,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
 
 !</input>
     
@@ -773,7 +773,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -808,10 +808,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -819,7 +819,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -855,14 +855,14 @@ contains
 !<input>
 
   ! Number of corner vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -870,7 +870,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -907,14 +907,14 @@ contains
 !<input>
 
   ! Number of corner vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -922,7 +922,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -959,20 +959,20 @@ contains
 !<input>
 
   ! Specifies the local degree of the PN element
-  integer, intent(IN) :: ndegree
+  integer, intent(in) :: ndegree
   
   ! The number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! The number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -980,7 +980,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1016,7 +1016,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
 
 !</input>
     
@@ -1024,7 +1024,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1059,10 +1059,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1070,7 +1070,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1109,17 +1109,17 @@ contains
 !</description>
 
 !<input>
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1127,7 +1127,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1171,27 +1171,27 @@ contains
 !<input>
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of edes in the triangulation
-  integer, intent(IN) :: NMT
+  integer, intent(in) :: NMT
 !</input>
     
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1239,37 +1239,37 @@ contains
 !<input>
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element counter array. This gives every triangle and every quad a
   ! unique running number (1,2,3,...)
-  integer, dimension(:), intent(IN) :: IelementCounter
+  integer, dimension(:), intent(in) :: IelementCounter
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of edes in the triangulation
-  integer, intent(IN) :: NMT
+  integer, intent(in) :: NMT
   
   ! Element type identifier for which type of elements is currently
   ! under view in IelIdx. All elements in IelIdx are assumed to be of
   ! the same type.
   ! =3: triangular, =4: quad.
-  integer, intent(IN) :: NVE
+  integer, intent(in) :: NVE
 !</input>
     
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1341,10 +1341,10 @@ contains
 !<input>
 
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
 
 !</input>
     
@@ -1352,7 +1352,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1391,10 +1391,10 @@ contains
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1402,7 +1402,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1441,10 +1441,10 @@ contains
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1452,7 +1452,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1489,14 +1489,14 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer, intent(IN) :: iNMT
+  integer, intent(in) :: iNMT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1504,7 +1504,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1543,14 +1543,14 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer, intent(IN) :: iNMT
+  integer, intent(in) :: iNMT
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1558,7 +1558,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1602,17 +1602,17 @@ contains
 !<input>
 
   ! Number of edges in the triangulation.
-  integer, intent(IN) :: iNMT
+  integer, intent(in) :: iNMT
 
   ! Number of elements in the triangulation.
-  integer, intent(IN) :: iNEL
+  integer, intent(in) :: iNEL
 
   ! An array with the number of edges adjacent on each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1620,7 +1620,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1665,7 +1665,7 @@ contains
 !<input>
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
 
 !</input>
     
@@ -1673,7 +1673,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1709,10 +1709,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1720,7 +1720,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1761,34 +1761,34 @@ contains
 !<input>
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! An array with the number of edges adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 
   ! An array with the number of faces adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
   ! Number of corner vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of edes in the triangulation
-  integer, intent(IN) :: NMT
+  integer, intent(in) :: NMT
   
   ! Number of faces in the triangulation
-  integer, intent(IN) :: NAT
+  integer, intent(in) :: NAT
 !</input>
     
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1824,10 +1824,10 @@ contains
 !<input>
 
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
 
 !</input>
     
@@ -1835,7 +1835,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1876,10 +1876,10 @@ contains
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1887,7 +1887,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1921,14 +1921,14 @@ contains
 !<input>
 
   ! Number of faces in the triangulation.
-  integer, intent(IN) :: iNAT
+  integer, intent(in) :: iNAT
 
   ! An array with the number of vertices adjacent to each element of the
   ! triangulation.
-  integer, dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
 
   ! Element indices, where the mapping should be computed.
-  integer, dimension(:), intent(IN) :: IelIdx
+  integer, dimension(:), intent(in) :: IelIdx
   
 !</input>
     
@@ -1936,7 +1936,7 @@ contains
 
   ! Array of global DOF numbers; for every element in IelIdx there is
   ! a subarray in this list receiving the corresponding global DOF's.
-  integer, dimension(:,:), intent(OUT) :: IdofGlob
+  integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
 
@@ -1979,7 +1979,7 @@ contains
 
 !<inputoutput>
   ! The discretisation structure where information should be printed.
-  type(t_spatialDiscretisation), intent(IN), target :: rspatialDiscr
+  type(t_spatialDiscretisation), intent(in), target :: rspatialDiscr
 !</inputoutput>
   
 !</subroutine>
@@ -2045,10 +2045,10 @@ contains
   ! FALSE prints out information only about the block discretisation.
   ! TRUE prints out more detailed information about the block 
   ! discretisation, the structure of the blocks, the used FE spaces etc.
-  logical, intent(IN) :: bdetailed
+  logical, intent(in) :: bdetailed
 
   ! The discretisation structure where information should be printed.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscr
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscr
 !</input>
   
 !</subroutine>

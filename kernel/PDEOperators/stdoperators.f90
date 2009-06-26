@@ -50,11 +50,11 @@ contains
 !<input>
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
-  logical, intent(IN), optional :: bclear
+  logical, intent(in), optional :: bclear
   
   ! OPTIONAL: Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, 1.0 is assumed.
-  real(DP), intent(IN), optional :: dalpha
+  real(DP), intent(in), optional :: dalpha
 !</input>
 
 !<inputoutput>
@@ -65,7 +65,7 @@ contains
   ! If the array exist, the new entries of the Laplace operator overwrite
   ! the old entries (if bclear=true) or are added to the old entries 
   ! (if bclear=false).
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
   
 !</subroutine>
@@ -149,19 +149,19 @@ contains
 !<input>
   ! A derivative quantifier for the trial function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
-  integer, intent(IN) :: cderivTrial
+  integer, intent(in) :: cderivTrial
   
   ! A derivative quantifier for the test function. One of the DER_XXXX constants,
   ! e.g. DER_DERIV_X for X- or DER_DERIV_Y for Y-derivative.
-  integer, intent(IN) :: cderivTest
+  integer, intent(in) :: cderivTest
   
   ! Constant coefficient in front of the matrix, which is multiplied
   ! to all entries. If not specified, a value of 1.0 is assumed.
-  real(DP), intent(IN), optional :: dalpha
+  real(DP), intent(in), optional :: dalpha
   
   ! OPTIONAL: If set to TRUE (standard), the content of rmatrix is set to 0.0
   ! before assembling the matrix.
-  logical, intent(IN), optional :: bclear
+  logical, intent(in), optional :: bclear
 !</input>
 
 !<inputoutput>
@@ -172,7 +172,7 @@ contains
   ! If the array exist, the new entries of the Laplace operator overwrite
   ! the old entries (if bclear=true) or are added to the old entries 
   ! (if bclear=false).
-  type(t_matrixScalar), intent(INOUT) :: rmatrix
+  type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
   
 !</subroutine>

@@ -577,11 +577,11 @@ contains
 !<input>
 
   ! Initial number of handles maintained by the storage routines.
-  integer, intent(IN) :: ihandleCount
+  integer, intent(in) :: ihandleCount
 
   ! OPTIONAL: Number of handles to increase the memory block by, if there are
   ! not enough handles available. Standard setting is 1/2*ihandleCount.
-  integer, intent(IN), optional :: ihandlesDelta
+  integer, intent(in), optional :: ihandlesDelta
 
 !</input>
 
@@ -589,7 +589,7 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
@@ -653,7 +653,7 @@ contains
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is cleaned up.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -715,7 +715,7 @@ contains
 !<inputoutput>
 
   ! The heap structure where to create a new handle
-  type(t_storageBlock), intent(INOUT) :: rheap
+  type(t_storageBlock), intent(inout) :: rheap
 
 !</inputoutput>
 
@@ -795,12 +795,12 @@ contains
 
 !<input>
   ! The handle to release
-  integer, intent(INOUT) :: ihandle
+  integer, intent(inout) :: ihandle
 !</input>
 
 !<inputoutput>
   ! The heap structure where to release the handle from.
-  type(t_storageBlock), intent(INOUT) :: rheap
+  type(t_storageBlock), intent(inout) :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -859,22 +859,22 @@ contains
 
 !<input>
   ! The storage node whose associated storage should be initialised.
-  type(t_storageNode), intent(INOUT) :: rstorageNode
+  type(t_storageNode), intent(inout) :: rstorageNode
 
   ! Init new storage block identifier (ST_NEWBLOCK_ZERO, ST_NEWBLOCK_NOINIT,
   ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
   ! to ihandle.
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
   ! Start index from where to initialise; should usually be =1.
   ! For multidimensional arrays, this specifies the start index of the
   ! last dimension.
-  integer, intent(IN) :: istartIndex
+  integer, intent(in) :: istartIndex
 
   ! OPTIONAL: Stop index up to which to initialise; should usually be =SIZE(*).
   ! For multidimensional arrays, this specifies the stop index of the
   ! last dimension.
-  integer, intent(IN), optional :: istopIndex
+  integer, intent(in), optional :: istopIndex
 !</input>
 
 !</subroutine>
@@ -1111,21 +1111,21 @@ contains
 
 !<input>
   ! Handle of the memory block to initialise
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! Init new storage block identifier (ST_NEWBLOCK_ZERO, ST_NEWBLOCK_NOINIT,
   ! ST_NEWBLOCK_ORDERED). Specifies how to initialise the data block associated
   ! to ihandle.
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
   ! OPTIONAL: Start index of Block
-  integer, intent(IN), optional :: istartIndex
+  integer, intent(in), optional :: istartIndex
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -1167,19 +1167,19 @@ contains
 !<input>
 
   ! name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   ! clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   ! requested storage size
-  integer, intent(IN) :: isize
+  integer, intent(in) :: isize
 
   ! data type, one of the ST_XXXX constants
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   ! init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
 !</input>
 
@@ -1187,14 +1187,14 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
 
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 
 !</output>
 
@@ -1301,22 +1301,22 @@ contains
 !<input>
 
   !name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   !clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   !requested lower bound
-  integer, intent(IN) :: ilbound
+  integer, intent(in) :: ilbound
 
   !requested upper bound
-  integer, intent(IN) :: iubound
+  integer, intent(in) :: iubound
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
 !</input>
 
@@ -1324,14 +1324,14 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
 
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 
 !</output>
 
@@ -1438,19 +1438,19 @@ contains
 !<input>
 
   !name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   !clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   !requested storage size for 1st and 2nd dimension
-  integer, dimension(2), intent(IN) :: Isize
+  integer, dimension(2), intent(in) :: Isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
 !</input>
 
@@ -1458,14 +1458,14 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
 
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 
 !</output>
 
@@ -1572,22 +1572,22 @@ contains
 !<input>
 
   !name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   !clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   !requested lower bounds for 1st and 2nd dimension
-  integer, dimension(2), intent(IN) :: Ilbound
+  integer, dimension(2), intent(in) :: Ilbound
 
   !requested upper bounds for 1st and 2nd dimension
-  integer, dimension(2), intent(IN) :: Iubound
+  integer, dimension(2), intent(in) :: Iubound
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
 !</input>
 
@@ -1595,14 +1595,14 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
 
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 
 !</output>
 
@@ -1715,7 +1715,7 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
@@ -1798,7 +1798,7 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
@@ -1901,16 +1901,16 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<output>
   ! Length of the array identified by ihandle.
-  integer, intent(OUT) :: isize
+  integer, intent(out) :: isize
 !</output>
 
 !</subroutine>
@@ -1992,16 +1992,16 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<output>
   ! Length of each dimension of the array identified by ihandle.
-  integer, dimension(:), intent(OUT) :: Isize
+  integer, dimension(:), intent(out) :: Isize
 !</output>
 
 !</subroutine>
@@ -2087,11 +2087,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2148,14 +2148,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2218,17 +2218,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2294,11 +2294,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2354,14 +2354,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2424,17 +2424,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2500,11 +2500,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2560,14 +2560,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2630,17 +2630,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2706,11 +2706,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2766,14 +2766,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2836,17 +2836,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2912,11 +2912,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -2972,14 +2972,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3042,17 +3042,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3118,11 +3118,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3178,14 +3178,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3248,17 +3248,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3324,11 +3324,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3384,14 +3384,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3454,17 +3454,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3530,11 +3530,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3590,14 +3590,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3660,17 +3660,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3736,11 +3736,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3796,14 +3796,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3866,17 +3866,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -3942,11 +3942,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4002,14 +4002,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4072,17 +4072,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4148,11 +4148,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4208,14 +4208,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4279,17 +4279,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4355,11 +4355,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4415,14 +4415,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4486,17 +4486,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
   
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -4561,11 +4561,11 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4617,14 +4617,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4684,17 +4684,17 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4756,11 +4756,11 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4812,14 +4812,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4879,17 +4879,17 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<output>
@@ -4952,11 +4952,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5012,14 +5012,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5083,17 +5083,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5159,11 +5159,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5219,14 +5219,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5290,17 +5290,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5366,11 +5366,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5426,14 +5426,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5497,17 +5497,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5573,11 +5573,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5633,14 +5633,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5704,17 +5704,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5780,11 +5780,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5840,14 +5840,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5911,17 +5911,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -5987,11 +5987,11 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -6047,14 +6047,14 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -6118,17 +6118,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! The lower bound
-  integer, intent(IN) :: lbnd
+  integer, intent(in) :: lbnd
 
   ! The upper bound
-  integer, intent(IN) :: ubnd
+  integer, intent(in) :: ubnd
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
@@ -6192,18 +6192,18 @@ contains
 
 !<input>
   ! Handle of the source array to copy
-  integer, intent(IN) :: h_source
+  integer, intent(in) :: h_source
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<inputoutput>
   ! Handle of the destination array.
   ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
   ! and structure as h_source and data is copied to it.
-  integer, intent(INOUT) :: h_dest
+  integer, intent(inout) :: h_dest
 !</inputoutput>
 
 !</subroutine>
@@ -6741,27 +6741,27 @@ contains
 
 !<input>
   ! Handle of the source array to copy
-  integer, intent(IN) :: h_source
+  integer, intent(in) :: h_source
 
   ! First entry of the source array to copy
-  integer, intent(IN) :: istart_source
+  integer, intent(in) :: istart_source
 
   ! First entry of the destination array where to copy
-  integer, intent(IN) :: istart_dest
+  integer, intent(in) :: istart_dest
 
   ! Length of the array to copy
-  integer, intent(IN) :: ilength
+  integer, intent(in) :: ilength
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<inputoutput>
   ! Handle of the destination array.
   ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
   ! and structure as h_source and data is copied to it.
-  integer, intent(INOUT) :: h_dest
+  integer, intent(inout) :: h_dest
 !</inputoutput>
 
 !</subroutine>
@@ -7524,27 +7524,27 @@ contains
 
 !<input>
   ! Handle of the source array to copy
-  integer, intent(IN) :: h_source
+  integer, intent(in) :: h_source
 
   ! First entry of the source array to copy
-  integer, dimension(2), intent(IN) :: Istart_source
+  integer, dimension(2), intent(in) :: Istart_source
 
   ! First entry of the destination array where to copy
-  integer, dimension(2), intent(IN) :: Istart_dest
+  integer, dimension(2), intent(in) :: Istart_dest
 
   ! Length of the array to copy
-  integer, dimension(2), intent(IN) :: Ilength
+  integer, dimension(2), intent(in) :: Ilength
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<inputoutput>
   ! Handle of the destination array.
   ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
   ! and structure as h_source and data is copied to it.
-  integer, intent(INOUT) :: h_dest
+  integer, intent(inout) :: h_dest
 !</inputoutput>
 
 !</subroutine>
@@ -8844,11 +8844,11 @@ contains
 !<input>
   ! OPTIONAL: If set to TRUE, the handles still remaining in the
   ! heap together with their names are printed to the terminal.
-  logical, intent(IN), optional :: bprintHandles
+  logical, intent(in), optional :: bprintHandles
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !</subroutine>
@@ -8919,16 +8919,16 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<output>
   ! Datatype of the array identified by ihandle.
-  integer, intent(OUT) :: idatatype
+  integer, intent(out) :: idatatype
 !</output>
 
 !</subroutine>
@@ -9000,16 +9000,16 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<output>
   ! Dimension of the array identified by ihandle.
-  integer, intent(OUT) :: idimension
+  integer, intent(out) :: idimension
 !</output>
 
 !</subroutine>
@@ -9057,22 +9057,22 @@ contains
 !<input>
 
   ! Name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   ! Requested storage size for the memory block / the new size of the last
   ! dimension in the memory block identified by ihandle
-  integer, intent(IN) :: isize
+  integer, intent(in) :: isize
 
   ! Init new storage block identifier (ST_NEWBLOCK_ZERO,
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
   ! Specifies how to initialise memory if isize > original array size.
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
   ! =FALSE: Reallocate memory, don't copy old data.
   ! If not specified, TRUE is assumed.
-  logical, intent(IN), optional :: bcopy
+  logical, intent(in), optional :: bcopy
 
 !</input>
 
@@ -9080,10 +9080,10 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
   ! Handle of the memory block.
-  integer, intent(INOUT) :: ihandle
+  integer, intent(inout) :: ihandle
 
 !</inputoutput>
 
@@ -9465,26 +9465,26 @@ contains
 !<input>
 
   ! Name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   ! Requested lower bound for the memory block / the new lower bound of the last
   ! dimension in the memory block identified by ihandle
-  integer, intent(IN) :: ilbound
+  integer, intent(in) :: ilbound
 
   ! Requested upper bound for the memory block / the new upper bound of the last
   ! dimension in the memory block identified by ihandle
-  integer, intent(IN) :: iubound
+  integer, intent(in) :: iubound
 
   ! Init new storage block identifier (ST_NEWBLOCK_Zero,
   ! ST_NEWBLOCK_NOINIT, ST_NEWBLOCK_ORDERED).
   ! Specifies how to initialise memory if isize > original array size.
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
 
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
   ! =FALSE: Reallocate memory, don't copy old data.
   ! If not specified, TRUE is assumed.
-  logical, intent(IN), optional :: bcopy
+  logical, intent(in), optional :: bcopy
 
 !</input>
 
@@ -9492,10 +9492,10 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 
   ! Handle of the memory block.
-  integer, intent(INOUT) :: ihandle
+  integer, intent(inout) :: ihandle
 
 !</inputoutput>
 
@@ -9984,18 +9984,18 @@ contains
 !<input>
 
   ! The first handle
-  integer, intent(IN) :: ihandle1
+  integer, intent(in) :: ihandle1
 
   ! The second handle
-  integer, intent(IN) :: ihandle2
+  integer, intent(in) :: ihandle2
 
   ! OPTIONAL: first local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap1
+  type(t_storageBlock), intent(in), target, optional :: rheap1
 
   ! OPTIONAL: second local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(IN), target, optional :: rheap2
+  type(t_storageBlock), intent(in), target, optional :: rheap2
 
 !</input>
 
@@ -10245,16 +10245,16 @@ contains
 
 !<input>
   ! The full qualified name of the object
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
   
   ! OPTIONAL: local heap structure to initialise. 
   ! If not given, the global heap is initialised.
-  type(t_storageBlock), intent(IN), target, optional :: rheap
+  type(t_storageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !<inputoutput>
   ! The ObjectItem that is created
-  type(t_fpdbObjectItem), intent(INOUT) :: rfpdbObjectItem
+  type(t_fpdbObjectItem), intent(inout) :: rfpdbObjectItem
 !</inputoutput>
 
 !</subroutine>
@@ -10547,13 +10547,13 @@ contains
 
 !<input>
     ! The object item that is created
-    type(t_fpdbObjectItem), intent(IN) :: rfpdbObjectItem
+    type(t_fpdbObjectItem), intent(in) :: rfpdbObjectItem
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: local heap structure to initialise. 
     ! If not given, the global heap is initialised.
-    type(t_storageBlock), intent(INOUT), target, optional :: rheap   
+    type(t_storageBlock), intent(inout), target, optional :: rheap   
 !</inputoutput>
 !</subroutine>
 
@@ -10962,14 +10962,14 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! Target Datatype of the array identified by ihandle.
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rheap
+  type(t_storageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !</subroutine>

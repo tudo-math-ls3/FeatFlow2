@@ -297,17 +297,17 @@ contains
 
 !<input>
     ! Total number of vertices that should be stored in the quadtree
-    integer, intent(IN) :: nnvt
+    integer, intent(in) :: nnvt
 
     ! Total number of subdivisions that should be stored in the quadtree
-    integer, intent(IN) :: nnnode
+    integer, intent(in) :: nnnode
 
     ! Dimensions of the initial bounding box
-    real(DP), intent(IN) :: xmin,ymin,xmax,ymax
+    real(DP), intent(in) :: xmin,ymin,xmax,ymax
 
     ! OPTIONAL: Factor by which the quadtree should be enlarged if
     ! new storage has to be allocated
-    real(DP), intent(IN), optional :: dfactor
+    real(DP), intent(in), optional :: dfactor
 
     ! OPTIONAL: Number of data items stored per quad
     integer, optional :: ndata
@@ -315,7 +315,7 @@ contains
 
 !<output>
     ! Quadtree structure
-    type(t_quadtree), intent(OUT) :: rquadtree
+    type(t_quadtree), intent(out) :: rquadtree
 !</output>
 !</subroutine>
     
@@ -383,7 +383,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
@@ -418,12 +418,12 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
     ! Handle to the coordinate vector
-    integer, intent(INOUT) :: h_Ddata
+    integer, intent(inout) :: h_Ddata
 !</inputoutput>
 !</subroutine>
 
@@ -465,12 +465,12 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
     ! Coordinate vector
-    real(DP), dimension(:,:), intent(INOUT) :: p_Ddata
+    real(DP), dimension(:,:), intent(inout) :: p_Ddata
 !</inputoutput>
 !</subroutine>
 
@@ -502,12 +502,12 @@ contains
 
 !<input>
     ! Handle to the coordinate vector
-    integer, intent(IN) :: h_Ddata
+    integer, intent(in) :: h_Ddata
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
@@ -534,12 +534,12 @@ contains
 
 !<input>
     ! Coordinate vector
-    real(DP), dimension(:,:), intent(IN) :: p_Ddata
+    real(DP), dimension(:,:), intent(in) :: p_Ddata
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
     
@@ -582,21 +582,21 @@ contains
 
 !<input>
     ! Coordinates of the new vertex
-    real(DP), dimension(2), intent(IN) :: Ddata
+    real(DP), dimension(2), intent(in) :: Ddata
 
     ! OPTIONAL: Number of the quad to which vertex should be inserted.
     ! If there is no space left, then the next free position will be used
-    integer, intent(IN), optional :: inode
+    integer, intent(in), optional :: inode
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
     ! Number of the inserted vertex
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -651,7 +651,7 @@ contains
     
     recursive function insert(ivt, inode) result(iresult)
       
-      integer, intent(IN) :: ivt,inode
+      integer, intent(in) :: ivt,inode
       integer :: iresult
 
       ! local variables
@@ -792,17 +792,17 @@ contains
 
 !<input>
     ! Coordinates of the vertex that should be deleted
-    real(DP), dimension(2), intent(IN) :: Ddata
+    real(DP), dimension(2), intent(in) :: Ddata
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
     ! Number of the vertex that is deleted
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -824,8 +824,8 @@ contains
 
     recursive function delete(inode, ivt) result(iresult)
       
-      integer, intent(IN) :: inode
-      integer, intent(INOUT) :: ivt
+      integer, intent(in) :: inode
+      integer, intent(inout) :: ivt
       integer :: iresult
       
       ! local variables
@@ -974,17 +974,17 @@ contains
 
 !<input>
     ! Number of the vertex to be deleted
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<output>
     ! Number of the vertex that replaces the deleted vertex
-    integer, intent(OUT) :: ivtReplace
+    integer, intent(out) :: ivtReplace
 !</output>
 
 !<result>
@@ -1025,21 +1025,21 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
     
     ! coordinates that should be searched
-    real(DP), dimension(2), intent(IN) :: Ddata
+    real(DP), dimension(2), intent(in) :: Ddata
 !</input>
 
 !<output>
     ! Number of the quad in which the given coordinates are
-    integer, intent(OUT) :: inode
+    integer, intent(out) :: inode
 
     ! Position of the coordinates in the quad
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 
     ! Number of the vertex the coordinates correspond to
-    integer, intent(OUT) :: ivt
+    integer, intent(out) :: ivt
 !</output>
 
 !<result>
@@ -1063,7 +1063,7 @@ contains
 
     recursive function search(inode, ipos, ivt) result(iresult)
       
-      integer, intent(INOUT) :: inode,ipos,ivt
+      integer, intent(inout) :: inode,ipos,ivt
       integer :: iresult
       
       
@@ -1128,13 +1128,13 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
     
     ! Coordinates
-    real(DP), dimension(2), intent(IN) :: Ddata
+    real(DP), dimension(2), intent(in) :: Ddata
 
     ! Number of quad
-    integer, intent(IN) :: inode
+    integer, intent(in) :: inode
 !</input>
 
 !<result>
@@ -1181,10 +1181,10 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 
     ! filename of the output file
-    character(LEN=*), intent(IN) :: cfilename
+    character(LEN=*), intent(in) :: cfilename
 !</input>
 !</subroutine>
     
@@ -1207,8 +1207,8 @@ contains
     ! Here, the recursive print routine follows
     
     recursive subroutine print(xmin, ymin, xmax, ymax, inode)
-      real(DP), intent(IN) :: xmin,ymin,xmax,ymax
-      integer, intent(IN) :: inode
+      real(DP), intent(in) :: xmin,ymin,xmax,ymax
+      integer, intent(in) :: inode
       real(DP) :: xmid,ymid
       integer :: i,j
 
@@ -1254,7 +1254,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 !</input>
 !</subroutine>
 
@@ -1290,7 +1290,7 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 !</input>
 
 !<result>
@@ -1317,11 +1317,11 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 
     ! OPTIONAL: number of quad for which bounding box should be
     ! returned
-    integer, intent(IN), optional :: inode
+    integer, intent(in), optional :: inode
 !</input>
 
 !<result>
@@ -1355,10 +1355,10 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 
     ! position in the quadtree
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<result>
@@ -1382,10 +1382,10 @@ contains
 
 !<input>
     ! Quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 
     ! position in the quadtree
-    integer, intent(IN) :: ivt
+    integer, intent(in) :: ivt
 !</input>
 
 !<result>
@@ -1412,12 +1412,12 @@ contains
 
 !<input>
     ! Source quadtree
-    type(t_quadtree), intent(IN) :: rquadtree
+    type(t_quadtree), intent(in) :: rquadtree
 !</input>
 
 !<inputoutput>
     ! Destination quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtreeBackup
+    type(t_quadtree), intent(inout) :: rquadtreeBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1465,12 +1465,12 @@ contains
 
 !<input>
     ! Backup of an quadtree
-    type(t_quadtree), intent(IN) :: rquadtreeBackup
+    type(t_quadtree), intent(in) :: rquadtreeBackup
 !</input>
 
 !<inputoutput>
     ! Destination quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
@@ -1494,7 +1494,7 @@ contains
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
@@ -1543,7 +1543,7 @@ contains
     
     recursive subroutine rebuild(inode, istart, iend)
       
-      integer, intent(IN) :: inode, istart, iend
+      integer, intent(in) :: inode, istart, iend
       
       ! local variables
       real(DP) :: xmin,ymin,xmax,ymax,xmid,ymid
@@ -1656,8 +1656,8 @@ contains
 
     function partition(istart, iend, idim, dmid) result(imid)
 
-      real(DP), intent(IN) :: dmid
-      integer, intent(IN) :: istart, iend, idim
+      real(DP), intent(in) :: dmid
+      integer, intent(in) :: istart, iend, idim
       integer :: imid
 
       ! local variables
@@ -1699,7 +1699,7 @@ contains
 
     recursive subroutine quicksort(istart, iend, idim)
 
-      integer, intent(IN) :: istart, iend, idim
+      integer, intent(in) :: istart, iend, idim
 
       ! local variables
       integer :: isplit
@@ -1717,7 +1717,7 @@ contains
 
     function split(istart, iend, idim) result(isplit)
 
-      integer, intent(IN) :: istart, iend, idim
+      integer, intent(in) :: istart, iend, idim
       integer :: isplit
 
       ! local variables
@@ -1776,15 +1776,15 @@ contains
 
 !<input>
     ! Old coordinates of the vertex
-    real(DP), dimension(2), intent(IN) :: DdataOld
+    real(DP), dimension(2), intent(in) :: DdataOld
 
     ! New coordinates of the vertex
-    real(DP), dimension(2), intent(IN) :: DdataNew
+    real(DP), dimension(2), intent(in) :: DdataNew
 !</input>
 
 !<inputoutput>
     ! Quadtree
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 
 !<result>
@@ -1824,8 +1824,8 @@ contains
 
     recursive function move(inode, ivt) result(iresult)
       
-      integer, intent(IN) :: inode
-      integer, intent(INOUT) :: ivt
+      integer, intent(in) :: inode
+      integer, intent(inout) :: ivt
       integer :: iresult
       
       ! local variables
@@ -1959,7 +1959,7 @@ contains
     
     recursive function insert(ivt, inode) result(iresult)
       
-      integer, intent(IN) :: ivt,inode
+      integer, intent(in) :: ivt,inode
       integer :: iresult
 
       ! local variables
@@ -2097,12 +2097,12 @@ contains
 
 !<input>
     ! New number of vertices that should be stored in the quadtree
-    integer, intent(IN) :: nnvt
+    integer, intent(in) :: nnvt
 !</input>
 
 !<inputoutput>
     ! Quadtree that should be resized
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 
@@ -2127,12 +2127,12 @@ contains
 
 !<input>
     ! New number of quads that should be stored in the quadtree
-    integer, intent(IN) :: nnnode
+    integer, intent(in) :: nnnode
 !</input>
 
 !<inputoutput>
     ! Quadtree that should be resized
-    type(t_quadtree), intent(INOUT) :: rquadtree
+    type(t_quadtree), intent(inout) :: rquadtree
 !</inputoutput>
 !</subroutine>
 

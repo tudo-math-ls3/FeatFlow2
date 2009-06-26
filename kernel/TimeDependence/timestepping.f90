@@ -257,7 +257,7 @@ contains
 
 !<input>
   ! Time stepping structure that describes an explicit time stepping scheme.
-  type(t_explicitTimeStepping), intent(IN) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(in) :: rtstepScheme
 !</input>
 
 !<result>
@@ -296,16 +296,16 @@ contains
 !<input>
   ! The type of time stepping to use. TSCHM_ONESTEP for a one-step scheme
   ! or TSCHM_FRACTIONALSTEP for Fractional Step.
-  integer, intent(IN)    :: ctimestepType
+  integer, intent(in)    :: ctimestepType
   
   ! The initial simulational time. 
-  real(DP), intent(IN)   :: dtime
+  real(DP), intent(in)   :: dtime
     
   ! (Theoretical) Time step length of the simulation / 'base' step length of the
   ! time stepping scheme.
   ! Might vary from the real time step size by the type of the
   ! scheme. The real time step size is found in rtstepScheme%dtstep.
-  real(DP), intent(IN)   :: dtstep
+  real(DP), intent(in)   :: dtstep
 
   ! OPTIONAL: Theta scheme identifier. 
   ! Only used for ctimestepType=TSCHM_ONESTEP.
@@ -314,13 +314,13 @@ contains
   !  =0.5: Crank Nicolson
   ! Ignored for Fractional step. If not specified, dtheta=1.0 (Backward Euler)
   ! is used in one-step schemes.
-  real(DP), intent(IN), optional   :: dtheta
+  real(DP), intent(in), optional   :: dtheta
 !</input>
 
 !<output>
   ! The time stepping structure. This is initialised to perform the first
   ! time step.
-  type(t_explicitTimeStepping), intent(OUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(out) :: rtstepScheme
 !</output>
 
 !</subroutine>
@@ -401,13 +401,13 @@ contains
   ! (Theoretical) Time step length of the simulation.
   ! Might vary from the real time step size by the type of the
   ! scheme, which is indicated by rtstepScheme%dtstep
-  real(DP), intent(IN)   :: dtstep
+  real(DP), intent(in)   :: dtstep
 !</input>
 
 !<output>
   ! The time stepping structure. This is initialised according to the
   ! new time step length.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(inout) :: rtstepScheme
 !</output>
 
 !</subroutine>
@@ -498,7 +498,7 @@ contains
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(inout) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>
@@ -525,7 +525,7 @@ contains
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(inout) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>
@@ -554,7 +554,7 @@ contains
   
 !<inputoutput>
   ! The time stepping structure. Is modified to represent the next time step.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtstepScheme
+  type(t_explicitTimeStepping), intent(inout) :: rtstepScheme
 !</inputoutput>
 
 !</subroutine>

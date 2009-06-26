@@ -74,14 +74,14 @@ contains
 
 !<input>
   ! The source vector to be projected.
-  type(t_vectorScalar), intent(IN) :: rsourceVector
+  type(t_vectorScalar), intent(in) :: rsourceVector
 !</input>
 
 !<output>
   ! An existing scalar vector structure that receives the projected 
   ! solution vector. Must provide a scalar discretisation structure 
   ! that specifies the destination FE spaces.
-  type(t_vectorScalar), intent(INOUT) :: rdestVector
+  type(t_vectorScalar), intent(inout) :: rdestVector
 !</output>
 
 !</subroutine>
@@ -365,21 +365,21 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
 
   ! IelementsAtVertex array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertex
+  integer, dimension(:), intent(in) :: IelementsAtVertex
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -419,18 +419,18 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
   
   ! IverticesAtElement array of the triangulation
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement 
+  integer, dimension(:,:), intent(in) :: IverticesAtElement 
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -469,27 +469,27 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! IedgesAtElement array of the triangulation (old KMID)
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -560,30 +560,30 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! IedgesAtElement array of the triangulation (old KMID)
-  integer, dimension(:,:), intent(IN) :: IedgesAtElement
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
   
   ! ItwistIndexEdges array of the triangulation
-  integer(I32), dimension(:), intent(IN) :: ItwistIndexEdges
+  integer(I32), dimension(:), intent(in) :: ItwistIndexEdges
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -655,25 +655,25 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -729,30 +729,30 @@ contains
 
 !<input>
   ! Source vector to be converted
-  real(DP), dimension(:), intent(IN) :: Dsource
+  real(DP), dimension(:), intent(in) :: Dsource
   
   ! Number of vertices in the triangulation
-  integer, intent(IN) :: NVT
+  integer, intent(in) :: NVT
   
   ! Number of edges in the triangulation
-  integer, intent(IN) :: NMT
+  integer, intent(in) :: NMT
   
   ! Number of elements in the triangulation
-  integer, intent(IN) :: NEL
+  integer, intent(in) :: NEL
   
   ! IelementsAtVertexIdx array of the triangulation
-  integer, dimension(:), intent(IN) :: IelementsAtVertexIdx 
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
   
   ! IverticesAtElement array of the triangulation (old KVERT)
-  integer, dimension(:,:), intent(IN) :: IverticesAtElement
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
 
   ! IfacesAtElement array of the triangulation
-  integer, dimension(:,:), intent(IN) :: IfacesAtElement
+  integer, dimension(:,:), intent(in) :: IfacesAtElement
 !</input>
   
 !<output>
   ! Destination vector of size NVT; receives the interpolated solution
-  real(DP), dimension(:), intent(OUT) :: Ddest
+  real(DP), dimension(:), intent(out) :: Ddest
 !</output>
 
 !</subroutine>
@@ -819,14 +819,14 @@ contains
 
 !<input>
   ! The source vector to be projected.
-  type(t_vectorBlock), intent(IN) :: rsourceVector
+  type(t_vectorBlock), intent(in) :: rsourceVector
 !</input>
 
 !<output>
   ! An existing vector structure that receives the projected 
   ! solution vector. Must provide a scalar discretisation structures
   ! that specifies the destination FE spaces.
-  type(t_vectorBlock), intent(INOUT) :: rdestVector
+  type(t_vectorBlock), intent(inout) :: rdestVector
 !</output>
 
 !</subroutine>
@@ -882,18 +882,18 @@ contains
 
 !<input>
   ! The source vector to be projected.
-  type(t_vectorScalar), intent(IN) :: rsourceVector
+  type(t_vectorScalar), intent(in) :: rsourceVector
 !</input>
 
 !<inputoutput>
   ! A scalar vector structure that receives the projected 
   ! solution vector. If undefined, a vector is created.
-  type(t_vectorScalar), intent(INOUT) :: rdestVector
+  type(t_vectorScalar), intent(inout) :: rdestVector
 
   ! A discretisation structure that defines a discretisation with
   ! $P_1$ and/or $Q_1$ elements. If undefines, the structure
   ! is automatically created.  
-  type(t_spatialDiscretisation), intent(INOUT) :: rdestDiscretisation
+  type(t_spatialDiscretisation), intent(inout) :: rdestDiscretisation
 !</inputoutput>
 
 !</subroutine>
@@ -947,11 +947,11 @@ contains
 
 !<input>
   ! The coefficient vector to be projected.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
   
   ! OPTIONAL: A derivative quantifier specifying which derivative is to be
   ! projected onto the vertices. If not given, DER_FUNC is used.
-  integer, optional, intent(IN) :: ideriv
+  integer, optional, intent(in) :: ideriv
 !</input>
 
 !<inputoutput>
@@ -1159,11 +1159,11 @@ contains
 
 !<input>
   ! The coefficient vector to be projected.
-  type(t_vectorScalar), intent(IN) :: rvector
+  type(t_vectorScalar), intent(in) :: rvector
   
   ! OPTIONAL: A derivative quantifier specifying which derivative is to be
   ! projected onto the vertices. If not given, DER_FUNC is used.
-  integer, optional, intent(IN) :: ideriv
+  integer, optional, intent(in) :: ideriv
 !</input>
 
 !<inputoutput>
@@ -1341,15 +1341,15 @@ contains
 
 !<output>
   ! The reference coordinates of the corner vertices.
-  real(DP), dimension(:,:), intent(OUT) :: Dcoords
+  real(DP), dimension(:,:), intent(out) :: Dcoords
 !</output>
 
 !<input>
   ! The dimension of the element.
-  integer, intent(IN) :: ndim
+  integer, intent(in) :: ndim
   
   ! The number of corner vertices of the element.
-  integer, intent(IN) :: nve
+  integer, intent(in) :: nve
 !</input>
 
 !</subroutine>
@@ -1496,15 +1496,15 @@ contains
 
 !<output>
   ! The reference coordinates of the element midpoint.
-  real(DP), dimension(:,:), intent(OUT) :: Dcoords
+  real(DP), dimension(:,:), intent(out) :: Dcoords
 !</output>
 
 !<input>
   ! The dimension of the element.
-  integer, intent(IN) :: ndim
+  integer, intent(in) :: ndim
   
   ! The number of corner vertices of the element.
-  integer, intent(IN) :: nve
+  integer, intent(in) :: nve
 !</input>
 
 !</subroutine>

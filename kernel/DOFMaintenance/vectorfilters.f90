@@ -189,13 +189,13 @@ contains
 
 !<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteBCDirichlet), intent(IN), target  :: rdbcStructure
+  type(t_discreteBCDirichlet), intent(in), target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
 
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorScalar), intent(INOUT), target :: rx
+  type(t_vectorScalar), intent(inout), target :: rx
   
 !</inputoutput>
   
@@ -287,12 +287,12 @@ contains
 
 !<input>
   ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteBCDirichlet), intent(IN),target  :: rdbcStructure
+  type(t_discreteBCDirichlet), intent(in),target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorScalar), intent(INOUT), target :: rx
+  type(t_vectorScalar), intent(inout), target :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -374,16 +374,16 @@ contains
 
 !<input>
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteFBCDirichlet), intent(IN), target  :: rdbcStructure
+  type(t_discreteFBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Index of the solution component in rdbcStructure\%Icomponent
-  integer, intent(IN) :: icomponent
+  integer, intent(in) :: icomponent
 !</input>
 
 !<inputoutput>
 
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorScalar), intent(INOUT), target :: rx
+  type(t_vectorScalar), intent(inout), target :: rx
   
 !</inputoutput>
   
@@ -471,12 +471,12 @@ contains
 
 !<input>
   ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
-  type(t_discreteFBCDirichlet), intent(IN),target  :: rdbcStructure
+  type(t_discreteFBCDirichlet), intent(in),target  :: rdbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorScalar), intent(INOUT), target :: rx
+  type(t_vectorScalar), intent(inout), target :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -559,7 +559,7 @@ contains
   
 !<inputoutput>
   ! The vector which is to be normalised.
-  type(t_vectorScalar), intent(INOUT),target :: rx
+  type(t_vectorScalar), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -733,17 +733,17 @@ contains
 !<input>
   ! The t_discreteBCpressureDrop that describes the discrete pressure 
   ! drop BC's
-  type(t_discreteBCpressureDrop), intent(IN), target  :: rpdbcStructure
+  type(t_discreteBCpressureDrop), intent(in), target  :: rpdbcStructure
   
   ! Weighting factor for time-dependent problems.
   ! =1.0 for stationary simulation.
-  real(DP), intent(IN) :: dtimeweight
+  real(DP), intent(in) :: dtimeweight
 !</input>
 
 !<inputoutput>
 
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorblock), intent(INOUT), target :: rx
+  type(t_vectorblock), intent(inout), target :: rx
   
 !</inputoutput>
   
@@ -837,13 +837,13 @@ contains
 
 !<input>
   ! The t_discreteBCSlip that describes the discrete Dirichlet BC's
-  type(t_discreteBCSlip), intent(IN), target  :: rslipBCStructure
+  type(t_discreteBCSlip), intent(in), target  :: rslipBCStructure
 !</input>
 
 !<inputoutput>
 
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT), target :: rx
+  type(t_vectorBlock), intent(inout), target :: rx
   
 !</inputoutput>
   
@@ -969,12 +969,12 @@ contains
 
 !<input>
   ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
-  type(t_discreteBCFeastMirror), intent(IN), target  :: rfmbcStructure
+  type(t_discreteBCFeastMirror), intent(in), target  :: rfmbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT), target :: rx
+  type(t_vectorBlock), intent(inout), target :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -1075,12 +1075,12 @@ contains
 
 !<input>
   ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
-  type(t_discreteBCFeastMirror), intent(IN), target  :: rfmbcStructure
+  type(t_discreteBCFeastMirror), intent(in), target  :: rfmbcStructure
 !</input>
 
 !<inputoutput>
   ! The scalar vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT), target :: rx
+  type(t_vectorBlock), intent(inout), target :: rx
 !</inputoutput>
   
 !</subroutine>
@@ -1179,12 +1179,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1269,12 +1269,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1356,17 +1356,17 @@ contains
   ! OPTIONAL: Time-step weight. This weight is multiplied to time-dependent
   ! boundary conditions before these are added to the vector rx.
   ! The parameter can be omitted in stationary simulations.
-  real(DP), intent(IN), optional :: dtimeWeight
+  real(DP), intent(in), optional :: dtimeWeight
 
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the vector.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1433,12 +1433,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1527,12 +1527,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the vector.
-  type(t_discreteBC), optional, intent(IN), target :: rdiscreteBC
+  type(t_discreteBC), optional, intent(in), target :: rdiscreteBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1590,12 +1590,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default fictitious boundary conditions associated 
   ! to the vector rx are imposed to the matrix.
-  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1677,12 +1677,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1764,12 +1764,12 @@ contains
   ! OPTIONAL: boundary conditions to impose into the vector.
   ! If not specified, the default boundary conditions associated to the
   ! vector rx are imposed to the matrix.
-  type(t_discreteFBC), optional, intent(IN), target :: rdiscreteFBC
+  type(t_discreteFBC), optional, intent(in), target :: rdiscreteFBC
 !</input>
 
 !<inputoutput>
   ! The block vector where the boundary conditions should be imposed.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
 !</inputoutput>
 
 !</subroutine>
@@ -1847,10 +1847,10 @@ contains
 !<inputoutput>
 
   ! The block vector which is partially to be normalised.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
   
   ! The number of the subvector in rx which is to be normalised.
-  integer, intent(IN) :: isubvector
+  integer, intent(in) :: isubvector
   
 !</inputoutput>
 
@@ -1889,10 +1889,10 @@ contains
 !<inputoutput>
 
   ! The block vector which is partially to be normalised.
-  type(t_vectorBlock), intent(INOUT),target :: rx
+  type(t_vectorBlock), intent(inout),target :: rx
   
   ! The number of the subvector in rx which is to be normalised.
-  integer, intent(IN) :: isubvector
+  integer, intent(in) :: isubvector
   
 !</inputoutput>
 

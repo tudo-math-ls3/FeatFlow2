@@ -113,15 +113,15 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! name of the section
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<output>
     ! adaptivity structure
-    type(t_hadapt), intent(OUT) :: rhadapt
+    type(t_hadapt), intent(out) :: rhadapt
 !</output>
 !</subroutine>
 
@@ -153,12 +153,12 @@ contains
 
 !<input>
     ! triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -233,10 +233,10 @@ contains
 
 !<inputoutput>
     ! adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
     
     ! triangulation structure
-    type(t_triangulation), intent(INOUT) :: rtriangulation
+    type(t_triangulation), intent(inout) :: rtriangulation
 !</inputoutput>
 !</subroutine>
 
@@ -307,7 +307,7 @@ contains
 
 !<inputoutput>
     ! adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -397,9 +397,9 @@ contains
       ! If yes, the handle ihandle is set removed
       ! Otherwise, the the memory behind ihandle is freed.
 
-      integer(I32), intent(IN) :: ibitfield
-      integer(I32), intent(IN) :: idupFlag
-      integer, intent(INOUT) :: ihandle
+      integer(I32), intent(in) :: ibitfield
+      integer(I32), intent(in) :: idupFlag
+      integer, intent(inout) :: ihandle
       
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (ihandle .ne. ST_NOHANDLE) call storage_free(ihandle)
@@ -434,7 +434,7 @@ contains
 
 !<input>
     ! The source structure which provides all information
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 
     ! Bitfield that decides which handles are a copy of another structure, thus 
     ! which arrays are shared between the new and the old structure. 
@@ -444,7 +444,7 @@ contains
     ! Therefore e.g., iduplicationFlag=0 copies all arrays from rhadapt in memory,
     ! while HADAPT_SHARE_ALL will copy nothing, but will share everything between 
     ! rhadapt and rhadaptBackup.
-    integer(I32), intent(IN) :: iduplicationFlag
+    integer(I32), intent(in) :: iduplicationFlag
   
     ! OPTIONAL. Defines how to create the backup.
     ! = .FALSE.: Treat rhadaptBackup as empty destination structure. If necessary, 
@@ -464,12 +464,12 @@ contains
     !          set and which exist as duplicates. Arrays corresponding to flags which
     !          are set or where the handles in rhadapt and rhadaptBackup coincide 
     !          are not touched.
-    logical, intent(IN), optional :: bupdate
+    logical, intent(in), optional :: bupdate
 !</input>
 
 !<inputoutput>
     ! The destination structure which receives the information
-    type(t_hadapt), intent(INOUT) :: rhadaptBackup
+    type(t_hadapt), intent(inout) :: rhadaptBackup
 !</inputoutput>
 
 !</subroutine>
@@ -619,10 +619,10 @@ contains
       ! Otherwise, the memory behind isourcehandle is duplicated in memory
       ! and idesthandle receives the handle to the new memory block.
       
-      integer(I32), intent(IN) :: ibitfield
-      integer(I32), intent(IN) :: idupFlag
-      integer, intent(IN) :: isourcehandle
-      integer, intent(INOUT) :: idesthandle
+      integer(I32), intent(in) :: ibitfield
+      integer(I32), intent(in) :: idupFlag
+      integer, intent(in) :: isourcehandle
+      integer, intent(inout) :: idesthandle
       
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
@@ -650,14 +650,14 @@ contains
 
 !<input>
     ! Backup of an adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadaptBackup
+    type(t_hadapt), intent(in) :: rhadaptBackup
 !</input>
 
 !<inputoutput>
     ! Destination adaptivity structure
     ! All components where a duplicates exist in rhadaptBackup are copied
     ! to rhadapt, overwriting the old information arrays.
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 
 !</subroutine>
@@ -784,10 +784,10 @@ contains
       ! If not, the memory behind isourcehandle is copied to idesthandle
       ! overwriting all previous information.
       
-      integer(I32), intent(IN) :: ibitfield
-      integer(I32), intent(IN) :: idupFlag
-      integer, intent(IN) :: isourcehandle
-      integer, intent(INOUT) :: idesthandle
+      integer(I32), intent(in) :: ibitfield
+      integer(I32), intent(in) :: idupFlag
+      integer, intent(in) :: isourcehandle
+      integer, intent(inout) :: idesthandle
       
       if (iand(idupFlag, ibitfield) .ne. ibitfield) then
         if (isourcehandle .ne. ST_NOHANDLE) then
@@ -819,12 +819,12 @@ contains
 
 !<input>
     ! Triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 
@@ -922,13 +922,13 @@ contains
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! Indicator vector for refinement
-    type(t_vectorScalar), intent(INOUT) :: rindicator
+    type(t_vectorScalar), intent(inout) :: rindicator
 
     ! OPTIONAL: Collection
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1130,7 +1130,7 @@ contains
 
 !<input>
     ! Adaptivity structure
-    type(t_hadapt), intent(IN) :: rhadapt
+    type(t_hadapt), intent(in) :: rhadapt
 !</input>
 !</subroutine>
 
@@ -1217,12 +1217,12 @@ contains
 
 !<input>
     ! output file name w/o suffix .gmv
-    character(LEN=*), intent(IN) :: coutputFile
+    character(LEN=*), intent(in) :: coutputFile
 !</input>
 
 !<inputoutput>
     ! Adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
     
@@ -1401,7 +1401,7 @@ contains
 
 !<inputoutput>
     ! adaptivity structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 !</inputoutput>
 !</subroutine>
 

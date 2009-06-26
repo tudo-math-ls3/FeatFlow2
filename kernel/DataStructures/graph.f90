@@ -188,21 +188,21 @@ contains
 
 !<input>
     ! Format of the graph
-    integer, intent(IN) :: cgraphFormat
+    integer, intent(in) :: cgraphFormat
 
     ! Maximum number of vertices
-    integer, intent(IN) :: nvtMax
+    integer, intent(in) :: nvtMax
 
     ! Maximum number of edges
-    integer, intent(IN) :: nedgeMax
+    integer, intent(in) :: nedgeMax
 
     ! OPTIONAL: Indicates if the graph is dense or not
-    logical, intent(IN), optional :: bisDense
+    logical, intent(in), optional :: bisDense
 !</input>
 
 !<output>
     ! The sparsity graph
-    type(t_graph), intent(OUT) :: rgraph
+    type(t_graph), intent(out) :: rgraph
 !</output>
 !</subroutine>
 
@@ -291,18 +291,18 @@ contains
 
 !<input>
     ! The scalar matrix which should be used to create the sparsity graph
-    type(t_matrixScalar), intent(IN) :: rscalarMatrix
+    type(t_matrixScalar), intent(in) :: rscalarMatrix
 
     ! OPTIONAL: maximum number of vertices
-    integer, intent(IN), optional :: nvtMax
+    integer, intent(in), optional :: nvtMax
 
     ! OPTIONAL: maximum number of edges
-    integer, intent(IN), optional :: nedgeMax
+    integer, intent(in), optional :: nedgeMax
 !</input>
 
 !<output>
     ! The sparsity graph
-    type(t_graph), intent(OUT) :: rgraph
+    type(t_graph), intent(out) :: rgraph
 !</output>
 
 !</subroutine>
@@ -402,7 +402,7 @@ contains
 
 !<inputoutput>
     ! The graph that should be released
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 !</subroutine>
 
@@ -433,12 +433,12 @@ contains
 
 !<input>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</input>
 
 !<inputoutput>
     ! The matrix
-    type(t_matrixScalar), intent(INOUT) :: rscalarMatrix
+    type(t_matrixScalar), intent(inout) :: rscalarMatrix
 !</inputoutput>
 !</subroutine>
 
@@ -583,7 +583,7 @@ contains
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 !</subroutine>
 
@@ -601,7 +601,7 @@ contains
     !**************************************************************
     ! Inorder traversal of the tree storing the vertex numbers
     recursive subroutine inorderDense(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
 
       ! local variables
       integer :: ikey
@@ -627,7 +627,7 @@ contains
      !**************************************************************
     ! Inorder traversal of the tree storing the vertex numbers
     recursive subroutine inorderSparse(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
 
       ! local variables
       integer :: itable,ikey
@@ -668,17 +668,17 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer, intent(IN) :: iVertex
+    integer, intent(in) :: iVertex
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer, intent(OUT), optional :: iVertexPosition
+    integer, intent(out), optional :: iVertexPosition
 !</output>
 
 !<result>
@@ -716,20 +716,20 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer, intent(IN) :: iVertex
+    integer, intent(in) :: iVertex
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer, intent(OUT), optional :: iVertexPosition
+    integer, intent(out), optional :: iVertexPosition
 
     ! OPTIONAL: position of edge (iVertex,iVertex)
-    integer, intent(OUT), optional :: iEdgePosition
+    integer, intent(out), optional :: iEdgePosition
 !</output>
 !</subroutine>
 
@@ -794,15 +794,15 @@ contains
 
 !<input>
     ! Number of the vertex
-    integer, intent(IN) :: iVertex
+    integer, intent(in) :: iVertex
 
     ! OPTIONAL: Number of the replacement vertex
-    integer, intent(IN), optional :: ireplacementVertex
+    integer, intent(in), optional :: ireplacementVertex
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 !</subroutine>
 
@@ -1189,20 +1189,20 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer, intent(IN) :: iFromVertex
+    integer, intent(in) :: iFromVertex
 
     ! Number of the ending vertex
-    integer, intent(IN) :: iToVertex
+    integer, intent(in) :: iToVertex
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: position of vertex in list
-    integer, intent(OUT), optional :: iEdgePosition
+    integer, intent(out), optional :: iEdgePosition
 !</output>
 
 !<result>
@@ -1249,23 +1249,23 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer, intent(IN) :: iFromVertex
+    integer, intent(in) :: iFromVertex
 
     ! Number of the ending vertex
-    integer, intent(IN) :: iToVertex    
+    integer, intent(in) :: iToVertex    
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: Position of edge (iToVertex,iFromVertex) in the array list
-    integer, intent(OUT), optional :: iToEdgePosition
+    integer, intent(out), optional :: iToEdgePosition
 
     ! OPTIONAL: Position of edge (iFromVertex,iToVertex) in the array list
-    integer, intent(OUT), optional :: iFromEdgePosition
+    integer, intent(out), optional :: iFromEdgePosition
 !</output>
 !</subroutine>
 
@@ -1435,15 +1435,15 @@ contains
 
 !<input>
     ! Number of the starting vertex
-    integer, intent(IN) :: iFromVertex
+    integer, intent(in) :: iFromVertex
 
     ! Number of the ending vertex
-    integer, intent(IN) :: iToVertex    
+    integer, intent(in) :: iToVertex    
 !</input>
 
 !<inputoutput>
     ! The graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 !</subroutine>
 
@@ -1539,7 +1539,7 @@ contains
 
 !<input>
     ! graph
-    type(t_graph), intent(IN) :: rgraph
+    type(t_graph), intent(in) :: rgraph
 !</input>
 !</subroutine>
 
@@ -1567,12 +1567,12 @@ contains
 
 !<input>
     ! Source graph
-    type(t_graph), intent(IN) :: rgraph
+    type(t_graph), intent(in) :: rgraph
 !</input>
 
 !<inputoutput>
     ! Destination graph
-    type(t_graph), intent(INOUT) :: rgraphBackup
+    type(t_graph), intent(inout) :: rgraphBackup
 !</inputoutput>
 !</subroutine>
 
@@ -1599,12 +1599,12 @@ contains
 
 !<input>
     ! Backup of a graph
-    type(t_graph), intent(IN) :: rgraphBackup
+    type(t_graph), intent(in) :: rgraphBackup
 !</input>
 
 !<inputoutput>
     ! Destination graph
-    type(t_graph), intent(INOUT) :: rgraph
+    type(t_graph), intent(inout) :: rgraph
 !</inputoutput>
 !</subroutine>
 

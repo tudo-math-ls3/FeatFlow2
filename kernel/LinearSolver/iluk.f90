@@ -265,12 +265,12 @@ contains
 
       ! colind is another csr component and points to the
       ! column indices of A
-      integer, dimension(:), intent(IN) :: rwptr, colind
+      integer, dimension(:), intent(in) :: rwptr, colind
       
       ! relaxation parameter.  relax = 0 gives ilu(s), relax = 1
       ! gives milu(s), and values between give the multiplier to use
       ! before adding discarded fill to the diagonal.
-      real(dp), intent(IN) :: relax
+      real(dp), intent(in) :: relax
       
 !</input>      
       
@@ -285,7 +285,7 @@ contains
       
       ! A structure that stores the return values of this routine,
       ! which is an ILU-decomposition in a modified sparse row format(MSR).
-      type(t_MILUdecomp), intent(INOUT) :: rILUDecomp
+      type(t_MILUdecomp), intent(inout) :: rILUDecomp
 !</output>
       
 !</subroutine>

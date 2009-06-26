@@ -156,12 +156,12 @@ contains
   ! OPTIONAL: Number of equations.
   ! If specified, the p_DequationWeights array in the coarse grid correction
   ! structure is allocated and initially filled with 1.0-values.
-  integer, intent(IN), optional :: nequations
+  integer, intent(in), optional :: nequations
 !</input>
 
 !<output>
   ! A coarse grid correction structure to be initialised
-  type(t_coarseGridCorrection), intent(OUT) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(out) :: rcoarseGridCorrection
 !</output>
 
     ! Initialise by default initialisation
@@ -186,7 +186,7 @@ contains
 
 !<inputoutput>
   ! A coarse grid correction structure to be released
-  type(t_coarseGridCorrection), intent(INOUT) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(inout) :: rcoarseGridCorrection
 !</inputoutput>
 
     ! Release the pointer to the equation weights if associated
@@ -213,22 +213,22 @@ contains
 
 !<input>
   ! A coarse grid correction structure specifying the algorithm to use.
-  type(t_coarseGridCorrection), intent(IN) :: rcoarseGridCorrection
+  type(t_coarseGridCorrection), intent(in) :: rcoarseGridCorrection
   
   ! The block matrix of the system Ax=b which is solved by multigrid
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! The current RHS vector
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  type(t_vectorBlock), intent(IN) :: rcorrVector
+  type(t_vectorBlock), intent(in) :: rcorrVector
   
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
@@ -240,12 +240,12 @@ contains
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  type(t_vectorBlock), intent(INOUT) :: rtempVector
+  type(t_vectorBlock), intent(inout) :: rtempVector
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
 !</output>
 
 !</subroutine>
@@ -295,19 +295,19 @@ contains
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! The current RHS vector
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  type(t_vectorBlock), intent(IN) :: rcorrVector
+  type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
@@ -319,12 +319,12 @@ contains
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(inout) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
 !</output>
 
 !</subroutine>
@@ -388,26 +388,26 @@ contains
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! The current RHS vector
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  type(t_vectorBlock), intent(IN) :: rcorrVector
+  type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
   ! List of weights for every equation (=row of the matrix)
-  real(DP), dimension(:), intent(IN) :: DequationWeights
+  real(DP), dimension(:), intent(in) :: DequationWeights
 !</input>
   
 !<inputoutput>
@@ -415,12 +415,12 @@ contains
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(inout) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
 !</output>
 
 !</subroutine>
@@ -493,19 +493,19 @@ contains
 
 !<input>
   ! The block matrix of the system Ax=b which is solved by multigrid
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
   
   ! The current (uncorrected) solution vector
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! The current RHS vector
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
   ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
-  type(t_vectorBlock), intent(IN) :: rcorrVector
+  type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
   ! to every defect vector (b-Ax).
@@ -517,12 +517,12 @@ contains
   ! the RHS and the solution vector.
   ! The content is undefined on entry of this routine and will be
   ! undefined when the routine finishes.
-  type(t_vectorBlock), intent(INOUT) :: rtempVecBlock
+  type(t_vectorBlock), intent(inout) :: rtempVecBlock
 !</inputoutput>
 
 !<output>
   ! The optimal correction parameter $\alpha$ for the coarse grid correction.
-  real(DP), intent(OUT) :: dalpha
+  real(DP), intent(out) :: dalpha
 !</output>
 
 !</subroutine>

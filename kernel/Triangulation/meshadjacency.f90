@@ -95,19 +95,19 @@ contains
 
 !<input>
   ! The triangulation structure for which the adjencency is to be calculated.
-  type(t_triangulation), intent(IN) :: rtria
+  type(t_triangulation), intent(in) :: rtria
   
   ! OPTIONAL: One of the MSHADJ_ADJ_XXXX identifiers which specifies how the
   ! adjacency is to be calculated. If not given, MSHADJ_ADJ_NEIGHBOUR is used.
-  integer(I32), optional, intent(IN) :: cadjacency
+  integer(I32), optional, intent(in) :: cadjacency
 !</input>
 
 !<output>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(OUT) :: h_Iptr
+  integer, intent(out) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
-  integer, intent(OUT) :: h_Iidx
+  integer, intent(out) :: h_Iidx
 !</output>
 
 !</subroutine>

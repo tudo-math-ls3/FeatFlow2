@@ -177,29 +177,29 @@ module meshregion
 !<input>
   ! The nodal property array from which the index array is to be
   ! calculated.
-  integer, dimension(:), intent(IN)                :: IpropArray
+  integer, dimension(:), intent(in)                :: IpropArray
   
   ! The offset of the first entry in the nodal property array.
-  integer, intent(IN)                              :: ioff
+  integer, intent(in)                              :: ioff
   
   ! The number of entries in the nodal property array.
-  integer, intent(IN)                              :: ilen
+  integer, intent(in)                              :: ilen
 
   ! ...  
-  integer, intent(IN)                              :: iidx
+  integer, intent(in)                              :: iidx
   
   ! OPTIONAL: An array holding all allowed nodal properties that
   ! are to be added into the index array. If not given, all entries
   ! with nodal property > 0 are added.
-  integer, dimension(:), optional, intent(IN)      :: IallowedProp
+  integer, dimension(:), optional, intent(in)      :: IallowedProp
 !</input>
 
 !<output>
   ! A storage handle to the created index array.
-  integer, intent(OUT)                             :: h_IidxArray
+  integer, intent(out)                             :: h_IidxArray
   
   ! The number of entries in the created index array.
-  integer, intent(OUT)                             :: inumEntries
+  integer, intent(out)                             :: inumEntries
 !</output>
 
 !</subroutine>
@@ -286,30 +286,30 @@ module meshregion
 !<input>
   ! The nodal property array from which the index array is to be
   ! calculated.
-  integer, dimension(:), intent(IN)                :: IpropArray
+  integer, dimension(:), intent(in)                :: IpropArray
   
   ! The offset of the first entry in the nodal property array.
-  integer, intent(IN)                              :: ioff
+  integer, intent(in)                              :: ioff
   
   ! The number of entries in the nodal property array.
-  integer, intent(IN)                              :: ilen
+  integer, intent(in)                              :: ilen
   
   ! An array holding the indices of the entries in the
   ! nodal property array.
-  integer, dimension(:), intent(IN)                :: Iindex
+  integer, dimension(:), intent(in)                :: Iindex
   
   ! OPTIONAL: An array holding all allowed nodal properties that
   ! are to be added into the index array. If not given, all entries
   ! with nodal property > 0 are added.
-  integer, dimension(:), optional, intent(IN)      :: IallowedProp
+  integer, dimension(:), optional, intent(in)      :: IallowedProp
 !</input>
 
 !<output>
   ! A storage handle to the created index array.
-  integer, intent(OUT)                             :: h_IidxArray
+  integer, intent(out)                             :: h_IidxArray
   
   ! The number of entries in the created index array.
-  integer, intent(OUT)                             :: inumEntries
+  integer, intent(out)                             :: inumEntries
 !</output>
 
 !</subroutine>
@@ -391,24 +391,24 @@ module meshregion
 
 !<input>
   ! The triangulation that is to be used.
-  type(t_triangulation), target, intent(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(in)      :: rtriangulation
   
   ! A combination of MSHREG_IDX_XXXX constants defined above which
   ! specifies which index arrays should be calculated from the nodal
   ! property array. May also be MSHREG_IDX_NONE or MSHREG_IDX_ALL.
-  integer(I32), intent(IN)                       :: cidxCalc
+  integer(I32), intent(in)                       :: cidxCalc
   
   ! OPTIONAL: A nodal property array for which the region is to be created.
   ! If present, all vertices, edges and faces which have one of the nodal
   ! properties specifies in the array will be added to this mesh region.
   ! If not present, all vertices, edges and faces which have a positive
   ! nodal property will be added to this mesh region.
-  integer, dimension(:), optional, intent(IN)    :: IallowedProp
+  integer, dimension(:), optional, intent(in)    :: IallowedProp
 !</input>
 
 !<output>
   ! The mesh region of the triangulation.
-  type(t_meshRegion), intent(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(out)                :: rmeshRegion
 !</output>
 
 !</subroutine>
@@ -498,34 +498,34 @@ module meshregion
 
 !<input>
   ! The triangulation that is to be used.
-  type(t_triangulation), target, intent(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(in)      :: rtriangulation
   
   ! A combination of MSHREG_IDX_XXXX constants defined above which
   ! specifies which index arrays should be calculated from the nodal
   ! property array. May also be MSHREG_IDX_NONE or MSHREG_IDX_ALL.
-  integer(I32), intent(IN)                       :: cidxCalc
+  integer(I32), intent(in)                       :: cidxCalc
   
   ! If .TRUE., then only the cells which belong to the triangulation's
   ! boundary are hit-tested, otherwise all cells are hit-tested.
-  logical, intent(IN)                            :: bonlyBndry
+  logical, intent(in)                            :: bonlyBndry
   
   ! A callback to the hit-test function.
   include 'intf_mshreghittest.inc'
   
   ! OPTIONAL: 
-  integer, dimension(:), optional, intent(IN)    :: IallowedHit
+  integer, dimension(:), optional, intent(in)    :: IallowedHit
   
 !</input>
 
 !<output>
   ! The mesh region of the triangulation.
-  type(t_meshRegion), intent(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(out)                :: rmeshRegion
 !</output>
 
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional information
   ! to the hit-test routine.
-  type(t_collection), optional, intent(INOUT)    :: rcollection
+  type(t_collection), optional, intent(inout)    :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -822,7 +822,7 @@ module meshregion
 !</description>
 
 !<inputoutput>
-  type(t_meshRegion), intent(INOUT) :: rmeshRegion
+  type(t_meshRegion), intent(inout) :: rmeshRegion
 !</inputoutput>
 
 !</subroutine>
@@ -909,12 +909,12 @@ module meshregion
   ! OPTIONAL: An operator mask for the old vertice index array.
   ! One of the MSHREG_MASK_XXXX constants defined above.
   ! If not given, MSHREG_MASK_KICK is used.
-  integer(I32), intent(IN), optional   :: coperatorMask
+  integer(I32), intent(in), optional   :: coperatorMask
 !</input>
 
 !<inputoutput>
   ! The mesh region.
-  type(t_meshRegion), intent(INOUT)    :: rmeshRegion
+  type(t_meshRegion), intent(inout)    :: rmeshRegion
 !</inputoutput>
 
 !</subroutine>
@@ -1075,12 +1075,12 @@ module meshregion
   ! OPTIONAL: An operator mask for the old vertice index array.
   ! One of the MSHREG_MASK_XXXX constants defined above.
   ! If not given, MSHREG_MASK_KICK is used.
-  integer(I32), intent(IN), optional   :: coperatorMask
+  integer(I32), intent(in), optional   :: coperatorMask
 !</input>
 
 !<inputoutput>
   ! The mesh region.
-  type(t_meshRegion), intent(INOUT)    :: rmeshRegion
+  type(t_meshRegion), intent(inout)    :: rmeshRegion
 !</inputoutput>
 
 !</subroutine>
@@ -1247,12 +1247,12 @@ module meshregion
   ! OPTIONAL: An operator mask for the old edge index array.
   ! One of the MSHREG_MASK_XXXX constants defined above.
   ! If not given, MSHREG_MASK_KICK is used.
-  integer(I32), intent(IN), optional   :: coperatorMask
+  integer(I32), intent(in), optional   :: coperatorMask
 !</input>
 
 !<inputoutput>
   ! The mesh region.
-  type(t_meshRegion), intent(INOUT)    :: rmeshRegion
+  type(t_meshRegion), intent(inout)    :: rmeshRegion
 !</inputoutput>
 
 !</subroutine>
@@ -1400,13 +1400,13 @@ module meshregion
 
 !<input>
   ! The mesh region for whose edges the normals are to be calcuated.
-  type(t_meshRegion), intent(IN)        :: rmeshRegion
+  type(t_meshRegion), intent(in)        :: rmeshRegion
 !</input>
 
 !<output>
   ! An array that recieves the normal vectors of the edges.
   ! Dimension: Dnormals(NDIM2D,rmeshRegion%NMT)
-  real(DP), dimension(:,:), intent(OUT) :: Dnormals
+  real(DP), dimension(:,:), intent(out) :: Dnormals
 !</output>
 
 !</subroutine>
@@ -1491,13 +1491,13 @@ module meshregion
 
 !<input>
   ! The mesh region for whose edges the normals are to be calcuated.
-  type(t_meshRegion), intent(IN)        :: rmeshRegion
+  type(t_meshRegion), intent(in)        :: rmeshRegion
 !</input>
 
 !<output>
   ! An array that recieves the normal vectors of the faces.
   ! Dimension: Dnormals(NDIM3D,rmeshRegion%NAT)
-  real(DP), dimension(:,:), intent(OUT) :: Dnormals
+  real(DP), dimension(:,:), intent(out) :: Dnormals
 !</output>
 
 !</subroutine>

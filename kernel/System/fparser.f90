@@ -731,18 +731,18 @@ contains
 
 !<input>
     ! Name of parameter file to be parsed
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
 
     ! Name of keyword to parser for
-    character(LEN=*), intent(IN) :: ckeyword
+    character(LEN=*), intent(in) :: ckeyword
 
     ! Type of keyword: FPAR_CONSTANT, FPAR_EXPRESSION, FPAR_FUNCTION
-    integer, intent(IN) :: itype
+    integer, intent(in) :: itype
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparser), intent(INOUT) :: rfparser
+    type(t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
 
@@ -895,10 +895,10 @@ contains
 
 !<input>
     ! Name of the constant
-    character(LEN=FPAR_CONSTLEN), intent(IN) :: sname
+    character(LEN=FPAR_CONSTLEN), intent(in) :: sname
 
     ! Value of the constant
-    real(DP), intent(IN) :: dvalue
+    real(DP), intent(in) :: dvalue
 !</input>
 !</subroutine>
 
@@ -952,10 +952,10 @@ contains
 
 !<input>
     ! Name of the expression
-    character(LEN=FPAR_EXPRLEN), intent(IN) :: sname
+    character(LEN=FPAR_EXPRLEN), intent(in) :: sname
 
     ! String of the expression
-    character(LEN=*), intent(IN) :: svalue
+    character(LEN=*), intent(in) :: svalue
 !</input>
 !</subroutine>
 
@@ -1022,20 +1022,20 @@ contains
 
 !<input>
     ! Number of functions
-    integer, intent(IN) :: nncomp
+    integer, intent(in) :: nncomp
 
     ! OPTIONAL: initial size of the stack memory
     ! If not present then the default value FPAR_INITSTACKSIZE will be used
-    integer, intent(IN), optional :: istacksize
+    integer, intent(in), optional :: istacksize
 
     ! OPTIONAL: maximum size of the stack memory
     ! If not present then the default value FPAR_MAXSTACKSIZE will be used
-    integer, intent(IN), optional :: imaxStacksize
+    integer, intent(in), optional :: imaxStacksize
 !</input>
 
 !<output>
     ! Function parser object
-    type(t_fparser), intent(OUT) :: rfparser
+    type(t_fparser), intent(out) :: rfparser
 !</output>
 !</subroutine>
 
@@ -1090,7 +1090,7 @@ contains
 
 !<inputoutput>
     ! Function parser
-    type(t_fparser), intent(INOUT) :: rfparser
+    type(t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
     
@@ -1132,21 +1132,21 @@ contains
 
 !<input>
     ! Function identifier
-    character (LEN=*), intent(IN) :: scompName
+    character (LEN=*), intent(in) :: scompName
 
     ! Function string
-    character (LEN=*), intent(IN) :: sfunctionString
+    character (LEN=*), intent(in) :: sfunctionString
 
     ! Array with variable names
-    character (LEN=*), dimension(:), intent(IN) :: Svariables
+    character (LEN=*), dimension(:), intent(in) :: Svariables
 
     ! OPTIONAL
-    logical, intent(IN), optional :: buseDegrees
+    logical, intent(in), optional :: buseDegrees
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type (t_fparser), intent(INOUT) :: rfparser
+    type (t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
     
@@ -1182,21 +1182,21 @@ contains
     
 !<input>
     ! Function identifier
-    integer, intent(IN) :: icomp
+    integer, intent(in) :: icomp
 
     ! Function string
-    character (LEN=*), intent(IN) :: sfunctionString
+    character (LEN=*), intent(in) :: sfunctionString
 
     ! Array with variable names
-    character (LEN=*), dimension(:), intent(IN) :: Svariables
+    character (LEN=*), dimension(:), intent(in) :: Svariables
 
     ! OPTIONAL
-    logical, intent(IN), optional :: buseDegrees
+    logical, intent(in), optional :: buseDegrees
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type (t_fparser), intent(INOUT) :: rfparser
+    type (t_fparser), intent(inout) :: rfparser
 !</inputoutput>
 !</subroutine>
 
@@ -1267,18 +1267,18 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(IN) :: rfparser
+    type (t_fparser),  intent(in) :: rfparser
 
     ! Function name
-    character(LEN=*), intent(IN) :: scompName
+    character(LEN=*), intent(in) :: scompName
 
     ! Variable values
-    real(DP), dimension(:), intent(IN) :: Dvalue
+    real(DP), dimension(:), intent(in) :: Dvalue
 !</input>
 
 !<output>
     ! Evaluated function
-    real(DP), intent(OUT)  :: dresult
+    real(DP), intent(out)  :: dresult
 !</output>
 !</subroutine>
 
@@ -1326,27 +1326,27 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(IN) :: rfparser
+    type (t_fparser),  intent(in) :: rfparser
 
     ! Function name
-    character(LEN=*), intent(IN) :: scompName
+    character(LEN=*), intent(in) :: scompName
 
     ! Orientation of the stored values
     ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
     ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
-    integer, intent(IN) :: idim
+    integer, intent(in) :: idim
 
     ! Variable values (must have the same dimension as Dresult)
-    real(DP), dimension(:,:), intent(IN) :: DvalueBlock
+    real(DP), dimension(:,:), intent(in) :: DvalueBlock
 
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
-    real(DP), dimension(:), intent(IN), optional :: DvalueScalar
+    real(DP), dimension(:), intent(in), optional :: DvalueScalar
 !</input>
 
 !<output>
     ! Evaluated function
-    real(DP), dimension(:), intent(OUT) :: Dresult
+    real(DP), dimension(:), intent(out) :: Dresult
 !</output>
 !</subroutine>
 
@@ -1377,18 +1377,18 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(IN) :: rfparser
+    type (t_fparser),  intent(in) :: rfparser
 
     ! Function identifier
-    integer, intent(IN) :: icomp
+    integer, intent(in) :: icomp
 
     ! Variable values
-    real(DP), dimension(:), intent(IN) :: Dvalue
+    real(DP), dimension(:), intent(in) :: Dvalue
 !</input>
 
 !<output>
     ! Evaluated function
-    real(DP), intent(OUT)  :: dresult
+    real(DP), intent(out)  :: dresult
 !</output>
 !</subroutine>
 
@@ -1452,27 +1452,27 @@ contains
 
 !<input>
     ! Function parser
-    type (t_fparser),  intent(IN) :: rfparser
+    type (t_fparser),  intent(in) :: rfparser
 
     ! Function identifier
-    integer, intent(IN) :: icomp
+    integer, intent(in) :: icomp
 
     ! Orientation of the stored values
     ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
     ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
-    integer, intent(IN) :: idim
+    integer, intent(in) :: idim
 
     ! Variable values (must have the same dimension as Dresult)
-    real(DP), dimension(:,:), intent(IN) :: DvalueBlock
+    real(DP), dimension(:,:), intent(in) :: DvalueBlock
 
     ! Variable values. This is a vector of scalar variables
     ! which is the same for all components of Res, e.g. the time variable.
-    real(DP), dimension(:), intent(IN), optional :: DvalueScalar
+    real(DP), dimension(:), intent(in), optional :: DvalueScalar
 !</input>
 
 !<output>
     ! Evaluated function
-    real(DP), dimension(:), intent(OUT) :: Dresult
+    real(DP), dimension(:), intent(out) :: Dresult
 !</output>
 !</subroutine>
     
@@ -1621,7 +1621,7 @@ contains
 
 !<input>
     ! Error identifier
-    integer, intent(IN) :: EvalErrType
+    integer, intent(in) :: EvalErrType
 !</input>   
     
 !<result>
@@ -1650,10 +1650,10 @@ contains
 
 !<input>
     ! Function parser
-    type(t_fparser), intent(IN) :: rfparser
+    type(t_fparser), intent(in) :: rfparser
 
     ! Function identifier
-    integer, intent(IN) :: icomp
+    integer, intent(in) :: icomp
 !</input>
 !</subroutine>
 
@@ -1739,10 +1739,10 @@ contains
 
 !<input>
     ! Function parser
-    type(t_fparser), intent(IN) :: rfparser
+    type(t_fparser), intent(in) :: rfparser
     
     ! Function name
-    character(len=*), intent(IN) :: scompName
+    character(len=*), intent(in) :: scompName
 !</input>
 
 !<result>
@@ -1999,7 +1999,7 @@ contains
     
 !<input>
     ! Operator string
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 !</input>
 
 !<result>
@@ -2336,7 +2336,7 @@ contains
 
 !<inputoutput>
     ! Function parser component
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
 
@@ -2400,7 +2400,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
 
@@ -2425,7 +2425,7 @@ contains
 !</input>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
 
@@ -2885,7 +2885,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
    
@@ -2910,7 +2910,7 @@ contains
 !</input>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
        
@@ -2930,7 +2930,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
 
@@ -2955,7 +2955,7 @@ contains
 !</input>
 
 !<inputoutput>
-    type (t_fparserComponent), intent(INOUT) :: rcomp
+    type (t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 !</subroutine>
     
@@ -3138,21 +3138,21 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 
     ! OPTIONAL: stop at comma
-    logical, intent(IN), optional :: bstopAtComma
+    logical, intent(in), optional :: bstopAtComma
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3191,18 +3191,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3240,18 +3240,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3289,18 +3289,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3356,18 +3356,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3409,18 +3409,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3472,18 +3472,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3534,18 +3534,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3583,18 +3583,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3702,21 +3702,21 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 
     ! Number of required parameters
-    integer, intent(IN) :: nparams
+    integer, intent(in) :: nparams
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3762,18 +3762,18 @@ contains
 
 !<input>
     ! Function substring
-    character(LEN=*), intent(IN) :: sfunctionString
+    character(LEN=*), intent(in) :: sfunctionString
 
     ! Begin position substring
-    integer, intent(IN) :: ind
+    integer, intent(in) :: ind
 
     ! Array with variable names
-    character(LEN=*), dimension(:), intent(IN) :: Svariables
+    character(LEN=*), dimension(:), intent(in) :: Svariables
 !</input>
 
 !<inputoutput>
     ! Function parser
-    type(t_fparserComponent), intent(INOUT) :: rcomp
+    type(t_fparserComponent), intent(inout) :: rcomp
 !</inputoutput>
 
 !<result>
@@ -3848,7 +3848,7 @@ contains
 
 !<input>
     ! Double variable
-    real(DP), intent(IN) :: d
+    real(DP), intent(in) :: d
 !</input>
 
 !<result>
@@ -3873,7 +3873,7 @@ contains
 
 !<input>
     ! Logical variable
-    logical, intent(IN) :: l
+    logical, intent(in) :: l
 !</input>
 
 !<result>
@@ -3898,7 +3898,7 @@ contains
 
 !<input>
     ! DEG
-    real(DP), intent(IN) :: d
+    real(DP), intent(in) :: d
 !</input>
 
 !<result>
@@ -3922,7 +3922,7 @@ contains
 
 !<input>
     ! RAD
-    real(DP), intent(IN) :: r
+    real(DP), intent(in) :: r
 !</input>
 
 !<result>
@@ -3949,23 +3949,23 @@ contains
 
 !<input>
     ! Component of function parser
-    type(t_fparserComponent), intent(IN) :: rcomp
+    type(t_fparserComponent), intent(in) :: rcomp
 
     ! Variable values
-    real(DP), dimension(:), intent(IN) :: Dvalue
+    real(DP), dimension(:), intent(in) :: Dvalue
 !</input>
 
 !<inputoutput>
     ! Stack memory
-    real(DP), dimension(*), intent(INOUT) :: Dstack
+    real(DP), dimension(*), intent(inout) :: Dstack
 !</inputoutput>
 
 !<output>
     ! Error code for function evaluation
-    integer, intent(OUT) :: EvalErrType
+    integer, intent(out) :: EvalErrType
 
     ! Evaluated function
-    real(DP), intent(OUT) :: dresult
+    real(DP), intent(out) :: dresult
 !</output>
 !</subroutine>
     
@@ -4273,31 +4273,31 @@ contains
 
 !<input>
     ! Component of function parser
-    type(t_fparserComponent), intent(IN) :: rcomp
+    type(t_fparserComponent), intent(in) :: rcomp
 
     ! Variable values
-    real(DP), dimension(:,:), intent(IN) :: DvalueBlock
+    real(DP), dimension(:,:), intent(in) :: DvalueBlock
 
     ! Size of the vector block
-    integer, intent(IN) :: iblockSize
+    integer, intent(in) :: iblockSize
 
     ! Orientation of the stored values
     ! idim =1 : DvalueBlock is organized as (x1:xN),(y1:yN),...
     ! idim =2 : DvalueBlock is organized as (x1,y1),(x2,y2),...,(xN,yN)
-    integer, intent(IN) :: idim
+    integer, intent(in) :: idim
 
     ! Vector of scalar variable values
-    real(DP), dimension(:), intent(IN), optional :: DvalueScalar
+    real(DP), dimension(:), intent(in), optional :: DvalueScalar
 !</input>
 
 !<inputoutput>
     ! Stack memory
-    real(DP), dimension(iblockSize,*), intent(INOUT) :: Dstack
+    real(DP), dimension(iblockSize,*), intent(inout) :: Dstack
 !</inputoutput>
 
 !<output>
     ! Error code for function evaluation
-    integer, intent(OUT) :: EvalErrType
+    integer, intent(out) :: EvalErrType
 
     ! Evaluated function
     real(DP), dimension(:) :: Dresult

@@ -73,7 +73,7 @@ contains
 
 !<input>
   ! Fine grid matrix.
-  type(t_matrixScalar), intent(IN) :: rfineMatrix
+  type(t_matrixScalar), intent(in) :: rfineMatrix
   
   ! Aspect-ratio indicator. Configures when to rebuild a line of the
   ! coarse matrix by constant restriction.
@@ -81,19 +81,19 @@ contains
   !  =1: switch depending on aspect ratio of current element
   !  =2: switch depending on aspect ratio of current element
   !      and aspect ratio of neighbour element
-  integer, intent(IN) :: iARindicator
+  integer, intent(in) :: iARindicator
   
   ! Maximum allowed aspect ratio. Rows in the matrix corresponding
   ! to elements (i.e. a DOF's of an element) with an aspect ratio
   ! larger than dARbound are rebuild with the Galerkin approach
   ! by constant restriction.
-  real(DP), intent(IN) :: dARbound
+  real(DP), intent(in) :: dARbound
   
 !</input>
 
 !<inputoutput>
   ! Coarse grid matrix to be modified.
-  type(t_matrixScalar), intent(IN) :: rcoarseMatrix
+  type(t_matrixScalar), intent(in) :: rcoarseMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -817,16 +817,16 @@ contains
     pure integer function getXYindex (IX, IY, Kcol, Kld)
 
       ! input: column number to search for
-      integer, intent(IN) :: IX
+      integer, intent(in) :: IX
 
       ! input: row number where to search
-      integer, intent(IN) :: IY
+      integer, intent(in) :: IY
 
       ! input: Column structure of the matrix
-      integer, dimension(:), intent(IN) :: Kcol
+      integer, dimension(:), intent(in) :: Kcol
       
       ! input: Row structure of the matrix
-      integer, dimension(:), intent(IN) :: Kld
+      integer, dimension(:), intent(in) :: Kld
     
       ! result: index of entry (ix,iy) in the matrix array.
       ! =-1, if the entry does not exist.

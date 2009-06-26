@@ -671,10 +671,10 @@ contains
   
 !<inputoutput>  
   ! We will fill this structure with useful values
-  type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
+  type(t_griddefInfo), intent(inout) :: rgriddefInfo
   
   !
-  type(t_griddefWork), intent(INOUT) :: rgriddefWork
+  type(t_griddefWork), intent(inout) :: rgriddefWork
 !</inputoutput>
 !</subroutine>
 
@@ -788,7 +788,7 @@ contains
 !</description>
   
   !<inputoutput>
-  TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+  TYPE(t_griddefWork), INTENT(inout) :: rgriddefWork
   !</inputoutput>
   
 !</subroutine>
@@ -822,7 +822,7 @@ contains
   
 !<inputoutput>  
   ! We will fill this structure with useful values
-  TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+  TYPE(t_griddefInfo), INTENT(inout) :: rgriddefInfo
 !</inputoutput>
 !</subroutine>
 
@@ -926,7 +926,7 @@ contains
 !</description>
   
   !<inputoutput>
-  TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+  TYPE(t_griddefWork), INTENT(inout) :: rgriddefWork
   !</inputoutput>
   
 !</subroutine>
@@ -963,14 +963,14 @@ contains
 
   !<inputout>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork), intent(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(inout) :: rgriddefWork
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation), intent(IN)  :: rdiscretisation    
+    type(t_blockDiscretisation), intent(in)  :: rdiscretisation    
 
   !</inputout>
 
@@ -1068,7 +1068,7 @@ contains
     ! if true, adjust the vectors after level change since a previous deformation call
     logical, intent(in) :: blevelHasChanged
 
-    logical, intent(IN) :: bterminate
+    logical, intent(in) :: bterminate
     
     ! number of adaptive iteration
     integer, intent(in) :: iiterAdapt
@@ -1077,7 +1077,7 @@ contains
     integer, intent(in) :: imgLevelCalc
 
     ! index of boundary condition related to the deformation PDE
-    integer, intent(IN):: ibcIdx
+    integer, intent(in):: ibcIdx
   !</input>
 
     ! flag for grid checking: if true, the deformation process would lead to
@@ -1086,7 +1086,7 @@ contains
 
   !<inoutput>
     ! handle of vector with elementwise error contributions
-    integer, intent(INOUT):: h_Dcontrib
+    integer, intent(inout):: h_Dcontrib
   !</inoutput>
   
     ! A callback routine for the monitor function
@@ -1225,10 +1225,10 @@ contains
 
   !<inputout>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    TYPE(t_griddefInfo), INTENT(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    TYPE(t_griddefWork), INTENT(inout) :: rgriddefWork
 !<\subroutine>
 
     ! local variables
@@ -1283,10 +1283,10 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork), intent(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(inout) :: rgriddefWork
   !</inputoutput>
   
   !<input>  
@@ -1500,12 +1500,12 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork), intent(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(inout) :: rgriddefWork
     
-    type(t_blockDiscretisation), intent(INOUT) :: rdiscretisation    
+    type(t_blockDiscretisation), intent(inout) :: rdiscretisation    
     
   !</inputoutput>
 
@@ -1615,12 +1615,12 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    TYPE(t_griddefInfo), INTENT(INOUT) :: rgriddefInfo
+    TYPE(t_griddefInfo), INTENT(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    TYPE(t_griddefWork), INTENT(INOUT) :: rgriddefWork
+    TYPE(t_griddefWork), INTENT(inout) :: rgriddefWork
     
-    TYPE(t_blockDiscretisation), INTENT(INOUT) :: rdiscretisation    
+    TYPE(t_blockDiscretisation), INTENT(inout) :: rdiscretisation    
     
   !</inputoutput>
 
@@ -1684,10 +1684,10 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo), intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork), intent(INOUT) :: rgriddefWork
+    type(t_griddefWork), intent(inout) :: rgriddefWork
     
   !</inputoutput>
   
@@ -1761,10 +1761,10 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo),intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo),intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork),intent(INOUT) :: rgriddefWork
+    type(t_griddefWork),intent(inout) :: rgriddefWork
     
   !</inputoutput>
     real(DP),intent(inout)  :: dBlendPar
@@ -1816,12 +1816,12 @@ contains
 
   !<inputoutput>
     ! structure containing all parameter settings for grid deformation
-    type(t_griddefInfo),intent(INOUT) :: rgriddefInfo
+    type(t_griddefInfo),intent(inout) :: rgriddefInfo
 
     ! structure containing all vector handles for the deformation algorithm
-    type(t_griddefWork),intent(INOUT) :: rgriddefWork
+    type(t_griddefWork),intent(inout) :: rgriddefWork
     
-    type(t_blockDiscretisation),intent(INOUT) :: rdiscretisation    
+    type(t_blockDiscretisation),intent(inout) :: rdiscretisation    
     
   !</inputoutput>
 
@@ -1885,9 +1885,9 @@ contains
 
 !<inputoutput>
   ! structure containing all vector handles for the deformation algorithm
-  type(t_griddefWork), intent(INOUT)  :: rgriddefWork
+  type(t_griddefWork), intent(inout)  :: rgriddefWork
 
-  type(t_blockDiscretisation), intent(INOUT)  :: rdiscretisation 
+  type(t_blockDiscretisation), intent(inout)  :: rdiscretisation 
 !</inputoutput>
 
 !</subroutine>
@@ -2151,9 +2151,9 @@ contains
 
 !<inputoutput>
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  TYPE(t_griddefWork), INTENT(inout)  :: rgriddefWork
 
-  TYPE(t_blockDiscretisation), INTENT(INOUT)  :: rdiscretisation 
+  TYPE(t_blockDiscretisation), INTENT(inout)  :: rdiscretisation 
 !</inputoutput>
 
 !</subroutine>
@@ -3712,13 +3712,13 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer, intent(in)           :: idertype
   
   ! the scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvecMon
+  type(t_vectorScalar), intent(in)              :: rvecMon
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(in)              :: rvecGradX
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(in)              :: rvecGradY  
   
-  type(t_vectorScalar), intent(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(in)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
@@ -3912,13 +3912,13 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer, intent(in)           :: iderType
   
   ! the scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvecMon
+  type(t_vectorScalar), intent(in)              :: rvecMon
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(in)              :: rvecGradX
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(in)              :: rvecGradY  
   
-  type(t_vectorScalar), intent(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(in)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
@@ -4122,13 +4122,13 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer, intent(in)           :: iinelement
   
   ! the scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(IN)              :: rvecMon
+  type(t_vectorScalar), intent(in)              :: rvecMon
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradX
+  type(t_vectorScalar), intent(in)              :: rvecGradX
   
-  type(t_vectorScalar), intent(IN)              :: rvecGradY  
+  type(t_vectorScalar), intent(in)              :: rvecGradY  
   
-  type(t_vectorScalar), intent(IN)              :: rvecArea    
+  type(t_vectorScalar), intent(in)              :: rvecArea    
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
@@ -4427,10 +4427,10 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
 
 !<inputoutput>
   ! structure containing all parameter settings for grid deformation
-  TYPE(t_griddefInfo), INTENT(INOUT)  :: rgriddefInfo
+  TYPE(t_griddefInfo), INTENT(inout)  :: rgriddefInfo
 
   ! structure containing all vector handles for the deformation algorithm
-  TYPE(t_griddefWork), INTENT(INOUT)  :: rgriddefWork
+  TYPE(t_griddefWork), INTENT(inout)  :: rgriddefWork
 
 !</inputoutput>
 !</subroutine>

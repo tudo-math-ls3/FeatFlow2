@@ -345,16 +345,16 @@ contains
   
   ! The solver node of the nonlinear solver that contains the 
   ! convergence criterion
-  type(t_nlsolNode), intent(IN) :: rsolverNode
+  type(t_nlsolNode), intent(in) :: rsolverNode
   
   ! Number of blocks in the solution vector/equation
-  integer, intent(IN) :: nvectorblocks
+  integer, intent(in) :: nvectorblocks
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the subvectors is returned in DvecNorm.
   ! If not existent, the routine assumes that DvecNorm is the norm
   ! of the vector and checks convergence depending on DvecNorm.
-  type(t_vectorBlock), intent(IN), optional :: rdef
+  type(t_vectorBlock), intent(in), optional :: rdef
   
 !</input>
 
@@ -365,7 +365,7 @@ contains
   ! and return them in dvecNorm.
   ! If rdef is not present, DvecNorm is assumed to be a valid norm of a
   ! vector and convergence is tested using DvecNorm.
-  real(DP), dimension(:), intent(INOUT) :: DvecNorm
+  real(DP), dimension(:), intent(inout) :: DvecNorm
 
 !</inputoutput>
   
@@ -488,16 +488,16 @@ contains
   
   ! The solver node of the nonlinear solver that contains the 
   ! convergence criterion
-  type(t_nlsolNode), intent(IN) :: rsolverNode
+  type(t_nlsolNode), intent(in) :: rsolverNode
   
   ! Number of blocks in the solution vector/equation
-  integer, intent(IN) :: nvectorblocks
+  integer, intent(in) :: nvectorblocks
   
   ! OPTIONAL: The defect vector which norm should be tested.
   ! If existent, the norm of the subvectors is returned in DvecNorm.
   ! If not existent, the routine assumes that DvecNrm is the norm
   ! of the vector and checks convergence depending on DvecNorm.
-  type(t_vectorBlock), intent(IN), optional :: rdef
+  type(t_vectorBlock), intent(in), optional :: rdef
   
 !</input>
 
@@ -508,7 +508,7 @@ contains
   ! and return them in dvecNorm.
   ! If rdef is not present, DvecNorm is assumed to be a valid norm of a
   ! vector and convergence is tested using DvecNorm.
-  real(DP), dimension(:), intent(INOUT) :: DvecNorm
+  real(DP), dimension(:), intent(inout) :: DvecNorm
 
 !</inputoutput>
   
@@ -578,13 +578,13 @@ contains
 
 !<input>
   ! The block matrix.
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
   ! The solver node of the nonlinear iteration loop where to set the 
   ! preconditioner.
-  type(t_nlsolNode), intent(INOUT) :: rsolverNode
+  type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -615,13 +615,13 @@ contains
 
 !<input>
   ! The scalar matrix.
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
   ! The solver node of the nonlinear iteration loop where to set the 
   ! preconditioner.
-  type(t_nlsolNode), intent(INOUT) :: rsolverNode
+  type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -653,13 +653,13 @@ contains
 !<input>
   ! The block matrix. Must be a matrix only containing diagonal blocks.
   ! the diagonal blocks must be lumped mass matrices.
-  type(t_matrixBlock), intent(IN) :: rmatrix
+  type(t_matrixBlock), intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
   ! The solver node of the nonlinear iteration loop where to set the 
   ! preconditioner.
-  type(t_nlsolNode), intent(INOUT) :: rsolverNode
+  type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -688,13 +688,13 @@ contains
 
 !<input>
   ! The lumped mass matrix.
-  type(t_matrixScalar), intent(IN) :: rmatrix
+  type(t_matrixScalar), intent(in) :: rmatrix
 !</input>
 
 !<inputoutput>
   ! The solver node of the nonlinear iteration loop where to set the 
   ! preconditioner.
-  type(t_nlsolNode), intent(INOUT) :: rsolverNode
+  type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -722,13 +722,13 @@ contains
 
 !<input>
   ! The linear solver node identifying the preconditioner
-  type(t_linsolNode), intent(IN), target :: rlinsolNode
+  type(t_linsolNode), intent(in), target :: rlinsolNode
 !</input>
 
 !<inputoutput>
   ! The solver node of the nonlinear iteration loop where to set the 
   ! preconditioner.
-  type(t_nlsolNode), intent(INOUT) :: rsolverNode
+  type(t_nlsolNode), intent(inout) :: rsolverNode
 !</inputoutput>
 
 !</subroutine>
@@ -794,25 +794,25 @@ contains
 
 !<inputoutput>
   ! The nonlinear solver node that configures the solution process.
-  type(t_nlsolNode), intent(INOUT)              :: rsolverNode
+  type(t_nlsolNode), intent(inout)              :: rsolverNode
   
   ! INPUT: Initial solution vector.
   ! OUTPUT: Final iteration vector.
-  type(t_vectorBlock), intent(INOUT)            :: rx
+  type(t_vectorBlock), intent(inout)            :: rx
              
   ! Temporary vector. Must be of the same size/type as rx/rb.
-  type(t_vectorBlock), intent(INOUT)            :: rd
+  type(t_vectorBlock), intent(inout)            :: rd
   
   ! OPTIONAL: Collection structure that saves problem-dependent information.
   ! This is passed without being changed to the callback routines of this
   ! algorithm.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
 !</inputoutput>
   
 !<input>
   ! Right hand side vector of the equation.
-  type(t_vectorBlock), intent(IN)               :: rb
+  type(t_vectorBlock), intent(in)               :: rb
   
   ! Defect vector calculation routine. Based on the current iteration vector
   ! rx and the right hand side vector rb, this routine has to compute the 
@@ -1063,25 +1063,25 @@ contains
 
 !<inputoutput>
   ! The nonlinear solver node that configures the solution process.
-  type(t_nlsolNode), intent(INOUT)              :: rsolverNode
+  type(t_nlsolNode), intent(inout)              :: rsolverNode
   
   ! INPUT: Initial solution vector.
   ! OUTPUT: Final iteration vector.
-  type(t_vectorScalar), intent(INOUT)            :: rx
+  type(t_vectorScalar), intent(inout)            :: rx
              
   ! Temporary vector. Must be of the same size/type as rx/rb.
-  type(t_vectorScalar), intent(INOUT)            :: rd
+  type(t_vectorScalar), intent(inout)            :: rd
   
   ! OPTIONAL: Collection structure that saves problem-dependent information.
   ! This is passed without being changed to the callback routines of this
   ! algorithm.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
 !</inputoutput>
   
 !<input>
   ! Right hand side vector of the equation.
-  type(t_vectorScalar), intent(IN)               :: rb
+  type(t_vectorScalar), intent(in)               :: rb
   
   ! Defect vector calculation routine. Based on the current iteration vector
   ! rx and the right hand side vector rb, this routine has to compute the 

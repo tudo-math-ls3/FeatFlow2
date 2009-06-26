@@ -348,12 +348,12 @@ contains
 
 !<input>
     ! factoriodic number
-    integer(I32), intent(IN) :: k
+    integer(I32), intent(in) :: k
 !</input>
 
 !<inputoutput>
     ! initial and permuted set
-    integer(I32), dimension(:), intent(INOUT) :: Idata
+    integer(I32), dimension(:), intent(inout) :: Idata
 !</inputoutput>
 !</subroutine>
   
@@ -460,10 +460,10 @@ contains
 
 !<input>
     ! An ID string of the project.
-    character(LEN=*), intent(IN) :: sprojectID
+    character(LEN=*), intent(in) :: sprojectID
     
     ! The directory of the project. "" means 'current directory'.
-    character(LEN=*), intent(IN) :: sprojectDir
+    character(LEN=*), intent(in) :: sprojectDir
 !</input>
 
 !</subroutine>
@@ -544,7 +544,7 @@ contains
 !<inputoutput>
   
     ! The string that is to make uppercase
-    character(LEN=*), intent(INOUT) :: str
+    character(LEN=*), intent(inout) :: str
   
 !</inputoutput>
   
@@ -577,14 +577,14 @@ contains
 !<input>
   
     ! The string that is to make uppercase
-    character(LEN=*), intent(IN) :: str
+    character(LEN=*), intent(in) :: str
 
 !</input>
 
 !<output>
 
     ! Uppercase version of the given string
-    character(LEN=*), intent(OUT) :: strUpper
+    character(LEN=*), intent(out) :: strUpper
   
 !</output>
   
@@ -628,7 +628,7 @@ contains
 !<inputoutput>
   
     ! The string that is to make lowercase
-    character(LEN=*), intent(INOUT) :: str
+    character(LEN=*), intent(inout) :: str
 
 !</inputoutput>
   
@@ -661,14 +661,14 @@ contains
 !<input>
   
     ! The string that is to make lowercase
-    character(LEN=*), intent(IN) :: str
+    character(LEN=*), intent(in) :: str
 
 !</input>
 
 !<output>
 
     ! Lowercase version of the given string
-    character(LEN=*), intent(OUT) :: strLower
+    character(LEN=*), intent(out) :: strLower
   
 !</output>
   
@@ -790,14 +790,14 @@ contains
 
 !<input>
     ! input string
-    character(LEN=*), intent(IN) :: sinput
+    character(LEN=*), intent(in) :: sinput
     
     ! Character to be searched for.
-    character, intent(IN) :: scharsource
+    character, intent(in) :: scharsource
     
     ! Detinatiion character, all scarsource characters in sinput should be
     ! replaced by.
-    character, intent(IN) :: schardest
+    character, intent(in) :: schardest
 !</input>
 
 !<output>
@@ -938,10 +938,10 @@ contains
 !<input>
 
     ! string containing the real number
-    character(LEN=*), intent(IN) :: svalue
+    character(LEN=*), intent(in) :: svalue
 
     ! format description to use for conversion
-    character(LEN=*), intent(IN) :: sformat
+    character(LEN=*), intent(in) :: sformat
 
 !</input>
 
@@ -996,10 +996,10 @@ contains
 !<input>
 
     ! string containing the real number
-    character(LEN=*), intent(IN) :: svalue
+    character(LEN=*), intent(in) :: svalue
 
     ! format description to use for conversion
-    character(LEN=*), intent(IN) :: sformat
+    character(LEN=*), intent(in) :: sformat
 
 !</input>
 
@@ -1053,11 +1053,11 @@ contains
 
 !<input>
   ! The memory usage in bytes.
-  integer(I64), intent(IN) :: imem
+  integer(I64), intent(in) :: imem
   
   ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
   ! If not given, ndigits = 2 is used.
-  integer, optional, intent(IN) :: ndigits
+  integer, optional, intent(in) :: ndigits
 !</input>
 
 !</function>
@@ -1163,11 +1163,11 @@ contains
 
 !<input>
   ! The memory usage in bytes.
-  integer(I64), intent(IN) :: imem
+  integer(I64), intent(in) :: imem
   
   ! OPTIONAL: The number of digits. Must be 0 <= ndigits <= 3.
   ! If not given, ndigits = 2 is used.
-  integer, optional, intent(IN) :: ndigits
+  integer, optional, intent(in) :: ndigits
 !</input>
 
 !</function>
@@ -1213,7 +1213,7 @@ contains
 !<input>
 
     ! value to be converted
-    logical, intent(IN) :: lvalue
+    logical, intent(in) :: lvalue
 !</input>
 !</function>
 

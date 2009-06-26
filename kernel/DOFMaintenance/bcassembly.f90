@@ -224,7 +224,7 @@ contains
 
 !<output>
   ! Discrete BC structure to be initialised.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</output>
 
 !</subroutine>
@@ -259,7 +259,7 @@ contains
 
 !<inputoutput>
   ! Discrete BC structure to be emptied.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -320,7 +320,7 @@ contains
 
 !<inputoutput>
   ! Discrete BC structure to be cleaned up.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -348,7 +348,7 @@ contains
 
 !<output>
   ! Discrete BC structure to be initialised.
-  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</output>
 
 !</subroutine>
@@ -383,7 +383,7 @@ contains
 
 !<inputoutput>
   ! Discrete BC structure to be emptied.
-  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
@@ -428,7 +428,7 @@ contains
 
 !<inputoutput>
   ! Discrete BC structure to be cleaned up.
-  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
@@ -459,12 +459,12 @@ contains
 
 !<inputoutput>
   ! Discrete BC structure containing the discrete BC's.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !<output>
   ! Optional: Index of the newly created entry for discrete BC's.
-  integer, intent(OUT), optional :: iindex
+  integer, intent(out), optional :: iindex
 !</output>
 
 !</subroutine>
@@ -513,12 +513,12 @@ contains
 
 !<inputoutput>
   ! Discrete FBC structure containing the discrete BC's.
-  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 
 !<output>
   ! Optional: Index of the newly created entry for discrete BC's.
-  integer, intent(OUT), optional :: iindex
+  integer, intent(out), optional :: iindex
 !</output>
 
 !</subroutine>
@@ -567,17 +567,17 @@ contains
 
 !<input>
   ! The underlying block discretisation structure.
-  type(t_blockDiscretisation), intent(IN) :: rblockDiscr
+  type(t_blockDiscretisation), intent(in) :: rblockDiscr
   
   ! The dirichlet boundary values for the left and right interval ends.
-  real(DP), intent(IN), optional :: dleft, dright
+  real(DP), intent(in), optional :: dleft, dright
 
 !</input>  
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
   
 !</subroutine>
@@ -837,28 +837,28 @@ contains
 
 !<input>
   ! The triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! The description of the domain boundary
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
   ! A boundary region structure describing a part of a boundary
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
 !</input>
 
 !<output>
   ! The index of the first vertex in IverticesAtBoundary belonging to the
   ! bonudary region rregion. = 0, if no vertices belong to the given region.
-  integer, dimension(2), intent(OUT) :: IminIndex
+  integer, dimension(2), intent(out) :: IminIndex
 
   ! The index of the last vertex in IverticesAtBoundary belonging to the
   ! bonudary region rregion. = -1, if no vertices belong to the given region.
-  integer, dimension(2), intent(OUT) :: ImaxIndex
+  integer, dimension(2), intent(out) :: ImaxIndex
   
   ! Number of index sets in IverticesAtBoundary belonging
   ! to rregion. IminIndex(1)..ImaxIndex(1) is the first set,...
   ! IminIndex(icount)..ImaxIndex(icount) is the last set.
-  integer, intent(OUT) :: icount
+  integer, intent(out) :: icount
 !</output>
 
 !</subroutine>
@@ -1026,28 +1026,28 @@ contains
 
 !<input>
   ! The triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! The description of the domain boundary
-  type(t_boundary), intent(IN) :: rboundary
+  type(t_boundary), intent(in) :: rboundary
   
   ! A boundary region structure describing a part of a boundary
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
 !</input>
 
 !<output>
   ! The index of the first edge in IedgesAtBoundary belonging to the
   ! bonudary region rregion. = 0, if no edges belong to the given region.
-  integer, dimension(2), intent(OUT) :: IminIndex
+  integer, dimension(2), intent(out) :: IminIndex
 
   ! The index of the last edges in IedgesAtBoundary belonging to the
   ! bonudary region rregion. = -1, if no edges belong to the given region.
-  integer, dimension(2), intent(OUT) :: ImaxIndex
+  integer, dimension(2), intent(out) :: ImaxIndex
   
   ! Number of index sets in IedgesAtBoundary belonging
   ! to rregion. IminIndex(1)..ImaxIndex(1) is the first set,...
   ! IminIndex(icount)..ImaxIndex(icount) is the last set.
-  integer, intent(OUT) :: icount
+  integer, intent(out) :: icount
 !</output>
 
 !</subroutine>
@@ -1207,23 +1207,23 @@ contains
 
 !<input>
   ! The triangulation structure.
-  type(t_triangulation), intent(IN) :: rtriangulation
+  type(t_triangulation), intent(in) :: rtriangulation
   
   ! A boundary region structure describing a part of a boundary
-  type(t_boundaryRegion), intent(IN) :: rregion
+  type(t_boundaryRegion), intent(in) :: rregion
 !</input>
 
 !<output>
   ! Number of edges in the boundary region, including repetitions.
-  integer, intent(OUT) :: ncount
+  integer, intent(out) :: ncount
 
   ! OPTIONAL: Array that receives a list of elements that touch the boundary region.
   ! Elements may be inside here more than once.
-  integer, dimension(:), intent(OUT), optional :: IelList
+  integer, dimension(:), intent(out), optional :: IelList
 
   ! OPTIONAL: Index list. Receives for every element touching the BC region an index
   ! into the IelementsAtBoundary where the element can be found.
-  integer, dimension(:), intent(OUT), optional :: IelListIdx
+  integer, dimension(:), intent(out), optional :: IelListIdx
   
   ! OPTIONAL: For each element on the boundary, local index of a vertex touching the
   ! boundary region. If more than one vertex touches it, the element is
@@ -1233,7 +1233,7 @@ contains
   ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
   ! the maximum number of elements that the boundary region covers, including
   ! all edges and vertices.
-  integer, dimension(:), intent(OUT), optional :: IvtLocal
+  integer, dimension(:), intent(out), optional :: IvtLocal
 
   ! OPTIONAL: For each element on the boundary, local index of an edge touching the
   ! boundary region. If more than one edge touches it, the element is
@@ -1243,7 +1243,7 @@ contains
   ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
   ! the maximum number of elements that the boundary region covers, including
   ! all edges and vertices.
-  integer, dimension(:), intent(OUT), optional :: IedgeLocal
+  integer, dimension(:), intent(out), optional :: IedgeLocal
   
 !</output>
 
@@ -1381,16 +1381,16 @@ contains
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
   ! Y-velocity), etc.
-  integer, intent(IN) :: iequation
+  integer, intent(in) :: iequation
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_bcassembly.inc'.
@@ -1398,7 +1398,7 @@ contains
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -1406,13 +1406,13 @@ contains
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
-  integer(I32), intent(IN), optional :: ccomplexity
+  integer(I32), intent(in), optional :: ccomplexity
 !</input>  
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -2094,7 +2094,7 @@ contains
 
 !<inputoutput>
   ! The discrete-BC structure which is to be cleaned up
-  type(t_discreteBCDirichlet), intent(INOUT) :: rdiscreteBCDirichlet
+  type(t_discreteBCDirichlet), intent(inout) :: rdiscreteBCDirichlet
 !</inputoutput>
 
 !</subroutine>
@@ -2126,19 +2126,19 @@ contains
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
   ! Y-velocity), etc.
-  integer, intent(IN) :: iequation
+  integer, intent(in) :: iequation
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! Configuration block for the FEAST mirror boundary conditions.
-  type(t_configDiscreteFeastMirrorBC), intent(IN) :: rconfigFeastMirrorBC
+  type(t_configDiscreteFeastMirrorBC), intent(in) :: rconfigFeastMirrorBC
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2146,13 +2146,13 @@ contains
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
-  integer(I32), intent(IN), optional :: ccomplexity
+  integer(I32), intent(in), optional :: ccomplexity
 !</input>  
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -2315,7 +2315,7 @@ contains
 
 !<inputoutput>
   ! The discrete-BC structure which is to be cleaned up
-  type(t_discreteBCFeastMirror), intent(INOUT) :: rdiscreteBCFeastMirror
+  type(t_discreteBCFeastMirror), intent(inout) :: rdiscreteBCFeastMirror
 !</inputoutput>
 
 !</subroutine>
@@ -2346,15 +2346,15 @@ contains
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! A list of identifiers for the velocity equations, this boundary condition
   ! modifies. Usually (1,2) for X- and Y-velocity.
-  integer, dimension(:), intent(IN) :: Iequations
+  integer, dimension(:), intent(in) :: Iequations
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_bcassembly.inc'.
@@ -2362,7 +2362,7 @@ contains
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2370,13 +2370,13 @@ contains
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
-  integer(I32), intent(IN), optional :: ccomplexity
+  integer(I32), intent(in), optional :: ccomplexity
 !</input>  
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -2573,7 +2573,7 @@ contains
 
 !<inputoutput>
   ! The discrete-BC structure which is to be cleaned up
-  type(t_discreteBCpressureDrop), intent(INOUT) :: p_rdiscreteBCentryPD
+  type(t_discreteBCpressureDrop), intent(inout) :: p_rdiscreteBCentryPD
 !</inputoutput>
 
 !</subroutine>
@@ -2607,15 +2607,15 @@ contains
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! A list of identifiers for the velocity equations, this boundary condition
   ! modifies. Usually (1,2) for X- and Y-velocity.
-  integer, dimension(:), intent(IN) :: Iequations
+  integer, dimension(:), intent(in) :: Iequations
 
   ! A boundary-condition-region object, describing the position on the
   ! boundary where boundary conditions should be imposed.
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2623,13 +2623,13 @@ contains
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
-  integer(I32), intent(IN), optional :: ccomplexity
+  integer(I32), intent(in), optional :: ccomplexity
 !</input>  
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -2819,7 +2819,7 @@ contains
 
 !<inputoutput>
   ! The discrete-BC structure which is to be cleaned up
-  type(t_discreteBCSlip), intent(INOUT) :: rdiscreteBCSlip
+  type(t_discreteBCSlip), intent(inout) :: rdiscreteBCSlip
 !</inputoutput>
 
 !</subroutine>
@@ -2858,12 +2858,12 @@ contains
 !<input>
   ! The discretisation structure of the underlying discretisation. The boundary
   ! conditions inside of this structure are discretised.
-  type(t_blockDiscretisation), intent(IN), target :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rblockDiscretisation
 
   ! An array of identifiers for the equations, this boundary condition 
   ! refers to. Example: Iequations = [1 2] for X-velocity-component (1) and
   ! Y-velocity component (2).
-  integer, dimension(:), intent(IN) :: Iequations
+  integer, dimension(:), intent(in) :: Iequations
 
   ! A callback function that calculates values in the domain.
   ! Is declared in the interface include file 'intf_fbcassembly.inc'.
@@ -2871,7 +2871,7 @@ contains
   
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
@@ -2879,7 +2879,7 @@ contains
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
-  integer(I32), intent(IN), optional :: ccomplexity
+  integer(I32), intent(in), optional :: ccomplexity
 !</input>  
 
 !<inputoutput>
@@ -2887,7 +2887,7 @@ contains
   ! When entering the routine, the content of this structure is undefined,
   ! all pointers are invalid. The routine fills everything with appropriate
   ! data.
-  type(t_discreteFBC), intent(INOUT), target :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout), target :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
@@ -3276,8 +3276,8 @@ contains
   contains
   
     pure subroutine fillsubset (istart, ilength, Isubset)
-    integer, intent(IN) :: istart, ilength
-    integer, dimension(:), intent(OUT) :: Isubset
+    integer, intent(in) :: istart, ilength
+    integer, dimension(:), intent(out) :: Isubset
     integer :: i
       do i=1,ilength
         Isubset(i) = istart-1+i
@@ -3299,7 +3299,7 @@ contains
 
 !<inputoutput>
   ! The discrete-FBC structure which is to be cleaned up
-  type(t_discreteFBCDirichlet), intent(INOUT) :: rdiscreteFBCDirichlet
+  type(t_discreteFBCDirichlet), intent(inout) :: rdiscreteFBCDirichlet
 !</inputoutput>
 
 !</subroutine>
@@ -3332,15 +3332,15 @@ contains
 
 !<input>
   ! The block discretisation structure of the underlying PDE.
-  type(t_blockDiscretisation), intent(IN) :: rblockDiscretisation
+  type(t_blockDiscretisation), intent(in) :: rblockDiscretisation
   
   ! An identifier for the equation, this boundary condition refers to.
   ! >= 1. 1=first equation (e.g. X-velocity), 2=2nd equation (e.g. 
   ! Y-velocity), etc.
-  integer, intent(IN)                     :: iequation
+  integer, intent(in)                     :: iequation
 
   ! The mesh region structure that is used for the boundary region.
-  type(t_meshRegion), intent(IN)          :: rmeshRegion
+  type(t_meshRegion), intent(in)          :: rmeshRegion
   
   ! A callback function that calculates values on the boundary.
   ! Is declared in the interface include file 'intf_discretebc.inc'.
@@ -3348,14 +3348,14 @@ contains
 
   ! Optional: A collection structure to inform the callback function with
   ! additional information. 
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
 !</input>
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
   ! in a discretisation-dependent way. The new BC's are added to this structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -4469,20 +4469,20 @@ contains
     subroutine addDofToDirichletEntry(rdirichlet, idof, dvalue, ndofs)
     
     ! The dirichlet boundary condition structure
-    type(t_discreteBCDirichlet), intent(INOUT) :: rdirichlet
+    type(t_discreteBCDirichlet), intent(inout) :: rdirichlet
     
     ! The number of the dof that is to be added
-    integer, intent(IN) :: idof
+    integer, intent(in) :: idof
     
     ! The dirichlet value of the dof
-    real(DP), intent(IN) :: dvalue
+    real(DP), intent(in) :: dvalue
     
     ! If the dirichlet entry structure is already initialized, then this
     ! corresponds to the total number of currently allocated dofs in the
     ! dirichlet entry structure.
     ! If the structure is uninitialized, then ndofs specifies the initial
     ! size which is to be used for the arrays.
-    integer, intent(INOUT) :: ndofs
+    integer, intent(inout) :: ndofs
     
     ! Some local variables
     integer, dimension(:), pointer :: p_Idofs

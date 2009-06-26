@@ -190,22 +190,22 @@ contains
 !<input>
   ! OPTIONAL: The origin of the coordinate system.
   ! Set to (/ 0.0_DP, 0.0_DP /) if not given.
-  real(DP), dimension(:), optional,    intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,    intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation angle of the coordinate system.
   ! Angle range: 0..2*PI
   ! Set to 0.0_DP if not given.
-  real(DP), optional,                  intent(IN)  :: drotation
+  real(DP), optional,                  intent(in)  :: drotation
   
   ! The scaling factor. Should be != 0.0_DP
   ! Set to 1.0_DP if not given.
-  real(DP), optional,                  intent(IN)  :: dscalingFactor
+  real(DP), optional,                  intent(in)  :: dscalingFactor
 
 !</input>
 
 !<output>
   ! A t_coordinateSystem2D structure to be written.
-  type(t_coordinateSystem2D),          intent(OUT) :: rcoordSys
+  type(t_coordinateSystem2D),          intent(out) :: rcoordSys
 
 !</output>
 
@@ -261,15 +261,15 @@ contains
 
 !<input>
   ! The 2D coordinate system that is to be applied to the given point.
-  type(t_coordinateSystem2D),  intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D),  intent(in)  :: rcoordSys
 
   ! The 2D point that is to be transformed.
-  real(DP), dimension(:),      intent(IN)  :: DpointIn
+  real(DP), dimension(:),      intent(in)  :: DpointIn
 !</input>
 
 !<output>
   ! The transformed 2D point.
-  real(DP), dimension(:),      intent(OUT) :: DpointOut
+  real(DP), dimension(:),      intent(out) :: DpointOut
 !</output>
 
 !</subroutine>
@@ -317,16 +317,16 @@ contains
 
 !<input>
   ! The 2D coordinate system of our input point.
-  type(t_coordinateSystem2D), intent(IN)  :: rcoordSys
+  type(t_coordinateSystem2D), intent(in)  :: rcoordSys
 
   ! The 2D point that is to be transformed, relative to the given coordinate
   ! system.
-  real(DP), dimension(:),     intent(IN)  :: DpointIn
+  real(DP), dimension(:),     intent(in)  :: DpointIn
 !</input>
 
 !<output>
   ! The transformed 2D point, in world coordinates.
-  real(DP), dimension(:),     intent(OUT) :: DpointOut
+  real(DP), dimension(:),     intent(out) :: DpointOut
 !</output>
 
 !</subroutine>
@@ -389,24 +389,24 @@ contains
 !<input>
   ! OPTIONAL: The origin of the coordinate system.
   ! Set to (/ 0.0_dp, 0.0_dp, 0.0_dp /) if not given.
-  real(DP), dimension(:), optional,    intent(IN)  :: Dorigin
+  real(DP), dimension(:), optional,    intent(in)  :: Dorigin
   
   ! OPTIONAL: The rotation angles of the coordinate system.
   ! Angle range: 0..2*PI
   ! Set to 0.0_DP if not given.
-  real(DP), optional,                  intent(IN)  :: drotationX
-  real(DP), optional,                  intent(IN)  :: drotationY
-  real(DP), optional,                  intent(IN)  :: drotationZ
+  real(DP), optional,                  intent(in)  :: drotationX
+  real(DP), optional,                  intent(in)  :: drotationY
+  real(DP), optional,                  intent(in)  :: drotationZ
   
   ! The scaling factor. Should be != 0.0_DP
   ! Set to 1.0_DP if not given.
-  real(DP), optional,                  intent(IN)  :: dscalingFactor
+  real(DP), optional,                  intent(in)  :: dscalingFactor
 
 !</input>
 
 !<output>
   ! A t_coordinateSystem3D structure to be written.
-  type(t_coordinateSystem3D),          intent(OUT) :: rcoordSys
+  type(t_coordinateSystem3D),          intent(out) :: rcoordSys
 
 !</output>
 

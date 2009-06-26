@@ -12,7 +12,7 @@ contains
   ! Associate a pointer with a Feat2D array
   
   function feat_htpdouble(n,handle) result(p)
-    integer, intent(IN) :: n,handle
+    integer, intent(in) :: n,handle
     double precision, dimension(:), pointer :: p
     include 'cmem.inc'
     
@@ -21,7 +21,7 @@ contains
   end function
 
   function feat_htpdouble2D(n,m,handle) result(p)
-    integer, intent(IN) :: n,m,handle
+    integer, intent(in) :: n,m,handle
     double precision, dimension(:,:), pointer :: p
     include 'cmem.inc'
     
@@ -30,7 +30,7 @@ contains
   end function
 
   function feat_htpint(n,handle) result(p)
-    integer, intent(IN) :: n,handle
+    integer, intent(in) :: n,handle
     integer, dimension(:), pointer :: p
     include 'cmem.inc'
     
@@ -39,7 +39,7 @@ contains
   end function
 
   function feat_htpint2D(n,m,handle) result(p)
-    integer, intent(IN) :: n,m,handle
+    integer, intent(in) :: n,m,handle
     integer, dimension(:,:), pointer :: p
     include 'cmem.inc'
     
@@ -49,7 +49,7 @@ contains
   
 
   function feat_vr(n,arr) result(p)
-    integer, intent(IN) :: n
+    integer, intent(in) :: n
     double precision, dimension(n), target :: arr
     double precision, dimension(:), pointer :: p
 
@@ -58,7 +58,7 @@ contains
   end function feat_vr
 
   function feat_mr(n,m,arr) result(p)
-    integer, intent(IN) :: n,m
+    integer, intent(in) :: n,m
     double precision, dimension(n,m), target :: arr
     double precision, dimension(:,:), pointer :: p
 
@@ -67,7 +67,7 @@ contains
   end function feat_mr
 
   function feat_vi(n,arr) result(p)
-    integer, intent(IN) :: n
+    integer, intent(in) :: n
     integer, dimension(n), target :: arr
     integer, dimension(:), pointer :: p
 
@@ -76,7 +76,7 @@ contains
   end function feat_vi
 
   function feat_mi(n,m,arr) result(p)
-    integer, intent(IN) :: n,m
+    integer, intent(in) :: n,m
     integer, dimension(n,m), target :: arr
     integer, dimension(:,:), pointer :: p
 

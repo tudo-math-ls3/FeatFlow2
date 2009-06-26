@@ -337,28 +337,28 @@ contains
 
 !<input>
     ! Total number of items that can be stored in the tree
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 
     ! Format-tag. Type of tree format (Double,Single,Integer)
-    integer, intent(IN) :: ctreeFormat
+    integer, intent(in) :: ctreeFormat
 
     ! Dimension of the auxiliary Double values to be stored
-    integer, intent(IN) :: isizeDble
+    integer, intent(in) :: isizeDble
 
     ! Dimension of the auxiliary Single values to be stored
-    integer, intent(IN) :: isizeSngl
+    integer, intent(in) :: isizeSngl
 
     ! Dimension of the auxiliary Integer values to be stored
-    integer, intent(IN) :: isizeInt
+    integer, intent(in) :: isizeInt
 
     ! OPTIONAL: Factor by which the list should be enlarged if memory
     ! needs to be reallocated
-    real(DP), intent(IN), optional :: dfactor
+    real(DP), intent(in), optional :: dfactor
 !</input>
 
 !<output>
     ! binary tree
-    type(t_btree), intent(OUT) :: rtree
+    type(t_btree), intent(out) :: rtree
 !</output>
 !</subroutine>
 
@@ -455,7 +455,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -497,12 +497,12 @@ contains
 
 !<input>
     ! New number of total items that can be stored in the tree
-    integer, intent(IN) :: nna
+    integer, intent(in) :: nna
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -573,21 +573,21 @@ contains
 
 !<input>
     ! handle to the key
-    integer, intent(IN) :: h_Key
+    integer, intent(in) :: h_Key
 
     ! OPTIONAL: handle to auxiliary Double data
-    integer, intent(IN), optional :: h_DData
+    integer, intent(in), optional :: h_DData
 
     ! OPTIONAL: handle to auxiliary Single data
-    integer, intent(IN), optional :: h_FData
+    integer, intent(in), optional :: h_FData
 
     ! OPTIONAL: handle to auxiliary Integer data
-    integer, intent(IN), optional :: h_IData
+    integer, intent(in), optional :: h_IData
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
     
@@ -653,7 +653,7 @@ contains
 
 !<input>
     ! double-valued key
-    real(DP), dimension(:), intent(IN) :: p_DKey
+    real(DP), dimension(:), intent(in) :: p_DKey
 
     ! OPTIONAL: auxiliary Double data
     real(DP), dimension(:,:), optional :: p_DData
@@ -667,7 +667,7 @@ contains
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -759,7 +759,7 @@ contains
 
 !<input>
     ! single-valued key
-    real(SP), dimension(:), intent(IN) :: p_FKey
+    real(SP), dimension(:), intent(in) :: p_FKey
 
     ! OPTIONAL: auxiliary Double data
     real(DP), dimension(:,:), optional :: p_DData
@@ -773,7 +773,7 @@ contains
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -865,7 +865,7 @@ contains
 
 !<input>
     ! integer-valued key
-    integer, dimension(:), intent(IN) :: p_IKey
+    integer, dimension(:), intent(in) :: p_IKey
 
     ! OPTIONAL: auxiliary Double data
     real(DP), dimension(:,:), optional :: p_DData
@@ -879,7 +879,7 @@ contains
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -968,15 +968,15 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! handle to the key
-    integer, intent(INOUT) :: h_Key
+    integer, intent(inout) :: h_Key
 !</inputoutput>
 !</subroutine>
     
@@ -1052,7 +1052,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine preorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
             j=j+1; p_DKey(j)=rtree%p_DKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1065,7 +1065,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine inorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1078,7 +1078,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine postorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1091,7 +1091,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine preorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_FKey(j)=rtree%p_FKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1104,7 +1104,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine inorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1117,7 +1117,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine postorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1130,7 +1130,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine preorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_IKey(j)=rtree%p_IKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1143,7 +1143,7 @@ contains
     ! Copy the content of the Integer key to an array
 
     recursive subroutine inorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1156,7 +1156,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine postorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1178,15 +1178,15 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! double-valued array
-    real(DP), dimension(:), intent(INOUT) :: p_DKey
+    real(DP), dimension(:), intent(inout) :: p_DKey
 !</inputoutput>
 !</subroutine>
 
@@ -1228,7 +1228,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine preorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_DKey(j)=rtree%p_DKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1241,7 +1241,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine inorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1254,7 +1254,7 @@ contains
     ! Copy the content of the Double key to an array
     
     recursive subroutine postorderKeyDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeyDble(rtree%p_Kchild(TLEFT,i))
@@ -1276,15 +1276,15 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! single-valued array
-    real(SP), dimension(:), intent(INOUT) :: p_FKey
+    real(SP), dimension(:), intent(inout) :: p_FKey
 !</inputoutput>
 !</subroutine>
 
@@ -1326,7 +1326,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine preorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_FKey(j)=rtree%p_FKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1339,7 +1339,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine inorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1352,7 +1352,7 @@ contains
     ! Copy the content of the Single key to an array
 
     recursive subroutine postorderKeySngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeySngl(rtree%p_Kchild(TLEFT,i))
@@ -1374,15 +1374,15 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! integer-valued array
-    integer, dimension(:), intent(INOUT) :: p_IKey
+    integer, dimension(:), intent(inout) :: p_IKey
 !</inputoutput>
 !</subroutine>
 
@@ -1424,7 +1424,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine preorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_IKey(j)=rtree%p_IKey(i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1437,7 +1437,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine inorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1450,7 +1450,7 @@ contains
     ! Copy the content of the Integer key to an array
     
     recursive subroutine postorderKeyInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderKeyInt(rtree%p_Kchild(TLEFT,i))
@@ -1487,21 +1487,21 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! type of data
-    integer, intent(IN) :: ctype
+    integer, intent(in) :: ctype
 
     ! OPTIONAL: mask of components to be copied
-    integer, dimension(:), intent(IN), optional :: mask
+    integer, dimension(:), intent(in), optional :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! handle to the data
-    integer, intent(INOUT) :: h_Data
+    integer, intent(inout) :: h_Data
 !</inputoutput>
 !</subroutine>
 
@@ -1739,18 +1739,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! mask of component to be copied
-    integer, intent(IN) :: mask
+    integer, intent(in) :: mask
     
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! double data array
-    real(DP), dimension(:),intent(INOUT) :: p_DData
+    real(DP), dimension(:),intent(inout) :: p_DData
 !</inputoutput>
 !</subroutine>
 
@@ -1799,7 +1799,7 @@ contains
     ! Copy the content of the Double data to an array
     
     recursive subroutine preorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
 
       j=j+1; p_DData(j)=rtree%p_DData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1812,7 +1812,7 @@ contains
     ! Copy the content of the Double data to an array
     
     recursive subroutine inorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1825,7 +1825,7 @@ contains
     ! Copy the content of the Double data to an array
     
     recursive subroutine postorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1852,18 +1852,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! OPTIONAL: mask of components to be copied
-    integer, dimension(:), intent(IN), optional :: mask
+    integer, dimension(:), intent(in), optional :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! double data array
-    real(DP), dimension(:,:),intent(INOUT) :: p_DData
+    real(DP), dimension(:,:),intent(inout) :: p_DData
 !</inputoutput>
 !</subroutine>
 
@@ -1938,7 +1938,7 @@ contains
     ! Copy the content of the Double data to an array
 
     recursive subroutine preorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_DData(:,j)=rtree%p_DData(:,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1951,7 +1951,7 @@ contains
     ! Copy the content of the Double data to an array
 
     recursive subroutine inorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1964,7 +1964,7 @@ contains
     ! Copy the content of the Double data to an array
 
     recursive subroutine postorderDataDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataDble(rtree%p_Kchild(TLEFT,i))
@@ -1977,7 +1977,7 @@ contains
     ! Copy the content of the Double data to an array (masked)
 
     recursive subroutine preorderDataDbleMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_DData(:,j)=rtree%p_DData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -1990,7 +1990,7 @@ contains
     ! Copy the content of the Double data to an array (masked)
 
     recursive subroutine inorderDataDbleMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataDbleMask(rtree%p_Kchild(TLEFT,i))
@@ -2003,7 +2003,7 @@ contains
     ! Copy the content of the Double data to an array (masked)
 
     recursive subroutine postorderDataDbleMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataDbleMask(rtree%p_Kchild(TLEFT,i))
@@ -2028,18 +2028,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! mask of component to be copied
-    integer, intent(IN) :: mask
+    integer, intent(in) :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! single data array
-    real(SP), dimension(:),intent(INOUT) :: p_FData
+    real(SP), dimension(:),intent(inout) :: p_FData
 !</inputoutput>
 !</subroutine>
 
@@ -2088,7 +2088,7 @@ contains
     ! Copy the content of the Single data to an array
     
     recursive subroutine preorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_FData(j)=rtree%p_FData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2101,7 +2101,7 @@ contains
     ! Copy the content of the Single data to an array
     
     recursive subroutine inorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -2114,7 +2114,7 @@ contains
     ! Copy the content of the Single data to an array
     
     recursive subroutine postorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -2141,18 +2141,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! OPTIONAL: mask of components to be copied
-    integer, dimension(:), intent(IN), optional :: mask
+    integer, dimension(:), intent(in), optional :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! single data array
-    real(SP), dimension(:,:),intent(INOUT) :: p_FData
+    real(SP), dimension(:,:),intent(inout) :: p_FData
 !</inputoutput>
 !</subroutine>
 
@@ -2227,7 +2227,7 @@ contains
     ! Copy the content of the Single data to an array
 
     recursive subroutine preorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_FData(:,j)=rtree%p_FData(:,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2240,7 +2240,7 @@ contains
     ! Copy the content of the Single data to an array
 
     recursive subroutine inorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -2253,7 +2253,7 @@ contains
     ! Copy the content of the Single data to an array
 
     recursive subroutine postorderDataSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataSngl(rtree%p_Kchild(TLEFT,i))
@@ -2266,7 +2266,7 @@ contains
     ! Copy the content of the Single data to an array (masked)
 
     recursive subroutine preorderDataSnglMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_FData(:,j)=rtree%p_FData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2279,7 +2279,7 @@ contains
     ! Copy the content of the Single data to an array (masked)
 
     recursive subroutine inorderDataSnglMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataSnglMask(rtree%p_Kchild(TLEFT,i))
@@ -2292,7 +2292,7 @@ contains
     ! Copy the content of the Single data to an array (masked)
 
     recursive subroutine postorderDataSnglMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataSnglMask(rtree%p_Kchild(TLEFT,i))
@@ -2317,18 +2317,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! mask of component to be copied
-    integer, intent(IN) :: mask
+    integer, intent(in) :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! integer data array
-    integer, dimension(:),intent(INOUT) :: p_IData
+    integer, dimension(:),intent(inout) :: p_IData
 !</inputoutput>
 !</subroutine>
 
@@ -2377,7 +2377,7 @@ contains
     ! Copy the content of the Integer data to an array
     
     recursive subroutine preorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_IData(j)=rtree%p_IData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2390,7 +2390,7 @@ contains
     ! Copy the content of the Integer data to an array
     
     recursive subroutine inorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -2403,7 +2403,7 @@ contains
     ! Copy the content of the Integer data to an array
     
     recursive subroutine postorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -2430,18 +2430,18 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
     
     ! OPTIONAL: mask of components to be copied
-    integer, dimension(:), intent(IN), optional :: mask
+    integer, dimension(:), intent(in), optional :: mask
 
     ! OPTIONAL: ordering strategy: BTREE_xxxORDER
-    integer, intent(IN), optional :: corder
+    integer, intent(in), optional :: corder
 !</input>
 
 !<inputoutput>
     ! integer data array
-    integer, dimension(:,:),intent(INOUT) :: p_IData
+    integer, dimension(:,:),intent(inout) :: p_IData
 !</inputoutput>
 !</subroutine>
 
@@ -2516,7 +2516,7 @@ contains
     ! Copy the content of the Integer data to an array
 
     recursive subroutine preorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_IData(:,j)=rtree%p_IData(:,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2529,7 +2529,7 @@ contains
     ! Copy the content of the Integer data to an array
 
     recursive subroutine inorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -2542,7 +2542,7 @@ contains
     ! Copy the content of the Integer data to an array
 
     recursive subroutine postorderDataInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataInt(rtree%p_Kchild(TLEFT,i))
@@ -2555,7 +2555,7 @@ contains
     ! Copy the content of the Integer data to an array (masked)
 
     recursive subroutine preorderDataIntMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       j=j+1; p_IData(:,j)=rtree%p_IData(mask,i)
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
@@ -2568,7 +2568,7 @@ contains
     ! Copy the content of the Integer data to an array (masked)
 
     recursive subroutine inorderDataIntMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDataIntMask(rtree%p_Kchild(TLEFT,i))
@@ -2581,7 +2581,7 @@ contains
     ! Copy the content of the Integer data to an array (masked)
 
     recursive subroutine postorderDataIntMask(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDataIntMask(rtree%p_Kchild(TLEFT,i))
@@ -2605,27 +2605,27 @@ contains
 
 !<input>
     ! key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
     
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: FData
+    real(SP), dimension(:), intent(in), optional :: FData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer, intent(OUT), optional :: iposOpt
+    integer, intent(out), optional :: iposOpt
 !</output>
 !</subroutine>
     
@@ -2700,27 +2700,27 @@ contains
 
 !<input>
     ! key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
     
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: FData
+    real(SP), dimension(:), intent(in), optional :: FData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer, intent(OUT), optional :: iposOpt
+    integer, intent(out), optional :: iposOpt
 !</output>
 !</subroutine>
     
@@ -2795,27 +2795,27 @@ contains
 
 !<input>
     ! key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
     
     ! OPTIONAL: Double data
-    real(DP), dimension(:), intent(IN), optional :: DData
+    real(DP), dimension(:), intent(in), optional :: DData
 
     ! OPTIONAL: Single data
-    real(SP), dimension(:), intent(IN), optional :: FData
+    real(SP), dimension(:), intent(in), optional :: FData
 
     ! OPTIONAL: Integer data
-    integer, dimension(:), intent(IN), optional :: IData
+    integer, dimension(:), intent(in), optional :: IData
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: Position of the new entry. If ipos < 0 then
     ! the entry already exists and ABS(ipos) is its position
-    integer, intent(OUT), optional :: iposOpt
+    integer, intent(out), optional :: iposOpt
 !</output>
 !</subroutine>
     
@@ -2889,12 +2889,12 @@ contains
 
 !<input>
     ! starting node
-    integer, intent(IN) :: i
+    integer, intent(in) :: i
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>    
     
@@ -3030,12 +3030,12 @@ contains
 
 !<input>
     ! Key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3133,12 +3133,12 @@ contains
 
 !<input>
     ! Key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3236,12 +3236,12 @@ contains
 
 !<input>
     ! Key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3339,12 +3339,12 @@ contains
 
 !<input>
     ! starting node
-    integer, intent(IN) :: i
+    integer, intent(in) :: i
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -3486,17 +3486,17 @@ contains
 
 !<input>
     ! Key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! Position of the predecessor
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 
 !<result>
@@ -3554,17 +3554,17 @@ contains
 
 !<input>
     ! Key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! Position of the predecessor
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 
 !<result>
@@ -3622,17 +3622,17 @@ contains
 
 !<input>
     ! Key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<output>
     ! Position of the predecessor
-    integer, intent(OUT) :: ipos
+    integer, intent(out) :: ipos
 !</output>
 
 !<result>
@@ -3692,12 +3692,12 @@ contains
 
 !<input>
     ! Key
-    real(DP), intent(IN) :: dkey
+    real(DP), intent(in) :: dkey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3731,12 +3731,12 @@ contains
 
 !<input>
     ! Key
-    real(SP), intent(IN) :: skey
+    real(SP), intent(in) :: skey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3770,12 +3770,12 @@ contains
 
 !<input>
     ! Key
-    integer, intent(IN) :: ikey
+    integer, intent(in) :: ikey
 !</input>
 
 !<inputoutput>
     ! binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 
 !<result>
@@ -3807,10 +3807,10 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 
     ! type of traversal: BTREE_xxORDER
-    integer, intent(IN) :: cordering
+    integer, intent(in) :: cordering
 !</input>
 !</subroutine>
 
@@ -3873,7 +3873,7 @@ contains
     ! Print the content of the tree in preorder for Double key
     
     recursive subroutine preorderDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       write(*,FMT='(A)',ADVANCE='NO')&
           trim(sys_sdEL(rtree%p_DKey(i),16))//','
@@ -3887,7 +3887,7 @@ contains
     ! Print the content of the tree in preorder for Single key
     
     recursive subroutine preorderSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       write(*,FMT='(A)',ADVANCE='NO')&
           trim(sys_sdEL(real(rtree%p_FKey(i),DP),16))//','
@@ -3901,7 +3901,7 @@ contains
     ! Print the content of the tree in preorder for Integer key
     
     recursive subroutine preorderInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       write(*,FMT='(A)',ADVANCE='NO')&
           trim(sys_siL(rtree%p_IKey(i),16))//','
@@ -3915,7 +3915,7 @@ contains
     ! Print the content of the tree in postorder for Double key
     
     recursive subroutine postorderDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderDble(rtree%p_Kchild(TLEFT,i))
@@ -3929,7 +3929,7 @@ contains
     ! Print the content of the tree in postorder for Single key
     
     recursive subroutine postorderSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderSngl(rtree%p_Kchild(TLEFT,i))
@@ -3943,7 +3943,7 @@ contains
     ! Print the content of the tree in postorder for Integer key
     
     recursive subroutine postorderInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call postorderInt(rtree%p_Kchild(TLEFT,i))
@@ -3957,7 +3957,7 @@ contains
     ! Print the content of the tree in inorder for Double key
     
     recursive subroutine inorderDble(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderDble(rtree%p_Kchild(TLEFT,i))
@@ -3971,7 +3971,7 @@ contains
     ! Print the content of the tree in inorder for Single key
     
     recursive subroutine inorderSngl(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderSngl(rtree%p_Kchild(TLEFT,i))
@@ -3985,7 +3985,7 @@ contains
     ! Print the content of the tree in inorder for Integer key
     
     recursive subroutine inorderInt(i)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL)&
           call inorderInt(rtree%p_Kchild(TLEFT,i))
@@ -4008,7 +4008,7 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 !</input>
 
 !<result>
@@ -4022,7 +4022,7 @@ contains
   contains
     
     pure recursive function height(i) result(h)
-      integer, intent(IN) :: i
+      integer, intent(in) :: i
       integer :: h,hl,hr
       
       if (rtree%p_Kchild(TLEFT,i) .ne. TNULL) then
@@ -4053,7 +4053,7 @@ contains
 
 !<input>
     ! binary tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 !</input>
 !</subroutine>
 
@@ -4091,12 +4091,12 @@ contains
 
 !<input>
     ! Source tree
-    type(t_btree), intent(IN) :: rtree
+    type(t_btree), intent(in) :: rtree
 !</input>
 
 !<inputoutput>
     ! Destination tree
-    type(t_btree), intent(INOUT) :: rtreeBackup
+    type(t_btree), intent(inout) :: rtreeBackup
 !</inputoutput>
 !</subroutine>
 
@@ -4176,12 +4176,12 @@ contains
 
 !<input>
     ! Backup of a binary tree
-    type(t_btree), intent(IN) :: rtreeBackup
+    type(t_btree), intent(in) :: rtreeBackup
 !</input>
 
 !<inputoutput>
     ! Destination binary tree
-    type(t_btree), intent(INOUT) :: rtree
+    type(t_btree), intent(inout) :: rtree
 !</inputoutput>
 !</subroutine>
 
@@ -4214,7 +4214,7 @@ contains
 
 !<input>
     ! integer value
-    integer, intent(IN) :: i
+    integer, intent(in) :: i
 !</input>
 
 !<result>

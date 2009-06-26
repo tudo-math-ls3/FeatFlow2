@@ -143,7 +143,7 @@ contains
 
 !<input>
   ! The consistent mass matrix of the FE space of rvector.
-  type(t_matrixScalar), intent(IN) :: rmatrixMass
+  type(t_matrixScalar), intent(in) :: rmatrixMass
   
   ! A callback routine for the function to be discretised. The callback routine
   ! has the same syntax as that for evaluating analytic functions for the 
@@ -153,27 +153,27 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
   ! OPTIONAL: The lumped mass matrix of the FE space of rvector.
   ! If not specified, the damped Jacobi method will be used.
-  type(t_matrixScalar), intent(IN), optional :: rmatrixMassLumped
+  type(t_matrixScalar), intent(in), optional :: rmatrixMassLumped
 
 !</input>
 
 !<inputoutput>
   ! A scalar vector that receives the $L_2$ projection of the function.
-  type(t_vectorScalar), intent(INOUT) :: rvector
+  type(t_vectorScalar), intent(inout) :: rvector
 
   ! OPTIONAL: A configuration block for the iteration.
   ! If not specified, the standard settings are used.
-  type(t_configL2ProjectionByMass), intent(INOUT), optional :: rL2ProjectionConfig
+  type(t_configL2ProjectionByMass), intent(inout), optional :: rL2ProjectionConfig
 
   ! OPTIONAL: A temporary vector of the same size as rvector.
-  type(t_vectorScalar), intent(INOUT), target, optional :: rvectorTemp1
+  type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp1
 
   ! OPTIONAL: A second temporary vector of the same size as rvector.
-  type(t_vectorScalar), intent(INOUT), target, optional :: rvectorTemp2
+  type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp2
 !</inputoutput>
 
 !</subroutine>
@@ -363,7 +363,7 @@ contains
   ! OPTIONAL: A pointer to a collection structure. This structure is 
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
   ! OPTIONAL: Order of the evaluation. Standard = 0.
   ! =0: Automatic; use highest possible evaluation (currently =2) to
@@ -382,7 +382,7 @@ contains
 
 !<inputoutput>
   ! A scalar vector that receives the $L_2$ projection of the function.
-  type(t_vectorScalar), intent(INOUT), target :: rvector
+  type(t_vectorScalar), intent(inout), target :: rvector
 !</inputoutput>
 
 !</subroutine>

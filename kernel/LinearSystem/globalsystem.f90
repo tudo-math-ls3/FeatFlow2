@@ -45,26 +45,26 @@ contains
                                    
 !<input>
   ! The source matrix.
-  type(t_matrixBlock), intent(IN) :: rsourceMatrix
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
 
   ! Whether to assemble a new structure in rdestMatrix.
   ! =TRUE (Standard): Release any old data/structure from rdestMatrix
   !   and create a new one.
   ! =FALSE          : rdestMatrix is assumed to be an existing matrix
   !   of the correct dimension/size which does not have to be rebuild.
-  logical, intent(IN) :: bstructure
+  logical, intent(in) :: bstructure
   
   ! Whether to assemble the matrix content.
   ! =TRUE (Standard): The content of rsourceMatrix is build in rdestMatrix.
   ! =FALSE          : No matrix content is build up in rdestMatrix.
-  logical, intent(IN) :: bcontent
+  logical, intent(in) :: bcontent
   
   ! OPTIONAL: Target format of the matrix rdestMatrix. Standard is Format 9.
-  integer, intent(IN), optional :: cmatrixFormat
+  integer, intent(in), optional :: cmatrixFormat
   
   ! OPTIONAL: Data type for the entries of rdestMatrix. 
   ! Standard is double precision.
-  integer, intent(IN), optional :: cdataType
+  integer, intent(in), optional :: cdataType
 
 !</input>
 
@@ -73,7 +73,7 @@ contains
   ! allocated memory blocks of the correct size for structure/entries,
   ! this data is overwritten. If not, arrays are (re-)allocated in
   ! the correct size.
-  type(t_matrixBlock), intent(INOUT) :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 !</output>
 
 !</subroutine>
@@ -441,17 +441,17 @@ contains
                                         cmatrixFormat,cdataType)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN) :: rsourceMatrix
+  type(t_matrixBlock), intent(in) :: rsourceMatrix
   
   ! The matrix to be initialised
-  type(t_matrixBlock), intent(INOUT) :: rdestMatrix
+  type(t_matrixBlock), intent(inout) :: rdestMatrix
 
   ! Target format of the matrix rdestMatrix. Standard is Format 9.
-  integer, intent(IN) :: cmatrixFormat
+  integer, intent(in) :: cmatrixFormat
   
   ! Data type for the entries of rdestMatrix. 
   ! Standard is double precision.
-  integer, intent(IN) :: cdataType
+  integer, intent(in) :: cdataType
 
     if ((rdestMatrix%nblocksPerCol .lt. 1) .or. &
         (rdestMatrix%nblocksPerRow .lt. 1)) then
@@ -489,15 +489,15 @@ contains
   subroutine glmatasm_getOffsets (rsourceMatrix,Icolumns,Irows)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! Real column numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(OUT) :: Icolumns
+  integer, dimension(:), intent(out) :: Icolumns
 
   ! Real row numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(OUT) :: Irows
+  integer, dimension(:), intent(out) :: Irows
 
     ! local variables
     integer :: i,j
@@ -541,15 +541,15 @@ contains
   subroutine glmatasm_KLD (rsourceMatrix,rdestMatrix,Irows)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised.
   ! KLD must exist and be filled with 0.
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
   
   ! Real row numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Irows
+  integer, dimension(:), intent(in) :: Irows
 
     ! local variables
     integer :: i,j
@@ -617,18 +617,18 @@ contains
                                   Icolumns, Irows)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
   
   ! Real column numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Icolumns
+  integer, dimension(:), intent(in) :: Icolumns
 
   ! Real row numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Irows
+  integer, dimension(:), intent(in) :: Irows
 
     ! local variables
     integer :: i,j,h_KldTmp
@@ -711,18 +711,18 @@ contains
                                 Icolumns, Irows)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
   
   ! Real column numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Icolumns
+  integer, dimension(:), intent(in) :: Icolumns
 
   ! Real row numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Irows
+  integer, dimension(:), intent(in) :: Irows
 
     ! local variables
     integer :: i,j,h_KldTmp
@@ -805,18 +805,18 @@ contains
                                     Icolumns, Irows)
 
   ! The source block matrix 
-  type(t_matrixBlock), intent(IN), target :: rsourceMatrix
+  type(t_matrixBlock), intent(in), target :: rsourceMatrix
   
   ! The scalar submatrix which KLD is to be initialised
-  type(t_matrixScalar), intent(INOUT) :: rdestMatrix
+  type(t_matrixScalar), intent(inout) :: rdestMatrix
   
   ! Real column numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Icolumns
+  integer, dimension(:), intent(in) :: Icolumns
 
   ! Real row numbers in each block-column of the block matrix.
   ! DIMENSION(rsourceMatrix%ndiagBlocks+1)
-  integer, dimension(:), intent(IN) :: Irows
+  integer, dimension(:), intent(in) :: Irows
 
     ! local variables
     integer :: i,j,h_KldTmp

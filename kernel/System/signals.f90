@@ -78,12 +78,12 @@ contains
 
 !<input>
     ! signal number
-    integer, intent(IN) :: sig
+    integer, intent(in) :: sig
     
     ! signal handler
     interface 
       function func(sig)
-        integer, intent(IN) :: sig
+        integer, intent(in) :: sig
         integer :: func
         
       end function func

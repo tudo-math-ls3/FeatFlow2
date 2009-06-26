@@ -484,18 +484,18 @@ contains
 !<input>
 
   ! Initial number of handles maintained by the storage routines.
-  integer, intent(IN) :: ihandleCount
+  integer, intent(in) :: ihandleCount
 
   ! OPTIONAL: Number of handles to increase the memory block by, if there are
   ! not enough handles available. Standard setting is 1/2*ihandleCount.
-  integer, intent(IN), optional :: ihandlesDelta
+  integer, intent(in), optional :: ihandlesDelta
 
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -561,13 +561,13 @@ contains
 !<input>
   ! OPTIONAL: Maximum size of the RamDrive (in bytes).
   ! -1 or not present = arbitrary.
-  integer(I64), intent(IN), optional :: imaxMem
+  integer(I64), intent(in), optional :: imaxMem
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -619,28 +619,28 @@ contains
 !<input>
   ! Path to the directory that saves the data.
   ! The directory must exist. If this is "", the current directory is used.
-  character(LEN=*), intent(IN) :: spath
+  character(LEN=*), intent(in) :: spath
 
   ! OPTIONAL: If set to TRUE, the data in the container will be saved
   ! in a formatted file format. If set to FALSE (default), the data will
   ! be saved unformatted (which is machine dependent but faster).
-  logical, intent(IN), optional :: bformatted
+  logical, intent(in), optional :: bformatted
   
   ! OPTIONAL: Maximum size of the container (in bytes).
   ! -1 or not present = arbitrary.
-  integer(I64), intent(IN), optional :: imaxMem
+  integer(I64), intent(in), optional :: imaxMem
 
   ! OPTIONAL: Basic filename of files that are stored on disc. The files will get
   ! the name "[filename].[handlenr]". If not specified, a default filename
   ! will be used.
-  character(LEN=*), intent(IN), optional :: sfilename
+  character(LEN=*), intent(in), optional :: sfilename
   
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is initialised.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -699,7 +699,7 @@ contains
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is cleaned up.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -756,15 +756,15 @@ contains
 !<input>
   ! OPTIONAL: If set to TRUE, the information about the storage containers 
   ! is printed to the terminal.
-  logical, intent(IN), optional :: bprintContainers
+  logical, intent(in), optional :: bprintContainers
 
   ! OPTIONAL: If set to TRUE, the handles still remaining in the
   ! heap together with their names are printed to the terminal.
-  logical, intent(IN), optional :: bprintHandles
+  logical, intent(in), optional :: bprintHandles
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(IN), target, optional :: rheap
+  type(t_exstorageBlock), intent(in), target, optional :: rheap
 !</input>
 
 !</subroutine>
@@ -878,7 +878,7 @@ contains
 !<inputoutput>
 
   ! The heap structure where to create a new handle
-  type(t_exstorageBlock), intent(INOUT) :: rheap
+  type(t_exstorageBlock), intent(inout) :: rheap
 
 !</inputoutput>
 
@@ -958,12 +958,12 @@ contains
 
 !<input>
   ! The handle to release
-  integer, intent(INOUT) :: ihandle
+  integer, intent(inout) :: ihandle
 !</input>
 
 !<inputoutput>
   ! The heap structure where to release the handle from.
-  type(t_exstorageBlock), intent(INOUT) :: rheap
+  type(t_exstorageBlock), intent(inout) :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -1017,7 +1017,7 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
@@ -1094,10 +1094,10 @@ contains
 
 !<input>
   ! Local heap structure where a container should be searched.
-  type(t_exstorageBlock), intent(IN), target, optional :: rheap
+  type(t_exstorageBlock), intent(in), target, optional :: rheap
   
   ! Number of bytes which are to be stored.
-  integer(I64), intent(IN) :: isize
+  integer(I64), intent(in) :: isize
 !</input>
 
 !<result>
@@ -1144,19 +1144,19 @@ contains
 !<input>
 
   !name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   !clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   !requested storage size
-  integer, intent(IN) :: isize
+  integer, intent(in) :: isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
   
   ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain 
   ! the memory block. If not specified, a container will automatically be 
@@ -1167,7 +1167,7 @@ contains
   ! a container (just as if the parameter is not specified).
   ! Note that if a valid container id <> 0 is specified, the memory block will
   ! be bound to that container and not be automatically moved to another one.
-  integer, intent(IN), optional :: icontainerId
+  integer, intent(in), optional :: icontainerId
 
 !</input>
 
@@ -1175,14 +1175,14 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
 
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 
 !</output>
 
@@ -1327,19 +1327,19 @@ contains
 !<input>
 
   ! name of the calling routine
-  character(LEN=*), intent(IN) :: scall
+  character(LEN=*), intent(in) :: scall
 
   ! clear name of data field
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 
   ! requested storage size; DIMENSION(2)
-  integer, dimension(:), intent(IN) :: Isize
+  integer, dimension(:), intent(in) :: Isize
 
   !data type (ST_SINGLE,ST_DOUBLE,ST_INT,ST_LOGICAL,ST_CHAR)
-  integer, intent(IN) :: ctype
+  integer, intent(in) :: ctype
 
   !init new storage block (ST_NEWBLOCK_ZERO,ST_NEWBLOCK_NOINIT,ST_NEWBLOCK_ORDERED)
-  integer, intent(IN) :: cinitNewBlock
+  integer, intent(in) :: cinitNewBlock
   
   ! OPTIONAL: Id of the storage container (1,2,3,...) that should maintain 
   ! the memory block. If not specified, a container will automatically be 
@@ -1350,7 +1350,7 @@ contains
   ! a container (just as if the parameter is not specified).
   ! Note that if a valid container id <> 0 is specified, the memory block will
   ! be bound to that container and not be automatically moved to another one.
-  integer, intent(IN), optional :: icontainerId
+  integer, intent(in), optional :: icontainerId
 
 !</input>
 
@@ -1358,13 +1358,13 @@ contains
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</inputoutput>
 
 !<output>
   ! Handle of the memory block.
-  integer, intent(OUT) :: ihandle
+  integer, intent(out) :: ihandle
 !</output>
 
 !</subroutine>
@@ -1505,17 +1505,17 @@ contains
 
 !<input>
   ! Handle of the memory block 
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !<output>
   ! Length of the array identified by ihandle.
-  integer, intent(OUT) :: isize
+  integer, intent(out) :: isize
 !</output>
 
 !</subroutine>
@@ -1571,18 +1571,18 @@ contains
 
 !<input>
   ! Handle of the memory block to be releases
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !<output>
   ! Length of each dimension of the array identified by ihandle.
-  integer, dimension(:), intent(OUT) :: Isize
+  integer, dimension(:), intent(out) :: Isize
 !</output>
 
 !</subroutine>
@@ -1640,17 +1640,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer, dimension(:), intent(OUT) :: Iarray
+  integer, dimension(:), intent(out) :: Iarray
 
 !</output>
 
@@ -1734,10 +1734,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer, dimension(:), intent(OUT) :: dataarray
+    integer, dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer, dimension(:), pointer :: p_data
@@ -1761,13 +1761,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer, dimension(:), intent(OUT) :: dataarray
+    integer, dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -1804,17 +1804,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer, dimension(:,:), intent(OUT) :: Iarray
+  integer, dimension(:,:), intent(out) :: Iarray
 
 !</output>
 
@@ -1895,10 +1895,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer, dimension(:,:), intent(OUT) :: dataarray
+    integer, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer, dimension(:,:), pointer :: p_data
@@ -1922,13 +1922,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer, dimension(:,:), intent(OUT) :: dataarray
+    integer, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -1964,14 +1964,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer, dimension(:), intent(IN) :: Iarray
+  integer, dimension(:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -2037,10 +2037,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer, dimension(:), intent(IN) :: dataarray
+    integer, dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer, dimension(:), pointer :: p_data
@@ -2065,13 +2065,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer, dimension(:), intent(IN) :: dataarray
+    integer, dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2107,14 +2107,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer, dimension(:,:), intent(IN) :: Iarray
+  integer, dimension(:,:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -2181,10 +2181,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer, dimension(:,:), intent(IN) :: dataarray
+    integer, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer, dimension(:,:), pointer :: p_data
@@ -2209,13 +2209,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer, dimension(:,:), intent(IN) :: dataarray
+    integer, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2252,17 +2252,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I8), dimension(:), intent(OUT) :: Iarray
+  integer(I8), dimension(:), intent(out) :: Iarray
 
 !</output>
 
@@ -2346,10 +2346,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I8), dimension(:), intent(OUT) :: dataarray
+    integer(I8), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer(I8), dimension(:), pointer :: p_data
@@ -2373,13 +2373,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I8), dimension(:), intent(OUT) :: dataarray
+    integer(I8), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2416,17 +2416,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I8), dimension(:,:), intent(OUT) :: Iarray
+  integer(I8), dimension(:,:), intent(out) :: Iarray
 
 !</output>
 
@@ -2507,10 +2507,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I8), dimension(:,:), intent(OUT) :: dataarray
+    integer(I8), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer(I8), dimension(:,:), pointer :: p_data
@@ -2534,13 +2534,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I8), dimension(:,:), intent(OUT) :: dataarray
+    integer(I8), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2576,14 +2576,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I8), dimension(:), intent(IN) :: Iarray
+  integer(I8), dimension(:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -2649,10 +2649,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I8), dimension(:), intent(IN) :: dataarray
+    integer(I8), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer(I8), dimension(:), pointer :: p_data
@@ -2677,13 +2677,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I8), dimension(:), intent(IN) :: dataarray
+    integer(I8), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2719,14 +2719,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I8), dimension(:,:), intent(IN) :: Iarray
+  integer(I8), dimension(:,:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -2793,10 +2793,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I8), dimension(:,:), intent(IN) :: dataarray
+    integer(I8), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer(I8), dimension(:,:), pointer :: p_data
@@ -2821,13 +2821,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I8), dimension(:,:), intent(IN) :: dataarray
+    integer(I8), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -2864,17 +2864,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I16), dimension(:), intent(OUT) :: Iarray
+  integer(I16), dimension(:), intent(out) :: Iarray
 
 !</output>
 
@@ -2958,10 +2958,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I16), dimension(:), intent(OUT) :: dataarray
+    integer(I16), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer(I16), dimension(:), pointer :: p_data
@@ -2985,13 +2985,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I16), dimension(:), intent(OUT) :: dataarray
+    integer(I16), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3028,17 +3028,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I16), dimension(:,:), intent(OUT) :: Iarray
+  integer(I16), dimension(:,:), intent(out) :: Iarray
 
 !</output>
 
@@ -3119,10 +3119,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I16), dimension(:,:), intent(OUT) :: dataarray
+    integer(I16), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer(I16), dimension(:,:), pointer :: p_data
@@ -3146,13 +3146,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I16), dimension(:,:), intent(OUT) :: dataarray
+    integer(I16), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3188,14 +3188,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I16), dimension(:), intent(IN) :: Iarray
+  integer(I16), dimension(:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -3261,10 +3261,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I16), dimension(:), intent(IN) :: dataarray
+    integer(I16), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer(I16), dimension(:), pointer :: p_data
@@ -3289,13 +3289,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I16), dimension(:), intent(IN) :: dataarray
+    integer(I16), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3331,14 +3331,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I16), dimension(:,:), intent(IN) :: Iarray
+  integer(I16), dimension(:,:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -3405,10 +3405,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I16), dimension(:,:), intent(IN) :: dataarray
+    integer(I16), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer(I16), dimension(:,:), pointer :: p_data
@@ -3433,13 +3433,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I16), dimension(:,:), intent(IN) :: dataarray
+    integer(I16), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3476,17 +3476,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I32), dimension(:), intent(OUT) :: Iarray
+  integer(I32), dimension(:), intent(out) :: Iarray
 
 !</output>
 
@@ -3570,10 +3570,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I32), dimension(:), intent(OUT) :: dataarray
+    integer(I32), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer(I32), dimension(:), pointer :: p_data
@@ -3597,13 +3597,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I32), dimension(:), intent(OUT) :: dataarray
+    integer(I32), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3640,17 +3640,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I32), dimension(:,:), intent(OUT) :: Iarray
+  integer(I32), dimension(:,:), intent(out) :: Iarray
 
 !</output>
 
@@ -3731,10 +3731,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I32), dimension(:,:), intent(OUT) :: dataarray
+    integer(I32), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer(I32), dimension(:,:), pointer :: p_data
@@ -3758,13 +3758,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I32), dimension(:,:), intent(OUT) :: dataarray
+    integer(I32), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3800,14 +3800,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I32), dimension(:), intent(IN) :: Iarray
+  integer(I32), dimension(:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -3873,10 +3873,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I32), dimension(:), intent(IN) :: dataarray
+    integer(I32), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer(I32), dimension(:), pointer :: p_data
@@ -3901,13 +3901,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I32), dimension(:), intent(IN) :: dataarray
+    integer(I32), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -3943,14 +3943,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I32), dimension(:,:), intent(IN) :: Iarray
+  integer(I32), dimension(:,:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -4017,10 +4017,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I32), dimension(:,:), intent(IN) :: dataarray
+    integer(I32), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer(I32), dimension(:,:), pointer :: p_data
@@ -4045,13 +4045,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I32), dimension(:,:), intent(IN) :: dataarray
+    integer(I32), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4088,17 +4088,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I64), dimension(:), intent(OUT) :: Iarray
+  integer(I64), dimension(:), intent(out) :: Iarray
 
 !</output>
 
@@ -4182,10 +4182,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I64), dimension(:), intent(OUT) :: dataarray
+    integer(I64), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer(I64), dimension(:), pointer :: p_data
@@ -4209,13 +4209,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I64), dimension(:), intent(OUT) :: dataarray
+    integer(I64), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4252,17 +4252,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  integer(I64), dimension(:,:), intent(OUT) :: Iarray
+  integer(I64), dimension(:,:), intent(out) :: Iarray
 
 !</output>
 
@@ -4343,10 +4343,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I64), dimension(:,:), intent(OUT) :: dataarray
+    integer(I64), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer(I64), dimension(:,:), pointer :: p_data
@@ -4370,13 +4370,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    integer(I64), dimension(:,:), intent(OUT) :: dataarray
+    integer(I64), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4412,14 +4412,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I64), dimension(:), intent(IN) :: Iarray
+  integer(I64), dimension(:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -4485,10 +4485,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I64), dimension(:), intent(IN) :: dataarray
+    integer(I64), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer(I64), dimension(:), pointer :: p_data
@@ -4513,13 +4513,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I64), dimension(:), intent(IN) :: dataarray
+    integer(I64), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4555,14 +4555,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  integer(I64), dimension(:,:), intent(IN) :: Iarray
+  integer(I64), dimension(:,:), intent(in) :: Iarray
 !</input>
 
 !</subroutine>
@@ -4629,10 +4629,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I64), dimension(:,:), intent(IN) :: dataarray
+    integer(I64), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer(I64), dimension(:,:), pointer :: p_data
@@ -4657,13 +4657,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    integer(I64), dimension(:,:), intent(IN) :: dataarray
+    integer(I64), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4700,17 +4700,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(SP), dimension(:), intent(OUT) :: Farray
+  real(SP), dimension(:), intent(out) :: Farray
 
 !</output>
 
@@ -4794,10 +4794,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(SP), dimension(:), intent(OUT) :: dataarray
+    real(SP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       real(SP), dimension(:), pointer :: p_data
@@ -4821,13 +4821,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(SP), dimension(:), intent(OUT) :: dataarray
+    real(SP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -4864,17 +4864,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(SP), dimension(:,:), intent(OUT) :: Farray
+  real(SP), dimension(:,:), intent(out) :: Farray
 
 !</output>
 
@@ -4955,10 +4955,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(SP), dimension(:,:), intent(OUT) :: dataarray
+    real(SP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       real(SP), dimension(:,:), pointer :: p_data
@@ -4982,13 +4982,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(SP), dimension(:,:), intent(OUT) :: dataarray
+    real(SP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5024,14 +5024,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(SP), dimension(:), intent(IN) :: Farray
+  real(SP), dimension(:), intent(in) :: Farray
 !</input>
 
 !</subroutine>
@@ -5097,10 +5097,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(SP), dimension(:), intent(IN) :: dataarray
+    real(SP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       real(SP), dimension(:), pointer :: p_data
@@ -5125,13 +5125,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(SP), dimension(:), intent(IN) :: dataarray
+    real(SP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5167,14 +5167,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(SP), dimension(:,:), intent(IN) :: Farray
+  real(SP), dimension(:,:), intent(in) :: Farray
 !</input>
 
 !</subroutine>
@@ -5241,10 +5241,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(SP), dimension(:,:), intent(IN) :: dataarray
+    real(SP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       real(SP), dimension(:,:), pointer :: p_data
@@ -5269,13 +5269,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(SP), dimension(:,:), intent(IN) :: dataarray
+    real(SP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5312,17 +5312,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(DP), dimension(:), intent(OUT) :: Darray
+  real(DP), dimension(:), intent(out) :: Darray
 
 !</output>
 
@@ -5406,10 +5406,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(DP), dimension(:), intent(OUT) :: dataarray
+    real(DP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       real(DP), dimension(:), pointer :: p_data
@@ -5433,13 +5433,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(DP), dimension(:), intent(OUT) :: dataarray
+    real(DP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5476,17 +5476,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(DP), dimension(:,:), intent(OUT) :: Darray
+  real(DP), dimension(:,:), intent(out) :: Darray
 
 !</output>
 
@@ -5567,10 +5567,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(DP), dimension(:,:), intent(OUT) :: dataarray
+    real(DP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_data
@@ -5594,13 +5594,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(DP), dimension(:,:), intent(OUT) :: dataarray
+    real(DP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5636,14 +5636,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(DP), dimension(:), intent(IN) :: Darray
+  real(DP), dimension(:), intent(in) :: Darray
 !</input>
 
 !</subroutine>
@@ -5709,10 +5709,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(DP), dimension(:), intent(IN) :: dataarray
+    real(DP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       real(DP), dimension(:), pointer :: p_data
@@ -5737,13 +5737,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(DP), dimension(:), intent(IN) :: dataarray
+    real(DP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5779,14 +5779,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(DP), dimension(:,:), intent(IN) :: Darray
+  real(DP), dimension(:,:), intent(in) :: Darray
 !</input>
 
 !</subroutine>
@@ -5853,10 +5853,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(DP), dimension(:,:), intent(IN) :: dataarray
+    real(DP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       real(DP), dimension(:,:), pointer :: p_data
@@ -5881,13 +5881,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(DP), dimension(:,:), intent(IN) :: dataarray
+    real(DP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -5925,17 +5925,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(QP), dimension(:), intent(OUT) :: Qarray
+  real(QP), dimension(:), intent(out) :: Qarray
 
 !</output>
 
@@ -6019,10 +6019,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(QP), dimension(:), intent(OUT) :: dataarray
+    real(QP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       real(QP), dimension(:), pointer :: p_data
@@ -6046,13 +6046,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(QP), dimension(:), intent(OUT) :: dataarray
+    real(QP), dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6089,17 +6089,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  real(QP), dimension(:,:), intent(OUT) :: Qarray
+  real(QP), dimension(:,:), intent(out) :: Qarray
 
 !</output>
 
@@ -6180,10 +6180,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(QP), dimension(:,:), intent(OUT) :: dataarray
+    real(QP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       real(QP), dimension(:,:), pointer :: p_data
@@ -6207,13 +6207,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
 
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    real(QP), dimension(:,:), intent(OUT) :: dataarray
+    real(QP), dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6249,14 +6249,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(QP), dimension(:), intent(IN) :: Qarray
+  real(QP), dimension(:), intent(in) :: Qarray
 !</input>
 
 !</subroutine>
@@ -6322,10 +6322,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(QP), dimension(:), intent(IN) :: dataarray
+    real(QP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       real(QP), dimension(:), pointer :: p_data
@@ -6350,13 +6350,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(QP), dimension(:), intent(IN) :: dataarray
+    real(QP), dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6392,14 +6392,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  real(QP), dimension(:,:), intent(IN) :: Qarray
+  real(QP), dimension(:,:), intent(in) :: Qarray
 !</input>
 
 !</subroutine>
@@ -6466,10 +6466,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(QP), dimension(:,:), intent(IN) :: dataarray
+    real(QP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       real(QP), dimension(:,:), pointer :: p_data
@@ -6494,13 +6494,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    real(QP), dimension(:,:), intent(IN) :: dataarray
+    real(QP), dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6537,17 +6537,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  logical, dimension(:), intent(OUT) :: Larray
+  logical, dimension(:), intent(out) :: Larray
 
 !</output>
 
@@ -6627,10 +6627,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    logical, dimension(:), intent(OUT) :: dataarray
+    logical, dimension(:), intent(out) :: dataarray
     
       ! local variables
       logical, dimension(:), pointer :: p_data
@@ -6658,13 +6658,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    logical, dimension(:), intent(OUT) :: dataarray
+    logical, dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6701,17 +6701,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  logical, dimension(:,:), intent(OUT) :: Larray
+  logical, dimension(:,:), intent(out) :: Larray
 
 !</output>
 
@@ -6792,10 +6792,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    logical, dimension(:,:), intent(OUT) :: dataarray
+    logical, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       logical, dimension(:,:), pointer :: p_data
@@ -6825,13 +6825,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    logical, dimension(:,:), intent(OUT) :: dataarray
+    logical, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -6867,14 +6867,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  logical, dimension(:), intent(IN) :: Larray
+  logical, dimension(:), intent(in) :: Larray
 !</input>
 
 !</subroutine>
@@ -6940,10 +6940,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    logical, dimension(:), intent(IN) :: dataarray
+    logical, dimension(:), intent(in) :: dataarray
     
       ! local variables
       logical, dimension(:), pointer :: p_data
@@ -6972,13 +6972,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    logical, dimension(:), intent(IN) :: dataarray
+    logical, dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7014,14 +7014,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  logical, dimension(:,:), intent(IN) :: Larray
+  logical, dimension(:,:), intent(in) :: Larray
 !</input>
 
 !</subroutine>
@@ -7088,10 +7088,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    logical, dimension(:,:), intent(IN) :: dataarray
+    logical, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       logical, dimension(:,:), pointer :: p_data
@@ -7122,13 +7122,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    logical, dimension(:,:), intent(IN) :: dataarray
+    logical, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7165,17 +7165,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  character, dimension(:), intent(OUT) :: Carray
+  character, dimension(:), intent(out) :: Carray
 
 !</output>
 
@@ -7255,10 +7255,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    character, dimension(:), intent(OUT) :: dataarray
+    character, dimension(:), intent(out) :: dataarray
     
       ! local variables
       character, dimension(:), pointer :: p_data
@@ -7286,13 +7286,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    character, dimension(:), intent(OUT) :: dataarray
+    character, dimension(:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7329,17 +7329,17 @@ contains
 !<input>
 
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
 !</input>
 
 !<output>
 
   ! An array that is filled with the data identified by the handle.
-  character, dimension(:,:), intent(OUT) :: Carray
+  character, dimension(:,:), intent(out) :: Carray
 
 !</output>
 
@@ -7420,10 +7420,10 @@ contains
     ! Retrieves the data from a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    character, dimension(:,:), intent(OUT) :: dataarray
+    character, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       character, dimension(:,:), pointer :: p_data
@@ -7453,13 +7453,13 @@ contains
     ! Retrieves the data from a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(IN) :: rnode
+    type(t_exstorageNode), intent(in) :: rnode
     
     ! The destination array for the data
-    character, dimension(:,:), intent(OUT) :: dataarray
+    character, dimension(:,:), intent(out) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7495,14 +7495,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  character, dimension(:), intent(IN) :: Carray
+  character, dimension(:), intent(in) :: Carray
 !</input>
 
 !</subroutine>
@@ -7568,10 +7568,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    character, dimension(:), intent(IN) :: dataarray
+    character, dimension(:), intent(in) :: dataarray
     
       ! local variables
       character, dimension(:), pointer :: p_data
@@ -7600,13 +7600,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    character, dimension(:), intent(IN) :: dataarray
+    character, dimension(:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7642,14 +7642,14 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! An array with data that should be stored on the external storage
   ! container.
-  character, dimension(:,:), intent(IN) :: Carray
+  character, dimension(:,:), intent(in) :: Carray
 !</input>
 
 !</subroutine>
@@ -7716,10 +7716,10 @@ contains
     ! Writes data to a RamDrive container
     
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    character, dimension(:,:), intent(IN) :: dataarray
+    character, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       character, dimension(:,:), pointer :: p_data
@@ -7750,13 +7750,13 @@ contains
     ! Writes data to a directory container
     
     ! The storage container assigned to the storage block
-    type(t_exstorageContainer), intent(IN) :: rcontainer
+    type(t_exstorageContainer), intent(in) :: rcontainer
         
     ! The storage block containing the data
-    type(t_exstorageNode), intent(INOUT) :: rnode
+    type(t_exstorageNode), intent(inout) :: rnode
     
     ! The source array with the data
-    character, dimension(:,:), intent(IN) :: dataarray
+    character, dimension(:,:), intent(in) :: dataarray
     
       ! local variables
       integer :: cf
@@ -7793,10 +7793,10 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</input>
 
 !<inputoutput>
@@ -7805,11 +7805,11 @@ contains
   ! to this memory block.
   ! If this is ST_NOHANDLE, a new handle is automatically created
   ! and the data is saved to it.
-  integer, intent(INOUT) :: istoragehandle
+  integer, intent(inout) :: istoragehandle
 
   ! OPTIONAL: local heap structure of the storage management for the
   ! main memory. If not given, the global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rstorageheap
+  type(t_storageBlock), intent(inout), target, optional :: rstorageheap
 !</inputoutput>
 
 !</subroutine>
@@ -8005,21 +8005,21 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
   
   ! Handle to a memory block in the main memory, maintained by the 
   ! storage.f90. The data in this memory block is directly saved
   ! to the the data container.
-  integer, intent(IN) :: istoragehandle
+  integer, intent(in) :: istoragehandle
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 
   ! OPTIONAL: local heap structure of the storage management for the
   ! main memory. If not given, the global heap is used.
-  type(t_storageBlock), intent(INOUT), target, optional :: rstorageheap
+  type(t_storageBlock), intent(inout), target, optional :: rstorageheap
 !</inputoutput>
 
 !</subroutine>
@@ -8203,12 +8203,12 @@ contains
 
 !<input>
   ! The handle
-  integer, intent(IN) :: ihandle
+  integer, intent(in) :: ihandle
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: local heap structure. If not given, the global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
 !</inputoutput>
 
 !</subroutine>
@@ -8250,16 +8250,16 @@ contains
 
 !<input>
   ! Handle of the source array to copy
-  integer, intent(IN) :: h_source
+  integer, intent(in) :: h_source
 
   ! OPTIONAL: If h_dest=ST_NOHANDLE, this parameter allows to specify
   ! a container id where new data is stored to.
   ! If h_dest<>ST_NOHANDLE, this parameter is ignored.
-  integer, intent(IN), optional :: icontainerId
+  integer, intent(in), optional :: icontainerId
 
   ! OPTIONAL: local heap structure to initialise. If not given, the
   ! global heap is used.
-  type(t_exstorageBlock), intent(INOUT), target, optional :: rheap
+  type(t_exstorageBlock), intent(inout), target, optional :: rheap
   
 !</input>
 
@@ -8268,7 +8268,7 @@ contains
   ! If =ST_NOHANDLE, a new handle is allocated in exactly the same size
   ! and structure as h_source and data is copied to it. Such a new
   ! block is allocated in the container icontainerId
-  integer, intent(INOUT) :: h_dest
+  integer, intent(inout) :: h_dest
 !</inputoutput>
 
 !</subroutine>

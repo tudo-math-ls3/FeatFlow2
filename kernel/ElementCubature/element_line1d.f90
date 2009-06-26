@@ -55,34 +55,34 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P0_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
   !  Djac(1) = J(1,1)
   ! REMARK: Not used by this special type of element!
-  real(DP), dimension(:), intent(IN) :: Djac
+  real(DP), dimension(:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
   ! REMARK: Not used by this special type of element!
-  real(DP), intent(IN) :: ddetj
+  real(DP), intent(in) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Cartesian coordinates of the evaluation point on reference element.
   ! Dpoint(1) = x-coordinate,
-  real(DP), dimension(1), intent(IN) :: Dpoint
+  real(DP), dimension(1), intent(in) :: Dpoint
 !</input>
   
 !<output>
@@ -93,7 +93,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
-  real(DP), dimension(:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -122,39 +122,39 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P0_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
   ! REMARK: Not used by this special type of element!
-  real(DP), dimension(:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! REMARK: Not used by this special type of element!
-  real(DP), dimension(:), intent(IN) :: Ddetj
+  real(DP), dimension(:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
   ! DIMENSION(#space dimensions,npoints)
   ! Dpoints(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:), intent(in) :: Dpoints
   
   !</input>
   
@@ -167,7 +167,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:,:), intent(out) :: Dbas
   
   !</output>
 
@@ -198,13 +198,13 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P0_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
-  integer, intent(IN)  :: nelements
+  integer, intent(in)  :: nelements
 
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE^,nelements)
@@ -213,27 +213,27 @@ contains
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
   !  Djac(1,i,.) = J_i(1,1,.)
   ! REMARK: Not used by this special type of element!
-  real(DP), dimension(:,:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
   !  Ddetj(i,.) = Determinant of point i
   !  Ddetj(:,j) = determinants of all points on element j
   ! REMARK: Not used by this special type of element!
-  real(DP), dimension(:,:), intent(IN) :: ddetj
+  real(DP), dimension(:,:), intent(in) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -243,7 +243,7 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
   !</input>
   
@@ -256,8 +256,8 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
-  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
-  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out) :: Dbas
   
   !</output>
 
@@ -290,36 +290,36 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P1_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
   !  Djac(1) = J(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:), intent(IN) :: Djac
+  real(DP), dimension(:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), intent(IN) :: ddetj
+  real(DP), intent(in) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Cartesian coordinates of the evaluation point on reference element.
   ! Dpoint(1) = x-coordinate,
-  real(DP), dimension(1), intent(IN) :: Dpoint
+  real(DP), dimension(1), intent(in) :: Dpoint
 !</input>
   
 !<output>
@@ -330,7 +330,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
-  real(DP), dimension(:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -380,41 +380,41 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:), intent(IN) :: Ddetj
+  real(DP), dimension(:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
   ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -425,7 +425,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -472,13 +472,13 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
-  integer, intent(IN)  :: nelements
+  integer, intent(in)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE,nelements).
@@ -487,7 +487,7 @@ contains
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -495,7 +495,7 @@ contains
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  real(DP), dimension(:,:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -503,14 +503,14 @@ contains
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  real(DP), dimension(:,:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -520,7 +520,7 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -531,8 +531,8 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
-  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
-  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -592,36 +592,36 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_P2_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
   !  Djac(1) = J(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:), intent(IN) :: Djac
+  real(DP), dimension(:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), intent(IN) :: ddetj
+  real(DP), intent(in) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Cartesian coordinates of the evaluation point on reference element.
   ! Dpoint(1) = x-coordinate,
-  real(DP), dimension(1), intent(IN) :: Dpoint
+  real(DP), dimension(1), intent(in) :: Dpoint
 !</input>
   
 !<output>
@@ -632,7 +632,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
-  real(DP), dimension(:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -685,41 +685,41 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P2_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:), intent(IN) :: Ddetj
+  real(DP), dimension(:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
   ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -730,7 +730,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -781,13 +781,13 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P2_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
-  integer, intent(IN)  :: nelements
+  integer, intent(in)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE,nelements).
@@ -796,7 +796,7 @@ contains
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -804,7 +804,7 @@ contains
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  real(DP), dimension(:,:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -812,14 +812,14 @@ contains
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  real(DP), dimension(:,:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -829,7 +829,7 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -840,8 +840,8 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
-  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
-  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -905,36 +905,36 @@ contains
   !<input>
 
   ! Element type identifier. Must be =EL_S31_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element.
   !  Djac(1) = J(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:), intent(IN) :: Djac
+  real(DP), dimension(:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), intent(IN) :: ddetj
+  real(DP), intent(in) :: ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Cartesian coordinates of the evaluation point on reference element.
   ! Dpoint(1) = x-coordinate,
-  real(DP), dimension(1), intent(IN) :: Dpoint
+  real(DP), dimension(1), intent(in) :: Dpoint
 !</input>
   
 !<output>
@@ -945,7 +945,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
-  real(DP), dimension(:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1020,41 +1020,41 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_S31_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
   
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE)
   ! Dcoords(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real element. For every point i:
   !  Djac(1,i) = J_i(1,1)
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
-  real(DP), dimension(:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! element for every of the npoints points.
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:), intent(IN) :: Ddetj
+  real(DP), dimension(:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
   ! DIMENSION(#space dimensions,npoints).
   !  Dpoints(1,.)=x-coordinates,
-  real(DP), dimension(:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -1065,7 +1065,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:), intent(OUT) :: Dbas
+  real(DP), dimension(:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1117,13 +1117,13 @@ contains
 
 !<input>
   ! Element type identifier. Must be =EL_P1_1D.
-  integer(I32), intent(IN)  :: celement
+  integer(I32), intent(in)  :: celement
 
   ! Number of points on every element where to evalate the basis functions.
-  integer, intent(IN) :: npoints
+  integer, intent(in) :: npoints
   
   ! Number of elements, the basis functions are evaluated at
-  integer, intent(IN)  :: nelements
+  integer, intent(in)  :: nelements
   
   ! Array with coordinates of the corners that form the real element.
   ! DIMENSION(#space dimensions,NVE,nelements).
@@ -1132,7 +1132,7 @@ contains
   !  Dcoords(:,i,.) = Coordinates of vertex i
   ! furthermore:
   !  Dcoords(:,:,j) = Coordinates of all corner vertices of element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
   
   ! Values of the Jacobian matrix that defines the mapping between the
   ! reference element and the real elements. For every point i:
@@ -1140,7 +1140,7 @@ contains
   ! Remark: Only used for calculating derivatives; can be set to 0.0
   ! when derivatives are not used.
   !  Djac(:,:,j) refers to the determinants of the points of element j.
-  real(DP), dimension(:,:,:), intent(IN) :: Djac
+  real(DP), dimension(:,:,:), intent(in) :: Djac
   
   ! Determinant of the mapping from the reference element to the real
   ! elements for every of the npoints points on all the elements.
@@ -1148,14 +1148,14 @@ contains
   !  Ddetj(:,j) = determinants of all points on element j
   ! Remark: Only used for calculating derivatives; can be set to 1.0
   ! when derivatives are not needed. Must not be set to 0.0!
-  real(DP), dimension(:,:), intent(IN) :: Ddetj
+  real(DP), dimension(:,:), intent(in) :: Ddetj
   
   ! Derivative quantifier array. array [1..EL_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN) :: Bder
+  logical, dimension(:), intent(in) :: Bder
   
   ! Array with coordinates of the points where to evaluate.
   ! The coordinates are expected on the reference element.
@@ -1165,7 +1165,7 @@ contains
   !  Dpoints(:,i,.) = Coordinates of point i
   ! furthermore:
   !  Dpoints(:,:,j) = Coordinates of all points on element j
-  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
 !</input>
   
 !<output>
@@ -1176,8 +1176,8 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
-  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(OUT) :: Dbas
-  real(DP), dimension(:,:,:,:), intent(OUT) :: Dbas
+  !REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out) :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1256,19 +1256,19 @@ contains
 
 !<input>
   ! The element specifier.
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
   
   ! t_evalElementSet-structure that contains cell-specific information and
   ! coordinates of the evaluation points. revalElementSet must be prepared
   ! for the evaluation.
-  type(t_evalElementSet), intent(IN)             :: reval
+  type(t_evalElementSet), intent(in)             :: reval
   
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN)              :: Bder  
+  logical, dimension(:), intent(in)              :: Bder  
 !</input>
   
 !<output>
@@ -1280,7 +1280,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1377,19 +1377,19 @@ contains
 
 !<input>
   ! The element specifier.
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
   
   ! t_evalElementSet-structure that contains cell-specific information and
   ! coordinates of the evaluation points. revalElementSet must be prepared
   ! for the evaluation.
-  type(t_evalElementSet), intent(IN)             :: reval
+  type(t_evalElementSet), intent(in)             :: reval
   
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN)              :: Bder  
+  logical, dimension(:), intent(in)              :: Bder  
 !</input>
   
 !<output>
@@ -1401,7 +1401,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1505,19 +1505,19 @@ contains
 
 !<input>
   ! The element specifier.
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
   
   ! t_evalElementSet-structure that contains cell-specific information and
   ! coordinates of the evaluation points. revalElementSet must be prepared
   ! for the evaluation.
-  type(t_evalElementSet), intent(IN)             :: reval
+  type(t_evalElementSet), intent(in)             :: reval
   
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN)              :: Bder  
+  logical, dimension(:), intent(in)              :: Bder  
 !</input>
   
 !<output>
@@ -1529,7 +1529,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
 !</output>
 
 ! </subroutine>
@@ -1647,19 +1647,19 @@ contains
 
 !<input>
   ! The element specifier.
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
   
   ! t_evalElementSet-structure that contains cell-specific information and
   ! coordinates of the evaluation points. revalElementSet must be prepared
   ! for the evaluation.
-  type(t_evalElementSet), intent(IN)             :: reval
+  type(t_evalElementSet), intent(in)             :: reval
   
   ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
   ! If bder(DER_xxxx)=true, the corresponding derivative (identified
   ! by DER_xxxx) is computed by the element (if supported). Otherwise,
   ! the element might skip the computation of that value type, i.e.
   ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
-  logical, dimension(:), intent(IN)              :: Bder  
+  logical, dimension(:), intent(in)              :: Bder  
 !</input>
   
 !<output>
@@ -1671,7 +1671,7 @@ contains
   !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
-  real(DP), dimension(:,:,:,:), intent(OUT)      :: Dbas
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
 !</output>
 
 ! </subroutine>

@@ -75,15 +75,15 @@ contains
 
 !<input>
     ! Initial stack size
-    integer, intent(IN) :: isize
+    integer, intent(in) :: isize
 
     ! Stack data type
-    integer, intent(IN) :: cdataType
+    integer, intent(in) :: cdataType
 !</input>
 
 !<inputoutput>
     ! Stack
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -121,7 +121,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -142,7 +142,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
     
@@ -160,7 +160,7 @@ contains
 !</description>
 
 !<input>
-    type(t_stack), intent(IN) :: rstack
+    type(t_stack), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -182,7 +182,7 @@ contains
 !</description>
 
 !<input>
-    type(t_stack), intent(IN) :: rstack
+    type(t_stack), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -204,11 +204,11 @@ contains
 !</description>
     
 !<input>
-    integer, intent(IN) :: idata
+    integer, intent(in) :: idata
 !</input>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
 
@@ -245,11 +245,11 @@ contains
 !</description>
     
 !<input>
-    real(SP), intent(IN) :: sdata
+    real(SP), intent(in) :: sdata
 !</input>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
 
@@ -286,11 +286,11 @@ contains
 !</description>
     
 !<input>
-    real(DP), intent(IN) :: ddata
+    real(DP), intent(in) :: ddata
 !</input>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 !</subroutine>
 
@@ -327,7 +327,7 @@ contains
 !</description>
 
 !<input>
-    type(t_stack), intent(IN) :: rstack
+    type(t_stack), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -359,7 +359,7 @@ contains
 !</description>
 
 !<input>
-    type(t_stack), intent(IN) :: rstack
+    type(t_stack), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -391,7 +391,7 @@ contains
 !</description>
 
 !<input>
-    type(t_stack), intent(IN) :: rstack
+    type(t_stack), intent(in) :: rstack
 !</input>
 
 !<result>
@@ -423,7 +423,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 
 !<result>
@@ -456,7 +456,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 
 !<result>
@@ -489,7 +489,7 @@ contains
 !</description>
 
 !<inputoutput>
-    type(t_stack), intent(INOUT) :: rstack
+    type(t_stack), intent(inout) :: rstack
 !</inputoutput>
 
 !<result>

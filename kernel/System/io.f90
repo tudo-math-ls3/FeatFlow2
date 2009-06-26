@@ -89,7 +89,7 @@ contains
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
-    logical, intent(IN), optional :: bformatted
+    logical, intent(in), optional :: bformatted
 
 !</input>
 
@@ -170,7 +170,7 @@ contains
     ! TRUE : Open the file formatted, i.e. in human readable form
     ! FALSE: Open the file in unformatted, machine dependent form
     ! If not specified, the default system dependent setting is used.
-    logical, intent(IN), optional :: bformatted
+    logical, intent(in), optional :: bformatted
 !</input>
 
 !<output>
@@ -248,7 +248,7 @@ contains
 
 !<input>
   ! filename
-  character(*), intent(IN) :: sfilename
+  character(*), intent(in) :: sfilename
 !</input>
 !</subroutine>
 
@@ -274,19 +274,19 @@ contains
 
 !<input>  
     ! The unit where to read from; must be connected to a file.
-    integer, intent(IN) :: iunit
+    integer, intent(in) :: iunit
 !</input>  
 
 !<output>
     ! The string where to write data to
-    character(LEN=*), intent(OUT) :: sdata
+    character(LEN=*), intent(out) :: sdata
     
     ! Length of the output
-    integer, intent(OUT) :: ilinelen
+    integer, intent(out) :: ilinelen
     
     ! Status of the reading process. Set to a value <> 0 if the end
     ! of the file is reached.
-    integer, intent(OUT) :: ios
+    integer, intent(out) :: ios
 !</output>
 !</subroutine>
     

@@ -375,10 +375,10 @@ contains
 
 !<input>
   ! The cubature formula to be tested
-  integer(I32), intent(IN)                       :: ccubType
+  integer(I32), intent(in)                       :: ccubType
   
   ! The element type the cubature formula should be checked against
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
 !</input>
   
 !</subroutine>
@@ -467,7 +467,7 @@ contains
 
 !<input>
   ! An element type identifier
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
 !</input>
 
 !<result>
@@ -584,7 +584,7 @@ contains
 
 !<input>
   ! An element type identifier
-  integer(I32), intent(IN)                       :: celement
+  integer(I32), intent(in)                       :: celement
 !</input>
 
 !<result>
@@ -709,20 +709,20 @@ contains
 !<input>
   
   ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target    :: rtriangulation
+  type(t_triangulation), intent(in), target    :: rtriangulation
   
   ! Number of solution components maintained by the block structure
-  integer, intent(IN), optional                :: ncomponents
+  integer, intent(in), optional                :: ncomponents
   
   ! OPTIONAL: The underlying domain.
-  type(t_boundary), intent(IN), target, optional :: rboundary
+  type(t_boundary), intent(in), target, optional :: rboundary
 
 !</input>
   
 !<output>
   
   ! The block discretisation structure to be initialised.
-  type(t_blockDiscretisation), intent(OUT) :: rblockDiscr
+  type(t_blockDiscretisation), intent(out) :: rblockDiscr
   
 !</output>
   
@@ -764,14 +764,14 @@ contains
   
   ! Spatial discretisation structure that is embedded into the
   ! block discretisation.
-  type(t_spatialDiscretisation), intent(IN) :: rspatialDiscr
+  type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
   
 !</input>
   
 !<output>
   
   ! The block discretisation structure to be initialised.
-  type(t_blockDiscretisation), intent(OUT) :: rblockDiscr
+  type(t_blockDiscretisation), intent(out) :: rblockDiscr
   
 !</output>
   
@@ -812,22 +812,22 @@ contains
 
 !<input>
   ! A source discretisation structure that should be used as template
-  type(t_blockDiscretisation), intent(IN), target :: rsourceDiscr
+  type(t_blockDiscretisation), intent(in), target :: rsourceDiscr
 
   ! OPTIONAL: Number of the block in rsourceDiscr that should be
   ! used as first block in rdestDiscr. Default value is =1.
-  integer, intent(IN), optional :: ifirstBlock
+  integer, intent(in), optional :: ifirstBlock
 
   ! OPTIONAL: Number of the last block in rsourceDiscr that should be
   ! used as last block in rdestDiscr. Default value is the 
   ! number of components in rsourceDiscr.
-  integer, intent(IN), optional :: ilastBlock
+  integer, intent(in), optional :: ilastBlock
 !</input>
   
 !<output>
   ! The discretisation structure to be initialised.
   ! Any old existing information in rdestDiscr is released if necessary.
-  type(t_blockDiscretisation), intent(INOUT), target :: rdestDiscr
+  type(t_blockDiscretisation), intent(inout), target :: rdestDiscr
 !</output>
   
 !</subroutine>
@@ -896,12 +896,12 @@ contains
   !   in rblockDiscr is also released from memory. This is the standard setting.
   ! Is set to FALSE, only rblockDiscr is cleaned up, the substructures
   !   are ignored.
-  logical, intent(IN), optional :: breleaseSubstruc
+  logical, intent(in), optional :: breleaseSubstruc
 !</input>
 
 !<inputoutput>
   ! The block discretisation structures to be released.
-  type(t_blockDiscretisation), intent(INOUT), target :: rblockDiscr
+  type(t_blockDiscretisation), intent(inout), target :: rblockDiscr
 !</inputoutput>
   
 !</subroutine>
@@ -953,23 +953,23 @@ contains
 
 !<input>
   ! The element type identifier that is to be used for all elements.
-  integer(I32), intent(IN) :: celement
+  integer(I32), intent(in) :: celement
   
   ! Cubature formula CUB_xxxx to use for calculating integrals.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
   
   ! The underlying domain.
-  type(t_boundary), intent(IN), target, optional :: rboundary
+  type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
   
 !<output>
   ! The discretisation structure to be initialised.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rspatialDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
 !</output>
   
 !</subroutine>
@@ -1069,33 +1069,33 @@ contains
 
 !<input>
   ! The element type identifier that is to be used for all triangular elements.
-  integer(I32), intent(IN) :: ieltypTri
+  integer(I32), intent(in) :: ieltypTri
 
   ! The element type identifier that is to be used for all quadrilateral elements.
-  integer(I32), intent(IN) :: ieltypQuad
+  integer(I32), intent(in) :: ieltypQuad
   
   ! Cubature formula CUB_xxxx to use for calculating integrals 
   ! on triangular elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer(I32), intent(IN) :: ccubTypeTri
+  integer(I32), intent(in) :: ccubTypeTri
 
   ! Cubature formula CUB_xxxx to use for calculating integrals on 
   ! quadrilateral elements
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer(I32), intent(IN) :: ccubTypeQuad
+  integer(I32), intent(in) :: ccubTypeQuad
   
   ! The triangulation structure underlying to the discretisation.
-  type(t_triangulation), intent(IN), target :: rtriangulation
+  type(t_triangulation), intent(in), target :: rtriangulation
   
   ! The underlying domain.
-  type(t_boundary), intent(IN), target, optional :: rboundary
+  type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
   
 !<output>
   ! The discretisation structure to be initialised.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rspatialDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
 !</output>
   
 !</subroutine>
@@ -1291,11 +1291,11 @@ contains
 
 !<input>
   ! A source discretisation structure that should be used as template
-  type(t_spatialDiscretisation), intent(IN), target :: rsourceDiscr
+  type(t_spatialDiscretisation), intent(in), target :: rsourceDiscr
 
   ! The element type identifier that is to be used for all elements
   ! in the new discretisation structure
-  integer(I32), intent(IN) :: celement
+  integer(I32), intent(in) :: celement
   
   ! Cubature formula to use for calculating integrals
   ! in the new discretisation structure
@@ -1303,14 +1303,14 @@ contains
   ! automatically determine cubature formula.
   ! A value SPDISC_CUB_NOCHANGE means:
   ! take the cubature formula from the source discretisation.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 !</input>
   
 !<output>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rdestDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
 !</output>
   
 !</subroutine>
@@ -1416,34 +1416,34 @@ contains
 
 !<input>
   ! A source discretisation structure that should be used as template
-  type(t_spatialDiscretisation), intent(IN), target :: rsourceDiscr
+  type(t_spatialDiscretisation), intent(in), target :: rsourceDiscr
 
   ! The element type identifier that is to be used for all triangular
   ! elements in the new discretisation structure
-  integer(I32), intent(IN) :: ieltypTri
+  integer(I32), intent(in) :: ieltypTri
 
   ! The element type identifier that is to be used for all quad
   ! elements in the new discretisation structure
-  integer(I32), intent(IN) :: ieltypQuad
+  integer(I32), intent(in) :: ieltypQuad
   
   ! Cubature formula to use for calculating integrals on triangular
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer(I32), intent(IN) :: ccubTypeTri
+  integer(I32), intent(in) :: ccubTypeTri
 
   ! Cubature formula to use for calculating integrals on quad
   ! elements in the new discretisation structure.
   ! Alternatively, the value SPDISC_CUB_AUTOMATIC means: 
   ! automatically determine cubature formula.
-  integer(I32), intent(IN) :: ccubTypeQuad
+  integer(I32), intent(in) :: ccubTypeQuad
 !</input>
   
 !<output>
   ! The discretisation structure to be initialised.
   ! Any old existing discretisation information in rdestDiscr
   ! is released if necessary.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rdestDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
 !</output>
   
 !</subroutine>
@@ -1552,7 +1552,7 @@ contains
 
 !<inputoutput>
   ! The discretisation structure to be released.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rspatialDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rspatialDiscr
 !</inputoutput>
   
 !</subroutine>
@@ -1638,7 +1638,7 @@ contains
 
 !<input>
   ! A source discretisation structure that should be used as template
-  type(t_spatialDiscretisation), intent(IN) :: rsourceDiscr
+  type(t_spatialDiscretisation), intent(in) :: rsourceDiscr
   
   ! OPTIONAL: Whether the new discretisation structure should share its information
   ! with rsourceDiscr.
@@ -1648,13 +1648,13 @@ contains
   !  'derived' structure, i.e. it uses the same dynamic information
   !  (handles and therefore element lists) as rsourceDiscr.
   ! If not specified, TRUE is assumed.
-  logical, intent(IN), optional :: bshare
+  logical, intent(in), optional :: bshare
 !</input>
   
 !<output>
   ! The new discretisation structure. Any old existing information in rdestDiscr
   ! is released if necessary.
-  type(t_spatialDiscretisation), intent(INOUT), target :: rdestDiscr
+  type(t_spatialDiscretisation), intent(inout), target :: rdestDiscr
 !</output>
   
 !</subroutine>
@@ -1711,7 +1711,7 @@ contains
 
 !<input>
   ! A source discretisation structure that should be used as template
-  type(t_blockDiscretisation), intent(IN) :: rsourceDiscr
+  type(t_blockDiscretisation), intent(in) :: rsourceDiscr
   
   ! OPTIONAL: Whether the new discretisation structure should share its information
   ! with rsourceDiscr.
@@ -1721,13 +1721,13 @@ contains
   !  'derived' structure, i.e. it uses the same dynamic information
   !  (handles and therefore element lists) as rsourceDiscr.
   ! If not specified, TRUE is assumed.
-  logical, intent(IN), optional :: bshare
+  logical, intent(in), optional :: bshare
 !</input>
   
 !<output>
   ! The new discretisation structure. Any old existing information in rdestDiscr
   ! is released if necessary.
-  type(t_blockDiscretisation), intent(INOUT), target :: rdestDiscr
+  type(t_blockDiscretisation), intent(inout), target :: rdestDiscr
 !</output>
   
 !</subroutine>
@@ -1777,7 +1777,7 @@ contains
 
 !<input>
     ! block discretisation
-    type(t_blockDiscretisation), intent(IN) :: rdiscr
+    type(t_blockDiscretisation), intent(in) :: rdiscr
 !</input>
 !</subroutine>
 
@@ -1811,7 +1811,7 @@ contains
 
 !<input>
      ! spatial discretisation
-     type(t_spatialDiscretisation), intent(IN) :: rspatialDiscr
+     type(t_spatialDiscretisation), intent(in) :: rspatialDiscr
 !</input>
 !</subroutine>
 
@@ -1854,7 +1854,7 @@ contains
 
 !<input>
      ! element distribution
-     type(t_elementDistribution), intent(IN) :: relementDistr
+     type(t_elementDistribution), intent(in) :: relementDistr
 !</input>
 !</subroutine>
 

@@ -208,12 +208,12 @@ contains
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 !</input>
 
 !<inputoutput>
   ! A structure which defines what errors are to be calculated.
-  type(t_errorScVec), intent(INOUT), target :: rerror
+  type(t_errorScVec), intent(inout), target :: rerror
 !</inputoutput>
 
 !</subroutine>
@@ -799,11 +799,11 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =0.
-  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -818,7 +818,7 @@ contains
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
   ! If not specified, the discretisation structure in the vector is used.
@@ -826,17 +826,17 @@ contains
   ! vector (concerning NEQ,...). pperr_scalar uses the cubature formula
   ! specifier of the linear form in rdiscretisation to compute the integrals
   ! for the error.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: A scalar vector which holds the calculated error per element
-  type(t_vectorScalar), intent(INOUT), optional :: relementError
+  type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
   ! The calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -976,12 +976,12 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvector
+  type(t_vectorScalar), intent(in), target :: rvector
   
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -991,7 +991,7 @@ contains
     
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
   ! If not specified, the discretisation structure in the vector is used.
@@ -999,17 +999,17 @@ contains
   ! vector (concerning NEQ,...). pperr_scalar uses the cubature formula
   ! specifier of the linear form in rdiscretisation to compute the integrals
   ! for the error.
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: A scalar vector which holds the calculated error per element
-  type(t_vectorScalar), intent(INOUT), optional :: relementError
+  type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
   ! The calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -1039,14 +1039,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =0.
-  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
   
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1063,15 +1063,15 @@ contains
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A scalar vector which holds the calculated error per element
-  type(t_vectorScalar), intent(INOUT), optional :: relementError
+  type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -1838,14 +1838,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =0.
-  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -1862,15 +1862,15 @@ contains
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A scalar vector which holds the calculated error per element
-  type(t_vectorScalar), intent(INOUT), optional :: relementError
+  type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -2641,14 +2641,14 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =0.
-  type(t_vectorScalar), intent(IN), target, optional :: rvectorScalar
+  type(t_vectorScalar), intent(in), target, optional :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -2665,15 +2665,15 @@ contains
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 
   ! OPTIONAL: A scalar vector which holds the calculated error per element
-  type(t_vectorScalar), intent(INOUT), optional :: relementError
+  type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: derror 
+  real(DP), intent(out) :: derror 
 !</output>
 
 !</subroutine>
@@ -3479,19 +3479,19 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
   
   ! OPTIONAL: A t_boundaryRegion specifying the boundary region where
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
-  type(t_boundaryRegion), intent(IN), optional :: rboundaryRegion
+  type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
   
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =1.
-  type(t_vectorScalar), intent(IN), optional, target :: rvectorScalar
+  type(t_vectorScalar), intent(in), optional, target :: rvectorScalar
   
   ! OPTIONAL: A callback function that provides the analytical reference 
   ! function to which the error should be computed.
@@ -3506,17 +3506,17 @@ contains
   
   ! OPTIONAL: A collection structure. This structure is given to the
   ! callback function to provide additional information. 
-  type(t_collection), intent(INOUT), target, optional :: rcollection
+  type(t_collection), intent(inout), target, optional :: rcollection
 
   ! OPTIONAL: A discretisation structure specifying how to compute the error.
   ! Must be specified if rvectorScalar is not specified as this
   ! describes the domain/triangulation/...
-  type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
 !</input>
 
 !<output>
   ! The calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -3629,21 +3629,21 @@ contains
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A line cubature formula CUB_xxxx_1D to be used for line integration.
-  integer(I32), intent(IN) :: ccubType
+  integer(I32), intent(in) :: ccubType
 
   ! A t_boundaryRegion specifying the boundary region where
   ! to calculate. 
-  type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! A discretisation structure specifying how to compute the error.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 
   ! OPTIONAL: The FE solution vector. Represents a scalar FE function.
   ! If omitted, the function is assumed to be constantly =0.
-  type(t_vectorScalar), intent(IN), optional, target :: rvectorScalar
+  type(t_vectorScalar), intent(in), optional, target :: rvectorScalar
 
   ! OPTIONAL: A callback function that provides a coefficient in front
   ! of the FE function. If not specified, a value of 1 is assumed.
@@ -3659,12 +3659,12 @@ contains
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: derror
+  real(DP), intent(out) :: derror
 !</output>
 
 !</subroutine>
@@ -4257,14 +4257,14 @@ contains
 
 !<input>
     ! FE solution vector
-    type(t_vectorScalar), intent(IN), target :: rvector
+    type(t_vectorScalar), intent(in), target :: rvector
 
     ! FE reference solution vector
-    type(t_vectorScalar), intent(IN), target :: rvectorRef
+    type(t_vectorScalar), intent(in), target :: rvectorRef
             
     ! Type of error to compute. A PPERR_xxERROR constant.
     ! PPERR_L2ERROR computes the L2-error, PPERR_L1ERROR the L1-error.
-    integer, intent(IN) :: ctype
+    integer, intent(in) :: ctype
             
     ! OPTIONAL: A discretisation structure specifying how to compute the error.
     ! If not specified, the discretisation structure in the reference gradient 
@@ -4272,17 +4272,17 @@ contains
     ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
     ! cubature formula specifier of the linear form in rdiscretisation to 
     ! compute the integrals for the error.
-    type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisationRef
+    type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated error on each element.
-    type(t_vectorScalar), intent(INOUT), optional :: relementError
+    type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
     ! The calculated error.
-    real(DP), intent(OUT) :: derror 
+    real(DP), intent(out) :: derror 
 !</output>
 !</subroutine>
 
@@ -4345,16 +4345,16 @@ contains
 
 !<input>
     ! FE solution block vector
-    type(t_vectorBlock), intent(IN), target :: rvector
+    type(t_vectorBlock), intent(in), target :: rvector
 
     ! FE reference solution block vector
-    type(t_vectorBlock), intent(IN), target :: rvectorRef
+    type(t_vectorBlock), intent(in), target :: rvectorRef
             
     ! Type of error to compute. A PPERR_xxERROR constant.
     ! PPERR_L2ERROR computes the L2-error.
     ! PPERR_L1ERROR computes the L1-error.
     ! PPERR_H1ERROR computes the H1-error.
-    integer, intent(IN) :: ctype
+    integer, intent(in) :: ctype
 
     ! OPTIONAL: A discretisation structure specifying how to compute the error.
     ! If not specified, the discretisation structure in the reference gradient 
@@ -4362,17 +4362,17 @@ contains
     ! to the two gradient vectors (concerning NEQ,...). pperr_gradient uses the
     ! cubature formula specifier of the linear form in rdiscretisation to 
     ! compute the integrals for the error.
-    type(t_spatialDiscretisation), intent(IN), target, optional :: rdiscretisationRef
+    type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisationRef
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated error on each element.
-    type(t_vectorScalar), intent(INOUT), optional :: relementError
+    type(t_vectorScalar), intent(inout), optional :: relementError
 !</inputoutput>
 
 !<output>
     ! The calculated error.
-    real(DP), intent(OUT) :: derror 
+    real(DP), intent(out) :: derror 
 !</output>
 !</subroutine>
 
@@ -4810,17 +4810,17 @@ contains
 
 !<input>
     ! FE solution vector
-    type(t_vectorScalar), intent(IN), target :: rvector
+    type(t_vectorScalar), intent(in), target :: rvector
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
-    type(t_vectorScalar), intent(INOUT), optional :: relementDeviation
+    type(t_vectorScalar), intent(inout), optional :: relementDeviation
 !</inputoutput>
 
 !<output>
     ! The calculated standard deviation.
-    real(DP), intent(OUT) :: ddeviation
+    real(DP), intent(out) :: ddeviation
 !</output>
 !</subroutine>
 
@@ -4877,17 +4877,17 @@ contains
 
 !<input>
     ! FE solution block vector
-    type(t_vectorBlock), intent(IN), target :: rvector
+    type(t_vectorBlock), intent(in), target :: rvector
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: Scalar vector that stores the calculated deviation on each element.
-    type(t_vectorScalar), intent(INOUT), optional :: relementDeviation
+    type(t_vectorScalar), intent(inout), optional :: relementDeviation
 !</inputoutput>
 
 !<output>
     ! The calculated deviation.
-    real(DP), intent(OUT) :: ddeviation
+    real(DP), intent(out) :: ddeviation
 !</output>
 !</subroutine>
 
