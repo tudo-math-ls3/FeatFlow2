@@ -5,18 +5,40 @@
 !#
 !# <purpose>
 !# This is the main program which calls the individual application modules.
+!#
+!# Frequently asked questions
+!# --------------------------
+!#
+!# 1.) How to add a new application/model?
+!#
+!#     To add a new application, you should create a new subdirectory in
+!#     src/models giving it the name of your application. Then you should
+!#     implement your application so that it can be evoked by a single
+!#     call to xxx_app(rparlist), where xxx stands for the application
+!#     name and user-defined parameters are supplied via parameter list.
+!#
+!# TODO
+!# ----
+!#
+!# 1.) Remove the old splib (ILU-k) from the solver module and replace it
+!#     by the routines from the iluk.f90 module.
+!#
+!# 2.) Rewrite the zpinch application so that it does not taint the transport
+!#     application any longer. Distinguish between circular and rectangular
+!#     grids. Test implementation with momentum rather then velocity vector.
 !# </purpose>
 !##############################################################################
 
 program flagship
 
-  use euler_application
   use fparser
   use fsystem
   use genoutput
   use paramlist
   use signals
   use storage
+
+  use euler_application
   use transport_application
   use zpinch_application
   
