@@ -45,6 +45,7 @@
 module numbersets
 
   use fsystem
+  use genoutput
   use storage
   
   implicit none
@@ -60,6 +61,9 @@ module numbersets
   
     ! A handle identifying the memory of the set.
     integer :: ihandle
+    
+    ! Specifies whether the memory should automatically be deallocated.
+    logical :: bautodealloc
     
     ! Maximum number of elements in the set.
     integer :: nmaxEntries
@@ -98,7 +102,7 @@ contains
   !****************************************************************************
 
 !<subroutine>
-  subroutine nsets_initDASet (rset,nelements)
+  subroutine nsets_initDASet (rset,nelements,ihandle)
 !<description>
   ! Initialises a direct access set for at most icount elements.
 !</description>
@@ -106,6 +110,12 @@ contains
 !<input>
   ! Maximum number of elements in the set.
   integer, intent(in) :: nelements
+  
+  ! OPTIONAL: A handle to an integer array, large enough to hold the set.
+  ! If not present, a new memory block is automatically allocated.
+  ! If present, the memory block is assumed to belong to the caller and
+  ! is not automatically released upon the destruction of the set structure.
+  integer, intent(in), optional :: ihandle
 !</input>
 
 !<output>
@@ -128,11 +138,27 @@ contains
     rset%ibitmask = ishft(1,rset%ishiftDivisor)-1
     rset%ishiftDivisor = -rset%ishiftDivisor
     
-    ! Allocate as much memory as necessary. Fill it with 0.
-    call storage_new ('sets_initDASet', 'set', (nelements+bit_size(i)-1)/bit_size(i),&
-        ST_INT, rset%ihandle, ST_NEWBLOCK_ZERO)
-    call storage_getbase_int(rset%ihandle,rset%p_Idata)
+    if (.not. present(ihandle)) then
+      ! Allocate as much memory as necessary. Fill it with 0.
+      call storage_new ('sets_initDASet', 'set', (nelements+bit_size(i)-1)/bit_size(i),&
+          ST_INT, rset%ihandle, ST_NEWBLOCK_ZERO)
+      rset%bautodealloc = .true.
+    else
+      ! Check if the memory block is large enough.
+      call storage_getsize(ihandle,j)
+      if (j*bit_size(i) .lt. nelements) then
+        call output_line ('Specified memory block too small.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'nsets_initDASet')
+        call sys_halt()
+      end if
+      
+      ! We use that memory block
+      rset%bautodealloc = .true.
+      rset%ihandle = ihandle
+      call storage_clear (ihandle)
+    end if
     
+    call storage_getbase_int(rset%ihandle,rset%p_Idata)
     rset%nmaxEntries = nelements
   
   end subroutine
@@ -153,7 +179,11 @@ contains
 !</subroutine>
 
     nullify(rset%p_Idata)
-    call storage_free (rset%ihandle)
+    
+    ! Only deallocate if this array belongs to the structure.
+    if (rset%bautodealloc) then
+      call storage_free (rset%ihandle)
+    end if
 
   end subroutine
   
