@@ -220,7 +220,7 @@ contains
 !</result>
 !</function>
 
-    select case(ivelocityType)
+    select case(abs(ivelocityType))
 
     case(VELOCITY_CONSTANT, VELOCITY_TIMEDEP)
       bvector = .true.
