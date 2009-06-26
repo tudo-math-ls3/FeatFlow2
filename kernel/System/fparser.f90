@@ -572,6 +572,20 @@ module fparser
 
 !</constantblock>
 
+
+!<constantblock description="predefined constant names for parser; an at-sign '@' is automatically added">
+
+  character(LEN=FPAR_CONSTLEN), dimension(1) :: PredefinedExpressions = (/ 'null      ' /)
+
+!</constantblock>
+
+
+!<constantblock description="predefined expressions for parser">
+
+  character(LEN=FPAR_CONSTLEN), dimension(1) :: PredefinedExpressionvals = (/ '0         ' /)
+
+!</constantblock>
+
 !</constants>
 
   !****************************************************************************
@@ -684,15 +698,22 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iconst
+    integer :: i
 
     ! Initialize predefined constants
-    do iconst = lbound(PredefinedConsts, 1),&
-                ubound(PredefinedConsts, 1)
-      call fparser_defineConstant(PredefinedConsts(iconst),&
-                                  PredefinedConstvals(iconst))
+    do i = lbound(PredefinedConsts, 1),&
+           ubound(PredefinedConsts, 1)
+      call fparser_defineConstant(PredefinedConsts(i),&
+                                  PredefinedConstvals(i))
     end do
-    
+
+    ! Initialize predefined expressions
+    do i = lbound(PredefinedExpressions, 1),&
+           ubound(PredefinedExpressions, 1)
+      call fparser_defineExpression(PredefinedExpressions(i),&
+                                    PredefinedExpressionvals(i))
+    end do
+
   end subroutine fparser_init
 
   ! *****************************************************************************
@@ -1074,7 +1095,7 @@ contains
     
     ! Allocate memory for global stack
     call storage_new('fparser_create', 'p_Dstack', isize, ST_DOUBLE,&
-                     rfparser%h_Stack, ST_NEWBLOCK_NOINIT) 
+                     rfparser%h_Stack, ST_NEWBLOCK_NOINIT)
     
   end subroutine fparser_create
 
