@@ -23,20 +23,18 @@ defexpr:  sqr2 = SQRT((x-_x0)^2+(y-_y0)^2)
 defexpr:  abs  =      (x-_x0)^2+(y-_y0)^2
 
 # Specify the initial solution
-deffunc: @initsol = 0 ; x,y,z,t
-#deffunc: @initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
+deffunc: @initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
 
 # Specify the exact solution
 deffunc: @exactsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
-#deffunc: @exactsol = 1 ; x,y,z,t
 
 # Specify the velocity field
 deffunc: @velocity_x = y ; x,y,z,t
 deffunc: @velocity_y = 1-x ; x,y,z,t
 
 # Specify the quantity of interest
-#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
-deffunc: @weightingFuncInt = if(x >= 0.1 & x <= 0.9 & y <= 0.7, 1, 0) ; x,y,z,t
+deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
+deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y <= 0.7, 1, 0) ; x,y,z,t
 #deffunc: @weightingFuncInt = 1 ; x,y,z,t
 #deffunc: @exactTargetFunc = 0.06044974016448 ; t
 deffunc: @exactTargetFunc = 0.00948534325289 ; t
@@ -44,8 +42,8 @@ deffunc: @exactTargetFunc = 0.00948534325289 ; t
 # Specify the right-hand side
 deffunc: @rhs = 0 ; x,y,z,t
 
-# Specify the Dirichlet boundary values
-deffunc: @dirichletbdrval = if(y <= 1e-3 & x >= 0.35 & x <= 0.65, 1, 0) ; x,y,z,t
+# Specify the Dirichlet boundary values for the primal problem
+deffunc: @DirichletBdr = if(y <= 1e-3 & x >= 0.35 & x <= 0.65, 1, 0) ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_primal]
@@ -77,8 +75,10 @@ NEXPR
 IBCT
 1
 NCOMP
-5
+1
 PARAMETERS
+4.0  F 0
+
 0.5  F 0
 2.0  T 1   0.0
 2.5  T 0

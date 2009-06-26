@@ -86,7 +86,7 @@ sreactionname =
 # type of right-hand side vector
 # 0 = zero right-hand side
 # 1 = analytical right-hand side
-irhstype = 1
+irhstype = 0
 
 # section name of right-hand side vector
 srhsname = @rhs
@@ -115,7 +115,7 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 0
+itargetfunctype = 1
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -126,15 +126,20 @@ stargetfuncname = @weightingFuncInt
 # 2 = surface integral (two components)
 # 3 = mixed volume/surface integral (four components)
 # 4 = analytical target functional
-iexacttargetfunctype = 2
+iexacttargetfunctype = 1
 
 # section name of target functional
 sexacttargetfuncname(2) = 
   @weightingFuncInt
   @exactsol
 
+# type of Dirichlet boundary conditions
+# 0 = strong Dirichlet boundary conditions
+# 1 = weak Dirichlet boundary conditions
+iweakDirichletBdr = 1
+
 # section name of Dirichlet boundary values
-sdirichletname = @dirichletbdrval
+sdirichletbdrname = @DirichletBdr
 
 #-------------------------------------------------------------------------------
 
