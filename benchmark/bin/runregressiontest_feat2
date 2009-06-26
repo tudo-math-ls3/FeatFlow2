@@ -372,7 +372,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pathscale"
 		    LIDOJOBNAMEPREFIX=fb-psc
-		    COMPILERNAME="Pathscale"
+		    COMPILERNAME="Pathscale 3.2"
 		    ;;
 
 		# PGI compiler suite
@@ -381,7 +381,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pgi/8.0-6"
 		    LIDOJOBNAMEPREFIX=fb-pgi
-		    COMPILERNAME="PGI"
+		    COMPILERNAME="PGI 8.0"
 		    ;;
 
 		# Sun Studio compiler suite
@@ -390,7 +390,7 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules sunstudio"
 		    LIDOJOBNAMEPREFIX=fb-sun
-		    COMPILERNAME="SunStudio"
+		    COMPILERNAME="SunStudio 12"
 		    ;;
 
 		# default build ID (Intel compiler suite)
@@ -399,11 +399,13 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl"
 #		    modules="$modules intel/cce/10.1.022 intel/fce/10.1.022"
-		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
+#		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
+		    modules="$modules intel/cce/11.1.038 intel/fce/11.1.038 intel/mkl"
 #		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
 		    LIDOJOBNAMEPREFIX=fb-intel
 #		    COMPILERNAME="Intel 10.1"
-		    COMPILERNAME="Intel 11.0"
+#		    COMPILERNAME="Intel 11.0"
+		    COMPILERNAME="Intel 11.1"
 		    ;;
 	    esac
 
