@@ -39,6 +39,12 @@
 !# 8.) nsets_addAllDASet
 !#     -> Adds all possible elements to a direct-access set for integer 
 !#        numbers.
+!#
+!# 9.) nsets_nelementsInSet
+!#     -> Returns the number of elements in the set.
+!#
+!# 10.) nsets_getElements
+!#      -> Creates a list of all elements in the set.
 !# </purpose>
 !##############################################################################
 
@@ -68,6 +74,9 @@ module numbersets
     ! Maximum number of elements in the set.
     integer :: nmaxEntries
     
+    ! Number of integers in the data array.
+    integer :: nintegers
+    
     ! Number of bits in an integer
     integer :: ibitsPerInteger
     
@@ -96,6 +105,8 @@ module numbersets
   public :: nsets_clearDASet
   public :: nsets_invertDASet
   public :: nsets_addAllDASet
+  public :: nsets_nelementsInSet
+  public :: nsets_getElements
 
 contains
 
@@ -130,23 +141,25 @@ contains
     
     ! Calculate the divisors for a quick access to the array.
     rset%ishiftDivisor = 1
-    j = bit_size(i)
+    rset%ibitsPerInteger = bit_size(i)
+    j = rset%ibitsPerInteger
     do while (.not. btest(j,1))
       rset%ishiftDivisor = rset%ishiftDivisor + 1
       j = ishft(j,-1)
     end do
     rset%ibitmask = ishft(1,rset%ishiftDivisor)-1
     rset%ishiftDivisor = -rset%ishiftDivisor
+    rset%nintegers = (nelements+rset%ibitsPerInteger-1)/rset%ibitsPerInteger
     
     if (.not. present(ihandle)) then
       ! Allocate as much memory as necessary. Fill it with 0.
-      call storage_new ('sets_initDASet', 'set', (nelements+bit_size(i)-1)/bit_size(i),&
+      call storage_new ('sets_initDASet', 'set', rset%nintegers,&
           ST_INT, rset%ihandle, ST_NEWBLOCK_ZERO)
       rset%bautodealloc = .true.
     else
       ! Check if the memory block is large enough.
       call storage_getsize(ihandle,j)
-      if (j*bit_size(i) .lt. nelements) then
+      if (j*rset%ibitsPerInteger .lt. nelements) then
         call output_line ('Specified memory block too small.', &
                           OU_CLASS_ERROR,OU_MODE_STD,'nsets_initDASet')
         call sys_halt()
@@ -208,9 +221,9 @@ contains
 !</subroutine>
 
     ! Set the bit. 
-    rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)) = &
-        ibset(rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)),&
-            iand(ielement,rset%ibitmask)-1)
+    rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
+        ibset(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
+            iand(ielement-1,rset%ibitmask))
   
   end subroutine
   
@@ -233,9 +246,9 @@ contains
 !</input>
 !</subroutine>
   
-    rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)) = &
-        ibclr(rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)),&
-            iand(ielement,rset%ibitmask)-1)
+    rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
+        ibclr(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
+            iand(ielement-1,rset%ibitmask))
   
   end subroutine
   
@@ -264,8 +277,8 @@ contains
 !</function>
 
     nsets_DASetContains = ibits(&
-        rset%p_Idata(1+ishft(ielement,rset%ishiftDivisor)),&
-        iand(ielement,rset%ibitmask)-1,1)
+        rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
+        iand(ielement-1,rset%ibitmask),1)
   
   end function
 
@@ -333,6 +346,156 @@ contains
       rset%p_Idata(i) = NOT(0)
     end do
   
+  end subroutine
+
+  !****************************************************************************
+
+!<function>
+  integer function nsets_nelementsInSet (rset)
+!<description>
+  ! Determines the number of elements in the set.
+!</description>
+
+!<input>
+  ! The set to check.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</input>
+
+!<returns>
+  ! Number of elements in the set.
+!</returns>
+
+!</function>
+    integer :: i,j,k,ncount
+
+    if (rset%nmaxEntries .eq. rset%ibitsPerInteger*rset%nintegers) then
+    
+      ! Loop through all integers
+      ncount = 0
+      do i = 1,rset%nintegers
+        ! Get the integer
+        j = rset%p_Idata(i)
+        
+        ! Shift it and count every one.
+        do k=1,rset%ibitsPerInteger
+          ncount = ncount + iand(j,1)
+          j = ishft(j,-1)
+        end do
+      end do
+      
+    else
+    
+      ! Loop through all integers except the last one.
+      ncount = 0
+      do i = 1,rset%nintegers-1
+        ! Get the integer
+        j = rset%p_Idata(i)
+        
+        ! Shift it and count every one.
+        do k=1,rset%ibitsPerInteger
+          ncount = ncount + iand(j,1)
+          j = ishft(j,-1)
+        end do
+      end do
+      
+      ! Get the last integer
+      j = rset%p_Idata(i)
+      
+      ! Shift it and count every one.
+      do k=1,iand(rset%nmaxEntries,rset%ibitmask)
+        ncount = ncount + iand(j,1)
+        j = ishft(j,-1)
+      end do
+    end if
+    
+    nsets_nelementsInSet = ncount
+  
+  end function
+
+  !****************************************************************************
+
+!<subroutine>
+  subroutine nsets_getElements (rset,Ilist,nelementsInList)
+!<description>
+  ! Creates a list of all elements in the set.
+!</description>
+
+!<input>
+  ! The set to check.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</input>
+
+!<output>
+  ! An array receiving the elements in the set.
+  ! The array must be large enough to hold all elements.
+  integer, dimension(:), intent(out) :: Ilist
+  
+  ! OPTIONAL: Returns the number of elements in the list.
+  integer, intent(out), optional :: nelementsInList
+!</output>
+
+!<returns>
+  ! Number of elements in the set.
+!</returns>
+
+!</subroutine>
+
+    integer :: i,j,k,ncount,iidx
+
+    if (rset%nmaxEntries .eq. rset%ibitsPerInteger*rset%nintegers) then
+    
+      ! Loop through all integers
+      iidx = 0
+      ncount = 0
+      do i = 1,rset%nintegers
+        ! Get the integer
+        j = rset%p_Idata(i)
+        
+        ! Get every element from the bitfield.
+        do k=0,rset%ibitsPerInteger-1
+          iidx = iidx + 1
+          if (btest(j,k)) then
+            ncount = ncount+1
+            Ilist(ncount) = iidx
+          end if
+        end do
+      end do
+      
+    else
+    
+      ! Loop through all integers except the last one.
+      ncount = 0
+      iidx = 0
+      do i = 1,rset%nintegers-1
+        ! Get the integer
+        j = rset%p_Idata(i)
+        
+        ! Get every element from the bitfield.
+        do k=0,rset%ibitsPerInteger-1
+          iidx = iidx + 1
+          if (btest(j,k)) then
+            ncount = ncount+1
+            Ilist(ncount) = iidx
+          end if
+        end do
+      end do
+      
+      ! Get the last integer
+      j = rset%p_Idata(i)
+      
+      ! Shift it and get the elements.
+      do k=0,iand(rset%nmaxEntries,rset%ibitmask)-1
+        iidx = iidx + 1
+        if (btest(j,k)) then
+          ncount = ncount+1
+          Ilist(ncount) = iidx
+        end if
+      end do
+    end if
+    
+    if (present(nelementsInList)) &
+      nelementsInList = ncount
+    
   end subroutine
 
 end module
