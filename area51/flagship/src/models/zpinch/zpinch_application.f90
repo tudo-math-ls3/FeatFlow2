@@ -100,7 +100,7 @@ contains
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 !</subroutine>
 
@@ -338,26 +338,26 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! minimum/maximum problem level
-    integer, intent(IN) :: nlmin, nlmax
+    integer, intent(in) :: nlmin, nlmax
 !</input>
 
 !<inputoutput>
     ! collection for the Euler model
-    type(t_collection), intent(INOUT) :: rcollectionEuler
+    type(t_collection), intent(inout) :: rcollectionEuler
 
     ! collection for the scalar transport model
-    type(t_collection), intent(INOUT) :: rcollectionTransport
+    type(t_collection), intent(inout) :: rcollectionTransport
 !</intputoutput>
 
 !<output>
     ! problem structure
-    type(t_problem), intent(OUT) :: rproblem
+    type(t_problem), intent(out) :: rproblem
 !</output>
 !</subroutine>
 
@@ -447,22 +447,22 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! solution vector for compressible Euler model
-    type(t_vectorBlock), intent(IN) :: rsolutionEuler
+    type(t_vectorBlock), intent(in) :: rsolutionEuler
 
     ! solution vector for scalar transport model
-    type(t_vectorBlock), intent(IN) :: rsolutionTransport
+    type(t_vectorBlock), intent(in) :: rsolutionTransport
 
     ! OPTIONAL: simulation time
-    real(DP), intent(IN), optional :: dtime
+    real(DP), intent(in), optional :: dtime
 !</input>
 !</subroutine>
 
@@ -696,22 +696,22 @@ contains
 
 !<inputoutput>
     ! adaptation structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! source triangulation structure
-    type(t_triangulation), intent(INOUT), target :: rtriangulationSrc
+    type(t_triangulation), intent(inout), target :: rtriangulationSrc
     
     ! element-wise indicator
-    type(t_vectorScalar), intent(INOUT) :: rindicator
+    type(t_vectorScalar), intent(inout) :: rindicator
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: destination triangulation structure
     ! If it is not given, the source triangulation is updated
-    type(t_triangulation), intent(OUT), optional, target :: rtriangulationDest
+    type(t_triangulation), intent(out), optional, target :: rtriangulationDest
 !</output>
 !</subroutine>
     
@@ -799,36 +799,36 @@ contains
 
 !<input>
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionNameEuler
-    character(LEN=*), intent(IN) :: ssectionNameTransport
+    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! boundary condition structure
-    type(t_boundaryCondition), intent(IN) :: rbdrCondEuler
-    type(t_boundaryCondition), intent(IN) :: rbdrCondTransport
+    type(t_boundaryCondition), intent(in) :: rbdrCondEuler
+    type(t_boundaryCondition), intent(in) :: rbdrCondTransport
 !</input>
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 
     ! problem structure
-    type(t_problem), intent(INOUT) :: rproblem
+    type(t_problem), intent(inout) :: rproblem
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestepEuler
-    type(t_timestep), intent(INOUT) :: rtimestepTransport
+    type(t_timestep), intent(inout) :: rtimestepEuler
+    type(t_timestep), intent(inout) :: rtimestepTransport
 
     ! solver struchture
-    type(t_solver), intent(INOUT), target :: rsolverEuler
-    type(t_solver), intent(INOUT), target :: rsolverTransport
+    type(t_solver), intent(inout), target :: rsolverEuler
+    type(t_solver), intent(inout), target :: rsolverTransport
 
     ! primal solution vector
-    type(t_vectorBlock), intent(INOUT), target :: rsolutionEuler
-    type(t_vectorBlock), intent(INOUT), target :: rsolutionTransport
+    type(t_vectorBlock), intent(inout), target :: rsolutionEuler
+    type(t_vectorBlock), intent(inout), target :: rsolutionTransport
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollectionEuler
-    type(t_collection), intent(INOUT) :: rcollectionTransport
+    type(t_collection), intent(inout) :: rcollectionEuler
+    type(t_collection), intent(inout) :: rcollectionTransport
 !</inputoutput>
 !</subroutine>
 
@@ -1347,7 +1347,7 @@ contains
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 !</subroutine>
 

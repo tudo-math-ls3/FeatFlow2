@@ -322,24 +322,24 @@ contains
 
 !<input>
     ! The name of the parameter file to read
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
 
     ! The name of the section in the parameter file
-    character(LEN=*), intent(IN) :: ssectionname
+    character(LEN=*), intent(in) :: ssectionname
 
     ! The number of spatial dimensions
-    integer, intent(IN) :: ndimension
+    integer, intent(in) :: ndimension
 !</input>
 
 !<output>
     ! The boundary conditions
-    type(t_boundarycondition), intent(OUT) :: rboundarycondition
+    type(t_boundarycondition), intent(out) :: rboundarycondition
 
     ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
     ! whether the boundary conditions could be read successfully or not.
     ! If not given, an error will inform the user of the boundary conditions
     ! could not be read successfully and the program will halt.
-    logical, intent(OUT), optional :: berror
+    logical, intent(out), optional :: berror
 !</output>
 !</subroutine>
 
@@ -622,7 +622,7 @@ contains
 
 !<inputoutput>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(INOUT) :: rboundaryCondition
+    type(t_boundaryCondition), intent(inout) :: rboundaryCondition
 !</inputoutput>
 !</subroutine>
 
@@ -658,15 +658,15 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! Scalar matrix to be adjusted
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -760,31 +760,31 @@ contains
                                Irows, nrows)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Auxiliary array for pairs of boundary vertices
-      integer, dimension(:,:), intent(OUT) :: Irows
+      integer, dimension(:,:), intent(out) :: Irows
 
       ! Number of pairs of boundary vertices
-      integer, intent(OUT) :: nrows
+      integer, intent(out) :: nrows
 
       ! local variables
       integer :: ivbd,ivbdPeriodic,ibct,ibctPeriodic,isegment
@@ -827,40 +827,40 @@ contains
                                Irows, nrows)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Auxiliary array for pairs of boundary vertices
-      integer, dimension(:,:), intent(OUT) :: Irows
+      integer, dimension(:,:), intent(out) :: Irows
 
       ! Number of pairs of boundary vertices
-      integer, intent(OUT) :: nrows
+      integer, intent(out) :: nrows
 
       ! local variables
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
@@ -976,17 +976,17 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! OPTIONAL: value for diagonal entry
-    real(DP), intent(IN), optional :: dvalue
+    real(DP), intent(in), optional :: dvalue
 !</input>
 
 !<inputoutput>
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -1034,17 +1034,17 @@ contains
 
 !<input>
     ! The boundary condition
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! OPTIONAL: value for diagonal entry
-    real(DP), intent(IN), optional :: dvalue
+    real(DP), intent(in), optional :: dvalue
 !</input>
 
 !<inputoutput>
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 !</inputoutput>
 !</subroutine>
 
@@ -1332,25 +1332,25 @@ contains
                                     DA, dfilter)
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Matrix data array
-      real(DP), dimension(:), intent(INOUT) :: DA
+      real(DP), dimension(:), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
       
 
       ! local variables
@@ -1403,34 +1403,34 @@ contains
                                     DA, dfilter)
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Matrix data array
-      real(DP), dimension(:), intent(INOUT) :: DA
+      real(DP), dimension(:), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
 
       ! local variables
@@ -1509,34 +1509,34 @@ contains
                                      Kld, Kcol, Kdiagonal, DA, dfilter)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Matrix data array
-      real(DP), dimension(:), intent(INOUT) :: DA
+      real(DP), dimension(:), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
       
       ! local variables
@@ -1643,43 +1643,43 @@ contains
                                      Kld, Kcol, Kdiagonal, DA, dfilter)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Matrix data array
-      real(DP), dimension(:), intent(INOUT) :: DA
+      real(DP), dimension(:), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
 
       ! local variables
@@ -1879,37 +1879,37 @@ contains
                                           Kld, Kcol, Kdiagonal, nvar, DA, dfilter)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: DA
+      real(DP), dimension(nvar,*), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
       
       ! local variables
@@ -2022,46 +2022,46 @@ contains
                                           Kld, Kcol, Kdiagonal, nvar, DA, dfilter)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: DA
+      real(DP), dimension(nvar,*), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
       
       ! local variables
@@ -2267,37 +2267,37 @@ contains
                                           Kld, Kcol, Kdiagonal, nvar, DA, dfilter)
 
        ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,nvar,*), intent(INOUT) :: DA
+      real(DP), dimension(nvar,nvar,*), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
       
       ! local variables
@@ -2418,46 +2418,46 @@ contains
                                           Kld, Kcol, Kdiagonal, nvar, DA, dfilter)
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,nvar,*), intent(INOUT) :: DA
+      real(DP), dimension(nvar,nvar,*), intent(inout) :: DA
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
       
       
       ! local variables
@@ -2673,18 +2673,18 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The scalar filter value
-    real(DP), intent(IN) :: dvalue
+    real(DP), intent(in) :: dvalue
 !</input>
 
 !<inputoutput>
     ! The vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -2711,18 +2711,18 @@ contains
 
 !<input>
     ! The boundary conditions 
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The scalar filter value
-    real(DP), intent(IN) :: dvalue
+    real(DP), intent(in) :: dvalue
 !</input>
 
 !<inputoutput>
     ! The vector that should be filtered
-    type(t_vectorScalar), intent(INOUT) :: rvector
+    type(t_vectorScalar), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -2805,28 +2805,28 @@ contains
                                nvar, Dx, dfilter)
       
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
       
       ! local variables
@@ -2870,37 +2870,37 @@ contains
                                nvar, Dx, dfilter)
       
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
 
        ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
 
       ! Filter value
-      real(DP), intent(IN) :: dfilter
+      real(DP), intent(in) :: dfilter
 
 
       ! local variables
@@ -2975,18 +2975,18 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! The vector filter
-    type(t_vectorBlock), intent(INOUT) :: rvectorFilter
+    type(t_vectorBlock), intent(inout) :: rvectorFilter
 
     ! The vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -3021,18 +3021,18 @@ contains
 
 !<input>
     ! The boundary conditions 
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 !</input>
 
 !<inputoutput>
     ! The vector filter
-    type(t_vectorScalar), intent(INOUT) :: rvectorFilter
+    type(t_vectorScalar), intent(inout) :: rvectorFilter
 
     ! The vector that should be filtered
-    type(t_vectorScalar), intent(INOUT) :: rvector
+    type(t_vectorScalar), intent(inout) :: rvector
 !</inputoutput>
 !</subroutine>
 
@@ -3124,28 +3124,28 @@ contains
                                nvar, Dx, Dfilter)
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
 
       ! Filter data array
-      real(DP), dimension(nvar,*), intent(IN) :: Dfilter
+      real(DP), dimension(nvar,*), intent(in) :: Dfilter
       
       ! local variables
       integer :: ivbd,ivt,ibct,isegment
@@ -3188,37 +3188,37 @@ contains
                                nvar, Dx, Dfilter)
       
         ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
 
        ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
 
       ! Filter data array
-      real(DP), dimension(nvar,*), intent(IN) :: Dfilter
+      real(DP), dimension(nvar,*), intent(in) :: Dfilter
 
       
       ! local variables
@@ -3295,16 +3295,16 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The simulation time
-    real(DP), intent(IN) :: ttime
+    real(DP), intent(in) :: ttime
     
     ! OPTIONAL: The boundary description
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
@@ -3313,10 +3313,10 @@ contains
 
 !<inputoutput>
     ! The block vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(inout) :: rvector
 
     ! OPTIONAL: Status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
 
@@ -3440,41 +3440,41 @@ contains
                                nvt, nvar, Dx, fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
       
       ! Total number of vertices
-      integer, intent(IN) :: nvt      
+      integer, intent(in) :: nvt      
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvt,nvar), intent(INOUT) :: Dx
+      real(DP), dimension(nvt,nvar), intent(inout) :: Dx
       
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
 
       ! local variables
@@ -3565,53 +3565,53 @@ contains
                                rboundary, fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
       
       ! Total number of vertices
-      integer, intent(IN) :: nvt      
+      integer, intent(in) :: nvt      
 
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvt,nvar), intent(INOUT) :: Dx
+      real(DP), dimension(nvt,nvar), intent(inout) :: Dx
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
       
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -3802,16 +3802,16 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The simulation time
-    real(DP), intent(IN) :: ttime
+    real(DP), intent(in) :: ttime
 
     ! OPTIONAL: The boundary description
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
@@ -3820,10 +3820,10 @@ contains
 
 !<inputoutput>
     ! The scalar vector that should be filtered
-    type(t_vectorScalar), intent(INOUT) :: rvector
+    type(t_vectorScalar), intent(inout) :: rvector
 
     ! OPTIONAL: Status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
     
@@ -3920,38 +3920,38 @@ contains
                                nvar, Dx, fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
       
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -4039,50 +4039,50 @@ contains
                                rboundary, fcb_calcBoundaryvalues, istatus)
 
        ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Vector data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Dx
+      real(DP), dimension(nvar,*), intent(inout) :: Dx
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
       
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -4287,19 +4287,19 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The initial solution vector from the last time step
-    type(t_vectorBlock), intent(IN) :: rsolution0
+    type(t_vectorBlock), intent(in) :: rsolution0
 
     ! The simulation time
-    real(DP), intent(IN) :: ttime
+    real(DP), intent(in) :: ttime
 
     ! OPTIONAL: The boundary description
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
@@ -4308,16 +4308,16 @@ contains
 
 !<inputoutput>
     ! The matrix data structure
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
 
     ! The solution vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! The defect vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rdefect
+    type(t_vectorBlock), intent(inout) :: rdefect
 
     ! OPTIONAL: Status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
 
@@ -4586,56 +4586,56 @@ contains
                                        fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of equations per variable
-      integer, intent(IN) :: neq
+      integer, intent(in) :: neq
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Auxiliary data structure representing the block matrix
-      type(t_rarray), dimension(:,:), intent(IN) :: rarray
+      type(t_rarray), dimension(:,:), intent(in) :: rarray
 
       ! Solution and residual data array
-      real(DP), dimension(neq,nvar), intent(INOUT) :: Du, Dr
+      real(DP), dimension(neq,nvar), intent(inout) :: Du, Dr
 
       ! Initial solution data array
-      real(DP), dimension(neq,nvar), intent(IN) :: Du0
+      real(DP), dimension(neq,nvar), intent(in) :: Du0
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
       
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
       
       ! local variables
       real(DP), dimension(NDIM1D+1) :: DvariableValues
@@ -4763,68 +4763,68 @@ contains
                                        rboundary, fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
 
       ! Number of equations per variable
-      integer, intent(IN) :: neq
+      integer, intent(in) :: neq
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Auxiliary data structure representing the block matrix
-      type(t_rarray), dimension(:,:), intent(IN) :: rarray
+      type(t_rarray), dimension(:,:), intent(in) :: rarray
 
       ! Solution and residual data array
-      real(DP), dimension(neq,nvar), intent(INOUT) :: Du, Dr
+      real(DP), dimension(neq,nvar), intent(inout) :: Du, Dr
 
       ! Initial solution data array
-      real(DP), dimension(neq,nvar), intent(IN) :: Du0
+      real(DP), dimension(neq,nvar), intent(in) :: Du0
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
       
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -5107,19 +5107,19 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The initial solution vector from the last time step
-    type(t_vectorBlock), intent(IN) :: rsolution0
+    type(t_vectorBlock), intent(in) :: rsolution0
 
     ! The simulation time
-    real(DP), intent(IN) :: ttime
+    real(DP), intent(in) :: ttime
 
     ! OPTIONAL: The boundary description
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
@@ -5128,16 +5128,16 @@ contains
 
 !<inputoutput>
     ! The matrix data structure
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! The solution vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! The defect vector that should be filtered
-    type(t_vectorBlock), intent(INOUT) :: rdefect
+    type(t_vectorBlock), intent(inout) :: rdefect
     
     ! OPTIONAL: Status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
 
@@ -5191,19 +5191,19 @@ contains
 
 !<input>
     ! The boundary conditions
-    type(t_boundaryCondition), intent(IN) :: rboundaryCondition
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The triangulation
-    type(t_triangulation), intent(IN) :: rtriangulation
+    type(t_triangulation), intent(in) :: rtriangulation
 
     ! The initial solution vector from the last time step
-    type(t_vectorScalar), intent(IN) :: rsolution0
+    type(t_vectorScalar), intent(in) :: rsolution0
 
     ! The simulation time
-    real(DP), intent(IN) :: ttime
+    real(DP), intent(in) :: ttime
 
     ! OPTIONAL: The boundary description
-    type(t_boundary), intent(IN), optional :: rboundary
+    type(t_boundary), intent(in), optional :: rboundary
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
@@ -5212,16 +5212,16 @@ contains
 
 !<inputoutput>
     ! The scalar matrix
-    type(t_matrixScalar), intent(INOUT) :: rmatrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
 
     ! The scalar solution vector that should be filtered
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! The scalar defect vector that should be filtered
-    type(t_vectorScalar), intent(INOUT) :: rdefect
+    type(t_vectorScalar), intent(inout) :: rdefect
 
     ! OPTIONAL: Status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
 
@@ -5591,31 +5591,31 @@ contains
                                       DvertexCoords, DA, Du, Dr)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
       
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
       
       ! Matrix data array
-      real(DP), dimension(:), intent(IN) :: DA
+      real(DP), dimension(:), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(:), intent(INOUT) :: Du, Dr
+      real(DP), dimension(:), intent(inout) :: Du, Dr
 
 
       ! local variables
@@ -5672,40 +5672,40 @@ contains
                                       DA, Du, Dr)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
       
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
 
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Matrix data array
-      real(DP), dimension(:), intent(IN) :: DA
+      real(DP), dimension(:), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(:), intent(INOUT) :: Du, Dr
+      real(DP), dimension(:), intent(inout) :: Du, Dr
 
 
       ! local variables
@@ -5789,40 +5789,40 @@ contains
                                        Kld, Kcol, Kdiagonal, DA, Du, Dr)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Matrix data array
-      real(DP), dimension(:), intent(IN) :: DA
+      real(DP), dimension(:), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(:), intent(INOUT) :: Du, Dr
+      real(DP), dimension(:), intent(inout) :: Du, Dr
 
 
       ! local variables
@@ -5895,49 +5895,49 @@ contains
                                        Kld, Kcol, Kdiagonal, DA, Du, Dr)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Matrix data array
-      real(DP), dimension(:), intent(IN) :: DA
+      real(DP), dimension(:), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(:), intent(INOUT) :: Du, Dr
+      real(DP), dimension(:), intent(inout) :: Du, Dr
 
 
       ! local variables
@@ -6076,56 +6076,56 @@ contains
                                             fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,*), intent(IN) :: DA
+      real(DP), dimension(nvar,*), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du, Dr
+      real(DP), dimension(nvar,*), intent(inout) :: Du, Dr
 
       ! Initidl solution data array
-      real(DP), dimension(nvar,*), intent(IN) :: Du0
+      real(DP), dimension(nvar,*), intent(in) :: Du0
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -6240,65 +6240,65 @@ contains
                                             fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,*), intent(IN) :: DA
+      real(DP), dimension(nvar,*), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du, Dr
+      real(DP), dimension(nvar,*), intent(inout) :: Du, Dr
 
       ! Initidl solution data array
-      real(DP), dimension(nvar,*), intent(IN) :: Du0
+      real(DP), dimension(nvar,*), intent(in) :: Du0
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
 
       
       ! local variables
@@ -6544,56 +6544,56 @@ contains
                                             fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: DA
+      real(DP), dimension(nvar,nvar,*), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du, Dr
+      real(DP), dimension(nvar,*), intent(inout) :: Du, Dr
 
       ! Initidl solution data array
-      real(DP), dimension(nvar,*), intent(IN) :: Du0
+      real(DP), dimension(nvar,*), intent(in) :: Du0
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
       
 
       ! local variables
@@ -6711,65 +6711,65 @@ contains
                                             fcb_calcBoundaryvalues, istatus)
 
       ! Function parser used to evaluate Dirichlet boundary values
-      type(t_fparser), intent(IN) :: rfparser
+      type(t_fparser), intent(in) :: rfparser
 
       ! Array with periodic boundary components
-      integer, dimension(:), intent(IN) :: IbdrCompPeriodic
+      integer, dimension(:), intent(in) :: IbdrCompPeriodic
       
       ! Array with periodic boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondPeriodic
+      integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
       ! Array with types of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondType
+      integer, dimension(:), intent(in) :: IbdrCondType
 
       ! Index array for type of boundary conditions
-      integer, dimension(:), intent(IN) :: IbdrCondCpIdx
+      integer, dimension(:), intent(in) :: IbdrCondCpIdx
 
       ! Array with maximum parameter value for each boundary component
-      real(DP), dimension(:), intent(IN) :: DmaxParam
+      real(DP), dimension(:), intent(in) :: DmaxParam
       
       ! Array with booleans for the segment type
-      logical, dimension(:), intent(IN) :: BisSegClosed
+      logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
-      integer, intent(IN) :: nbct
+      integer, intent(in) :: nbct
       
       ! Array with numbers of vertices at the boundary
-      integer, dimension(:), intent(IN) :: IverticesAtBoundary
+      integer, dimension(:), intent(in) :: IverticesAtBoundary
       
       ! Index array for vertices at the boundary
-      integer, dimension(:), intent(IN) :: IboundaryCpIdx
+      integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with parameter values for vertices at the boundary
-      real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+      real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
       ! Array with coordinates of vertices at the boundary
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
 
       ! Array with matrix structure
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
       
       ! Number of variables
-      integer, intent(IN) :: nvar
+      integer, intent(in) :: nvar
 
       ! Matrix data array
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: DA
+      real(DP), dimension(nvar,nvar,*), intent(in) :: DA
 
       ! Solution and residual data array
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du, Dr
+      real(DP), dimension(nvar,*), intent(inout) :: Du, Dr
 
       ! Initidl solution data array
-      real(DP), dimension(nvar,*), intent(IN) :: Du0
+      real(DP), dimension(nvar,*), intent(in) :: Du0
 
       ! OPTIONAL: Boundary description
-      type(t_boundary), intent(IN), optional :: rboundary
+      type(t_boundary), intent(in), optional :: rboundary
 
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
 
       ! OPTIONAL: Status of the callback function
-      integer, intent(INOUT), optional :: istatus
+      integer, intent(inout), optional :: istatus
       
 
       ! local variables
@@ -7019,22 +7019,22 @@ contains
 
 !<input>
     ! Parameter values of all boundary vertices
-    real(DP), dimension(:), intent(IN) :: DvertexParameterValue
+    real(DP), dimension(:), intent(in) :: DvertexParameterValue
 
     ! Parameter value to which nearest neighbor is required
-    real(DP), intent(IN) :: dParameterValue
+    real(DP), intent(in) :: dParameterValue
 
     ! Minimum number of boundary vertex
-    integer, intent(IN) :: ivbdMin
+    integer, intent(in) :: ivbdMin
 
     ! Maximum number of boundary vertex
-    integer, intent(IN) :: ivbdMax
+    integer, intent(in) :: ivbdMax
 !</input>
 
 !<inputoutput>
     ! Initial guess for the number of the boundary vertex on
     ! input. The number of the nearest neighbor on output.
-    integer, intent(INOUT) :: ivbd
+    integer, intent(inout) :: ivbd
 !</inputoutput>
 !</subroutine>
 

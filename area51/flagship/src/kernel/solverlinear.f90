@@ -112,18 +112,18 @@ contains
 
 !<input>
     ! Multigrid structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
     
     ! right-hand side vector
-    type(t_vectorScalar), intent(IN) :: rf
+    type(t_vectorScalar), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! Solution vector
-    type(t_vectorScalar), intent(INOUT) :: ru
+    type(t_vectorScalar), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -162,15 +162,15 @@ contains
     type(t_problemLevel) :: rproblemLevel
 
     ! right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -453,21 +453,21 @@ contains
 
 !<input>
     ! Multigrid level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! Right-hand side vector on fine grid
-    type(t_vectorBlock), intent(IN) :: rff
+    type(t_vectorBlock), intent(in) :: rff
 !</input>
 
 !<inputoutput>
     ! Multigrid solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! Solution vector in fine grid
-    type(t_vectorBlock), intent(INOUT) :: ruf
+    type(t_vectorBlock), intent(inout) :: ruf
 
     ! Identifier for multigrid cycle
-    integer, intent(INOUT) :: mgcycle
+    integer, intent(inout) :: mgcycle
 !</inputoutput>
 !</subroutine>
 
@@ -599,15 +599,15 @@ contains
 
 !<input>
     ! Right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! Linear solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
     
@@ -666,15 +666,15 @@ contains
 
 !<input>
     ! r.h.s. vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -778,14 +778,14 @@ contains
 
 !<input>
     ! Right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 !<inputoutput>
     ! Linear solver structure
     type(t_solver) :: rsolver
 
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine> 
 
@@ -960,14 +960,14 @@ contains
 
 !<input>
     ! Right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 !<inputoutput>
     ! Linear solver structure
     type(t_solver) :: rsolver
 
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine> 
     
@@ -1142,7 +1142,7 @@ contains
 
 !<input>
     ! Right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
@@ -1150,7 +1150,7 @@ contains
     type(t_solver) :: rsolver
     
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -1418,7 +1418,7 @@ contains
 
 !<input>
     ! Right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
@@ -1426,7 +1426,7 @@ contains
     type(t_solver) :: rsolver
 
     ! Solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine> 
 
@@ -1696,7 +1696,7 @@ contains
 
 !<input>
     ! Linear Solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<inputoutput>
@@ -1751,12 +1751,12 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -1869,10 +1869,10 @@ contains
 
     subroutine jacobi_MatD_double(Da, Du, neq, domega)
 
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       integer :: ieq
 
@@ -1889,11 +1889,11 @@ contains
 
     subroutine jacobi_Mat79_double(Kdiagonal, Da, Du, neq, domega)
 
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       integer :: ieq
 
@@ -1911,12 +1911,12 @@ contains
     
     subroutine jacobi_Mat79IntlD_double(Kdiagonal, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
       
       integer :: ieq,ivar
 
@@ -1936,12 +1936,12 @@ contains
     
     subroutine jacobi_Mat79Intl1_double(Kdiagonal,nvar,Da,Du,neq,domega)
       
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
       
       integer :: ieq,ivar
 
@@ -1968,12 +1968,12 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -2125,12 +2125,12 @@ contains
 
     subroutine sor_Mat7_double(Kld, Kcol, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       real(DP) :: daux
       integer :: ieq,icol,ild
@@ -2156,13 +2156,13 @@ contains
 
     subroutine sor_Mat9_double(Kdiagonal, Kld, Kcol, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       real(DP) :: daux
       integer :: ieq,icol,ild
@@ -2194,12 +2194,12 @@ contains
 
     subroutine ssor_Mat7_double(Kld, Kcol, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       real(DP) :: daux
       integer :: ieq,icol,ild
@@ -2241,13 +2241,13 @@ contains
 
     subroutine ssor_Mat9_double(Kdiagonal, Kld, Kcol, Da, Du, neq, domega)
 
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(:), intent(IN) :: Da
-      real(DP), dimension(:), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(:), intent(in) :: Da
+      real(DP), dimension(:), intent(inout) :: Du
+      integer, intent(in) :: neq
+      real(DP), intent(in) :: domega
 
       real(DP) :: daux
       integer :: ieq,icol,ild
@@ -2288,13 +2288,13 @@ contains
 
     subroutine sor_Mat7IntlD_double(Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild
@@ -2321,14 +2321,14 @@ contains
 
     subroutine sor_Mat9IntlD_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
 
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild
@@ -2361,13 +2361,13 @@ contains
 
     subroutine ssor_Mat7IntlD_double(Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild
@@ -2410,14 +2410,14 @@ contains
 
     subroutine ssor_Mat9IntlD_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild
@@ -2458,13 +2458,13 @@ contains
 
     subroutine sor_Mat7Intl1_double(Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
@@ -2498,14 +2498,14 @@ contains
 
     subroutine sor_Mat9Intl1_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
 
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
@@ -2550,13 +2550,13 @@ contains
 
     subroutine ssor_Mat7Intl1_double(Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
@@ -2637,14 +2637,14 @@ contains
 
     subroutine ssor_Mat9Intl1_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
       
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      real(DP), intent(IN) :: domega
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Du
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      real(DP), intent(in) :: domega
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
@@ -2729,12 +2729,12 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -2797,8 +2797,8 @@ contains
 
     subroutine do_scalarILU(rsolver, ru)
 
-      type(t_solverILU), intent(IN) :: rsolver
-      type(t_vectorScalar), intent(INOUT) :: ru
+      type(t_solverILU), intent(in) :: rsolver
+      type(t_vectorScalar), intent(inout) :: ru
 
       type(t_matrixScalar), pointer :: p_rmatrix
       real(DP), dimension(:), pointer :: p_Du,p_Ddata,p_Da
@@ -2930,13 +2930,13 @@ contains
 
     subroutine do_Mat7MILU0(Da, Kld, Kcol, neq, nvar, Du)
 
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
       
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
+      real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: Daux
       integer :: ia,ild,ieq,icol
@@ -2984,14 +2984,14 @@ contains
 
     subroutine do_Mat9MILU0(Da, Kld, Kcol, Kdiagonal, neq, nvar, Du)
 
-      real(DP), dimension(nvar,*), intent(IN) :: Da
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
+      real(DP), dimension(nvar,*), intent(in) :: Da
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
       
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
+      real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: Daux
       integer :: ia,ild,ieq,icol
@@ -3038,14 +3038,14 @@ contains
 
     subroutine do_mat7Intl1BILU0(Da, DaDiag, Kld, Kcol, neq, nvar, Du)
 
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,nvar,neq), intent(IN) :: DaDiag
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,nvar,neq), intent(in) :: DaDiag
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
       
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
+      real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
@@ -3119,15 +3119,15 @@ contains
 
     subroutine do_mat9Intl1BILU0(Da, DaDiag, Kld, Kcol, Kdiagonal, neq, nvar, Du)
 
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: Da
-      real(DP), dimension(nvar,nvar,neq), intent(IN) :: DaDiag
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
+      real(DP), dimension(nvar,nvar,*), intent(in) :: Da
+      real(DP), dimension(nvar,nvar,neq), intent(in) :: DaDiag
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
       
-      real(DP), dimension(nvar,*), intent(INOUT) :: Du
+      real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
@@ -3208,21 +3208,21 @@ contains
 
 !<input>
     ! multigrid level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! right-hand side vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 
     ! number of smoothing steps
-    integer, intent(IN) :: nsmooth
+    integer, intent(in) :: nsmooth
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
     
@@ -3286,15 +3286,15 @@ contains
 
 !<input>
     ! solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! r.h.s. vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 
@@ -3341,15 +3341,15 @@ contains
 
 !<input>
     ! solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! r.h.s. vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
     
@@ -3396,15 +3396,15 @@ contains
 
 !<input>
     ! solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
     
     ! r.h.s. vector
-    type(t_vectorBlock), intent(IN) :: rf
+    type(t_vectorBlock), intent(in) :: rf
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: ru
+    type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
 

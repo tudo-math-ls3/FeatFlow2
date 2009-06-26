@@ -121,10 +121,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), intent(IN) :: rsolutionInitial
+    type(t_vectorScalar), intent(in) :: rsolutionInitial
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -132,19 +132,19 @@ contains
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -206,10 +206,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -217,19 +217,19 @@ contains
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
     
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -396,10 +396,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 
     ! OPTIONAL: : constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -407,19 +407,19 @@ contains
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -453,10 +453,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorScalar), intent(IN) :: rsolutionInitial
+    type(t_vectorScalar), intent(in) :: rsolutionInitial
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -464,19 +464,19 @@ contains
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -543,10 +543,10 @@ contains
 
 !<input>
     ! Initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
     
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -554,19 +554,19 @@ contains
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
         
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -1074,19 +1074,19 @@ contains
 
 !<input>
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 
     ! norm of the old defect vector
-    real(DP), intent(IN) :: doldDefect
+    real(DP), intent(in) :: doldDefect
 
     ! value of R(transposed)*(J*s)
-    real(DP), intent(IN) :: drtjs
+    real(DP), intent(in) :: drtjs
 
     ! iteration number
-    integer, intent(IN) :: iiterations
+    integer, intent(in) :: iiterations
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 
     ! Callback routines
     include 'intf_solvercallback.inc'
@@ -1094,45 +1094,45 @@ contains
 
 !<inputoutput>
     ! multigrid structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! nonlinear solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! last/new solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
     
     ! failsave copy of last solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolutionFailsave
+    type(t_vectorBlock), intent(inout) :: rsolutionFailsave
     
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
+    type(t_vectorBlock), intent(inout) :: rrhs
     
     ! new residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! failsave copy of last residual vector
-    type(t_vectorBlock), intent(INOUT) :: rresFailsave
+    type(t_vectorBlock), intent(inout) :: rresFailsave
     
     ! (trial) inexact Newton step
-    type(t_vectorBlock), intent(INOUT) :: raux
+    type(t_vectorBlock), intent(inout) :: raux
 
     ! (modified) forcing term
-    real(DP), intent(INOUT) :: eta
+    real(DP), intent(inout) :: eta
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !<output>
     ! reduction factor
-    real(DP), intent(OUT) :: redfac
+    real(DP), intent(out) :: redfac
 
     ! status of backtracking
-    integer, intent(OUT) :: istatus
+    integer, intent(out) :: istatus
 !</output>
 !</subroutine>
     
@@ -1255,26 +1255,26 @@ contains
 
 !<input>
     ! current nonlinear residual R(u_k)
-    real(DP), intent(IN) :: dDefect
+    real(DP), intent(in) :: dDefect
 
     ! last nonlinear residual R(u_{k-1})
-    real(DP), intent(IN) :: doldDefect
+    real(DP), intent(in) :: doldDefect
 
     ! current residual of the linear model
     !  R(u_{k-1})+J(u_{k-1})*s_{k-1}
-    real(DP), intent(IN) :: dlinearDefect
+    real(DP), intent(in) :: dlinearDefect
 
     ! value of R(transposed)*(linear model)
-    real(DP), intent(IN) :: drtlm
+    real(DP), intent(in) :: drtlm
 
     ! net reduction factor of globalization
-    real(DP), intent(IN) :: redfac
+    real(DP), intent(in) :: redfac
 
      ! number of current iteration
-    integer, intent(IN) :: iiterations
+    integer, intent(in) :: iiterations
 
     ! Strategy for choosing the forcing term
-    real(DP), intent(IN) :: dforcingStrategy
+    real(DP), intent(in) :: dforcingStrategy
 !</input>
 
 !<inputoutput>
@@ -1429,12 +1429,12 @@ contains
 
 !<input>
     ! current iteration number
-    integer, intent(IN) :: iiterations
+    integer, intent(in) :: iiterations
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 
 !<result>
@@ -1491,12 +1491,12 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<inputoutput>
     ! time-stepping algorithm
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 !</subroutine>
 

@@ -157,7 +157,7 @@ contains
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 !</subroutine>
 
@@ -386,18 +386,18 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<output>
     ! time-stepping structure
-    type(t_timestep), intent(OUT) :: rtimestep
+    type(t_timestep), intent(out) :: rtimestep
 
     ! solver struchture
-    type(t_solver), intent(OUT) :: rsolver
+    type(t_solver), intent(out) :: rsolver
 !</output>
 !</subroutine>
 
@@ -444,18 +444,18 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! minimum/maximum problem level
-    integer, intent(IN) :: nlmin, nlmax
+    integer, intent(in) :: nlmin, nlmax
 !</input>
 
 !<output>
     ! problem structure
-    type(t_problem), intent(OUT) :: rproblem
+    type(t_problem), intent(out) :: rproblem
 !</output>
 !</subroutine>
 
@@ -532,18 +532,18 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT), target :: rproblemLevel
+    type(t_problemLevel), intent(inout), target :: rproblemLevel
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</output>
 !</subroutine>
 
@@ -981,18 +981,18 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<inputoutput>
     ! problem structure
-    type(t_problem), intent(INOUT) :: rproblem
+    type(t_problem), intent(inout) :: rproblem
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</intputoutput>
 !</subroutine>
 
@@ -1026,24 +1026,24 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! problem level
-    type(t_problemLevel), intent(IN), target :: rproblemLevel
+    type(t_problemLevel), intent(in), target :: rproblemLevel
 
     ! time for solution evaluation
-    real(DP), intent(IN) :: dtime
+    real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rvector
+    type(t_vectorBlock), intent(inout) :: rvector
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1135,22 +1135,22 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! OPTIONAL: solution vector for primal problem
-    type(t_vectorBlock), intent(IN), optional :: rsolutionPrimal
+    type(t_vectorBlock), intent(in), optional :: rsolutionPrimal
 
     ! OPTIONAL: solution vector for dual problem
-    type(t_vectorBlock), intent(IN), optional :: rsolutionDual
+    type(t_vectorBlock), intent(in), optional :: rsolutionDual
 
     ! OPTIONAL: simulation time
-    real(DP), intent(IN), optional :: dtime
+    real(DP), intent(in), optional :: dtime
 !</input>
 !</subroutine>
 
@@ -1361,12 +1361,12 @@ contains
 
 !<input>
     ! timer for total time measurement
-    type(t_timer), intent(IN) :: rtimerTotal
+    type(t_timer), intent(in) :: rtimerTotal
 !</input>
 
 !<inputoutput>
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1452,27 +1452,27 @@ contains
 
 !<input>
     ! parameter list
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution
+    type(t_vectorBlock), intent(in) :: rsolution
 
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! simulation time
-    real(DP), intent(IN) :: dtime
+    real(DP), intent(in) :: dtime
 !</input>
 
 !<output>
     ! element-wise error distribution
-    type(t_vectorScalar), intent(OUT) :: rerror
+    type(t_vectorScalar), intent(out) :: rerror
 
     ! global error
-    real(DP), intent(OUT) :: derror
+    real(DP), intent(out) :: derror
 !</output>
 !</subroutine>
 
@@ -1654,13 +1654,13 @@ contains
     subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
                                         dthreshold, Ddata, BisactiveElement)
 
-      integer, dimension(:,:), intent(IN) :: IverticesAtElement
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElement     
-      real(DP), intent(IN) :: dthreshold
-      integer, intent(IN) :: NEL
+      integer, dimension(:,:), intent(in) :: IverticesAtElement
+      integer, dimension(:,:), intent(in) :: IneighboursAtElement     
+      real(DP), intent(in) :: dthreshold
+      integer, intent(in) :: NEL
       
-      real(DP), dimension(:), intent(INOUT) :: Ddata
-      logical, dimension(:), intent(INOUT) :: BisactiveElement
+      real(DP), dimension(:), intent(inout) :: Ddata
+      logical, dimension(:), intent(inout) :: BisactiveElement
       
       
       ! local variables
@@ -1716,22 +1716,22 @@ contains
 
 !<inputoutput>
     ! adaptation structure
-    type(t_hadapt), intent(INOUT) :: rhadapt
+    type(t_hadapt), intent(inout) :: rhadapt
 
     ! source triangulation structure
-    type(t_triangulation), intent(INOUT), target :: rtriangulationSrc
+    type(t_triangulation), intent(inout), target :: rtriangulationSrc
     
     ! element-wise indicator
-    type(t_vectorScalar), intent(INOUT) :: rindicator
+    type(t_vectorScalar), intent(inout) :: rindicator
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !<output>
     ! OPTIONAL: destination triangulation structure
     ! If it is not given, the source triangulation is updated
-    type(t_triangulation), intent(OUT), optional, target :: rtriangulationDest
+    type(t_triangulation), intent(out), optional, target :: rtriangulationDest
 !</output>
 !</subroutine>
     
@@ -1842,30 +1842,30 @@ contains
 
 !<input>
       ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 
     ! boundary condition structure
-    type(t_boundaryCondition), intent(IN) :: rbdrCond
+    type(t_boundaryCondition), intent(in) :: rbdrCond
 !</input>
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 
     ! problem structure
-    type(t_problem), intent(INOUT) :: rproblem
+    type(t_problem), intent(inout) :: rproblem
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver struchture
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
 
     ! primal solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection    
+    type(t_collection), intent(inout) :: rcollection    
 !</inputoutput>
 !</subroutine>
 
@@ -2248,7 +2248,7 @@ contains
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
 !</inputoutput>
 !</subroutine>
     
@@ -2334,10 +2334,10 @@ contains
 
 !<inputoutput>
     ! parameter list
-    type(t_parlist), intent(INOUT) :: rparlist
+    type(t_parlist), intent(inout) :: rparlist
     
     ! section name in parameter list
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</inputoutput>
 !</subroutine>
 

@@ -191,17 +191,17 @@ contains
 !<input>
 
     ! File name
-    character(len=*), intent(IN) :: sfilename
+    character(len=*), intent(in) :: sfilename
 
     ! Directory name
-    character(len=*), intent(IN) :: sdirectoryname
+    character(len=*), intent(in) :: sdirectoryname
 
 !</input>
 
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -268,7 +268,7 @@ contains
 !<inputoutput>
 
     ! OPTIONAL: Bloodflow structure
-    type(t_bloodflow), intent(INOUT), optional :: rbloodflow
+    type(t_bloodflow), intent(inout), optional :: rbloodflow
 !</inputoutput>
 
 !</subroutine>
@@ -322,7 +322,7 @@ contains
 !<input>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(IN) :: rbloodflow
+    type(t_bloodflow), intent(in) :: rbloodflow
 
 !</input>
 !</subroutine>
@@ -374,14 +374,14 @@ contains
 !<input>
 
     ! Simulation time
-    real(DP), intent(IN) :: dtime
+    real(DP), intent(in) :: dtime
 
 !</input>
 
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -435,7 +435,7 @@ contains
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -499,7 +499,7 @@ contains
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -898,7 +898,7 @@ contains
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -950,7 +950,7 @@ contains
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -1278,20 +1278,20 @@ contains
 !<input>
     
     ! Coordinates of the triangle
-    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(in) :: TriaCoords
 
     ! Coordinates of the point
-    real(DP), dimension(NDIM2D), intent(IN) :: P
+    real(DP), dimension(NDIM2D), intent(in) :: P
 
     ! Tolerance for point collapse
-    real(DP), intent(IN) :: dtolerance
+    real(DP), intent(in) :: dtolerance
 
 !</input>
 
 !<output>
 
     ! Status of the test
-    integer, intent(OUT) :: istatus
+    integer, intent(out) :: istatus
 
 !</output>
 
@@ -1381,17 +1381,17 @@ contains
 !<input>
 
     ! Coordinates of the four points
-    real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3,P4
+    real(DP), dimension(NDIM2D), intent(in) :: P1,P2,P3,P4
 
 !</input>
 
 !<output>
     
     ! Parameter of the intersection point w.r.t. the first line
-    real(DP), intent(OUT) :: u
+    real(DP), intent(out) :: u
 
     ! Status of the test
-    integer, intent(OUT) :: istatus
+    integer, intent(out) :: istatus
 
 !</output>
 
@@ -1462,17 +1462,17 @@ contains
 !<input>
 
     ! Coordinates of the triangle
-    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(IN) :: TriaCoords
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(in) :: TriaCoords
 
     ! Coordinates of the point
-    real(DP), dimension(NDIM2D), intent(IN) :: P
+    real(DP), dimension(NDIM2D), intent(in) :: P
 
 !</input>
 
 !<output>
     
     ! Barycentric coordinates of the point
-    real(DP), dimension(TRIA_NVETRI2D), intent(OUT) :: BarycentricCoords
+    real(DP), dimension(TRIA_NVETRI2D), intent(out) :: BarycentricCoords
 
 !</output>
 
@@ -1510,7 +1510,7 @@ contains
 !<input>
 
     ! Coordinates of the triangle
-    real(DP), dimension(NDIM2D), intent(IN) :: P1,P2,P3
+    real(DP), dimension(NDIM2D), intent(in) :: P1,P2,P3
 
 !</input>
 

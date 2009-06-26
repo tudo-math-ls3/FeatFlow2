@@ -15,7 +15,7 @@
 !<inputoutput>
 
     ! Bloodflow structure
-    type(t_bloodflow), intent(INOUT) :: rbloodflow
+    type(t_bloodflow), intent(inout) :: rbloodflow
 
 !</inputoutput>
 !</subroutine>
@@ -229,9 +229,9 @@
       ! This subroutine initializes the particle positions by the
       ! physical coordinates of the grid points
 
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
-      integer, intent(IN) :: n
-      real(DP), dimension(NDIM2D, n), intent(OUT) :: Dparticles
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      integer, intent(in) :: n
+      real(DP), dimension(NDIM2D, n), intent(out) :: Dparticles
 
       
       ! Copy data
@@ -245,9 +245,9 @@
       ! This subroutine updates the physical coordinates of the grid
       ! points by the particle positions
 
-      integer, intent(IN) :: n
-      real(DP), dimension(NDIM2D, n), intent(IN) :: Dparticles
-      real(DP), dimension(:,:), intent(INOUT) :: DvertexCoords
+      integer, intent(in) :: n
+      real(DP), dimension(NDIM2D, n), intent(in) :: Dparticles
+      real(DP), dimension(:,:), intent(inout) :: DvertexCoords
       
       ! Copy data
       call lalg_copyVector(Dparticles, DvertexCoords)
@@ -266,16 +266,16 @@
       ! springs and from the non-linear projection springs which are
       ! required to prevent collapsing of elements.
       
-      real(DP), dimension(NDIM2D,neq), intent(IN) :: Dparticles
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords, DobjectCoords
-      real(DP), dimension(:), intent(IN), optional :: Dindicator
-      integer, dimension(:,:), intent(IN) :: IverticesAtElement
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
-      integer, intent(IN) :: na, neq, nel
+      real(DP), dimension(NDIM2D,neq), intent(in) :: Dparticles
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords, DobjectCoords
+      real(DP), dimension(:), intent(in), optional :: Dindicator
+      integer, dimension(:,:), intent(in) :: IverticesAtElement
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
+      integer, intent(in) :: na, neq, nel
       
-      real(DP), dimension(NDIM2D,NDIM2D,na), intent(INOUT) :: Dmatrix
-      real(DP), dimension(NDIM2D,neq), intent(INOUT) :: Dforces
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NDIM2D,NDIM2D,na), intent(inout) :: Dmatrix
+      real(DP), dimension(NDIM2D,neq), intent(inout) :: Dforces
+      integer, dimension(:), intent(inout) :: Ksep
 
       ! local variables
       real(DP), dimension(NDIM2D,NDIM2D) :: J_ij, J_il, J_ik, J_lj, J_lk, J_ls
@@ -505,12 +505,12 @@
       ! and replaces the corresponding row of the matrix by that of
       ! the identity matrix.
 
-      real(DP), dimension(:,:), intent(IN) :: DvertexCoords
-      integer, dimension(:), intent(IN) :: Kld, Kcol, Kdiagonal
-      integer, intent(IN) :: na, neq
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
+      integer, intent(in) :: na, neq
       
-      real(DP), dimension(NDIM2D,NDIM2D,na), intent(INOUT) :: Dmatrix
-      real(DP), dimension(NDIM2D,neq), intent(INOUT) :: Dforces
+      real(DP), dimension(NDIM2D,NDIM2D,na), intent(inout) :: Dmatrix
+      real(DP), dimension(NDIM2D,neq), intent(inout) :: Dforces
 
       ! local variables
       integer :: i,ii,ij

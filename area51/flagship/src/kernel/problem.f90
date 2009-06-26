@@ -306,12 +306,12 @@ contains
 
 !<input>
     ! abstract problem descriptor
-    type(t_problemDescriptor), intent(IN) :: rproblemDescriptor
+    type(t_problemDescriptor), intent(in) :: rproblemDescriptor
 !</input>
 
 !<output>
     ! problem data structure
-    type(t_problem), intent(OUT) :: rproblem
+    type(t_problem), intent(out) :: rproblem
 !</output>
 !</subroutine>
 
@@ -450,7 +450,7 @@ contains
 
 !<intputoutput>
     ! problem data structure
-    type(t_problem), intent(OUT) :: rproblem
+    type(t_problem), intent(out) :: rproblem
 !</inputoutput>
 !</subroutine>
     
@@ -472,7 +472,7 @@ contains
 
 !<inputoutput>
     ! problem data structure
-    type(t_problem), intent(INOUT) :: rproblem
+    type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 !</subroutine>
     
@@ -559,10 +559,10 @@ contains
 
 !<inputoutput>
     ! problem structure
-    type(t_problem), intent(INOUT), target :: rproblem
+    type(t_problem), intent(inout), target :: rproblem
 
     ! OPTIONAL: reference problem structure
-    type(t_problem), intent(INOUT), target, optional :: rproblemRef
+    type(t_problem), intent(inout), target, optional :: rproblemRef
 !</inputoutput>
 !</subroutine>
 
@@ -631,10 +631,10 @@ contains
 
 !<inputoutput>
     ! problem structure
-    type(t_problem), intent(INOUT), target :: rproblem
+    type(t_problem), intent(inout), target :: rproblem
 
     ! OPTIONAL: reference problem structure
-    type(t_problem), intent(INOUT), target, optional :: rproblemRef
+    type(t_problem), intent(inout), target, optional :: rproblemRef
 !</inputoutput>
 !</subroutine>
 
@@ -699,7 +699,7 @@ contains
 
 !<inputoutput>
     ! problem structure
-    type(t_problem), intent(INOUT) :: rproblem
+    type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 !</subroutine>
 
@@ -729,10 +729,10 @@ contains
 
 !<input>
     ! first problem structure
-    type(t_problem), intent(IN), target :: rproblemFirst
+    type(t_problem), intent(in), target :: rproblemFirst
 
     ! OPTIONAL: last problem structure
-    type(t_problem), intent(IN), target, optional :: rproblemLast
+    type(t_problem), intent(in), target, optional :: rproblemLast
 !</input>
 !</subroutine>
 
@@ -768,7 +768,7 @@ contains
     
     subroutine doInfo(rproblem)
 
-      type(t_problem), intent(IN), target :: rproblem
+      type(t_problem), intent(in), target :: rproblem
 
       ! local variables
       type(t_problemLevel), pointer :: p_rproblemLevel
@@ -818,12 +818,12 @@ contains
 
 !<input>
     ! level number
-    integer, intent(IN) :: ilev
+    integer, intent(in) :: ilev
 !</input>
 
 !<output>
     ! problem level structure
-    type(t_problemLevel), intent(OUT) :: rproblemLevel
+    type(t_problemLevel), intent(out) :: rproblemLevel
 !</output>
 !</subroutine>    
     
@@ -844,7 +844,7 @@ contains
  
 !<inputoutput>  
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 !</inputoutput>
 !</subroutine>
 
@@ -926,13 +926,13 @@ contains
   
 !<inputoutput>
     ! global problem structure
-    type(t_problem), intent(INOUT), target :: rproblem
+    type(t_problem), intent(inout), target :: rproblem
 
     ! problem level structure
-    type(t_problemLevel), intent(INOUT), target :: rproblemLevel
+    type(t_problemLevel), intent(inout), target :: rproblemLevel
 
     ! OPTIONAL: reference problem structure
-    type(t_problemLevel), intent(INOUT), target, optional :: rproblemLevelRef
+    type(t_problemLevel), intent(inout), target, optional :: rproblemLevelRef
 !</inputoutput>
 !</subroutine>
     
@@ -994,13 +994,13 @@ contains
   
 !<inputoutput>
     ! global problem structure
-    type(t_problem), intent(INOUT), target :: rproblem
+    type(t_problem), intent(inout), target :: rproblem
 
     ! problem level structure
-    type(t_problemLevel), intent(INOUT), target :: rproblemLevel
+    type(t_problemLevel), intent(inout), target :: rproblemLevel
 
     ! OPTIONAL: reference problem structure
-    type(t_problemLevel), intent(INOUT), target, optional :: rproblemLevelRef
+    type(t_problemLevel), intent(inout), target, optional :: rproblemLevelRef
 !</inputoutput>
 !</subroutine>
 
@@ -1060,10 +1060,10 @@ contains
 
 !<inputoutput>
     ! global problem structure
-    type(t_problem), intent(INOUT), target :: rproblem
+    type(t_problem), intent(inout), target :: rproblem
 
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 !</inputoutput>
 !</subroutine>
     
@@ -1099,7 +1099,7 @@ contains
 
 !<input>
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 !</input>
 !</subroutine>
 
@@ -1173,35 +1173,35 @@ contains
     
 !<input>
     ! global problem structure
-    type(t_problem), intent(IN) :: rproblem
+    type(t_problem), intent(in) :: rproblem
 
     ! name of parameter file
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
 
     ! name of the parameter section
-    character(LEN=*), intent(IN) :: ssectionname
+    character(LEN=*), intent(in) :: ssectionname
 
     ! symbolic variable names
-    character(LEN=*), dimension(:), intent(IN) :: cvariables
+    character(LEN=*), dimension(:), intent(in) :: cvariables
     
     ! OPTIONAL: simulation time
     ! if this parameter is not specified, then time=0 is assumed
-    real(DP), intent(IN), optional :: time
+    real(DP), intent(in), optional :: time
 !</input>
 
 !<inputoutput>
     ! OPTIONAL: profile vector
     ! If this vector is not present then no explicit profile is
     ! generated and only the parser is filled with data
-    type(t_vectorBlock), intent(INOUT), optional :: rvector
+    type(t_vectorBlock), intent(inout), optional :: rvector
 !</inputoutput>
 
 !<output>
     ! Parser
-    type(t_fparser), intent(OUT) :: rparser
+    type(t_fparser), intent(out) :: rparser
 
     ! Error flag: < 0 if profile was not created
-    integer, intent(OUT) :: istatus
+    integer, intent(out) :: istatus
 !</output>
 !</subroutine>
     
@@ -1390,10 +1390,10 @@ contains
     
 !<input>
     ! global problem structure
-    type(t_problem), intent(IN) :: rproblem
+    type(t_problem), intent(in) :: rproblem
 
     ! level number
-    integer, intent(IN) :: ilev
+    integer, intent(in) :: ilev
 
     ! OPTIONAL: search direction
     ! If this parameter is .false., the loop starts at the minimum
@@ -1401,7 +1401,7 @@ contains
     ! level. Otherwise, the loop starts at the maximum problem level
     ! and continues with the next coarser level. The default value is
     ! .true., that is, top-down search is performed
-    logical, intent(IN), optional :: btopdown
+    logical, intent(in), optional :: btopdown
 !</input>
 
 !<result

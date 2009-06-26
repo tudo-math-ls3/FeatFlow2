@@ -97,13 +97,13 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
     
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 !</input>
 
 !<result>
@@ -128,16 +128,16 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
     
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 !</input>
 
 !<result>
@@ -163,19 +163,19 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
     
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
     
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 !</input>
 
 !<result>
@@ -201,22 +201,22 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
     
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
     
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 
     ! z-velocity component
-    real(DP), intent(IN) :: w
+    real(DP), intent(in) :: w
 !</input>
 
 !<result>
@@ -242,16 +242,16 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 !</input>
 
 !<result>
@@ -276,19 +276,19 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 !</input>
 
 !<result>
@@ -313,22 +313,22 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! pressure
-    real(DP), intent(IN) :: p
+    real(DP), intent(in) :: p
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 
     ! z-velocity component
-    real(DP), intent(IN) :: w
+    real(DP), intent(in) :: w
 !</input>
 
 !<result>
@@ -353,16 +353,16 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! total energy
-    real(DP), intent(IN) :: E
+    real(DP), intent(in) :: E
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 !</input>
 
 !<result>
@@ -387,19 +387,19 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! total energy
-    real(DP), intent(IN) :: E
+    real(DP), intent(in) :: E
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 !</input>
 
 !<result>
@@ -424,22 +424,22 @@ contains
 
 !<input>
     ! ratio of specific heats
-    real(DP), intent(IN) :: gamma
+    real(DP), intent(in) :: gamma
 
     ! total energy
-    real(DP), intent(IN) :: E
+    real(DP), intent(in) :: E
 
     ! density
-    real(DP), intent(IN) :: rho
+    real(DP), intent(in) :: rho
 
     ! x-velocity component
-    real(DP), intent(IN) :: u
+    real(DP), intent(in) :: u
 
     ! y-velocity component
-    real(DP), intent(IN) :: v
+    real(DP), intent(in) :: v
 
     ! z-velocity component
-    real(DP), intent(IN) :: w
+    real(DP), intent(in) :: w
 !</input>
 
 !<result>

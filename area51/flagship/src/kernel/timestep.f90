@@ -140,20 +140,20 @@ contains
 
 !<input>
     ! Parameter list containing all data
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! Section name of the parameter list containing solver data
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<output>
     ! Time-stepping object
-    type(t_timestep), intent(OUT) :: rtimestep
+    type(t_timestep), intent(out) :: rtimestep
 !</output>
 !</subroutine>
 
 
-    ! The INTENT(OUT) already initializes rtimestep with the most
+    ! The INTENT(out) already initializes rtimestep with the most
     ! important information.
     rtimestep%sName = trim(adjustl(ssectionName))
     
@@ -303,17 +303,17 @@ contains
 
 !<input>
     ! Template timestep structure
-    type(t_timestep), intent(IN) :: rtimestepTemplate
+    type(t_timestep), intent(in) :: rtimestepTemplate
 !</input>
 
 !<output>
     ! Timestep structure
-    type(t_timestep), intent(OUT) :: rtimestep
+    type(t_timestep), intent(out) :: rtimestep
 !</output>
 !</subroutine>
 
 
-    ! The INTENT(OUT) already initializes rtimestep with the most
+    ! The INTENT(out) already initializes rtimestep with the most
     ! important information. The rest comes now
     rtimestep = rtimestepTemplate
     
@@ -364,7 +364,7 @@ contains
 
 !<inputoutput>
     ! Time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 !</subroutine>
 
@@ -428,12 +428,12 @@ contains
 
 !<input>
     ! OPTIONAL: Print internal data?
-    logical, intent(IN), optional :: bprintInternal
+    logical, intent(in), optional :: bprintInternal
 !</input>
 
 !<inputoutput>
     ! Time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 !</subroutine>
 
@@ -569,12 +569,12 @@ contains
 
 !<input>
     ! If true, the statistical output parameters are reset
-    logical, intent(IN) :: bresetStatistics
+    logical, intent(in) :: bresetStatistics
 !</input>
 
 !<inputoutput>
     ! time-stepping object
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 !</subroutine>
 
@@ -616,7 +616,7 @@ contains
 
 !<inputoutput>
     ! timestep structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 !</subroutine>
 
@@ -674,24 +674,24 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -752,24 +752,24 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -946,24 +946,24 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(IN), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1017,24 +1017,24 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT), target :: rtimestep
+    type(t_timestep), intent(inout), target :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1308,24 +1308,24 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1392,24 +1392,24 @@ contains
     include 'intf_solvercallback.inc'
     
     ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorScalar), intent(IN), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! solver structure
-    type(t_solver), intent(INOUT), target :: rsolver
+    type(t_solver), intent(inout), target :: rsolver
 
     ! solution vector
-    type(t_vectorScalar), intent(INOUT) :: rsolution
+    type(t_vectorScalar), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1480,18 +1480,18 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN):: rsolver
+    type(t_solver), intent(in):: rsolver
 
     ! first solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution1
+    type(t_vectorBlock), intent(in) :: rsolution1
 
     ! second soluion vector
-    type(t_vectorBlock), intent(IN) :: rsolution2
+    type(t_vectorBlock), intent(in) :: rsolution2
 !</input>
 
 !<inputoutput>
     ! time-stepping algorithm
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 !</inputoutput>
 
 !<result>

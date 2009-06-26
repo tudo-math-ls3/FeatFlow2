@@ -86,10 +86,10 @@ contains
 
 !<input>
     ! scalar vector
-    type(t_vectorScalar), intent(IN) :: rvector
+    type(t_vectorScalar), intent(in) :: rvector
 
     ! variable number
-    integer, intent(IN) :: ivariable
+    integer, intent(in) :: ivariable
 !</input>
 !</subroutine>
 
@@ -127,18 +127,18 @@ contains
     
 !<input>
     ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
+    real(DP), intent(in) :: u_i, u_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji,d_ij
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
 !</output>
 !</subroutine>
 
@@ -194,18 +194,18 @@ contains
     
 !<input>
     ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
+    real(DP), intent(in) :: u_i, u_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! convective coefficients
-    real(DP), intent(OUT) :: k_ij,k_ji,d_ij
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
 !</output>
 !</subroutine>
 
@@ -233,18 +233,18 @@ contains
    
 !<input>
     ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
+    real(DP), intent(in) :: u_i, u_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! convective coefficients
-    real(DP), intent(OUT) :: k_ij, k_ji, d_ij
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
 !</output>
 !</subroutine>
 
@@ -275,18 +275,18 @@ contains
    
 !<input>
     ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
+    real(DP), intent(in) :: u_i, u_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! convective coefficients
-    real(DP), intent(OUT) :: k_ij, k_ji, d_ij
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
 !</output>
 !</subroutine>
 
@@ -319,18 +319,18 @@ contains
    
 !<input>
     ! solution vector
-    real(DP), intent(IN) :: u_i, u_j
+    real(DP), intent(in) :: u_i, u_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij, C_ji
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! convective coefficients
-    real(DP), intent(OUT) :: k_ij, k_ji, d_ij
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
 !</output>
 !</subroutine>
 
@@ -357,18 +357,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 

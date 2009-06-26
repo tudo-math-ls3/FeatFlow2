@@ -113,18 +113,18 @@ contains
     
 !<input>
     ! name of parameter file
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
 
     ! name of the parameter section
-    character(LEN=*), intent(IN) :: ssectionname
+    character(LEN=*), intent(in) :: ssectionname
 
     ! symbolic variable names
-    character(LEN=*), dimension(:), intent(IN) :: cvariables
+    character(LEN=*), dimension(:), intent(in) :: cvariables
 !</input>
 
 !<output>
     ! function parser
-    type(t_fparser), intent(OUT) :: rparser
+    type(t_fparser), intent(out) :: rparser
 !</output>
 !</subroutine>
     
@@ -241,21 +241,21 @@ contains
 
 !<input>
     ! multigrid structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! name of the output file
-    character(LEN=*), intent(IN) :: sfilename
+    character(LEN=*), intent(in) :: sfilename
 
     ! type of UCD output
-    integer, intent(IN) :: ioutputUCD
+    integer, intent(in) :: ioutputUCD
 
     ! OPTIONAL: number of the output file
-    integer, intent(IN), optional :: ifilenumber
+    integer, intent(in), optional :: ifilenumber
 !</input>
 
 !<output>
     ! UCD export structure
-    type(t_ucdExport), intent(OUT) :: rexport
+    type(t_ucdExport), intent(out) :: rexport
 !</output>
 !</subroutine>
 
@@ -327,27 +327,27 @@ contains
 
 !<input>
     ! multigrid level to start with
-    type(t_problemLevel), intent(IN), target :: rproblemLevel
+    type(t_problemLevel), intent(in), target :: rproblemLevel
 
     ! number of the matrix in the problem level structure
-    integer, intent(IN) :: imatrix
+    integer, intent(in) :: imatrix
 
     ! type of the system format
-    integer, intent(IN) :: isystemformat
+    integer, intent(in) :: isystemformat
 
     ! flags which is used to specify the matrices to be updated
-    integer(I32), intent(IN) :: iupdflag
+    integer(I32), intent(in) :: iupdflag
 
     ! OPTIONAL: minimal multigrid level
-    integer, intent(IN), optional :: nlminOpt
+    integer, intent(in), optional :: nlminOpt
 
     ! OPTIONAL: maximal multigrid level
-    integer, intent(IN), optional :: nlmaxOpt
+    integer, intent(in), optional :: nlmaxOpt
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -388,10 +388,10 @@ contains
     recursive subroutine updateMatrix(rproblemLevel, rsolver, imatrix,&
                                       isystemformat, iupdflag, nlmin, nlmax)
 
-      type(t_problemLevel), intent(IN), target :: rproblemLevel
-      type(t_solver), intent(INOUT) :: rsolver
-      integer(I32), intent(IN) :: iupdflag
-      integer, intent(IN) :: imatrix,isystemformat,nlmin,nlmax
+      type(t_problemLevel), intent(in), target :: rproblemLevel
+      type(t_solver), intent(inout) :: rsolver
+      integer(I32), intent(in) :: iupdflag
+      integer, intent(in) :: imatrix,isystemformat,nlmin,nlmax
       
       
       ! local variables

@@ -197,7 +197,7 @@ contains
 
 !<input>
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 !</input>
 
 !<result>
@@ -223,15 +223,15 @@ contains
 
 !<input>
     ! Vector of conservative variables
-    type(t_vectorBlock), intent(IN) :: rvectorBlock
+    type(t_vectorBlock), intent(in) :: rvectorBlock
 
     ! Identifier for the variable
-    character(LEN=*), intent(IN) :: cvariable
+    character(LEN=*), intent(in) :: cvariable
 !</input>
 
 !<inputoutput>
     ! Extracted single variable
-    type(t_vectorScalar), intent(INOUT) :: rvectorScalar
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
 !</inputoutput>
 !</subroutine>
 
@@ -301,21 +301,21 @@ contains
 
 !<input>
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
 
     ! Number of variables
-    integer, intent(IN) :: nvar
+    integer, intent(in) :: nvar
     
     ! Identifier for the variable
-    character(LEN=*), intent(IN) :: cvariable
+    character(LEN=*), intent(in) :: cvariable
     
     ! Vector of conservative variables
-    real(DP), dimension(nvar,neq), intent(IN) :: Ddata
+    real(DP), dimension(nvar,neq), intent(in) :: Ddata
 !</input>
 
 !<output>
     ! Extracted single variable
-    real(DP), dimension(:), intent(OUT) :: Dvalue
+    real(DP), dimension(:), intent(out) :: Dvalue
 !</output>    
 !</subroutine>
     
@@ -467,21 +467,21 @@ contains
 
 !<input>
     ! Number of equations
-    integer, intent(IN) :: neq
+    integer, intent(in) :: neq
 
     ! Number of variables
-    integer, intent(IN) :: nvar
+    integer, intent(in) :: nvar
     
     ! Identifier for the variable
-    character(LEN=*), intent(IN) :: cvariable
+    character(LEN=*), intent(in) :: cvariable
     
     ! Vector of conservative variables
-    real(DP), dimension(neq,nvar), intent(IN) :: Ddata
+    real(DP), dimension(neq,nvar), intent(in) :: Ddata
 !</input>
 
 !<output>
     ! Extracted single variable
-    real(DP), dimension(:), intent(OUT) :: Dvalue
+    real(DP), dimension(:), intent(out) :: Dvalue
 !</output>    
 !</subroutine>
       

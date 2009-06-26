@@ -55,18 +55,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -140,18 +140,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -935,18 +935,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 

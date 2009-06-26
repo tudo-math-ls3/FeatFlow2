@@ -846,15 +846,15 @@ contains
 
 !<input>
     ! Parameter list containing all data
-    type(t_parlist), intent(IN) :: rparlist
+    type(t_parlist), intent(in) :: rparlist
 
     ! Section name of the parameter list containing solver data
-    character(LEN=*), intent(IN) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionName
 !</input>
 
 !<output>
     ! Solver structure
-    type(t_solver), intent(OUT) :: rsolver
+    type(t_solver), intent(out) :: rsolver
 !</output>
 !</subroutine>
 
@@ -866,7 +866,7 @@ contains
     ! Get solver type from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, "csolvertype", csolverType)
     
-    ! The INTENT(OUT) already initializes rsolver with the most
+    ! The INTENT(out) already initializes rsolver with the most
     ! important information. In the first part mandatory and optional
     ! parameters which apply to some type of solvers are read from
     ! the parameter list and applied to the solver.
@@ -1253,13 +1253,13 @@ contains
     
     subroutine create_preconditioner(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
-      type(t_parlist), intent(IN) :: rparlist
+      type(t_parlist), intent(in) :: rparlist
       
       ! Section name of the parameter list containing solver data
-      character(LEN=*), intent(IN) :: ssectionName
+      character(LEN=*), intent(in) :: ssectionName
 
       ! Solver structure
-      type(t_solver), intent(INOUT) :: rsolver
+      type(t_solver), intent(inout) :: rsolver
 
       ! local variables
       integer :: csolverType
@@ -1390,13 +1390,13 @@ contains
 
     subroutine create_smoother(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
-      type(t_parlist), intent(IN) :: rparlist
+      type(t_parlist), intent(in) :: rparlist
       
       ! Section name of the parameter list containing smoother data
-      character(LEN=*), intent(IN) :: ssectionName
+      character(LEN=*), intent(in) :: ssectionName
 
       ! Multigrid solver structure
-      type(t_solverMultigrid), intent(INOUT) :: rsolver
+      type(t_solverMultigrid), intent(inout) :: rsolver
 
       ! local variables
       integer :: i,csolverType
@@ -1462,17 +1462,17 @@ contains
 
 !<input>
     ! Template solver structure
-    type(t_solver), intent(IN) :: rsolverTemplate
+    type(t_solver), intent(in) :: rsolverTemplate
 !</input>
 
 !<output>
     ! Solver structure
-    type(t_solver), intent(OUT) :: rsolver
+    type(t_solver), intent(out) :: rsolver
 !</output>
 !</subroutine>
 
 
-    ! The INTENT(OUT) already initializes rsolver with the most
+    ! The INTENT(out) already initializes rsolver with the most
     ! important information. The rest comes now
     rsolver = rsolverTemplate
 
@@ -1584,13 +1584,13 @@ contains
     ! Create a multigrid solver
 
     subroutine create_solverMultigrid(rsolver, rsolverTemplate)
-      type(t_solverMultigrid), intent(IN) :: rsolverTemplate
-      type(t_solverMultigrid), intent(OUT) :: rsolver
+      type(t_solverMultigrid), intent(in) :: rsolverTemplate
+      type(t_solverMultigrid), intent(out) :: rsolver
 
       ! local variables
       integer :: i,ilbound,iubound
 
-      ! The INTENT(OUT) already initializes rsolver with the most important
+      ! The INTENT(out) already initializes rsolver with the most important
       ! information. The rest comes now
       rsolver = rsolverTemplate
 
@@ -1625,10 +1625,10 @@ contains
     ! Create an UMFPACK solver
 
     subroutine create_solverUMFPACK(rsolver, rsolverTemplate)
-      type(t_solverUMFPACK), intent(IN) :: rsolverTemplate
-      type(t_solverUMFPACK), intent(OUT) :: rsolver
+      type(t_solverUMFPACK), intent(in) :: rsolverTemplate
+      type(t_solverUMFPACK), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(OUT) initializes the solver
+      ! Do nothing, the INTENT(out) initializes the solver
 
     end subroutine create_solverUMFPACK
 
@@ -1636,10 +1636,10 @@ contains
     ! Create a Jacobi solver
 
     subroutine create_solverJacobi(rsolver, rsolverTemplate)
-      type(t_solverJacobi), intent(IN) :: rsolverTemplate
-      type(t_solverJacobi), intent(OUT) :: rsolver
+      type(t_solverJacobi), intent(in) :: rsolverTemplate
+      type(t_solverJacobi), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(OUT) initializes the solver
+      ! Do nothing, the INTENT(out) initializes the solver
 
     end subroutine create_solverJacobi
 
@@ -1647,10 +1647,10 @@ contains
     ! Create an (S)SOR solver
 
     subroutine create_solverSSOR(rsolver, rsolverTemplate)
-      type(t_solverSSOR), intent(IN) :: rsolverTemplate
-      type(t_solverSSOR), intent(OUT) :: rsolver
+      type(t_solverSSOR), intent(in) :: rsolverTemplate
+      type(t_solverSSOR), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(OUT) initializes the solver
+      ! Do nothing, the INTENT(out) initializes the solver
 
     end subroutine create_solverSSOR
 
@@ -1658,8 +1658,8 @@ contains
     ! Create a BiCGSTAB solver
 
     subroutine create_solverBiCGSTAB(rsolver, rsolverTemplate)
-      type(t_solverBiCGSTAB), intent(IN) :: rsolverTemplate
-      type(t_solverBiCGSTAB), intent(OUT) :: rsolver
+      type(t_solverBiCGSTAB), intent(in) :: rsolverTemplate
+      type(t_solverBiCGSTAB), intent(out) :: rsolver
 
       ! Create preconditioner if required
       if (associated(rsolverTemplate%p_precond)) then
@@ -1675,8 +1675,8 @@ contains
     ! Create a GMRES solver
 
     subroutine create_solverGMRES(rsolver, rsolverTemplate)
-      type(t_solverGMRES), intent(IN) :: rsolverTemplate
-      type(t_solverGMRES), intent(OUT) :: rsolver
+      type(t_solverGMRES), intent(in) :: rsolverTemplate
+      type(t_solverGMRES), intent(out) :: rsolver
 
       ! local variables
       integer :: ilbound,iubound
@@ -1722,10 +1722,10 @@ contains
     ! Create an ILU solver
 
     subroutine create_solverILU(rsolver, rsolverTemplate)
-      type(t_solverILU), intent(IN) :: rsolverTemplate
-      type(t_solverILU), intent(OUT) :: rsolver
+      type(t_solverILU), intent(in) :: rsolverTemplate
+      type(t_solverILU), intent(out) :: rsolver
 
-      ! The INTENT(OUT) initializes the solver already.
+      ! The INTENT(out) initializes the solver already.
       ! The rest is done now.
       rsolver%ifill   = rsolverTemplate%ifill
       rsolver%domega  = rsolverTemplate%domega
@@ -1736,10 +1736,10 @@ contains
     ! Create a defect correction algorithm
 
     subroutine create_solverDefcor(rsolver, rsolverTemplate)
-      type(t_solverDefcor), intent(IN) :: rsolverTemplate
-      type(t_solverDefcor), intent(OUT) :: rsolver
+      type(t_solverDefcor), intent(in) :: rsolverTemplate
+      type(t_solverDefcor), intent(out) :: rsolver
 
-      ! Do nothing, the INTENT(OUT) initializes the solver
+      ! Do nothing, the INTENT(out) initializes the solver
 
     end subroutine create_solverDefcor
 
@@ -1747,10 +1747,10 @@ contains
     ! Create a Newton algorithm
 
     subroutine create_solverNewton(rsolver, rsolverTemplate)
-      type(t_solverNewton), intent(IN) :: rsolverTemplate
-      type(t_solverNewton), intent(OUT) :: rsolver
+      type(t_solverNewton), intent(in) :: rsolverTemplate
+      type(t_solverNewton), intent(out) :: rsolver
 
-      ! The INTENT(OUT) initializes the solver already. The rest is done now.
+      ! The INTENT(out) initializes the solver already. The rest is done now.
       rsolver%icheckSufficientDecrease = rsolverTemplate%icheckSufficientDecrease
       rsolver%nmaxBacktrackingSteps    = rsolverTemplate%nmaxBacktrackingSteps
       rsolver%iupdateFrequency         = rsolverTemplate%iupdateFrequency
@@ -1773,7 +1773,7 @@ contains
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -1865,7 +1865,7 @@ contains
     ! Release multigrid solver
 
     subroutine release_solverMultigrid(rsolver)
-      type(t_solverMultigrid), intent(INOUT) :: rsolver
+      type(t_solverMultigrid), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -1912,7 +1912,7 @@ contains
     ! Release UMFPACK solver
 
     subroutine release_solverUMFPACK(rsolver)
-      type(t_solverUMFPACK), intent(INOUT) :: rsolver
+      type(t_solverUMFPACK), intent(inout) :: rsolver
 
       integer :: i
 
@@ -1947,7 +1947,7 @@ contains
     ! Release Jacobi solver
 
     subroutine release_solverJacobi(rsolver)
-      type(t_solverJacobi), intent(INOUT) :: rsolver
+      type(t_solverJacobi), intent(inout) :: rsolver
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
@@ -1960,7 +1960,7 @@ contains
     ! Release (S)SOR solver
 
     subroutine release_solverSSOR(rsolver)
-      type(t_solverSSOR), intent(INOUT) :: rsolver
+      type(t_solverSSOR), intent(inout) :: rsolver
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
@@ -1973,7 +1973,7 @@ contains
     ! Release BiCGSTAB solver
 
     subroutine release_solverBiCGSTAB(rsolver)
-      type(t_solverBiCGSTAB), intent(INOUT) :: rsolver
+      type(t_solverBiCGSTAB), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -1999,7 +1999,7 @@ contains
     ! Release GMRES solver
     
     subroutine release_solverGMRES(rsolver)
-      type(t_solverGMRES), intent(INOUT) :: rsolver
+      type(t_solverGMRES), intent(inout) :: rsolver
       
       ! local variables
       integer :: i
@@ -2042,7 +2042,7 @@ contains
     ! Release ILU solver
 
     recursive subroutine release_solverILU(rsolver)
-      type(t_solverILU), intent(INOUT) :: rsolver
+      type(t_solverILU), intent(inout) :: rsolver
 
       integer :: i
 
@@ -2070,7 +2070,7 @@ contains
     ! Release defect correction algorithm
 
     subroutine release_solverDefcor(rprecond)
-      type(t_solverDefcor), intent(INOUT) :: rprecond
+      type(t_solverDefcor), intent(inout) :: rprecond
 
       ! local variables
       integer :: i
@@ -2086,7 +2086,7 @@ contains
     ! Release Newton's algorithm
     
     subroutine release_solverNewton(rprecond)
-      type(t_solverNewton), intent(INOUT) :: rprecond
+      type(t_solverNewton), intent(inout) :: rprecond
 
       ! local variables
       integer :: i
@@ -2113,10 +2113,10 @@ contains
 
 !<input>
     ! Solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! OPTIONAL: If true, a detailed output of the internal solver structure is printed
-    logical, intent(IN), optional :: bprintInternal
+    logical, intent(in), optional :: bprintInternal
 !</input>
 !</subroutine>
 
@@ -2520,12 +2520,12 @@ contains
 
 !<input>
     ! If true, the statistical output parameters are reset
-    logical, intent(IN) :: bresetStatistics
+    logical, intent(in) :: bresetStatistics
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -2600,7 +2600,7 @@ contains
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -2665,7 +2665,7 @@ contains
     ! Remove temporal data from multigrid solver
     
     subroutine remove_solverMultigrid(rsolver)
-      type(t_solverMultigrid), intent(INOUT) :: rsolver
+      type(t_solverMultigrid), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -2704,7 +2704,7 @@ contains
     ! Remove temporal data from UMFPACK solver
 
     subroutine remove_solverUMFPACK(rsolver)
-      type(t_solverUMFPACK), intent(INOUT) :: rsolver
+      type(t_solverUMFPACK), intent(inout) :: rsolver
 
       integer :: i
 
@@ -2737,7 +2737,7 @@ contains
     ! Remove temporal data from Jacobi solver
     
     subroutine remove_solverJacobi(rsolver)
-      type(t_solverJacobi), intent(INOUT) :: rsolver
+      type(t_solverJacobi), intent(inout) :: rsolver
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
@@ -2750,7 +2750,7 @@ contains
     ! Remove temporal data from (S)SOR solver
 
     subroutine remove_solverSSOR(rsolver)
-      type(t_solverSSOR), intent(INOUT) :: rsolver
+      type(t_solverSSOR), intent(inout) :: rsolver
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
@@ -2763,7 +2763,7 @@ contains
     ! Remove temporal data from BiCGSTAB solver
 
     subroutine remove_solverBiCGSTAB(rsolver)
-      type(t_solverBiCGSTAB), intent(INOUT) :: rsolver
+      type(t_solverBiCGSTAB), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -2787,7 +2787,7 @@ contains
     ! Remove temporal data from GMRES solver
 
     subroutine remove_solverGMRES(rsolver)
-      type(t_solverGMRES), intent(INOUT) :: rsolver
+      type(t_solverGMRES), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -2816,7 +2816,7 @@ contains
     ! Remove temporal data from ILU solver
 
     subroutine remove_solverILU(rsolver)
-      type(t_solverILU), intent(INOUT) :: rsolver
+      type(t_solverILU), intent(inout) :: rsolver
 
       ! Release ILU handles
       if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
@@ -2833,7 +2833,7 @@ contains
     ! Remove temporal data from defect correction algorithm
     
     subroutine remove_solverDefcor(rsolver)
-      type(t_solverDefcor), intent(INOUT) :: rsolver
+      type(t_solverDefcor), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -2849,7 +2849,7 @@ contains
     ! Remove temporal data from Newton's algorithm
 
     subroutine remove_solverNewton(rsolver)
-      type(t_solverNewton), intent(INOUT) :: rsolver
+      type(t_solverNewton), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
@@ -2877,15 +2877,15 @@ contains
 
 !<input>
     ! OPTIONAL: minimum multigrid level to use
-    integer, intent(IN), optional :: nlminOpt
+    integer, intent(in), optional :: nlminOpt
 
     ! OPTIONAL: maximum multigrid level to use
-    integer, intent(IN), optional :: nlmaxOpt
+    integer, intent(in), optional :: nlmaxOpt
 !</input>
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -3028,7 +3028,7 @@ contains
 
 !<input>
     ! solver of the top-level
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 !</subroutine>
 
@@ -3046,8 +3046,8 @@ contains
     ! and proceeds to the next sublevel
 
     recursive subroutine showLevel(rsolver,cindent)
-      type(t_solver),   intent(IN) :: rsolver
-      character(LEN=*), intent(IN) :: cindent
+      type(t_solver),   intent(in) :: rsolver
+      character(LEN=*), intent(in) :: cindent
 
       integer :: i
 
@@ -3197,8 +3197,8 @@ contains
     ! This subroutine starts new indentation, i.e. "+--"
 
     subroutine startIndent(cindent, cmsg)
-      character(LEN=*), intent(IN) :: cindent
-      character(LEN=*), intent(IN) :: cmsg
+      character(LEN=*), intent(in) :: cindent
+      character(LEN=*), intent(in) :: cmsg
       
       call output_line(cindent//'+--'//cmsg)
       
@@ -3208,8 +3208,8 @@ contains
     ! This subroutine continues indentation, i.e. "  |"
 
     subroutine continueIndent(cindent, cmsg)
-      character(LEN=*), intent(IN) :: cindent
-      character(LEN=*), intent(IN) :: cmsg
+      character(LEN=*), intent(in) :: cindent
+      character(LEN=*), intent(in) :: cmsg
 
       call output_line(cindent//'  |'//cmsg)
 
@@ -3219,7 +3219,7 @@ contains
     ! This subroutine stopt indentation, i.e. "  +"
 
     subroutine stopIndent(cindent)
-      character(LEN=*), intent(IN) :: cindent
+      character(LEN=*), intent(in) :: cindent
       
       call output_line(cindent//'  +')
 
@@ -3243,12 +3243,12 @@ contains
 
 !<input>
     ! Number of iterations
-    integer, intent(IN) :: iiterations
+    integer, intent(in) :: iiterations
 !</input>
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -3292,7 +3292,7 @@ contains
 
 !<input>
     ! Solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<result>
@@ -3345,7 +3345,7 @@ contains
 
 !<input>
     ! Solver that is used as base solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 !</input>
 
 !<result>
@@ -3396,10 +3396,10 @@ contains
 
 !<input>
     ! Solver that is used as base solver
-    type(t_solver), intent(IN), target :: rsolver
+    type(t_solver), intent(in), target :: rsolver
 
     ! Array of types of solver to return
-    integer, dimension(:), intent(IN) :: CsolverType
+    integer, dimension(:), intent(in) :: CsolverType
 !</input>
 
 !<result>
@@ -3432,10 +3432,10 @@ contains
 
 !<input>
     ! Solver that is used as base solver
-    type(t_solver), intent(IN), target :: rsolver
+    type(t_solver), intent(in), target :: rsolver
 
     ! Type of solver to return
-    integer, intent(IN) :: csolverType
+    integer, intent(in) :: csolverType
 !</input>
 
 !<result>
@@ -3470,10 +3470,10 @@ contains
 
 !<input>
     ! solver
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! OPTIONAL: alternative nlmin which is used, if no nlmin could be found
-    integer, intent(IN), optional :: nlminAlt
+    integer, intent(in), optional :: nlminAlt
 !</input>
 
 !<result>
@@ -3502,7 +3502,7 @@ contains
     ! This function returns the minimum mulitigrid level
 
     recursive function get_nlmin(rsolver) result(nlmin)
-      type(t_solver), intent(IN) :: rsolver
+      type(t_solver), intent(in) :: rsolver
       integer :: nlmin
 
       ! Initialization
@@ -3543,10 +3543,10 @@ contains
 
 !<input>
     ! single-grid structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! OPTIONAL: alternative nlmax which is used, if no nlmax could be found
-    integer, intent(IN), optional :: nlmaxAlt
+    integer, intent(in), optional :: nlmaxAlt
 !</input>
 
 !<result>
@@ -3575,7 +3575,7 @@ contains
     ! This function returns the maximum mulitigrid level
     
     recursive function get_nlmax(rsolver) result(nlmax)
-      type(t_solver), intent(IN) :: rsolver
+      type(t_solver), intent(in) :: rsolver
       integer :: nlmax
       
       ! Initialization
@@ -3612,12 +3612,12 @@ contains
 
 !<input>
     ! minimal multigrid level
-    integer, intent(IN) :: nlmin
+    integer, intent(in) :: nlmin
 !</input>
 
 !<inputoutput>
     ! solver
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -3632,8 +3632,8 @@ contains
     ! This subroutine sets the minimum multigrid leve recursively
 
     recursive subroutine set_nlmin(rsolver, nlmin)
-      type(t_solver), intent(INOUT) :: rsolver
-      integer, intent(IN) :: nlmin
+      type(t_solver), intent(inout) :: rsolver
+      integer, intent(in) :: nlmin
       
       integer :: i
       
@@ -3692,12 +3692,12 @@ contains
 
 !<input>
     ! maximal multigrid level
-    integer, intent(IN) :: nlmax
+    integer, intent(in) :: nlmax
 !</input>
 
 !<inputoutput>
     ! solver
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -3712,8 +3712,8 @@ contains
     ! This subroutine sets the maximum multigrid leve recursively
 
     recursive subroutine set_nlmax(rsolver, nlmax)
-      type(t_solver), intent(INOUT) :: rsolver
-      integer, intent(IN) :: nlmax
+      type(t_solver), intent(inout) :: rsolver
+      integer, intent(in) :: nlmax
       
       integer :: i
       
@@ -3774,16 +3774,16 @@ contains
 
 !<input>
     ! boundary condition
-    type(t_boundaryCondition), intent(IN), target :: rboundaryCondition
+    type(t_boundaryCondition), intent(in), target :: rboundaryCondition
 
     ! Flag: If TRUE, then boundary conditions are set recursively for all
     !       subsolvers in the solver hierarchy.
-    logical, intent(IN) :: brecursive
+    logical, intent(in) :: brecursive
 !</input>
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -3852,15 +3852,15 @@ contains
 
 !<input>
     ! scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -4015,15 +4015,15 @@ contains
 
 !<input>
     ! block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -4185,15 +4185,15 @@ contains
 
 !<input>
     ! scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -4243,15 +4243,15 @@ contains
 
 !<input>
     ! block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -4300,15 +4300,15 @@ contains
 
 !<input>
     ! scalar matrix
-    type(t_matrixScalar), intent(IN) :: rmatrix
+    type(t_matrixScalar), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
     
@@ -4382,15 +4382,15 @@ contains
 
 !<input>
     ! block matrix
-    type(t_matrixBlock), intent(IN) :: rmatrix
+    type(t_matrixBlock), intent(in) :: rmatrix
 
     ! OPTIONAL: level of the multigrid solver
-    integer, intent(IN), optional :: ilev
+    integer, intent(in), optional :: ilev
 !</input>
 
 !<inputoutput>
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
     
@@ -4480,7 +4480,7 @@ contains
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -4895,7 +4895,7 @@ contains
     ! Update the structure of the smoother
 
     subroutine smoother_updateStructure(rsolver)
-      type(t_solverMultigrid), intent(INOUT) :: rsolver
+      type(t_solverMultigrid), intent(inout) :: rsolver
       
       ! local variables
       type(t_solver) :: rsolverTemplateSmoother
@@ -4981,7 +4981,7 @@ contains
 
 !<inputoutput>
     ! Solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
 
@@ -5138,18 +5138,18 @@ contains
 
 !<input>
     ! Coarse triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationCoarse
+    type(t_triangulation), intent(in) :: rtriangulationCoarse
     
     ! Fine triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationFine
+    type(t_triangulation), intent(in) :: rtriangulationFine
     
     ! Coarse mesh vector
-    type(t_vectorScalar), intent(IN) :: rxCoarse
+    type(t_vectorScalar), intent(in) :: rxCoarse
 !</input>
     
 !<inputoutput>
     ! Fine mesh vector
-    type(t_vectorScalar), intent(INOUT) :: rxFine
+    type(t_vectorScalar), intent(inout) :: rxFine
 !</inputoutput>
 !</subroutine>
 
@@ -5204,14 +5204,14 @@ contains
     subroutine do_prolongationP1Q1(nvar, nel, IneighboursAtElementFine, &
                                    IneighboursAtElementCoarse, IverticesAtElementFine, &
                                    IverticesAtElementCoarse, DxFine, DxCoarse)
-      integer, intent(IN) :: nvar
-      integer, intent(IN) :: nel
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElementCoarse
-      integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
-      integer, dimension(:,:), intent(IN) :: IverticesAtElementCoarse
-      real(DP), dimension(nvar,*), intent(IN) :: DxCoarse
-      real(DP), dimension(nvar,*), intent(INOUT) :: DxFine
+      integer, intent(in) :: nvar
+      integer, intent(in) :: nel
+      integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
+      integer, dimension(:,:), intent(in) :: IneighboursAtElementCoarse
+      integer, dimension(:,:), intent(in) :: IverticesAtElementFine
+      integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
+      real(DP), dimension(nvar,*), intent(in) :: DxCoarse
+      real(DP), dimension(nvar,*), intent(inout) :: DxFine
       
       real(DP), dimension(nvar,TRIA_MAXNVE2D) :: Dxloc
       integer :: iel,iel1,iel2,iel3,iel4,nve
@@ -5284,18 +5284,18 @@ contains
 
 !<input>
     ! Coarse triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationCoarse
+    type(t_triangulation), intent(in) :: rtriangulationCoarse
     
     ! Fine triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationFine
+    type(t_triangulation), intent(in) :: rtriangulationFine
     
     ! Coarse mesh vector
-    type(t_vectorBlock), intent(IN) :: rxCoarse
+    type(t_vectorBlock), intent(in) :: rxCoarse
 !</input>
     
 !<inputoutput>
     ! Fine mesh vector
-    type(t_vectorBlock), intent(INOUT) :: rxFine
+    type(t_vectorBlock), intent(inout) :: rxFine
 !</inputoutput>
 !</subroutine>
 
@@ -5333,18 +5333,18 @@ contains
 
 !<input>
     ! Coarse triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationFine
+    type(t_triangulation), intent(in) :: rtriangulationFine
     
     ! Fine triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationCoarse
+    type(t_triangulation), intent(in) :: rtriangulationCoarse
     
     ! Coarse mesh vector
-    type(t_vectorScalar), intent(IN) :: rxFine
+    type(t_vectorScalar), intent(in) :: rxFine
 !</input>
     
 !<inputoutput>
     ! Fine mesh vector
-    type(t_vectorScalar), intent(INOUT) :: rxCoarse
+    type(t_vectorScalar), intent(inout) :: rxCoarse
 !</inputoutput>
 !</subroutine>
 
@@ -5394,12 +5394,12 @@ contains
     subroutine do_restrictionP1Q1(nvar, nelFine, nelCoarse, &
                                   IneighboursAtElementFine, IverticesAtElementFine,&
                                   DxFine, DxCoarse)
-      integer, intent(IN) :: nvar
-      integer, intent(IN) :: nelFine,nelCoarse
-      integer, dimension(:,:), intent(IN) :: IneighboursAtElementFine
-      integer, dimension(:,:), intent(IN) :: IverticesAtElementFine
-      real(DP), dimension(nvar,*), intent(IN) :: DxFine
-      real(DP), dimension(nvar,*), intent(INOUT) :: DxCoarse
+      integer, intent(in) :: nvar
+      integer, intent(in) :: nelFine,nelCoarse
+      integer, dimension(:,:), intent(in) :: IneighboursAtElementFine
+      integer, dimension(:,:), intent(in) :: IverticesAtElementFine
+      real(DP), dimension(nvar,*), intent(in) :: DxFine
+      real(DP), dimension(nvar,*), intent(inout) :: DxCoarse
 
       integer, dimension(TRIA_MAXNVE2D) :: iloc
       integer :: iel,nve
@@ -5465,18 +5465,18 @@ contains
 
 !<input>
     ! Coarse triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationFine
+    type(t_triangulation), intent(in) :: rtriangulationFine
     
     ! Fine triangulation structure
-    type(t_triangulation), intent(IN) :: rtriangulationCoarse
+    type(t_triangulation), intent(in) :: rtriangulationCoarse
     
     ! Coarse mesh vector
-    type(t_vectorBlock), intent(IN) :: rxFine
+    type(t_vectorBlock), intent(in) :: rxFine
 !</input>
     
 !<inputoutput>
     ! Fine mesh vector
-    type(t_vectorBlock), intent(INOUT) :: rxCoarse
+    type(t_vectorBlock), intent(inout) :: rxCoarse
 !</inputoutput>
 !</subroutine>
 
@@ -5521,18 +5521,18 @@ contains
 
 !<input>
     ! The source solver structure
-    type(t_solver), intent(IN) :: rsolverSource
+    type(t_solver), intent(in) :: rsolverSource
 
     ! Copy flag for input parameters
-    logical, intent(IN) :: bcopyInput
+    logical, intent(in) :: bcopyInput
 
     ! Copy flag for output parameters
-    logical, intent(IN) :: bcopyOutput
+    logical, intent(in) :: bcopyOutput
 !</input>
 
 !<inputoutput>
     ! The destination solver structure
-    type(t_solver), intent(INOUT) :: rsolverDest
+    type(t_solver), intent(inout) :: rsolverDest
 !</inputoutput>
 
 !</subroutine>
@@ -5580,7 +5580,7 @@ contains
 
 !<inputoutput>
     ! ILU-solver structure
-    type(t_solverILU), intent(INOUT) :: rsolver
+    type(t_solverILU), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
     
@@ -5647,7 +5647,7 @@ contains
     ! Release ILU solver
     recursive subroutine release_solverILU(rsolver)
       
-      type(t_solverILU), intent(INOUT) :: rsolver
+      type(t_solverILU), intent(inout) :: rsolver
 
       integer :: i
 
@@ -5678,7 +5678,7 @@ contains
     ! decomposition or the ILU(s) decomposition with fill-in.
     subroutine do_scalarILU(rsolver, rmatrix)
 
-      type(t_solverILU), intent(INOUT) :: rsolver
+      type(t_solverILU), intent(inout) :: rsolver
       type(t_matrixScalar), intent(INout) :: rmatrix
       
       real(DP), dimension(:), pointer :: p_DA,p_Ddata
@@ -5867,15 +5867,15 @@ contains
 
     subroutine do_mat79MILUs(Da, Kcol, Kld, neq, na, ifill,&
                              domega, lu, jlu, ilup, h_Idata)
-      real(DP), dimension(:), intent(INOUT) :: Da
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, dimension(:), intent(IN) :: Kld
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: na
-      integer, intent(IN) :: ifill
-      real(DP), intent(IN) :: domega
-      integer(I32), intent(OUT) :: lu,jlu,ilup
-      integer, intent(INOUT) :: h_Idata
+      real(DP), dimension(:), intent(inout) :: Da
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: Kld
+      integer, intent(in) :: neq
+      integer, intent(in) :: na
+      integer, intent(in) :: ifill
+      real(DP), intent(in) :: domega
+      integer(I32), intent(out) :: lu,jlu,ilup
+      integer, intent(inout) :: h_Idata
 
       ! Declare our ILUS-routine from SPLIB as interface to be sure,
       ! parameter interfaces are checked by compiler
@@ -5972,14 +5972,14 @@ contains
     
     subroutine do_mat7MILU0(Da, Kcol, Kld, neq, nvar, ilu, alpha, tol)
 
-      real(DP), intent(IN) :: alpha,tol
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, dimension(:), intent(IN) :: Kld
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      integer, intent(IN) :: ilu
+      real(DP), intent(in) :: alpha,tol
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: Kld
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      integer, intent(in) :: ilu
 
-      real(DP), dimension(nvar,*), intent(INOUT) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Da
 
       ! local variables
       real(DP), dimension(nvar) :: A,A_ij
@@ -6178,15 +6178,15 @@ contains
     
     subroutine do_mat9MILU0(Da, Kcol, Kld, Kdiagonal, neq, nvar, ilu, alpha, tol)
       
-      real(DP), intent(IN) :: alpha,tol
-      integer, dimension(:), intent(IN) :: Kcol
-      integer, dimension(:), intent(IN) :: Kld
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
-      integer, intent(IN) :: ilu
+      real(DP), intent(in) :: alpha,tol
+      integer, dimension(:), intent(in) :: Kcol
+      integer, dimension(:), intent(in) :: Kld
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
+      integer, intent(in) :: ilu
 
-      real(DP), dimension(nvar,*), intent(INOUT) :: Da
+      real(DP), dimension(nvar,*), intent(inout) :: Da
 
       ! local variables
       real(DP), dimension(nvar) :: A,A_ij
@@ -6388,11 +6388,11 @@ contains
     
     subroutine do_mat79Intl1BILU0(DDa, Da, Kdiagonal, neq, nvar)
 
-      real(DP), dimension(nvar,nvar,*), intent(IN) :: DDa
-      real(DP), dimension(nvar,nvar,*), intent(INOUT) :: Da
-      integer, dimension(:), intent(IN) :: Kdiagonal
-      integer, intent(IN) :: neq
-      integer, intent(IN) :: nvar
+      real(DP), dimension(nvar,nvar,*), intent(in) :: DDa
+      real(DP), dimension(nvar,nvar,*), intent(inout) :: Da
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: neq
+      integer, intent(in) :: nvar
 
       ! local variables
       real(DP) :: a_ij
@@ -6450,7 +6450,7 @@ contains
 
 !<inputoutput>
     ! Umfpack-solver structure
-    type(t_solverUMFPACK), intent(INOUT) :: rsolver
+    type(t_solverUMFPACK), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
     
@@ -6553,8 +6553,8 @@ contains
     ! Prepare the matrix for UMFACK
 
     subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
-      type(t_matrixBlock), intent(IN) :: rmatrixSrc
-      type(t_matrixScalar), intent(INOUT) :: rmatrixDest
+      type(t_matrixBlock), intent(in) :: rmatrixSrc
+      type(t_matrixScalar), intent(inout) :: rmatrixDest
       
 
       ! Check if matrix is a 1x1 block matrix

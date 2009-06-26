@@ -177,7 +177,7 @@ function signal_SIGINT(signum) result(sigcount)
 !</description>
 
 !<input>
-  integer, intent(IN) :: signum
+  integer, intent(in) :: signum
 !</input>
 
 !<result>
@@ -223,7 +223,7 @@ function signal_SIGQUIT(signum) result(sigcount)
 !</description>
 
 !<input>
-  integer, intent(IN) :: signum
+  integer, intent(in) :: signum
 !</input>
 
 !<result>

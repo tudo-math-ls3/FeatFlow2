@@ -137,21 +137,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! inviscid fluxes
-    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
     
@@ -173,21 +173,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! inviscid fluxes
-    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
 
@@ -206,21 +206,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! inviscid fluxes
-    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
 
@@ -239,21 +239,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! inviscid fluxes
-    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
 
@@ -272,21 +272,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! inviscid fluxes
-    real(DP), dimension(:), intent(OUT) :: F_ij, F_ji
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
 
@@ -305,21 +305,21 @@ contains
 
 !<input>
     ! local solution at node I
-    real(DP), dimension(:), intent(IN) :: U_i
+    real(DP), dimension(:), intent(in) :: U_i
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ii
+    real(DP), dimension(:), intent(in) :: C_ii
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! row number
-    integer, intent(IN) :: i
+    integer, intent(in) :: i
 !</input>
 
 !<output>
     ! local Jacobian matrix
-    real(DP), dimension(:), intent(OUT) :: K_ii
+    real(DP), dimension(:), intent(out) :: K_ii
 !</output>
 !</subroutine>
 
@@ -338,21 +338,21 @@ contains
 
 !<input>
     ! local solution at node I
-    real(DP), dimension(:), intent(IN) :: U_i
+    real(DP), dimension(:), intent(in) :: U_i
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ii
+    real(DP), dimension(:), intent(in) :: C_ii
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! row number
-    integer, intent(IN) :: i
+    integer, intent(in) :: i
 !</input>
 
 !<output>
     ! local Jacobian matrix
-    real(DP), dimension(:), intent(OUT) :: K_ii
+    real(DP), dimension(:), intent(out) :: K_ii
 !</output>
 !</subroutine>
 
@@ -370,21 +370,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -402,21 +402,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -435,21 +435,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -469,21 +469,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -502,21 +502,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -535,21 +535,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -568,21 +568,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -601,21 +601,21 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(IN) :: C_ij,C_ji
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
-    real(DP), intent(IN) :: dscale
+    real(DP), intent(in) :: dscale
 
     ! node numbers
-    integer, intent(IN) :: i, j
+    integer, intent(in) :: i, j
 !</input>
 
 !<output>
     ! local Roe matrices
-    real(DP), dimension(:), intent(OUT) :: K_ij,K_ji,D_ij
+    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
@@ -633,24 +633,24 @@ contains
 
 !<input>
     ! local solution at nodes I and J
-    real(DP), dimension(:), intent(IN) :: U_i,U_j
+    real(DP), dimension(:), intent(in) :: U_i,U_j
 
     ! weighting vector
-    real(DP), dimension(:), intent(IN) :: Dweight
+    real(DP), dimension(:), intent(in) :: Dweight
 !</input>
 
 !<output>
     ! vector of characteristic variables
-    real(DP), dimension(:), intent(OUT), optional :: W_ij
+    real(DP), dimension(:), intent(out), optional :: W_ij
 
     ! OPTIONAL: diagonal matrix of eigenvalues
-    real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
+    real(DP), dimension(:), intent(out), optional :: Lbd_ij
 
     ! OPTIONAL: transformation matrix into conservative variables
-    real(DP), dimension(:), intent(OUT), optional :: R_ij
+    real(DP), dimension(:), intent(out), optional :: R_ij
 
     ! OPTIONAL: transformation matrix into characteristic variables
-    real(DP), dimension(:), intent(OUT), optional :: L_ij
+    real(DP), dimension(:), intent(out), optional :: L_ij
 !</output>
 !</subroutine>
 
@@ -669,27 +669,27 @@ contains
 
 !<input>
     ! normal vector at the boundary
-    real(DP), dimension(:), intent(IN) :: DbdrNormal
+    real(DP), dimension(:), intent(in) :: DbdrNormal
 
     ! normal vector at the point on the boundary
-    real(DP), dimension(:), intent(IN) :: DpointNormal
+    real(DP), dimension(:), intent(in) :: DpointNormal
 
     ! evaluated boundary values
-    real(DP), dimension(:), intent(IN) :: DbdrValue
+    real(DP), dimension(:), intent(in) :: DbdrValue
 
     ! initial solution from the previous time step
-    real(DP), dimension(:), intent(IN) :: Du0
+    real(DP), dimension(:), intent(in) :: Du0
 
     ! type of boundary condition
-    integer, intent(IN) :: ibdrCondType
+    integer, intent(in) :: ibdrCondType
 !</input>
 
 !<inputoutput>
     ! computed boundary values
-    real(DP), dimension(:), intent(INOUT) :: Du
+    real(DP), dimension(:), intent(inout) :: Du
 
     ! OPTIONAL: status of the callback function
-    integer, intent(INOUT), optional :: istatus
+    integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
 
@@ -710,18 +710,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -828,18 +828,18 @@ contains
 
 !<input>
     ! Identifier for the grid modification operation
-    integer, intent(IN) :: iOperation
+    integer, intent(in) :: iOperation
 
     ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ivertices
+    integer, dimension(:), intent(in) :: Ivertices
 
     ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
     ! Collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 

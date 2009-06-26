@@ -90,44 +90,44 @@ contains
 
 !<input>
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
     
     ! number of solver step
-    integer, intent(IN) :: istep
+    integer, intent(in) :: istep
     
     ! specifier for operations
-    integer(I32), intent(IN) :: ioperationSpec
+    integer(I32), intent(in) :: ioperationSpec
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(IN), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
     
     ! time-stepping structure
-    type(t_timestep), intent(INOUT) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
     
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
     
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
+    type(t_vectorBlock), intent(inout) :: rrhs
 
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
         
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !<output>
     ! status flag
-    integer, intent(OUT) :: istatus
+    integer, intent(out) :: istatus
 !</output>
 !</subroutine>
 
@@ -191,21 +191,21 @@ contains
 
 !<input>
     ! time-stepping structure
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 
     ! solution vector
-    type(t_vectorBlock), intent(IN) :: rsolution
+    type(t_vectorBlock), intent(in) :: rsolution
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -732,24 +732,24 @@ contains
 
 !<input>
     ! time-stepping algorithm
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT), target :: rproblemLevel
+    type(t_problemLevel), intent(inout), target :: rproblemLevel
 
     ! nonlinear solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
 
     ! current solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -772,24 +772,24 @@ contains
 
 !<input>
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! vector to which the Jacobian should be applied to
-    type(t_vectorBlock), intent(IN) :: rx
+    type(t_vectorBlock), intent(in) :: rx
 
     ! factor by which rx should be scaled
-    real(DP), intent(IN) :: cx
+    real(DP), intent(in) :: cx
 
     ! factor by which ry should be scaled
-    real(DP), intent(IN) :: cy
+    real(DP), intent(in) :: cy
 !</input>
 
 !<inputoutput>
     ! vector to which the result should be added
-    type(t_vectorBlock), intent(INOUT) :: ry
+    type(t_vectorBlock), intent(inout) :: ry
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -824,33 +824,33 @@ contains
 
 !<input>
     ! time-stepping structure
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 
     ! number of nonlinear iteration
-    integer, intent(IN) :: ite
+    integer, intent(in) :: ite
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
+    type(t_vectorBlock), intent(inout) :: rrhs
 
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1410,30 +1410,30 @@ contains
 
 !<input>
     ! time-stepping structure
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 
     ! number of explicit step
-    integer, intent(IN) :: istep
+    integer, intent(in) :: istep
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! solver structure
-    type(t_solver), intent(INOUT) :: rsolver
+    type(t_solver), intent(inout) :: rsolver
     
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! right-hand side vector
-    type(t_vectorBlock), intent(INOUT) :: rrhs
+    type(t_vectorBlock), intent(inout) :: rrhs
 
     ! collection
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
     
@@ -1658,24 +1658,24 @@ contains
 
 !<input>
     ! time-stepping algorithm
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 
     ! nonlinear solver structure
-    type(t_solver), intent(IN) :: rsolver
+    type(t_solver), intent(in) :: rsolver
 
     ! initial solution vector
-    type(t_vectorBlock), intent(IN) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
 !</input>
 
 !<inputoutput>
     ! problem level structure
-    type(t_problemLevel), intent(INOUT) :: rproblemLevel
+    type(t_problemLevel), intent(inout) :: rproblemLevel
 
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! residual vector
-    type(t_vectorBlock), intent(INOUT) :: rres
+    type(t_vectorBlock), intent(inout) :: rres
 
     ! collection structure to provide additional
     ! information to the boundary setting routine
@@ -1761,21 +1761,21 @@ contains
 
 !<input>
     ! boundary condition structure
-    type(t_boundaryCondition), intent(IN) :: rbdrCond
+    type(t_boundaryCondition), intent(in) :: rbdrCond
 
     ! problem level structure
-    type(t_problemLevel), intent(IN) :: rproblemLevel
+    type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! time-stepping algorithm
-    type(t_timestep), intent(IN) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep
 !</input>
 
 !<inputoutput>
     ! solution vector
-    type(t_vectorBlock), intent(INOUT) :: rsolution
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection structure
-    type(t_collection), intent(INOUT) :: rcollection
+    type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -1904,16 +1904,16 @@ contains
 !!$    subroutine buildFluxChar(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
 !!$                             Dweight, dscale, MC, ML, C, troc, flux, flux0)
 !!$      
-!!$      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-!!$      real(DP), dimension(:), intent(IN) :: Dweight,MC,ML,C
-!!$      real(DP), intent(IN) :: dscale
-!!$      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-!!$      integer, intent(IN) :: NEQ,NVAR,NEDGE
+!!$      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+!!$      real(DP), dimension(:), intent(in) :: Dweight,MC,ML,C
+!!$      real(DP), intent(in) :: dscale
+!!$      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+!!$      integer, intent(in) :: NEQ,NVAR,NEDGE
 !!$      
-!!$      integer, dimension(:), intent(INOUT) :: Ksep
-!!$      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux,flux0
+!!$      integer, dimension(:), intent(inout) :: Ksep
+!!$      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux,flux0
 !!$      
-!!$      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc
+!!$      real(DP), dimension(NVAR,NEQ), intent(out) :: troc
 !!$      
 !!$      ! local variables
 !!$      real(DP), dimension(NVAR*NVAR) :: R_ij
@@ -2003,14 +2003,14 @@ contains
 !!$    subroutine buildCorrectionChar(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
 !!$                                   Dweight, ML, flux, flux0)
 !!$
-!!$      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-!!$      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
-!!$      real(DP), dimension(:), intent(IN) :: Dweight, ML
-!!$      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-!!$      integer, intent(IN) :: NEQ,NVAR,NEDGE
+!!$      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+!!$      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
+!!$      real(DP), dimension(:), intent(in) :: Dweight, ML
+!!$      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+!!$      integer, intent(in) :: NEQ,NVAR,NEDGE
 !!$      
-!!$      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
-!!$      integer, dimension(:), intent(INOUT) :: Ksep
+!!$      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
+!!$      integer, dimension(:), intent(inout) :: Ksep
 !!$      
 !!$      ! local variables
 !!$      real(DP), dimension(:,:), allocatable :: pp,pm,qp,qm,rp,rm
@@ -2117,16 +2117,16 @@ contains
 !!$    subroutine buildFluxChar2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
 !!$                               dscale, MC, ML, Cx, Cy, troc, flux, flux0)
 !!$
-!!$      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-!!$      real(DP), dimension(:), intent(IN) :: MC,ML,Cx, Cy
-!!$      real(DP), intent(IN) :: dscale
-!!$      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-!!$      integer, intent(IN) :: NEQ,NVAR,NEDGE
+!!$      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+!!$      real(DP), dimension(:), intent(in) :: MC,ML,Cx, Cy
+!!$      real(DP), intent(in) :: dscale
+!!$      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+!!$      integer, intent(in) :: NEQ,NVAR,NEDGE
 !!$      
-!!$      integer, dimension(:), intent(INOUT) :: Ksep
-!!$      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+!!$      integer, dimension(:), intent(inout) :: Ksep
+!!$      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux0,flux
 !!$
-!!$      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc     
+!!$      real(DP), dimension(NVAR,NEQ), intent(out) :: troc     
 !!$
 !!$      ! local variables
 !!$      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
@@ -2207,16 +2207,16 @@ contains
     subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
                                dscale, MC, ML, Cx, Cy, troc, flux, flux0)
 
-      real(DP), dimension(NVAR,NEQ), intent(IN) :: u
-      real(DP), dimension(:), intent(IN) :: MC,ML,Cx,Cy
-      real(DP), intent(IN) :: dscale
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR,NEDGE
       
-      integer, dimension(:), intent(INOUT) :: Ksep
-      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux0,flux
+      integer, dimension(:), intent(inout) :: Ksep
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux0,flux
 
-      real(DP), dimension(NVAR,NEQ), intent(OUT) :: troc     
+      real(DP), dimension(NVAR,NEQ), intent(out) :: troc     
 
       real(DP), parameter :: c_d = 1.0
 
@@ -2299,14 +2299,14 @@ contains
 !!$                                   ML, flux, flux0, data, u)
 !!$
 !!$      
-!!$      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
-!!$      real(DP), dimension(:), intent(IN) :: ML
-!!$      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-!!$      integer, intent(IN) :: NEQ,NVAR,NEDGE
+!!$      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
+!!$      real(DP), dimension(:), intent(in) :: ML
+!!$      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+!!$      integer, intent(in) :: NEQ,NVAR,NEDGE
 !!$      
-!!$      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
-!!$      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: data,u
-!!$      integer, dimension(:), intent(INOUT) :: Ksep
+!!$      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
+!!$      real(DP), dimension(NVAR,NEQ), intent(inout) :: data,u
+!!$      integer, dimension(:), intent(inout) :: Ksep
 !!$      
 !!$      ! local variables
 !!$      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
@@ -2416,15 +2416,15 @@ contains
     subroutine  buildCorrectionCons2(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE,&
                                      ML, flux, flux0, ivar, alpha, u)
 
-      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux0
-      real(DP), dimension(:), intent(IN) :: ML
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR,NEDGE,ivar
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
+      real(DP), dimension(:), intent(in) :: ML
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR,NEDGE,ivar
       
-      real(DP), dimension(NVAR,NEDGE), intent(INOUT) :: flux
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u
-      real(DP), dimension(:), intent(INOUT) :: alpha
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: u
+      real(DP), dimension(:), intent(inout) :: alpha
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
@@ -2550,13 +2550,13 @@ contains
     subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, flux, data, u)
 
       
-      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux
-      real(DP), dimension(:), intent(IN) :: ML
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(:), intent(in) :: ML
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR,NEDGE
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u,data
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP) :: p
@@ -2597,13 +2597,13 @@ contains
     subroutine applyCorrection2(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, ML, flux, alpha, data, u)
 
       
-      real(DP), dimension(NVAR,NEDGE), intent(IN) :: flux
-      real(DP), dimension(:), intent(IN) :: ML,alpha
-      integer, dimension(:), intent(IN) :: Kld,Kcol,Kdiagonal
-      integer, intent(IN) :: NEQ,NVAR,NEDGE
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(:), intent(in) :: ML,alpha
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NVAR,NEDGE
       
-      real(DP), dimension(NVAR,NEQ), intent(INOUT) :: u,data
-      integer, dimension(:), intent(INOUT) :: Ksep
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
+      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(NVAR) :: f_ij
@@ -2647,7 +2647,7 @@ contains
     !***************************************************************************
 
     pure elemental function minmod(a,b)
-      real(DP), intent(IN) :: a,b
+      real(DP), intent(in) :: a,b
       real(DP) :: minmod
 
       if (a > 0 .and. b > 0) then
