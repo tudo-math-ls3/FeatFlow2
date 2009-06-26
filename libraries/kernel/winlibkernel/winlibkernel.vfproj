@@ -6,39 +6,39 @@
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS;_DEBUG" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true" CompileOnly="true"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" DisableDefaultLibSearch="true" CompileOnly="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
+		<Configuration Name="Debug Parallel|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" OpenMP="OpenMPParallelCode" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="Debug Parallel|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
-				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
-				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" OpenMP="OpenMPParallelCode" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug" DisableDefaultLibSearch="true" CompileOnly="true"/>
-				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
-				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration>
 		<Configuration Name="Release ohne IPO|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFCustomBuildTool"/>
-				<Tool Name="VFLibrarianTool" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
 				<Tool Name="VFPreLinkEventTool"/>
-				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
+				<Tool Name="VFLibrarianTool" MustRebuild="true" OutputFile="$(OUTDIR)/winlibkernel.lib" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Adaptivity">
@@ -46,12 +46,12 @@
 		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux1d.f90"/>
 		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux2d.f90"/>
 		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptaux3d.f90"/>
-		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptivity.f90"/>
 		<File RelativePath="..\..\..\kernel\Adaptivity\intf_hadaptcallback.inc"/></Filter>
 		<Filter Name="BasicGeometry">
 		<File RelativePath="..\..\..\kernel\BasicGeometry\basicgeometry.f90"/>
 		<File RelativePath="..\..\..\kernel\BasicGeometry\geometry.f90"/>
-		<File RelativePath="..\..\..\kernel\BasicGeometry\geometryaux.f90"/></Filter>
+		<File RelativePath="..\..\..\kernel\BasicGeometry\geometryaux.f90"/>
+		<File RelativePath="..\..\..\kernel\Adaptivity\hadaptivity.f90"/></Filter>
 		<Filter Name="Boundary">
 		<File RelativePath="..\..\..\kernel\Boundary\boundary.f90"/>
 		<File RelativePath="..\..\..\kernel\Boundary\fictitiousboundary.f90"/></Filter>
@@ -63,6 +63,7 @@
 		<File RelativePath="..\..\..\kernel\DataStructures\binarytree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\graph.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\list.f90"/>
+		<File RelativePath="..\..\..\kernel\DataStructures\numbersets.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\octree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\quadtree.f90"/>
 		<File RelativePath="..\..\..\kernel\DataStructures\stack.f90"/></Filter>
@@ -75,6 +76,7 @@
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration>
 			<FileConfiguration Name="Release ohne IPO|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" UninitializedVariablesCheck="false"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\boundaryaux.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretebc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\discretefbc.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\dofmapping.f90"/>
@@ -98,6 +100,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\trilinearformevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\vectorfilters.f90"/></Filter>
 		<Filter Name="ElementCubature">
+		<File RelativePath="..\..\..\kernel\ElementCubature\adaptivecubature.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\derivatives.f90"/>
 		<File RelativePath="..\..\..\kernel\ElementCubature\element.f90"/>
@@ -148,10 +151,10 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\stdoperators.f90"/></Filter>
 		<Filter Name="Postprocessing">
 		<File RelativePath="..\..\..\kernel\Postprocessing\boundaryintegral.f90"/>
-		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScBoundary2D.inc"/>
+		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScBdr2D.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScSimple.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionSc.inc"/>
-		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionScBoundary.inc"/>
+		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionScBdr2D.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\mapleio.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\matrixio.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\pprocerror.f90"/>
@@ -184,6 +187,9 @@
 		<File RelativePath="..\..\..\kernel\System\genoutput.f90"/>
 		<File RelativePath="..\..\..\kernel\System\io.f90"/>
 		<File RelativePath="..\..\..\kernel\System\paramlist.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
+		<File RelativePath="..\..\..\kernel\System\signals.f90">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\sort.f90"/>
