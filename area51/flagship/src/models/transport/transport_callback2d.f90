@@ -30,19 +30,34 @@
 !# 7.) transp_hadaptCallback2d
 !#     -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
+!# 8.) transp_coeffVecBdrPrimalConst2d
+!#      -> Calculates the coefficients for the linear form in 2D
+!#
+!# 9.) transp_coeffVecBdrDualConst2d
+!#      -> Calculates the coefficients for the linear form in 2D
+!#
+!# 10.) transp_coeffMatBdrPrimalConst2d
+!#      -> Calculates the coefficients for the bilinear form in 2D
+!#
+!# 11.) transp_coeffMatBdrDualConst2d
+!#      -> Calculates the coefficients for the bilinear form in 2D
+!#
+!#
 !# </purpose>
 !##############################################################################
 
 module transport_callback2d
 
   use collection
-  use flagship_callback
+  use derivatives
   use fsystem
   use genoutput
   use hadaptaux
   use linearsystemscalar
   use linearsystemblock
   use storage
+
+  use flagship_callback
 
   implicit none
 
@@ -54,6 +69,10 @@ module transport_callback2d
   public :: transp_calcMatrixPrimalBuckLevSpT2d
   public :: transp_calcMatrixPrimalBurgers2d
   public :: transp_hadaptCallback2d
+  public :: transp_coeffVecBdrPrimalConst2d
+  public :: transp_coeffVecBdrDualConst2d
+  public :: transp_coeffMatBdrPrimalConst2d
+  public :: transp_coeffMatBdrDualConst2d
 
 !<globals>
 
@@ -456,5 +475,779 @@ contains
     end select
 
   end subroutine transp_hadaptCallback2d
+
+   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine transp_coeffVecBdrPrimalConst2d(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use boundary
+    use collection
+    use domainintegration
+    use feevaluation
+    use fparser
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! This routine handles the constant velocities in the primal problem.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+                                       trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! This subroutine assumes that the first quick access integer
+    ! value holds the Dirichlet value at the boundary
+    icomp  = rcollection%IquickAccess(1)
+    
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
+    dtime = rcollection%DquickAccess(1)
+
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Initialize values
+    Dvalue = 0.0_DP
+    Dvalue(NDIM3D+1) = dtime
+
+    ! Set number of spatial dimensions
+    ndim = size(Dpoints, 1)
+
+    ! Evaluate the function parser for the Dirichlet values in the
+    ! cubature points on the boundary and store the result in
+    ! Dcoefficients(:,:,3).
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        
+        ! Set values for function parser
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,NDIM2D+1))
+      end do
+    end do
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+    
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        ! Check if we are at the primal inflow boundary
+        if (dnv .lt. -SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = -dnv * Daux(ipoint,iel,3)
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Daux)
+
+  end subroutine transp_coeffVecBdrPrimalConst2d
+
+   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine transp_coeffVecBdrDualConst2d(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use boundary
+    use collection
+    use domainintegration
+    use feevaluation
+    use fparser
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! This routine handles the constant velocities in the dual problem.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+                                       trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! This subroutine assumes that the first quick access integer
+    ! value holds the Dirichlet value at the boundary
+    icomp  = rcollection%IquickAccess(1)
+    
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
+    dtime = rcollection%DquickAccess(1)
+
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+    call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Initialize values
+    Dvalue = 0.0_DP
+    Dvalue(NDIM3D+1) = dtime
+
+    ! Set number of spatial dimensions
+    ndim = size(Dpoints, 1)
+
+    ! Evaluate the function parser for the Dirichlet values in the
+    ! cubature points on the boundary and store the result in
+    ! Dcoefficients(:,:,3).
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        
+        ! Set values for function parser
+        Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+        
+        ! Evaluate function parser
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,NDIM2D+1))
+      end do
+    end do
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+    
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        ! Check if we are at the dual inflow boundary
+        if (dnv .gt. SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = dnv * Daux(ipoint,iel,3)
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
+    end do
+
+    ! Deallocate temporal memory
+    deallocate(Daux)
+
+  end subroutine transp_coeffVecBdrDualConst2d  
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_coeffMatBdrPrimalConst2d (rdiscretisationTrial,&
+      rdiscretisationTest, rform, nelements, npointsPerElement,&
+      Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use boundary
+    use collection
+    use domainintegration
+    use feevaluation
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! This routine handles the constant velocities in the primal problem.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection   
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+  
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        ! Check if we are at the primal inflow boundary
+        if (dnv .lt. -SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = dnv
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
+    end do
+
+  end subroutine transp_coeffMatBdrPrimalConst2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_coeffMatBdrDualConst2d (rdiscretisationTrial,&
+      rdiscretisationTest, rform, nelements, npointsPerElement,&
+      Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use boundary
+    use collection
+    use domainintegration
+    use feevaluation
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+    
+!<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the bilinear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! This routine handles the constant velocities in the dual problem.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection   
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+  
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvelocity
+    real(DP), dimension(:,:,:), pointer :: Daux
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    integer :: icomp,iel,ipoint,ndim
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the velocity vector
+    p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! Allocate temporal memory
+    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+    ! Evaluate the velocity field in the cubature points on the boundary
+    ! and store the result in Daux(:,:,:,1:2)
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints,&
+        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+    
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, size(rdomainIntSubset%p_Ielements)
+      do ipoint = 1, ubound(Dpoints,2)
+
+        dt = DpointPar(ipoint,iel)
+        
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
+
+        ! Compute the normal velocity
+        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+        ! Check if we are at the dual inflow boundary
+        if (dnv .gt. SYS_EPSREAL) then
+          Dcoefficients(1,ipoint,iel) = -dnv
+        else
+          Dcoefficients(1,ipoint,iel) = 0.0_DP
+        end if
+      end do
+    end do
+
+  end subroutine transp_coeffMatBdrDualConst2d
+  
+
 
 end module transport_callback2d

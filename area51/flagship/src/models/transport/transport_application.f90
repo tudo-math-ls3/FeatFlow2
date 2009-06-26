@@ -807,7 +807,7 @@ contains
                                         EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
                                         p_rtriangulation, p_rboundary)
         case DEFAULT
-          call output_line('Unsupproted element type!',&
+          call output_line('Unsupported element type!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
@@ -1503,13 +1503,17 @@ contains
     ! local variables
     type(t_fparser), pointer :: rfparser
     type(t_linearForm) :: rform
-    character(LEN=SYS_STRLEN) :: srhsname, sdirichletname
-    integer :: icomp, irhstype, velocityfield
+    character(LEN=SYS_STRLEN) :: srhsname, sdirichletbdrname
+    integer :: icomp, irhstype
+    integer :: iweakDirichletBdr, velocityfield, ivelocityType
 
     
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+                             'iweakdirichletbdr', iweakDirichletBdr)
+
     
     ! How should the right-hand side be initialized?
     select case(irhstype)
@@ -1542,45 +1546,79 @@ contains
       call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
                                    transp_coeffVectorAnalytic, rcollection)
       
-
     case DEFAULT
       call output_line('Invalid type of target functional!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
       call sys_halt()
     end select
 
-    !@DEBUG
+    !---------------------------------------------------------------------------
     ! Apply weakly imposed Dirichlet values
-
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'velocityfield', velocityfield)
-    call parlst_getvalue_string(rparlist, ssectionName,&
-                                'sdirichletname', sdirichletname)
-
-    ! Get function parser from collection structure
-    rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
-    ! Get the number of the component used for evaluating the right-hand side
-    icomp = fparser_getFunctionNumber(rfparser, sdirichletname)
-
-    ! Prepare quick access arrays of the collection
-    rcollection%DquickAccess(1) = dtime
-    rcollection%IquickAccess(1) = icomp
-    rcollection%SquickAccess(1) = 'rfparser'
+    !---------------------------------------------------------------------------
     
-    ! Attach velocity vectors to collection structure
-    rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+    if (iweakDirichletBdr .eq. 1) then
+      
+      ! Get global configuration from parameter list
+      call parlst_getvalue_int(rparlist, ssectionName,&
+                               'ivelocitytype', ivelocityType)
 
-    ! Set up the corresponding linear form
-    rform%itermCount      = 1
-    rform%Idescriptors(1) = DER_FUNC
-
-    ! Buill the discretized boundary integral
-    call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D, .false.,&
-        rvector%RvectorBlock(1), transp_coeffVectorBdr2DAnalytic,&
-        rcollection=rcollection)
-    !@DEBUG
+      ! Get the name of the Dirichlet boundary description
+      call parlst_getvalue_string(rparlist, ssectionName,&
+                                  'sdirichletbdrname', sdirichletbdrname)
+           
+      ! Get function parser from collection structure
+      rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      
+      ! Get the number of the component used for evaluating the right-hand side
+      icomp = fparser_getFunctionNumber(rfparser, sdirichletbdrname)
+      
+      ! Prepare quick access arrays of the collection
+      rcollection%DquickAccess(1) = dtime
+      rcollection%IquickAccess(1) = icomp
+      rcollection%SquickAccess(1) = 'rfparser'
+    
+      select case(abs(ivelocityType))
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing
+        
+        
+      case (VELOCITY_CONSTANT,&
+            VELOCITY_TIMEDEP)
+        ! linear velocity
+        
+        ! Attach velocity vectors to collection structure (if any)
+        if (transp_hasVelocityVector(ivelocityType)) then
+          call parlst_getvalue_int(rparlist, ssectionName,&
+                                   'velocityfield', velocityfield)
+          rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+        end if
+        
+        ! Set up the corresponding linear form
+        rform%itermCount      = 1
+        rform%Idescriptors(1) = DER_FUNC
+        
+        ! How many spatial dimensions do we have?
+        select case(rproblemLevel%rtriangulation%ndim)
+          
+        case(NDIM2D)
+          ! Build the discretized boundary integral
+          call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D, .false.,&
+              rvector%RvectorBlock(1), transp_coeffVecBdrPrimalConst2d,&
+              rcollection=rcollection)
+            
+        case default
+          call output_line('Invalid spatial dimension !',&
+                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
+          call sys_halt()
+        end select
+        
+      case default
+        call output_line('Invalid velocity profile!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
+        call sys_halt()
+      end select
+      
+    end if
     
   end subroutine transp_initRHS
 
@@ -1686,8 +1724,7 @@ contains
 
       ! Build the boundary part of the discretized target function
       call linf_buildVectorScalarBdr2D(rform, CUB_G3_1D, .true., rvector%RvectorBlock(1),&
-                                       transp_coeffVectorBdr2DAnalytic,&
-                                       rcollection=rcollection)
+          transp_coeffVecBdrPrimalConst2d, rcollection=rcollection)
       
     case (TFUNC_MIXINTG)
       ! Get function parser from collection structure
@@ -2957,7 +2994,7 @@ contains
 
     ! local variables
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
-    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: templateMatrix, systemMatrix, discretisation, iweakDirichletBdr
     integer :: nlmin, ipreadapt, npreadapt, irhstype, ivelocitytype
     integer, external :: signal_SIGINT
 
@@ -2977,6 +3014,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iweakDirichletBdr', iweakDirichletBdr)
 
     ! Set pointer to maximum problem level and discretisation
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
@@ -3083,7 +3121,7 @@ contains
     end if
     
     ! Initialize right-hand side vector
-    if (irhstype > 0) then
+    if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
       call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                           rtimestep%dinitialTime, rrhs, rcollection)
@@ -3281,7 +3319,7 @@ contains
                                       rtimestep%dTime, rcollection, nlmin)
 
         ! Re-initialize the right-hand side vector
-        if (irhstype > 0) then
+        if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
           call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
@@ -3393,7 +3431,7 @@ contains
 
     ! local variables
     real(DP) :: derror
-    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: templateMatrix, systemMatrix, discretisation, iweakDirichletBdr
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
     
@@ -3412,6 +3450,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iweakDirichletBdr', iweakDirichletBdr)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -3487,7 +3526,7 @@ contains
       call solver_resetSolver(rsolver, .false.)
       
       ! Check if right-hand side vector exists
-      if (irhstype > 0) then
+      if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
@@ -3684,7 +3723,7 @@ contains
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: templateMatrix, systemMatrix, discretisation, iweakDirichletBdr
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
     
@@ -3710,6 +3749,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iweakDirichletBdr', iweakDirichletBdr)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -3784,7 +3824,7 @@ contains
       call solver_resetSolver(rsolver, .false.)
 
       ! Check if right-hand side vector exists
-      if (irhstype > 0) then
+      if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorblock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
@@ -3990,7 +4030,7 @@ contains
 
     ! local variables
     real(dp) :: derror
-    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: templateMatrix, systemMatrix, discretisation, iweakDirichletBdr
     integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
 
 
@@ -4016,6 +4056,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
     call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist, ssectionName, 'iweakDirichletBdr', iweakDirichletBdr)
 
     ! Set pointer to maximum problem level
     p_rproblemLevel   => rproblem%p_rproblemLevelMax
@@ -4090,7 +4131,7 @@ contains
       call solver_resetSolver(rsolver, .false.)
 
       ! Check if right-hand side vector exists
-      if (irhstype > 0) then
+      if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
