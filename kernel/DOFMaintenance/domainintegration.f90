@@ -23,11 +23,12 @@
 
 module domainintegration
 
-  use fsystem
-  use triangulation
-  use element
-  use transformation
   use collection
+  use element
+  use fsystem
+  use genoutput
+  use transformation
+  use triangulation
   
   implicit none
   
@@ -45,29 +46,29 @@ module domainintegration
   type t_domainIntSubset
   
     ! Maximum number of elements in each element set.
-    integer                                       :: nelements = 0
+    integer :: nelements = 0
     
     ! Number of (cubature) points per element.
-    integer                                       :: npointsPerElement = 0
+    integer :: npointsPerElement = 0
 
     ! The currently active element distribution in the discretisation.
     ! Allows the routine to get the currently active element type for
     ! trial and test functions.
-    integer                                       :: ielementDistribution = 0
+    integer :: ielementDistribution = 0
     
     ! Start index of the current element block in the current element 
     ! distribution ielementDistribution of the discretisation. 
     ! If this is =1, e.g., this is the very first element block
     ! that is currently being integrated.
-    integer                                       :: ielementStartIdx = 0
+    integer :: ielementStartIdx = 0
 
     ! The element set that is currently in progress by the integration 
     ! routine.
-    integer, dimension(:), pointer                :: p_Ielements => null()
+    integer, dimension(:), pointer :: p_Ielements => null()
     
     ! If p_IdofsTrial is assigned, this is an element identifier that
     ! indicates the trial space.
-    integer(I32)                                  :: celement = 0
+    integer(I32) :: celement = 0
     
     ! An array containing the the degrees of freedom on all the
     ! elements. For multilinear forms (bilinear, trilinear), this is a pointer
@@ -85,7 +86,7 @@ module domainintegration
     
     ! A list of the corner vertices of all elements in progress.
     ! array [1..dimension,1..#vertices per element,1..Number of elements] of double
-    real(DP), dimension(:,:,:), pointer           :: p_Dcoords => null()
+    real(DP), dimension(:,:,:), pointer :: p_Dcoords => null()
     
     ! A list of points in coordinates on the reference element.
     ! On each element in the current set of elements, this gives the
@@ -93,23 +94,23 @@ module domainintegration
     ! Remark: As long as the same cubature formula is used on all
     !  elements, the coordinates here are the same for each element.
     ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
-    real(DP), dimension(:,:,:), pointer           :: p_DcubPtsRef => null()
+    real(DP), dimension(:,:,:), pointer :: p_DcubPtsRef => null()
 
     ! A list of points, corresponding to DcubPtsRef, in real coordinates.
     ! On each element in the current set of elements, this gives the
     ! coordinates of the cubature points on the real element.
     ! array [1..dimension,1..npointsPerElement,1..Number of elements] of double
-    real(DP), dimension(:,:,:), pointer           :: p_DcubPtsReal => null()
+    real(DP), dimension(:,:,:), pointer :: p_DcubPtsReal => null()
 
     ! The Jacobian matrix of the mapping between the reference and each
     ! real element, for all points on all elements in progress.
     ! array [1..dimension*dimension,1..npointsPerElement,1..Number of elements)
-    real(DP), dimension(:,:,:),pointer            :: p_Djac => null()
+    real(DP), dimension(:,:,:),pointer :: p_Djac => null()
     
     ! The Jacobian determinant of the mapping of each point from the
     ! reference element to each real element in progress.
     ! array [1..npointsPerElement,1..Number of elements]
-    real(DP), dimension(:,:), pointer             :: p_Ddetj => null()
+    real(DP), dimension(:,:), pointer :: p_Ddetj => null()
     
   end type
   
@@ -198,7 +199,8 @@ contains
       
     case DEFAULT
       ! NULLIFY(rintSubset%p_DcubPtsRef)
-      print *,'domint_initIntegration: Unknown coordinate system!'
+      call output_line('Unknown coordinate system!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'domint_initIntegration')
       call sys_halt()
       
     end select
