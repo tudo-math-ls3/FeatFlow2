@@ -73,14 +73,14 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! The current solution vector at time $t^n$. Is replaced by the
   ! solution vector at time $t^{n+1}.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! The RHS vector at time $t^n$. Is replaced by the RHS at time $t^{n+1}$.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 !</subroutine>
 
@@ -263,18 +263,18 @@ contains
 
 !<input>
   ! Number of current iteration
-  integer, intent(IN) :: iiteration
+  integer, intent(in) :: iiteration
   
   ! Current simulation time
-  real(DP), intent(IN) :: dtime
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! The current solution vector.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -323,15 +323,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 
   ! The initial solution vector. Is replaced by the final solution vector.
   ! Must be unsorted.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! The initial RHS vector. Is replaced by the final RHS vector.
   ! Must be unsorted and without any boundary conditions implemented.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>

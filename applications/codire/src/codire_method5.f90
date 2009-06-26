@@ -135,10 +135,10 @@ contains
 
 !<input>
   ! Minimum refinement level of the mesh; = coarse grid = level 1
-  integer, intent(IN) :: ilvmin
+  integer, intent(in) :: ilvmin
   
   ! Maximum refinement level
-  integer, intent(IN) :: ilvmax
+  integer, intent(in) :: ilvmax
 
   ! the PRM and TRI file of the mesh
   character(len=*), intent(in) :: sPRMfile,sTRIfile
@@ -146,7 +146,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -198,7 +198,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -260,10 +260,10 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! A parameter list with informations from the DAT file.
-  type(t_parlist), intent(IN) :: rparams
+  type(t_parlist), intent(in) :: rparams
 !</inputoutput>
 
 !</subroutine>
@@ -463,7 +463,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -579,7 +579,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -629,7 +629,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -812,7 +812,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! Path where to write output data to
   character(len=*), intent(in) :: sucddir
@@ -867,7 +867,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -910,7 +910,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -938,7 +938,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -969,7 +969,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>

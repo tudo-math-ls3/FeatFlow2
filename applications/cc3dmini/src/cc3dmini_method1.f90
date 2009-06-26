@@ -152,15 +152,15 @@ contains
 
 !<input>
   ! Minimum refinement level of the mesh; = coarse grid = level 1
-  integer, intent(IN) :: ilvmin
+  integer, intent(in) :: ilvmin
   
   ! Maximum refinement level
-  integer, intent(IN) :: ilvmax
+  integer, intent(in) :: ilvmax
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -213,7 +213,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -293,7 +293,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -614,12 +614,12 @@ contains
 
 !<input>
   ! A discretisation structure specifying the current discretisation.
-  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A structure that receives the discretised boundary conditions.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -672,7 +672,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -749,7 +749,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -806,13 +806,13 @@ contains
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN),target        :: rx
+    type(t_vectorBlock), intent(in),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
   !</input>
                
   !<inputoutput>
@@ -822,7 +822,7 @@ contains
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
   !</inputoutput>
   
   !</subroutine>
@@ -942,13 +942,13 @@ contains
 
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN)               :: rx
+    type(t_vectorBlock), intent(in)               :: rx
 
     ! Current RHS vector of the nonlinear equation
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
 
     ! Defect vector b-A(x)x. 
-    type(t_vectorBlock), intent(IN)               :: rd
+    type(t_vectorBlock), intent(in)               :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -957,15 +957,15 @@ contains
 
   !<inputoutput>
     ! A temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp1
+    type(t_vectorBlock), intent(inout)            :: rtemp1
 
     ! A 2nd temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp2
+    type(t_vectorBlock), intent(inout)            :: rtemp2
 
     ! Damping parameter. On entry: an initial value given e.g. by the
     ! previous step.
     ! On return: The new damping parameter.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
   !</inputoutput>
   
   !</subroutine>
@@ -1166,10 +1166,10 @@ contains
 
   !<inputoutput>
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -1182,21 +1182,21 @@ contains
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    logical, intent(INOUT)                        :: bsuccess
+    logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
   
   !</subroutine>
@@ -1374,7 +1374,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1599,7 +1599,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1739,7 +1739,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1792,7 +1792,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1820,7 +1820,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1850,7 +1850,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>

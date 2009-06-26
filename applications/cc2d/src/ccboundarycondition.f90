@@ -70,15 +70,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! A vector structure for the solution vector. The discrete BC structures are 
   ! attached to that.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The discrete BC structures are 
   ! attached to that.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -154,7 +154,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -209,20 +209,20 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! A vector structure for the solution vector. The discrete BC's are implemented
   ! into that.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
   
   ! Whether to implement the BC's into the solution vector or not
-  logical, intent(IN) :: bsolvector
+  logical, intent(in) :: bsolvector
 
   ! Whether to implement the BC's into the solution vector or not
-  logical, intent(IN) :: brhsvector
+  logical, intent(in) :: brhsvector
 !</inputoutput>
 
 !</subroutine>
@@ -294,7 +294,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>

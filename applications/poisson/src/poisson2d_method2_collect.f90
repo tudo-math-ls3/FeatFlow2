@@ -60,11 +60,11 @@ contains
 !<inputoutput>
   ! The level up to where we refine the coarse mesh.
   ! If the number is too large, ilv is reduced to the maximum allowed value.
-  integer, intent(INOUT) :: ilv
+  integer, intent(inout) :: ilv
 
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -124,7 +124,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -182,7 +182,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -297,7 +297,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -401,7 +401,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -443,7 +443,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -550,7 +550,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -620,7 +620,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -665,7 +665,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -703,7 +703,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -738,7 +738,7 @@ contains
 !<inputoutput>
   ! A collection object for saving structural data and some problem-dependent 
   ! information.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 
 !</subroutine>

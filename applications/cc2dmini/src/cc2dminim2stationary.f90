@@ -130,13 +130,13 @@ contains
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN),target        :: rx
+    type(t_vectorBlock), intent(in),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
   !</input>
                
   !<inputoutput>
@@ -146,7 +146,7 @@ contains
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
   !</inputoutput>
   
   !</subroutine>
@@ -279,13 +279,13 @@ contains
 
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN)               :: rx
+    type(t_vectorBlock), intent(in)               :: rx
 
     ! Current RHS vector of the nonlinear equation
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
 
     ! Defect vector b-A(x)x. 
-    type(t_vectorBlock), intent(IN)               :: rd
+    type(t_vectorBlock), intent(in)               :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -294,15 +294,15 @@ contains
 
   !<inputoutput>
     ! A temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp1
+    type(t_vectorBlock), intent(inout)            :: rtemp1
 
     ! A 2nd temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp2
+    type(t_vectorBlock), intent(inout)            :: rtemp2
 
     ! Damping parameter. On entry: an initial value given e.g. by the
     ! previous step.
     ! On return: The new damping parameter.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
   !</inputoutput>
   
   !</subroutine>
@@ -535,10 +535,10 @@ contains
 
   !<inputoutput>
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -551,21 +551,21 @@ contains
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    logical, intent(INOUT)                        :: bsuccess
+    logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
   
   !</subroutine>
@@ -822,18 +822,18 @@ contains
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the prolongation/restriction.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
   ! An interlevel projection block structure containing an initial
   ! configuration of prolongation/restriction. The structure is modified
   ! according to the parameters in the INI/DAT file(s).
-  type(t_interlevelProjectionBlock), intent(INOUT) :: rprojection
+  type(t_interlevelProjectionBlock), intent(inout) :: rprojection
 !</output>
 
 !</subroutine>
@@ -919,13 +919,13 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !<output>
   ! A preconditioner structure for the CCxD problem. Will be initialised
   ! with data.
-  type(t_ccPreconditioner), intent(OUT), target :: rpreconditioner
+  type(t_ccPreconditioner), intent(out), target :: rpreconditioner
 !</output>
 
 !</subroutine>
@@ -1118,10 +1118,10 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! The preconditioner structure for the CCxD problem. 
-  type(t_ccPreconditioner), intent(INOUT), target :: rpreconditioner
+  type(t_ccPreconditioner), intent(inout), target :: rpreconditioner
 !</inputoutput>
 
 !</subroutine>
@@ -1181,11 +1181,11 @@ contains
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
@@ -1256,7 +1256,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>

@@ -91,7 +91,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT)                 :: rproblem
+  type(t_problem), intent(inout)                 :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -127,7 +127,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT)                 :: rproblem
+  type(t_problem), intent(inout)                 :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -155,12 +155,12 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT)                 :: rproblem
+  type(t_problem), intent(inout)                 :: rproblem
 !</inputoutput>
 
 !<output>
   ! The number of boundary regions of the domain
-  integer, intent(OUT)                           :: inumRegions
+  integer, intent(out)                           :: inumRegions
 !</output>
 
 !</subroutine>
@@ -198,21 +198,21 @@ contains
 
 !<input>
   ! The triangulation on which the mesh region is to be defined.
-  type(t_triangulation), target, intent(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(in)      :: rtriangulation
   
   ! An array holding the indices of all domain regions which should be added
   ! into the mesh region.
-  integer, dimension(:), intent(IN)              :: Iregions
+  integer, dimension(:), intent(in)              :: Iregions
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT)                 :: rproblem
+  type(t_problem), intent(inout)                 :: rproblem
 !</inputoutput>
 
 !<output>
   ! The mesh region
-  type(t_meshRegion), intent(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(out)                :: rmeshRegion
 !</output>
 
 !</subroutine>
@@ -249,10 +249,10 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT)                 :: rproblem
+  type(t_problem), intent(inout)                 :: rproblem
 
   ! The triangulation which is to be corrected.
-  type(t_triangulation), intent(INOUT)           :: rtriangulation
+  type(t_triangulation), intent(inout)           :: rtriangulation
 !</inputoutput>
 
 !</subroutine>
@@ -283,21 +283,21 @@ contains
 !<input>
   ! Specifies the index of the boundary region of which the parabolic profile
   ! is to be calculated.
-  integer, intent(IN)                            :: iregion
+  integer, intent(in)                            :: iregion
   
   ! The coordinates of the point in which the parabolic profile is to be
   ! evaluated.
-  real(DP), intent(IN)                           :: dx, dy, dz
+  real(DP), intent(in)                           :: dx, dy, dz
 !</input>
 
 !<inputoutput>
   ! A collection structure holding the domain identifier.
-  type(t_collection), intent(INOUT)              :: rcollection
+  type(t_collection), intent(inout)              :: rcollection
 !</inputoutput>
 
 !<output>
   ! The result of the evaluation of the parabolic profile.
-  real(DP), intent(OUT)                          :: dvalue
+  real(DP), intent(out)                          :: dvalue
 !</output>
 
 !</subroutine>

@@ -328,32 +328,32 @@ contains
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(in)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(in)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! DIMENSION(NDIM2D,npointsPerElement,nelements)
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
 
@@ -361,7 +361,7 @@ contains
     ! This array has to receive the values of the coefficients
     ! in all the points specified in Dpoints.
     ! cterm specifies what to evaluate.
-    real(DP), dimension(:,:), intent(OUT) :: Dcoefficients
+    real(DP), dimension(:,:), intent(out) :: Dcoefficients
 !</output>
   
 !</subroutine>
@@ -507,7 +507,7 @@ contains
   !  vector without copying matrix data.)
   ! In this case, the caller MUST NOT CHANGE rmatrix in any way, otherwise
   ! the original (template) matrices would be changed!
-  integer(I32), intent(IN) :: coperation
+  integer(I32), intent(in) :: coperation
 
   ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
   ! constants.
@@ -518,7 +518,7 @@ contains
   !
   ! If the matrix already exists and only its entries are to be computed,
   ! CCMASM_MTP_AUTOMATIC should be specified here.
-  integer, intent(IN) :: cmatrixType
+  integer, intent(in) :: cmatrixType
 
   ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
   ! about how to set up the matrix. 
@@ -527,18 +527,18 @@ contains
   ! must be initialised as well as p_rdiscretisation!
   ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
   ! p_rdiscretisation. Memory is allocated automatically if it's missing.
-  type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+  type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity.
-  type(t_vectorBlock), intent(IN), optional :: rvector
+  type(t_vectorBlock), intent(in), optional :: rvector
 
   ! OPTIONAL: This parameter allows to specify a 'fine grid matrix'. This is 
   ! usually done when assembling matrices on multiple levels. If specified, the
   ! routine will (if possible) try to include a level-dependent stabilisation
   ! term into the matrix (-> e.g. constant matrix restriction for nonparametric
   ! Rannacher-Turek element if cells are too anisotropic).
-  type(t_matrixBlock), intent(IN), optional :: rfineMatrix
+  type(t_matrixBlock), intent(in), optional :: rfineMatrix
   
 !</input>
 
@@ -549,7 +549,7 @@ contains
   ! was specified).
   ! If initialised, the existing matrix is updated or recreated, depending on
   ! coperation.
-  type(t_matrixBlock), intent(INOUT) :: rmatrix
+  type(t_matrixBlock), intent(inout) :: rmatrix
   
 !</inputoutput>
   
@@ -647,14 +647,14 @@ contains
 
     ! Type of matrix that should be set up in rmatrix. One of the CCMASM_MTP_xxxx
     ! constants.
-    integer, intent(IN) :: cmatrixType
+    integer, intent(in) :: cmatrixType
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    type(t_nonlinearCCMatrix), intent(IN), target :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(in), target :: rnonlinearCCMatrix
 
     ! A block matrix that receives the basic system matrix.
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
     
       ! local variables
       logical :: bdecoupled, bfulltensor
@@ -832,17 +832,17 @@ contains
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
     
     ! Block matrix where the 2x2-velocity submatrix should be assembled
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
     
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
     type(t_vectorBlock), target, optional :: rvector
     
     ! Weight for the velocity vector; standard = -1.
-    real(DP), intent(IN), optional :: dvectorWeight
+    real(DP), intent(in), optional :: dvectorWeight
     
     ! local variables
     logical :: bshared
@@ -1373,10 +1373,10 @@ contains
 
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
     ! Block matrix where the B-matrices should be set up
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
 
     ! Whether or not the matrix entries of the source gradient-matrices 
     ! should be copied in memory. 
@@ -1390,7 +1390,7 @@ contains
     ! If set to TRUE, the entries of the source matrices in rnonlinearCCMatrix are
     ! copied, so the caller can change rmatrix afterwards (e.g. to implement
     ! boundary conditions).
-    logical, intent(IN) :: bsharedMatrix
+    logical, intent(in) :: bsharedMatrix
 
       ! local variables
       integer :: idubStructure,idubContent
@@ -1490,26 +1490,26 @@ contains
   ! or set the p_rmatrixTemplateXXXX as well as p_rdiscretisation to
   ! appropriate values. This is necessary for exploiting then structure
   ! of the matrix.
-  type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+  type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
   ! This vector specifies the 'x' that is multiplied to the matrix.
-  type(t_vectorBlock), intent(IN), target :: rx
+  type(t_vectorBlock), intent(in), target :: rx
 
   ! Multiplication factor in front of the term 'A(ry) rx'.
-  real(DP), intent(IN) :: dcx
+  real(DP), intent(in) :: dcx
 
   ! Multiplication factor in front of the term 'rd'.
-  real(DP), intent(IN) :: dcd
+  real(DP), intent(in) :: dcd
 
   ! OPTIONAL: Point where to evaluate the nonlinearity. If not specified,
   ! ry=rx is assumed.
-  type(t_vectorBlock), intent(IN), target, optional :: ry
+  type(t_vectorBlock), intent(in), target, optional :: ry
 
 !</input>
 
 !<inputoutput>
   ! Destination vector. cx*A(ry)*rx is subtracted from this vector.
-  type(t_vectorBlock), intent(INOUT) :: rd
+  type(t_vectorBlock), intent(inout) :: rd
 !</inputoutput>
   
 !</subroutine>
@@ -1628,27 +1628,27 @@ contains
     
     ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
     ! about how to set up the matrix. 
-    type(t_nonlinearCCMatrix), intent(IN) :: rnonlinearCCMatrix
+    type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
     ! Reference to the system matrix. Only the structure of the matrix
     ! is used to reconstruct the structure of the discretisation.
     ! The content of the matrix is not changed or used.
-    type(t_matrixBlock), intent(INOUT) :: rmatrix
+    type(t_matrixBlock), intent(inout) :: rmatrix
     
     ! Solution vector.
-    type(t_vectorBlock), intent(IN) :: rvector
+    type(t_vectorBlock), intent(in) :: rvector
     
     ! On entry: RHS vector.
     ! Is overwritten by the defect vector in the velocity subsystem.
-    type(t_vectorBlock), intent(INOUT) :: rdefect
+    type(t_vectorBlock), intent(inout) :: rdefect
     
     ! Weight for the velocity vector; usually = 1.0
-    real(DP), intent(IN) :: dvectorWeight
+    real(DP), intent(in) :: dvectorWeight
     
     ! Velocity vector field that should be used for the assembly of the
     ! nonlinearity. The first two blocks in that block vector are
     ! used as velocity field.
-    type(t_vectorBlock), intent(IN), target :: rvelocityVector
+    type(t_vectorBlock), intent(in), target :: rvelocityVector
 
     ! local variables
     logical :: bshared

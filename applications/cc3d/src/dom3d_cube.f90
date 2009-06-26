@@ -96,16 +96,16 @@ contains
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the 3D [0,1]^3 cube domain.
-  type(t_triangulation), target, intent(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(in)      :: rtriangulation
   
   ! A combination of DOM3D_CUBE_REG_XXXX contants defined above specifying
   ! which faces should be in the mesh region.
-  integer(I32), intent(IN)                       :: cfaces
+  integer(I32), intent(in)                       :: cfaces
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  type(t_meshRegion), intent(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(out)                :: rmeshRegion
 !<output>
 
 !<subroutine>
@@ -157,16 +157,16 @@ contains
 !<input>
   ! The triangulation on which the mesh region is to be defined.
   ! This trinagulation must represent the 3D [0,1]^3 cube domain.
-  type(t_triangulation), target, intent(IN)      :: rtriangulation
+  type(t_triangulation), target, intent(in)      :: rtriangulation
   
   ! An array holding the indices of the faces which should be in the mesh
   ! region.
-  integer, dimension(:), intent(IN)              :: Ifaces
+  integer, dimension(:), intent(in)              :: Ifaces
 !<input>
 
 !<output>
   ! The mesh region that is to be created.
-  type(t_meshRegion), intent(OUT)                :: rmeshRegion
+  type(t_meshRegion), intent(out)                :: rmeshRegion
 !<output>
 
 !<subroutine>
@@ -203,25 +203,25 @@ contains
 !<input>
   ! Number of cells (i.e. vertices,edges,faces,etc.) for which the
   ! hit-test is to be performed.
-  integer, intent(IN)                          :: inumCells
+  integer, intent(in)                          :: inumCells
     
   ! Coordinates of the points for which the hit-test is to be performed.
   ! The dimension of the array is at least (1:idim,1:inumCells), where:
   ! -> idim is the dimension of the mesh, i.e. 1 for 1D, 2 for 2D, etc.
   ! -> inumCells is the parameter passed to this routine.
-  real(DP), dimension(:,:), intent(IN)         :: Dcoords
+  real(DP), dimension(:,:), intent(in)         :: Dcoords
 !</input>
 
 !<output>
   ! An array that recieves the result of the hit-test.
   ! The dimension of the array is at least (1:inumCells).
-  integer, dimension(:), intent(OUT)           :: Ihit
+  integer, dimension(:), intent(out)           :: Ihit
 !</output>
 
 !</inputoutput>
   ! OPTIONAL: A collection structure to provide additional information
   ! to the hit-test routine.
-  type(t_collection), intent(INOUT), optional  :: rcollection
+  type(t_collection), intent(inout), optional  :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -284,16 +284,16 @@ contains
 !<input>
   ! Specifies the index of the boundary region of which the parabolic profile
   ! is to be calculated.
-  integer, intent(IN)                            :: iregion
+  integer, intent(in)                            :: iregion
   
   ! The coordinates of the point in which the parabolic profile is to be
   ! evaluated.
-  real(DP), intent(IN)                           :: dx, dy, dz
+  real(DP), intent(in)                           :: dx, dy, dz
 !</input>
 
 !<output>
   ! The result of the evaluation of the parabolic profile.
-  real(DP), intent(OUT)                          :: dvalue
+  real(DP), intent(out)                          :: dvalue
 !</output>
 
 !</subroutine>

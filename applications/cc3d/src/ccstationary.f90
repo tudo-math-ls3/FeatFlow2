@@ -67,16 +67,16 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
   ! iteration. After the iteration, this is replaced by the new solution vector.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !<input>
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 !</input>
 
 !</subroutine>

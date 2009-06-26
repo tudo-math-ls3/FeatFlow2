@@ -40,7 +40,7 @@ contains
   ! The mesh region describing the cube's boundary.
   ! On entry: the complete cube boundary
   ! On exit: the cube boundary except the Neumann boundary face
-  type(t_meshRegion), intent(INOUT)                 :: rmeshRegion
+  type(t_meshRegion), intent(inout)                 :: rmeshRegion
 
 !</inputoutput>
 !</subroutine>

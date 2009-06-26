@@ -776,19 +776,19 @@ contains
   
 !<input>
   ! Type of solution.
-  integer, intent(IN) :: isolution
+  integer, intent(in) :: isolution
   
   ! Current discretisation
-  type(t_blockDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_blockDiscretisation), intent(in), target :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A collection structure with problem specific parameters. This structure
   ! is passed to the callback function that defines the values on the boundary.
-  type(t_collection), intent(INOUT) :: rcollection
+  type(t_collection), intent(inout) :: rcollection
 
   ! Structure that receives the discrete boundary conditions.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
   
 !</subroutine>

@@ -64,13 +64,13 @@ contains
 
 !<output>
   ! Name of the message log file.
-  character(LEN=*), intent(OUT) :: slogfile
+  character(LEN=*), intent(out) :: slogfile
   
   ! Name of the error log file.
-  character(LEN=*), intent(OUT) :: serrorfile
+  character(LEN=*), intent(out) :: serrorfile
 
   ! Name of the benchmark log file.
-  character(LEN=*), intent(OUT) :: sbenchlogfile
+  character(LEN=*), intent(out) :: sbenchlogfile
 !</output>
 
 !</subroutine>
@@ -128,7 +128,7 @@ contains
   ! The parameter list where the values of the DAT files should be stored.
   ! The structure must have been initialised, the parameters are just added
   ! to the list.
-  type(t_parlist), intent(INOUT) :: rparamList
+  type(t_parlist), intent(inout) :: rparamList
 !</inputoutput>
 
 !</subroutine>
@@ -175,7 +175,7 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -207,7 +207,7 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -298,7 +298,7 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>

@@ -115,21 +115,21 @@ contains
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(IN) :: rproblem
+  type(t_problem), intent(in) :: rproblem
 
   ! Type of matrix.
   ! =CCMASM_MTP_AUTOMATIC: standard matrix, A11=A22
   ! =CCMASM_MTP_DECOUPLED: Decoupled velocity matrices A11 and A22
   ! =CCMASM_MTP_FULLTENSOR: Full-tensor matrix with A11,A12,A21,A22 independent
-  integer, intent(IN) :: cmatrixType
+  integer, intent(in) :: cmatrixType
 
   ! A level-info structure specifying the matrices of the problem.
-  type(t_problem_lvl), intent(IN), target :: rlevelInfo
+  type(t_problem_lvl), intent(in), target :: rlevelInfo
 !</input>
 
 !<output>
   ! A block matrix that receives the basic system matrix.
-  type(t_matrixBlock), intent(OUT) :: rmatrix
+  type(t_matrixBlock), intent(out) :: rmatrix
 !</output>
 
 !</subroutine>
@@ -218,31 +218,31 @@ contains
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! Minimum refinement level in the rproblem structure that is allowed to be used
   ! by the preconditioners.
-  integer, intent(IN) :: nlmin
+  integer, intent(in) :: nlmin
   
   ! Maximum refinement level in the rproblem structure that is allowed to be used
   ! by the preconditioners. This level must correspond to rvector and rrhs.
-  integer, intent(IN) :: nlmax
+  integer, intent(in) :: nlmax
 
   ! The solution vector which is modified later during the nonlinear iteration.
-  type(t_vectorBlock), intent(IN), target :: rvector
+  type(t_vectorBlock), intent(in), target :: rvector
 
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN), target :: rrhs
+  type(t_vectorBlock), intent(in), target :: rrhs
 
   ! Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
   ! Nonlinar iteration structure saving data for the callback routines.
   ! Is filled with data.
-  type(t_ccnonlinearIteration), intent(OUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(out) :: rnonlinearIteration
 !</output>
 
 !</subroutine>
@@ -374,7 +374,7 @@ contains
 
 !<inputoutput>
   ! The nonlinear iteration structure that should be cleaned up.
-  type(t_ccNonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccNonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -405,19 +405,19 @@ contains
 !<input>
   ! Name of the section in the parameter list that contains the parameters
   ! of the linear solver.
-  character(LEN=*), intent(IN) :: ssection
+  character(LEN=*), intent(in) :: ssection
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! The nonlinear iteration structure to which a preconditioner should
   ! be initialised. The parameters for the linear solver are written to
   ! the rpreconditioner substructure.
   ! The rprecSpecials structure is configured according to the linear
   ! solver.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -657,7 +657,7 @@ contains
 
 !<inputoutput>
   ! The nonlinear iteration structure to be cleaned up.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -684,22 +684,22 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! The current solution vector.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 !</input>
 
 !<inputoutput>
   ! Nonlinar iteration structure saving data for the callback routines.
   ! This is configured according to the preconditioner as specified in
   ! the DAT files.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -818,31 +818,31 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !<input>
   ! The current solution vector.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 
   ! First initialisation.
   ! Has to be set to TRUE on the first call. Initialises the preconditioner
   ! with the structure of the matrices.
-  logical, intent(IN) :: binit
+  logical, intent(in) :: binit
 
   ! Whether the structure of the system matrices is new.
   ! This variable has to be set to TRUE whenever there was a structure in 
   ! the system matrices. This reinitialises the linear solver.
-  logical, intent(IN) :: bstructuralUpdate
+  logical, intent(in) :: bstructuralUpdate
 !</input>
 
 !<inputoutput>
   ! Nonlinar iteration structure saving data for the callback routines.
   ! Preconditioner data is saved here.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -1152,7 +1152,7 @@ contains
 !<inputoutput>
   ! Nonlinar iteration structure saving data for the callback routines.
   ! The preconditioner data is removed from that,
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -1231,18 +1231,18 @@ contains
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the prolongation/restriction.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
   ! An interlevel projection block structure containing an initial
   ! configuration of prolongation/restriction. The structure is modified
   ! according to the parameters in the INI/DAT file(s).
-  type(t_interlevelProjectionBlock), intent(INOUT) :: rprojection
+  type(t_interlevelProjectionBlock), intent(inout) :: rprojection
 !</output>
 
 !</subroutine>
@@ -1332,11 +1332,11 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! Nonlinar iteration structure saving data about the actual configuration
   ! of the core equation.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
 !</inputoutput>
 
 !<inputoutput>
@@ -1344,7 +1344,7 @@ contains
   ! The t_ccPreconditionerSpecials substructure that receives information how to 
   ! finally assembly the matrices such that everything in the callback routines 
   ! will work.
-  type(t_ccPreconditionerSpecials), intent(INOUT) :: rprecSpecials
+  type(t_ccPreconditionerSpecials), intent(inout) :: rprecSpecials
 !</inputoutput>
 
 !</subroutine>

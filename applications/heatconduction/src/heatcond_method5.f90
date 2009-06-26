@@ -102,10 +102,10 @@ contains
 
 !<inputoutput>
   ! A parameter list structure accepting the parameters from the DAT file.
-  type(t_parlist), intent(INOUT) :: rparams
+  type(t_parlist), intent(inout) :: rparams
 
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>

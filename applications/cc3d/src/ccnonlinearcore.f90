@@ -519,25 +519,25 @@ contains
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN),target        :: rx
+    type(t_vectorBlock), intent(in),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
   !</input>
                
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
 
     ! Defect vector b-A(x)x. This must be filled with data by the callback routine.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
   !</inputoutput>
   
   !</subroutine>
@@ -624,33 +624,33 @@ contains
 
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN)               :: rx
+    type(t_vectorBlock), intent(in)               :: rx
 
     ! Current RHS vector of the nonlinear equation
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
 
     ! Defect vector b-A(x)x. 
-    type(t_vectorBlock), intent(IN)               :: rd
+    type(t_vectorBlock), intent(in)               :: rd
   !</input>
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
 
     ! A temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp1
+    type(t_vectorBlock), intent(inout)            :: rtemp1
 
     ! A 2nd temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp2
+    type(t_vectorBlock), intent(inout)            :: rtemp2
 
     ! Damping parameter. On entry: an initial value given e.g. by the
     ! previous step.
     ! On return: The new damping parameter.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
   !</inputoutput>
   
   !</subroutine>
@@ -872,17 +872,17 @@ contains
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT), target   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout), target   :: rnonlinearIteration
 
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
 
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
@@ -891,21 +891,21 @@ contains
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it's changed again.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    logical, intent(INOUT)                        :: bsuccess
+    logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
   
   !</subroutine>
@@ -1105,25 +1105,25 @@ contains
 
       ! Reference to a collection structure that contains all parameters of the
       ! discretisation (for nonlinearity, etc.).
-      type(t_collection), intent(INOUT)                :: rcollection
+      type(t_collection), intent(inout)                :: rcollection
 
       ! Nonlinear iteration structure where to write the linearised system matrix to.
-      type(t_ccnonlinearIteration), intent(INOUT)      :: rnonlinearIteration
+      type(t_ccnonlinearIteration), intent(inout)      :: rnonlinearIteration
 
       ! TRUE  = Assemble the Newton preconditioner.
       ! FALSE = Assemble the standard defect correction preconditioner
       !         (i.e. the linearised system matrix).
-      logical, intent(IN) :: bassembleNewton
+      logical, intent(in) :: bassembleNewton
       
       ! Minimum level of the preconditioner that is to be initialised.
-      integer, intent(IN)                              :: NLMIN
+      integer, intent(in)                              :: NLMIN
       
       ! Maximum level of the preconditioner that is to be initialised.
       ! This must corresponds to the last matrix in Rmatrices.
-      integer, intent(IN)                              :: NLMAX
+      integer, intent(in)                              :: NLMAX
       
       ! Current iteration vector. 
-      type(t_vectorBlock), intent(IN), target          :: rx
+      type(t_vectorBlock), intent(in), target          :: rx
 
       ! local variables
       real(DP) :: dnewton
@@ -1334,37 +1334,37 @@ contains
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
 
     ! Number of current iteration. Is set to 0 when the callback routine
     ! is called the first time. In this situation, rd describes the initial
     ! defect vector.
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
   
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
 
     ! Defect vector b-A(x)x.
-    type(t_vectorBlock), intent(IN), target       :: rd
+    type(t_vectorBlock), intent(in), target       :: rd
   !</inputoutput>
   
   !<output>
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is within a desired tolerance, so that the solver should treat
     ! the iteration as 'converged'.
-    logical, intent(OUT)                        :: bconvergence
+    logical, intent(out)                        :: bconvergence
   
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is out of a desired tolerance, so that the solver should treat
     ! the iteration as 'diverged'.
-    logical, intent(OUT)                        :: bdivergence
+    logical, intent(out)                        :: bdivergence
   !</output>
 
       ! local variables
@@ -1518,20 +1518,20 @@ contains
 
 !<input>
   ! The solution vector which is modified later during the nonlinear iteration.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! A defect vector calculated with rvector and rrhs
-  type(t_vectorBlock), intent(IN) :: rdefect
+  type(t_vectorBlock), intent(in) :: rdefect
 !</input>
 
 !<output>
   ! An array receiving different defect norms calculated by the above vectors.
   ! Dresiduals(1) = RESU   = ||defect_u|| / ||rhs|| = velocity residual
   ! Dresiduals(2) = RESDIV = ||p|| / ||u||          = divergence residual
-  real(DP), dimension(:), intent(OUT) :: Dresiduals
+  real(DP), dimension(:), intent(out) :: Dresiduals
 !</output>
 
 !</subroutine>
@@ -1591,11 +1591,11 @@ contains
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
@@ -1701,26 +1701,26 @@ contains
 
 !<inputoutput>
   ! The problem structure characterising the whole problem.
-  type(t_problem), intent(INOUT)                :: rproblem
+  type(t_problem), intent(inout)                :: rproblem
 
   ! Reference to the nonlinear iteration structure that configures the
   ! main nonlinear equation. Intermediate data is changed during the iteration.
-  type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
 
   ! The nonlinear solver node that configures the solution process.
-  type(t_nlsolNode), intent(INOUT)              :: rsolverNode
+  type(t_nlsolNode), intent(inout)              :: rsolverNode
   
   ! INPUT: Initial solution vector.
   ! OUTPUT: Final iteration vector.
-  type(t_vectorBlock), intent(INOUT)            :: rx
+  type(t_vectorBlock), intent(inout)            :: rx
              
   ! Temporary vector. Must be of the same size/type as rx/rb.
-  type(t_vectorBlock), intent(INOUT)            :: rd
+  type(t_vectorBlock), intent(inout)            :: rd
 !</inputoutput>
   
 !<input>
   ! Right hand side vector of the equation.
-  type(t_vectorBlock), intent(IN)               :: rb
+  type(t_vectorBlock), intent(in)               :: rb
 !</input>
 
 !</subroutine>
@@ -1869,28 +1869,28 @@ contains
 
 !<input>
   ! The right-hand-side vector to use in the equation.
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 !</input>
   
 !<inputoutput>
   ! The problem structure characterising the whole problem.
-  type(t_problem), intent(INOUT)                :: rproblem
+  type(t_problem), intent(inout)                :: rproblem
 
   ! A nonlinear-iteration structure that configures the core equation to solve.
   ! Can be initialised e.g. by cc_createNonlinearLoop + manual setup of
   ! the coefficients of the terms.
-  type(t_ccNonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccNonlinearIteration), intent(inout) :: rnonlinearIteration
 
   ! A nonlinear solver configuration.
   ! Can be initialised e.g. by using cc_getNonlinearSolver.
-  type(t_nlsolNode), intent(INOUT) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
   
   ! Initial solution vector. Is replaced by the new solution vector.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A temporary block vector for the nonlinear iteration.
   ! OPTIONAL: If not specified, a temporary vector is automatically allocated.
-  type(t_vectorBlock), intent(INOUT), target, optional :: rtempBlock
+  type(t_vectorBlock), intent(inout), target, optional :: rtempBlock
   
 !</inputoutput>
 
