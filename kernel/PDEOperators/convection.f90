@@ -12203,7 +12203,7 @@ contains
     ! global matrix.
     ! Calculate the positions of the local matrix in the global matrix.
     call bilf_getLocalMatrixIndices (rcollection%p_rmatrixQuickAccess1%RmatrixBlock(1,1),&
-        Idofs,Idofs,KentryA11)
+        Idofs,Idofs,KentryA11,indof,indof,nelements)
         
     ! Now incorporate the local system matrices into the global one          
     select case (inonlinComplexity)
@@ -12250,7 +12250,7 @@ contains
     case default
       ! A12/A21 is there
       call bilf_getLocalMatrixIndices (rcollection%p_rmatrixQuickAccess1%RmatrixBlock(1,2),&
-          Idofs,Idofs,KentryA12)
+          Idofs,Idofs,KentryA12,indof,indof,nelements)
 
       ! Get the matrix data
       call lsyssc_getbase_double (rcollection%p_rmatrixQuickAccess1%RmatrixBlock(1,1),&

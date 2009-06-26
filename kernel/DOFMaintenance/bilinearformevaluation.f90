@@ -4782,7 +4782,8 @@ contains
 
   !<subroutine>
 
-  subroutine bilf_getLocalMatrixIndices (rmatrix,Irows,Icolumns,Kentry)
+  subroutine bilf_getLocalMatrixIndices (rmatrix,Irows,Icolumns,Kentry,&
+      irowsPerElement,icolsPerElement,nelements)
   
   !<description>
   
@@ -4816,6 +4817,15 @@ contains
   ! DIMENSION(#columns per element, #elements).
   integer, dimension(:,:), intent(in) :: Icolumns
   
+  ! Number of rows per element / in the local matrix
+  integer, intent(in) :: irowsPerElement
+  
+  ! Number of columns per element / in the local matrix
+  integer, intent(in) :: icolsPerElement
+  
+  ! Number of elements.
+  integer, intent(in) :: nelements
+  
   !</input>
   
   !<output>
@@ -4832,11 +4842,10 @@ contains
   
     ! local variables
     integer, dimension(:), pointer :: p_Kcol, p_Kld
-    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,nelements,jcol0,jdfg,jcol
+    integer :: na,iel,idofe,jdofe,indofTest,indofTrial,jcol0,jdfg,jcol
 
-    indofTrial = ubound(Icolumns,1)
-    indofTest = ubound(Irows,1)
-    nelements = ubound(Irows,2)
+    indofTrial = icolsPerElement
+    indofTest = irowsPerElement
 
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
@@ -5368,7 +5377,8 @@ contains
       ! We build local matrices for all our elements 
       ! in the set simultaneously. Get the positions of the local matrices
       ! in the global matrix.
-      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTrial,p_IdofsTest,p_Kentry)      
+      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTrial,p_IdofsTest,p_Kentry,&
+          ubound(p_IdofsTrial,1),ubound(p_IdofsTest,1),IELmax-IELset+1)
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -5902,7 +5912,8 @@ contains
       ! We build local matrices for all our elements 
       ! in the set simultaneously. Get the positions of the local matrices
       ! in the global matrix.
-      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTrial,p_IdofsTest,p_Kentry)      
+      call bilf_getLocalMatrixIndices (rmatrix,p_IdofsTrial,p_IdofsTest,p_Kentry,&
+          ubound(p_IdofsTrial,1),ubound(p_IdofsTest,1),IELmax-IELset+1)      
       
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
