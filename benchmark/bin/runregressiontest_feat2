@@ -399,8 +399,8 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules intel/mkl"
 #		    modules="$modules intel/cce/10.1.022 intel/fce/10.1.022"
-#		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
-		    modules="$modules intel/cce/11.1.038 intel/fce/11.1.038 intel/mkl"
+		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
+#		    modules="$modules intel/cce/11.1.038 intel/fce/11.1.038 intel/mkl"
 #		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
 		    LIDOJOBNAMEPREFIX=fb-intel
 #		    COMPILERNAME="Intel 10.1"
