@@ -155,52 +155,52 @@ module afcstabilisation
   type t_afcstab
     
     ! Format Tag. Identifies the type of stabilisation
-    integer :: ctypeAFCstabilisation                   = AFCSTAB_GALERKIN
+    integer :: ctypeAFCstabilisation = AFCSTAB_GALERKIN
 
     ! Format Tag: Specifies the stabilisation
-    integer :: iSpec                                   = AFCSTAB_UNDEFINED
+    integer :: iSpec = AFCSTAB_UNDEFINED
 
     ! Number of equations of the sparsity pattern
-    integer :: NEQ                        = 0
+    integer :: NEQ = 0
 
     ! Number of local variables; in general scalar solution vectors of
     ! size NEQ posses NEQ entries. However, scalar vectors can be interleaved,
     ! that is, each of the NEQ entries stores NVAR local variables. In this case,
     ! NEQ remains unmodified but NVAR>1 such that the physical length of the
     ! vector is NEQ*NVAR.
-    integer :: NVAR                                    = 1
+    integer :: NVAR = 1
 
     ! Number of edges of the sparsity pattern
-    integer :: NEDGE                      = 0
+    integer :: NEDGE = 0
 
     ! Maximum number of edges adjacent to one vertex. 
     ! This corresponds to the maximum number of nonzero row entries.
-    integer :: NNVEDGE                    = 0
+    integer :: NNVEDGE = 0
 
     ! Handle to index pointer for superdiagonal edge numbers
     ! integer, DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
     ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
     ! denote the edge numbers of the ith vertex which are located in
     ! the upper right triangular matrix.
-    integer :: h_IsuperdiagonalEdgesIdx                    = ST_NOHANDLE
+    integer :: h_IsuperdiagonalEdgesIdx = ST_NOHANDLE
 
     ! Handle to vertices at edge structure
     ! integer, DIMENSION(:,:), POINTER :: IverticesAtEdge
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
-    integer :: h_IverticesAtEdge                       = ST_NOHANDLE
+    integer :: h_IverticesAtEdge = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
     ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
-    integer :: h_IsubdiagonalEdgesIdx                  = ST_NOHANDLE
+    integer :: h_IsubdiagonalEdgesIdx = ST_NOHANDLE
 
     ! Handle to the subdiagonal edge numbers
     ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdges
-    integer :: h_IsubdiagonalEdges                     = ST_NOHANDLE
+    integer :: h_IsubdiagonalEdges = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
-    integer :: h_DcoefficientsAtEdge                   = ST_NOHANDLE
+    integer :: h_DcoefficientsAtEdge = ST_NOHANDLE
 
     ! Flag whether or not the matrix is resorted.
     !  <0: Matrix is unsorted, sorting strategy is prepared in 
@@ -214,7 +214,7 @@ module afcstabilisation
     ! matrix (+) or not (-).
     ! The value is usually one of the SSTRAT_xxxx constants from
     ! the module 'sortstrategy'.
-    integer :: isortStrategy                           = 0
+    integer :: isortStrategy = 0
 
     ! Handle to renumbering strategy for resorting the matrix.
     ! The renumbering strategy is a vector
@@ -228,16 +228,16 @@ module afcstabilisation
     !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
     ! Whether or not the matrix is actually sorted depends on the
     ! flag isortStrategy!
-    integer :: h_IsortPermutation                      = ST_NOHANDLE
+    integer :: h_IsortPermutation = ST_NOHANDLE
 
     ! Auxiliary nodal vectors; used internally
-    type(t_vectorScalar), dimension(:), pointer :: RnodalVectors      => null()
+    type(t_vectorScalar), dimension(:), pointer :: RnodalVectors => null()
 
     ! Auxiliary nodal block vectors; used internally
     type(t_vectorBlock), dimension(:), pointer  :: RnodalBlockVectors => null()
 
     ! Auxiliary edge vectors; used internally
-    type(t_vectorScalar), dimension(:), pointer :: RedgeVectors       => null()
+    type(t_vectorScalar), dimension(:), pointer :: RedgeVectors => null()
   end type t_afcstab
 !</typeblock>
 !</types>
