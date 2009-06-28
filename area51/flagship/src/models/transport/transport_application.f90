@@ -102,7 +102,7 @@
 !#     -> Initializes the solution vector based on the parameter
 !#        settings given by the parameter list
 !#
-!# 7.) transp_calcRHS
+!# 7.) transp_initRHS
 !#     -> Initializes the right-hand side vector based on the
 !#        parameter settings given by the application descriptor
 !#
@@ -229,7 +229,7 @@ module transport_application
   public :: transp_initProblemLevel
   public :: transp_initAllProblemLevels
   public :: transp_initSolution
-  public :: transp_calcRHS
+  public :: transp_initRHS
   public :: transp_calcTargetFunc
   public :: transp_outputSolution
   public :: transp_outputStatistics
@@ -1470,7 +1470,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcRHS(rparlist, ssectionName, rproblemLevel,&
+  subroutine transp_initRHS(rparlist, ssectionName, rproblemLevel,&
       dtime, rvector, rcollection)
 
 !<description>
@@ -1548,7 +1548,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of target functional!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'transp_calcRHS')
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
       call sys_halt()
     end select
 
@@ -1608,19 +1608,19 @@ contains
             
         case default
           call output_line('Invalid spatial dimension !',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcRHS')
+                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
           call sys_halt()
         end select
         
       case default
         call output_line('Invalid velocity profile!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_calcRHS')
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_initRHS')
         call sys_halt()
       end select
       
     end if
     
-  end subroutine transp_calcRHS
+  end subroutine transp_initRHS
 
   !*****************************************************************************
 
@@ -3123,7 +3123,7 @@ contains
     ! Initialize right-hand side vector
     if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
-      call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+      call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                           rtimestep%dinitialTime, rrhs, rcollection)
     end if
 
@@ -3322,7 +3322,7 @@ contains
         if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                               rtimestep%dinitialTime, rrhs, rcollection)
         end if
 
@@ -3528,7 +3528,7 @@ contains
       ! Check if right-hand side vector exists
       if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
-        call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
@@ -3826,7 +3826,7 @@ contains
       ! Check if right-hand side vector exists
       if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorblock(rsolution, rrhs)
-        call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
@@ -4133,7 +4133,7 @@ contains
       ! Check if right-hand side vector exists
       if (irhstype > 0 .or. iweakDirichletBdr .eq. 1) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
@@ -4239,7 +4239,7 @@ contains
 
         ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
-        call transp_calcRHS(rparlist, ssectionName, p_rproblemLevel,&
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
                             0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
