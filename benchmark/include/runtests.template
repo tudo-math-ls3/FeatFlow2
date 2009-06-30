@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# ================================================================
-# Script that runs an arbitrary number of FEAT2 benchmark tests.
+# ===================================================================
+# Script that runs an arbitrary number of FEAST benchmark tests.
 # These tests are identified by their benchmark test id (e.g. BC0011,
 # SBBLAS0018, STOKES-SOL3-0001, generally any sequence of non-blanks
 # specified as value of the keyword 'testid') and defined in *.fbdef
@@ -9,16 +9,16 @@
 #
 # The script works on standalone workstations, pc clusters and
 # supercomputers like NEC SX-6/-8/-9 and IBM p690 systems.
-# ================================================================
+# ===================================================================
 
 
 # 'fb_' in function names stands for 'FEAT2 benchmark'.
 # Variables are written in capital letters if used globally
 
 
-# ================================================================
+# ===================================================================
 # Customisation section
-# ================================================================
+# ===================================================================
 
 ## Type:	boolean integer
 ## Default:     <SET_VIA_MAKEFILE>, therein set to 0
@@ -82,6 +82,7 @@ DEBUGGER=<SET_VIA_MAKEFILE>
 #
 # Command line arguments when running valgrind.
 VALGRIND_ARGS=""
+#VALGRIND_ARGS="${VALGRIND_ARGS} -v"
 #VALGRIND_ARGS="${VALGRIND_ARGS} --leak-check=full"
 #VALGRIND_ARGS="${VALGRIND_ARGS} --gen-suppressions=all"
 #VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
@@ -154,9 +155,17 @@ QUEUEINGSYSTEM=
 MPIENV=<SET_VIA_MAKEFILE>
 
 
-# ================================================================
+
+## Type:	boolean
+## Default:     0/false
+#
+# Whether or not to use a hostfile to e.g. put the master process on a separate node
+GENERATE_AND_USE_HOSTFILE=0
+
+
+# ===================================================================
 # End of customisation section
-# ================================================================
+# ===================================================================
 
 
 
@@ -172,9 +181,10 @@ fb_initialiseEnv() {
 
 
     # Empty declaration of variable that will later on contain all environment
-    # variables FEAT2 used in its configuration files. We will
+    # variables FEAT2 uses in its configuration files. We will
     # always append to this variable, that's why an initialisation is needed.
     addEnvVars=""
+#    addEnvVars="--hostfile <file> --nolocal"
 #    addEnvVars="--mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
 #    addEnvVars="--mca mpi_maffinity_alone 1 --hostfile <file> --rankfile <file>"
     # Syntax of Open MPI 1.x.x hostfile
@@ -187,9 +197,17 @@ fb_initialiseEnv() {
     # number of processes/parallel blocks.
 
 
-    # ================================================================
+    # A shell function that creates a hostfile and prints it to screen
+    fb_generate_host() {
+	# empty function by default
+	file="$1"  # IN
+	echo "# ${file}";
+    }
+
+
+    # ===================================================================
     # Define MPI commands depending on top-of-file settings
-    # ================================================================
+    # ===================================================================
     ARCH="`uname -m`";
     case "${QUEUEINGSYSTEM}" in
 	# No queueing system
@@ -216,7 +234,7 @@ fb_initialiseEnv() {
 			# DigitalMPI on Alpha
 			"DigitalMPI")
 			    MPIRC='dmpirun -np ${ntasks} '
-			    MPICLEAN='mpiclean >& /dev/null #'
+			    MPICLEAN='mpiclean 1> /dev/null 2>&1 #'
 			    MPISTART='echo'
 			    MPISTOP='echo'
 			    ;;
@@ -423,8 +441,25 @@ fb_initialiseEnv() {
 		    MPICLEAN='echo'
 		    MPISTART='echo'
 		    MPISTOP='echo'
-		    # bind an MPI process to a cpu and its memory; the linux scheduler sucks for MPI
-		    addEnvVars="${addEnvVars} --mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
+		    case "`hostname -f`" in
+			*.cvos.cluster)
+			    # bind an MPI process to a cpu and its memory; the linux scheduler sucks for MPI
+			    addEnvVars="${addEnvVars} --mca mpi_maffinity_alone 1 --mca mpi_paffinity_alone 1"
+			    ;;
+			*.lidocluster.hp)
+			    # maff-paff is deadly (so far) on LiDO-2 nodes: Run times may explode for
+			    # from 3s to > 18min depending on how many jobs are scheduled to a node.
+
+			    # A shell function that creates a hostfile and prints it to screen
+			    unset -f fb_generate_host;
+			    fb_generate_host() {
+				file="$1"  # IN
+				# Setting that puts master on a separate node
+				uniq ${file} | \
+				    perl -e 'use strict; my $line = 0; while (<>) { $line++; chomp(); if (1 == $line) { print $_ . "\tslots=1 \tmax_slots=1\n"; } else { print $_ . "\tslots=4 \tmax_slots=8\n"; }}'
+			    }
+			    ;;
+		    esac
 		    # Update command line settings for TotalView Debugger
 		    TOTALVIEW_ARGS="${TOTALVIEW_ARGS} -mpi \"Open MPI\""
 		    ;;
@@ -517,9 +552,9 @@ fb_initialiseEnv() {
 	    ;;
     esac
 
-    # ================================================================
+    # ===================================================================
     # Section for variable initialisation
-    # ================================================================
+    # ===================================================================
 
     # Initialise variables that keep book of benchmark progress and behaviour.
     testall=0
@@ -654,7 +689,7 @@ fb_runAndEvalBenchmarkTest() {
     esac
 
     startdate=`date | awk '{print $4}'`
-    echo
+
     echo "START : "${startdate}
     echo
 
@@ -682,7 +717,7 @@ fb_runAndEvalBenchmarkTest() {
 		;;
 
 	    x86_64)
-		string="AMD x86-64"
+		string="ELF 64-bit LSB executable"
 		;;
 
 	    00223C3B4C00) # IBM p690
@@ -716,6 +751,27 @@ fb_runAndEvalBenchmarkTest() {
 #		ntasks=`expr $ntasks + 1`
 #		AUTOPART=YES
 #		export AUTOPART
+#	    fi
+
+#	    # Automatically detect whether binary has been built with MARMOT 
+#	    # instrumenting. In this case, one additional process is required
+#	    # for the debug server.
+#	    if test -n "`nm ${appname} | grep marmot_`"; then
+#		echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+#		echo
+#		echo "The binary <${appname}> contains MARMOT symbols."
+#		echo "The binary will be run with one additional process."
+#		ntasks=`expr $ntasks + 1`
+#
+#		# Text file output
+#		#MARMOT_LOGFILE_TYPE=0
+#		# HTML format output
+#		#MARMOT_LOGFILE_TYPE=1
+#		# Cube format output
+#		MARMOT_LOGFILE_TYPE=2
+#		# Timeout before deadlock is assumed (in nanoseconds)
+#		MARMOT_MAX_TIMEOUT_DEADLOCK=1000000
+#		export MARMOT_LOGFILE_TYPE MARMOT_MAX_TIMEOUT_DEADLOCK
 #	    fi
 
 	    # Initialise boolean variable
@@ -770,128 +826,89 @@ fb_runAndEvalBenchmarkTest() {
 		    fi
 		fi
 
+		# Generate hostfile
+		if test ${GENERATE_AND_USE_HOSTFILE} -ne 0; then
+		    if test "${MPIENV}" = "OpenMPI"; then
+			# OpenMPI on LiDO
+			fb_generate_host ${PBS_NODEFILE} > ${LOGDIR}/hostfile
+			addEnvVarsWorkingCopy="${addEnvVarsWorkingCopy} --mca mpi_paffinity_alone 1 --hostfile ${LOGDIR}/hostfile"
+			echo "Will use hostfile ${LOGDIR}/hostfile."
+		    fi
+		fi
 
 		# ############################
 		# parallel
-		case "${EXECMODE}-${DEBUGGER}" in
+		case "${EXECMODE}" in
 		    # ############################
-		    # parallel, normal execution
-		    PARALLEL-0)
-
+		    PARALLEL)
 			# boot up MPI universe
 			eval ${MPISTART} ${outputredirect}
-
-			echo -n "Running "${currentmglevel}".... "
-
-			# Submitted via PBS?
-#			if test "${PBS_ENVIRONMENT+set}" = set ; then
-#			    echo "PBS job found"
-#			    eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-#			else
-#			    echo "non-PBS scheduling"
-#			    eval ${MPIRC} --hostfile ~/hostfile.ib --nolocal ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-#			fi
-
-#			echo ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			# Show problems if any occured
-			if test $? -ne 0; then
-			    execfailed=1
-			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
-				echo "Execution failed:"
-				cat ${EXECUTIONLOG}
-			    else
-				echo "Execution failed."
-			    fi
-			else
-			    echo "Done"
-			fi
-			;;
-
-
-		    # ############################
-		    # parallel, with some kind of debugger
-		    PARALLEL-*)
-			# boot up MPI universe
-			eval ${MPISTART} ${outputredirect}
-
-			# Passing an argument to the program to be debugged does not work.
-			# Store config file under default config file name.
-#			\cp -p ${DATFILE} master.dat
 
 			echo -n "Running "${currentmglevel}".... "
 
 			# DDT settings (w/o PBS)
-			if test "DDT" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # Issue warning when Intel, PGI or Pathscale compiler are being used.
-			    if test -n "`echo ${BUILDID} | grep intel-`" -o \
-				    -n "`echo ${BUILDID} | grep pgi-`" -o \
-				    -n "`echo ${BUILDID} | grep psc-`"; then
-				echo
-				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-				echo
-				echo "When debugging a program, try not to compile it with Intel Compilers and "
-				echo "debug it with gdb (plain or as backend in ddt). You will experience very "
-				echo "serious performance penalties, communication between ddt and gdb will "
-				echo "time-out very often. Support for idb in ddt exists, but according to the"
-				echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
-				echo "debuggers is significantly less than what the GNU community does. Instead"
-				echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
-				echo "binary!"
-				echo
-				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-				echo
-			    fi
-			    ddt -np ${ntasks} ${PWD}/${appname}
+			case "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`" in
+			    # parallel, normal execution
+			    0)
+				# Submitted via PBS?
+#				if test "${PBS_ENVIRONMENT+set}" = set ; then
+#				    echo "PBS job found"
+#				    eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+#				else
+#				    echo "non-PBS scheduling"
+#				    eval ${MPIRC} --hostfile ~/hostfile.ib --nolocal ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+#				fi
 
-			    # DDT via PBS settings
-#			    mpirun -np NUM_PROCS_TAG ${addEnvVarsWorkingCopy} ddt-debugger PROGRAM_ARGUMENTS_TAG
+#				echo ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				eval ${MPIRC} ${addEnvVarsWorkingCopy} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				;;
 
-			elif test "TOTALVIEW" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # use TotalView
-			    eval totalview ${TOTALVIEW_ARGS} -np ${ntasks} ${PWD}/${appname} -a ${DATFILE}
+			    DDT)
+			        # Issue warning when Intel, PGI or Pathscale compiler are being used.
+			        if test -n "`echo ${BUILDID} | grep intel-`" -o \
+				        -n "`echo ${BUILDID} | grep pgi-`" -o \
+				        -n "`echo ${BUILDID} | grep psc-`"; then
+				    echo
+				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				    echo
+				    echo "When debugging a program, try not to compile it with Intel Compilers and "
+				    echo "debug it with gdb (plain or as backend in ddt). You will experience very "
+				    echo "serious performance penalties, communication between ddt and gdb will "
+				    echo "time-out very often. Support for idb in ddt exists, but according to the"
+				    echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
+				    echo "debuggers is significantly less than what the GNU community does. Instead"
+				    echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
+				    echo "binary!"
+				    echo
+				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				    echo
+				fi
+				ddt -np ${ntasks} ${PWD}/${appname}
 
-			elif test "VALGRIND" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # use valgrind
-#			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+			        # DDT via PBS settings
+#			        mpirun -np NUM_PROCS_TAG ${addEnvVarsWorkingCopy} ddt-debugger PROGRAM_ARGUMENTS_TAG
+				;;
 
-			elif test "RUN_DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # run_dbx settings
-#			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			    eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${outputredirect}
-			fi
+			    RUN_DBX)
+			        # run_dbx settings
+#			        eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} run_dbx ${PWD}/${appname} ${outputredirect}
+				;;
 
-			# Show problems if any occured
-			if test $? -ne 0; then
-			    execfailed=1
-			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
-				echo "Execution failed:"
-				cat ${EXECUTIONLOG}
-			    else
-				echo "Execution failed."
-			    fi
-			else
-			    echo "Done"
-			fi
-			rm -f master.dat
-			;;
+			    TOTALVIEW)
+			        # use TotalView
+				eval totalview ${TOTALVIEW_ARGS} -np ${ntasks} ${PWD}/${appname} -a ${DATFILE}
+				;;
 
+			    VALGRIND)
+			        # use valgrind
+#			        eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				eval ${MPIRC} -np ${ntasks} ${addEnvVarsWorkingCopy} valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+				;;
 
-		    # ############################
-		    # serial run, normal execution
-		    SERIAL-0)
-			# check if numactl is available
-			which numactl 1> /dev/null 2>&1
-			if test $? -ne 0; then
-			    echo -n "Running "${currentmglevel}" (without NUMACTL).... "
-			    echo ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			    eval ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			else
-			    echo -n "Running "${currentmglevel}" (with NUMACTL).... "
-			    eval numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE} ${outputredirect}
-			fi
-			# Show problems if any occured
+			esac
+
+			# Show problems if any occurred
 			if test $? -ne 0; then
 			    execfailed=1
 			    if test "${SUPPRESSOUTPUT}" = "1" -o "${SUPPRESSOUTPUT}" = "yes"; then
@@ -907,14 +924,7 @@ fb_runAndEvalBenchmarkTest() {
 
 
 		    # ############################
-		    # serial run, with some kind of debugger
-		    SERIAL-*)
-			# Passing an argument to the program to be debugged does not work.
-			# Store config file under default config file name.
-#			\cp -p ${DATFILE} master.dat
-
-			echo -n "Running "${currentmglevel}".... "
-
+		    SERIAL)
 			# To select a debugger, (un)comment the appropriate lines. While being uncomfortable,
 			# this approach is considered as 'has to do' by the fb2 developers for the time being.
 			# If you believe that this sucks, please implement this feature properly by allowing
@@ -924,59 +934,96 @@ fb_runAndEvalBenchmarkTest() {
 			# in kernel/arch/templates to include -g which tells the compiler to include
 			# routine names, variable names etc. in the binary
 
-			if test "DDT" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # Issue warning when Intel, PGI or Pathscale compiler are being used.
-			    if test -n "`echo ${BUILDID} | grep intel-`" -o \
-				    -n "`echo ${BUILDID} | grep pgi-`" -o \
-				    -n "`echo ${BUILDID} | grep psc-`"; then
+			case "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`" in
+			    # serial run, normal execution
+			    0)
+				use_numactl=0
+				# check if numactl is available
+				if which numactl 1> /dev/null 2>&1; then
+				    # check whether it is usable
+				    if numactl --show 1> /dev/null 2>&1 ; then 
+					use_numactl=1;
+				    fi
+				fi
+				if test $use_numactl -gt 1; then
+				    echo -n "Running "${currentmglevel}" (with NUMACTL).... "
+				    echo numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE}
+				    eval numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				else
+				    echo -n "Running "${currentmglevel}" (without NUMACTL).... "
+				    eval ${PWD}/${appname} ${DATFILE} ${outputredirect}
+				fi
+				;;
+
+			    DDT)
+				echo -n "Running "${currentmglevel}".... "
+
+				# Issue warning when Intel, PGI or Pathscale compiler are being used.
+				if test -n "`echo ${BUILDID} | grep intel-`" -o \
+				        -n "`echo ${BUILDID} | grep pgi-`" -o \
+				        -n "`echo ${BUILDID} | grep psc-`"; then
+				    echo
+				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				    echo
+				    echo "When debugging a program, try not to compile it with Intel Compilers and "
+				    echo "debug it with gdb (plain or as backend in ddt). You will experience very "
+				    echo "serious performance penalties, communication between ddt and gdb will "
+				    echo "time-out very often. Support for idb in ddt exists, but according to the"
+				    echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
+				    echo "debuggers is significantly less than what the GNU community does. Instead"
+				    echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
+				    echo "binary!"
+				    echo
+				    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
+				    echo
+				fi
+
+				ddt ${PWD}/${appname}
+				;;
+
+			    VALGRIND)
+				# use valgrind
+				echo -n "Running "${currentmglevel}".... "
+				eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+				;;
+
+			    GDB)
+				echo -n "Running "${currentmglevel}".... "
+
+				# use gdb
 				echo
 				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
 				echo
-				echo "When debugging a program, try not to compile it with Intel Compilers and "
-				echo "debug it with gdb (plain or as backend in ddt). You will experience very "
-				echo "serious performance penalties, communication between ddt and gdb will "
-				echo "time-out very often. Support for idb in ddt exists, but according to the"
-				echo "ddt developers, the effort Intel (and Pathscale and PGI) invest into their"
-				echo "debuggers is significantly less than what the GNU community does. Instead"
-				echo "of using idb, try to trigger the bug and then debug the code with a gcc-compiled"
-				echo "binary!"
+				echo "Never try to perform debugging without SUPPRESSOUTPUT=0, as the"
+				echo "debugger otherwise seems to hang the machine waiting for you to type run."
 				echo
 				echo "Warning! Warning! Warning! Warning! Warning! Warning!"
 				echo
-			    fi
+				eval gdb  ${PWD}/${appname} ${outputredirect}
+				;;
 
-			    ddt ${PWD}/${appname}
+			    DBX)
+				echo -n "Running "${currentmglevel}".... "
+				eval dbx -r  ${PWD}/${appname} ${outputredirect}
+				;;
 
-			elif test "VALGRIND" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # use valgrind
-			    eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
+			    RUN_DBX)
+				echo -n "Running "${currentmglevel}".... "
+				# run_dbx settings
+				eval run_dbx ${PWD}/${appname} ${outputredirect}
+				;;
 
-			elif test "GDB" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # use gdb
-			    echo
-			    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-			    echo
-			    echo "Never try to perform debugging without SUPPRESSOUTPUT=0, as the"
-			    echo "debugger otherwise seems to hang the machine waiting for you to type run."
-			    echo
-			    echo "Warning! Warning! Warning! Warning! Warning! Warning!"
-			    echo
-			    eval gdb  ${PWD}/${appname} ${outputredirect}
+			    DDD)
+				echo -n "Running "${currentmglevel}".... "
+				ddd ${PWD}/${appname}
+				;;
 
-			elif test "DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    eval dbx -r  ${PWD}/${appname} ${outputredirect}
+			    PGI)
+				echo -n "Running "${currentmglevel}".... "
+				pgdbg ${PWD}/${appname}
+				;;
 
-			elif test "RUN_DBX" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    # run_dbx settings
-			    eval run_dbx ${PWD}/${appname} ${outputredirect}
-
-			elif test "DDD" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    ddd ${PWD}/${appname}
-
-			elif test "PGI" = "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`"; then
-			    pgdbg ${PWD}/${appname}
-
-			fi
+			esac
 
 
 			# Show problems if any occured
@@ -996,7 +1043,6 @@ fb_runAndEvalBenchmarkTest() {
 			else
 			    echo "Done"
 			fi
-			rm -f master.dat
 			;;
 		esac # serial/parallel
 
@@ -1118,7 +1164,7 @@ fb_runAndEvalBenchmarkTest() {
     	    fi
 
 	    # Clean up
-#	    /bin/rm feastlog.* ${EXECUTIONLOG} diffresult >& /dev/null
+#	    /bin/rm feastlog.* ${EXECUTIONLOG} diffresult 1> /dev/null 2>&1
 	fi # binary compatible/incompatible
     else
 	# No binary found
@@ -1149,12 +1195,12 @@ fb_runAndEvalBenchmarkTest() {
 
 
 
-# ================================================================
+# ===================================================================
 # Run the benchmark
-# ================================================================
+# ===================================================================
 
 # Clean up any temporary files from previous benchmark runs
-#\rm feastlog.* *.gmv *.gmv.[0-9]* slaveresult.* >& /dev/null
+#\rm feastlog.* *.gmv *.gmv.[0-9]* slaveresult.* 1> /dev/null 2>&1
 
 fb_initialiseEnv
 
