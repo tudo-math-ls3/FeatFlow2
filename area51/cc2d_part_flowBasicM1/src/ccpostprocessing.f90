@@ -2568,11 +2568,17 @@ contains
     dvolume  = (rproblem%drad)**2 * SYS_PI
     dmasssl  = rproblem%drho2 * dvolume 
     ddmasssl = (rproblem%drho2-1.0_dp) * dvolume 
+    
+    ! Calculate the moment of inertia by formula,
+    ! this formula is valid only for a circle
+    ! note: for other shaped an approximation can
+    ! be calculated by the routine cc_torque:
+    ! there we calculated :int_Particle |r|^2 dParticle
+    ! the moment of inertia can then be calculated by
+    ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
+    ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
+    ! we already calculated earlier; so we just need to divide...
     dimomir  = dmasssl*((rproblem%drad)**2)/4.0_dp !moment of inertia !    
-    
-    !dimomir = 3.764619308303142E-004
-    
-    print *,"Moment of Inertia",dimomir
     
     ! Mean resistance forces for the given time step
     dfx = 0.5_dp * (p_DforceX(5) + p_DforceX(4))
@@ -2600,22 +2606,10 @@ contains
     ! Recalculate SIN and COS values of angle
     p_rgeometryObject%rcoord2D%dsin_rotation = sin(p_rgeometryObject%rcoord2D%drotation)
     p_rgeometryObject%rcoord2D%dcos_rotation = cos(p_rgeometryObject%rcoord2D%drotation)
-
-    print *,"--------------------------"
-    
-    print *,"Total torque force: ",rproblem%DTrqForce(1)
-    
-    print *,"--------------------------"
-
-    print *,"domega: ",domega
     
     ! Update the angular velocity
     ! avel_new = avel_old + avel_new
     rproblem%DAngVel(1) = rproblem%DAngVel(1) + domega
- 
-    print *,"--------------------------"
-
-    print *,"DAngVel: ",rproblem%DAngVel(1)
  
     ! save the old forces for the next time step
     p_DforceX(5) = p_DforceX(4)
@@ -2632,12 +2626,6 @@ contains
     ! update the position of the geometry object
     p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
     p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
-    
-    print *,"New Position X: ",dCenterX
-    
-    print *,"--------------------------"
-    
-    print *,"VelocityXfromFlow: ",dvelx
 
     ! save the current velocity
     p_DforceX(6) = p_DforceX(6) + dvelx
@@ -2661,7 +2649,28 @@ contains
     rproblem%rcollection%DQuickaccess(11)= p_DforceY(6)
     rproblem%rcollection%DQuickaccess(12)= rproblem%DAngVel(1)
     rproblem%rcollection%DQuickaccess(13)= rproblem%DTrqForce(1)
+
+    ! Output some values to get some readable stuff on the
+    ! the screen
+    print *,"--------------------------"
     
+    print *,"Total torque force: ",rproblem%DTrqForce(1)
+    
+    print *,"--------------------------"
+
+    print *,"domega: ",domega
+
+    print *,"--------------------------"
+
+    print *,"DAngVel: ",rproblem%DAngVel(1)
+
+    print *,"--------------------------"
+    
+    print *,"New Position X: ",dCenterX
+    
+    print *,"--------------------------"
+    
+    print *,"VelocityXfromFlow: ",dvelx
 
     print *,"--------------------------"
     
@@ -2670,9 +2679,6 @@ contains
     print *,"--------------------------"
     
     print *,"VelocityXTotal: ",rproblem%rcollection%DQuickaccess(10)
-    
-    
-    
     
   end subroutine
 
@@ -2944,7 +2950,7 @@ contains
             
             OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
             
-            ! int_Particle |r|^2 dParticle
+            ! int_Particle |r_ob|^2 dParticle
             
             ! calculate r_ob
             robx = -1.0_dp*(revalElementSet%p_DpointsReal(2,icubp,iel) - dcentery)
