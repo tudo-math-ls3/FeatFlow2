@@ -214,9 +214,9 @@ include ../unpack.mk
 # That's the key to serialise the unpacking process.
 SRC_UFCONFIG = $(UFCONFIG)
 
-$(UFCONFIG):  NAME     = "UFconfig 3.1.0 sources"
-$(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
-$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
+$(UFCONFIG):  NAME     = "UFconfig 3.4.0 sources"
+$(UFCONFIG):  TARBALL  = ../UFconfig-3.4.0.tar.gz
+$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
@@ -249,3 +249,4 @@ purge:
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source
+	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk

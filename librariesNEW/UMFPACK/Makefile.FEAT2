@@ -18,6 +18,8 @@ C = $(CC) $(CFLAGS) $(UMFPACK_CONFIG) -DNO_TIMER \
     -IInclude -ISource -I../AMD/Include -I../UFconfig
 #FEAST#    -I../Include -I../Source -I../../AMD/Include -I../../UFconfig
 
+UFCONFIG = ../UFconfig/UFconfig.h
+
 #-------------------------------------------------------------------------------
 # source files
 #-------------------------------------------------------------------------------
@@ -77,7 +79,7 @@ GENERIC = umfpack_timer umfpack_tictoc umfpack_global
 #FEAST Substitution Rule# ../Include/ => Include/
 #FEAST Substitution Rule# ../Source/  => Source/
 #FEAST Substitution Rule# ../../AMD/  => ../AMD/
-INC = Include/umfpack.h ../UFconfig/UFconfig.h \
+INC = Include/umfpack.h $(UFCONFIG) \
 	Source/umf_config.h Source/umf_version.h \
 	Source/umf_internal.h Source/umf_triplet.h \
 	$(addprefix Source/,  $(addsuffix .h,$(UMFCH))) \
@@ -430,12 +432,11 @@ $(LAST_FILE_FROM_AMD_TARBALL):
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
-UFCONFIG = ../UFconfig/UFconfig.h
 SRC_UFCONFIG = $(UFCONFIG)
 
-$(UFCONFIG):  NAME     = "UFconfig 3.1.0 sources"
-$(UFCONFIG):  TARBALL  = ../UFconfig-3.1.0.tar.gz
-$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.1.0.tar.gz
+$(UFCONFIG):  NAME     = "UFconfig 3.4.0 sources"
+$(UFCONFIG):  TARBALL  = ../UFconfig-3.4.0.tar.gz
+$(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
@@ -469,9 +470,9 @@ SRC_UMFPACK = Include/umfpack.h \
 LAST_FILE_FROM_UMFPACK_TARBALL = Demo/umfpack_dl_demo.c
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
 
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.2 sources"
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = ../UMFPACK-5.2.tar.gz
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.2.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.4 sources"
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = ../UMFPACK-5.4.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.4.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
