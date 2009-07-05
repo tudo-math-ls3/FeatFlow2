@@ -324,6 +324,9 @@ module bilinearformevaluation
   ! that are adjacent via one of the corner vertices.
   integer, parameter, public :: BILF_MATC_VERTEXBASED  = 2
 
+  ! Lumped matrix construction. All off-diagonal entries are added to the diagonal
+  integer, parameter, public :: BILF_MATC_LUMPED  = 3
+
 !</constantblock>
 
 !<constantblock description="Constants defining the blocking of the assembly">
@@ -373,7 +376,7 @@ contains
   ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
   ! the matrix construction method. If not specified,
   ! BILF_MATC_ELEMENTBASED is used.
-  integer, intent(in), optional      :: cconstrType
+  integer, intent(in), optional :: cconstrType
 
   ! OPTIONAL: The underlying discretisation structure for the test functions.
   ! If not specified, the trial functions coincide with the test functions.
@@ -5676,7 +5679,7 @@ contains
   
   subroutine bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
-      fcoeff_buildMatrixScBdr2D_sim, rcollection)
+      cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
   
 !<description>
 
@@ -5697,6 +5700,10 @@ contains
 
   ! List of start- and end-parameter values of the edges on the boundary
   real(DP), dimension(:,:), intent(in) :: DedgePosition
+
+  ! One of the BILF_MATC_xxxx constants that allow to specify the
+  ! matrix construction method.
+  integer, intent(in) :: cconstrType
 
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
@@ -6180,19 +6187,42 @@ contains
       ! messed up.
       ! The critical section is put around both loops as indofTest/indofTrial
       ! are usually small and quickly to handle.
-      !
-      !%OMP CRITICAL
-      do iel = 1,IELmax-IELset+1          
-      
-        do idofe = 1,indofTest
-          do jdofe = 1,indofTrial
-            p_DA(p_Kentry(jdofe,idofe,iel)) = &
-                p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
-          end do
-        end do
 
-      end do ! iel
-      !%OMP END CRITICAL
+      if (cconstrType .eq. BILF_MATC_LUMPED) then
+
+        !%OMP CRITICAL
+        do iel = 1,IELmax-IELset+1          
+          
+          do idofe = 1,indofTest
+            do jdofe = 1,indofTrial
+              p_DA(p_Kentry(jdofe,idofe,iel)) = &
+                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+            end do
+          end do
+          
+        end do ! iel
+        !%OMP END CRITICAL
+
+      else
+        
+        !%OMP CRITICAL
+        do iel = 1,IELmax-IELset+1          
+          
+          do idofe = 1,indofTest
+            daux = 0.0_DP
+            do jdofe = 1,indofTrial
+              daux = daux + p_Dentry(jdofe,idofe,iel)
+!!$              p_DA(p_Kentry(jdofe,idofe,iel)) = &
+!!$                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+            end do
+            p_DA(p_Kentry(idofe,idofe,iel)) = &
+                p_DA(p_Kentry(idofe,idofe,iel)) + daux
+          end do
+          
+        end do ! iel
+        !%OMP END CRITICAL
+
+      end if
 
     end do ! IELset
     
@@ -6348,7 +6378,7 @@ contains
 
   subroutine bilf_buildMatrixScalarBdr2D (rform, ccubType, bclear, rmatrix,&
                                           fcoeff_buildMatrixScBdr2D_sim,&
-                                          rboundaryRegion, rcollection)
+                                          rboundaryRegion, rcollection, cconstrType)
 
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -6389,21 +6419,26 @@ contains
   ! to calculate. If not specified, the computation is done over
   ! the whole boundary.
   type(t_boundaryRegion), intent(in), optional :: rboundaryRegion
-
-  ! OPTIONAL: A collection structure. This structure is given to the
-  ! callback function for nonconstant coefficients to provide additional
-  ! information. 
-  type(t_collection), intent(inout), target, optional :: rcollection
   
   ! OPTIONAL: A callback routine for nonconstant coefficient matrices.
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixScBdr2D.inc'
   optional :: fcoeff_buildMatrixScBdr2D_sim
+
+  ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
+  ! the matrix construction method. If not specified,
+  ! BILF_MATC_ELEMENTBASED is used.
+  integer, intent(in), optional :: cconstrType
 !</input>
 
 !<inputoutput>
   ! The FE matrix. Calculated matrix entries are imposed to this matrix.
   type(t_matrixScalar), intent(inout) :: rmatrix
+
+  ! OPTIONAL: A collection structure. This structure is given to the
+  ! callback function for nonconstant coefficients to provide additional
+  ! information. 
+  type(t_collection), intent(inout), target, optional :: rcollection
 !</inputoutput>
 
 !</subroutine>
@@ -6415,7 +6450,7 @@ contains
   type(t_boundaryRegion) :: rboundaryReg
   real(DP), dimension(:,:), pointer :: p_DedgePosition
   integer, dimension(:), pointer :: p_IelementList, p_IelementOrientation
-  integer :: ibdc,ielementDistr,NELbdc
+  integer :: ibdc,ielementDistr,NELbdc,ccType
 
   ! The matrix must be unsorted, otherwise we can't set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
@@ -6465,6 +6500,9 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalarBdr2D')
     call sys_halt()
   end if
+
+  ccType = BILF_MATC_ELEMENTBASED
+  if (present(cconstrType)) ccType = cconstrType
   
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrix%p_rspatialDiscrTest%ccomplexity)
@@ -6511,7 +6549,7 @@ contains
             ! Assemble the data for all elements in this element distribution
             call bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
                 rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
             
             ! Release the assembly structure.
             call bilf_doneAssembly(rmatrixAssembly)
@@ -6555,7 +6593,7 @@ contains
               ! Assemble the data for all elements in this element distribution
               call bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
                   rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                  fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                  ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
               
               ! Release memory
               deallocate(p_IelementList, p_IelementOrientation)
