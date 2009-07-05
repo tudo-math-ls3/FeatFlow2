@@ -43,28 +43,24 @@
 !#      -> Callback routine for the evaluation of linear forms
 !#         using an analytic expression for the load-vector
 !#
-!# 13.) transp_coeffMatrixBdr2dAnalytic
-!#      -> Callback routine for the evaluation of bilinear forms
-!#         using an analytic expression for the coefficient
-!#
-!# 14.) transp_refFuncAnalytic
+!# 12.) transp_refFuncAnalytic
 !#      -> Callback routine for the evaluation of the reference
 !#         target function for goal-oriented error estimation
 !#
-!# 15.) transp_weightFuncAnalytic
+!# 13.) transp_weightFuncAnalytic
 !#      -> Callback routine for the evaluation of the weights in
 !#         the target functional for goal-oriented error estimation
 !#
-!# 16.) transp_refFuncBdrInt2D
+!# 14.) transp_refFuncBdrInt2D
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the target functional for goal-oriented error estimation
 !#
-!# 17.) transp_errorBdrInt2D
+!# 15.) transp_errorBdrInt2D
 !#      -> Callback routine for the evaluation of the boundary integral
 !#         of the error in the target functional for goal-oriented
 !#         error estimation
 !#
-!# 18.) transp_weightFuncBdrInt2D
+!# 16.) transp_weightFuncBdrInt2D
 !#      -> Callback routine for the evaluation of the weights in
 !#         the boundary integral of the target functional for
 !#         goal-oriented error estimation
@@ -94,6 +90,7 @@ module transport_callback
   use genoutput
   use groupfemscalar
   use linearalgebra
+  use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
   use paramlist
@@ -124,7 +121,6 @@ module transport_callback
   public :: transp_setVelocityField
   public :: transp_calcLinearizedFCT
   public :: transp_coeffVectorAnalytic
-  public :: transp_coeffMatrixBdr2dAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
   public :: transp_refFuncBdrInt2D
@@ -209,7 +205,7 @@ contains
     ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
-      call transp_calcRhs(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolutionInitial, rrhs, istep, rcollection)
     end if
           
@@ -297,6 +293,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_bilinearForm) :: rform
     character(LEN=SYS_STRLEN) :: smode
     logical :: bStabilize, bbuildAFC, bconservative
     integer :: systemMatrix, transportMatrix
@@ -305,14 +302,10 @@ contains
     integer :: imasstype, ivelocitytype, idiffusiontype
     integer :: convectionAFC, diffusionAFC, velocityfield
 
-    !@DEBUG
-    type(t_bilinearForm) :: rform
-    !@DEBUG
     
     ! Check if the preconditioner has to be updated and return otherwise.
     if (iand(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE) .eq. 0) return
     
-
      ! Start time measurement for matrix evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
@@ -459,7 +452,7 @@ contains
                                  'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
-        ! @DEBUG Evaluate boundary integrals
+        ! Evaluate boundary integrals
 
         ! Attach velocity vectors to collection structure
         rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
@@ -473,16 +466,12 @@ contains
         rform%Idescriptors(1,1) = DER_FUNC
         rform%Idescriptors(2,1) = DER_FUNC
         
-        ! Assemble the bilinear form for the boundary integral
+        ! Assemble the lumped bilinear form for the boundary integral
         call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D, .false.,&
             rproblemLevel%Rmatrix(transportMatrix),&
-            transp_coeffMatrixBdr2DAnalytic,&
-            rcollection=rcollection)
+            transp_coeffMatBdrPrimalConst2d,&
+            rcollection=rcollection, cconstrType=BILF_MATC_LUMPED)
 
-        ! Perform lumping
-        call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(transportMatrix),&
-            LSYSSC_LUMP_DIAG, .false.)
-        ! @DEBUG
 
         if (bbuildAFC) then
           
@@ -696,6 +685,26 @@ contains
                                  'velocityfield', velocityfield)
         call transp_setVelocityField(rproblemLevel%RvectorBlock(velocityfield))
         
+        ! Evaluate boundary integrals
+
+        ! Attach velocity vectors to collection structure
+        rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+
+        ! We have no constant coefficients
+        rform%ballCoeffConstant = .false.
+        rform%BconstantCoeff    = .false.
+
+        ! Initialize the bilinear form
+        rform%itermCount = 1
+        rform%Idescriptors(1,1) = DER_FUNC
+        rform%Idescriptors(2,1) = DER_FUNC
+        
+        ! Assemble the lumped bilinear form for the boundary integral
+        call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix),&
+            transp_coeffMatBdrDualConst2d,&
+            rcollection=rcollection, cconstrType=BILF_MATC_LUMPED)
+
         if (bbuildAFC) then
 
           select case(rproblemLevel%rtriangulation%ndim)
@@ -2074,7 +2083,8 @@ contains
       rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
-    ! This subroutine imposes the nonlinear boundary conditions.
+    ! This subroutine imposes the Dirichlet and/or Neumann boundary
+    ! conditions in a weak sense.
 !</description>
 
 !<input>
@@ -2105,41 +2115,123 @@ contains
 !</subroutine>
     
     ! local variables
+    type(t_fparser), pointer :: rfparser
     type(t_parlist), pointer :: p_rparlist
-    integer :: imatrix
+    type(t_linearForm) :: rform
+    character(LEN=SYS_STRLEN) :: sdirichletbdrname, ssectionname, smode
+    integer :: imatrix,icomp
+    integer :: ivelocityType,velocityfield
 
     
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+    ! This subroutine assumes that the first quick access string array
+    ! holds the section name of the application
+    ssectionname = rcollection%SquickAccess(1)
+
+    ! Get mode from parameter list
+    call parlst_getvalue_string(p_rparlist, rcollection%SquickAccess(1),&
+                                'mode', smode)
+
+    ! Check that we are in primal mode, otherwise return
+    if (trim(smode) .ne. 'primal') return
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(p_rparlist, ssectionname,&
+                                'sdirichletbdrname', sdirichletbdrname)      
+    call parlst_getvalue_int(p_rparlist, ssectionname,&
+                             'ivelocitytype', ivelocityType)
+    call parlst_getvalue_string(p_rparlist, ssectionname,&
+                                'sdirichletbdrname', sdirichletbdrname, 'null')
+
+    ! Get function parser from collection structure
+    rfparser => collct_getvalue_pars(rcollection, 'rfparser')
     
-    select case(rsolver%iprecond)
-    case (NLSOL_PRECOND_BLOCKD,&
-          NLSOL_PRECOND_DEFCOR,&
-          NLSOL_PRECOND_NEWTON_FAILED)
+    ! Get the number of the component used for evaluating the right-hand side
+    icomp = fparser_getFunctionNumber(rfparser, sdirichletbdrname)
+    
+    ! Prepare quick access arrays of the collection
+    rcollection%DquickAccess(1) = rtimestep%dTime
+    rcollection%IquickAccess(1) = icomp
+    rcollection%SquickAccess(1) = 'rfparser'
+    
+    ! Attach velocity vectors to collection structure (if any)
+    if (transp_hasVelocityVector(ivelocityType)) then
+      call parlst_getvalue_int(p_rparlist, ssectionName,&
+                               'velocityfield', velocityfield)
+      rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
+    end if
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'systemmatrix', imatrix)
-      
-    case (NLSOL_PRECOND_NEWTON)
+    ! Apply weakly imposed Dirichlet values
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'jacobianmatrix', imatrix)
+    select case(abs(ivelocityType))
+    case (VELOCITY_ZERO)
+      ! zero velocity, do nothing
       
-    case DEFAULT
-      call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundary')
+    case (VELOCITY_CONSTANT,&
+          VELOCITY_TIMEDEP)
+      ! linear velocity
+        
+      ! Set up the corresponding linear form
+      rform%itermCount      = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! How many spatial dimensions do we have?
+      select case(rproblemLevel%rtriangulation%ndim)
+        
+      case(NDIM2D)
+        ! Build the discretized boundary integral into the residual
+        call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D, .false.,&
+            rres%RvectorBlock(1), transp_coeffVecBdrPrimalConst2d,&
+            rcollection=rcollection)
+        
+      case default
+        call output_line('Invalid spatial dimension !',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_setBoundary')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Invalid velocity profile!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'transp_setBoundary')
       call sys_halt()
     end select
-    
-    ! Impose boundary conditions for the solution vector and impose
-    ! zeros in the residual vector and the off-diagonal positions of
-    ! the system matrix which is obtained from the collection
-    
-    call bdrf_filterSolution(rsolver%rboundaryCondition,& 
-                             rproblemLevel%rtriangulation,&
-                             rproblemLevel%Rmatrix(imatrix),&
-                             rsolution, rres, rsolutionInitial,&
-                             rtimestep%dTime)
+
+    ! We have modified the collection structure, hence, we need to
+    ! reset the first quick access string array to the section name
+    rcollection%SquickAccess(1) = ssectionname
+
+
+
+!!$    select case(rsolver%iprecond)
+!!$    case (NLSOL_PRECOND_BLOCKD,&
+!!$          NLSOL_PRECOND_DEFCOR,&
+!!$          NLSOL_PRECOND_NEWTON_FAILED)
+!!$
+!!$      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+!!$                               'systemmatrix', imatrix)
+!!$      
+!!$    case (NLSOL_PRECOND_NEWTON)
+!!$
+!!$      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+!!$                               'jacobianmatrix', imatrix)
+!!$      
+!!$    case DEFAULT
+!!$      call output_line('Invalid nonlinear preconditioner!',&
+!!$                       OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundary')
+!!$      call sys_halt()
+!!$    end select
+!!$    
+!!$    ! Impose boundary conditions for the solution vector and impose
+!!$    ! zeros in the residual vector and the off-diagonal positions of
+!!$    ! the system matrix which is obtained from the collection
+!!$    
+!!$    call bdrf_filterSolution(rsolver%rboundaryCondition,& 
+!!$                             rproblemLevel%rtriangulation,&
+!!$                             rproblemLevel%Rmatrix(imatrix),&
+!!$                             rsolution, rres, rsolutionInitial,&
+!!$                             rtimestep%dTime)
 
   end subroutine transp_setBoundary
 
@@ -2784,179 +2876,6 @@ contains
     end do ! itermCount
     
   end subroutine transp_coeffVectorAnalytic
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine transp_coeffMatrixBdr2DAnalytic (rdiscretisationTrial,&
-      rdiscretisationTest, rform, nelements, npointsPerElement,&
-      Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
-      rdomainIntSubset, Dcoefficients, rcollection)
-    
-    use basicgeometry
-    use boundary
-    use collection
-    use domainintegration
-    use feevaluation
-    use fsystem
-    use scalarpde
-    use spatialdiscretisation
-    use triangulation
-    
-!<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-!</description>
-    
-!<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
-
-    ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(in) :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
-    ! This is the number of the boundary component that contains the
-    ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(in) :: ibct
-
-    ! For every point under consideration, this specifies the parameter
-    ! value of the point on the boundary component. The parameter value
-    ! is calculated in LENGTH PARAMETRISATION!
-    ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(in) :: DpointPar
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTrial
-    
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
-!</input>
-  
-!<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
-    
-!</subroutine>
-  
-    ! local variables
-    type(t_vectorBlock), pointer :: p_rvelocity
-    real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
-    integer :: icomp,iel,ipoint,ndim
-
-    ! This subroutine assumes that the first quick access vector
-    ! points to the velocity vector
-    p_rvelocity => rcollection%p_rvectorQuickAccess1
-
-    ! Allocate temporal memory
-    allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
-
-    ! Evaluate the velocity field in the cubature points on the boundary
-    ! and store the result in Daux(:,:,:,1:2)
-    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
-        p_rvelocity%RvectorBlock(1), Dpoints,&
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-    
-    call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
-        p_rvelocity%RvectorBlock(2), Dpoints,&
-        rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-    
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
-    dminPar = DpointPar(1,1)
-    dmaxPar = DpointPar(1,1)
-    do iel = 1, size(rdomainIntSubset%p_Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-        dminPar = min(DpointPar(ipoint,iel), dminPar)
-        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
-
-    ! Multiply the velocity vector with the normal in each point
-    ! to get the normal velocity.
-    do iel = 1, size(rdomainIntSubset%p_Ielements)
-      do ipoint = 1, ubound(Dpoints,2)
-
-        dt = DpointPar(ipoint,iel)
-        
-        ! Get the normal vector in the point from the boundary.
-        ! Note that the parameter value is in length parametrisation!
-        ! When we are at the left or right endpoint of the interval, we
-        ! calculate the normal vector based on the current edge.
-        ! Without that, the behaviour of the routine may lead to some
-        ! confusion if the endpoints of the interval coincide with
-        ! the endpoints of a boundary edge. In such a case, the routine
-        ! would normally compute the normal vector as a mean on the
-        ! normal vectors of the edges adjacent to such a point!
-        if (DpointPar(ipoint,iel) .eq. dminPar) then
-          ! Start point
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-          ! End point
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-        else
-          ! Inner point
-          call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
-              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-        end if
-
-        ! Compute the normal velocity
-        dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
-
-        if (dnv .lt. -SYS_EPSREAL) then
-          Dcoefficients(1,ipoint,iel) = dnv
-        else
-          Dcoefficients(1,ipoint,iel) = 0.0_DP
-        end if
-      end do
-    end do
-
-  end subroutine transp_coeffMatrixBdr2DAnalytic
 
   !*****************************************************************************
 

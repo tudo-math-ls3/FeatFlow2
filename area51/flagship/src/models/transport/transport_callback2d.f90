@@ -1070,6 +1070,9 @@ contains
       end do
     end do
 
+    ! Free temporal memory
+    deallocate(Daux)
+
   end subroutine transp_coeffMatBdrPrimalConst2d
 
   !*****************************************************************************
@@ -1246,8 +1249,9 @@ contains
       end do
     end do
 
+    ! Free temporal memory
+    deallocate(Daux)
+
   end subroutine transp_coeffMatBdrDualConst2d
   
-
-
 end module transport_callback2d
