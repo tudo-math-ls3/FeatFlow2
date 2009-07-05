@@ -115,10 +115,12 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral (two components)
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 3
 
 # section name of target functional
-stargetfuncname = @weightingFuncInt
+stargetfuncname(2) =
+  @weightingFuncInt
+  @weightingFuncInt1
 
 # type of exact target functional
 # 0 = no target variable
@@ -207,7 +209,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 
 ################################################################################
@@ -463,7 +465,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 1000
+nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner

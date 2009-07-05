@@ -33,9 +33,11 @@ deffunc: @velocity_x = y ; x,y,z,t
 deffunc: @velocity_y = 1-x ; x,y,z,t
 
 # Specify the quantity of interest
-deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
-deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y <= 0.7, 1, 0) ; x,y,z,t
-#deffunc: @weightingFuncInt = 1 ; x,y,z,t
+#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
+#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y <= 0.7, 2, 0) ; x,y,z,t
+deffunc: @weightingFuncInt = if (y <= 0.9 & x >= 1.35 & x <= 1.65, 1, 0) ; x,y,z,t
+deffunc: @weightingFuncInt1 = 0 ; x,y,z,t
+#if (y <= 0.9 & x >= 1.35 & x <= 1.65, 1, 0) ; x,y,z,t
 #deffunc: @exactTargetFunc = 0.06044974016448 ; t
 deffunc: @exactTargetFunc = 0.00948534325289 ; t
 
