@@ -1887,7 +1887,7 @@ endif
 #########################   Nehalem 64 bit (HP BETA)  #########################
 #########################        Core i7 64 bit       #########################
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-intel-.*),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-intel-.*),yes)
 # invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/intel-generic.mk
