@@ -1916,7 +1916,7 @@ endif
 endif
 
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-gcc-.*),yes)
 # invokes the GCC Fortran 77/90 compiler, local umfpack, local metis
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
@@ -1935,25 +1935,25 @@ endif
 #-fast -xtarget=nehalem -xarch=generic 
 
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-blas.*),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-mkl.*),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-mkl.*),yes)
 # Use Intel Math Kernel Library
 include $(TEMPLATESDIR)/mkl-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-goto.*),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-.*-ompi),yes)
+ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-.*-ompi),yes)
 # Use OpenMPI
 include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
