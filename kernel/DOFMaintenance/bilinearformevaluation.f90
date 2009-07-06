@@ -6589,9 +6589,11 @@ contains
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
               
               ! Assemble the data for all elements in this element distribution
-              call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                  rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                  ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+              if (NELbdc .gt. 0) then
+                call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
+                    rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                    ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+              end if
               
               ! Release memory
               deallocate(p_IelementList, p_IelementOrientation)

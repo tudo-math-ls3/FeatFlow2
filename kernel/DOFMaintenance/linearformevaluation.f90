@@ -972,9 +972,11 @@ contains
                 rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
             
             ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-                rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                fcoeff_buildVectorScBdr2D_sim, rcollection)
+            if (NELbdc .gt. 0) then
+              call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
+                  rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                  fcoeff_buildVectorScBdr2D_sim, rcollection)
+            end if
 
             ! Deallocate memory
             deallocate(p_IelementList, p_IelementOrientation)
