@@ -31,7 +31,7 @@
 !#     -> Manual matrix assembly. Assemble parts of a matrix given in 
 !#        matrix  format 9.
 !#
-!# 7.)  bilf_assembleSubmeshMatrix9Bdr2D
+!# 7.)  bilf_assembleSubmeshMat9Bdr2D
 !#     -> Manual matrix assembly. Assemble parts of a matrix given in 
 !#        matrix  format 9.
 !#
@@ -345,7 +345,7 @@ module bilinearformevaluation
   public :: bilf_initAssembly
   public :: bilf_doneAssembly
   public :: bilf_assembleSubmeshMatrix9
-  public :: bilf_assembleSubmeshMatrix9Bdr2D
+  public :: bilf_assembleSubmeshMat9Bdr2D
   
 contains
 
@@ -5677,7 +5677,7 @@ contains
   
 !<subroutine>  
   
-  subroutine bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
+  subroutine bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
       rboundaryRegion, IelementList, IelementOrientation, DedgePosition,&
       cconstrType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
   
@@ -6545,7 +6545,7 @@ contains
                 ccubType, min(BILF_NELEMSIM,size(p_IelementList)))
             
             ! Assemble the data for all elements in this element distribution
-            call bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
+            call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                 rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
                 ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
             
@@ -6589,7 +6589,7 @@ contains
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
               
               ! Assemble the data for all elements in this element distribution
-              call bilf_assembleSubmeshMatrix9Bdr2D (rmatrixAssembly, rmatrix,&
+              call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
                   rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
                   ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
               
