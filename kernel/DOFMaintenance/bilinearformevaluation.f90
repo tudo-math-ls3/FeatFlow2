@@ -6194,10 +6194,12 @@ contains
         do iel = 1,IELmax-IELset+1          
           
           do idofe = 1,indofTest
+            daux = 0.0_DP
             do jdofe = 1,indofTrial
-              p_DA(p_Kentry(jdofe,idofe,iel)) = &
-                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+              daux = daux + p_Dentry(jdofe,idofe,iel)
             end do
+            p_DA(p_Kentry(idofe,idofe,iel)) = &
+                p_DA(p_Kentry(idofe,idofe,iel)) + daux
           end do
           
         end do ! iel
@@ -6209,14 +6211,10 @@ contains
         do iel = 1,IELmax-IELset+1          
           
           do idofe = 1,indofTest
-            daux = 0.0_DP
             do jdofe = 1,indofTrial
-              daux = daux + p_Dentry(jdofe,idofe,iel)
-!!$              p_DA(p_Kentry(jdofe,idofe,iel)) = &
-!!$                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
+              p_DA(p_Kentry(jdofe,idofe,iel)) = &
+                  p_DA(p_Kentry(jdofe,idofe,iel)) + p_Dentry(jdofe,idofe,iel)
             end do
-            p_DA(p_Kentry(idofe,idofe,iel)) = &
-                p_DA(p_Kentry(idofe,idofe,iel)) + daux
           end do
           
         end do ! iel
