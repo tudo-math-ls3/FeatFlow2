@@ -562,6 +562,21 @@ contains
           ncubp = 8
         
         end if
+        
+      case (EL_Q2)
+        ! Evaluate in the corners, edge midpoints and the element midpoint.
+        ccub = CUB_SIMPSON_2D
+        ! Get the coordinates of that points.
+        ! The weights Domega are ignored in the following...
+        allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
+        call cub_getCubPoints(ccub, ncubp, Dxi, Domega)
+
+        ! Reformat the cubature points; they are in the wrong shape!
+        do i=1,ncubp
+          do k=1,ubound(p_DcubPtsRef,1)
+            p_DcubPtsRef(k,i) = Dxi(i,k)
+          end do
+        end do
 
       case default
         ! For most of the standard finite elements based on point values,
