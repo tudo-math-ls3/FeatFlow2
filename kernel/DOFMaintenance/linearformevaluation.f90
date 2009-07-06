@@ -1599,10 +1599,10 @@ contains
     end do
 
     ! Allocate memory for the cubature points in 2D.
-    allocate(Dxi2D(ncubp,NDIM2D,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(Dxi2D(ncubp,NDIM2D+1,rlocalVectorAssembly%nelementsPerBlock))
 
     ! Allocate memory for the coordinates of the reference points
-    allocate(DpointsRef(NDIM2D,ncubp,rlocalVectorAssembly%nelementsPerBlock))
+    allocate(DpointsRef(NDIM2D+1,ncubp,rlocalVectorAssembly%nelementsPerBlock))
 
     ! Allocate memory for the parameter values of the points on the boundary
     allocate(DpointsPar(ncubp,rlocalVectorAssembly%nelementsPerBlock))
@@ -1809,7 +1809,7 @@ contains
               
               DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,icubp,iel)*daux
               
-            end do ! jdofe
+            end do ! idofe
             
           end do ! ialbet
 
