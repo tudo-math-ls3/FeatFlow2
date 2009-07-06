@@ -147,7 +147,8 @@ contains
   case default
   
     ! Dimension not supported
-    print *,'dof_igetNDofGlob: Invalid discretisation dimension!'
+    call output_line('Invalid discretisation dimension!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'dof_igetNDofGlob')
     call sys_halt()
   
   end select
@@ -746,11 +747,13 @@ contains
       end if
     
     case default
-      print *,'dof_locGlobMapping_mult: invalid discretisation!'
+      call output_line('Invalid discretisation!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'dof_locGlobMapping_mult')
       call sys_halt()
     end select
 
-    print *,'dof_locGlobMapping_mult: Unsupported discretisation!'
+    call output_line('Unsupported discretisation!',&
+                     OU_CLASS_ERROR,OU_MODE_STD,'dof_locGlobMapping_mult')
     call sys_halt()
 
   end subroutine
