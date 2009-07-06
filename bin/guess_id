@@ -94,6 +94,7 @@ case ${id} in
 			14) cpu="coresolo" core="banias";;
 			15) cpu="coreduo" core="core2";;
 			23) cpu="penryn";;
+			26) cpu="nehalem";;
 		    esac
 		    ;;
 		7) 

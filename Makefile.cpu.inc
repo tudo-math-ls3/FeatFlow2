@@ -1883,6 +1883,81 @@ endif
 
 
 
+######################### Nehalem 64 bit (Xeon X5560) #########################
+#########################   Nehalem 64 bit (HP BETA)  #########################
+#########################        Core i7 64 bit       #########################
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-intel-.*),yes)
+# invokes the Intel Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/intel-generic.mk
+ifeq ($(strip $(optimise)), YES)
+# older intel versions
+ifneq (,$(findstring 10.1.,$(INTELVERSION)))
+CFLAGSF77LIBS := -xT $(CFLAGSF77LIBS)
+CFLAGSF77     := -xT $(CFLAGSF77)
+CFLAGSF90     := -xT $(CFLAGSF90)
+CFLAGSC       := -xT $(CFLAGSC)
+CFLAGSCXX     := -xT $(CFLAGSCXX)
+CFLAGSCOPROC  := -xT $(CFLAGSCOPROC)
+LDFLAGS       := -xT $(LDFLAGS)
+endif
+# intel 11.1
+ifneq (,$(findstring 11.1,$(INTELVERSION)))
+CFLAGSF77LIBS := -xSSE4.2 $(CFLAGSF77LIBS)
+CFLAGSF77     := -xSSE4.2 $(CFLAGSF77)
+CFLAGSF90     := -xSSE4.2 $(CFLAGSF90)
+CFLAGSC       := -xSSE4.2 $(CFLAGSC)
+CFLAGSCXX     := -xSSE4.2 $(CFLAGSCXX)
+CFLAGSCOPROC  := -xSSE4.2 $(CFLAGSCOPROC)
+LDFLAGS       := -xSSE4.2 $(LDFLAGS)
+endif
+endif
+endif
+
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-gcc-.*),yes)
+# invokes the GCC Fortran 77/90 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(strip $(optimise)), YES)
+CFLAGSF77LIBS := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSC)
+CFLAGSCXX     := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCXX)
+CFLAGSCOPROC  := -O3 -m64 -march=core2 -mtune=core2 -msse4 -msse4.1 -msse4.2 -mfpmath=sse $(CFLAGSCOPROC)
+endif
+endif
+
+
+#sun (ideas, not tested yet):
+#-fast -xtarget=nehalem -xarch=generic 
+
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-mkl.*),yes)
+# Use Intel Math Kernel Library
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-nehalem-linux64-.*-.*-ompi),yes)
+# Use OpenMPI
+include $(TEMPLATESDIR)/openmpi-generic.mk
+endif
+
 ######################### Penryn 64 bit (Xeon E5450) #########################
 ######################### Penryn 64 bit (LiDO 2)     #########################
 
