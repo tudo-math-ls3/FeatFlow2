@@ -82,6 +82,14 @@
 !#
 !# 20.) spdiscr_releaseDofMapping
 !#      -> Release precomputed DOF-mapping data
+!#
+!# 21.) spdscr_edgeBlocking2D
+!#      -> Blocks the edges in a triangulation according to the FE spaces
+!#         of the adjacent elements
+!#
+!# 22.) spdscr_releaseEdgeBlocking
+!#      -> Releases the edge blocking structure allocated by
+!#         spdscr_edgeBlocking2D
 !# </purpose>
 !##############################################################################
 
@@ -96,6 +104,7 @@ module spatialdiscretisation
   use element
   use cubature
   use genoutput
+  use sort
   
   implicit none
   
@@ -335,6 +344,40 @@ module spatialdiscretisation
   
 !</typeblock>
 
+!<typeblock>
+
+  ! Defines the blocking of a set of edges.
+  type t_edgeBlocking
+  
+    ! Number of edges described by this structure.
+    integer :: nedges
+    
+    ! Number of FE spaces
+    integer :: nelementDistributions
+    
+    ! Number of combinations of FE spaces
+    integer :: nfecombinations
+
+    ! A list of all edges, ordered in blocks in such a way that all edges in a block
+    ! have the same FE spaces at the adjacent elements.
+    integer :: h_Iedges
+    
+    ! Array of length (#combinations+1). Defines the start positions in Iedges
+    ! of every block of edges that have the same type of elements adjacent.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer :: h_IdistPositions
+    
+    ! Array of dimension(2,#combinations/2).
+    ! Returns for each block described by IdistPositions the number of the
+    ! element distributions of the elements on each side of the edge.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer :: h_Idistributions
+  end type
+
+  public :: t_edgeBlocking
+
+!</typeblock>
+
 !</types>
 
   public :: spdiscr_initBlockDiscr
@@ -356,6 +399,8 @@ module spatialdiscretisation
   public :: spdiscr_infoElementDistr
   public :: spdiscr_igetNDofLocMax
   public :: spdiscr_releaseDofMapping
+  public :: spdscr_edgeBlocking2D
+  public :: spdscr_releaseEdgeBlocking
 
 contains
 
@@ -1925,5 +1970,233 @@ contains
     spdiscr_igetNDofLocMax = imax
     
   end function
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdscr_edgeBlocking2D (rdiscretisation,redgeBlocking)
+
+!<description>
+  ! Blocks all edges in a triangulation in such a way that all edges in a block
+  ! have the same FE spaces at the adjacent elements.
+!</description>
+
+  !<input>
+    ! A discretisation structure that defines for all elements the element types.
+    type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+  !</input>
+
+  !<output>
+    ! Edge blocking structure that defines the blocking of the edges.  
+    type(t_edgeBlocking), intent(out) :: redgeBlocking
+  !<output>
+!</subroutine>
+
+    ! local variables
+
+    ! A list of all edges, ordered in blocks in such a way that all edges in a block
+    ! have the same FE spaces at the adjacent elements.
+    integer, dimension(:), pointer :: p_Iedges
+    
+    ! Array of length (#combinations+1). Defines the start positions in Iedges
+    ! of every block of edges that have the same type of elements adjacent.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer, dimension(:), pointer :: p_IdistPositions
+    
+    ! Array of dimension(2,#combinations/2).
+    ! Returns for each block described by IdistPositions the number of the
+    ! element distributions of the elements on each side of the edge.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer, dimension(:,:), pointer :: p_Idistributions
+
+    integer, dimension(2) :: Isize
+
+    ! Allocate memory in the structure
+    redgeBlocking%nelementDistributions = rdiscretisation%inumFESpaces
+    redgeBlocking%nedges = rdiscretisation%p_rtriangulation%NMT
+    
+    ! Number of combinations is n*(n+1)2 + number of element spaces.
+    ! The forst coefficient is for the inner edges, the last for the
+    ! boundary edges.
+    redgeBlocking%nfecombinations = redgeBlocking%nelementDistributions * &
+        (redgeBlocking%nelementDistributions+1) / 2 + &
+        redgeBlocking%nelementDistributions
+    
+    call storage_new ('spdscr_edgeBlocking2D', 'Iedges', redgeBlocking%nedges,&
+        ST_INT, redgeBlocking%h_Iedges, ST_NEWBLOCK_NOINIT)
+    call storage_new ('spdscr_edgeBlocking2D', 'IedgePositions', &
+        redgeBlocking%nfecombinations+1,&
+        ST_INT, redgeBlocking%h_IdistPositions, ST_NEWBLOCK_NOINIT)
+    Isize = (/2,redgeBlocking%nfecombinations/)
+    call storage_new ('spdscr_edgeBlocking2D', 'Idistributions', &
+        Isize, ST_INT, redgeBlocking%h_Idistributions, ST_NEWBLOCK_NOINIT)
+
+    ! Calculate the blocking
+    call storage_getbase_int(redgeBlocking%h_Iedges,p_Iedges)
+    call storage_getbase_int(redgeBlocking%h_IdistPositions,p_IdistPositions)
+    call storage_getbase_int2d(redgeBlocking%h_Idistributions,p_Idistributions)
+
+    call spdscr_doEdgeBlocking2D (rdiscretisation,p_Iedges,p_IdistPositions,p_Idistributions)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdscr_releaseEdgeBlocking (redgeBlocking)
+
+!<description>
+  ! Releases memory used by an edge blocking structure.
+!</description>
+
+  !<inputoutput>
+    ! Edge blocking structure to be cleaned up
+    type(t_edgeBlocking), intent(inout) :: redgeBlocking
+  !<inputoutput>
+!</subroutine>
+
+    call storage_free(redgeBlocking%h_Iedges)
+    call storage_free(redgeBlocking%h_IdistPositions)
+    call storage_free(redgeBlocking%h_Idistributions)
+    redgeBlocking%nelementDistributions = 0
+    redgeBlocking%nedges = 0
+    redgeBlocking%nfecombinations = 0
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spdscr_doEdgeBlocking2D (rdiscretisation,Iedges,IdistPositions,Idistributions)
+
+!<description>
+  ! Blocks all edges in a triangulation in such a way that all edges in a block
+  ! have the same FE spaces at the adjacent elements.
+  ! Worker routine.
+!</description>
+
+  !<input>
+    ! A discretisation structure that defines for all elements the element types.
+    type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
+  !</input>
+  
+  !<output>
+    ! A list of all edges, ordered in blocks in such a way that all edges in a block
+    ! have the same FE spaces at the adjacent elements.
+    integer, dimension(:), intent(out) :: Iedges
+    
+    ! Array of length (#combinations+1). Defines the start positions in Iedges
+    ! of every block of edges that have the same type of elements adjacent.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer, dimension(:), intent(out) :: IdistPositions
+    
+    ! Array of dimension(2,#combinations/2).
+    ! Returns for each block described by IdistPositions the number of the
+    ! element distributions of the elements on each side of the edge.
+    ! Idistributions(2,:) is =0 for boundary edges.
+    ! #combinations = #element distributions * (#element distributions+1)/2
+    integer, dimension(:,:), intent(out) :: Idistributions
+  !</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i,j,k
+    type(t_triangulation), pointer :: p_rtria
+    integer, dimension(:,:), allocatable :: IsortArray
+    integer, dimension(:), pointer :: p_IelementDistr
+    integer, dimension(:,:), pointer :: p_IelementsAtEdge
+    
+    p_rtria => rdiscretisation%p_rtriangulation
+    
+    ! Is that a uniform discretisation? If yes, we can easily fill the output
+    ! arrays.
+    if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
+      do i=1,p_rtria%NMT
+        Iedges(i) = i
+      end do
+      IdistPositions(1) = 1
+      IdistPositions(2:) = p_rtria%NMT+1
+      Idistributions(1:2,1) = 1
+      return
+    end if
+
+    ! Get some arrays    
+    call storage_getbase_int(rdiscretisation%h_IelementDistr,p_IelementDistr)
+    call storage_getbase_int2d(p_rtria%h_IelementsAtEdge,p_IelementsAtEdge)
+    
+    ! Generate an array that contains all edge numbers and the adjacent
+    ! FE space identifiers from the discretisation.
+    allocate(IsortArray(3,p_rtria%NMT))
+    
+    ! Put the edge number to coordinate 1.
+    ! Put the id if the first FE space to coordinate 2.
+    ! Put the íd of the 2nd FE space to coordinate 3.
+    do i=1,p_rtria%NMT
+      IsortArray(1,i) = i
+      j = p_IelementDistr(p_IelementsAtEdge(1,i))
+      
+      ! The edge may be a boundary edge.
+      if (p_IelementsAtEdge(2,i) .eq. 0) then
+        k = 0
+
+        IsortArray(2,i) = j
+        IsortArray(3,i) = k
+      else
+        k = p_IelementDistr(p_IelementsAtEdge(2,i))
+
+        if (j .lt. k) then
+          IsortArray(2,i) = j
+          IsortArray(3,i) = k
+        else
+          IsortArray(2,i) = k
+          IsortArray(3,i) = j
+        end if      
+      end if
+
+    end do
+    
+    ! Not sort the array -- first for the 3rd coordinate, then for the 2nd.
+    call arraySort_sortByIndex_int (IsortArray, 3, SORT_STABLE)
+    call arraySort_sortByIndex_int (IsortArray, 2, SORT_STABLE)
+    
+    ! Now count how many elements belong to each set.
+    IdistPositions(1) = 1
+    k = 1
+    i = 1
+    blockloop: do 
+      do j=i+1,p_rtria%NMT
+        if ((IsortArray(2,i) .ne. IsortArray(2,j)) .or. &
+            (IsortArray(3,i) .ne. IsortArray(3,j))) then
+          k=k+1
+          IdistPositions(k) = j
+          i = j
+          cycle blockloop
+        end if
+      end do
+      
+      ! We reached the end
+      k = k + 1
+      IdistPositions(k:) = p_rtria%NMT + 1
+      exit
+    end do blockloop
+    
+    ! Finally, collect the element numbers
+    do i=1,k-1
+      Idistributions(1,i) = IsortArray(2,IdistPositions(i))
+      Idistributions(2,i) = IsortArray(3,IdistPositions(i))
+      do j=IdistPositions(i),IdistPositions(i+1)-1
+        Iedges(j) = IsortArray(1,j)
+      end do
+    end do
+    Idistributions(:,k:) = 0
+    
+    ! That's it.
+    deallocate(IsortArray)
+  
+  end subroutine
 
 end module

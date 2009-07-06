@@ -574,6 +574,10 @@ module element
   ! be set to identify the edges.
   integer(I32), parameter, public :: EL_Q2ISO4 = EL_Q2ISO + 2**16 + 2**17
 
+
+  ! Discontinuous Galerkin element based on P1, 2D.
+  integer(I32), parameter, public :: EL_DG_P1_2D   = EL_P1 + 101
+
 !</constantblock>
 
 !<constantblock description="maximal values">
@@ -809,7 +813,7 @@ contains
     case (EL_P0)
       ! local DOFs for P0
       elem_igetNDofLoc = 1
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       ! local DOFs for P1
       elem_igetNDofLoc = 3
     case (EL_P2)
@@ -821,7 +825,7 @@ contains
     case (EL_P1T)
       ! local DOFs for Ex20
       elem_igetNDofLoc = 3
-    
+
     ! -= 2D Quadrilateral Elements =-
     case (EL_Q0)
       ! local DOFs for Q0
@@ -983,6 +987,10 @@ contains
     case (EL_P1T)
       ! local DOFs for P1~
       ndofAtEdges    = 3
+
+    case (EL_DG_P1_2D)
+      ! local DOFs for P1
+      ndofAtElement = 3
     
     ! -= 2D Quadrilateral Elements =-
     case (EL_Q0)
@@ -1139,7 +1147,7 @@ contains
       elem_igetCoordSystem = TRAFO_CS_REF1D
     
     ! 2D Element Types
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
       ! Triangular elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
@@ -1206,7 +1214,7 @@ contains
       ! Linear line transformation, 1D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
     
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
       ! Linear triangular transformation, 2D
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
       
@@ -1316,7 +1324,7 @@ contains
     case (EL_P0, EL_Q0)
       ! Function
       elem_getMaxDerivative = 1
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
     case (EL_P2)
@@ -1542,7 +1550,7 @@ contains
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
     
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T)
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T,EL_DG_P1_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
       
@@ -1692,7 +1700,7 @@ contains
       ! 2D elements
       case (EL_P0)
         call elem_P0 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
-      case (EL_P1)
+      case (EL_P1,EL_DG_P1_2D)
         call elem_P1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_P2)
         call elem_P2 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -1876,7 +1884,7 @@ contains
     case (EL_P0)
       call elem_P0 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       call elem_P1 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_P2)
@@ -2053,7 +2061,7 @@ contains
     ! 2D elements
     case (EL_P0)
       call elem_P0_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       call elem_P1_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_P2)
       call elem_P2_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
@@ -2231,7 +2239,7 @@ contains
     case (EL_P0)
       call elem_P0_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       call elem_P1_sim (celement, Dcoords, Djac, Ddetj, &
                         Bder, Dbas, npoints, nelements, Dpoints)
     case (EL_P2)
@@ -2413,7 +2421,7 @@ contains
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
     
-    case (EL_P1)
+    case (EL_P1,EL_DG_P1_2D)
       call elem_P1_sim (celement, revalElementSet%p_Dcoords, &
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &

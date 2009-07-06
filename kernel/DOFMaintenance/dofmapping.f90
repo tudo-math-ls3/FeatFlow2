@@ -214,6 +214,9 @@ contains
     case (EL_P1, EL_Q1)
       ! DOF's in the vertices
       NDFG_uniform2D = rtriangulation%NVT
+    case (EL_DG_P1_2D)
+      ! DOF's in the vertices
+      NDFG_uniform2D = rtriangulation%NEL*3
     case (EL_P2)
       ! DOF's in the vertices and edge midpoints
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT
@@ -562,6 +565,10 @@ contains
           ! DOF's in the vertices
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
+          return
+        case (EL_DG_P1_2D)
+          ! DOF's in the vertices
+          call dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
           return
         case (EL_P2)
           ! DOF's in the vertices and egde midpoints
@@ -1089,6 +1096,51 @@ contains
       ! Calculate the global DOF's - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! all elements in the list are assumed to be the DG P1.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+  
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF's.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i,j
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Calculate the global DOF's. Every element gives 3 DOF's which are
+      ! 'internally' associated to the vertices but are not coupled.
+      IdofGlob(1,i) = 1+3*(IelIdx(i)-1)
+      IdofGlob(2,i) = 2+3*(IelIdx(i)-1)
+      IdofGlob(3,i) = 3+3*(IelIdx(i)-1)
     end do
 
   end subroutine

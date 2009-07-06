@@ -1418,7 +1418,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i,j,ilocalEdge,icount,ielidx
+    integer :: i,i2,j,ilocalEdge,icount,ielidx
     integer(I32) :: celement
     integer :: ielement
     integer :: iedge,ipoint1,ipoint2,NVT
@@ -1588,7 +1588,7 @@ contains
       
       ! Index in the boundary arrays.
       I = IelementsAtBoundaryIdx (ielidx)
-
+      
       ! Get the element type in case we don't have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
@@ -1698,6 +1698,73 @@ contains
         ! will produce two index sets: One index set for [0.0, 0.0]
         ! and one for [3.0, TMAX).
         
+      case (EL_DG_P1_2D)
+
+        ! Left point inside? -> Corresponding DOF must be computed
+        if ( ipoint1 .ne. 0 ) then
+        
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          if (associated(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(I)
+                
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, Dvalues, rcollection)
+                                    
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+            ! Save the computed function value
+            DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+          end if
+          
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+          end if
+        end if
+        
+        ! Right point inside? -> Corresponding DOF must be computed
+        if ( ipoint2 .ne. 0 ) then
+        
+          ! Index of the endpoint. If we are at the last element, the
+          ! endpoint is the start point.
+          if (ielidx .lt. icount) then
+            i2 = IelementsAtBoundaryIdx (ielidx)
+          else
+            i2 = IelementsAtBoundaryIdx (1)
+          end if
+
+          ! If parameter values are available, get the parameter value.
+          ! Otherwise, take the standard value from above!
+          if (associated(p_DvertexParameterValue)) &
+            dpar = p_DvertexParameterValue(i2)
+                
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+                                  rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                  ipoint1,dpar, Dvalues, rcollection)
+                                    
+          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then  
+            ! Save the computed function value
+            DdofValue(mod(ilocalEdge,3)+1,ielidx) = Dvalues(1) 
+          end if
+          
+          ! A value of SYS_INFINITY indicates a do-nothing node inside of
+          ! Dirichlet boundary.
+          if (Dvalues(1) .ne. SYS_INFINITY) then
+            ! Set the DOF number < 0 to indicate that it is Dirichlet.
+            ! ilocalEdge is the number of the local edge - and at the same
+            ! time the number of the local DOF of Q1, as an edge always
+            ! follows a corner vertex!
+            Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+            Idofs(mod(ilocalEdge,3)+1,ielidx) = -abs(Idofs(mod(ilocalEdge,3)+1,ielidx))
+          end if
+        end if
+
       case (EL_P2,EL_Q2)
 
         ! Left point inside? -> Corresponding DOF must be computed
