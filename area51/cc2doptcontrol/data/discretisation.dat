@@ -340,6 +340,8 @@ iconvectionExplicit = 0
 #     Implemented by cubature point (more exact). Analytic Newton matrix.
 # =3: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
 #     Implemented by DOF. Newton matrix is approximative.
+# =4: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by cubature point (more exact). Adaptive integration.
 ccontrolConstraints = 0
 
 # Constraints on u_1

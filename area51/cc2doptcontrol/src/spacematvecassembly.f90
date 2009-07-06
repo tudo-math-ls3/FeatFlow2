@@ -14,7 +14,7 @@
 !#  $$           A_1 y   +  \eta_1 B p   +          R lambda      = f_1 $$
 !#  $$ \tau_{11} B^T y   +  \kappa_{11} I p                       = f_2 $$
 !#
-!#  $$        R_{22} y   +  A_{22} \lambda  + \eta_{22}   B \xi           = f_3 $$
+!#  $$ (R_{22}+R2_{22}) y +  A_{22} \lambda  + \eta_{22}   B \xi           = f_3 $$
 !#  $$               \tau_{22} B^T \lambda  + \kappa_{22} I \xi           = f_4 $$
 !#
 !# with
@@ -27,6 +27,7 @@
 !#   $$ R_2 = \alpha_{21} M  +  
 !#            \gamma_{21} N(\lambda) + dnewton_{21} N*(\lambda) + 
 !#            gammaT_{21} N^t(\lambda) + dnewtonT_{21} N*^t(\lambda) $$
+!#   $$ R2_2 =  dnewton_{21} N*(\lambda) + gammaT_{21} N^t(\lambda) $$
 !#  
 !# and
 !#
@@ -114,6 +115,7 @@ module spacematvecassembly
   use optcontrolconvection
   use convection
   use collection
+  use numbersets
     
   implicit none
   
@@ -582,7 +584,7 @@ contains
     ! with the FE space of the vector T we evaluate!
     
     celement = rdiscretisationTrial%RelementDistr(&
-        rdomainIntSubset%ielementDistribution)%celement
+        max(1,rdomainIntSubset%ielementDistribution))%celement
     
     call fevl_evaluate_sim (p_rsubvector, &
         rdomainIntSubset%p_revalElementSet, &
@@ -600,6 +602,180 @@ contains
           Dcoefficients(1,ipt,iel) = 0.0_DP
         end if
       end do
+    end do
+    
+    ! Release memory
+    deallocate(Dfunc)
+
+  end subroutine
+
+! ***************************************************************************
+  !<subroutine>
+
+  subroutine coeff_ProjMassCollect (rdiscretisationTrial,rdiscretisationTest,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTrial,IdofsTest,rdomainIntSubset, &
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the matrix assembly. It has to compute
+    ! the coefficients in front of the terms of the bilinear form
+    ! that assembles the projective mass matrix.
+    !
+    ! The coefficients is c=c(lambda_1) or =c(lambda_2) with
+    ! c=1/alpha if a < -1/alpha lambda_i < b and c=0 otherwise. This is the derivative
+    ! of the projection operator "-P[a,b](-1/alpha lambda_i)" on the left hand
+    ! side of the equation.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; trial space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
+    
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.; test space.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
+
+    ! The bilinear form which is currently being evaluated:
+    type(t_bilinearForm), intent(IN)                            :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                        :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in trial space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTrial
+    
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the bilinear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the bilinear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    type(t_vectorScalar), pointer :: p_rsubvector
+    real(dp), dimension(:,:), allocatable :: Dfunc
+    integer(I32) :: celement
+    real(DP) :: da, db, dalpha, dp1
+    integer :: ipt, iel
+    integer :: nptsInactive
+    integer, dimension(:), pointer :: p_IelementList
+    
+    ! Get the bounds and the multiplier from the collection
+    dalpha = rcollection%DquickAccess(3)
+    dp1 = rcollection%DquickAccess(4)
+    
+    ! Scale the bounds by -alpha as we analyse lambda
+    ! and not u. Change the role of min/max because of the "-"
+    ! sign!
+    da = -rcollection%DquickAccess(2)*dalpha
+    db = -rcollection%DquickAccess(1)*dalpha
+    
+    ! Get a pointer to the FE solution from the collection.
+    ! The routine below wrote a pointer to the vector T to the
+    ! first quick-access vector pointer in the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+
+    ! Do we have to analyse lambda_1 or lambda_2?
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      p_rsubvector => p_Rvector%RvectorBlock(4)
+    else
+      p_rsubvector => p_Rvector%RvectorBlock(5)
+    end if
+  
+    ! Allocate memory for the function values in the cubature points:
+    allocate(Dfunc(ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
+    
+    ! Calculate the function value of the solution vector in all
+    ! our cubature points:
+    !
+    ! Figure out the element type, then call the 
+    ! evaluation routine for a prepared element set.
+    ! This works only if the trial space of the matrix coincides
+    ! with the FE space of the vector T we evaluate!
+    
+    celement = rdiscretisationTrial%RelementDistr(&
+        rdomainIntSubset%ielementDistribution)%celement
+    
+    call fevl_evaluate_sim (p_rsubvector, &
+        rdomainIntSubset%p_revalElementSet, &
+        celement, rdomainIntSubset%p_IdofsTrial, DER_FUNC, Dfunc)
+    
+    call storage_getbase_int (rcollection%IquickAccess(2),p_IelementList)
+    
+    ! Now check the function values lambda.
+    ! If b < -1/alpha lambda < a, return 1/alpha.
+    ! Otherwise, return 0.
+    !
+    ! If we detect an element, which is on the border of the active set,
+    ! return 0 everywhere and collect the element to the element list,
+    ! so the assembly routine can assemble there on a 2nd pass later.
+    do iel = 1,ubound(Dcoefficients,3)
+      
+      ! Count the inactive points.
+      nptsInactive = 0
+      do ipt = 1,ubound(Dcoefficients,2)
+        ! Check if the dual variable is in the bounds for the control.
+        if ((Dfunc(ipt,iel) .gt. da) .and. (Dfunc(ipt,iel) .lt. db)) then
+          nptsInactive = nptsInactive + 1
+        end if
+      end do
+      
+      ! All points inactive? Ok. 
+      ! Partially active? Remember the element.
+      ! Completely active? Return 0 everywhere.
+      if (nptsInactive .eq.  ubound(Dcoefficients,2)) then
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = dp1
+        end do
+      else
+        do ipt = 1,ubound(Dcoefficients,2)
+          Dcoefficients(1,ipt,iel) = 0.0_DP
+        end do
+        if (nptsInactive .gt. 0) then
+          rcollection%IquickAccess(3) = rcollection%IquickAccess(3) + 1
+          p_IelementList(rcollection%IquickAccess(3)) = &
+              rdomainIntSubset%p_Ielements(iel)
+        end if
+      end if
     end do
     
     ! Release memory
@@ -2179,6 +2355,10 @@ contains
       type(t_convStreamlineDiffusion) :: rstreamlineDiffusion
       type(t_bilinearForm) :: rform
       type(t_collection) :: rcollection
+      integer, dimension(:), pointer :: p_IelementList
+      integer :: ielemHandle,nelements
+      type(t_bilfMatrixAssembly) :: rmatrixAssembly
+      integer(I32) :: celement,ccubType
 
       ! Assemble A14/A25? 
       if (dweight .ne. 0.0_DP) then
@@ -2210,7 +2390,9 @@ contains
           
         else if (rmatrixComponents%cmatrixType .eq. 1) then
           
-          if (rmatrixComponents%ccontrolConstraints .eq. 1) then
+          select case (rmatrixComponents%ccontrolConstraints)
+          
+          case (1)
           
             ! Copy the entries of the mass matrix. Share the structure.
             ! We must not share the entries as these might be changed by the caller
@@ -2235,7 +2417,7 @@ contains
             call massmatfilter (rmatrix%RmatrixBlock(2,2),rvector%RvectorBlock(5),&
                 rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
                 
-          else if (rmatrixComponents%ccontrolConstraints .eq. 2) then
+          case (2)
           
             ! Exact reassembly of the mass matrices.
           
@@ -2294,7 +2476,7 @@ contains
             ! Now we can forget about the collection again.
             call collct_done (rcollection)
             
-          else if (rmatrixComponents%ccontrolConstraints .eq. 3) then
+          case (3)
           
             call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
                 rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
@@ -2316,14 +2498,118 @@ contains
               call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(1,1),dweight)
               call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(2,2),dweight)
             end if
+            
+          case (4)
+          
+            ! Exact reassembly of the mass matrices with adaptive integration.
+          
+            ! Create an array that saves all elements on the border of the active set.  
+            nelements = rmatrixComponents%p_rdiscretisation%RspatialDiscr(1)%&
+                p_rtriangulation%NEL
+            call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
+                ST_NEWBLOCK_NOINIT)
+          
+            ! In A11/A22 we have to create a 'projective mass matrix'.
+            ! This is the derivative of a projection operator
+            ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
+            ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
+            ! We assemble this matrix just as a standard mass matrix with noconstant
+            ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
+            ! we return 0 as coefficient, otherwise 1.
+          
+            rform%itermCount = 1
+            rform%Idescriptors(1,1) = DER_FUNC
+            rform%Idescriptors(2,1) = DER_FUNC
 
-          else
+            ! In this case, we have nonconstant coefficients.
+            rform%ballCoeffConstant = .FALSE.
+            rform%BconstantCoeff(:) = .FALSE.
+
+            ! Prepare a collection structure to be passed to the callback
+            ! routine. We attach the vector T in the quick-access variables
+            ! so the callback routine can access it.
+            ! The bounds and the alpha value are passed in the
+            ! quickaccess-arrays.
+            call collct_init(rcollection)
+            rcollection%p_rvectorQuickAccess1 => rvector
+            
+            ! Coefficient is dmu1=1/alpha or 0, depending on lambda
+            rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+            rcollection%DquickAccess(4)  = dweight
+            
+            ! At first, set up A14, depending on lambda_1.
+            rcollection%IquickAccess(1) = 1
+            rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+            rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+            
+            ! The IquickAccess(2) element saves the handle of the element list.
+            ! IquickAccess(3) saves how many elements are collected.
+            rcollection%IquickAccess(2) = ielemhandle
+            rcollection%IquickAccess(3) = 0
+
+            ! Now we can build the matrix entries.
+            ! We specify the callback function coeff_Laplace for the coefficients.
+            ! As long as we use constant coefficients, this routine is not used.
+            ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+            ! the framework will call the callback routine to get analytical
+            ! data.
+            ! The collection is passed as additional parameter. That's the way
+            ! how we get the vector to the callback routine.
+            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(1,1),&
+                coeff_ProjMassCollect,rcollection)
+                
+            ! Assemble a submesh matrix on the elements in the list
+            ! with a summed cubature formula.
+            ! Note: Up to now, this works only for uniform meshes!
+            if (rcollection%IquickAccess(3) .gt. 0) then
+              celement = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
+              ccubType = rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
+              call storage_getbase_int(ielemhandle,p_IelementList)
+              call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
+                  cub_getSummedCubType(ccubType,1))
+              call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(1,1),&
+                  p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
+              call bilf_doneAssembly(rmatrixAssembly)
+            end if            
+
+            ! Now, set up A25, depending on lambda_2.
+            rcollection%IquickAccess(1) = 2
+            rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+            rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+
+            ! Create a new element list
+            rcollection%IquickAccess(3) = 0
+
+            call bilf_buildMatrixScalar (rform,.TRUE.,rmatrix%RmatrixBlock(2,2),&
+                coeff_ProjMassCollect,rcollection)
+            
+            ! Assemble a submesh matrix on the elements in the list
+            ! with a summed cubature formula.
+            ! Note: Up to now, this works only for uniform meshes!
+            if (rcollection%IquickAccess(3) .gt. 0) then
+              celement = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
+              ccubType = rmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
+              call storage_getbase_int(ielemhandle,p_IelementList)
+              call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
+                  cub_getSummedCubType(ccubType,1))
+              call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix%RmatrixBlock(2,2),&
+                  p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
+              call bilf_doneAssembly(rmatrixAssembly)
+            end if            
+
+            ! Now we can forget about the collection again.
+            call collct_done (rcollection)
+            
+            ! Release the element set.
+            call storage_free (ielemHandle)
+
+          case default
           
             call output_line ('Unsupported ccontrolConstraints flag.', &
                               OU_CLASS_ERROR,OU_MODE_STD,'assembleProjectedMassBlocks')
             call sys_halt()
             
-          end if
+          end select
 
         else
         
@@ -5065,6 +5351,10 @@ contains
       type(t_vectorBlock) :: rtempvectorEval,rtempVectorDef
       type(t_collection) :: rcollection
       type(t_bilinearForm) :: rform
+      integer, dimension(:), pointer :: p_IelementList
+      integer :: ielemHandle,nelements
+      type(t_bilfMatrixAssembly) :: rmatrixAssembly
+      integer(I32) :: celement,ccubType
       
       ! If we have a reactive coupling mass matrix, it gets interesting...
       if (dcx .ne. 0.0_DP) then
@@ -5074,7 +5364,8 @@ contains
         ! The ccontrolConstraints decides on whether we use the 'quick-setup'
         ! method for the mass matrices or rebuild them again.
         ! ccontrolConstraints=0 uses standard mass matrices.
-        if (rmatrixComponents%ccontrolConstraints .eq. 0) then
+        select case (rmatrixComponents%ccontrolConstraints)
+        case (0) 
         
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -5084,7 +5375,7 @@ contains
            
           call lsysbl_updateMatStrucInfo (rtempMatrix)
              
-        else if (rmatrixComponents%ccontrolConstraints .eq. 1) then
+        case (1)
         
           call lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
               rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -5108,7 +5399,7 @@ contains
           call massmatfilter (rtempMatrix%RmatrixBlock(2,2),rvelocityVector%RvectorBlock(5),&
               rmatrixComponents%dalphaC,rmatrixComponents%dumin2,rmatrixComponents%dumax2)
             
-        else if (rmatrixComponents%ccontrolConstraints .eq. 2) then
+        case (2) 
 
           ! Create a matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly      
@@ -5169,7 +5460,7 @@ contains
           ! Now we can forget about the collection again.
           call collct_done (rcollection)
           
-        else if (rmatrixComponents%ccontrolConstraints .eq. 3) then
+        case (3)
         
           ! Create a matrix with the structure we need. Share the structure
           ! of the mass matrix. Entries are not necessary for the assembly      
@@ -5191,13 +5482,127 @@ contains
         
           call lsysbl_updateMatStrucInfo (rtempMatrix)
             
-        else 
+        case (4)
+        
+          ! Exact reassembly of the mass matrices with adaptive integration.
+
+          ! Create a matrix with the structure we need. Share the structure
+          ! of the mass matrix. Entries are not necessary for the assembly      
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+          CALL lsyssc_duplicateMatrix (rmatrixComponents%p_rmatrixMass,&
+              rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+          CALL lsysbl_updateMatStrucInfo (rtempMatrix)
+
+          ! Create an array that saves all elements on the border of the active set.  
+          nelements = rmatrixComponents%p_rdiscretisation%RspatialDiscr(1)%&
+              p_rtriangulation%NEL
+          call storage_new ('', 'Ielements', nelements, ST_INT, ielemhandle, &
+              ST_NEWBLOCK_NOINIT)
+        
+          ! In A11/A22 we have to create a 'projective mass matrix'.
+          ! This is the derivative of a projection operator
+          ! P[a,b](f)=a if f<a, =b if f>b, =f otherwise.
+          ! For a<f<b, this is the mass matrix. Everywhere else, this is =0.
+          ! We assemble this matrix just as a standard mass matrix with noconstant
+          ! coefficients. Whereever u = -1/alpha * lambda is out of bounds,
+          ! we return 0 as coefficient, otherwise 1.
+        
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+
+          ! In this case, we have nonconstant coefficients.
+          rform%ballCoeffConstant = .FALSE.
+          rform%BconstantCoeff(:) = .FALSE.
+
+          ! Prepare a collection structure to be passed to the callback
+          ! routine. We attach the vector T in the quick-access variables
+          ! so the callback routine can access it.
+          ! The bounds and the alpha value are passed in the
+          ! quickaccess-arrays.
+          call collct_init(rcollection)
+          rcollection%p_rvectorQuickAccess1 => rvelocityVector
+
+          ! Coefficient is dmu1=1/alpha or 0, depending on lambda
+          rcollection%DquickAccess(3)  = rmatrixComponents%dalphaC
+          rcollection%DquickAccess(4)  = 1.0_DP
+          
+          ! At first, set up A14, depending on lambda_1.
+          rcollection%IquickAccess(1) = 1
+          rcollection%DquickAccess(1) = rmatrixComponents%dumin1
+          rcollection%DquickAccess(2) = rmatrixComponents%dumax1
+          
+          ! The IquickAccess(2) element saves the handle of the element list.
+          ! IquickAccess(3) saves how many elements are collected.
+          rcollection%IquickAccess(2) = ielemhandle
+          rcollection%IquickAccess(3) = 0
+
+          ! Now we can build the matrix entries.
+          ! We specify the callback function coeff_Laplace for the coefficients.
+          ! As long as we use constant coefficients, this routine is not used.
+          ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+          ! the framework will call the callback routine to get analytical
+          ! data.
+          ! The collection is passed as additional parameter. That's the way
+          ! how we get the vector to the callback routine.
+          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(1,1),&
+              coeff_ProjMassCollect,rcollection)
+              
+          ! Assemble a submesh matrix on the elements in the list
+          ! with a summed cubature formula.
+          ! Note: Up to now, this works only for uniform meshes!
+          if (rcollection%IquickAccess(3) .gt. 0) then
+            celement = rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%celement
+            ccubType = rtempmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
+            call storage_getbase_int(ielemhandle,p_IelementList)
+            call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
+                cub_getSummedCubType(ccubType,1))
+            call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(1,1),&
+                p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
+            call bilf_doneAssembly(rmatrixAssembly)
+          end if            
+
+          ! Now, set up A25, depending on lambda_2.
+          rcollection%IquickAccess(1) = 2
+          rcollection%DquickAccess(1) = rmatrixComponents%dumin2
+          rcollection%DquickAccess(2) = rmatrixComponents%dumax2
+
+          ! Create a new element list
+          rcollection%IquickAccess(3) = 0
+
+          call bilf_buildMatrixScalar (rform,.TRUE.,rtempmatrix%RmatrixBlock(2,2),&
+              coeff_ProjMassCollect,rcollection)
+          
+          ! Assemble a submesh matrix on the elements in the list
+          ! with a summed cubature formula.
+          ! Note: Up to now, this works only for uniform meshes!
+          if (rcollection%IquickAccess(3) .gt. 0) then
+            celement = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%celement
+            ccubType = rtempmatrix%RmatrixBlock(2,2)%p_rspatialDiscrTest%RelementDistr(1)%ccubTypeBilForm
+            call storage_getbase_int(ielemhandle,p_IelementList)
+            call bilf_initAssembly(rmatrixAssembly,rform,celement,celement,&
+                cub_getSummedCubType(ccubType,1))
+            call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rtempmatrix%RmatrixBlock(2,2),&
+                p_IelementList(1:rcollection%IquickAccess(3)),coeff_ProjMass,rcollection)
+            call bilf_doneAssembly(rmatrixAssembly)
+          end if            
+
+          ! Now we can forget about the collection again.
+          call collct_done (rcollection)
+          
+          ! Release the element set.
+          call storage_free (ielemHandle)
+
+        case default
         
           ! Cancel
           call lsysbl_releaseMatrix (rtempMatrix)
           return
           
-        end if
+        end select
 
         ! Create a temporary block vector that points to the dual velocity.
         ! This has to be evaluated during the assembly.
