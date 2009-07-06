@@ -2093,6 +2093,9 @@ contains
 
     ! nonlinear solver structure
     type(t_solver), intent(in) :: rsolver
+    
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolutionInitial
@@ -2101,9 +2104,6 @@ contains
 !<inputoutput>
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
