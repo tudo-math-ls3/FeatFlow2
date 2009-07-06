@@ -481,8 +481,10 @@ module geometry
     ! A boolean which tells us whether the geometry object is inverted or not.
     logical                    :: binverted = .false.
     
-    ! Structure for the composed geometry object
-    type(t_geometryComposed)   :: rcomposed
+    ! Structure for the composed geometry object.
+    ! Note: This is a pointer as Intel 11.1 crashes if it's not a pointer --
+    ! because of a circular dependency of the t_geometryObject type!
+    type(t_geometryComposed), pointer   :: p_rcomposed
     
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 2D object subnodes -
@@ -629,17 +631,20 @@ contains
     rgeomObject%binverted = .false.
   end if
   
+  ! Allocate the object
+  allocate(rgeomObject%p_rcomposed)
+  
   ! Set the operator
-  rgeomObject%rcomposed%ccomposedType = ccomposedType
+  rgeomObject%p_rcomposed%ccomposedType = ccomposedType
   
   ! Set the number of sub-objects
-  rgeomObject%rcomposed%nsubObjects = nsubObjects
+  rgeomObject%p_rcomposed%nsubObjects = nsubObjects
   
   ! Allocate sub-objects
-  allocate(rgeomObject%rcomposed%p_RsubObjects(nsubObjects))
+  allocate(rgeomObject%p_rcomposed%p_RsubObjects(nsubObjects))
   
   ! Allocate boundary approximation structure
-  allocate(rgeomObject%rcomposed%p_rboundaryApprox)
+  allocate(rgeomObject%p_rcomposed%p_rboundaryApprox)
   
   ! That's it
   
@@ -680,13 +685,13 @@ end subroutine
     end if
     
     ! Make sure the index is in range
-    if ((nindex .le. 0) .or. (nindex .gt. rgeomObject%rcomposed%nsubObjects)) &
+    if ((nindex .le. 0) .or. (nindex .gt. rgeomObject%p_rcomposed%nsubObjects)) &
       then
       return
     end if
     
     ! Insert the sub-node
-    rgeomObject%rcomposed%p_RsubObjects(nindex) = rsubObject
+    rgeomObject%p_rcomposed%p_RsubObjects(nindex) = rsubObject
     
     ! Reset the sub-node
     rsubObject%ctype = GEOM_NONE
@@ -736,14 +741,14 @@ end subroutine
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Go through all sub-objects
-    if (rgeomObject%rcomposed%ccomposedType .eq. GEOM_COMP_TYPE_AND) then
+    if (rgeomObject%p_rcomposed%ccomposedType .eq. GEOM_COMP_TYPE_AND) then
     
       ! Let's assume that the point is inside
       iisInObject = 1
       
-      do i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%p_rcomposed%nsubObjects
       
-        call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+        call geom_isInGeometry(rgeomObject%p_rcomposed%p_RsubObjects(i), &
                                DrelCoords, iisInSubObject)
       
         if (iisInSubObject .eq. 0) then
@@ -759,9 +764,9 @@ end subroutine
       ! Let's assume the point is outside
       iisInObject = 0
     
-      do i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%p_rcomposed%nsubObjects
       
-        call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(i), &
+        call geom_isInGeometry(rgeomObject%p_rcomposed%p_RsubObjects(i), &
                                DrelCoords, iisInSubObject)
       
         if (iisInSubObject .eq. 1) then
@@ -822,7 +827,7 @@ end subroutine
   type(t_boundaryApprox), pointer :: p_rbndApprox
 
     ! Get boundary approximation
-    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    p_rbndApprox => rgeomObject%p_rcomposed%p_rboundaryApprox
     
     ! Check if we already have a boundary approximation vector
     if(p_rbndApprox%h_Dverts .eq. ST_NOHANDLE) then
@@ -902,7 +907,7 @@ end subroutine
   type(t_boundaryApprox), pointer :: p_rbndApprox
 
     ! Get boundary approximation
-    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    p_rbndApprox => rgeomObject%p_rcomposed%p_rboundaryApprox
 
     ! Check if we already have a boundary approximation vector
     if(p_rbndApprox%h_Dverts .eq. ST_NOHANDLE) then
@@ -925,7 +930,7 @@ end subroutine
     dminDist = Dray(1)**2 + Dray(2)**2
 
     ! Go through all points of our boundary projection
-    do i = 2, rgeomObject%rcomposed%p_rboundaryApprox%nverts
+    do i = 2, rgeomObject%p_rcomposed%p_rboundaryApprox%nverts
     
       ! Get vector from point to boundary
       Dray = DcoordsRef - p_Dverts(1:2, i)
@@ -983,12 +988,12 @@ end subroutine
   type(t_geometryObject), pointer :: p_rsubObject
   
     ! Maybe we already have an boundary approximation?
-    h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
+    h_Dverts = rgeomObject%p_rcomposed%p_rboundaryApprox%h_Dverts
     
     ! If yes, then we can return the number of allocated vertices
     if (h_Dverts .ne. ST_NOHANDLE) then
     
-      nverts = rgeomObject%rcomposed%p_rboundaryApprox%nverts
+      nverts = rgeomObject%p_rcomposed%p_rboundaryApprox%nverts
 
       return
 
@@ -998,10 +1003,10 @@ end subroutine
     nverts = 0
     
     ! Go through all sub-objects
-    do i = 1, rgeomObject%rcomposed%nsubObjects
+    do i = 1, rgeomObject%p_rcomposed%nsubObjects
       
       ! Get i-th sub-object
-      p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
+      p_rsubObject => rgeomObject%p_rcomposed%p_RsubObjects(i)
       
       ! Calculate tolerance
       !IF (p_rsubObject%ndimension .EQ. NDIM3D) THEN
@@ -1060,7 +1065,7 @@ end subroutine
   type(t_boundaryApprox), pointer :: p_rbndApprox
   
     ! Get boundary approximation
-    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    p_rbndApprox => rgeomObject%p_rcomposed%p_rboundaryApprox
     if (p_rbndApprox%h_Dverts .ne. ST_NOHANDLE) then
     
       ! Simply copy the vertices of the boundary approximation
@@ -1082,7 +1087,7 @@ end subroutine
     end if
   
     ! Get composed object's type
-    ctype = rgeomObject%rcomposed%ccomposedType
+    ctype = rgeomObject%p_rcomposed%ccomposedType
   
     ! Get number of vertices
     call geom_composed_getNAV(rgeomObject, dtolerance, nmaxverts)
@@ -1093,10 +1098,10 @@ end subroutine
     nverts = 0
     
     ! Now go through all our objects
-    do i = 1, rgeomObject%rcomposed%nsubObjects
+    do i = 1, rgeomObject%p_rcomposed%nsubObjects
     
       ! Get i-th sub-object
-      p_rsubObject => rgeomObject%rcomposed%p_RsubObjects(i)
+      p_rsubObject => rgeomObject%p_rcomposed%p_RsubObjects(i)
     
       ! Calculate tolerance for sub-object
       dsubtol = dtolerance / p_rsubObject%rcoord2D%dscalingFactor
@@ -1119,7 +1124,7 @@ end subroutine
       end do
       
       ! Now perform inside-outside test with all other sub-objects
-      do k = 1, rgeomObject%rcomposed%nsubObjects
+      do k = 1, rgeomObject%p_rcomposed%nsubObjects
       
         ! Skip i-th sub-object
         if (k .ne. i) then
@@ -1131,7 +1136,7 @@ end subroutine
             if (Iinout(j) .ne. 0) then
           
               ! Perform inside-outside-test
-              call geom_isInGeometry(rgeomObject%rcomposed%p_RsubObjects(k), &
+              call geom_isInGeometry(rgeomObject%p_rcomposed%p_RsubObjects(k), &
                                    Dverts(1:2, j), io)
 
               ! If this is a UNION-quantor node and the point is inside the
@@ -1236,7 +1241,7 @@ end subroutine
     end if
 
     ! Get a pointer to the boundary approximation
-    p_rbndApprox => rgeomObject%rcomposed%p_rboundaryApprox
+    p_rbndApprox => rgeomObject%p_rcomposed%p_rboundaryApprox
 
     ! Backup boundary approximation vertice handle
     h_Dverts = p_rbndApprox%h_Dverts
@@ -4886,25 +4891,28 @@ end subroutine
     if(rgeomObject%ctype .eq. GEOM_COMPOSED) then
     
       ! Go through all sub-objects and destroy them
-      do i=1, rgeomObject%rcomposed%nsubObjects
+      do i=1, rgeomObject%p_rcomposed%nsubObjects
       
         ! Destroy sub-object
-        call geom_done(rgeomObject%rcomposed%p_RsubObjects(i))
+        call geom_done(rgeomObject%p_rcomposed%p_RsubObjects(i))
       
       end do
       
       ! Deallocate object array
-      deallocate(rgeomObject%rcomposed%p_RsubObjects)
+      deallocate(rgeomObject%p_rcomposed%p_RsubObjects)
       
       ! Destroy boundary approximation
-      h_Dverts = rgeomObject%rcomposed%p_rboundaryApprox%h_Dverts
+      h_Dverts = rgeomObject%p_rcomposed%p_rboundaryApprox%h_Dverts
       if (h_Dverts .ne. ST_NOHANDLE) then
         call storage_free(h_Dverts)
       end if
       
       ! Deallocate boundary approximation structure
-      deallocate(rgeomObject%rcomposed%p_rboundaryApprox)
+      deallocate(rgeomObject%p_rcomposed%p_rboundaryApprox)
     
+      ! Deallocate the object
+      deallocate(rgeomObject%p_rcomposed)
+      
     end if
 
     ! Reset the object's type
