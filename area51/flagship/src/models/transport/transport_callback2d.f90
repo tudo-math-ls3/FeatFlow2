@@ -622,7 +622,7 @@ contains
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,NDIM2D+1))
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,3))
       end do
     end do
     
@@ -832,7 +832,7 @@ contains
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,NDIM2D+1))
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Daux(ipoint,iel,3))
       end do
     end do
     
