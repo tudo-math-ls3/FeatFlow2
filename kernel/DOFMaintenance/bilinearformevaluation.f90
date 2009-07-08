@@ -6331,6 +6331,11 @@ contains
       
         ! Loop over the element distributions.
         do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+
+          ! Check if element distribution is empty
+          if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0 ) cycle
+
+          ! Get list of elements present in the element distribution
           call storage_getbase_int(&
               rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
               p_IelementList)
@@ -6527,6 +6532,9 @@ contains
             ! Calculate number of elements adjacent to the boundary region
             NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
 
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
+
             ! Allocate memory for element list, element orientation and
             ! the start- and end-parameter values of edges at the boundary
             allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
@@ -6538,19 +6546,23 @@ contains
                 p_IelementList, p_IelementOrientation, p_DedgePosition,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
             
-            ! Initialise a matrix assembly structure for that element distribution
-            call bilf_initAssembly(rmatrixAssembly,rform,&
-                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(BILF_NELEMSIM,size(p_IelementList)))
-            
-            ! Assemble the data for all elements in this element distribution
-            call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
-            
-            ! Release the assembly structure.
-            call bilf_doneAssembly(rmatrixAssembly)
+            if (NELbdc .gt. 0) then
+
+              ! Initialise a matrix assembly structure for that element distribution
+              call bilf_initAssembly(rmatrixAssembly, rform,&
+                  rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                  ccubType, min(BILF_NELEMSIM,size(p_IelementList)))
+              
+              ! Assemble the data for all elements in this element distribution
+              call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
+                  rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                  ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+              
+              ! Release the assembly structure.
+              call bilf_doneAssembly(rmatrixAssembly)
+
+            end if
 
             ! Release memory
             deallocate(p_IelementList, p_IelementOrientation)
@@ -6563,6 +6575,9 @@ contains
           ! Loop over the element distributions.
           do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
             
+            ! Check if element distribution is empty
+            if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+
             ! Initialise a matrix assembly structure for that element distribution
             call bilf_initAssembly(rmatrixAssembly,rform,&
                 rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&

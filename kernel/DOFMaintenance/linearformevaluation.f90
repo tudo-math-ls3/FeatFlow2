@@ -912,6 +912,9 @@ contains
           ! Calculate number of elements adjacent to the boundary region
           NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
           
+          ! Check if element distribution is empty
+          if (NELbdc .le. 0) cycle
+
           ! Allocate memory for element list, element orientation and
           ! the start- and end-parameter values of edges at the boundary
           allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
@@ -923,18 +926,22 @@ contains
               p_IelementList, p_IelementOrientation, p_DedgePosition,&
               rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
           
-          ! Initialise a vector assembly structure for that element distribution
-          call linf_initAssembly(rvectorAssembly, rform,&
-              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-              ccubType, min(LINF_NELEMSIM,size(p_IelementList)))
+          if (NELbdc .gt. 0) then
 
-          ! Assemble the data for all elements in this element distribution
-          call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-              rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-              fcoeff_buildVectorScBdr2D_sim, rcollection)
-          
-          ! Release the assembly structure.
-          call linf_doneAssembly(rvectorAssembly)
+            ! Initialise a vector assembly structure for that element distribution
+            call linf_initAssembly(rvectorAssembly, rform,&
+                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+                ccubType, min(LINF_NELEMSIM,size(p_IelementList)))
+            
+            ! Assemble the data for all elements in this element distribution
+            call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
+                rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                fcoeff_buildVectorScBdr2D_sim, rcollection)
+            
+            ! Release the assembly structure.
+            call linf_doneAssembly(rvectorAssembly)
+
+          end if
 
           ! Release memory
           deallocate(p_IelementList, p_IelementOrientation)
@@ -947,6 +954,9 @@ contains
         ! Loop over the element distributions.
         do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
           
+          ! Check if element distribution is empty
+          if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+
           ! Initialise a vector assembly structure for that element distribution
           call linf_initAssembly(rvectorAssembly, rform,&
               rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
@@ -959,7 +969,10 @@ contains
             
             ! Calculate number of elements adjacent to the boundary region
             NELbdc = bdraux_getNELAtRegion(rboundaryReg, p_rtriangulation)
-            
+
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
+
             ! Allocate memory for element list, element orientation and
             ! the start- and end-parameter values of edges at the boundary
             allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
@@ -977,7 +990,7 @@ contains
                   rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
                   fcoeff_buildVectorScBdr2D_sim, rcollection)
             end if
-
+            
             ! Deallocate memory
             deallocate(p_IelementList, p_IelementOrientation)
             deallocate(p_DedgePosition)
@@ -1927,6 +1940,11 @@ contains
     case(ST_DOUBLE)
       ! Loop over the element distributions.
       do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
+
+        ! Check if element distribution is empty
+        if (rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%NEL .le. 0) cycle
+        
+        ! Get list of elements in distribution
         call storage_getbase_int(&
             rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%h_IelementList,&
             p_IelementList)
