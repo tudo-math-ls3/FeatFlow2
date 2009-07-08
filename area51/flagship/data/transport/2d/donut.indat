@@ -22,6 +22,9 @@ defexpr:  sqr1 = SQRT((x-1)^2+y^2)
 defexpr:  sqr2 = SQRT((x-_x0)^2+(y-_y0)^2)
 defexpr:  abs  =      (x-_x0)^2+(y-_y0)^2
 
+# Specify null function
+deffunc: @null = @null ; x,y,z,t
+
 # Specify the initial solution
 deffunc: @initsol = if(@sqr1 >= 0.35 & @sqr1 <= 0.65, 1, 0) ; x,y,z,t
 
@@ -33,16 +36,10 @@ deffunc: @velocity_x = y ; x,y,z,t
 deffunc: @velocity_y = 1-x ; x,y,z,t
 
 # Specify the quantity of interest
-#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y >= 0.6 & y <= 0.7, 1, 0) ; x,y,z,t
-#deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1 & y <= 0.7, 2, 0) ; x,y,z,t
-deffunc: @weightingFuncInt = if (y <= 0.9 & x >= 1.35 & x <= 1.65, 1, 0) ; x,y,z,t
-deffunc: @weightingFuncInt1 = 0 ; x,y,z,t
-#if (y <= 0.9 & x >= 1.35 & x <= 1.65, 1, 0) ; x,y,z,t
-#deffunc: @exactTargetFunc = 0.06044974016448 ; t
-deffunc: @exactTargetFunc = 0.00948534325289 ; t
+deffunc: @weightingFuncInt = if(x >= 0.9 & x <= 1.1, 1, 0) ; x,y,z,t
 
-# Specify the right-hand side
-deffunc: @rhs = 0 ; x,y,z,t
+deffunc: @exactTargetFunc = 0.06044974016448 ; t
+#deffunc: @exactTargetFunc = 0.00948534325289 ; t
 
 # Specify the Dirichlet boundary values for the primal problem
 deffunc: @DirichletBdr = if(y <= 1e-3 & x >= 0.35 & x <= 0.65, 1, 0) ; x,y,z,t

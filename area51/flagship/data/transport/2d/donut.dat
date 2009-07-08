@@ -1,5 +1,7 @@
 # -*- mode: any-ini; -*-
 
+
+
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
 #                                                                              #
@@ -89,7 +91,7 @@ sreactionname =
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -111,34 +113,16 @@ sexactsolutionname = @exactsol
 
 # type of target functional
 # 0 = no target variable
-# 1 = volume integral
-# 2 = surface integral
+# 1 = volume integral (one component)
+# 2 = surface integral (one component)
 # 3 = mixed volume/surface integral (two components)
-# 4 = analytical target functional
 itargetfunctype = 3
 
 # section name of target functional
-stargetfuncname(2) =
-  @weightingFuncInt
-  @weightingFuncInt1
+stargetfuncname = @weightingFuncInt
 
-# type of exact target functional
-# 0 = no target variable
-# 1 = volume integral (two components)
-# 2 = surface integral (two components)
-# 3 = mixed volume/surface integral (four components)
-# 4 = analytical target functional
-iexacttargetfunctype = 1
-
-# section name of target functional
-sexacttargetfuncname(2) = 
-  @weightingFuncInt
-  @exactsol
-
-# type of Dirichlet boundary conditions
-# 0 = strong Dirichlet boundary conditions
-# 1 = weak Dirichlet boundary conditions
-iweakDirichletBdr = 1
+# section name of exacttarget functional
+sexacttargetfuncname = @exactTargetFunc
 
 # section name of Dirichlet boundary values
 sdirichletbdrname = @DirichletBdr
@@ -158,7 +142,7 @@ trifile = grids/2d/rect_2x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 11
+celement = -1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -209,7 +193,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
 
 
 ################################################################################
@@ -331,10 +315,10 @@ depsSteady = 1e-12
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -452,7 +436,7 @@ depsStag = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 4
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -482,7 +466,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 1
+dperturbationStrategy = 2
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -507,7 +491,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-16
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -656,7 +640,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of linear steps
-nmaxIterations = 200
+nmaxIterations = 50
 
 # type of linear solver
 #  2 = Jacobi
@@ -665,7 +649,7 @@ nmaxIterations = 200
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 8
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -716,7 +700,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 1
+nadapt = 2
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -725,7 +709,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 0
+nsubdividemax = 5
 
 # adaptation strategy
 # 1 = red-green
