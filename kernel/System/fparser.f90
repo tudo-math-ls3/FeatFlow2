@@ -573,7 +573,7 @@ module fparser
 !</constantblock>
 
 
-!<constantblock description="predefined constant names for parser; an at-sign '@' is automatically added">
+!<constantblock description="predefined expression names for parser; an at-sign '@' is automatically added">
 
   character(LEN=FPAR_CONSTLEN), dimension(1) :: PredefinedExpressions = (/ 'null      ' /)
 
