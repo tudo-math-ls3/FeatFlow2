@@ -6451,8 +6451,8 @@ contains
   type(t_boundary), pointer :: p_rboundary
   type(t_triangulation), pointer :: p_rtriangulation
   type(t_boundaryRegion) :: rboundaryReg
-  real(DP), dimension(:,:), pointer :: p_DedgePosition
-  integer, dimension(:), pointer :: p_IelementList, p_IelementOrientation
+  real(DP), dimension(:,:), pointer :: DedgePosition
+  integer, dimension(:), pointer :: IelementList, IelementOrientation
   integer :: ibdc,ielementDistr,NELbdc,ccType
 
   ! The matrix must be unsorted, otherwise we can't set up the matrix.
@@ -6526,49 +6526,45 @@ contains
         
         if (present(rboundaryRegion)) then
 
+          ! Calculate number of elements adjacent to the boundary region
+          NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
+
+          ! Allocate memory for element list, element orientation and
+          ! the start- and end-parameter values of edges at the boundary
+          allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+          allocate(DedgePosition(2,NELbdc))
+          
           ! Loop over the element distributions.
           do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
-
-            ! Calculate number of elements adjacent to the boundary region
-            NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
-
-            ! Check if element distribution is empty
-            if (NELbdc .le. 0) cycle
-
-            ! Allocate memory for element list, element orientation and
-            ! the start- and end-parameter values of edges at the boundary
-            allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
-            allocate(p_DedgePosition(2,NELbdc))
 
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryRegion,&
                 rmatrix%p_rspatialDiscrTrial, NELbdc,&
-                p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                IelementList, IelementOrientation, DedgePosition,&
                 rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
             
-            if (NELbdc .gt. 0) then
-
-              ! Initialise a matrix assembly structure for that element distribution
-              call bilf_initAssembly(rmatrixAssembly, rform,&
-                  rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
-                  rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  ccubType, min(BILF_NELEMSIM, NELbdc))
-              
-              ! Assemble the data for all elements in this element distribution
-              call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                  rboundaryRegion, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
-                  p_DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
-              
-              ! Release the assembly structure.
-              call bilf_doneAssembly(rmatrixAssembly)
-
-            end if
-
-            ! Release memory
-            deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
-
+            ! Check if element distribution is empty
+            if (NELbdc .le. 0) cycle
+            
+            ! Initialise a matrix assembly structure for that element distribution
+            call bilf_initAssembly(rmatrixAssembly, rform,&
+                rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
+                ccubType, min(BILF_NELEMSIM, NELbdc))
+            
+            ! Assemble the data for all elements in this element distribution
+            call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
+                rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
+                DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+            
+            ! Release the assembly structure.
+            call bilf_doneAssembly(rmatrixAssembly)
+            
           end do
 
+          ! Release memory
+          deallocate(IelementList, IelementOrientation, DedgePosition)
+          
         else
 
           ! Loop over the element distributions.
@@ -6593,26 +6589,26 @@ contains
               
               ! Allocate memory for element list, element orientation and
               ! the start- and end-parameter values of edges at the boundary
-              allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
-              allocate(p_DedgePosition(2,NELbdc))
+              allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+              allocate(DedgePosition(2,NELbdc))
               
               ! Calculate the list of elements adjacent to the boundary
               call bdraux_getElementsAtRegion(rboundaryReg,&
                   rmatrix%p_rspatialDiscrTrial, NELbdc,&
-                  p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                  IelementList, IelementOrientation, DedgePosition,&
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
 
               if (NELbdc .gt. 0) then
                 
                 ! Assemble the data for all elements in this element distribution
                 call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                    rboundaryReg, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
-                    p_DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                    rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
+                    DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
 
               end if
               
               ! Release memory
-              deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
+              deallocate(IelementList, IelementOrientation, DedgePosition)
 
             end do ! ibdc
 

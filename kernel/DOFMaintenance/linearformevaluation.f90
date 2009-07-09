@@ -851,8 +851,8 @@ contains
   type(t_boundary), pointer :: p_rboundary
   type(t_triangulation), pointer :: p_rtriangulation
   type(t_boundaryRegion) :: rboundaryReg
-  real(DP), dimension(:,:), pointer :: p_DedgePosition
-  integer, dimension(:), pointer :: p_IelementList, p_IelementOrientation
+  real(DP), dimension(:,:), pointer :: DedgePosition
+  integer, dimension(:), pointer :: IelementList, IelementOrientation
   integer :: ibdc,ielementDistr,NELbdc
 
   ! If the vector does not exist, stop here.
@@ -906,48 +906,44 @@ contains
 
       if (present(rboundaryRegion)) then
         
+        ! Calculate total number of elements adjacent to the boundary region
+        NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
+        
+        ! Allocate memory for element list, element orientation and
+        ! the start- and end-parameter values of edges at the boundary
+        allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+        allocate(DedgePosition(2,NELbdc))
+
         ! Loop over the element distributions.
         do ielementDistr = 1,rvectorScalar%p_rspatialDiscr%inumFESpaces
-          
-          ! Calculate number of elements adjacent to the boundary region
-          NELbdc = bdraux_getNELAtRegion(rboundaryRegion, p_rtriangulation)
-          
-          ! Check if element distribution is empty
-          if (NELbdc .le. 0) cycle
-
-          ! Allocate memory for element list, element orientation and
-          ! the start- and end-parameter values of edges at the boundary
-          allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
-          allocate(p_DedgePosition(2,NELbdc))
           
           ! Calculate the list of elements adjacent to the boundary
           call bdraux_getElementsAtRegion(rboundaryRegion,&
               rvectorScalar%p_rspatialDiscr, NELbdc,&
-              p_IelementList, p_IelementOrientation, p_DedgePosition,&
+              IelementList, IelementOrientation, DedgePosition,&
               rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
           
-          if (NELbdc .gt. 0) then
+          ! Check if element distribution is empty
+          if (NELbdc .le. 0) cycle
 
-            ! Initialise a vector assembly structure for that element distribution
-            call linf_initAssembly(rvectorAssembly, rform,&
-                rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(LINF_NELEMSIM, NELbdc))
-            
-            ! Assemble the data for all elements in this element distribution
-            call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-                rboundaryRegion, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
-                p_DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
-            
-            ! Release the assembly structure.
-            call linf_doneAssembly(rvectorAssembly)
-
-          end if
-
-          ! Release memory
-          deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
+          ! Initialise a vector assembly structure for that element distribution
+          call linf_initAssembly(rvectorAssembly, rform,&
+              rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
+              ccubType, min(LINF_NELEMSIM, NELbdc))
+          
+          ! Assemble the data for all elements in this element distribution
+          call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
+              rboundaryRegion, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
+              DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
+          
+          ! Release the assembly structure.
+          call linf_doneAssembly(rvectorAssembly)
 
         end do
 
+        ! Release memory
+        deallocate(IelementList, IelementOrientation, DedgePosition)
+        
       else
 
         ! Loop over the element distributions.
@@ -974,26 +970,26 @@ contains
 
             ! Allocate memory for element list, element orientation and
             ! the start- and end-parameter values of edges at the boundary
-            allocate(p_IelementList(NELbdc), p_IelementOrientation(NELbdc))
-            allocate(p_DedgePosition(2,NELbdc))
+            allocate(IelementList(NELbdc), IelementOrientation(NELbdc))
+            allocate(DedgePosition(2,NELbdc))
             
             ! Calculate the list of elements adjacent to the boundary
             call bdraux_getElementsAtRegion(rboundaryReg,&
                 rvectorScalar%p_rspatialDiscr, NELbdc,&
-                p_IelementList, p_IelementOrientation, p_DedgePosition,&
+                IelementList, IelementOrientation, DedgePosition,&
                 rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
             
             if (NELbdc .gt. 0) then
 
               ! Assemble the data for all elements in this element distribution
               call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-                  rboundaryReg, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
-                  p_DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
+                  rboundaryReg, IelementList(1:NELbdc), IelementOrientation(1:NELbdc),&
+                  DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
 
             end if
             
             ! Deallocate memory
-            deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
+            deallocate(IelementList, IelementOrientation, DedgePosition)
 
           end do ! ibdc
             
