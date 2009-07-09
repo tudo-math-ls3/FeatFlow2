@@ -65,7 +65,7 @@
 !#         optionally converts the vertices into world coordinates.
 !#
 !# Remark:
-!# This module contains a lot more routines, which however are not meant to
+!# This module contains a lot more routines, which however are not meant to  
 !# be called by the user, e.g. routines which are called by wrapper routines
 !# listed above or routines which are needed for the boundary approximation
 !# of a composed object.
@@ -235,7 +235,7 @@ module geometry
   use storage
   use basicgeometry
   use storage
-
+  use genoutput
   implicit none
   
   private
@@ -301,6 +301,9 @@ module geometry
 ! *****************************************************************************
 
 !<types>
+
+
+
 !<typeblock>
 
   ! This stucture realises a boundary approximation, which is needed for
@@ -503,7 +506,7 @@ module geometry
 
     ! Structure for the polygon object
     type(t_geometryPolygon)    :: rpolygon
-    
+
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
@@ -513,9 +516,61 @@ module geometry
     
   end type
   
+!</typeblock>
+
+! *****************************************************************************  
+  
+!<typeblock>  
+  ! This is a type that describes a particle in
+  ! a situation with certain parameters.
+  ! The geometry object describes the shape of the
+  ! particle. The remaining parameters describe the
+  ! physical properties of the particle
+  type t_particle
+  
+    ! structure for a geometry object
+    type(t_geometryObject) :: rgeometryObject    
+
+    ! mass of the particle  
+    real(DP) :: dmass
+    
+    ! radius of the circle, that circumferes the particle
+    real(dp) :: drad
+    
+    ! density of the particle
+    real(dp) :: drho    
+  
+  end type
+
+!</typeblock>
+
+! *****************************************************************************  
+
+!<typeblock> 
+  ! This structure holds a collection of particles
+  ! the particles themselves are of "t_particle" type
+  ! An example for the use of this structure is 
+  ! to add it to a collection, so that access to the
+  ! particles is possible in callback functions
+  type t_particleCollection
+  
+    ! number of particles in the particle collection
+    ! this number is initialized with 0
+    integer :: nparticles = 0
+  
+    ! pointer to the particle structures
+    type(t_particle), dimension(:), pointer :: p_rParticles
+  
+  end type
+!</typeblock>
+
+! *****************************************************************************  
+  
+  public :: t_particle
+  public :: t_particleCollection
   public :: t_geometryObject
   
-!</typeblock>
+
 !</types>
 
   interface geom_init_circle
@@ -566,6 +621,8 @@ module geometry
   public :: geom_calcSignedDistance
   public :: geom_calcSignedDistanceArray
   public :: geom_polygonise
+  public :: geom_initParticleCollection
+  public :: geom_releaseParticleCollection
   
 contains
 
@@ -5205,5 +5262,168 @@ end subroutine
     ! That's it
     
   end subroutine
+  
+! ***************************************************************************  
 
+!<subroutine>  
+  subroutine geom_initParticle(rParticle,iid,dx,dy,drad,drho)
+!<description>
+  ! this routines initializes a t_particle structure
+  ! according to the parameters iid,dx,dy,drad,drho
+  ! The parameter iid should be one of the constants:
+  ! GEOM_CIRCLE GEOM_ELLIPSE GEOM_SQUARE GEOM_RECT GEOM_POLYGON
+  ! So far ONLY GEOM_CIRCLE is supported!!!
+  !
+!</description>
+  
+!<inputoutput>  
+  ! structure for a geometry object
+  type(t_particle),intent(inout) :: rParticle    
+!</inputoutput>  
+  
+!<input>  
+  ! particle density
+  real(dp),intent(in) :: drho
+  
+  ! coordinate of the center
+  real(dp),intent(in) :: dx
+  
+  real(dp),intent(in) :: dy
+  
+  ! radius of the particle
+  real(dp),intent(in) :: drad
+  
+  ! shape of the object
+  integer, intent(in) :: iid
+  
+!</input>  
+  
+!</subroutine>  
+
+  ! set the dimension of the particle
+  rParticle%rgeometryObject%ndimension = NDIM2D
+  
+  select case(iid)
+  case (GEOM_CIRCLE)
+  ! init the particle with the given parameters
+  call geom_init_circle(rParticle%rgeometryObject,drad,(/dx,dy/))
+  case (GEOM_ELLIPSE)
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  case (GEOM_SQUARE)
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  
+  case (GEOM_RECT)
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  
+  case (GEOM_POLYGON)
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  
+  case default
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  end select
+
+  
+  ! assign the radius
+  rParticle%drad = drad
+  ! the the physical parameters  
+  rParticle%drho = drho
+  
+  end subroutine ! end geom_initParticle
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_initParticleCollection(rparticleCollection,iparticles,pparameters)
+  
+!<description>
+  ! this routines initializes a Particle collection
+  ! according to the parameters given in pparameters
+  ! pparameters is a double array of size [4,iparticles]
+  ! The structure of this array is as follows:
+  !           
+  !       [1,i]:= initial x position of the i-th particle
+  !       [2,i]:= initial y position of the i-th particle
+  !       [3,i]:= the radius of a circle that circumferes the i-th particle
+  !               in later versions we want this to be the radius
+  !               of the smallest circumfering circle...
+  !       [4,i]:= the density of the i-th particle
+  !
+  !
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_particleCollection), intent(inout) :: rparticleCollection
+!</inputoutput>
+
+!<input>
+  ! the number of particles that will take part in the simulation
+  integer, intent(IN) :: iparticles
+  ! the particle data
+  real(DP), dimension(:,:), pointer, intent(in) :: pparameters
+!</input>
+
+!</subroutine>
+  real(DP) :: dnu,dx,dy,drad,drho
+  integer :: i1
+
+  ! set the number of particles in the collection
+  rparticleCollection%nparticles = iparticles
+
+  ! allocate memory for the number of particles that we want to use
+  allocate(rparticleCollection%p_rParticles(iparticles))
+    
+  ! loop to initialize the particles
+  do i1=1,iparticles
+    dx    = pparameters(1,i1)
+    dy    = pparameters(2,i1)
+    drad  = pparameters(3,i1)
+    drho  = pparameters(4,i1)
+    ! call the routine to initialize the particle
+    call geom_initParticle(rparticleCollection%p_rParticles(i1),GEOM_CIRCLE,&
+                         dx,dy,drad,drho)    
+  end do
+    
+  end subroutine ! end geom_initParticleCollection
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_releaseParticleCollection(rparticleCollection)
+           
+!<description>
+  ! releases the memory allocated in the
+  ! particle Collection structure
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_particleCollection), intent(inout) :: rparticleCollection
+!</inputoutput>
+
+!</subroutine>
+  
+  ! check if there are particles for
+  ! which memory has been allocated
+  if(rparticleCollection%nparticles .gt. 0) then 
+    deallocate(rparticleCollection%p_rparticles)
+  end if
+    
+  end subroutine ! end geom_initParticleCollection
+  
+! ***************************************************************************
+
+  
 end module
