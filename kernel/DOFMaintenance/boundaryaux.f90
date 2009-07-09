@@ -289,7 +289,7 @@ contains
           ! Check if we are the correct element distribution
           if (present(celement)) then
             if (celement .ne. p_RelementDistribution(&
-                p_IelementDistr(iel+1))%celement) cycle
+                p_IelementDistr(p_IelementsAtBoundary(iedge)))%celement) cycle
           end if
           iel = iel + 1
           
