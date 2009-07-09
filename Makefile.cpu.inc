@@ -810,10 +810,10 @@ ifeq ($(call optimise), YES)
 # * GCC 4.2:
 #   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
 #   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=pentium-m -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=pentium-m -msse3 -mfpmath=sse $(CFLAGSF77)
-CFLAGSF90     := -march=pentium-m -msse3 -mfpmath=sse $(CFLAGSF90)
-CFLAGSC       := -march=pentium-m -msse3 -mfpmath=sse $(CFLAGSC)
+CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
 endif
 endif
 
