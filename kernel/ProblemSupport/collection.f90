@@ -270,7 +270,7 @@ module collection
                                   t_interlevelProjectionBlock
   use filtersupport, only: t_filterChain
   use fparser, only: t_fparser
-  use geometry, only: t_geometryObject
+  use geometry, only: t_geometryObject, t_particleCollection
   use hadaptaux, only: t_hadapt
   use afcstabilisation, only: t_afcstab
   use statistics, only: t_timer
@@ -416,6 +416,10 @@ module collection
   ! Graph structure
   integer, parameter, public :: COLLCT_GRAPH        = 32
 
+  ! Particles structure
+  integer, parameter, public :: COLLCT_PARTICLES    = 33
+
+
 !</constantblock>
 
 !</constants>
@@ -484,6 +488,9 @@ module collection
 
     ! Pointer to a geometry object
     type(t_geometryObject), pointer             :: p_rgeometry => null()
+    
+    ! Pointer to a particle collection
+    type(t_particleCollection), pointer         :: p_rparticles => null()
 
     ! Pointer to scalar boundary conditions
     type(t_boundaryConditions), pointer         :: p_rboundaryConditions => null()
@@ -759,7 +766,8 @@ module collection
   public :: collct_getvalue_ilvp 
   public :: collct_getvalue_coll 
   public :: collct_getvalue_pars 
-  public :: collct_getvalue_geom 
+  public :: collct_getvalue_geom
+  public :: collct_getvalue_particles 
   public :: collct_getvalue_fchn 
   public :: collct_getvalue_hadapt 
   public :: collct_getvalue_afcstab 
@@ -767,7 +775,8 @@ module collection
   public :: collct_getvalue_list 
   public :: collct_getvalue_arraylist 
   public :: collct_getvalue_btree 
-  public :: collct_getvalue_graph 
+  public :: collct_getvalue_graph
+  public :: collct_setvalue_particles 
 
 contains
   
@@ -3881,6 +3890,70 @@ contains
   
 !<function>
 
+  function collct_getvalue_particles(rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a particle collection object.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+  type(t_particleCollection), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There's no error thrown if a variable does not exist.
+  logical, intent(OUT), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rparticles
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_particles
+
+
+  ! ***************************************************************************
+  
+!<function>
+
   function collct_getvalue_fchn (rcollection, sparameter, &
                                  ilevel, ssectionName, bexists) result(value)
 !<description>
@@ -6297,5 +6370,69 @@ contains
     p_rvalue%p_rgraph => value
     
   end subroutine collct_setvalue_graph
+  
+! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_particles(rcollection, sparameter, value, badd, &
+                                   ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(INOUT) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(IN) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_particleCollection), intent(IN), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: don't add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(IN) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(IN), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(IN), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rparticles => value
+    
+  end subroutine collct_setvalue_particles
+
+  ! ***************************************************************************
+  
   
 end module collection
