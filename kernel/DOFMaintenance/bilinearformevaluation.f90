@@ -6552,12 +6552,12 @@ contains
               call bilf_initAssembly(rmatrixAssembly, rform,&
                   rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-                  ccubType, min(BILF_NELEMSIM,size(p_IelementList)))
+                  ccubType, min(BILF_NELEMSIM, NELbdc))
               
               ! Assemble the data for all elements in this element distribution
               call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                  rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                  ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                  rboundaryRegion, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
+                  p_DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
               
               ! Release the assembly structure.
               call bilf_doneAssembly(rmatrixAssembly)
@@ -6565,8 +6565,7 @@ contains
             end if
 
             ! Release memory
-            deallocate(p_IelementList, p_IelementOrientation)
-            deallocate(p_DedgePosition)
+            deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
 
           end do
 
@@ -6602,17 +6601,18 @@ contains
                   rmatrix%p_rspatialDiscrTrial, NELbdc,&
                   p_IelementList, p_IelementOrientation, p_DedgePosition,&
                   rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement)
-              
-              ! Assemble the data for all elements in this element distribution
+
               if (NELbdc .gt. 0) then
+                
+                ! Assemble the data for all elements in this element distribution
                 call bilf_assembleSubmeshMat9Bdr2D (rmatrixAssembly, rmatrix,&
-                    rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                    ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+                    rboundaryReg, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
+                    p_DedgePosition(:,1:NELbdc), ccType, fcoeff_buildMatrixScBdr2D_sim, rcollection)
+
               end if
               
               ! Release memory
-              deallocate(p_IelementList, p_IelementOrientation)
-              deallocate(p_DedgePosition)
+              deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
 
             end do ! ibdc
 

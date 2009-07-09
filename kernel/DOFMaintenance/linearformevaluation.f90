@@ -524,7 +524,7 @@ contains
   ! the number of elements per block. For smaller triangulations,
   ! this is NEL. If there are too many elements, it's at most
   ! LINF_NELEMSIM. This is only used for allocating some arrays.
-  nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
+  nelementsPerBlock = min(LINF_NELEMSIM, p_rtriangulation%NEL)
   
   ! Now loop over the different element distributions (=combinations
   ! of trial and test functions) in the discretisation.
@@ -931,12 +931,12 @@ contains
             ! Initialise a vector assembly structure for that element distribution
             call linf_initAssembly(rvectorAssembly, rform,&
                 rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
-                ccubType, min(LINF_NELEMSIM,size(p_IelementList)))
+                ccubType, min(LINF_NELEMSIM, NELbdc))
             
             ! Assemble the data for all elements in this element distribution
             call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-                rboundaryRegion, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                fcoeff_buildVectorScBdr2D_sim, rcollection)
+                rboundaryRegion, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
+                p_DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
             
             ! Release the assembly structure.
             call linf_doneAssembly(rvectorAssembly)
@@ -944,8 +944,7 @@ contains
           end if
 
           ! Release memory
-          deallocate(p_IelementList, p_IelementOrientation)
-          deallocate(p_DedgePosition)
+          deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
 
         end do
 
@@ -984,16 +983,17 @@ contains
                 p_IelementList, p_IelementOrientation, p_DedgePosition,&
                 rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement)
             
-            ! Assemble the data for all elements in this element distribution
             if (NELbdc .gt. 0) then
+
+              ! Assemble the data for all elements in this element distribution
               call linf_assembleSubmeshVectorBdr2D (rvectorAssembly, rvectorScalar,&
-                  rboundaryReg, p_IelementList, p_IelementOrientation, p_DedgePosition,&
-                  fcoeff_buildVectorScBdr2D_sim, rcollection)
+                  rboundaryReg, p_IelementList(1:NELbdc), p_IelementOrientation(1:NELbdc),&
+                  p_DedgePosition(:,1:NELbdc), fcoeff_buildVectorScBdr2D_sim, rcollection)
+
             end if
             
             ! Deallocate memory
-            deallocate(p_IelementList, p_IelementOrientation)
-            deallocate(p_DedgePosition)
+            deallocate(p_IelementList, p_IelementOrientation, p_DedgePosition)
 
           end do ! ibdc
             
@@ -1953,7 +1953,7 @@ contains
         call linf_initAssembly(rvectorAssembly,rform,&
             rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%celement,&
             rvectorScalar%p_rspatialDiscr%RelementDistr(ielementDistr)%ccubTypeLinForm,&
-            min(LINF_NELEMSIM,size(p_IelementList)))
+            min(LINF_NELEMSIM, size(p_IelementList)))
             
         ! Assemble the data for all elements in this element distribution
         call linf_assembleSubmeshVector (rvectorAssembly,rvectorScalar,&
