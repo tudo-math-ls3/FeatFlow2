@@ -108,7 +108,7 @@ istartSuffixFilm = 0
 # =0: Don't calculate
 # =1: Calculate the error
 
-ierrorAnalysisL2 = 1
+ierrorAnalysisL2 = 0
 
 # Calculate H1-error to reference solution.
 # =0: Don't calculate
@@ -121,6 +121,18 @@ ierrorAnalysisH1 = 0
 # =1: Calculate the energy
 
 icalcKineticEnergy = 1
+
+# Whether to write the L2/H1-error and/or kinetic energy to a file
+
+iwriteErrorAnalysisL2 = 0
+iwriteErrorAnalysisH1 = 0
+iwriteKineticEnergy = 0
+
+# Filename for the L2/H1-error/kinetic energy if iwriteerrorAnalysisXXXX = 1
+
+sfilenameErrorAnalysisL2 = './ns/error_L2'
+sfilenameErrorAnalysisH1 = './ns/error_H12'
+sfilenameKineticEnergy = './ns/energy'
 
 # ------------------------------------------------------------------------
 # Body forces
@@ -155,3 +167,11 @@ ibodyForcesBdComponent = 2
 # around cylinder with RE=1000)
 
 # dbdForcesCoeff2 = 0.004
+
+# Whether to write the body forces to a file
+
+iwriteBodyForces = 0
+
+# Filename for the body forces
+
+sfilenameBodyForces = './ns/bdforces'

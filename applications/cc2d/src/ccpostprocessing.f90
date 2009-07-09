@@ -67,6 +67,7 @@ module ccpostprocessing
   use element
   use multilevelprojection
   use vectorio
+  use io
   
   use collection
   use convection
@@ -284,19 +285,56 @@ contains
     real(DP),dimension(3) :: Derr
     real(DP) :: derrorVel, derrorP, denergy
     integer :: icalcL2,icalcH1,icalcEnergy
+    integer :: iwriteErrorAnalysisL2,iwriteErrorAnalysisH1,iwriteKineticEnergy
+    character(len=SYS_STRLEN) :: sfilenameErrorAnalysisL2
+    character(len=SYS_STRLEN) :: sfilenameErrorAnalysisH1
+    character(len=SYS_STRLEN) :: sfilenameKineticEnergy
+    character(len=SYS_STRLEN) :: stemp
+    integer :: iunit
+    integer :: cflag
+    logical :: bfileExists
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                     'IERRORANALYSISL2', icalcL2, 0)
+        'IERRORANALYSISL2', icalcL2, 0)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                     'IERRORANALYSISH1', icalcH1, 0)
+        'IERRORANALYSISH1', icalcH1, 0)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                     'ICALCKINETICENERGY', icalcEnergy, 1)
+        'ICALCKINETICENERGY', icalcEnergy, 1)
+
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEERRORANALYSISL2', iwriteErrorAnalysisL2, 0)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEERRORANALYSISH1', iwriteErrorAnalysisH1, 0)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEKINETICENERGY', iwriteKineticEnergy, 0)
+
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEERRORANALYSISL2', stemp, '''''')
+    read(stemp,*) sfilenameErrorAnalysisL2
+    if (sfilenameErrorAnalysisL2 .eq. '') &
+      iwriteErrorAnalysisL2 = 0
+    
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEERRORANALYSISH1', stemp, '''''')
+    read(stemp,*) sfilenameErrorAnalysisH1
+    if (sfilenameErrorAnalysisH1 .eq. '') &
+      iwriteErrorAnalysisH1 = 0
+    
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEKINETICENERGY', stemp, '''''')
+    read(stemp,*) sfilenameKineticEnergy
+    if (sfilenameKineticEnergy .eq. '') &
+      iwriteKineticEnergy = 0
     
     if ((icalcL2 .ne. 0) .or. (icalcH1 .ne. 0) .or. (icalcEnergy .ne. 0)) then
       call output_lbrk()
       call output_line ('Error Analysis')
       call output_line ('--------------')
     end if
+    
+    ! When writing to a file is enabled, delete the file in the first timestep.
+    cflag = SYS_APPEND
+    if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
     
     if (icalcL2 .ne. 0) then
     
@@ -321,6 +359,22 @@ contains
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
+      if (iwriteErrorAnalysisL2 .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(sfilenameErrorAnalysisL2, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time ||u-reference||_L2 ||p-reference||_L2'
+        end if
+        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(derrorVel,10)) // ' ' &
+            // trim(sys_sdEL(derrorP,10))
+        close (iunit)
+      end if
+      
     end if
 
     if (icalcH1 .ne. 0) then
@@ -341,9 +395,24 @@ contains
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
+      if (iwriteErrorAnalysisH1 .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(sfilenameErrorAnalysisH1, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time ||u-reference||_H1'
+        end if
+        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(derrorVel,10))
+        close (iunit)
+      end if
+      
     end if
     
-    if (icalcL2 .ne. 0) then
+    if (icalcEnergy .ne. 0) then
     
       call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
     
@@ -358,6 +427,21 @@ contains
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
+      if (iwriteKineticEnergy .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(sfilenameKineticEnergy, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time ||u||^2_L2'
+        end if
+        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(denergy,10))
+        close (iunit)
+      end if
+
     end if
 
   end subroutine
@@ -476,6 +560,13 @@ contains
     integer :: cformulation
     integer :: ibodyForcesFormulation,icalcBodyForces,ibodyForcesBdComponent
     
+    integer :: iwriteBodyForces
+    character(len=SYS_STRLEN) :: sfilenameBodyForces
+    character(len=SYS_STRLEN) :: stemp
+    integer :: iunit
+    integer :: cflag
+    logical :: bfileExists
+    
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'icalcBodyForces', icalcBodyForces, 1)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
@@ -489,6 +580,20 @@ contains
     
     ! Probably cancel the calculation
     if (icalcBodyForces .eq. 0) return
+    
+    ! Information about writing body forces to a file.
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEBODYFORCES', iwriteBodyForces, 0)
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEBODYFORCES', stemp, '''''')
+    read(stemp,*) sfilenameBodyForces
+    if (sfilenameBodyForces .eq. '') &
+      iwriteBodyForces = 0
+
+    ! When writing to a file is enabled, delete the file in the first timestep.
+    cflag = SYS_APPEND
+    if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
+      
     
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
@@ -568,6 +673,23 @@ contains
           //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
           //trim(sys_sdEP(Dforces(2),15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      
+      if (iwriteBodyForces .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(sfilenameBodyForces, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time bdc horiz vert'
+        end if
+        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_siL(ibodyForcesBdComponent,10)) // ' ' &
+            // trim(sys_sdEL(Dforces(1),10)) // ' '&
+            // trim(sys_sdEL(Dforces(2),10))
+        close (iunit)
+      end if
       
     end if
     
