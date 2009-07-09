@@ -37,13 +37,14 @@ module ccbasic
   use discretefbc
   use timestepping  
   use collection
-  
+  use geometry
   use adaptivetimestep
-    
+  use basicgeometry
+  
   implicit none
   
 !<types>
-
+  
 !<typeblock description="Type block defining all information about one level">
 
   type t_problem_lvl
@@ -327,6 +328,8 @@ module ccbasic
     real(dp) :: dCoefficientDrag
 
     real(dp) :: dCoefficientLift
+    
+    type(t_particleCollection) :: rparticleCollection
 
   end type
 

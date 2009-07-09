@@ -105,6 +105,8 @@ contains
     ! structure for a geometry object
     type(t_geometryObject) :: rgeometryObject    
     
+    real(DP), dimension(:,:), pointer :: pparameters
+    
     integer :: i
     
     ! Ok, let's start. 
@@ -120,6 +122,7 @@ contains
     
     ! Allocate memory fo rthe problem structure -- it's rather large!
     allocate (p_rproblem)
+    allocate(pparameters(4,1))
     
     p_rproblem%DAngVel(:) = 0.0_dp
     p_rproblem%DTrqForce(:) = 0.0_dp
@@ -157,13 +160,19 @@ contains
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     call cc_initParameters (p_rproblem)
-
-    CALL geom_init_circle(rgeometryObject,p_rproblem%drad,(/p_rproblem%dx,p_rproblem%dy/))
+    pparameters(1,1)=p_rproblem%dx
+    pparameters(2,1)=p_rproblem%dy
+    pparameters(3,1)=p_rproblem%drad
+    pparameters(4,1)=p_rproblem%drho2
+    call geom_init_circle(rgeometryObject,p_rproblem%drad,(/p_rproblem%dx,p_rproblem%dy/))
     
+    call geom_initParticleCollection(p_rproblem%rparticleCollection,1,pparameters)
+    
+    call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
+                                   p_rproblem%rparticleCollection,.true.)
     ! we put the geometry object into the collection
     ! to make it easily accessible
-    CALL collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
-
+    call collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
     
     ! So now the different steps - one after the other.
     !
@@ -345,6 +354,8 @@ contains
     call parlst_done (p_rproblem%rparamList)
     
     call collct_deletevalue (p_rproblem%rcollection, 'mini')
+    call collct_deletevalue (p_rproblem%rcollection, 'particles')
+    call geom_releaseParticleCollection(p_rproblem%rparticleCollection)
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
@@ -412,7 +423,7 @@ contains
 
     ! That's it.    
     deallocate(p_rproblem)
-    
+    deallocate(pparameters)
   end subroutine
 
 end module

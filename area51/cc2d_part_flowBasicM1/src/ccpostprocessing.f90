@@ -567,16 +567,21 @@ contains
     type(t_ucdExport) :: rexport
     
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
-    integer :: ioutputUCD,ieltype,ilevelUCD,ipolyHandle
+    integer :: ioutputUCD,ieltype,ilevelUCD,ipolyHandle,ipart
     
     character(SYS_STRLEN) :: sfile,sfilename
     
 !    so holt man es wieder aus der collection raus    
     type(t_geometryObject), pointer :: p_rgeometryObject
     
-    real(DP), dimension(:,:), pointer :: p_Dvertices    
+    real(DP), dimension(:,:), pointer :: p_Dvertices 
     
-    p_rgeometryObject => collct_getvalue_geom (rproblem%rcollection, 'mini')    
+    type(t_particleCollection), pointer :: p_rparticleCollection
+
+    !
+    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
     
     
     if (present(dtime)) then
@@ -767,12 +772,18 @@ contains
       
     end if
     
-    call geom_polygonise(p_rgeometryObject,ipolyHandle)
-    
-    ! Get the vertices
-    call storage_getbase_double2D(ipolyHandle, p_Dvertices)
-    
-    call ucd_addPolygon(rexport,p_Dvertices)
+    do ipart=1,p_rparticleCollection%nparticles
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject    
+      
+      call geom_polygonise(p_rgeometryObject,ipolyHandle)
+      
+      ! Get the vertices
+      call storage_getbase_double2D(ipolyHandle, p_Dvertices)
+      
+      call ucd_addPolygon(rexport,p_Dvertices)
+      call storage_free(ipolyHandle)
+      ipolyHandle = ST_NOHANDLE
+    end do
     
     ! Write the file to disc, that's it.
     call ucd_write (rexport)
@@ -781,7 +792,7 @@ contains
     ! Release the auxiliary vector
     call lsysbl_releaseVector (rprjVector)
     
-    call storage_free(ipolyHandle)
+
     
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
@@ -1210,79 +1221,6 @@ contains
   end subroutine  
 
 ! ***************************************************************************
-
-  !<subroutine>
-  subroutine cc_forcesNonStat(rpostprocessing,rvector,rproblem)
-  !<description>
-  ! A routine that calculated the forces acting on an object
-  ! and moves the object according to these forces
-  !</description>
-
-  ! structure for a geometry object
-  !<inputoutput>
-  type(t_problem), intent(INOUT) :: rproblem
-  type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
-  !</inputoutput>  
-
-  !<input>
-  type(t_vectorBlock), intent(IN) :: rvector
-  !</input>
-  
-  !</subroutine>
-
-  ! Local variables
-  ! pointer to the entries of the alpha vector  
-  real(DP), dimension(:), pointer :: p_Dvector  
-
-  ! pointer to the nodes of the grid
-  real(DP), dimension(:,:), pointer :: p_Ddata
-  
-  ! Forces
-  real(DP) :: DResForceX
-  real(DP) :: DResForceY
-
-  ! pointer to the triangulation structure
-  type(t_triangulation), pointer :: p_rtriangulation
-  
-  integer :: ive,NEL
-
-  real(DP) :: mytime
-  
-  !mytime = dtime
- 
-  if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
-    call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
- 
-  call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
-  rpostprocessing%rvectorScalarFB,.true.)
-  
-  ! get a pointer to the triangulation
-  p_rtriangulation => &
-  rpostprocessing%rvectorScalarFB%p_rspatialDiscr%p_rtriangulation
-  
-  call anprj_discrDirect (rpostprocessing%rvectorScalarFB,cc_Particle,&
-                          rproblem%rcollection,iorder=1)  
-  
-  ! get a pointer to the entries of the vector
-  call lsyssc_getbase_double(rpostprocessing%rvectorScalarFB,p_Dvector)
-
-  call output_lbrk ()
-  call output_separator(OU_SEP_EQUAL)
-  call output_line ('Q1 Vector recalculated ')
-  call output_separator(OU_SEP_EQUAL)   
-  
-  call cc_forcesIntegrationNonStat(rproblem,rvector,rpostprocessing,&
-       rpostprocessing%rvectorScalarFB, DResForceX, &
-       DResForceY,0.01_dp,0.01_dp,0.1_dp*0.2_dp**2)
-  
-  call output_lbrk()
-  call output_line ('Drag forces')
-  call output_line ('-----------')  
-  print*, DResForceX," / ", DResForceY
-  
-  end subroutine  
-
-! ***************************************************************************
     
 !<subroutine>
   subroutine cc_CB(cderivative,rdiscretisation, &
@@ -1368,125 +1306,6 @@ contains
     do j=1,npointsPerElement
         dRadius = sqrt((Dpoints(1,j,i) - dCenterX)**2 + (Dpoints(2,j,i) -dCenterY)**2)
       if(dRadius < 0.05_DP)then
-        Dvalues(j,i) =  1.0_DP 
-      else
-        Dvalues(j,i) = 0.0_DP
-      end if
-    end do
-  end do    
-    
-  case (DER_DERIV_X)
-    ! Not really useful in the case at hand
-    Dvalues (:,:) = 0.0_dp
-  case (DER_DERIV_Y)
-    ! not much better than the above case
-    Dvalues (:,:) = 0.0_dp
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
-  
-  
-  end subroutine
-  
-! ***************************************************************************  
-
-!<subroutine>
-  subroutine cc_Particle(cderivative,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Dvalues,rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
-  
-!<description>
-  ! This subroutine is called during the calculation of errors. It has to compute
-  ! the (analytical) values of a function in a couple of points on a couple
-  ! of elements. These values are compared to those of a computed FE function
-  ! and used to calculate an error.
-  !
-  ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
-  ! According to the terms in the linear form, the routine has to compute
-  ! simultaneously for all these points.
-!</description>
-  
-!<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-  ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
-  
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-  ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
-  
-!</input>
-
-!<output>
-  ! This array has to receive the values of the (analytical) function
-  ! in all the points specified in Dpoints, or the appropriate derivative
-  ! of the function, respectively, according to cderivative.
-  !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
-!</output>
-  
-!</subroutine>
-  ! local variables
-  real :: dCenterX,dCenterY,dRadius,ddist
-  integer :: i,j,iin
-  type(t_geometryObject), pointer :: p_rgeometryObject
-
-  p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
-
-  select case (cderivative)
-  case (DER_FUNC)
-  
-  ! get the neccessary from the geometry structure
-  dCenterX = p_rgeometryObject%rcoord2D%Dorigin(1)
-  dCenterY = p_rgeometryObject%rcoord2D%Dorigin(2)
-  
-  dRadius = p_rgeometryObject%rcircle%dradius
-
-  ! loop over all elements and calculate the
-  ! values in the cubature points
-  do i=1,nelements
-    do j=1,npointsPerElement
-    
-      ! Get the distance to the center
-      call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,j,i),Dpoints(2,j,i)/), iin)
-      
-      ! check if it is inside      
-      if(iin .eq. 1)then 
         Dvalues(j,i) =  1.0_DP 
       else
         Dvalues(j,i) = 0.0_DP
@@ -2081,6 +1900,198 @@ contains
   
   end subroutine
   
+! ***************************************************************************
+
+  !<subroutine>
+  subroutine cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+  !<description>
+  ! A routine that calculated the forces acting on an object
+  ! and moves the object according to these forces
+  !</description>
+
+  ! structure for a geometry object
+  !<inputoutput>
+  type(t_problem), intent(INOUT) :: rproblem
+  type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
+  !</inputoutput>  
+
+  !<input>
+  type(t_vectorBlock), intent(IN) :: rvector
+  !</input>
+  
+  !</subroutine>
+
+  ! Local variables
+  ! pointer to the entries of the alpha vector  
+  real(DP), dimension(:), pointer :: p_Dvector  
+
+  ! pointer to the nodes of the grid
+  real(DP), dimension(:,:), pointer :: p_Ddata
+  
+  ! Forces
+  real(DP) :: DResForceX
+  real(DP) :: DResForceY
+
+  ! pointer to the triangulation structure
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  integer :: ive,NEL
+
+  real(DP) :: mytime
+  
+  !mytime = dtime
+ 
+  if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
+    call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
+ 
+  call lsyssc_createVecByDiscr(rvector%RvectorBlock(1)%p_rspatialDiscr, &
+  rpostprocessing%rvectorScalarFB,.true.)
+  
+  ! get a pointer to the triangulation
+  p_rtriangulation => &
+  rpostprocessing%rvectorScalarFB%p_rspatialDiscr%p_rtriangulation
+  
+  call anprj_discrDirect (rpostprocessing%rvectorScalarFB,cc_Particle,&
+                          rproblem%rcollection,iorder=1)  
+  
+  ! get a pointer to the entries of the vector
+  call lsyssc_getbase_double(rpostprocessing%rvectorScalarFB,p_Dvector)
+
+  call output_lbrk ()
+  call output_separator(OU_SEP_EQUAL)
+  call output_line ('Q1 Vector recalculated ')
+  call output_separator(OU_SEP_EQUAL)   
+  
+  call cc_forcesIntegrationNonStat(rproblem,rvector,rpostprocessing,&
+       rpostprocessing%rvectorScalarFB, DResForceX, &
+       DResForceY,0.01_dp,0.01_dp,0.1_dp*0.2_dp**2)
+  
+  call output_lbrk()
+  call output_line ('Drag forces')
+  call output_line ('-----------')  
+  print*, DResForceX," / ", DResForceY
+  
+  end subroutine
+  
+! ***************************************************************************  
+
+!<subroutine>
+  subroutine cc_Particle(cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(IN)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(IN)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(IN)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+
+  ! An array accepting the DOF's on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  integer, dimension(:,:), intent(IN) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(INOUT), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+  ! local variables
+  integer :: i,j,iin,ipart
+  type(t_geometryObject), pointer :: p_rgeometryObject
+  
+  type(t_particleCollection), pointer :: p_rparticleCollection
+
+  p_rparticleCollection => collct_getvalue_particles(rcollection,'particles')
+  !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
+
+  select case (cderivative)
+  case (DER_FUNC)
+  
+  ! loop over all elements and calculate the
+  ! values in the cubature points
+  do i=1,nelements
+    do j=1,npointsPerElement
+      ! loop over the particles
+      do ipart=1,p_rparticleCollection%nparticles
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+      ! Get the distance to the center
+      call geom_isInGeometry (p_rgeometryObject, (/Dpoints(1,j,i),Dpoints(2,j,i)/), iin)
+      
+      ! check if it is inside      
+      if(iin .eq. 1)then 
+        Dvalues(j,i) =  1.0_DP 
+        exit
+      else
+        Dvalues(j,i) = 0.0_DP
+      end if
+      end do ! end particles
+    end do
+  end do    
+    
+  case (DER_DERIV_X)
+    ! Not really useful in the case at hand
+    Dvalues (:,:) = 0.0_dp
+  case (DER_DERIV_Y)
+    ! not much better than the above case
+    Dvalues (:,:) = 0.0_dp
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+  
+  end subroutine
+
 ! *************************************************************************** 
 
 !<subroutine>
@@ -2208,13 +2219,20 @@ contains
     real(dp), dimension(:), pointer :: p_DforceY  
     type(t_geometryObject), pointer :: p_rgeometryObject  
     
+    type(t_particleCollection), pointer :: p_rparticleCollection
+
+    !
+    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject
+    
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
     if (present(df2)) dpf2 = df2    
 
-    p_rgeometryObject => collct_getvalue_geom(rproblem%rcollection,'mini')
+
 
     dcenterx = p_rgeometryObject%rcoord2D%Dorigin(1)
     dcentery = p_rgeometryObject%rcoord2D%Dorigin(2)
@@ -2488,7 +2506,7 @@ contains
 
         end do ! IEL
         
-      END DO ! IELset
+      end do ! IELset
       
       ! assign the forces
       p_DforceX(1) = Dfx
@@ -2538,7 +2556,7 @@ contains
 
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
-    integer(I32) :: IEL, IELmax, IELset
+    integer(I32) :: IEL, IELmax, IELset,ipart
     real(DP) :: OM, DN1, DN2, DN3,dpp
     real(DP) :: ah1,ah2,ah3,dvelx,dvely,dvelz,dmasssl,ddmasssl,dvolume,dimomir
     real(DP) :: dfx,dfy,du3x,du3y,du3z,dalx,daly,dalz,nennerX
@@ -2549,136 +2567,131 @@ contains
     real(dp), dimension(:), pointer :: p_DforceX
     real(dp), dimension(:), pointer :: p_DforceY
     
-    ! get the geometry object
-    p_rgeometryObject => collct_getvalue_geom (rproblem%rcollection, 'mini')    
-    
-    ! get the arrays from the pointers
-    call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
-    call lsyssc_getbase_double (rpostprocessing%rResForceY,p_DforceY)
-    
-    ! position
-    dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
-    dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
-    
-    ! old position
-    dCenterXold=p_rgeometryObject%rcoord2D%Dorigin(1)
-    dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
-    
-    ! some physical parameters
-    dvolume  = (rproblem%drad)**2 * SYS_PI
-    dmasssl  = rproblem%drho2 * dvolume 
-    ddmasssl = (rproblem%drho2-1.0_dp) * dvolume 
-    
-    ! Calculate the moment of inertia by formula,
-    ! this formula is valid only for a circle
-    ! note: for other shaped an approximation can
-    ! be calculated by the routine cc_torque:
-    ! there we calculated :int_Particle |r|^2 dParticle
-    ! the moment of inertia can then be calculated by
-    ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
-    ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
-    ! we already calculated earlier; so we just need to divide...
-    dimomir  = dmasssl*((rproblem%drad)**2)/4.0_dp !moment of inertia !    
-    
-    ! Mean resistance forces for the given time step
-    dfx = 0.5_dp * (p_DforceX(5) + p_DforceX(4))
-    dfy = 0.5_dp * (p_DforceY(5) + p_DforceY(4))
-    
-    ! Velocity difference for the given time step
-    dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
-    dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-98.1_dp)/dmasssl
- 
-    ! integrate the torque to get the angular velocity
-    ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
-    domega = dtimestep*0.5_dp*(rproblem%DTrqForce(2)+rproblem%DTrqForce(1))/dimomir
-    
-    ! update the torque
-    ! set the new values for the torque
-    ! torque_old=torque_new
-    rproblem%DTrqForce(2)=rproblem%DTrqForce(1)
-    
-    ! Update the angles
-    ! a_new = a_old + time*(avel_old + 0.5*avel_new)
-    ! Overwrite rotation angle
-    p_rgeometryObject%rcoord2D%drotation = p_rgeometryObject%rcoord2D%drotation + &
-                                         dtimestep *(rproblem%DAngVel(1) + 0.5_dp*domega)
-    
-    ! Recalculate SIN and COS values of angle
-    p_rgeometryObject%rcoord2D%dsin_rotation = sin(p_rgeometryObject%rcoord2D%drotation)
-    p_rgeometryObject%rcoord2D%dcos_rotation = cos(p_rgeometryObject%rcoord2D%drotation)
-    
-    ! Update the angular velocity
-    ! avel_new = avel_old + avel_new
-    rproblem%DAngVel(1) = rproblem%DAngVel(1) + domega
- 
-    ! save the old forces for the next time step
-    p_DforceX(5) = p_DforceX(4)
-    p_DforceY(5) = p_DforceY(4)
-    
-    ! save the old forces for the next time step
-    rproblem%DResForceX(2) = rproblem%DResForceX(1)
-    rproblem%DResForceY(2) = rproblem%DResForceY(1)
-    
-    ! update the position of the center
-    dCenterX=dCenterX+dtimestep*(p_DforceX(6)+0.5_dp*dvelx) 
-    dCenterY=dCenterY+dtimestep*(p_DforceY(6)+0.5_dp*dvely)
-    
-    ! update the position of the geometry object
-    p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
-    p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
+    type(t_particleCollection), pointer :: p_rparticleCollection
 
-    ! save the current velocity
-    p_DforceX(6) = p_DforceX(6) + dvelx
-    p_DforceY(6) = p_DforceY(6) + dvely
+    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+    !p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
 
-    ! save the current velocity
-    rproblem%DVelX(1)=p_DforceX(6)
-    rproblem%DVelY(1)=p_DforceY(6)
+    do ipart=1,p_rparticleCollection%nparticles
+    
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+      
+      ! get the arrays from the pointers
+      call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
+      call lsyssc_getbase_double (rpostprocessing%rResForceY,p_DforceY)
+      
+      ! position
+      dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
+      dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
+      
+      ! old position
+      dCenterXold=p_rgeometryObject%rcoord2D%Dorigin(1)
+      dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
+      
+      ! some physical parameters
+      dvolume  = (rproblem%drad)**2 * SYS_PI
+      dmasssl  = rproblem%drho2 * dvolume 
+      ddmasssl = (rproblem%drho2-1.0_dp) * dvolume 
+      
+      ! Calculate the moment of inertia by formula,
+      ! this formula is valid only for a circle
+      ! note: for other shaped an approximation can
+      ! be calculated by the routine cc_torque:
+      ! there we calculated :int_Particle |r|^2 dParticle
+      ! the moment of inertia can then be calculated by
+      ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
+      ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
+      ! we already calculated earlier; so we just need to divide...
+      dimomir  = dmasssl*((rproblem%drad)**2)/4.0_dp !moment of inertia !    
+      
+      ! Mean resistance forces for the given time step
+      dfx = 0.5_dp * (p_DforceX(5) + p_DforceX(4))
+      dfy = 0.5_dp * (p_DforceY(5) + p_DforceY(4))
+      
+      ! Velocity difference for the given time step
+      dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
+      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-98.1_dp)/dmasssl
+   
+      ! integrate the torque to get the angular velocity
+      ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
+      domega = dtimestep*0.5_dp*(rproblem%DTrqForce(2)+rproblem%DTrqForce(1))/dimomir
+      
+      ! update the torque
+      ! set the new values for the torque
+      ! torque_old=torque_new
+      rproblem%DTrqForce(2)=rproblem%DTrqForce(1)
+      
+      ! Update the angles
+      ! a_new = a_old + time*(avel_old + 0.5*avel_new)
+      ! Overwrite rotation angle
+      p_rgeometryObject%rcoord2D%drotation = p_rgeometryObject%rcoord2D%drotation + &
+                                           dtimestep *(rproblem%DAngVel(1) + 0.5_dp*domega)
+      
+      ! Recalculate SIN and COS values of angle
+      p_rgeometryObject%rcoord2D%dsin_rotation = sin(p_rgeometryObject%rcoord2D%drotation)
+      p_rgeometryObject%rcoord2D%dcos_rotation = cos(p_rgeometryObject%rcoord2D%drotation)
+      
+      ! Update the angular velocity
+      ! avel_new = avel_old + avel_new
+      rproblem%DAngVel(1) = rproblem%DAngVel(1) + domega
+   
+      ! save the old forces for the next time step
+      p_DforceX(5) = p_DforceX(4)
+      p_DforceY(5) = p_DforceY(4)
+      
+      ! save the old forces for the next time step
+      rproblem%DResForceX(2) = rproblem%DResForceX(1)
+      rproblem%DResForceY(2) = rproblem%DResForceY(1)
+      
+      ! update the position of the center
+      dCenterX=dCenterX+dtimestep*(p_DforceX(6)+0.5_dp*dvelx) 
+      dCenterY=dCenterY+dtimestep*(p_DforceY(6)+0.5_dp*dvely)
+      
+      ! update the position of the geometry object
+      p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
+      p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
 
-    ! write back new position
-    ! we need to write it to the collection so we can
-    ! access it in the callback routine
-    rproblem%rcollection%DQuickaccess(7)=dCenterX
-    rproblem%rcollection%DQuickaccess(8)=dCenterY
-    
-    ! We need the velocity in the callback routine
-    ! for the right hand side, so we save it to
-    ! the collection here, so it will be available
-    ! for the callback routine
-    rproblem%rcollection%DQuickaccess(10)= p_DforceX(6)
-    rproblem%rcollection%DQuickaccess(11)= p_DforceY(6)
-    rproblem%rcollection%DQuickaccess(12)= rproblem%DAngVel(1)
-    rproblem%rcollection%DQuickaccess(13)= rproblem%DTrqForce(1)
+      ! save the current velocity
+      p_DforceX(6) = p_DforceX(6) + dvelx
+      p_DforceY(6) = p_DforceY(6) + dvely
 
-    ! Output some values to get some readable stuff on the
-    ! the screen
-    print *,"--------------------------"
-    
-    print *,"Total torque force: ",rproblem%DTrqForce(1)
-    
-    print *,"--------------------------"
+      ! save the current velocity
+      rproblem%DVelX(1)=p_DforceX(6)
+      rproblem%DVelY(1)=p_DforceY(6)
 
-    print *,"domega: ",domega
+      ! write back new position
+      ! we need to write it to the collection so we can
+      ! access it in the callback routine
+      rproblem%rcollection%DQuickaccess(7)=dCenterX
+      rproblem%rcollection%DQuickaccess(8)=dCenterY
+      
+      ! We need the velocity in the callback routine
+      ! for the right hand side, so we save it to
+      ! the collection here, so it will be available
+      ! for the callback routine
+      rproblem%rcollection%DQuickaccess(10)= p_DforceX(6)
+      rproblem%rcollection%DQuickaccess(11)= p_DforceY(6)
+      rproblem%rcollection%DQuickaccess(12)= rproblem%DAngVel(1)
+      rproblem%rcollection%DQuickaccess(13)= rproblem%DTrqForce(1)
 
-    print *,"--------------------------"
-
-    print *,"DAngVel: ",rproblem%DAngVel(1)
-
-    print *,"--------------------------"
+      ! Output some values to get some readable stuff on the
+      ! the screen
+      print *,"--------------------------"
+      print *,"Total torque force: ",rproblem%DTrqForce(1)
+      print *,"--------------------------"
+      print *,"domega: ",domega
+      print *,"--------------------------"
+      print *,"DAngVel: ",rproblem%DAngVel(1)
+      print *,"--------------------------"
+      print *,"New Position X: ",dCenterX
+      print *,"--------------------------"
+      print *,"VelocityXfromFlow: ",dvelx
+      print *,"--------------------------"
+      print *,"accumulated velocity: ",p_DforceX(6)
+      print *,"--------------------------"
+      print *,"VelocityXTotal: ",rproblem%rcollection%DQuickaccess(10)
     
-    print *,"New Position X: ",dCenterX
-    
-    print *,"--------------------------"
-    
-    print *,"VelocityXfromFlow: ",dvelx
-
-    print *,"--------------------------"
-    
-    print *,"accumulated velocity: ",p_DforceX(6)
-    
-    print *,"--------------------------"
-    
-    print *,"VelocityXTotal: ",rproblem%rcollection%DQuickaccess(10)
+    end do ! end ipart
     
   end subroutine
 

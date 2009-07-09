@@ -1530,8 +1530,13 @@ contains
     integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
     integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
-    integer :: ipoint,idx,iin
+    integer :: ipoint,idx,iin,ipart
     type(t_geometryObject), pointer :: p_rgeometryObject
+    
+    type(t_particleCollection), pointer :: p_rparticleCollection
+
+    !
+    p_rparticleCollection => collct_getvalue_particles(rcollection,'particles')
     
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
@@ -1541,13 +1546,6 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
-
-    ! get the data out of the geometry structure
-    p_rgeometryObject => collct_getvalue_geom(rcollection,'mini')
-
-    ! center of the circle
-    dxcenter = p_rgeometryObject%rcoord2D%Dorigin(1)
-    dycenter = p_rgeometryObject%rcoord2D%Dorigin(2)
 
     ! Loop through the points where to evaluate:
     do idx = 1,Revaluation(1)%nvalues
@@ -1562,9 +1560,18 @@ contains
                         p_IverticesAtElement,p_IverticesAtEdge,&
                         p_rtriangulation%NVT,&
                         dx,dy)
-      
+
+      do ipart=1,p_rparticleCollection%nparticles
+
+      ! get the data out of the geometry structure
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject 
+
       ! Get the distance to the center
       call geom_isInGeometry (p_rgeometryObject, (/dx,dy/), iin)
+      
+      ! center of the circle
+      dxcenter = p_rgeometryObject%rcoord2D%Dorigin(1)
+      dycenter = p_rgeometryObject%rcoord2D%Dorigin(2)
       
       if(iin .eq. 1)then 
         ! Denote in the p_Iinside array that we prescribe a value here:
@@ -1583,6 +1590,8 @@ contains
         Revaluation(2)%p_Dvalues (idx,1) = rcollection%Dquickaccess(11) + lvy
         
       end if
+      
+      end do ! end ipart
       
     end do
 
