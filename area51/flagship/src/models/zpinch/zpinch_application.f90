@@ -297,7 +297,7 @@ contains
 
     ! Release collection
     call collct_done(rcollectionTransport)
-    
+
     ! Stop time measurement for pre-processing
 !!!!    call stat_stopTimer(rappDescrTransport%rtimerPrePostprocess)
 
@@ -855,10 +855,10 @@ contains
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
-    real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
+    real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
-    integer :: isize, ipreadapt, npreadapt, nerrorvariable
+    integer :: isize, ipreadapt, npreadapt
     integer, external :: signal_SIGINT
 
     
@@ -934,7 +934,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionTransport, .false., ST_DOUBLE)
 !!$    call transp_initSolution(rappDescrTransport, rparlist, ssectionNameTransport, p_rproblemLevel,&
 !!$                             rtimestepTransport%dinitialTime, rsolutionTransport)
-    call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCondTransport,&
                                    rsolutionTransport, rtimestepTransport%dinitialTime)
     
     ! Attach the boundary condition
@@ -1064,7 +1064,7 @@ contains
 !!$                                             rsolutionEuler, rtimestepEuler%dinitialTime,&
 !!$                                             rproblem%rboundary, euler_calcBoundaryvalues3d)
 !!$            end select
-            call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
+            call bdrf_filterVectorExplicit(rbdrCondTransport,&
                                              rsolutionTransport, rtimestepTransport%dinitialTime)
           end do
 

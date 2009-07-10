@@ -537,14 +537,12 @@ contains
                          1, nedge, p_ML, p_fluxTransport, p_alpha, p_DataTransport, p_solTransport)
 
     ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCondEuler, rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCondEuler,&
                                    rsolutionEuler, rtimestep%dTime,&
-                                   rproblemLevel%p_rproblem%rboundary,&
                                    euler_calcBoundaryvalues2d)
 
-    call bdrf_filterVectorExplicit(rbdrCondTransport, rproblemLevel%rtriangulation,&
-                                   rsolutionTransport, rtimestep%dTime,&
-                                   rproblemLevel%p_rproblem%rboundary)
+    call bdrf_filterVectorExplicit(rbdrCondTransport,&
+                                   rsolutionTransport, rtimestep%dTime)
     
     ! Release flux vectors
     call storage_free(h_Ksep)
@@ -1091,7 +1089,7 @@ contains
     ! local variables
     type(t_vectorBlock), pointer, save :: rsolutionEuler, rsolutionTransport
     real(DP), dimension(:), pointer, save :: p_DsolutionEuler, p_DsolutionTransport
-    integer :: ivar,neq
+    integer :: ivar
 
 
     ! What operation should be performed?
