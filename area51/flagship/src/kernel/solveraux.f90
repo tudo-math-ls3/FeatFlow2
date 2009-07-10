@@ -165,7 +165,7 @@ module solveraux
   public :: solver_restrictionScalar
   public :: solver_restrictionBlock
   
-  ! *****************************************************************************
+  ! ****************************************************************************
 
   interface solver_createSolver
     module procedure solver_createSolverDirect
@@ -187,7 +187,7 @@ module solveraux
     module procedure solver_setSmootherMatrixBlock
   end interface
 
-  ! *****************************************************************************
+  ! ****************************************************************************
 
 !<constants>
 
