@@ -774,11 +774,6 @@ contains
             rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(1),&
             rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(1),&
             LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlVelocity)
-
-          ! The matrix for the interpolation has the same structure.
-          call lsyssc_duplicateMatrix(rproblem%RlevelInfo(i)%rmatrixProlVelocity,&
-              rproblem%RlevelInfo(i)%rmatrixInterpVelocity,&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
           
         end if
         
@@ -790,11 +785,6 @@ contains
             rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(3),&
             LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlPressure)
             
-          ! The matrix for the interpolation has the same structure.
-          call lsyssc_duplicateMatrix(rproblem%RlevelInfo(i)%rmatrixProlPressure,&
-              rproblem%RlevelInfo(i)%rmatrixInterpPressure,&
-              LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-
         end if
 
       end if
@@ -1109,11 +1099,6 @@ contains
           rlevelFine%rdiscretisation%RspatialDiscr(1),&
           .true., rlevelFine%rmatrixProlVelocity, MLOP_AVRG_MASS)
 
-      call mlop_build2LvlInterpMatrix (&
-          rlevelCoarse%rdiscretisation%RspatialDiscr(1),&
-          rlevelFine%rdiscretisation%RspatialDiscr(1),&
-          .true., rlevelFine%rmatrixInterpVelocity,MLOP_AVRG_MASS)
-
     end if
 
     ! Assemble projection matrix for pressure?
@@ -1125,10 +1110,6 @@ contains
           rlevelFine%rdiscretisation%RspatialDiscr(3),&
           .true., rlevelFine%rmatrixProlPressure, MLOP_AVRG_MASS)
 
-      call mlop_build2LvlInterpMatrix (&
-          rlevelCoarse%rdiscretisation%RspatialDiscr(3),&
-          rlevelFine%rdiscretisation%RspatialDiscr(3),&
-          .true., rlevelFine%rmatrixInterpPressure, MLOP_AVRG_MASS)
     end if
 
   end subroutine
@@ -1680,14 +1661,10 @@ contains
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEMPressure)
       
       ! Release prolongation matrices.
-      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlVelocity)) then
+      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlVelocity)) &
         call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixProlVelocity)
-        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixInterpVelocity)
-      end if
-      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlPressure)) then
+      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlPressure)) &
         call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixProlPressure)
-        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixInterpPressure)
-      end if
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.

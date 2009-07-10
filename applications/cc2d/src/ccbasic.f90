@@ -127,12 +127,6 @@ module ccbasic
     
     ! A prolongation matrix for the pressure.
     type(t_matrixScalar) :: rmatrixProlPressure
-
-    ! An interpolation matix for the velocity.
-    type(t_matrixScalar) :: rmatrixInterpVelocity
-    
-    ! An interpolation matrix for the pressure.
-    type(t_matrixScalar) :: rmatrixInterpPressure
     
   end type
   
