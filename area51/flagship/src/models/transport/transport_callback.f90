@@ -70,6 +70,16 @@
 !#
 !# 1.) What is the magic behind subroutine  'transp_nlsolverCallback'?
 !#
+!#     -> This is the main callback routine which is called by the
+!#        nonlinear solution algorithm. The specifier ioperationSpec
+!#        specifies the type of operations that should be performed,
+!#        e.g., assemble the preconditioner, the residual and impose
+!#        boundary values. If you want to implement a special routine
+!#        for assembling the preconditioner, than you have to call it
+!#        from transp_nlsolverCallback instead if the standard routine
+!#        transp_calcResidual. Note that changing the interface of this
+!#        callback routine would require to update ALL models. Hence,
+!#        the interface should only be changed if really necessary.
 !#     
 !# </purpose>
 !##############################################################################
