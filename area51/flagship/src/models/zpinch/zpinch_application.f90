@@ -908,8 +908,9 @@ contains
     call parlst_getvalue_string(rparlist, 'Zpinch', 'output', soutputName)
     call parlst_getvalue_double(rparlist, trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
 
-    ! Attach the boundary condition to the solver structure
+    ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolverEuler, rbdrCondEuler, .true.)
+    call problem_setBoundaryCondition(rproblem, rbdrCondEuler)
 
     ! Set collection to primal problem mode
     call collct_setvalue_int(rcollectionEuler, 'primaldual', 1, .true.)
@@ -936,8 +937,9 @@ contains
     call bdrf_filterVectorExplicit(rbdrCondTransport, p_rproblemLevel%rtriangulation,&
                                    rsolutionTransport, rtimestepTransport%dinitialTime)
     
-    ! Attach the boundary condition to the solver structure
+    ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolverTransport, rbdrCondTransport, .true.)
+    call problem_setBoundaryCondition(rproblem, rbdrCondTransport)
 
     ! Set collection to primal problem mode
     call collct_setvalue_int(rcollectionTransport, 'primaldual', 1, .true.)
