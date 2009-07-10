@@ -116,7 +116,7 @@ sexactsolutionname = @exactsol
 # 1 = volume integral (one component)
 # 2 = surface integral (one component)
 # 3 = mixed volume/surface integral (one-two components)
-itargetfunctype = 3
+itargetfunctype = 2
 
 # section name of target functional
 stargetfuncname = @weightingFuncInt
@@ -449,13 +449,13 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 100
+nmaxIterations = 500
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 2
+iprecond = 3
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -466,7 +466,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 2
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -709,17 +709,17 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 1
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1e-8
+drefinementTolerance = 1e-7
 
 # coarsening tolerance
-dcoarseningTolerance = 0.0 #1e-6  #1e-8
+dcoarseningTolerance = 1e-5  #1e-8
 
 
 ################################################################################

@@ -33,7 +33,7 @@ SIN(_ang*_PI/180)
 #    ibctyp = 11: Supersonic outlet boundary condition
 #    ibctyp = 12: Periodic boundary condition (symmetric)
 #    ibctyp = 13: Periodic boundary condition (anti-symmetric)
-[boundary_conditions]
+[boundary_conditions_primal]
 NBCT
 3
 NEXPR
