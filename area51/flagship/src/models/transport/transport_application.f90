@@ -2060,10 +2060,6 @@ contains
     ! Release temporal mass matrix if required
     if (lumpedMassMatrix .le. 0) call lsyssc_releaseMatrix(rmatrix)
     
-
-    print *, "Estimated 1:",daux
-    print *, "Estimated 2:",dtargetError
-    print *, "---"
     
     ! Check if an exact solution is available or if there is an exact
     ! expression for the target functional. If neither is available,
@@ -2366,9 +2362,10 @@ contains
                                                                                         dexactTargetFunc ),15,6)))
       call output_lbrk()
 
+      stop
+
     end if
 
-    pause
 
     !---------------------------------------------------------------------------
     ! Apply the adaptation strategy
@@ -3176,8 +3173,9 @@ contains
     call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                   rtimestep%dinitialTime, rcollection, nlmin)
     
-    ! Attach the boundary condition to the solver structure
+    ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
+    call problem_setBoundaryCondition(rproblem, rbdrCond)
 
     ! Set primal problem mode
     call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -3558,8 +3556,9 @@ contains
       call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     0.0_DP, rcollection, nlmin)
 
-      ! Attach the boundary condition to the solver structure
+      ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
+      call problem_setBoundaryCondition(rproblem, rbdrCond)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -3855,8 +3854,9 @@ contains
       call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
-      ! Attach the boundary condition to the solver structure
+      ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
+      call problem_setBoundaryCondition(rproblem, rbdrCond)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -4161,8 +4161,9 @@ contains
       call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
-      ! Attach the boundary condition to the solver structure
+      ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
+      call problem_setBoundaryCondition(rproblem, rbdrCondPrimal)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -4226,8 +4227,9 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
       
-      ! Attach the boundary condition to the solver structure
+      ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
+      call problem_setBoundaryCondition(rproblem, rbdrCondDual)
       
       ! Set dual problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
@@ -4269,8 +4271,9 @@ contains
       call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
                                     rtimestep%dTime, rcollection, nlmin)
       
-      ! Attach the boundary condition to the solver structure
+      ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
+      call problem_setBoundaryCondition(rproblem, rbdrCondPrimal)
       
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
