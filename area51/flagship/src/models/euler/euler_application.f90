@@ -2055,8 +2055,9 @@ contains
       
     end if
     
-    ! Attach the boundary condition to the solver structure
+    ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
+    call problem_setBoundaryCondition(rproblem, rbdrCond)
 
     ! Set primal problem mode
     call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
