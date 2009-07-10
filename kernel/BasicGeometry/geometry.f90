@@ -479,7 +479,7 @@ module geometry
     
     ! The 3D coordinate system for this geometry object.
     ! Used for 3D geometry objects - undefined for 2D geometry objects.
-    TYPE(t_coordinateSystem3D) :: rcoord3D
+    type(t_coordinateSystem3D) :: rcoord3D
     
     ! A boolean which tells us whether the geometry object is inverted or not.
     logical                    :: binverted = .false.
@@ -5375,7 +5375,7 @@ end subroutine
 !</input>
 
 !</subroutine>
-  real(DP) :: dnu,dx,dy,drad,drho
+  real(DP) :: dx,dy,drad,drho
   integer :: i1
 
   ! set the number of particles in the collection
