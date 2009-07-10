@@ -701,8 +701,8 @@ contains
     ! Impose boundary conditions
     !---------------------------------------------------------------------------
 
-    call bdrf_filterMatrix(rsolver%rboundaryCondition, rproblemLevel%rtriangulation,&
-                           rproblemLevel%RmatrixBlock(systemMatrix), 1.0_DP)
+    call bdrf_filterMatrix(rsolver%rboundaryCondition, &
+        rproblemLevel%RmatrixBlock(systemMatrix), 1.0_DP)
 
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still 
     ! have to link it to the solver hierarchy. This is done recursively.
@@ -1719,27 +1719,21 @@ contains
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
                                rproblemLevel%RmatrixBlock(imatrix),&
                                rsolution, rres, rsolutionInitial,&
                                rtimestep%dTime,&
-                               rproblemLevel%p_rproblem%rboundary,&
                                euler_calcBoundaryvalues1d, istatus)
     case (NDIM2D)
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
                                rproblemLevel%RmatrixBlock(imatrix),&
                                rsolution, rres, rsolutionInitial,&
                                rtimestep%dTime,&
-                               rproblemLevel%p_rproblem%rboundary,&
                                euler_calcBoundaryvalues2d, istatus)
     case (NDIM3D)
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
-                               rproblemLevel%rtriangulation,&
                                rproblemLevel%RmatrixBlock(imatrix),&
                                rsolution, rres, rsolutionInitial,&
                                rtimestep%dTime,&
-                               rproblemLevel%p_rproblem%rboundary,&
                                euler_calcBoundaryvalues3d, istatus)
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
@@ -1887,9 +1881,8 @@ contains
                           NVAR2D, nedge, p_ML, p_flux, p_alpha, p_data, p_u)
 
     ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCond,&
                                    rsolution, rtimestep%dTime,&
-                                   rproblemLevel%p_rproblem%rboundary,&
                                    euler_calcBoundaryvalues2d)
 
     ! Release flux vectors

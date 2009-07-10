@@ -359,6 +359,9 @@ contains
     call lsysbl_releaseVector(rsolutionPrimal)
     call lsysbl_releaseVector(rsolutionDual)
     
+    ! Release function parser
+    call fparser_release(rfparser)
+
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
 
@@ -1935,17 +1938,17 @@ contains
                             rtimestep%dinitialTime, rsolution, rcollection)
     select case(ndimension)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+      call bdrf_filterVectorExplicit(rbdrCond,&
                                      rsolution, rtimestep%dinitialTime,&
-                                     rproblem%rboundary, euler_calcBoundaryvalues1d)
+                                     euler_calcBoundaryvalues1d)
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+      call bdrf_filterVectorExplicit(rbdrCond,&
                                      rsolution, rtimestep%dinitialTime,&
-                                     rproblem%rboundary, euler_calcBoundaryvalues2d)
+                                     euler_calcBoundaryvalues2d)
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+      call bdrf_filterVectorExplicit(rbdrCond,&
                                      rsolution, rtimestep%dinitialTime,&
-                                     rproblem%rboundary, euler_calcBoundaryvalues3d)
+                                     euler_calcBoundaryvalues3d)
     end select
 
     ! Initialize timer for intermediate UCD exporter
@@ -2024,17 +2027,17 @@ contains
                                     rtimestep%dinitialTime, rsolution, rcollection)
             select case(ndimension)
             case (NDIM1D)
-              call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+              call bdrf_filterVectorExplicit(rbdrCond,&
                                              rsolution, rtimestep%dinitialTime,&
-                                             rproblem%rboundary, euler_calcBoundaryvalues1d)
+                                             euler_calcBoundaryvalues1d)
             case (NDIM2D)
-              call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+              call bdrf_filterVectorExplicit(rbdrCond,&
                                              rsolution, rtimestep%dinitialTime,&
-                                             rproblem%rboundary, euler_calcBoundaryvalues2d)
+                                             euler_calcBoundaryvalues2d)
             case (NDIM3D)
-              call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+              call bdrf_filterVectorExplicit(rbdrCond,&
                                              rsolution, rtimestep%dinitialTime,&
-                                             rproblem%rboundary, euler_calcBoundaryvalues3d)
+                                             euler_calcBoundaryvalues3d)
             end select
           end do
 
