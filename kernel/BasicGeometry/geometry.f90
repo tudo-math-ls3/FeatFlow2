@@ -5371,7 +5371,7 @@ end subroutine
   ! the number of particles that will take part in the simulation
   integer, intent(IN) :: iparticles
   ! the particle data
-  real(DP), dimension(:,:), pointer, intent(in) :: pparameters
+  real(DP), dimension(:,:), intent(in) :: pparameters
 !</input>
 
 !</subroutine>
