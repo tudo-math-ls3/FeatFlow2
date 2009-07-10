@@ -1592,7 +1592,7 @@ contains
     type(t_linearForm) :: rform
     character(LEN=SYS_STRLEN) :: stargetfuncname
     integer :: itargetfunctype, ivelocityType, velocityfield
-    integer :: icomp, nsubstr
+    integer :: icomp
 
 
     ! Get global configuration from parameter list
@@ -1969,7 +1969,7 @@ contains
     real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance, daux, dtargetFunc
     integer :: i, icomp, convectionAFC, diffusionAFC
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
-    integer :: itargetfunctype, iexacttargetfunctype, iexactsolutiontype
+    integer :: itargetfunctype, iexactsolutiontype
     integer :: iprotectLayer, nprotectLayers, igridindicator
     integer :: h_BisactiveElement
 
@@ -3065,7 +3065,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              rtimestep%dinitialTime, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCond,&
                                    rsolution, rtimestep%dinitialTime)
 
     ! Initialize timer for intermediate UCD exporter
@@ -3138,7 +3138,7 @@ contains
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
             call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
                                      rtimestep%dinitialTime, rsolution, rcollection)
-            call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+            call bdrf_filterVectorExplicit(rbdrCond,&
                                            rsolution, rtimestep%dinitialTime)
 
             ! Re-initialize all constant coefficient matrices
@@ -3501,7 +3501,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              0.0_DP, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCond,&
                                    rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
@@ -3800,7 +3800,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              0.0_DP, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond, p_rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCond,&
                                    rsolution, 0.0_DP)    
 
     !---------------------------------------------------------------------------
@@ -4107,7 +4107,7 @@ contains
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
                              0.0_DP, rsolutionPrimal, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCondPrimal, p_rproblemLevel%rtriangulation,&
+    call bdrf_filterVectorExplicit(rbdrCondPrimal,&
                                    rsolutionPrimal, 0.0_DP)
 
     !---------------------------------------------------------------------------

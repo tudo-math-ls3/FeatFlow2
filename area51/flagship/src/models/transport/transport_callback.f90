@@ -858,7 +858,6 @@ contains
     !---------------------------------------------------------------------------
       
     call bdrf_filterMatrix(rsolver%rboundaryCondition,&
-                           rproblemLevel%rtriangulation,&
                            rproblemLevel%Rmatrix(systemMatrix), 1.0_DP)
         
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still 
@@ -1515,7 +1514,7 @@ contains
     ! Impose boundary conditions
     !---------------------------------------------------------------------------
     
-    call bdrf_filterMatrix(rsolver%rboundaryCondition, rproblemLevel%rtriangulation,&
+    call bdrf_filterMatrix(rsolver%rboundaryCondition,&
                            rproblemLevel%Rmatrix(jacobianMatrix), 1.0_DP)
 
     ! Ok, we updated the Jacobian matrix successfully. Now we still have to
@@ -2509,9 +2508,8 @@ contains
                          nedge, p_ML, p_flux, p_flux0, p_data, p_u)
     
     ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond, rproblemLevel%rtriangulation,&
-                                   rsolution, rtimestep%dTime,&
-                                   rproblemLevel%p_rproblem%rboundary)
+    call bdrf_filterVectorExplicit(rbdrCond,&
+                                   rsolution, rtimestep%dTime)
 
     ! Release flux vectors
     call storage_free(h_Ksep)
