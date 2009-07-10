@@ -535,9 +535,7 @@ contains
                                    p_rresf, p_rresc)
 
       ! Filter boundary conditions
-      call bdrf_filterVectorByValue(rsolver%rboundaryCondition,&
-                                    rproblemLevel%p_rproblemLevelCoarse%rtriangulation,&
-                                    p_rresc, 0.0_DP)
+      call bdrf_filterVectorByValue(rsolver%rboundaryCondition, p_rresc, 0.0_DP)
 
       ! Compute the coarse grid correction recursively, whereby
       ! raux is initialized by zeros (see above)
@@ -559,8 +557,7 @@ contains
                                     rproblemLevel%rtriangulation, p_raux, p_rresf)
       
       ! Filter boundary conditions
-      call bdrf_filterVectorByValue(rsolver%rboundaryCondition,&
-                                    rproblemLevel%rtriangulation, p_rresf, 0.0_DP)
+      call bdrf_filterVectorByValue(rsolver%rboundaryCondition, p_rresf, 0.0_DP)
       
       ! Update the solution: u:=u+omega*raux
       if (rsolver%domega < 0.0_DP) then
