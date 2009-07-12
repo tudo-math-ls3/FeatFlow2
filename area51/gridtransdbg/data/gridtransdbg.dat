@@ -1,0 +1,39 @@
+
+# Path of the log-file (optional)
+SLOGFILE = ./log/output.txt
+
+# Name of the configuration section that is to be loaded
+SCONFIGSECTION = EXAMPLE
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+# Example Section
+[EXAMPLE]
+
+# Test that is to be loaded (non-optional)
+# 1 -> Grid-Transfer Debugger #1: projection matrix comparision
+ITEST = 1
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Parameters for ITEST = 1
+
+# Element identifier (non-optional)
+SELEMENT = EL_Q1_2D
+
+# Cubature rule identifier (non-optional)
+SCUBATURE = G4_2D
+
+# Coarse mesh level (default: 1)
+ILEVEL = 1
+
+# Grid transfer operator which is to be compared (non-optional)
+# 1 -> compare Prolongation operators
+# 2 -> compare Restriction operators
+# 3 -> compare Interpolation operators
+ITRANSFEROPERATOR = 1
+
+# Projection types which are to be compared (non-optional)
+# 1 -> 'hard-coded' projection operator
+# 2 -> L2-projection operator
+# 3 -> sliced L2-projection operator
+IPROJTYPE_A = 2
+IPROJTYPE_B = 3
