@@ -40,17 +40,10 @@
 				<Tool Name="VFPreLinkEventTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/></Configuration></Configurations>
 	<Files>
+		<Filter Name="Data Files" Filter="dat">
+		<File RelativePath="..\data\gridtransdbg.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath="..\src\disto2d_aux.f90"/>
-		<File RelativePath="..\src\disto3d_aux.f90"/>
-		<File RelativePath="..\src\elemdbg.f90"/>
-		<File RelativePath="..\src\elemdbg1d_callback.f90"/>
-		<File RelativePath="..\src\elemdbg1d_test1.f90"/>
-		<File RelativePath="..\src\elemdbg2d_callback.f90"/>
-		<File RelativePath="..\src\elemdbg2d_test1.f90"/>
-		<File RelativePath="..\src\elemdbg3d_callback.f90"/>
-		<File RelativePath="..\src\elemdbg3d_test1.f90"/></Filter>
-		<Filter Name="Header Files" Filter="fi;fd">
-		<File RelativePath="..\data\elemdbg.dat"/></Filter>
-		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/></Files>
+		<File RelativePath="..\data\gridtransdbg_aux.f90"/>
+		<File RelativePath="..\data\gridtransdbg_test1.f90"/>
+		<File RelativePath="..\data\gridtransdbg.f90"/></Filter></Filter></Files>
 	<Globals/></VisualStudioProject>
