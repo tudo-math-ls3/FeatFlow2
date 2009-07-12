@@ -43,7 +43,7 @@
 		<Filter Name="Data Files" Filter="dat">
 		<File RelativePath="..\data\gridtransdbg.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
-		<File RelativePath="..\data\gridtransdbg_aux.f90"/>
-		<File RelativePath="..\data\gridtransdbg_test1.f90"/>
-		<File RelativePath="..\data\gridtransdbg.f90"/></Filter></Files>
+		<File RelativePath="..\src\gridtransdbg_aux.f90"/>
+		<File RelativePath="..\src\gridtransdbg_test1.f90"/>
+		<File RelativePath="..\src\gridtransdbg.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>
