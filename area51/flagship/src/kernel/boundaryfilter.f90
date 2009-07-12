@@ -50,15 +50,20 @@
 !#                           bdrf_filterSolutionBlockScalar
 !#     -> Performs explicit filtering of the solution and the defect vector
 !#
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) bdrf_getNearestNeighbor2d
 !#     -> Calculates number of the boundary vertex which is the
 !#        nearest neighbor to some parameter value
 !#
-!# 1.) bdrf_getNumberOfExpressions
+!# 2.) bdrf_getNumberOfExpressions
 !#     -> Calculates the number of expressions for a particular boundary
 !#        condition in a given spatial dimension
+!#
+!# 3.) bdrf_createRegion
+!#     -> Get the characteristics of a boundary segment and create
+!#        a boundary region structure from it.
 !# </purpose>
 !##############################################################################
 
@@ -88,6 +93,7 @@ module boundaryfilter
   public :: bdrf_filterVectorByVector
   public :: bdrf_filterVectorExplicit
   public :: bdrf_filterSolution
+  public :: bdrf_createRegion
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -7590,5 +7596,72 @@ contains
     end select
 
   end function bdrf_getNumberOfExpressions
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine bdrf_createRegion(rboundaryCondition, iboundCompIdx,&
+      iboundSegIdx, rregion, cpartype)
+
+!<description>
+    ! This subroutine creates a boundary region from a boundary
+    !  condition structure which stores all required data.
+!</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(in) :: rboundaryCondition
+
+    ! Index of boundary component.
+    integer, intent(in) :: iboundCompIdx
   
+    ! Index of the boundary segment.
+    integer, intent(in) :: iboundSegIdx
+
+    ! OPTIONAL: Type of parametrisation to use.
+    ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+    integer, intent(in), optional :: cparType
+!</input>
+
+!<output>
+    ! Boundary region that is characterised by the boundary segment
+    type(t_boundaryRegion), intent(out) :: rregion
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_DmaxParam
+    integer, dimension(:), pointer :: p_IboundaryCpIdx
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx
+    logical, dimension(:), pointer :: p_BisSegClosed
+    integer :: cpar ! local copy of cparType
+    
+    cpar = BDR_PAR_01
+    if (present(cparType)) cpar = cparType
+
+    if ((iboundCompIdx .gt. rboundaryCondition%iboundarycount) .or.&
+        (iboundCompIdx .lt. 0)) then
+      call output_line ('iboundCompIdx out of bounds!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_createRegion')
+      call sys_halt()
+    endif
+
+    ! Set pointers for boundary
+    call storage_getbase_double(rboundaryCondition%h_DmaxParam, p_DmaxParam)
+    call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+    call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
+
+    if ((iboundSegIdx .gt. p_IbdrCondCpIdx(iboundCompIdx+1)&
+        -p_IbdrCondCpIdx(iboundCompIdx)) .or. (iboundSegIdx.lt.0))&
+        then
+      call output_line ('iboundSegIdx out of bounds!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_createRegion')
+      call sys_halt()
+    endif
+
+    
+
+  end subroutine bdrf_createRegion
+
 end module boundaryfilter
