@@ -1356,20 +1356,13 @@ contains
 
 
   ! local variables
-  integer :: i,k,JDFG, ICUBP, NELC,NELF, IELDIST
+  integer :: i,JDFG, ICUBP, NELC,NELF, IELDIST
   integer :: IELC,IELF, IDXC, NELREF, IDOFE, JDOFE
   integer :: JCOL0,JCOL
   real(DP) :: OM, DB
   
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
-  
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
-  ! For every cubature point on the reference element,
-  ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
   
   ! number of cubature points on the reference element
   integer :: ncubpFine,ncubpCoarse,nmaxcubpFine,nmaxcubpCoarse
@@ -1412,6 +1405,7 @@ contains
 
   ! An array that takes coordinates of the cubature formula on the reference element
   real(DP), dimension(:,:), allocatable :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
+  real(DP), dimension(:), allocatable :: Domega
   
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
@@ -1557,6 +1551,7 @@ contains
     ! Allocate some memory to hold the cubature points on the fine mesh
     allocate(p_DcubPtsRefFine(nmaxRefDimFine,nmaxcubpFine))
     allocate(p_DcubPtsRefCoarse(nmaxRefDimCoarse,nmaxcubpCoarse))
+    allocate(Domega(nmaxcubpFine))
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -1601,14 +1596,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      call cub_getCubPoints(p_relemDistFine%ccubTypeBilForm, ncubpFine, Dxi, Domega)
-      
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i = 1, ncubpFine
-        do k = 1, ubound(p_DcubPtsRefFine,1)
-          p_DcubPtsRefFine(k,i) = Dxi(i,k)
-        end do
-      end do
+      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
 
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
@@ -1890,6 +1878,7 @@ contains
     end do ! IELDIST
     
     ! Release memory
+    deallocate(Domega)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
     deallocate(IdofsCoarse)
@@ -1951,13 +1940,6 @@ contains
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
-  ! For every cubature point on the reference element,
-  ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
-  
   ! number of cubature points on the reference element
   integer :: ncubpFine,ncubpCoarse,nmaxcubpFine,nmaxcubpCoarse
   
@@ -1999,6 +1981,7 @@ contains
 
   ! An array that takes coordinates of the cubature formula on the reference element
   real(DP), dimension(:,:), allocatable :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
+  real(DP), dimension(:), allocatable :: Domega
   
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
@@ -2157,6 +2140,7 @@ contains
     ! Allocate some memory to hold the cubature points on the fine mesh
     allocate(p_DcubPtsRefFine(nmaxRefDimFine,nmaxcubpFine))
     allocate(p_DcubPtsRefCoarse(nmaxRefDimCoarse,nmaxcubpCoarse))
+    allocate(Domega(nmaxcubpFine))
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -2215,14 +2199,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      call cub_getCubPoints(p_relemDistFine%ccubTypeBilForm, ncubpFine, Dxi, Domega)
-      
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i = 1, ncubpFine
-        do k = 1, ubound(p_DcubPtsRefFine,1)
-          p_DcubPtsRefFine(k,i) = Dxi(i,k)
-        end do
-      end do
+      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
@@ -2566,6 +2543,7 @@ contains
     deallocate(DglobWeights)
     deallocate(Ipivot)
     deallocate(Dmass)
+    deallocate(Domega)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
     deallocate(IdofsCoarse)
@@ -2576,7 +2554,7 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
-  ! That's it
+    ! That's it
   
   end subroutine
 
@@ -2627,13 +2605,6 @@ contains
   ! Array to tell the element which derivatives to calculate
   logical, dimension(EL_MAXNDER) :: Bder
   
-  ! Cubature point coordinates on the reference element
-  real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
-
-  ! For every cubature point on the reference element,
-  ! the corresponding cubature weight
-  real(DP), dimension(CUB_MAXCUBP) :: Domega
-  
   ! number of cubature points on the reference element
   integer :: ncubpFine,ncubpCoarse,nmaxcubpFine,nmaxcubpCoarse
   
@@ -2649,8 +2620,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable, target :: DbasCoarse,DbasFine
   
   ! Number of entries in the matrix - for quicker access
-  integer :: NA
-  integer :: NEQ, NCOLS
+  integer :: NA, NEQ, NCOLS
   
   ! Type of transformation from the reference to the real element 
   integer(I32) :: ctrafoCoarse, ctrafoFine
@@ -2675,6 +2645,7 @@ contains
 
   ! An array that takes coordinates of the cubature formula on the reference element
   real(DP), dimension(:,:), allocatable :: p_DcubPtsRefFine, p_DcubPtsRefCoarse
+  real(DP), dimension(:), allocatable :: Domega
   
   ! Pointer to the jacobian determinants
   real(DP), dimension(:,:), pointer :: p_Ddetj
@@ -2834,6 +2805,7 @@ contains
     ! Allocate some memory to hold the cubature points on the fine mesh
     allocate(p_DcubPtsRefFine(nmaxRefDimFine,nmaxcubpFine))
     allocate(p_DcubPtsRefCoarse(nmaxRefDimCoarse,nmaxcubpCoarse))
+    allocate(Domega(nmaxcubpFine))
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -2847,11 +2819,8 @@ contains
 
     ! Allocate an array saving the local matrices for all elements
     ! in an element set.
-    ! We could also allocate EL_MAXNBAS*EL_MAXNBAS*BILF_NELEMSIM integers
-    ! for this local matrix, but this would normally not fit to the cache
-    ! anymore! indofTrial*indofTest*BILF_NELEMSIM is normally much smaller!
-    allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsCoarse))
-    allocate(Dentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsCoarse))
+    allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
+    allocate(Dentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
     allocate(Dmass(inmaxdofCoarse,inmaxdofCoarse,nmaxelementsCoarse))
     
     ! Allocate a pivot array for lapack
@@ -2892,14 +2861,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
-      call cub_getCubPoints(p_relemDistFine%ccubTypeBilForm, ncubpFine, Dxi, Domega)
-      
-      ! Reformat the cubature points; they are in the wrong shape!
-      do i = 1, ncubpFine
-        do k = 1, ubound(p_DcubPtsRefFine,1)
-          p_DcubPtsRefFine(k,i) = Dxi(i,k)
-        end do
-      end do
+      call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
       ! in one run.
@@ -2975,7 +2937,7 @@ contains
         ! If nelementsToDo is 0, then we have a serious problem...
         if (nelementsToDo .le. 0) then
           call output_line ('INTERNAL ERROR: nelementsToDo = 0!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlProl9_conf')
+              OU_CLASS_ERROR,OU_MODE_STD,'mlop_build2LvlInterp9_conf')
           call sys_halt()
         end if
         
@@ -3000,9 +2962,6 @@ contains
           ! And loop through all elements of the current refinement patch
           do IELF = 1, NELREF
           
-            ! Get the index of the currently processed fine mesh element
-            !IDXF = p_IelementRef(NELF+IELF)
-        
             ! For building the local matrices, we have first to
             ! loop through the test functions (the "O"'s), as these
             ! define the rows in the matrix.
@@ -3047,7 +3006,7 @@ contains
                 ! higher speed of the assembly routine, since this leads
                 ! to better data locality.
                 
-                Kentry(JDOFE,IDOFE,IELC)=JCOL
+                Kentry(JDOFE,IDOFE,NELF+IELF)=JCOL
                 
               end do ! IDOFE
               
@@ -3129,36 +3088,33 @@ contains
               ! the determinant might be negative -- that's normal!
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,NELF+IELF))
 
-              ! Assemble the 2-level mass matrix
+              ! Build the 2-level mass matrix.
               do IDOFE=1,indofFine
               
                 ! Get the value of the (test) basis function 
+                ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
-                ! Loop over the trial basis functions
-                do JDOFE=1,indofCoarse
+                ! Loop over the coarse mesh DOFs.
+                do JDOFE = 1, indofCoarse
                 
                   Dentry(JDOFE,IDOFE,NELF+IELF) = Dentry(JDOFE,IDOFE,NELF+IELF) + &
-                           DB*DbasCoarse(JDOFE,DER_FUNC,&
-                           ICUBP + (IELF-1)*ncubpFine,IELC)
+                           DB*DbasCoarse(JDOFE,DER_FUNC,ICUBP + (IELF-1)*ncubpFine,IELC)
                 
                 end do ! JDOFE
-                
+              
               end do ! IDOFE
               
-              ! Assemble the coarse-level mass matrix
+              ! Build the coarse mesh mass matrix.
               do IDOFE = 1, indofCoarse
-
-                ! Get the value of the (test) basis function 
-                DB = DbasCoarse(IDOFE,DER_FUNC,ICUBP+(IELF-1)*ncubpFine,IELC)*OM
+              
+                DB = DbasCoarse(IDOFE,DER_FUNC,ICUBP + (IELF-1)*ncubpFine,IELC)*OM
                 
-                ! Loop over the trial basis functions
                 do JDOFE = 1, indofCoarse
                 
                   Dmass(JDOFE,IDOFE,IELC) = Dmass(JDOFE,IDOFE,IELC) + &
-                           DB*DbasCoarse(JDOFE,DER_FUNC,&
-                           ICUBP + (IELF-1)*ncubpFine,IELC)
-                
+                            DB*DbasCoarse(JDOFE,DER_FUNC,ICUBP + (IELF-1)*ncubpFine,IELC)
+                  
                 end do ! JDOFE
               
               end do ! IDOFE
@@ -3180,7 +3136,7 @@ contains
             do IDOFE = 1, indofCoarse
               DlocWeights(IDOFE,IELC) = Dmass(IDOFE,IDOFE,IELC)
             end do ! IDOFE
-          end do ! IELC
+          end do ! IELF
         
         case (MLOP_AVRG_INV_MASS)
           ! inverse mass based averaging
@@ -3188,27 +3144,65 @@ contains
             do IDOFE = 1, indofCoarse
               DlocWeights(IDOFE,IELC) = 1.0_DP / Dmass(IDOFE,IDOFE,IELC)
             end do ! IDOFE
-          end do ! IELC
+          end do ! IELF
         
         end select
         
-        ! Now loop through all elements and perform the local L2-projection!
+        ! Loop over all coarse mesh elements
+        NELF = 0
         do IELC = 1, nelementsToDo
-          call DGESV(indofCoarse,indofFine,Dmass(:,:,IELC),inmaxdofCoarse,&
-                     Ipivot,Dentry(:,:,IELC),inmaxdofCoarse,IDOFE)
-        end do
+        
+          ! Factorise the coarse mesh mass matrix
+          call DGETRF(indofCoarse,indofCoarse,Dmass(:,:,IELC),&
+                      inmaxdofCoarse,Ipivot,IDOFE)
+          
+          ! Get the index of the currently processed coarse mesh element
+          IDXC = p_IelementList(nelementsDone+IELC)
+          
+          ! Get the number of fine mesh elements
+          NELREF = p_IrefPatchIdx(IDXC+1) - p_IrefPatchIdx(IDXC)
+          
+          ! Loop over all 2-level mass matrices for that coarse mesh element
+          do IELF = 1, NELREF
+          
+            ! Solve the system
+            call DGETRS('N',indofCoarse,indofFine,Dmass(:,:,IELC),&
+                        inmaxdofCoarse,Ipivot,Dentry(:,:,NELF+IELF),&
+                        inmaxdofFine,IDOFE)
+            
+            ! Scale the entries by the weights
+            do IDOFE = 1, indofCoarse
+            
+              ! Get the weight
+              OM = DlocWeights(IDOFE,IELC)
+              
+              do JDOFE = 1, indofFine
+                Dentry(IDOFE,JDOFE,NELF+IELF) = OM*Dentry(IDOFE,JDOFE,NELF+IELF)
+              end do ! JDOFE
+            
+            end do ! IDOFE
+          
+          end do ! IELF
+          
+          ! Update counter
+          NELF = NELF + NELREF
+          
+          ! Update the global weights
+          do IDOFE = 1, indofCoarse
+            i = IdofsCoarse(IDOFE,IELC)
+            DglobWeights(i) = DglobWeights(i) + DlocWeights(IDOFE,IELC)
+          end do ! IDOFE
+        
+        end do ! IELC
 
         ! Incorporate the local matrix into the global one.
         ! Kentry gives the position of the additive contributions in Dentry.
-        do IELC = 1, nelementsToDo
-          do JDOFE = 1, indofCoarse
-            OM = DlocWeights(JDOFE,IELC)
-            do IDOFE = 1, indofFine
-              p_DA(Kentry(JDOFE,IDOFE,IELC)) = &
-                p_DA(Kentry(JDOFE,IDOFE,IELC)) + OM*Dentry(JDOFE,IDOFE,IELC)
+        do IELF = 1, NELF
+          do IDOFE=1,indofFine
+            do JDOFE=1,indofCoarse
+              p_DA(Kentry(JDOFE,IDOFE,IELF)) = &
+                p_DA(Kentry(JDOFE,IDOFE,IELF)) + Dentry(JDOFE,IDOFE,IELF)
             end do
-            i = IdofsCoarse(JDOFE,IELC)
-            DglobWeights(i) = DglobWeights(i) + OM
           end do
         end do
 
@@ -3225,6 +3219,7 @@ contains
     
     ! Okay, there's one last thing left: Scale the matrix columns by the
     ! global averaging weights!
+    ! So first invert the global weights
     do i = 1, NCOLS
     
       ! Get the weight
@@ -3235,17 +3230,16 @@ contains
       
       ! Invert the weight
       DglobWeights(i) = 1.0_DP / OM
-      
-    end do
-   
-    ! Now loop over all matrix rows
+    
+    end do ! i
+    
+    ! Low loop over the matrix's rows
     do i = 1, NEQ
-      
-      ! Loop over all non-zeroes of the row and scale the entries by the
-      ! column's corresponding weight.
+    
+      ! Loop over the non-zeroes
       do k = p_Kld(i), p_Kld(i+1)-1
         p_DA(k) = p_DA(k) * DglobWeights(p_Kcol(k))
-      end do
+      end do ! j
     
     end do ! i
     
@@ -3254,6 +3248,7 @@ contains
     deallocate(DglobWeights)
     deallocate(Ipivot)
     deallocate(Dmass)
+    deallocate(Domega)
     deallocate(p_DcubPtsRefCoarse)
     deallocate(p_DcubPtsRefFine)
     deallocate(IdofsCoarse)
@@ -3264,7 +3259,7 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
-  ! That's it
+    ! That's it
   
   end subroutine
 
