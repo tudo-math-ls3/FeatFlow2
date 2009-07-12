@@ -1583,6 +1583,10 @@ contains
   ! =0: Create a boundary region that covers the whole boundary component.
   integer, intent(in) :: iboundSegIdx
   
+  ! OPTIONAL: Type of parametrisation to use.
+  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
+  integer, intent(in), optional :: cparType
+
 !</input>
 
 !<output>
@@ -1590,10 +1594,6 @@ contains
   ! Boundary region that is characterised by the boundary segment
   type(t_boundaryRegion), intent(out) :: rregion
   
-  ! OPTIONAL: Type of parametrisation to use.
-  ! One of the BDR_PAR_xxxx constants. If not given, BDR_PAR_01 is assumed.
-  integer, intent(in), optional :: cparType
-
 !</output>
   
 !</subroutine>
