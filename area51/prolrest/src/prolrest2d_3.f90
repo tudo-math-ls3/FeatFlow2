@@ -225,8 +225,8 @@ contains
     call mlprj_initProjectionMat (rL2proj,rmatrixF)
     
     ! Set matrices for L2-projection
-    call mlprj_initL2Proj (rL2proj%RscalarProjection(1,1), &
-                           rmatrix2Lvl, rmatrixF%RmatrixBlock(1,1))
+    call mlprj_initL2Projection (rL2proj%RscalarProjection(1,1), &
+                                 rmatrix2Lvl, rmatrixF%RmatrixBlock(1,1))
     !rL2proj%RscalarProjection(1,1)%depsAbsL2 = SYS_EPSREAL
     !rL2proj%RscalarProjection(1,1)%imaxL2Iterations = 100
     
