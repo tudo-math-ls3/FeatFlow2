@@ -1352,9 +1352,13 @@ contains
       ! Yes, so link the prolongation matrix to the projection structure,
       ! for both X- and Y-velocity.
       call mlprj_initMatrixProjection(&
-          rprojection%RscalarProjection(1,1),rlevelInfo%rmatrixProlVelocity)
+          rprojection%RscalarProjection(1,1), &
+          rlevelInfo%rmatrixProlVelocity, &
+          rlevelInfo%rmatrixInterpVelocity)
       call mlprj_initMatrixProjection(&
-          rprojection%RscalarProjection(1,2),rlevelInfo%rmatrixProlVelocity)
+          rprojection%RscalarProjection(1,2), &
+          rlevelInfo%rmatrixProlVelocity, &
+          rlevelInfo%rmatrixInterpVelocity)
           
     end if
 
@@ -1364,7 +1368,9 @@ contains
       
       ! Yes, so link the prolongation matrix to the projection structure.
       call mlprj_initMatrixProjection(&
-          rprojection%RscalarProjection(1,3),rlevelInfo%rmatrixProlPressure)
+          rprojection%RscalarProjection(1,3), &
+          rlevelInfo%rmatrixProlPressure, &
+          rlevelInfo%rmatrixInterpPressure)
           
     end if
     

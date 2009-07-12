@@ -771,9 +771,15 @@ contains
           
           ! Assemble the matrix structure for velocity projection
           call mlop_create2LvlMatrixStruct (&
-            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(1),&
-            rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(1),&
-            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlVelocity)
+              rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(1),&
+              rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(1),&
+              LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlVelocity)
+          
+          ! And let the interpolation matrix share the structure
+          call lsyssc_duplicateMatrix(&
+              rproblem%RlevelInfo(i)%rmatrixProlVelocity, &
+              rproblem%RlevelInfo(i)%rmatrixInterpVelocity, &
+              LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
           
         end if
         
@@ -781,9 +787,15 @@ contains
           
           ! Assemble the matrix structure for pressure projection
           call mlop_create2LvlMatrixStruct (&
-            rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(3),&
-            rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(3),&
-            LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlPressure)
+              rproblem%RlevelInfo(i-1)%rdiscretisation%RspatialDiscr(3),&
+              rproblem%RlevelInfo(i  )%rdiscretisation%RspatialDiscr(3),&
+              LSYSSC_MATRIX9, rproblem%RlevelInfo(i)%rmatrixProlPressure)
+
+          ! And let the interpolation matrix share the structure
+          call lsyssc_duplicateMatrix(&
+              rproblem%RlevelInfo(i)%rmatrixProlPressure, &
+              rproblem%RlevelInfo(i)%rmatrixInterpPressure, &
+              LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
             
         end if
 
@@ -1099,6 +1111,11 @@ contains
           rlevelFine%rdiscretisation%RspatialDiscr(1),&
           .true., rlevelFine%rmatrixProlVelocity, MLOP_AVRG_MASS)
 
+      call mlop_build2LvlInterpMatrix(&
+          rlevelCoarse%rdiscretisation%RspatialDiscr(1),&
+          rlevelFine%rdiscretisation%RspatialDiscr(1),&
+          .true., rlevelFine%rmatrixInterpVelocity, MLOP_AVRG_MASS)
+
     end if
 
     ! Assemble projection matrix for pressure?
@@ -1109,6 +1126,11 @@ contains
           rlevelCoarse%rdiscretisation%RspatialDiscr(3),&
           rlevelFine%rdiscretisation%RspatialDiscr(3),&
           .true., rlevelFine%rmatrixProlPressure, MLOP_AVRG_MASS)
+
+      call mlop_build2LvlInterpMatrix(&
+          rlevelCoarse%rdiscretisation%RspatialDiscr(3),&
+          rlevelFine%rdiscretisation%RspatialDiscr(3),&
+          .true., rlevelFine%rmatrixInterpPressure, MLOP_AVRG_MASS)
 
     end if
 
@@ -1660,11 +1682,15 @@ contains
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEMPressure)
       
-      ! Release prolongation matrices.
-      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlVelocity)) &
+      ! Release prolongation/interpolation matrices.
+      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlVelocity)) then
+        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixInterpVelocity)
         call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixProlVelocity)
-      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlPressure)) &
+      end if
+      if(lsyssc_hasMatrixStructure(rproblem%RlevelInfo(i)%rmatrixProlPressure)) then
+        call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixInterpPressure)
         call lsyssc_releaseMatrix(rproblem%RlevelInfo(i)%rmatrixProlPressure)
+      end if
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.

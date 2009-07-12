@@ -122,11 +122,17 @@ module ccbasic
     ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
     type(t_matrixScalar) :: rmatrixStabil
     
-    ! A prolongation matix for the velocity.
+    ! A prolongation matrix for the velocity.
     type(t_matrixScalar) :: rmatrixProlVelocity
     
     ! A prolongation matrix for the pressure.
     type(t_matrixScalar) :: rmatrixProlPressure
+    
+    ! An interpolation matrix for the velocity.
+    type(t_matrixScalar) :: rmatrixInterpVelocity
+    
+    ! An interpolation matrix for the pressure.
+    type(t_matrixScalar) :: rmatrixInterpPressure
     
   end type
   
