@@ -123,6 +123,7 @@
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolver.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\linearsolverautoinitialise.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\quicksolver.f90"/>
+		<File RelativePath="..\..\..\kernel\LinearSolver\spsor.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanka.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanka_bouss2d.f90"/>
 		<File RelativePath="..\..\..\kernel\LinearSolver\vanka_navst2d.f90"/></Filter>
