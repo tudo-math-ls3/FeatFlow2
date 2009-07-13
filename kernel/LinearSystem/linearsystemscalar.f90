@@ -133,7 +133,8 @@
 !#         structure.
 !#
 !# 35.) lsyssc_transposeMatrix,
-!#      lsyssc_transposeMatrixInSitu
+!#      lsyssc_transposeMatrixInSitu,
+!#      lsyssc_transposeMatrixDirect
 !#      -> Transposes a scalar matrix.
 !#
 !# 36.) lsyssc_allocEmptyMatrix
@@ -10555,7 +10556,8 @@ contains
 
 !<subroutine>
   subroutine lsyssc_transpMatStruct79double (nrow, ncol, Icol, Irow, &
-                                             Itmp, IcolDest, IrowDest)
+                                             Itmp, IcolDest, IrowDest, &
+                                             Ipermutation)
   
 !<description>
     ! This routine accepts the structure of a structure-7 or structure-9
@@ -10587,6 +10589,10 @@ contains
 
     ! Row structure of the destination matrix
     integer, dimension(ncol+1), intent(out) :: IrowDest
+
+    ! OPTIONAL: Permutation array that specifies how to get the transposed 
+    ! matrix from the untransposed matrix. This is an array of length NA.
+    integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
     
 !<inputoutput>
@@ -10627,18 +10633,40 @@ contains
       Itmp(i) = 0
     end do
 
-    do i=1, nrow
-      ncolumn = Irow(i+1)-Irow(i)
-      do j=1, ncolumn
-        ! Get the column of the item in question -> new row number.
-        icolumn = Icol(Irow(i)+j-1)
-        ! Rows get columns by transposing, therefore note i as column
-        ! number in IcolDest
-        IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-        ! Increment running index of that row
-        Itmp(icolumn) = Itmp(icolumn)+1
+    if (.not. present(Ipermutation)) then
+      do i=1, nrow
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Rows get columns by transposing, therefore note i as column
+          ! number in IcolDest
+          IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+          
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
       end do
-    end do
+    else
+      do i=1, nrow
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Rows get columns by transposing, therefore note i as column
+          ! number in IcolDest
+          IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+          
+          ! Save where this entry is moved to.
+          Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
+
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
+      end do
+    end if
     
   end subroutine 
 
@@ -10646,7 +10674,7 @@ contains
 
 !<subroutine>
   subroutine lsyssc_transpMat79double (nrow, ncol, Da, Icol, Irow, &
-                                       Itmp, DaDest, IcolDest, IrowDest)
+      Itmp, DaDest, IcolDest, IrowDest, Ipermutation)
   
 !<description>
     ! Auxiliary routine.
@@ -10687,6 +10715,10 @@ contains
     ! Row structure of the destination matrix.
     ! DIMENSION(ncol+1)
     integer, dimension(:), intent(out) :: IrowDest
+
+    ! OPTIONAL: Permutation array that specifies how to get the transposed 
+    ! matrix from the untransposed matrix. This is an array of length NA.
+    integer, dimension(:), intent(out), optional :: Ipermutation
 !</output>
     
 !<inputoutput>
@@ -10745,21 +10777,48 @@ contains
       Itmp(i) = 0
     end do
 
-    do i=1, nrow
-      ! Loop through the row
-      ncolumn = Irow(i+1)-Irow(i)
-      do j=1, ncolumn
-        ! Get the column of the item in question -> new row number.
-        icolumn = Icol(Irow(i)+j-1)
-        ! Rows get columns by transposing, therefore note i as column
-        ! number in IcolDest
-        IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
-        ! Copy the matrix entry:
-        DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
-        ! Increment running index of that row
-        Itmp(icolumn) = Itmp(icolumn)+1
+    if (.not. present(Ipermutation)) then
+      do i=1, nrow
+        ! Loop through the row
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Rows get columns by transposing, therefore note i as column
+          ! number in IcolDest
+          IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+          
+          ! Copy the matrix entry:
+          DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
+          
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
       end do
-    end do
+    else
+      do i=1, nrow
+        ! Loop through the row
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Rows get columns by transposing, therefore note i as column
+          ! number in IcolDest
+          IcolDest(IrowDest(icolumn)+Itmp(icolumn)) = i
+          
+          ! Copy the matrix entry:
+          DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
+          
+          ! Save where this entry is moved to.
+          Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
+          
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
+      end do
+    end if
     
   end subroutine 
 
@@ -10981,7 +11040,92 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_transposeMatrix (rmatrix,rtransposedMatrix,itransFlag)
+  subroutine lsyssc_transposeMatrixDirect (rsourceMatrix,rdestMatrix,Ipermutation)
+  
+!<description>
+  ! Transposes the matrix entries of a matrix according to a matrix permutation
+  ! array. Ipermutation must be a permutation array computed by 
+  ! lsyssc_transposeMatrix. lsyssc_transposeMatrixQuick will then permute
+  ! the entries in the matrix rsourceMatrix according to this permutation and 
+  ! will save the result to rdestMatrix.
+  ! The routine assumes that rdestMatrix describes the structure of the
+  ! transposed of rsourceMatrix, generated by lsyssc_transposeMatrix.
+!</description>
+
+!<input>
+  ! The matrix to be transposed.
+  type(t_matrixScalar),intent(in) :: rsourceMatrix
+
+  ! Permutation array that specifies how to get the transposed matrix
+  ! from the untransposed matrix. This is an array of length NA.
+  integer, dimension(:), intent(in) :: Ipermutation
+!</input>
+
+!<inputoutput>
+  ! The matrix structure that receives the transposed matrix.
+  type(t_matrixScalar),intent(inout) :: rdestMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_DaSource,p_DaDest
+
+    select case (rsourceMatrix%cmatrixFormat)
+    case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD)
+
+      if (rsourceMatrix%NA .eq. 0) then
+        call output_line('Source matrix empry!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call sys_halt()
+      end if
+
+      if (rsourceMatrix%cdataType .ne. ST_DOUBLE) then
+        call output_line('Invalid data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call sys_halt()
+      end if
+
+      if ((rsourceMatrix%NA .ne. rdestMatrix%NA) .or. &
+          (rsourceMatrix%cdataType .ne. rdestMatrix%cdataType)) then
+        call output_line('Source and destination matrix incompatible!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call sys_halt()
+      end if
+      
+      select case (rsourceMatrix%cdataType)
+      case (ST_DOUBLE)
+      
+        ! Get the data arrays
+        call lsyssc_getbase_double(rsourceMatrix,p_DaSource)
+        if (rdestMatrix%h_Da .eq. ST_NOHANDLE) then
+          call lsyssc_allocEmptyMatrix (rdestMatrix,LSYSSC_SETM_UNDEFINED)
+        end if
+        call lsyssc_getbase_double(rdestMatrix,p_DaDest)
+        
+        ! Permute
+        call lalg_vectorSortDble (p_DaSource, p_DaDest, Ipermutation)
+        
+      case default
+        call output_line('Invalid data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixDirect')
+      call sys_halt()
+    end select
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_transposeMatrix (rmatrix,rtransposedMatrix,itransFlag,&
+      Ipermutation)
   
 !<description>
   ! This routine transposes a matrix rmatrix and creates the transposed
@@ -11033,6 +11177,12 @@ contains
   !   an error is thrown.
   type(t_matrixScalar),intent(inout) :: rtransposedMatrix
 !</inputoutput>
+
+!<output>
+    ! OPTIONAL: Permutation array that specifies how to get the transposed matrix
+    ! from the untransposed matrix. This is an array of length NA.
+    integer, dimension(:), intent(out), optional :: Ipermutation
+!</output>
   
 !</subroutine>
 
@@ -11101,12 +11251,14 @@ contains
       ! Make sure the destination matrix can accept all data of the source
       ! matrix. Matrix format and size must match.
       if (rMatrix%cmatrixFormat .ne. rtransposedMatrix%cmatrixFormat) then
-        print *,'lsyssc_transposeMatrix: Different matrix formats not allowed!'
+        call output_line('Different matrix formats not allowed!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end if
 
       if (rmatrix%NA .ne. rtransposedMatrix%NA) then
-        print *,'lsyssc_transposeMatrix: Matrices have different size!'
+        call output_line('Matrices have different size!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end if
 
@@ -11115,7 +11267,8 @@ contains
 
       if (itrans .eq. LSYSSC_TR_ALL) then
         if (rmatrix%cdataType .ne. rtransposedMatrix%cdataType) then
-          print *,'lsyssc_transposeMatrix: Matrices have different data types!'
+          call output_line('Matrices have different data types!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
           call sys_halt()
         end if
       end if
@@ -11133,7 +11286,8 @@ contains
     ! Otherwise, check that we are able to create the transposed matrix at all.
     if (itrans .eq. LSYSSC_TR_ALL) then
       if (rmatrix%cdataType .ne. ST_DOUBLE) then
-        print *,'lsyssc_transposeMatrix: Unsupported data type!'
+        call output_line('Unsupported data type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end if
     end if
@@ -11154,6 +11308,12 @@ contains
           
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
+
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
           
         else
           ! We really have to do some work now :)
@@ -11181,7 +11341,7 @@ contains
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
                      p_KcolSource, p_KldSource, &
-                     p_Itemp, p_KcolDest, p_KldDest)
+                     p_Itemp, p_KcolDest, p_KldDest,Ipermutation)
                      
           ! Release the temp array
           call storage_free (h_Itemp)
@@ -11203,6 +11363,12 @@ contains
           call lsyssc_auxcopy_Kld (rmatrix,rtransposedMatrix)
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
+          
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
           
         else
           ! We really have to do some work now :)
@@ -11230,7 +11396,7 @@ contains
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMatStruct79double (rmatrix%NEQ, rmatrix%NCOLS, &
                      p_KcolSource, p_KldSource, &
-                     p_Itemp, p_KcolDest, p_KldDest)
+                     p_Itemp, p_KcolDest, p_KldDest, Ipermutation)
                      
           ! Release the temp array
           call storage_free (h_Itemp)
@@ -11242,8 +11408,15 @@ contains
       case (LSYSSC_MATRIXD)
         ! Nothing to do
 
-      case DEFAULT
-        print *,'lsyssc_transposeMatrix: Unsupported matrix format.'
+        if (present(Ipermutation)) then          
+          call output_line('Calculation of the permutation not possible!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+          call sys_halt()
+        end if
+
+      case default
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end select
       
@@ -11272,6 +11445,12 @@ contains
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
           
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
+
         else
           ! We really have to do some work now :)
           ! Allocate a new KCol and a new Kld.
@@ -11305,7 +11484,7 @@ contains
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
-                p_Itemp, p_DaDest, p_KcolDest, p_KldDest)
+                p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
                      
           ! Release the temp array
           call storage_free (h_Itemp)
@@ -11333,6 +11512,12 @@ contains
           rtransposedMatrix%imatrixSpec = &
             iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
           
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
+
         else
           ! We really have to do some work now :)
           ! Allocate a new KCol and a new Kld.
@@ -11366,7 +11551,7 @@ contains
           ! Calculate the transposed matrix structure:
           call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
                 p_DaSource, p_KcolSource, p_KldSource, &
-                p_Itemp, p_DaDest, p_KcolDest, p_KldDest)
+                p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
                      
           ! Release the temp array
           call storage_free (h_Itemp)
@@ -11380,7 +11565,8 @@ contains
         ! Nothing to do
 
       case DEFAULT
-        print *,'lsyssc_transposeMatrix: Unsupported matrix format.'
+        call output_line('Unsupported matrix format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
         call sys_halt()
       end select
       
