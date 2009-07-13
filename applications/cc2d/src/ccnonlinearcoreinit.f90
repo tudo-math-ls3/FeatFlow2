@@ -631,7 +631,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:7,101:105)
+        case (0:7,101:102,201:202)
 
           nullify(p_rsmoother)
         
@@ -663,8 +663,6 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
           case (102)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
-          case (103)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
           
           ! --- SP-SOR ---
           case (201)
@@ -1122,7 +1120,6 @@ contains
               ! --- NEW IMPLEMENTATION ---
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 101) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 102) .or. &
-                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 103) .or. &
               ! --- SP-SOR ---
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 201) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 202)) then
