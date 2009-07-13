@@ -664,11 +664,13 @@ contains
           case (102)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
           case (103)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF)
-          case (104)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
-          case (105)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSSOR)
+          
+          ! --- SP-SOR ---
+          case (201)
+            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
+          case (202)
+            call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -864,7 +866,7 @@ contains
       call cc_updatePreconditioner (rproblem,rnonlinearIteration,&
           rvector,rrhs,.true.,.true.)
       
-    case DEFAULT
+    case default
       
       ! Unknown preconditioner
       call output_line ('Unknown preconditioner for nonlinear iteration!', &
@@ -1121,10 +1123,11 @@ contains
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 101) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 102) .or. &
                   (rnonlinearIteration%rprecSpecials%ismootherType .eq. 103) .or. &
-                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 104) .or. &
-                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 105)) then
+              ! --- SP-SOR ---
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 201) .or. &
+                  (rnonlinearIteration%rprecSpecials%ismootherType .eq. 202)) then
                 btranspose = .true.
-              end if              
+              end if
               
             end if
 

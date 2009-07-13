@@ -33,24 +33,22 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # =3: Simple Jacobi-like VANKA, 2D Navier Stokes problem, general discretisation
 #     (i.e. automatically chooses the best suitable VANKA variant).
 #     'direct' method, bypassing the defect correction approach.
-#     (-> specialised variant of 8, but faster)
+#     (-> specialised variant of 2, but faster)
 # =4: Full VANKA, 2D Navier Stokes problem, general discretisation
 #     (i.e. automatically chooses the best suitable VANKA variant).
 # =5: Full VANKA, 2D Navier Stokes problem, general discretisation
 #     (i.e. automatically chooses the best suitable VANKA variant).
 #     'direct' method, bypassing the defect correction approach.
-#     (-> specialised variant of 10, but faster)
-# =6: BiCGStab smoother with diagonal VANCA preconditioner
-# =7: BiCGStab smoother with full VANCA preconditioner
+#     (-> specialised variant of 4, but faster)
+# =6: BiCGStab smoother with diagonal VANKA preconditioner
+# =7: BiCGStab smoother with full VANKA preconditioner
 #
 # The following smoothers are some new Vanka implementations.
-# Warning: You use the following ones at your own risk!
 # = 101: diagonal Vanka (a new implementation of 3)
 # = 102: full Vanka (a new implementation of 5)
-# = 103: pressure-DOF based Vanka, a black-box Vanka implementation for
-#        2D Navier-Stokes systems
-# = 104: SP-SOR (experimental), a SOR-like smoother for saddle-point systems
-# = 105: SP-SSOR (experimental), a SSOR-like smoother for saddle-point systems
+#
+# = 201: SP-SOR, full version
+# = 202: SP-SOR, diagonal version
 
 ismootherType = 3
 
@@ -58,7 +56,7 @@ ismootherType = 3
 
 ssmootherSection = 'CC-SMOOTHER'
 
-# Type of coarse grid solver. Standard = 1
+# Type of coarse grid solver. Standard = 2
 # =0: Gauss elimination (UMFPACK)
 # =1: Defect correction with diagonal VANKA preconditioning.
 # =2: BiCGStab with diagonal VANKA preconditioning
