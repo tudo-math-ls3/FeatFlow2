@@ -440,7 +440,7 @@ contains
 !<subroutine>
   
   elemental subroutine gaux_getIntersection_ray2D(&
-      dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect)
+      dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
   
 !<description>
   ! Calculates the intersection point of two 2D rays given by 
@@ -471,12 +471,18 @@ contains
   ! = 0: The rays don't intersect.
   ! = 1: The rays intersect in exactly one point.
   integer, intent(out) :: iintersect
+  
+  ! Parameter value of the intersection.
+  ! The intersection point (dx,dy) can be found at position
+  ! (dx,dy) = (dx0,dy0) + da*(dx1-dx0,dy1-dy0).
+  ! If iintersect<>1, da is set to 0.
+  real(DP), intent(out) :: da
 !</result>
 
 !</subroutine>
 
     ! local variables
-    real(DP) :: ddet,da
+    real(DP) :: ddet
 
     ! Initial setting of the destination point
     dx = 0.0_DP
@@ -518,6 +524,8 @@ contains
       if (ddet .eq. 0.0_DP) then
         iintersect = -1
       end if
+      
+      da = 0
      
     else
 
@@ -528,8 +536,8 @@ contains
         
       !  The intersection point is then
 
-      dx = da*dx1 + (1.0_DP-da)*dx
-      dy = da*dy1 + (1.0_DP-da)*dy
+      dx = da*dx1 + (1.0_DP-da)*dx0
+      dy = da*dy1 + (1.0_DP-da)*dy0
       
       iintersect = 1
        
