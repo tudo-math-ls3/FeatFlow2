@@ -512,6 +512,9 @@
 !#              an array to store level information rather than a linear list.
 !#              Simplified interface.
 !#
+!#      13.) linsol_initSPSOR
+!#           -> SP-SOR preconditioner
+!#
 !# 9.) What is this linsol_matricesCompatible?
 !#
 !#     This allows to check a set of system matrices against a solver node.
@@ -617,6 +620,7 @@ module linearsolver
   use globalsystem
   use genoutput
   use iluk
+  use spsor
   
   use matrixio
   
@@ -655,6 +659,7 @@ module linearsolver
   public :: linsol_initMultigrid
   public :: linsol_initMultigrid2
   public :: linsol_initSchur
+  public :: linsol_initSPSOR
   
   public :: linsol_addMultigridLevel,linsol_addMultigridLevel2
   
@@ -734,6 +739,9 @@ module linearsolver
   
   ! Schur-complement iteration
   integer, parameter, public :: LINSOL_ALG_SCHUR         = 55
+  
+  ! SP-SOR iteration
+  integer, parameter, public :: LINSOL_ALG_SPSOR         = 56
   
 !</constantblock>
 
@@ -950,10 +958,22 @@ module linearsolver
 
 ! *****************************************************************************
 
+!<constantblock description="Variants of the SP-SOR solver">
+
+  ! SP-SOR solver for 2D Navier-Stokes systems
+  integer, parameter, public :: LINSOL_SPSOR_NAVST2D        = 1
+
+  ! 'diagonal' SP-SOR solver for 2D Navier-Stokes systems
+  integer, parameter, public :: LINSOL_SPSOR_NAVST2D_DIAG   = 2
+
+!</constantblock>
+
+! *****************************************************************************
+
 !<constantblock description="default values for the GMRES(m) solver">
 
   ! One or two Gram-Schmidt calls per GMRES iteration
-  logical, parameter, public :: LINSOL_GMRES_DEF_TWICE_GS              = .false.
+  logical, parameter, public :: LINSOL_GMRES_DEF_TWICE_GS = .false.
     
 !</constantblock>
 
@@ -1212,6 +1232,9 @@ module linearsolver
 
     ! Pointer to a structure for the VANKA solver; NULL() if not set
     type (t_linsolSubnodeVANKA), pointer          :: p_rsubnodeVANKA       => null()
+
+    ! Pointer to a structure for the SP-SOR solver; NULL() if not set
+    type (t_linsolSubnodeSPSOR), pointer          :: p_rsubnodeSPSOR       => null()
     
     ! Pointer to a structure for the Defect correction solver; NULL() if not set
     type (t_linsolSubnodeDefCorr), pointer        :: p_rsubnodeDefCorr     => null()
@@ -1367,6 +1390,29 @@ module linearsolver
   end type
   
   public :: t_linsolSubnodeVANKA
+  
+!</typeblock>
+
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the SP-SOR solver.
+  type t_linsolSubnodeSPSOR
+  
+    ! Type of SP-SOR subsolver. One of the LINSOL_SPSOR_xxxx constants.
+    integer             :: csubtype
+  
+    ! The SP-SOR data structure
+    type(t_spsor)       :: rdata
+  
+    ! Temporary vector to use during the solution process
+    type(t_vectorBlock) :: rtempVector
+
+  end type
+  
+  public :: t_linsolSubnodeSPSOR
   
 !</typeblock>
 
@@ -2065,6 +2111,8 @@ contains
       ! UMFPACK needs no matrix initialisation routine.
     case (LINSOL_ALG_VANKA)
       ! VANKA needs no matrix initialisation routine.
+    case (LINSOL_ALG_SPSOR)
+      ! SPSOR needs no matrix initialisation routine.
     case (LINSOL_ALG_CG)
       call linsol_setMatrixCG (rsolverNode, Rmatrices)
     case (LINSOL_ALG_BICGSTAB)
@@ -2150,6 +2198,10 @@ contains
     case (LINSOL_ALG_VANKA)
       ! Ask VANKA if the matrices are ok.
       call linsol_matCompatVANKA (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
+
+    case (LINSOL_ALG_SPSOR)
+      ! Ask SP-SOR if the matrices are ok.
+      call linsol_matCompatSPSOR (rsolverNode,Rmatrices,ccompatible,CcompatibleDetail)
       
     case (LINSOL_ALG_JACOBI)
       ! Ask Jacobi if the matrices are ok.
@@ -2297,6 +2349,8 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_initStructureVANKA (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_SPSOR)
+      call linsol_initStructureSPSOR (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_initStructureDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2374,6 +2428,8 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_initDataVANKA (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_SPSOR)
+      call linsol_initDataSPSOR (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_initDataDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2544,6 +2600,8 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_doneDataVANKA (rsolverNode,isubgroup)
+    case (LINSOL_ALG_SPSOR)
+      !call linsol_doneDataSPSOR (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_doneDataDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2606,6 +2664,8 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_doneStructureVANKA (rsolverNode,isubgroup)
+    case (LINSOL_ALG_SPSOR)
+      call linsol_doneStructureSPSOR (rsolverNode,isubgroup)
     case (LINSOL_ALG_DEFCORR)
       call linsol_doneStructureDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
@@ -2672,6 +2732,8 @@ contains
     select case(p_rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_doneVANKA (p_rsolverNode)
+    case (LINSOL_ALG_SPSOR)
+      call linsol_doneSPSOR (p_rsolverNode)
     case (LINSOL_ALG_SOR)
       call linsol_doneSOR (p_rsolverNode)
     case (LINSOL_ALG_SSOR)
@@ -2754,12 +2816,14 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_alterVANKA (rsolverNode, ralterConfig)
+    case (LINSOL_ALG_SPSOR)
+      ! No alter routine for SP-SOR
     case (LINSOL_ALG_DEFCORR)
       call linsol_alterDefCorr (rsolverNode, ralterConfig)
     case (LINSOL_ALG_UMFPACK4)
       ! No alter routine for UMFPACK
     case (LINSOL_ALG_MILUS1X1)
-      ! No structure routine for (M)ILU(s)
+      ! No alter routine for (M)ILU(s)
     case (LINSOL_ALG_CG)
       call linsol_alterCG (rsolverNode, ralterConfig)
     case (LINSOL_ALG_BICGSTAB)
@@ -2985,6 +3049,8 @@ contains
     select case(rsolverNode%calgorithm)
     case (LINSOL_ALG_VANKA)
       call linsol_precVANKA (rsolverNode,rd)
+    case (LINSOL_ALG_SPSOR)
+      call linsol_precSPSOR (rsolverNode,rd)
     case (LINSOL_ALG_DEFCORR)
       call linsol_precDefCorr (rsolverNode,rd)
     case (LINSOL_ALG_JACOBI)
@@ -5530,11 +5596,11 @@ contains
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_FULL)
 
-    case (LINSOL_VANKA_NAVST2D_PDOF)
-      ! Pressure-DOF based VANKA for Navier-Stokes
-      call vanka_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
+!    case (LINSOL_VANKA_NAVST2D_PDOF)
+!      ! Pressure-DOF based VANKA for Navier-Stokes
+!      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+!                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+!                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
 
     case (LINSOL_VANKA_NAVST2D_SPSOR)
       ! SP-SOR for Navier-Stokes
@@ -5782,6 +5848,488 @@ contains
       ! Execute VANKA
       call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
           p_rvector, rd, domega)
+
+      ! Copy the solution vector to rd - it's our preconditioned defect now.
+      call lsysbl_copyVector (p_rvector,rd)
+    
+    end select
+  
+  end subroutine
+
+  
+! *****************************************************************************
+! Routines for the SP-SOR solver
+! *****************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initSPSOR (p_rsolverNode, csubtype, domega)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the SP-SOR solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+!</description>
+  
+!<input>
+  ! SP-SOR subtype. One of the LINSOL_SPSOR_XXXX constants
+  integer, intent(in) :: csubtype
+
+  ! OPTIONAL: Damping parameter. Is saved to rsolverNode\%domega if specified.
+  real(DP), optional :: domega
+!</input>  
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = LINSOL_ALG_SPSOR
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = LINSOL_ABIL_BLOCK + LINSOL_ABIL_DIRECT 
+    
+    ! Allocate the subnode for SP-SOR.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    allocate(p_rsolverNode%p_rsubnodeSPSOR)
+    
+    ! Store the subtype.
+    p_rsolverNode%p_rsubnodeSPSOR%csubtype = csubtype
+    
+    if (present(domega)) p_rsolverNode%domega = domega
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_matCompatSPSOR (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in):: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), target, intent(in) :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+  integer :: iblock,jblock
+  type(t_matrixBlock), pointer :: p_rmat
+
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+    
+!    ! VANKA is a bit tricky. Loop through all scalar submatrices and
+!    ! check them. The VANKA subtype decides on whether it can use that or not!
+!    
+!    p_rmat => Rmatrices(ubound(Rmatrices,1))
+!    
+!    ! VANKA subtype?
+!    select case (rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
+!    case (LINSOL_VANKA_GENERAL,LINSOL_VANKA_GENERALDIRECT)
+!      
+!      ! Check all sub-matrices
+!      do jblock = 1,p_rmat%nblocksPerRow
+!        do iblock = 1,p_rmat%nblocksPerCol
+!          if (p_rmat%RmatrixBlock(iblock,jblock)%NEQ .ne. 0) then
+!            if (iand(p_rmat%RmatrixBlock(iblock,jblock)%imatrixSpec,&
+!                LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+!              ! We can't handle transposed matrices.
+!              ccompatible = LINSOL_COMP_ERRTRANSPOSED
+!            end if
+!          end if
+!        end do
+!      end do
+!
+!    case (LINSOL_VANKA_2DNAVST  , LINSOL_VANKA_2DNAVSTDIRECT  ,&
+!          LINSOL_VANKA_2DNAVSTSB, LINSOL_VANKA_2DNAVSTDIRECTSB,&
+!          LINSOL_VANKA_2DFNAVST , LINSOL_VANKA_2DFNAVSTDIRECT )
+!      ! Blocks (3,1) and (3,2) must be virtually transposed
+!      if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
+!          (iand(p_rmat%RmatrixBlock(3,2)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .eq. 0)) then
+!        ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
+!      end if
+!
+!    case (LINSOL_VANKA_3DNAVST  , LINSOL_VANKA_3DNAVSTDIRECT  ,&
+!          LINSOL_VANKA_3DFNAVST , LINSOL_VANKA_3DFNAVSTDIRECT )
+!      ! Blocks (4,1), (4,2) and (4,3) must be virtually transposed
+!      if ((iand(p_rmat%RmatrixBlock(4,1)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
+!          (iand(p_rmat%RmatrixBlock(4,2)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .eq. 0) .or. &
+!          (iand(p_rmat%RmatrixBlock(4,3)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .eq. 0)) then
+!        ccompatible = LINSOL_COMP_ERRNOTTRANSPOSED
+!      end if
+!    
+!    !  ---------------- NEW IMPLEMENTATION ----------------
+!
+!    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL, &
+!          LINSOL_VANKA_NAVST2D_PDOF, &
+!          LINSOL_VANKA_NAVST2D_SPSOR, LINSOL_VANKA_NAVST2D_SPSSOR)
+!      ! Blocks (3,1) and (3,2) must not be virtually transposed
+!      if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+!          (iand(p_rmat%RmatrixBlock(3,2)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+!        ccompatible = LINSOL_COMP_ERRTRANSPOSED
+!      end if
+!
+!    case (LINSOL_VANKA_BOUSS2D_DIAG, LINSOL_VANKA_BOUSS2D_FULL) !, &
+!          !LINSOL_VANKA_BOUSS2D_SPSOR)
+!      ! Blocks (3,1) and (3,2) must not be virtually transposed
+!      if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
+!          (iand(p_rmat%RmatrixBlock(3,2)%imatrixSpec, &
+!            LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
+!        ccompatible = LINSOL_COMP_ERRTRANSPOSED
+!      end if
+!      
+!    end select
+    
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    if (present(CcompatibleDetail)) &
+        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initStructureSPSOR (rsolverNode,ierror,isolverSubgroup)
+  
+!<description>
+  ! Memory allocation for the SP-SOR solver.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the SP-SOR solver
+  type(t_linsolNode), target, intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Stop if there's no matrix assigned
+    if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
+      call output_line ('No matrix associated!', &
+                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
+      call sys_halt()
+    end if
+    
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Allocate a temporary vector
+    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
+          rsolverNode%p_rsubnodeSPSOR%rtempVector,.false.,.false.,&
+          rsolverNode%cdefaultDataType)
+    
+    ! And set up the SP-SOR structure
+    select case(rsolverNode%p_rsubnodeSPSOR%csubtype)
+    case (LINSOL_SPSOR_NAVST2D)
+      ! SP-SOR for 2D Navier-Stokes systems
+      call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                             rsolverNode%rsystemMatrix, 0)
+
+    case (LINSOL_SPSOR_NAVST2D_DIAG)
+      ! diagonal SP-SOR for 2D Navier-Stokes systems
+      call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                             rsolverNode%rsystemMatrix, SPSOR_FLAG_DIAG)
+    
+    case default
+      call output_line ('Invalid SP-SOR subtype!', &
+                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initStructureSPSOR')
+      call sys_halt()
+    end select
+        
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initDataSPSOR (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Performs final preparation of the SP-SOR solver subtype.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the SP-SOR solver
+  type(t_linsolNode), target, intent(inout) :: rsolverNode
+!</inputoutput>
+
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Stop if there's no matrix assigned
+    if (rsolverNode%rsystemMatrix%NEQ .eq. 0) then
+      call output_line ('No matrix associated!', &
+                        OU_CLASS_ERROR, OU_MODE_STD, 'linsol_initDataVANKA')
+      call sys_halt()
+    end if
+    
+    ! Initialise the SP-SOR data
+    call spsor_initData(rsolverNode%p_rsubnodeSPSOR%rdata)
+      
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneStructureSPSOR (rsolverNode, isolverSubgroup)
+  
+!<description>
+  ! Releases temporary memory of the SP-SOR solver allocated in
+  ! linsol_initStrutureSPSOR.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the SP-SOR solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+    
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Release the SP-SOR data structure
+    call spsor_done(rsolverNode%p_rsubnodeSPSOR%rdata)
+    
+    ! Release the temp vector and associated data if associated
+    if (rsolverNode%p_rsubnodeSPSOR%rtempVector%NEQ .ne. 0) then
+      call lsysbl_releaseVector(rsolverNode%p_rsubnodeSPSOR%rtempVector)
+    end if
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneSPSOR (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the SP-SOR solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of SP-SOR which is to be cleaned up.
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! local variables
+  integer :: isubgroup
+  
+    ! The done routine always releases everything.
+    isubgroup = rsolverNode%isolverSubgroup
+
+    ! Release temporary data.
+    call linsol_doneStructureSPSOR (rsolverNode, isubgroup)
+
+    deallocate(rsolverNode%p_rsubnodeSPSOR)
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  subroutine linsol_precSPSOR (rsolverNode,rd)
+  
+!<description>
+  ! Applies the SP-SOR preconditioner $P \approx A$ to the defect 
+  ! vector rd and solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the VANKA solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout)        :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  type (t_vectorBlock), pointer :: p_rvector
+  type (t_matrixBlock), pointer :: p_rmatrix
+  real(DP) :: domega
+
+    ! Status reset
+    rsolverNode%iresult = 0
+
+    ! Getch some information
+    p_rmatrix => rsolverNode%rsystemMatrix
+
+    ! Check the parameters
+    if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
+        (p_rmatrix%NEQ .ne. rd%NEQ) ) then
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      return
+    end if
+
+    ! Damping parameter
+    domega = rsolverNode%domega
+    
+    select case(rsolverNode%p_rsubnodeSPSOR%csubtype)
+!    case(LINSOL_SPSOR_NAVST2D, LINSOL_SPSOR_NAVST2D_DIAG)
+!    
+!      ! Call SP-SOR preconditioner for 2D Navier-Stokes.
+!      call vanka_NS2D_precSPSOR(&
+!          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
+!      
+!
+!    case(LINSOL_SPSSOR_NAVST2D, LINSOL_SPSSOR_NAVST2D_DIAG)
+!    
+!      ! This is the 'critical' case. We need to catch this case here,
+!      ! as the SP-SSOR preconditioner can *not* be called via the
+!      ! vanka_conformal wrapper which is used in the 'default' case below!
+!    
+!      ! Call SP-SSOR preconditioner for 2D Navier-Stokes.
+!      call vanka_NS2D_precSPSSOR(&
+!          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
+
+
+    case default
+      
+      ! Get our temporary vector.
+      p_rvector => rsolverNode%p_rsubnodeSPSOR%rtempVector
+
+      ! The vector shares the same boundary conditions as rd!
+      ! So assign now all discretisation-related information (boundary
+      ! conditions,...) to the temporary vector.
+      call lsysbl_assignDiscrIndirect (rd, p_rvector)
+    
+      ! Clear our solution vector
+      call lsysbl_clearVector (p_rvector)
+      
+      ! Call SP-SOR solver
+      call spsor_solve(rsolverNode%p_rsubnodeSPSOR%rdata, &
+                       p_rvector, rd, domega)
 
       ! Copy the solution vector to rd - it's our preconditioned defect now.
       call lsysbl_copyVector (p_rvector,rd)
@@ -12126,6 +12674,50 @@ contains
         return
       
       end select
+      
+    case (LINSOL_ALG_SPSOR) 
+      ! The basic proceeding is like below: Apply the corresponding solver multiple
+      ! times to the solution- and RHS-vector to improve the solution. Let's see
+      ! which solver we have. 
+      ! If the previous IF-guess was wrong, we will leave this IF-clause and
+      ! fall back to use the preconditioner approach.
+      
+      ! Call it nmaxIterations times to perform the smoothing.
+      do i = 1, rsolverNode%nmaxIterations
+      
+        ! Probably print the residuum
+        if (rsolverNode%ioutputLevel .ge. 2) then
+          call lsysbl_copyVector(rb,rtemp)
+          call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+          
+          dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+          if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
+                    
+          call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
+              ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        end if
+      
+        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
+        ! without explicitly calculating (b-Ax_n) like below.
+        call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, &
+                          rx, rb, rsolverNode%domega)
+                              
+      end do
+
+      ! Probably print the residuum
+      if (rsolverNode%ioutputLevel .ge. 2) then
+        call lsysbl_copyVector(rb,rtemp)
+        call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+        
+        dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
+        if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
+                  
+        call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
+            ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+      end if
+
+      ! That's it.
+      return
 
     end select
       
