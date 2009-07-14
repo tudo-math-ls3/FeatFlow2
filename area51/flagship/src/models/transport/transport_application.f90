@@ -3800,9 +3800,8 @@ contains
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
-                             0.0_DP, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond,&
-                                   rsolution, 0.0_DP)    
+        0.0_DP, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution, 0.0_DP)    
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -3870,15 +3869,15 @@ contains
       if (irhstype > 0) then
         call lsysbl_createVectorblock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                            0.0_DP, rrhs, rcollection)
+            0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, transp_nlsolverCallback,&
-                                    rcollection, rrhs)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback, rcollection,&
+            rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -3889,9 +3888,8 @@ contains
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, transp_nlsolverCallback,&
-                                    rcollection)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback, rcollection)
       end if
             
       ! Stop time measurement for solution procedure
@@ -3908,8 +3906,9 @@ contains
       call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                        rsolution, 0.0_DP, relementError, derror, rcollection)
+      call transp_estimateRecoveryError(rparlist, ssectionname,&
+          p_rproblemLevel, rsolution, 0.0_DP, relementError, derror,&
+          rcollection)
 
       ! Stop time measurement for error estimation
       call stat_stopTimer(rtimerErrorEstimation)
