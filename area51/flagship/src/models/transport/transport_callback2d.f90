@@ -572,7 +572,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv,dscale
     integer :: icomp,iel,ipoint,ndim
     
     ! This subroutine assumes that the first quick access string
@@ -585,12 +585,13 @@ contains
     p_rvelocity => rcollection%p_rvectorQuickAccess1
 
     ! This subroutine assumes that the first quick access integer
-    ! value holds the Dirichlet value at the boundary
+    ! value holds the component number of the function parser
     icomp  = rcollection%IquickAccess(1)
     
-    ! This subroutine assumes that the first quick access double value
-    ! holds the simulation time
+    ! This subroutine assumes that the first two quick access double values
+    ! hold the simulation time and the scaling parameter
     dtime = rcollection%DquickAccess(1)
+    dscale = rcollection%DquickAccess(2)
 
     ! Allocate temporal memory
     allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -674,7 +675,7 @@ contains
 
         ! Check if we are at the primal inflow boundary
         if (dnv .lt. -SYS_EPSREAL) then
-          Dcoefficients(1,ipoint,iel) = -dnv * Daux(ipoint,iel,3)
+          Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
         else
           Dcoefficients(1,ipoint,iel) = 0.0_DP
         end if
@@ -782,7 +783,7 @@ contains
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
     real(DP), dimension(NDIM3D+1) :: Dvalue
-    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv,dscale
     integer :: icomp,iel,ipoint,ndim
     
     ! This subroutine assumes that the first quick access string
@@ -795,12 +796,13 @@ contains
     p_rvelocity => rcollection%p_rvectorQuickAccess1
 
     ! This subroutine assumes that the first quick access integer
-    ! value holds the Dirichlet value at the boundary
+    ! value holds the component number of the function parser
     icomp  = rcollection%IquickAccess(1)
     
-    ! This subroutine assumes that the first quick access double value
-    ! holds the simulation time
+    ! This subroutine assumes that the first two quick access double
+    ! values hold the simulation time and the scaling parameter
     dtime = rcollection%DquickAccess(1)
+    dscale = rcollection%DquickAccess(2)
 
     ! Allocate temporal memory
     allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -884,7 +886,7 @@ contains
 
         ! Check if we are at the dual inflow boundary
         if (dnv .gt. SYS_EPSREAL) then
-          Dcoefficients(1,ipoint,iel) = dnv * Daux(ipoint,iel,3)
+          Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
         else
           Dcoefficients(1,ipoint,iel) = 0.0_DP
         end if
@@ -995,12 +997,16 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dscale
     integer :: icomp,iel,ipoint,ndim
 
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
     p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! This subroutine assumes that the first quick access double value
+    ! holds the scaling parameter
+    dscale = rcollection%IquickAccess(1)
 
     ! Allocate temporal memory
     allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -1063,7 +1069,7 @@ contains
 
         ! Check if we are at the primal inflow boundary
         if (dnv .lt. -SYS_EPSREAL) then
-          Dcoefficients(1,ipoint,iel) = dnv
+          Dcoefficients(1,ipoint,iel) = dscale * dnv
         else
           Dcoefficients(1,ipoint,iel) = 0.0_DP
         end if
@@ -1174,12 +1180,16 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
-    real(DP) :: dtime,dminPar,dmaxPar,dt,dnx,dny,dnv
+    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dscale
     integer :: icomp,iel,ipoint,ndim
 
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
     p_rvelocity => rcollection%p_rvectorQuickAccess1
+
+    ! This subroutine assumes that the first quick access double value
+    ! holds the scaling parameter
+    dscale = rcollection%IquickAccess(1)
 
     ! Allocate temporal memory
     allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
@@ -1242,7 +1252,7 @@ contains
 
         ! Check if we are at the dual inflow boundary
         if (dnv .gt. SYS_EPSREAL) then
-          Dcoefficients(1,ipoint,iel) = -dnv
+          Dcoefficients(1,ipoint,iel) = dscale * dnv
         else
           Dcoefficients(1,ipoint,iel) = 0.0_DP
         end if
