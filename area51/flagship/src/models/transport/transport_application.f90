@@ -1998,37 +1998,42 @@ contains
 
     ! Calculate the standard Galerkin preconditioner (required for residual calculation)
     call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
-                                   rsolutionPrimal, rcollection)
+        rsolutionPrimal, rcollection)
 
     ! Calculate the standard Galerkin residual
     call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-                             rsolutionPrimal, rsolutionPrimal,&
-                             rvector, rvector, 0, rcollection, rrhs)
-    
-    ! Weakly impose Dirichlet boundary conditions
-    call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-        rsolutionPrimal, rsolutionPrimal, rvector, rcollection)
+        rsolutionPrimal, rsolutionPrimal, rvector, rvector, 0,&
+        rcollection, rrhs)
+
+    ! HERE WE GO NEXT
+!!$    ! Weakly impose Dirichlet boundary conditions
+!!$    call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
+!!$        rsolutionPrimal, rsolutionPrimal, rvector, rcollection)
     
     ! Ok, now we have to switch on all types of stabilization
-    call parlst_setvalue(rparlist, ssectionName, 'convectionAFC', trim(sys_siL(convectionAFC,10)))
-    call parlst_setvalue(rparlist, ssectionName, 'diffusionAFC', trim(sys_siL(convectionAFC,10)))
+    call parlst_setvalue(rparlist, ssectionName,&
+        'convectionAFC', trim(sys_siL(convectionAFC,10)))
+    call parlst_setvalue(rparlist, ssectionName,&
+        'diffusionAFC', trim(sys_siL(convectionAFC,10)))
 
     ! Again, set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
     
     
     ! We need the lumped mass matrix for scaling
-    call parlst_getvalue_int(rparlist, ssectionName, 'lumpedMassMatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'lumpedMassMatrix', lumpedMassMatrix)
     if (lumpedMassMatrix > 0) then
 
       ! Set pointer to the lumped mass matrix
-      call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                 p_DlumpedMassMatrix)
+      call lsyssc_getbase_double(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
     else
       ! Compute the lumped mass matrix explicitly
-      call parlst_getvalue_int(rparlist, ssectionName, 'templatematrix', templateMatrix)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          'templatematrix', templateMatrix)
       call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                  rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          rmatrix, LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC) 
       call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
@@ -2051,8 +2056,8 @@ contains
     ! compute the local L1-norms of nodal error vector which yields
     ! the local values of the a posteriori error estimator.
     call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
-    call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR,&
-                      daux, relementError=rtargetError)   
+    call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR, daux,&
+        relementError=rtargetError)   
 
     ! Release the vector of nodal error values
     call lsysbl_releaseVector(rvector)
@@ -2065,9 +2070,9 @@ contains
     ! expression for the target functional. If neither is available,
     ! then we are unable to compute the effectivity index.
     call parlst_getvalue_int(rparlist, ssectionName,&
-                             'iexactsolutiontype', iexactsolutiontype)
+        'iexactsolutiontype', iexactsolutiontype)
     call parlst_getvalue_string(rparlist, ssectionName,&
-                                'sexacttargetfuncname', sexacttargetfuncname, '')
+        'sexacttargetfuncname', sexacttargetfuncname, '')
     
     if ((iexactsolutiontype .ne. SOLUTION_ANALYTIC) .and.&
         (trim(sexacttargetfuncname) .eq. '')) then
@@ -2136,16 +2141,15 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
-                            rsolutionPrimal%RvectorBlock(1),&
-                            transp_refFuncAnalytic, rcollection,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
+              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic&
+              , rcollection, ffunctionWeight=transp_weightFuncAnalytic)
           
           ! Compute the exact value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-                            ffunctionReference=transp_refFuncAnalytic,&
-                            rcollection=rcollection,&
-                            rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
+              ffunctionReference=transp_refFuncAnalytic, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncAnalytic)
         end if
       
 
@@ -2155,9 +2159,9 @@ contains
         
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
-                                 'velocityfield', velocityfield)
+            'velocityfield', velocityfield)
         call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'stargetfuncname', stargetfuncName)
+            'stargetfuncname', stargetfuncName)
               
         ! Prepare quick access arrays of the collection
         rcollection%DquickAccess(1) = rtimestep%dTime
@@ -2166,8 +2170,8 @@ contains
         rcollection%SquickAccess(1) = 'rfparser'
         
         do i = 1, rproblemLevel%rtriangulation%ndim
-          call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
-                                      svelocityname, isubString=i)
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'svelocityname', svelocityname, isubString=i)
           rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
 
@@ -2181,17 +2185,17 @@ contains
       
           ! Evaluate exact value of the quantity of interest
           call fparser_evalFunction(p_rfparser, icomp,&
-                                   (/rtimestep%dTime/), dexactTargetFunc)
+              (/rtimestep%dTime/), dexactTargetFunc)
 
           ! Prepare quick access arrays of the collection
           rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, '@null')
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dtargetFunc,&
-                                      ffunctionReference=transp_errorBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
 
           ! Compute exact error in target functional. Note that the
           ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
@@ -2201,18 +2205,18 @@ contains
         else
           
           ! Compute the exact error of the quantity of interest
-          call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
-                                      ffunctionReference=transp_errorBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+          call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError&
+              , ffunctionReference=transp_errorBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
           
           ! Compute the exact value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetFunc,&
-                                      ffunctionReference=transp_refFuncBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+              ffunctionReference=transp_refFuncBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
         end if
         
 
@@ -2222,16 +2226,16 @@ contains
         
         ! Get global configuration from parameter list
         call parlst_getvalue_int(rparlist, ssectionName,&
-                                 'velocityfield', velocityfield)
+            'velocityfield', velocityfield)
 
         ! Get the name of the function used for evaluating the
         ! volume integral part of the target functional
         if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
-          call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                      stargetfuncname)
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'stargetfuncname', stargetfuncname)
         else
-          call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                      stargetfuncname, isubstring=1)
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'stargetfuncname', stargetfuncname, isubstring=1)
         end if
         
         ! Prepare quick access arrays of the collection
@@ -2241,8 +2245,8 @@ contains
         rcollection%SquickAccess(1) = 'rfparser'
         
         do i = 1, rproblemLevel%rtriangulation%ndim
-          call parlst_getvalue_string(rparlist, ssectionName, 'svelocityname',&
-                                      svelocityname, isubString=i)
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'svelocityname', svelocityname, isubString=i)
           rcollection%IquickAccess(i+2) = fparser_getFunctionNumber(p_rfparser, svelocityname)
         end do
         
@@ -2263,18 +2267,17 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dtargetFunc,&
-                            rsolutionPrimal%RvectorBlock(1),&
-                            rcollection=rcollection,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
+              rsolutionPrimal%RvectorBlock(1), rcollection&
+              =rcollection, ffunctionWeight=transp_weightFuncAnalytic)
 
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
           if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
-            call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                        stargetfuncname)
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'stargetfuncname', stargetfuncname)
           else
-            call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                        stargetfuncname, isubstring=2)
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'stargetfuncname', stargetfuncname, isubstring=2)
           end if
                    
           ! Prepare quick access arrays of the collection
@@ -2282,10 +2285,10 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-                                      ffunctionReference=transp_errorBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
 
           ! Add boundary contribution
           dtargetFunc = dtargetFunc + daux
@@ -2299,25 +2302,24 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
-                            rsolutionPrimal%RvectorBlock(1),&
-                            transp_refFuncAnalytic, rcollection,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
+              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic&
+              , rcollection, ffunctionWeight=transp_weightFuncAnalytic)
       
           ! Compute the exact value of the quantity of interest.
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
-                            ffunctionReference=transp_refFuncAnalytic,&
-                            rcollection=rcollection,&
-                            rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                            ffunctionWeight=transp_weightFuncAnalytic)
+              ffunctionReference=transp_refFuncAnalytic, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncAnalytic)
 
           ! Get the name of the function used for evaluating the
           ! surface integral part of the target functional
           if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
-            call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                        stargetfuncname)
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'stargetfuncname', stargetfuncname)
           else
-            call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                        stargetfuncname, isubstring=2)
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'stargetfuncname', stargetfuncname, isubstring=2)
           end if
           
           ! Prepare quick access arrays of the collection
@@ -2326,20 +2328,20 @@ contains
           
           ! Compute the exact error of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-                                      ffunctionReference=transp_errorBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
 
           ! Add boundary contribution
           dexactTargetError = dexactTargetError + daux
       
           ! Compute the exact value of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-                                      ffunctionReference=transp_refFuncBdrInt2D,&
-                                      rcollection=rcollection,&
-                                      rdiscretisation=rsolutionPrimal%RvectorBlock(1)%p_rspatialdiscr,&
-                                      ffunctionWeight=transp_weightFuncBdrInt2D)
+              ffunctionReference=transp_refFuncBdrInt2D, rcollection&
+              =rcollection, rdiscretisation=rsolutionPrimal&
+              %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
+              =transp_weightFuncBdrInt2D)
           
           ! Add boundary contribution
           dexactTargetFunc = dexactTargetFunc + daux
@@ -2361,8 +2363,6 @@ contains
       call output_line('relative effectivity index:              '//trim(sys_sdEP(abs( (dtargetError-abs(dexactTargetError)) /&
                                                                                         dexactTargetFunc ),15,6)))
       call output_lbrk()
-
-      stop
 
     end if
 
@@ -2419,9 +2419,10 @@ contains
         p_BisActiveElement = .false.
         
         ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
-                                      rproblemLevel%rtriangulation%NEL,&
-                                      dprotectLayerTolerance, p_DtargetError, p_BisActiveElement)
+        call doProtectionLayerUniform(p_IverticesAtElement,&
+            p_IneighboursAtElement, rproblemLevel%rtriangulation%NEL,&
+            dprotectLayerTolerance, p_DtargetError,&
+            p_BisActiveElement)
       end do
 
       ! Release memory
