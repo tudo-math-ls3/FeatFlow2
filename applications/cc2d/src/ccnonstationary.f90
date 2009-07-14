@@ -401,42 +401,17 @@ contains
     ! Don't implement any boundary conditions when assembling this -- it's not
     ! a defect vector!
     ! The BC's are implemented at the end when the full RHS is finished...
-    
-    rnonlinearIterationTmp = rnonlinearIteration
 
-    ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
-    ! matrix we want to have.
+    call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo)
+    
     rnonlinearCCMatrix%dalpha = -1.0_DP
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
-    rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-    rnonlinearCCMatrix%isubequation = rproblem%isubequation
-    rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-    rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-    rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-    rnonlinearCCMatrix%dnu = rproblem%dnu
-    rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-    rnonlinearCCMatrix%p_rdiscretisation => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
-    rnonlinearCCMatrix%p_rdiscretisationStabil => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisationStabil
-    rnonlinearCCMatrix%p_rmatrixStokes => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
-    rnonlinearCCMatrix%p_rmatrixB1 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
-    rnonlinearCCMatrix%p_rmatrixB2 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
-    rnonlinearCCMatrix%p_rmatrixD1 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD1
-    rnonlinearCCMatrix%p_rmatrixD2 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD2
-    rnonlinearCCMatrix%p_rmatrixMass => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
-    rnonlinearCCMatrix%p_rmatrixStabil => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStabil
-        
+    
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP)
 
     ! -------------------------------------------    

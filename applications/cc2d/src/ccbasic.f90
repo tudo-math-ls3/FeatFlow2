@@ -42,17 +42,13 @@ module ccbasic
   
 !<types>
 
-!<typeblock description="Type block defining all information about one level">
+!<typeblock>
 
-  type t_problem_lvl
+  ! A type block specifying all 'static' information which are depending
+  ! on a discretisation and a triangulation. Such static information can be
+  ! precalculated and is valid until the mesh or the FE spaces change.
+  type t_staticLevelInfo
   
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-
-    ! An object specifying the block discretisation
-    ! (size of subvectors in the solution vector, trial/test functions,...)
-    type(t_blockDiscretisation) :: rdiscretisation
-
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateFEM
@@ -65,39 +61,34 @@ module ccbasic
     ! matrices (B1/B2). The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateGradient
 
-    ! Stokes matrix for that specific level (=nu*Laplace)
+    ! A template FEM matrix that defines the structure of divergence
+    ! matrices (D1/D2). The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateDivergence
+
+    ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! B1-matrix for that specific level. 
+    ! Precalculated B1-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! Precalculated B2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB2
     
-    ! D1-matrix for that specific level. This usually coincides with B1^T.
-    ! Note that this matrix is saved 'virtually transposed'!
+    ! Precalculated D1-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixD1
 
-    ! B2^T-matrix for that specific level. This usually coincides with B2^T.
-    ! Note that this matrix is saved 'virtually transposed'!
+    ! Precalculated D2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixD2
 
-    ! Temporary vector in the size of the RHS/solution vector on that level.
-    type(t_vectorBlock) :: rtempVector
+    ! Precalculated D1^T-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
+    ! or describes an independent D1 matrix.
+    type(t_matrixScalar) :: rmatrixD1T
 
-    ! A variable describing the discrete boundary conditions fo the velocity.
-    ! Points to NULL until the BC's are discretised for the first time.
-    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
-  
-    ! A structure for discrete fictitious boundary conditions
-    ! Points to NULL until the BC's are discretised for the first time.
-    type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
-    
-    ! Mass matrix for the velocity.
-    type(t_matrixScalar) :: rmatrixMass
-
-    ! Mass matrix for the pressure.
-    type(t_matrixScalar) :: rmatrixMassPressure
+    ! Precalculated D2-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
+    ! or describes an independent D2 matrix.
+    type(t_matrixScalar) :: rmatrixD2T
 
     ! A scalar discretisation structure that specifies how to generate 
     ! the mass matrix in the velocity FEM space.
@@ -107,16 +98,17 @@ module ccbasic
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMassPressure
 
-    ! This flag signales whether there are Neumann boundary components
-    ! visible on the boundary of this level or not. If there are no
-    ! Neumann boundary components visible, the equation gets indefinite
-    ! for the pressure.
-    logical :: bhasNeumannBoundary
-    
-    ! An object specifying the block discretisation to be used for (edge)
-    ! stabilisation. Only used if edge stabilisation is activated, otherwise
-    ! this coincides with rdiscretisation.
-    type(t_blockDiscretisation) :: rdiscretisationStabil
+    ! Precalculated mass matrix for the velocity space.
+    type(t_matrixScalar) :: rmatrixMass
+
+    ! Precalculated mass matrix for the pressure space.
+    type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! An object specifying the discretisation in the velocity space
+    ! to be used for (edge) stabilisation. Only used if edge stabilisation 
+    ! is activated, otherwise this coincides with the default discretisation
+    ! of the velocity space.
+    type(t_spatialDiscretisation) :: rdiscretisationStabil
     
     ! Precomputed matrix for edge stabilisation. Only active if
     ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
@@ -133,6 +125,46 @@ module ccbasic
     
     ! An interpolation matrix for the pressure.
     type(t_matrixScalar) :: rmatrixInterpPressure
+    
+  end type
+
+!</typeblock>
+
+!<typeblock description="Type block defining all information about one level">
+
+  type t_problem_lvl
+  
+    ! An object for saving the triangulation of the domain
+    type(t_triangulation) :: rtriangulation
+
+    ! An object specifying the block discretisation
+    ! (size of subvectors in the solution vector, trial/test functions,...)
+    type(t_blockDiscretisation) :: rdiscretisation
+
+    ! An object specifying the block discretisation to be used for (edge)
+    ! stabilisation. Only used if edge stabilisation is activated, otherwise
+    ! this coincides with rdiscretisation.
+    type(t_blockDiscretisation) :: rdiscretisationStabil
+
+    ! Temporary vector in the size of the RHS/solution vector on that level.
+    type(t_vectorBlock) :: rtempVector
+
+    ! A variable describing the discrete boundary conditions fo the velocity.
+    ! Points to NULL until the BC's are discretised for the first time.
+    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
+  
+    ! A structure for discrete fictitious boundary conditions
+    ! Points to NULL until the BC's are discretised for the first time.
+    type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
+    
+    ! This flag signales whether there are Neumann boundary components
+    ! visible on the boundary of this level or not. If there are no
+    ! Neumann boundary components visible, the equation gets indefinite
+    ! for the pressure.
+    logical :: bhasNeumannBoundary
+    
+    ! A structure containing all static information about this level.
+    type(t_staticLevelInfo) :: rstaticInfo
     
   end type
   

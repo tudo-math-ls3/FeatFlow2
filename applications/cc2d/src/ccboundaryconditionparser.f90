@@ -285,18 +285,7 @@ contains
     !    
     ! Put some information to the quick access arrays for access
     ! in the callback routine.
-    rcoll%Iquickaccess(1) = rproblem%itimedependence
-    select case (rproblem%itimedependence)
-    case (0)
-      ! Stationary simulation
-      rcoll%Dquickaccess(1) = 0.0_DP
-      rcoll%Dquickaccess(2) = 0.0_DP
-      rcoll%Dquickaccess(3) = 0.0_DP
-    case (1)
-      rcoll%Dquickaccess(1) = rproblem%rtimedependence%dtime
-      rcoll%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
-      rcoll%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
-    end select
+    call cc_initCollectForAssembly (rproblem,rcoll)
     
     ! DquickAccess(4:) is reserved for BC specific information.
     !    
@@ -518,6 +507,9 @@ contains
       end if
       
     end do
+
+    ! Assembly finished, callback routine interface may now clean up.
+    call cc_doneCollectForAssembly (rproblem,rcoll)
 
     ! Release the parser object with all the expressions to be evaluated
     ! on the boundary.

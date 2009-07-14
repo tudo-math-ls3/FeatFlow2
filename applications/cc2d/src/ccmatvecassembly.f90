@@ -86,8 +86,9 @@ module ccmatvecassembly
   use linearsolverautoinitialise
   use collection
   use feevaluation
-  
   use convection
+  
+  use ccbasic
   
   use pprocnavierstokes
   
@@ -230,48 +231,17 @@ module ccmatvecassembly
     ! Standard = 20.0
     real(DP) :: dadmatthreshold = 20.0_DP
     
+    ! ASSEMBLY SPECIALS: If set to TRUE, the D-matrices are assembled as 
+    ! virtually transposed B-matrices. With the standard setting FALSE, the
+    ! D-matrices are assembled as standard divergence matrices.
+    logical :: bvirtualTransposedD = .false.
+    
     ! An object specifying the block discretisation
     ! (size of subvectors in the solution vector, trial/test functions,...).
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to a template FEM matrix that defines the structure of 
-    ! Laplace/Stokes/... matrices. 
-    type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM => null()
-
-    ! A template FEM matrix that defines the structure of gradient
-    ! matrices (B1/B2) matrices. 
-    type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient => null()
-
-    ! Pointer to Stokes matrix (=nu*Laplace). 
-    type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
-
-    ! Pointer to a B1-matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
-
-    ! Pointer to a B2-matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
-
-    ! Pointer to a B1^T-matrix.
-    ! This pointer may point to NULL(). In this case, B1^T is created
-    ! by 'virtually transposing' the B1 matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
-
-    ! Pointer to a B2-matrix.
-    ! This pointer may point to NULL(). In this case, B2^T is created
-    ! by 'virtually transposing' the B2 matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
-
-    ! Pointer to a Mass matrix.
-    ! May point to NULL() during matrix creation.
-    type(t_matrixScalar), pointer :: p_rmatrixMass => null()
-
-    ! An object specifying the block discretisation
-    ! for the (edge) stabilisation.
-    type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
-
-    ! Pointer to the Jump stabilisation matrix. 
-    ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
-    type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    ! Pointer to static/precalculated information on this level.
+    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
 
   end type
 
@@ -580,7 +550,7 @@ contains
       !          
       !    ( A11  A12  B1  ) 
       !    ( A21  A22  B2  ) 
-      !    ( B1^T B2^T     ) 
+      !    ( D1   D2       ) 
       !
       ! Assemble the velocity submatrices
       !
@@ -595,16 +565,24 @@ contains
       !          
       !    ( .    .    B1  ) 
       !    ( .    .    B2  ) 
-      !    ( B1^T B2^T .   ) 
+      !    ( D1   D2   .   ) 
       
       call assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,&
         iand(coperation,CMASM_QUICKREFERENCES) .ne. 0)
+
+      ! Assemble the pressure submatrix (if it exists)
+      !          
+      !    ( .    .    .   ) 
+      !    ( .    .    .   ) 
+      !    ( .    .    C   ) 
+      
+      call assemblePressureMatrix (rnonlinearCCMatrix,rmatrix)
 
       ! 2.) Initialise the weights for the B-matrices
       !
       !    (  .    .   B1  ) 
       !    (  .    .   B2  ) 
-      !    ( B1^T B2^T  .  )
+      !    ( D1   D2    .  )
       
       rmatrix%RmatrixBlock(1,3)%dscaleFactor = rnonlinearCCMatrix%deta
       rmatrix%RmatrixBlock(2,3)%dscaleFactor = rnonlinearCCMatrix%deta
@@ -681,9 +659,9 @@ contains
       
       ! Get a pointer to the template FEM matrix. If that doesn't exist,
       ! take the Stokes matrix as template.
-      p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixTemplateFEM
+      p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rstaticInfo%rmatrixTemplateFEM
       if (.not. associated(p_rmatrixTemplateFEM)) &
-        p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rmatrixStokes
+        p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes
       if (.not. associated(p_rmatrixTemplateFEM)) then
         call output_line ('Cannot set up A matrices in system matrix!', &
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
@@ -704,7 +682,7 @@ contains
       !
       !    ( A11       B1  ) = ( A11  A12  A13 )
       !    (      A22  B2  )   ( A21  A22  A23 )
-      !    ( B1^T B2^T .   )   ( A31  A32  A33 )
+      !    ( D1   D2   .   )   ( A31  A32  A33 )
       !
       ! All matices may have multiplication factors in their front.
       !
@@ -750,7 +728,7 @@ contains
         !
         !    ( A11  A12  B1  ) 
         !    ( A21  A22  B2  ) 
-        !    ( B1^T B2^T .   ) 
+        !    ( D1   D2   .   ) 
         !
         ! Create A12 and A21.
       
@@ -795,23 +773,50 @@ contains
       ! block matrix, while we create empty space for the entries. 
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
-                                    rmatrix%RmatrixBlock(1,3),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1, &
+          rmatrix%RmatrixBlock(1,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
-                                    rmatrix%RmatrixBlock(2,3),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2, &
+          rmatrix%RmatrixBlock(2,3),&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
       ! Now, prepare D1 and D2.
-      
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
-                                    rmatrix%RmatrixBlock(3,1),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ! The flag bvirtualTransposedD in the structure decides on whether
+      ! these matrices are created by the default Di matrices or by
+      ! virtually transposing the B-matrices. (This may be need by some VANKA
+      ! variants in the preconditioner e.g.)
+      if (rnonlinearCCMatrix%bvirtualTransposedD) then
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1T,&
+            rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
+            
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2T,&
+            rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+      else
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1, &
+            rmatrix%RmatrixBlock(3,1),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
-                                    rmatrix%RmatrixBlock(3,2),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2, &
+            rmatrix%RmatrixBlock(3,2),&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      end if
+
+      ! Include a matrx for the pressure
+      !      
+      !    ( .    .    .   ) 
+      !    ( .    .    .   ) 
+      !    ( .    .    C   ) 
+      !
+      ! which may be used for stabilisation or other features.
+      ! This submatrix will be deactived by setting the scaling factor
+      ! to 0.
+      call lsyssc_duplicateMatrix (&
+          rnonlinearCCMatrix%p_rstaticInfo%rmatrixTemplateFEMPressure,&
+          rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+      rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
+      call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
 
       ! That's it, all submatrices are basically set up.
       !
@@ -896,7 +901,7 @@ contains
         end if
       
         call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rmatrixMass       ,rnonlinearCCMatrix%dalpha,&
+            rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass,rnonlinearCCMatrix%dalpha,&
             rmatrix%RmatrixBlock(1,1),0.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
@@ -909,7 +914,7 @@ contains
           end if
 
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixMass     ,rnonlinearCCMatrix%dalpha,&
+              rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass,rnonlinearCCMatrix%dalpha,&
               rmatrix%RmatrixBlock(2,2),0.0_DP,&
               rmatrix%RmatrixBlock(2,2),&
               .false.,.false.,.true.,.true.)
@@ -951,14 +956,14 @@ contains
         if ((rnonlinearCCMatrix%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStokes     ,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rmatrixStokes   ,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1137,12 +1142,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
           end if
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
@@ -1172,14 +1177,14 @@ contains
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStabil     ,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rmatrixStabil   ,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1263,12 +1268,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
           end if
 
         case default
@@ -1302,12 +1307,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil,CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
           end if
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
@@ -1328,14 +1333,14 @@ contains
 
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rmatrixStabil     ,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rmatrixStabil   ,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1421,13 +1426,13 @@ contains
       !
       !    ( A11  A12  B1  ) = ( A11  A12  A13 )
       !    ( A21  A22  B2  )   ( A21  A22  A23 )
-      !    ( B1^T B2^T 0   )   ( A31  A32  A33 )
+      !    ( D1   D2   0   )   ( A31  A32  A33 )
       !
       ! We exclude the velocity submatrices here, so our system looks like:
       !
       !    (           B1 ) = (           A13 )
       !    (           B2 )   (           A23 )
-      !    ( B1^T B2^T    )   ( A31  A32  A33 )
+      !    ( D1   D2      )   ( A31  A32  A33 )
 
       ! The B1/B2 matrices exist up to now only in rnonlinearCCMatrix.
       ! Put a copy of them into the block matrix.
@@ -1439,24 +1444,57 @@ contains
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1, &
                                     rmatrix%RmatrixBlock(1,3),&
                                     idubStructure,idubContent)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2, &
                                     rmatrix%RmatrixBlock(2,3),&
                                     idubStructure,idubContent)
       
-      ! Now, prepare B1^T and B2^T. These matrices always share
+      ! Now, prepare D1 and D2. These matrices always share
       ! their data with the 'template' matrices as the data in these
-      ! matrices is usually not overwritten by boundary conditions...
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1, &
-                                    rmatrix%RmatrixBlock(3,1),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      ! matrices is usually not overwritten by boundary conditions.
+      ! Check the flag bvirtualTransposedD; this decides on whether Di are
+      ! created as virtually transposed B-matrices or by taking the D-matrices.
+      if (rnonlinearCCMatrix%bvirtualTransposedD) then
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1T,&
+            rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
+            
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2T,&
+            rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+      else
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1, &
+                                      rmatrix%RmatrixBlock(3,1),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2, &
-                                    rmatrix%RmatrixBlock(3,2),&
-                                    LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2, &
+                                      rmatrix%RmatrixBlock(3,2),&
+                                      LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      end if
+                                    
+    end subroutine
+
+    ! -----------------------------------------------------
+    
+    subroutine assemblePressureMatrix (rnonlinearCCMatrix,rmatrix)
+    
+    ! Initialises the pressure matrix with entries from
+    ! the rnonlinearCCMatrix structure.
+
+    ! A t_nonlinearCCMatrix structure providing all necessary 'source' information
+    ! about how to set up the matrix. 
+    type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
+
+    ! Block matrix where the C-matrix (3,3) should be set up
+    type(t_matrixBlock), intent(inout) :: rmatrix
+
+      ! For the moment, there cannot be found much in C. 
+      ! If the matrix exists (scale factor <> 0), we clear the
+      ! content, otherwise we ignore it.
+      if (rmatrix%RmatrixBlock(3,3)%dscaleFactor .ne. 0.0_DP) then
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
+      end if
                                     
     end subroutine
 
@@ -1536,7 +1574,7 @@ contains
     !          
     !    ( A11  A12  B1  ) 
     !    ( A21  A22  B2  ) 
-    !    ( B1^T B2^T .   ) 
+    !    ( D1   D2   .   ) 
     ! 
     ! Create a temporary matrix that covers this structure.
     call lsysbl_createMatBlockByDiscr (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)
@@ -1544,26 +1582,26 @@ contains
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
         rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
         rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
           rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixStokes,&
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
           rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     end if
     
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1,&
         rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixB2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2,&
         rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1,&
         rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rmatrixD2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2,&
         rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! In the first step, we assemble the defect that arises in the velocity 
@@ -1581,7 +1619,7 @@ contains
     !
     !    ( .    .    B1  ) 
     !    ( .    .    B2  ) 
-    !    ( B1^T B2^T .   ) 
+    !    ( D1   D2   .   ) 
 
     ! To build the appropriate defect, we firat remove the velocity blocks:
     
@@ -1674,11 +1712,11 @@ contains
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixMass, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
@@ -1692,11 +1730,11 @@ contains
         if ((rnonlinearCCMatrix%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%cviscoModel .eq. 0)) then
       
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStokes, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
               
@@ -1889,7 +1927,7 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
           if (.not. bshared) then
             call output_line (&
@@ -1999,7 +2037,7 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
           if (.not. bshared) then
             call output_line (&
@@ -2055,11 +2093,11 @@ contains
                               rmatrix,rsolution=rvector,rdefect=rdefect)          
         
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
@@ -2096,17 +2134,17 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(1))
+              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
           
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 

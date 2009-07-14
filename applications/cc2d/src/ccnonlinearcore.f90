@@ -72,6 +72,15 @@
 !# 10.) cc_nonlinearSolver
 !#      -> The actual nonlinear solver; similar to NSDEF in old CC versions.
 !#
+!# Auxiliary routines:
+!#
+!# 1.) cc_initNonlinMatrix
+!#     -> Initialise the basic structure of a nonlinear matrix.
+!#
+!# 2.) cc_prepareNonlinMatrixAssembly
+!#     -> Prepare a nonlinear matrix for the assembly in order to be
+!#        used in a preconditioner.
+!#
 !# To solve a system with the core equation, one has to deal with two
 !# main structures. On one hand, one has a nonlinear iteration structure 
 !# t_nlsolNode from the kernel; this is initialised by cc_getNonlinearSolver.
@@ -324,7 +333,15 @@ module ccnonlinearcore
     ! This flag is set to .TRUE. if there are no Neumann boundary
     ! components. In that case, the pressure matrices of direct
     ! solvers must be changed.
-    logical :: bpressureGloballyIndefinite = .false.
+    logical :: bneedPressureDiagonalBlock = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on all levels except for the coarse mesh.
+    logical :: bneedVirtTransposedD = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on the coarse mesh.
+    logical :: bneedVirtTransposedDonCoarse = .false.
     
   end type
 
@@ -340,22 +357,9 @@ module ccnonlinearcore
     ! Pointer to the discretisation structure of that level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to the discretisation structure of the stabilisation
-    ! on that level
-    type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
+    ! Pointer to static/precalculated information on this level.
+    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
 
-    ! Stokes matrix for that specific level (=nu*Laplace)
-    type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
-
-    ! B1-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
-
-    ! B2-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
-
-    ! Mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixMass => null()
-    
     ! Temporary vector for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
     type(t_vectorBlock), pointer :: p_rtempVector => null()
@@ -368,32 +372,6 @@ module ccnonlinearcore
     ! used for preconditioning.
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
   
-    ! Velocity coupling matrix $A_{12}$.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    type(t_matrixScalar), pointer :: p_rmatrixVelocityCoupling12 => null()
-
-    ! Velocity coupling matrix $A_{21}$.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    type(t_matrixScalar), pointer :: p_rmatrixVelocityCoupling21 => null()
-    
-    ! Divergence matrix D1. This usually coincides with B1^T.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar) :: rmatrixD1
-
-    ! Divergence matrix D2. This usually coincides with B2^T.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar) :: rmatrixD2
-    
-    ! Pointer to the Jump stabilisation matrix. 
-    ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
-    type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
-    
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
 
@@ -495,6 +473,110 @@ module ccnonlinearcore
 contains
   
   ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rdiscretisation,rstaticLevelInfo)
+  
+  !<description>
+    ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
+    ! from the main problem and precalculated information.
+  !</description>
+
+  !<input>
+    ! Global problem structure.
+    type(t_problem), intent(in) :: rproblem
+    
+    ! Discretisation of the level where the matrix is to be assembled.
+    type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+    
+    ! Core equation structure of one level.
+    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearCCMatrix), intent(inout) :: rnonlinearCCMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Initialise the matrix assembly structure rnonlinearCCMatrix 
+      ! with basic global information.
+      !
+      ! 1.) Model, stabilisation
+      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
+      rnonlinearCCMatrix%isubequation = rproblem%isubequation
+      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
+      rnonlinearCCMatrix%dnu = rproblem%dnu
+      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
+      
+      ! 2.) Pointers to global precalculated matrices.
+      rnonlinearCCMatrix%p_rdiscretisation => rdiscretisation
+      rnonlinearCCMatrix%p_rstaticInfo => rstaticLevelInfo
+      
+    end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+        ilev,nlmin,nlmax,rprecSpecials)
+  
+  !<description>
+    ! Prepares a rnonlinearCCMatrix structure for the assembly according
+    ! to a preconditioner. rprecSpecials specifies a couple of preconditioner
+    ! flags that configure the shape of the system matrix that the preconditioner
+    ! needs.
+    !
+    ! cc_initNonlinMatrix must have been called prior to this routine to
+    ! initialise the basic matrix. cc_prepareNonlinMatrixAssembly will then
+    ! add assembly-specific parameters of the preconditioner.
+  !</description>
+
+  !<input>
+    ! Current assembly level.
+    integer, intent(in) :: ilev
+    
+    ! Minimum assembly level.
+    integer, intent(in) :: nlmin
+    
+    ! Maximum assembly level.
+    integer, intent(in) :: nlmax
+  
+    ! Structure with assembly-specific parameters of the preconditioner.
+    type(t_ccPreconditionerSpecials), intent(in) :: rprecSpecials
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearCCMatrix), intent(inout) :: rnonlinearCCMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Parameters for adaptive matrices for Q1~ with anisotropic elements
+      rnonlinearCCMatrix%iadaptiveMatrices = rprecSpecials%iadaptiveMatrices
+      rnonlinearCCMatrix%dadmatthreshold = rprecSpecials%dadmatthreshold
+      
+      ! Depending on the level, we have to set up information about
+      ! transposing B-matrices.
+      if (ilev .eq. nlmin) then
+        rnonlinearCCMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedDonCoarse
+      else
+        rnonlinearCCMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedD
+      end if
+      
+    end subroutine
+
+  ! ***************************************************************************
   ! Callback routines for the nonlinear solver
   ! ***************************************************************************
 
@@ -566,38 +648,16 @@ contains
           
       ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
       ! matrix we want to have.
+      call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo)
+
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%isubequation = rproblem%isubequation
-      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
-      rnonlinearCCMatrix%p_rdiscretisation => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
-      rnonlinearCCMatrix%p_rdiscretisationStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
-      rnonlinearCCMatrix%p_rmatrixStokes => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
-      rnonlinearCCMatrix%p_rmatrixB1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
-      rnonlinearCCMatrix%p_rmatrixB2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
-      rnonlinearCCMatrix%p_rmatrixD1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
-      rnonlinearCCMatrix%p_rmatrixD2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
-      rnonlinearCCMatrix%p_rmatrixMass => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-      rnonlinearCCMatrix%p_rmatrixStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
-          
+      
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
@@ -722,7 +782,7 @@ contains
       !
       ! (u1)     (u1)                     ( (f1)   [ A         B1] (u1) )
       ! (u2)  := (u2)  + OMEGA * C^{-1} * ( (f2) - [      A    B2] (u2) )
-      ! (p )     (p )                     ( (fp)   [ B1^T B2^T 0 ] (p ) )
+      ! (p )     (p )                     ( (fp)   [ D1   D2   0 ] (p ) )
       !
       !                                   |------------------------------|
       !                                              = d_n
@@ -734,7 +794,7 @@ contains
       !
       !                  [ A         B1 ]
       !    C = T(u_n) =  [      A    B2 ]
-      !                  [ B1^T B2^T 0  ]
+      !                  [ D1   D2   0  ]
       !
       ! The parameter OMEGA is calculated as the result of the 1D
       ! minimisation problem:
@@ -771,41 +831,21 @@ contains
       ! Re-assemble the nonlinear system matrix on the maximum level.
       ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
       ! matrix we want to have.
+ 
+      call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo)
+        
+      call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+        rnonlinearIteration%NLMAX,&
+        rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX,&
+        rnonlinearIteration%rprecSpecials)
+        
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%isubequation = rproblem%isubequation
-      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
-      rnonlinearCCMatrix%iadaptiveMatrices = &
-          rnonlinearIteration%rprecSpecials%iadaptiveMatrices
-      rnonlinearCCMatrix%dadmatthreshold = &
-          rnonlinearIteration%rprecSpecials%dadmatthreshold
-      rnonlinearCCMatrix%p_rdiscretisation => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
-      rnonlinearCCMatrix%p_rdiscretisationStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
-      rnonlinearCCMatrix%p_rmatrixStokes => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
-      rnonlinearCCMatrix%p_rmatrixB1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
-      rnonlinearCCMatrix%p_rmatrixB2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
-      rnonlinearCCMatrix%p_rmatrixD1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
-      rnonlinearCCMatrix%p_rmatrixD2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
-      rnonlinearCCMatrix%p_rmatrixMass => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-      rnonlinearCCMatrix%p_rmatrixStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
@@ -1347,42 +1387,20 @@ contains
 
           ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
           ! matrix we want to have.
+          
+          call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rstaticInfo)
+            
+          call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+            ilev,nlmin,nlmax,rnonlinearIteration%rprecSpecials)
+          
           rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
           rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
           rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
           rnonlinearCCMatrix%deta = 1.0_DP
           rnonlinearCCMatrix%dtau = 1.0_DP
-          rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-          rnonlinearCCMatrix%isubequation = rproblem%isubequation
-          rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-          rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-          rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-          rnonlinearCCMatrix%dnu = rproblem%dnu
-          rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-          rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
-          rnonlinearCCMatrix%iadaptiveMatrices = &
-              rnonlinearIteration%rprecSpecials%iadaptiveMatrices
-          rnonlinearCCMatrix%dadmatthreshold = &
-              rnonlinearIteration%rprecSpecials%dadmatthreshold
-          rnonlinearCCMatrix%p_rdiscretisation => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation
-          rnonlinearCCMatrix%p_rdiscretisationStabil => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisationStabil
-          rnonlinearCCMatrix%p_rmatrixStokes => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
-          rnonlinearCCMatrix%p_rmatrixB1 => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
-          rnonlinearCCMatrix%p_rmatrixB2 => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2
-          rnonlinearCCMatrix%p_rmatrixD1 => &
-              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD1
-          rnonlinearCCMatrix%p_rmatrixD2 => &
-              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD2
-          rnonlinearCCMatrix%p_rmatrixMass => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
-          rnonlinearCCMatrix%p_rmatrixStabil => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStabil
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
@@ -1418,7 +1436,7 @@ contains
             
         end do
         
-        if (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) then
+        if (rnonlinearIteration%rprecSpecials%bneedPressureDiagonalBlock) then
           
           ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
           !
