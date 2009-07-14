@@ -142,6 +142,9 @@ module problem
   ! Problem level requires update
   integer(I32), parameter, public :: PROBLEV_MSPEC_UPDATE           = 2**0
 
+  ! Problem level requires initialization
+  integer(I32), parameter, public :: PROBLEV_MSPEC_INITIALIZE       = 2**1
+
 !</constantblock>
 
 !</constants>
@@ -238,9 +241,9 @@ module problem
     ! Problem level specification tag. This is a bitfield coming from
     ! an OR combination of different PROBLEV_MSPEC_xxxx constants and
     ! specifies variour details of the problem level. If it is
-    ! =PROBLEV_MSPEC_STANDARD, the problem level is a usual problem
+    ! =PROBLEV_MSPEC_INITIALIZE, the problem level is a usual problem
     ! level taht needs no special handling.
-    integer(I32) :: iproblemSpec = PROBLEV_MSPEC_STANDARD
+    integer(I32) :: iproblemSpec = PROBLEV_MSPEC_INITIALIZE
 
     ! Number of the problem level
     integer :: ilev
