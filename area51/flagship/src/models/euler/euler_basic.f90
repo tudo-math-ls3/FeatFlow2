@@ -321,7 +321,7 @@ contains
     
     ! local variables
     real(DP) :: p
-    integer :: ieq,ivar
+    integer :: ieq
     
     
     select case (trim(adjustl(sys_upcase(cvariable))))
@@ -487,7 +487,7 @@ contains
       
     ! local variables
     real(DP) :: p
-    integer :: ieq,ivar
+    integer :: ieq
     
     
     select case (trim(adjustl(sys_upcase(cvariable))))
