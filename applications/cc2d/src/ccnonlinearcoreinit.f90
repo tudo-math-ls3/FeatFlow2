@@ -636,14 +636,8 @@ contains
           case (0)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERAL)
         
-            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-            rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .true.
-
           case (1)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
-
-            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-            rnonlinearIteration%rprecSpecials%bneedVirtTransposedD = .true.
 
           case (2)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
