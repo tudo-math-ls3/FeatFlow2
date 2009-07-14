@@ -27,40 +27,43 @@
 !# 6.) transp_calcRHS
 !#     -> Calculates the constant right-hand side vector
 !#
-!# 7.) transp_setBoundary
+!# 7.) transp_calcBoundaryConditions
+!#     -> Calculates the contribution of weakly imposed boundary conditions
+!#
+!# 8.) transp_setBoundaryConditions
 !#     -> Imposes boundary conditions for nonlinear solver
 !#
-!# 8.) transp_calcVelocityField
+!# 9.) transp_calcVelocityField
 !#     -> Calculates the velocity field
 !#
-!# 9.) transp_setVelocityField
-!#     -> Sets the velocity field internally
+!# 10.) transp_setVelocityField
+!#      -> Sets the velocity field internally
 !#
-!# 10.) transp_calcLinearizedFCT
+!# 11.) transp_calcLinearizedFCT
 !#      -> Calculates the linearized FCT correction
 !#
-!# 11.) transp_coeffVectorAnalytic
+!# 12.) transp_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using an analytic expression for the load-vector
 !#
-!# 12.) transp_refFuncAnalytic
+!# 13.) transp_refFuncAnalytic
 !#      -> Callback routine for the evaluation of the reference
 !#         target function for goal-oriented error estimation
 !#
-!# 13.) transp_weightFuncAnalytic
+!# 14.) transp_weightFuncAnalytic
 !#      -> Callback routine for the evaluation of the weights in
 !#         the target functional for goal-oriented error estimation
 !#
-!# 14.) transp_refFuncBdrInt2D
+!# 15.) transp_refFuncBdrInt2D
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the target functional for goal-oriented error estimation
 !#
-!# 15.) transp_errorBdrInt2D
+!# 16.) transp_errorBdrInt2D
 !#      -> Callback routine for the evaluation of the boundary integral
 !#         of the error in the target functional for goal-oriented
 !#         error estimation
 !#
-!# 16.) transp_weightFuncBdrInt2D
+!# 17.) transp_weightFuncBdrInt2D
 !#      -> Callback routine for the evaluation of the weights in
 !#         the boundary integral of the target functional for
 !#         goal-oriented error estimation
@@ -121,21 +124,22 @@ module transport_callback
   implicit none
 
   private
-  public :: transp_nlsolverCallback
-  public :: transp_setBoundary
-  public :: transp_calcPreconditioner
-  public :: transp_calcJacobian
   public :: transp_applyJacobian
-  public :: transp_calcResidual
-  public :: transp_calcRHS
-  public :: transp_calcVelocityField
-  public :: transp_setVelocityField
+  public :: transp_calcBoundaryConditions
+  public :: transp_calcJacobian
   public :: transp_calcLinearizedFCT
+  public :: transp_calcPreconditioner
+  public :: transp_calcRHS
+  public :: transp_calcResidual
+  public :: transp_calcVelocityField
   public :: transp_coeffVectorAnalytic
-  public :: transp_refFuncAnalytic
-  public :: transp_weightFuncAnalytic
-  public :: transp_refFuncBdrInt2D
   public :: transp_errorBdrInt2D
+  public :: transp_nlsolverCallback
+  public :: transp_refFuncAnalytic
+  public :: transp_refFuncBdrInt2D
+  public :: transp_setBoundaryConditions
+  public :: transp_setVelocityField
+  public :: transp_weightFuncAnalytic
   public :: transp_weightFuncBdrInt2D
 
 contains
@@ -198,38 +202,44 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    integer(i32) :: iSpec
     integer :: jacobianMatrix
+    
+    
+    ! Make a local copy
+    iSpec = ioperationSpec
+    
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
+      call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
+          rsolution, rsolutionInitial, rrhs, istep, rcollection, rb)
+
+      ! Remove specifier for the preconditioner (if any)
+      iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+    end if
+    
+    
+    ! Do we have to calculate the residual?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+
+      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
+          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection , rb)
+
+      ! Remove specifier for the preconditioner (if any)
+      iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+    end if
     
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND)  .ne. 0) .or.&
-        (iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)      .ne. 0) .or.&
-        (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0)) then
+    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
      
       call transp_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
 
-    
-    ! Do we have to calculate the constant right-hand side?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
-      call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, istep, rcollection)
-    end if
-          
-    
-    ! Do we have to calculate the residual
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-
-      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection&
-          , rb)
-    end if
-    
     
     ! Do we have to calculate the Jacobian operator?
     ! --------------------------------------------------------------------------
@@ -244,8 +254,8 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rres, rcollection)
+      call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rres, rcollection)
     end if
     
 
@@ -575,6 +585,9 @@ contains
           rcollection%p_rvectorQuickAccess1 =>&
               rproblemLevel%RvectorBlock(velocityfield)
 
+          ! Prepare quick access array
+          rcollection%IquickAccess(1) = 1.0
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM2D)
             ! Set pointers
@@ -887,6 +900,9 @@ contains
           rcollection%p_rvectorQuickAccess1 =>&
               rproblemLevel%RvectorBlock(velocityfield)
 
+          ! Prepare quick access array
+          rcollection%IquickAccess(1) = -1.0
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM2D)
             ! Set pointers
@@ -1066,6 +1082,11 @@ contains
     integer :: velocityfield
     logical :: bStabilize, bisExactStructure, bisExtendedSparsity
 
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_bilinearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer :: ibct, isegment
 
     ! Start time measurement for matrix evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
@@ -1246,6 +1267,65 @@ contains
               rsolution, transp_calcMatrixPrimalConst3d, hstep, bStabilize,&
               .false., rproblemLevel%Rmatrix(transportMatrix))
         end select
+
+        ! Evaluate bilinear form for boundary integral (if any)
+        p_rboundaryCondition => rproblemLevel%p_rboundaryCondition
+        if (p_rboundaryCondition%bWeakBdrCond) then
+          
+          ! Initialize the bilinear form
+          rform%itermCount = 1
+          rform%Idescriptors(1,1) = DER_FUNC
+          rform%Idescriptors(2,1) = DER_FUNC
+          
+          ! We have no constant coefficients
+          rform%ballCoeffConstant = .false.
+          rform%BconstantCoeff    = .false.
+          
+          ! Attach velocity vectors to collection structure
+          rcollection%p_rvectorQuickAccess1 =>&
+              rproblemLevel%RvectorBlock(velocityfield)
+          
+          ! Prepare quick access array
+          rcollection%IquickAccess(1) = 1.0
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM2D)
+            ! Set pointers
+            call storage_getbase_int(p_rboundaryCondition&
+                %h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+            call storage_getbase_int(p_rboundaryCondition&
+                %h_IbdrCondType, p_IbdrCondType)
+            
+            ! Loop over all boundary components
+            do ibct = 1, p_rboundaryCondition%iboundarycount
+              
+              ! Loop over all boundary segments
+              do isegment = p_IbdrCondCpIdx(ibct),&
+                            p_IbdrCondCpIdx(ibct+1)-1
+        
+                if (p_IbdrCondType(isegment) .eq. -BDR_DIRICHLET) then
+                  
+                  ! Create boundary region
+                  call bdrf_createRegion(p_rboundaryCondition,&
+                      ibct, isegment-p_IbdrCondCpIdx(ibct)+1,&
+                      rboundaryRegion)
+                  
+                  ! Assemble the lumped bilinear form
+                  call bilf_buildMatrixScalarBdr2D(rform, CUB_G3_1D,&
+                      .false., rproblemLevel%Rmatrix(transportMatrix),&
+                      transp_coeffMatBdrPrimalConst2d, rboundaryRegion,&
+                      rcollection, BILF_MATC_LUMPED)
+                end if
+                
+              end do ! isegment
+            end do ! ibct
+            
+          case default
+            call output_line('Unsupported spatial dimension!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+            call sys_halt()
+          end select
+        end if
       
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers' equation in space-time
@@ -1798,7 +1878,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rrhs, istep, rcollection)
+      rsolution, rsolutionInitial, rrhs, istep, rcollection,rb)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -1817,6 +1897,9 @@ contains
 
     ! number of explicit step
     integer, intent(in) :: istep
+
+    ! OPTIONAL: load vector specified by the application
+    type(t_vectorBlock), intent(in), optional :: rb
 !</input>
 
 !<inputoutput>
@@ -1844,25 +1927,21 @@ contains
     integer :: imassantidiffusiontype
 
 
+    print *, "WARNING: This subroutine has not been tested!"
+    stop
+
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
 
-    ! For nonlinear conservation laws, the global system operator
-    ! needs to be updated in each nonlinear iteration. The update 
-    ! routine is written such that it first determines if the problem
-    ! is nonlinear and returns without matrix update otherwise.
-    call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver, rsolution, rcollection)
-
-
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'transportmatrix', transportMatrix)
+        'transportmatrix', transportMatrix)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'lumpedmassmatrix', lumpedMassMatrix)
+        'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'consistentmassmatrix', consistentMassMatrix)
+        'consistentmassmatrix', consistentMassMatrix)
 
 
     ! Compute the right-hand side
@@ -1872,8 +1951,8 @@ contains
     dweight = rtimestep%DmultistepWeights(istep)*&
               rtimestep%dStep*(1.0_DP-rtimestep%theta)
     call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                             rsolution%rvectorBlock(1),&
-                             rrhs%RvectorBlock(1), dweight, 0.0_DP)
+        rsolution%rvectorBlock(1), rrhs%RvectorBlock(1), dweight,&
+        0.0_DP)
 
 
     ! Perform algebraic flux correction for the convective term if required
@@ -1881,7 +1960,7 @@ contains
     !   $ rhs = rhs + f^*(u^n+1,u^n) $
 
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'convectionAFC', convectionAFC)
+        'convectionAFC', convectionAFC)
        
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
@@ -1890,29 +1969,33 @@ contains
           AFCSTAB_FEMFCT_CLASSICAL)
 
       dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'imassantidiffusiontype', imassantidiffusiontype)
+      call parlst_getvalue_int(p_rparlist, rcollection&
+          %SquickAccess(1), 'imassantidiffusiontype',&
+          imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution, rtimestep%theta, dweight, .true., rrhs,&
-                                   rproblemLevel%Rafcstab(convectionAFC),&
-                                   rproblemLevel%Rmatrix(consistentMassMatrix))
+        call gfsc_buildResidualFCT(rproblemLevel&
+            %Rmatrix(lumpedMassMatrix), rsolution, rtimestep%theta,&
+            dweight, .true., rrhs, rproblemLevel&
+            %Rafcstab(convectionAFC), rproblemLevel&
+            %Rmatrix(consistentMassMatrix))
       else
-        call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution, rtimestep%theta, dweight, .true., rrhs,&
-                                   rproblemLevel%Rafcstab(convectionAFC))
+        call gfsc_buildResidualFCT(rproblemLevel&
+            %Rmatrix(lumpedMassMatrix), rsolution, rtimestep%theta,&
+            dweight, .true., rrhs, rproblemLevel&
+            %Rafcstab(convectionAFC))
       end if
           
     case (AFCSTAB_FEMTVD)
       call gfsc_buildResidualTVD(rsolution, dweight, rrhs,&
-                                 rproblemLevel%Rafcstab(convectionAFC))
+          rproblemLevel%Rafcstab(convectionAFC))
 
     case (AFCSTAB_FEMGP)
-      call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                rsolution, rsolutionInitial, rtimestep%theta, dweight, rrhs,&
-                                rproblemLevel%Rafcstab(convectionAFC))
+      call gfsc_buildResidualGP(rproblemLevel&
+          %Rmatrix(consistentMassMatrix), rsolution, rsolutionInitial&
+          , rtimestep%theta, dweight, rrhs, rproblemLevel&
+          %Rafcstab(convectionAFC))
     end select
 
 
@@ -1921,17 +2004,20 @@ contains
     !   $ rhs = rhs + g^*(u^n+1,u^n) $
 
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'diffusionAFC', diffusionAFC)
+        'diffusionAFC', diffusionAFC)
     
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
           
     case (AFCSTAB_SYMMETRIC)
       call gfsc_buildResidualSymm(rsolution, 1.0_DP, rrhs,&
-                                  rproblemLevel%Rafcstab(diffusionAFC))
+          rproblemLevel%Rafcstab(diffusionAFC))
     end select
     
-    ! Stop time measurement for residual/rhs evaluation
+    ! Apply the given load vector to the residual
+    if (present(rb)) call lsysbl_vectorLinearComb(rb, rrhs, 1.0_DP, 1.0_DP)
+
+    ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
   end subroutine transp_calcRHS
@@ -1985,7 +2071,7 @@ contains
     ! residual vector
     !   ite=0: the initial residual vector is calculated
     !   ite>0: the residual vector is initialized by the right-hand
-    !          sude vector and updated by the implicit contribution
+    !          side vector and updated by the implicit contribution
     type(t_vectorBlock), intent(inout) :: rres
 
     ! collection
@@ -1996,291 +2082,259 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    character(LEN=SYS_STRLEN) :: smode
     integer :: transportMatrix, consistentMassMatrix, lumpedMassMatrix
     integer :: convectionAFC, diffusionAFC
     integer :: imasstype, imassantidiffusiontype
-
     
-    ! Start time measurement for residual/rhs evaluation
-    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
-    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
-
-    ! Get parameters from parameter list which are required unconditionally
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                             'transportmatrix', transportMatrix)
-
+    
+    ! Check if the preconditioner has to be initialized
+    if (iand(rproblemLevel%iproblemSpec,&
+             PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
+                                        not(PROBLEV_MSPEC_INITIALIZE))
+    end if
+    
     ! Are we in the zero-th iteration?
     if (ite .eq. 0) then
 
       !-------------------------------------------------------------------------
-      ! In the zero-th nonlinear iteration we calculate the initial
-      ! residual vector and the constant right-hand side vector
+      ! In the zero-th nonlinear iteration we calculate the constant
+      ! right-hand side vector based on the transport operator from
+      ! the previous time step. Of boundary conditions are imposed in
+      ! weak sense, then additional surface integrals are applied to
+      ! the right-hand side of the primal problem. In the dual
+      ! problem, weakly imposed boundary conditions are built into
+      ! the target functional which is supplied via the vector 'rb'.
       !-------------------------------------------------------------------------
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'imasstype', imasstype)
-      
+      ! Start time measurement for rhs evaluation
+      p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+      call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
+
+      ! Get parameters from parameter list which are required unconditionally
+      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+      call parlst_getvalue_int(p_rparlist, rcollection&
+          %SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection&
+          %SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection &
+          %SquickAccess(1), 'transportmatrix', transportMatrix)
+      call parlst_getvalue_int(p_rparlist, rcollection&
+          %SquickAccess(1), 'imasstype', imasstype)
+
       select case(imasstype)
       case (MASS_LUMPED)
-        
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = dt*L(u^n)*u^n $
-        
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 0.0_DP)
 
         ! Compute the constant right-hand side
         !
-        !   $ rhs = M_L*u^n+(1-theta)*res^{(0)} $
+        !   $ rhs = M_L*u^n+(1-theta)*dt*L(u^n)u^n + b.c.'s$
 
         if (rtimestep%theta .lt. 1.0_DP) then
-          call lsysbl_copyVector(rres, rrhs)
+          ! Build transport term $dt*L(u^n)u^n$
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+              rrhs%RvectorBlock(1), rtimestep%dStep, 0.0_DP)
+          
+          ! Build transient term $M_L*u^n$
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
 
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
+          ! Build weakly imposed boundary conditions
+          call transp_calcBoundaryConditions(rproblemLevel,&
+              rtimestep%dTime-rtimestep%dStep,&
+              -(1.0_DP-rtimestep%theta)*rtimestep%dStep,&
+              rrhs%RvectorBlock(1), rcollection)
         else
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1),&
-                                   1.0_DP, 0.0_DP)
+          ! Build transient term $M_L*u^n$
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
         end if
 
       case (MASS_CONSISTENT)
 
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = dt*L(u^n)*u^n $
-        
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%dStep, 0.0_DP)
-        
         ! Compute the constant right-hand side
         !
-        !   $ rhs = M_C*u^n+(1-theta)*res^{(0)} $
+        !   $ rhs = M_C*u^n+(1-theta)*dt*L(u^n)u^n + b.c.'s $
 
         if (rtimestep%theta .lt. 1.0_DP) then
-          call lsysbl_copyVector(rres, rrhs)
+          ! Build transport term $dt*L(u^n)u^n$
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+              rrhs%RvectorBlock(1), rtimestep%dStep, 0.0_DP)
+          
+          ! Build transient term $M_C*u^n$
+          call lsyssc_scalarMatVec(rproblemLevel &
+              %Rmatrix(consistentMassMatrix), rsolution &
+              %RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP &
+              -rtimestep%theta)
 
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                   rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
+          ! Build weakly imposed boundary conditions
+          call transp_calcBoundaryConditions(rproblemLevel,&
+              rtimestep%dTime-rtimestep%dStep,&
+              -(1.0_DP-rtimestep%theta)*rtimestep%dStep,&
+              rrhs%RvectorBlock(1), rcollection)
         else
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                   rsolution%RvectorBlock(1),&
-                                   rrhs%RvectorBlock(1),&
-                                   1.0_DP, 0.0_DP)
+          ! Build transient term $M_L*u^n$
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(consistentMassMatrix), rsolution&
+              %RvectorBlock(1), rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
         end if
-
+        
       case DEFAULT
 
-        ! Compute the initial low-order residual
-        !
-        !   $  res^{(0)} = L(u^n)*u^n $
+        ! Build weakly imposed boundary conditions
+        call lsysbl_clearVector(rrhs)
+        call transp_calcBoundaryConditions(rproblemLevel, rtimestep&
+            %dTime, -1.0_DP, rrhs%RvectorBlock(1), rcollection)
 
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 1.0_DP, 0.0_DP)        
       end select
-     
+      
+      ! Apply the given load vector to the residual
+      if (present(rb)) call lsysbl_vectorLinearComb(rb, rrhs, 1.0_DP, 1.0_DP)
+      
+      ! Stop time measurement for rhs evaluation
+      call stat_stopTimer(p_rtimer)
 
-      ! Perform algebraic flux correction for the convective term if required
+    end if ! ite
+    
+    
+    ! Update the nonlinear preconditioner since we need to evaluate
+    ! the transport operator for the current time step
+    call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+        rsolver, rsolution, rcollection)
+    
+    
+    ! Start time measurement for residual evaluation
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
+    
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'imasstype', imasstype)
+    
+    select case(imasstype)
+    case (MASS_LUMPED)
+      
+      ! Compute the low-order residual
       !
-      !   $ res^{(0)} = res^{(0)} + f(u^n,u^n) $
-
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'convectionAFC', convectionAFC)
-
-      if (convectionAFC > 0) then
-
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
-
-          call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                                   'imassantidiffusiontype', imassantidiffusiontype)
-          
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .true.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                       rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .true.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC))
-          end if
-          
-        case (AFCSTAB_FEMTVD)
-          call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
-                                     rproblemLevel%Rafcstab(convectionAFC))
-          
-        case (AFCSTAB_FEMGP)
-          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    rsolution, rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
-                                    rres, rproblemLevel%Rafcstab(convectionAFC))
-        end select
-
-      end if   ! convectionAFC > 0
-
+      !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})]*u^{(m)} $
       
-      ! Perform algebraic flux correction for the diffusive term if required
+      call lsysbl_copyVector(rrhs, rres)
+      
+      call lsyssc_scalarMatVec(rproblemLevel&
+          %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+          rres%RvectorBlock(1), rtimestep%theta*rtimestep%dStep,&
+          1.0_DP)
+      
+      call lsyssc_scalarMatVec(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
+          rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
+      
+    case (MASS_CONSISTENT)
+      
+      ! Compute the low-order residual
       !
-      !   $ res^{(0)} = res^{(0)} + g(u^n,u^n) $
+      !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})]*u^{(m)} $
       
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'diffusionAFC', diffusionAFC)
-
-      if (diffusionAFC > 0) then
-        
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-          
-        case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres,&
-                                      rproblemLevel%Rafcstab(diffusionAFC))
-        end select
+      call lsysbl_copyVector(rrhs, rres)
       
-      end if   ! diffusionAFC > 0    
+      call lsyssc_scalarMatVec(rproblemLevel&
+          %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+          rres%RvectorBlock(1), rtimestep%theta*rtimestep%dStep,&
+          1.0_DP)
+      
+      call lsyssc_scalarMatVec(rproblemLevel&
+          %Rmatrix(consistentMassMatrix), rsolution%RvectorBlock(1),&
+          rres%RvectorBlock(1), -1.0_DP, 1.0_DP)
+      
+    case DEFAULT
+      
+      ! Compute the low-order residual
+      !
+      !   $ res^{(m)} = rhs + L(u^{(m)})*u^{(m)} $
+      
+      call lsysbl_copyVector(rrhs, rres)
 
-    else   ! ite > 0
-
-      !-------------------------------------------------------------------------
-      ! In all subsequent nonlinear iterations only the residual vector is
-      ! updated, using the right-hand side vector from the zero-th iteration
-      !-------------------------------------------------------------------------
-
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'imasstype', imasstype)
-
-      select case(imasstype)
-      case (MASS_LUMPED)
+      call lsyssc_scalarMatVec(rproblemLevel&
+          %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+          rres%RvectorBlock(1), 1.0_DP, 1.0_DP)
+    end select
+    
+    ! Perform algebraic flux correction for the convective term if required
+    !
+    !   $ res = res + f^*(u^(m),u^n) $
+    
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'convectionAFC', convectionAFC)
+    
+    if (convectionAFC > 0) then
+      
+      select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+      case (AFCSTAB_FEMFCT,&
+            AFCSTAB_FEMFCT_CLASSICAL)
         
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = rhs - [M_L - dt*theta*L(u^{(m)})]*u^{(m)} $
-
-        call lsysbl_copyVector(rrhs, rres)
-
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%theta*rtimestep%dStep, 1.0_DP)
-
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 -1.0_DP, 1.0_DP)
-      case (MASS_CONSISTENT)
+        call parlst_getvalue_int(p_rparlist, rcollection&
+            %SquickAccess(1), 'imassantidiffusiontype', imassantidiffusiontype)
         
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = rhs - [M_C - dt*theta*L(u^{(m)})]*u^{(m)} $
-
-        call lsysbl_copyVector(rrhs, rres)
-
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 rtimestep%theta*rtimestep%dStep, 1.0_DP)
-
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                 rsolution%RvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 -1.0_DP, 1.0_DP)
-      case DEFAULT
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsc_buildResidualFCT(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution, rtimestep&
+              %theta, rtimestep%dStep, (ite .eq. 0), rres,&
+              rproblemLevel %Rafcstab(convectionAFC), rproblemLevel &
+              %Rmatrix(consistentMassMatrix))
+        else
+          call gfsc_buildResidualFCT(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution, rtimestep&
+              %theta, rtimestep%dStep, (ite .eq. 0), rres,&
+              rproblemLevel %Rafcstab(convectionAFC))
+        end if
         
-        ! Compute the low-order residual
-        !
-        !   $ res^{(m)} = L(u^{(m)})*u^{(m)} $
+      case (AFCSTAB_FEMTVD)
+        call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
+            rproblemLevel%Rafcstab(convectionAFC))
         
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rsolution%rvectorBlock(1),&
-                                 rres%RvectorBlock(1),&
-                                 1.0_DP, 0.0_DP)
+      case (AFCSTAB_FEMGP)
+        call gfsc_buildResidualGP(rproblemLevel&
+            %Rmatrix(consistentMassMatrix), rsolution,&
+            rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
+            rres, rproblemLevel%Rafcstab(convectionAFC))
       end select
-
-
-      ! Perform algebraic flux correction for the convective term if required
-      !
-      !   $ res = res + f^*(u^(m),u^n) $
-
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'convectionAFC', convectionAFC)
-
-      if (convectionAFC > 0) then
-
-        select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
-        
-          call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                                   'imassantidiffusiontype', imassantidiffusiontype)
-          
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .false.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC),&
-                                       rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsc_buildResidualFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                       rsolution, rtimestep%theta, rtimestep%dStep, .false.,&
-                                       rres, rproblemLevel%Rafcstab(convectionAFC))
-          end if
-          
-        case (AFCSTAB_FEMTVD)
-          call gfsc_buildResidualTVD(rsolution, rtimestep%dStep, rres,&
-                                     rproblemLevel%Rafcstab(convectionAFC))
-          
-        case (AFCSTAB_FEMGP)
-          call gfsc_buildResidualGP(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    rsolution, rsolutionInitial, rtimestep%theta, rtimestep%dStep,&
-                                    rres, rproblemLevel%Rafcstab(convectionAFC))
-        end select
-
-      end if   ! convectionAFC > 0
-
       
-      ! Perform algebraic flux correction for the diffusive term if required
-      !
-      !   $ res = res + g^*(u^n+1,u^n) $
+    end if   ! convectionAFC > 0
 
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'diffusionAFC', diffusionAFC)
+    ! Perform algebraic flux correction for the diffusive term if required
+    !
+    !   $ res = res + g^*(u^n+1,u^n) $
+    
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'diffusionAFC', diffusionAFC)
+    
+    if (diffusionAFC > 0) then
 
-      if (diffusionAFC > 0) then
+      ! What kind of stabilisation should be applied?
+      select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
         
-        ! What kind of stabilisation should be applied?
-        select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
-          
-        case (AFCSTAB_SYMMETRIC)
-          call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres,&
-                                      rproblemLevel%Rafcstab(diffusionAFC))
-        end select
+      case (AFCSTAB_SYMMETRIC)
+        call gfsc_buildResidualSymm(rsolution, 1.0_DP, rres,&
+            rproblemLevel%Rafcstab(diffusionAFC))
+      end select
       
-      end if   ! diffusionAFC > 0
-
-    end if   ! ite = 0
-
-    ! Apply the given load vector to the residual
-    if (present(rb)) call lsysbl_vectorLinearComb(rb, rres, 1.0_DP, 1.0_DP)
-
-    ! Stop time measurement for residual/rhs evaluation
+    end if   ! diffusionAFC > 0
+    
+    ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
     
   end subroutine transp_calcResidual
@@ -2289,8 +2343,171 @@ contains
 
 !<subroutine>
 
-  subroutine transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rres, rcollection)
+  subroutine transp_calcBoundaryConditions(rproblemLevel, dtime,&
+      dscale, rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from weakly
+    ! imposed boundary conditions
+!</description>
+
+!<input>
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+!</intput>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! residual/right-hand side vector
+    type(t_vectorScalar), intent(inout) :: rvector
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
+    type(t_parlist), pointer :: p_rparlist
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    character(LEN=SYS_STRLEN) :: smode, ssectionname
+    integer :: ivelocitytype, velocityfield
+    integer :: ibct, isegment
+
+    ! Get section name (since first quick access array is overwritten)
+    ssectionname = rcollection%SquickAccess(1)
+
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_string(p_rparlist,&
+        ssectionname, 'mode', smode)
+    
+    ! Check that we are in primal mode and the there are some weakly
+    ! imposed boundary conditions, otherwise return
+    p_rboundaryCondition => rproblemLevel%p_rboundaryCondition
+    if ((trim(smode) .ne. 'primal') .or.&
+        .not.p_rboundaryCondition%bWeakBdrCond) return
+
+
+    ! Set velocity vector and attach it to the collection (if any)
+    call parlst_getvalue_int(p_rparlist,&
+        ssectionname, 'ivelocitytype', ivelocitytype)
+    if (transp_hasVelocityVector(ivelocityType)) then
+      call parlst_getvalue_int(p_rparlist,&
+          ssectionname, 'velocityfield', velocityfield)
+      call transp_setVelocityField(&
+          rproblemLevel%RvectorBlock(velocityfield))
+      rcollection%p_rvectorQuickAccess1 =>&
+          rproblemLevel%RvectorBlock(velocityfield)
+    end if
+
+    ! What type of velocity are we?
+    select case(abs(ivelocityType))
+    case (VELOCITY_ZERO)
+      ! zero velocity, do nothing
+      
+    case (VELOCITY_CONSTANT,&
+          VELOCITY_TIMEDEP)
+      ! linear velocity
+      
+      ! Initialize the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+
+      ! How many spatial dimensions do we have?
+      select case(rproblemLevel%rtriangulation%ndim)
+
+      case(NDIM2D)
+        
+        ! Set pointers
+        call storage_getbase_int(p_rboundaryCondition&
+            %h_IbdrCondCpIdx, p_IbdrCondCpIdx)
+        call storage_getbase_int(p_rboundaryCondition&
+            %h_IbdrCondType, p_IbdrCondType)
+        
+        ! Attach function parser to collection structure
+        call collct_setvalue_pars(rcollection, 'rfparser_bdr',&
+            p_rboundaryCondition%rfparser, .true.)
+        
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = 'rfparser_bdr'
+        rcollection%DquickAccess(1) = dtime
+        rcollection%DquickAccess(2) = dscale
+        
+        ! Loop over all boundary components
+        do ibct = 1, p_rboundaryCondition%iboundarycount
+          
+          ! Loop over all boundary segments
+          do isegment = p_IbdrCondCpIdx(ibct),&
+                        p_IbdrCondCpIdx(ibct+1)-1
+            
+            ! Prepare quick access arrays of the collection
+            rcollection%IquickAccess(1) = isegment
+            
+            ! What type of boundary conditions are we?
+            select case(p_IbdrCondType(isegment))
+              
+            case(-BDR_DIRICHLET)
+              ! Dirichlet boundary conditions
+              
+              ! Create boundary segment
+              call bdrf_createRegion(p_rboundaryCondition, ibct,&
+                  isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+              
+              ! Build the discretized boundary integral into the residual
+              call linf_buildVectorScalarBdr2d(rform, CUB_G3_1D,&
+                  .false., rvector, transp_coeffVecBdrPrimalConst2d,&
+                  rboundaryRegion, rcollection)
+              
+            case (-BDR_INHOMNEUMANN)
+              ! Non-homogeneous Neumann boundary conditions
+              
+              ! Create boundary segment
+              call bdrf_createRegion(p_rboundaryCondition, ibct,&
+                  isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+              
+              ! @TODO: We must implement a callback function for
+              !  the evaluation of non-homogeneous Neumann
+              !  boundary conditions. Now, we only throw an error
+              print *, "Non-homogeneous Neumann boundaries are not&
+                  & implented yet"
+              stop
+              
+            end select
+            
+          end do ! isegment
+        end do ! ibct
+        
+      case default
+        call output_line('Invalid spatial dimension !',&
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBoundaryConditions')
+        call sys_halt()
+      end select
+      
+    case default
+      call output_line('Invalid velocity profile!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcBoundaryConditions')
+      call sys_halt()
+    end select
+
+    ! Reset first quick access array
+    rcollection%SquickAccess(1) = ssectionname
+    
+  end subroutine transp_calcBoundaryConditions 
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_setBoundaryConditions(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
     ! This subroutine imposes the Dirichlet boundary conditions in 
@@ -2348,7 +2565,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundary')
+          OU_CLASS_ERROR, OU_MODE_STD,'transp_setBoundaryConditions')
       call sys_halt()
     end select
     
@@ -2475,7 +2692,7 @@ contains
 !!$    ! reset the first quick access string array to the section name
 !!$    rcollection%SquickAccess(1) = ssectionname
 
-  end subroutine transp_setBoundary
+  end subroutine transp_setBoundaryConditions
 
   !*****************************************************************************
 
