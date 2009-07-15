@@ -149,9 +149,11 @@ module boundaryfilter
 
   ! Homogeneous Neumann boundary conditions
   integer, parameter, public :: BDR_HOMNEUMANN = 0
+  integer, parameter, public :: BDR_HOMNEUMANN_WEAK = -BDR_HOMNEUMANN
 
   ! Dirichlet boundary conditions
   integer, parameter, public :: BDR_DIRICHLET = 1
+  integer, parameter, public :: BDR_DIRICHLET_WEAK = -BDR_DIRICHLET
 
   ! Euler wall and symmetry plane boundary condition
   ! The normal component of the velocity vector is set to zero
@@ -159,13 +161,15 @@ module boundaryfilter
   ! V*n = 0
 
   integer, parameter, public :: BDR_EULERWALL = 2
-
+  integer, parameter, public :: BDR_EULERWALL_WEAK = -BDR_EULERWALL
+  
   ! Viscous wall boundary condition
   ! The velocity vector is set to zero
   !
   ! V = 0
 
   integer, parameter, public :: BDR_VISCOUSWALL = 3
+  integer, parameter, public :: BDR_VISCOUSWALL_WEAK = -BDR_VISCOUSWALL
 
   ! Farfield boundary condition using characteristics
   ! These boundary conditions can be used for both subsonic and
@@ -174,18 +178,21 @@ module boundaryfilter
   ! adopted from the interior values for outgoing characteristics.
 
   integer, parameter, public :: BDR_FARFIELD = 4
+  integer, parameter, public :: BDR_FARFIELD_WEAK = -BDR_FARFIELD
   
   ! Subsonic inlet boundary condition
   ! At a subsonic inlet, the recommended boundary condition is to specify
   ! the total temperature and total pressure as well as the flow angle.
 
   integer, parameter, public :: BDR_SUBINLET = 5
+  integer, parameter, public :: BDR_SUBINLET_WEAK = -BDR_SUBINLET
 
   ! Subsonic outlet boundary condition
   ! At a subsonic outlet the recommended boundary condition is to specify
   ! the static pressure.
 
   integer, parameter, public :: BDR_SUBOUTLET = 6
+  integer, parameter, public :: BDR_SUBOUTLET_WEAK = -BDR_SUBOUTLET
 
   ! Massflow inlet boundary condition
   ! This boundary condition can be prescribed at a subsonic inflow boundary 
@@ -205,6 +212,7 @@ module boundaryfilter
   ! (3) p0 = p*(1-(gamma-1)/(gamma+1)Laval^2)^(-gamma)/(gamma-1)
 
   integer, parameter, public :: BDR_MASSINLET = 7
+  integer, parameter, public :: BDR_MASSINLET_WEAK = -BDR_MASSINLET
 
   ! Massflow outlet boundary condition
   ! This boundary condition can be prescribed at a subsonic outflow boundary
@@ -228,6 +236,7 @@ module boundaryfilter
   ! (3) p = p0*(1-(gamma-1)/(gamma+1)*Laval^2)^gamma/(gamma-1)
 
   integer, parameter, public :: BDR_MASSOUTLET = 8
+  integer, parameter, public :: BDR_MASSOUTLET_WEAK = -BDR_MASSOUTLET
 
   ! Mach outflow boundary condition
   ! This condition is similar to the mass flow outflow boundary condition. It is
@@ -238,26 +247,31 @@ module boundaryfilter
   ! p = p0*(1+(gamma-1)/2*M^2)^(-gamma/(gamma-1))
 
   integer, parameter, public :: BDR_MACHOUTLET = 9
+  integer, parameter, public :: BDR_MACHOUTLET_WEAK = -BDR_MACHOUTLET
 
   ! Supersonic inlet boundary condition
   ! All boundary conditions are prescribed by the free stream quantities
   
   integer, parameter, public :: BDR_SUPERINLET = 10
+  integer, parameter, public :: BDR_SUPERINLET_WEAK = -BDR_SUPERINLET
 
   ! Supersonic outlet boundary condition
   ! No boundary conditions are prescribed at all
 
   integer, parameter, public :: BDR_SUPEROUTLET = 11
+  integer, parameter, public :: BDR_SUPEROUTLET_WEAK = -BDR_SUPEROUTLET
 
   ! Periodic boundary condition (symmetric)
   ! This condition couples two boundary segments periodically
 
   integer, parameter, public :: BDR_PERIODIC = 12
+  integer, parameter, public :: BDR_PERIODIC_WEAK = -BDR_PERIODIC
 
   ! Periodic boundary condition (anti-symmetric)
   ! This condition couples two boundary segments periodically
 
   integer, parameter, public :: BDR_ANTIPERIODIC = 13
+  integer, parameter, public :: BDR_ANTIPERIODIC_WEAK = -BDR_ANTIPERIODIC
 
   ! Relaxed Euler wall and symmetry plane boundary condition
   ! The normal component of the velocity vector is "approching" zero
@@ -265,9 +279,12 @@ module boundaryfilter
   ! (V-c*Vold)*n = 0, where   0 < c <= 1
 
   integer, parameter, public :: BDR_RLXEULERWALL = 14
+  integer, parameter, public :: BDR_RLXEULERWALL_WEAK = -BDR_RLXEULERWALL
 
   ! Inhomogeneous Neumann boundary conditions
+
   integer, parameter, public :: BDR_INHOMNEUMANN = 15
+  integer, parameter, public :: BDR_INHOMNEUMANN_WEAK = -BDR_INHOMNEUMANN
   
 !</constantblock>
 
