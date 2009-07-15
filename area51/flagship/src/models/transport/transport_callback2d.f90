@@ -1105,7 +1105,7 @@ contains
       
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
-      
+
       ! Evaluate the function parser for the Dirichlet values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
