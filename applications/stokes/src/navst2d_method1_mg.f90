@@ -7,8 +7,7 @@
 !# This module is a demonstation program how to solve a (Navier-)Stokes
 !# problem on a simple domain.
 !#
-!# The routine uses a pressure-DOF based Vanka smoother for 2D saddle point
-!# problems for a multigrid solver.
+!# The routine uses a SP-SOR smoother for a multigrid solver.
 !#
 !# This module is based on the stokes2d_method1_mg example, but in contrast
 !# this module uses the bench1 domain and, optionally, solves a Navier-Stokes
@@ -147,8 +146,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,&
-                                   p_rcoarseGridSolver,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -683,9 +681,7 @@ contains
     ! Set the output level of multigrid to 2 for some output
     p_rsolverNode%ioutputLevel = 2
     
-    ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
-    !call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
-    !call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+    ! Set up a UMFPACK as coarse grid solver:
     call linsol_initUMFPACK4 (p_rcoarseGridSolver)
     
     ! Set the output level of the coarse grid solver to -1, so that it
@@ -699,8 +695,8 @@ contains
     ! Now set up the other levels...
     do i = NLMIN+1, NLMAX
     
-      ! Set up the pressure-DOF based Vanka smoother.
-      call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
+      ! Set up the SP-SOR smoother.
+      call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
       
       ! We will use 4 smoothing steps with damping parameter 1.0
       call linsol_convertToSmoother(p_rsmoother, 8, 1.0_DP)
