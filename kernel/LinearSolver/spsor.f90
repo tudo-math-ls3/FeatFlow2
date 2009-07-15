@@ -305,18 +305,18 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_solve(rdata, ru, rf, niterations, domega)
+  subroutine spsor_solve(rdata, rsol, rrhs, niterations, domega)
 
 !<description>
-  ! This routine performs one SP-SOR iteration.
+  ! This routine performs a specified number of SP-SOR iterations.
 !</description>
 
 !<input>
   ! The SP-SOR data structure
   type(t_spsor), intent(in) :: rdata
   
-  ! The right-hand-side vector
-  type(t_vectorBlock), intent(in) :: rf
+  ! The right-hand-side vector of the system
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
@@ -328,7 +328,7 @@ contains
 
 !<inputoutput>
   ! The iteration vector that is to be updated.
-  type(t_vectorblock), intent(inout) :: ru
+  type(t_vectorblock), intent(inout) :: rsol
 !</inputoutput>
 
 !</subroutine>
@@ -336,8 +336,7 @@ contains
   real(DP) :: dom
   
     dom = 1.0_DP
-    ! temporary disabled
-    !if(present(domega)) dom = domega
+    if(present(domega)) dom = domega
 
     ! Make sure we do not apply the symmetric variant ('SP-SSOR')
     if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
@@ -354,7 +353,7 @@ contains
     case (SPSOR_SYSTEM_NAVST2D)
     
       ! Call the routine for 2D Navier-Stokes systems
-      call spsor_solve_NavSt2D(rdata, ru, rf, niterations, dom)
+      call spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, dom)
       
     case default
       call output_line ('SP-SOR data structure not initialised',&
@@ -369,7 +368,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_precond(rdata, rd, domega)
+  subroutine spsor_precond(rdata, rdef, domega)
 
 !<description>
   ! This routine performs applies the SP-SOR / SP-SSOR preconditioner onto
@@ -387,7 +386,7 @@ contains
 
 !<inputoutput>
   ! The defect vector that is to be preconditioned
-  type(t_vectorblock), intent(inout) :: rd
+  type(t_vectorblock), intent(inout) :: rdef
 !</inputoutput>
 
 !</subroutine>
@@ -395,8 +394,7 @@ contains
   real(DP) :: dom
   
     dom = 1.0_DP
-    ! temporarily disabled
-    !if(present(domega)) dom = domega
+    if(present(domega)) dom = domega
 
     ! Okay, which SP-SOR solver do we have here?
     select case(rdata%csystem)
@@ -405,10 +403,10 @@ contains
       ! Do we apply SP-SOR or SP-SSOR?
       if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
         ! Apply SP-SSOR for 2D Navier-Stokes systems
-        call spsor_prec_sym_NavSt2D(rdata, rd, dom)
+        call spsor_prec_sym_NavSt2D(rdata, rdef, dom)
       else
         ! Apply SP-SOR for 2D Navier-Stokes systems
-        call spsor_prec_NavSt2D(rdata, rd, dom)
+        call spsor_prec_NavSt2D(rdata, rdef, dom)
       end if
       
     case default
@@ -978,26 +976,26 @@ contains
         if(present(bvalid)) then
           return
         else
-          call output_line ('Sub-Matrix B(' // trim(sys_sil(j,2)) // ') does not exist',&
+          call output_line ('Sub-Matrix B(' // trim(sys_sil(i,2)) // ') does not exist',&
               OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
           call sys_halt()
         end if
       end if
       
-      if(i .gt. 1) then
-        ! Make all B matrices have the same structure
-        if(.not. lsyssc_isMatrixStructureShared(&
-            rmatrix%RmatrixBlock(1,3), rmatrix%RmatrixBlock(i,3))) then
-          if(present(bvalid)) then
-            return
-          else
-            call output_line ('All B(i) sub-matrices must share the same structure',&
-                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
-            call sys_halt()
-          end if
-        end if
-      end if
-    end do ! j
+!      if(i .gt. 1) then
+!        ! Make all B matrices have the same structure
+!        if(.not. lsyssc_isMatrixStructureShared(&
+!            rmatrix%RmatrixBlock(1,3), rmatrix%RmatrixBlock(i,3))) then
+!          if(present(bvalid)) then
+!            return
+!          else
+!            call output_line ('All B(i) sub-matrices must share the same structure',&
+!                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+!            call sys_halt()
+!          end if
+!        end if
+!      end if
+    end do ! i
 
     ! Loop over the D matrices
     do j = 1, 2
@@ -1014,19 +1012,19 @@ contains
         end if
       end if
       
-      if(j .gt. 1) then
-        ! Make all D matrices have the same structure
-        if(.not. lsyssc_isMatrixStructureShared(&
-            rmatrix%RmatrixBlock(3,1), rmatrix%RmatrixBlock(3,j))) then
-          if(present(bvalid)) then
-            return
-          else
-            call output_line ('All D(j) sub-matrices must share the same structure',&
-                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
-            call sys_halt()
-          end if
-        end if
-      end if
+!      if(j .gt. 1) then
+!        ! Make all D matrices have the same structure
+!        if(.not. lsyssc_isMatrixStructureShared(&
+!            rmatrix%RmatrixBlock(3,1), rmatrix%RmatrixBlock(3,j))) then
+!          if(present(bvalid)) then
+!            return
+!          else
+!            call output_line ('All D(j) sub-matrices must share the same structure',&
+!                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+!            call sys_halt()
+!          end if
+!        end if
+!      end if
     end do ! j
     
     ! All checks passed, so the matrix is valid
@@ -1936,19 +1934,19 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_solve_NavSt2D(rdata, ru, rf, niterations, domega)
+  subroutine spsor_solve_NavSt2D(rdata, rsol, rrhs, niterations, domega)
 
 !<description>
   ! INTERNAL ROUTINE:
-  ! Perform one SP-SOR iteration for 2D Navier-Stokes systems.
+  ! Performs a specifies number of SP-SOR iterations for 2D Navier-Stokes systems.
 !</description>
 
 !<input>
   ! The SP-SOR data structure
   type(t_spsor), target, intent(in) :: rdata
   
-  ! The right-hand-side vector
-  type(t_vectorBlock), intent(in) :: rf
+  ! The right-hand-side vector of the system
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
@@ -1959,7 +1957,7 @@ contains
 
 !<inputoutput>
   ! The iteration vector that is to be updated.
-  type(t_vectorblock), intent(inout) :: ru
+  type(t_vectorblock), intent(inout) :: rsol
 !</inputoutput>
 
 !</subroutine>
@@ -2030,12 +2028,12 @@ contains
     end if
     
     ! Fetch the vector arrays
-    call lsyssc_getbase_double(ru%RvectorBlock(1), p_Du1)
-    call lsyssc_getbase_double(ru%RvectorBlock(2), p_Du2)
-    call lsyssc_getbase_double(ru%RvectorBlock(3), p_Dup)
-    call lsyssc_getbase_double(rf%RvectorBlock(1), p_Df1)
-    call lsyssc_getbase_double(rf%RvectorBlock(2), p_Df2)
-    call lsyssc_getbase_double(rf%RvectorBlock(3), p_Dfp)
+    call lsyssc_getbase_double(rsol%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(rsol%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(rsol%RvectorBlock(3), p_Dup)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(1), p_Df1)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_Df2)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_Dfp)
     if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
         
     ! Fetch the number of velocity and pressure DOFs
@@ -2103,7 +2101,7 @@ contains
 
         ! Calculate p := p + omega * S * w
         call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
-            ru%rvectorBlock(3), domegaS, 1.0_DP)
+            rsol%rvectorBlock(3), domegaS, 1.0_DP)
       
       end if
     
@@ -2117,7 +2115,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_prec_NavSt2D(rdata, rd, domega)
+  subroutine spsor_prec_NavSt2D(rdata, rdef, domega)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -2134,7 +2132,7 @@ contains
 
 !<inputoutput>
   ! The defect vector that is to be preconditioned.
-  type(t_vectorblock), intent(inout) :: rd
+  type(t_vectorblock), intent(inout) :: rdef
 !</inputoutput>
 
 !</subroutine>
@@ -2194,9 +2192,9 @@ contains
     end if
     
     ! Fetch the vector arrays
-    call lsyssc_getbase_double(rd%RvectorBlock(1), p_Du1)
-    call lsyssc_getbase_double(rd%RvectorBlock(2), p_Du2)
-    call lsyssc_getbase_double(rd%RvectorBlock(3), p_Dup)
+    call lsyssc_getbase_double(rdef%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(rdef%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(rdef%RvectorBlock(3), p_Dup)
     if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
         
     ! Fetch the number of velocity and pressure DOFs
@@ -2259,7 +2257,7 @@ contains
 
       ! Calculate p := omega * S * w
       call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
-          rd%rvectorBlock(3), domegaS, 0.0_DP)
+          rdef%rvectorBlock(3), domegaS, 0.0_DP)
     
     end if
     
@@ -2272,7 +2270,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_prec_sym_NavSt2D(rdata, rd, domega)
+  subroutine spsor_prec_sym_NavSt2D(rdata, rdef, domega)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -2289,7 +2287,7 @@ contains
 
 !<inputoutput>
   ! The defect vector that is to be preconditioned.
-  type(t_vectorblock), intent(inout) :: rd
+  type(t_vectorblock), intent(inout) :: rdef
 !</inputoutput>
 
 !</subroutine>
@@ -2359,9 +2357,9 @@ contains
     end if
     
     ! Fetch the vector arrays
-    call lsyssc_getbase_double(rd%RvectorBlock(1), p_Du1)
-    call lsyssc_getbase_double(rd%RvectorBlock(2), p_Du2)
-    call lsyssc_getbase_double(rd%RvectorBlock(3), p_Dup)
+    call lsyssc_getbase_double(rdef%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(rdef%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(rdef%RvectorBlock(3), p_Dup)
     if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
         
     ! Fetch the number of velocity and pressure DOFs
@@ -2425,7 +2423,7 @@ contains
 
       ! Calculate p := omega * S * w
       call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
-          rd%rvectorBlock(3), domegaS, 0.0_DP)
+          rdef%rvectorBlock(3), domegaS, 0.0_DP)
     
     end if
     
