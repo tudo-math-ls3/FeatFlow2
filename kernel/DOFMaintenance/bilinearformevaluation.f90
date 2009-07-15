@@ -6384,7 +6384,7 @@ contains
                                           rboundaryRegion, rcollection, cconstrType)
 
 !<description>
-  ! This routine calculates the entries of a finite element matrix.
+    ! This routine calculates the entries of a finite element matrix.
   ! The matrix structure must be prepared with bilf_createMatrixStructure
   ! in advance.
   ! In case the array for the matrix entries does not exist, the routine
