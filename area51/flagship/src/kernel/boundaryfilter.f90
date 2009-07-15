@@ -290,14 +290,9 @@ module boundaryfilter
 
 !<constantblock description="Symbolic variables for boundary description">
   
-  ! List of variables which are evaluated by the bytecode interpreter in 1D
-  character (LEN=*), dimension(2), parameter :: BDR_SYMBOLICVARS1D = (/ (/'x'/),(/'t'/) /)
-
-  ! List of variables which are evaluated by the bytecode interpreter in 2D
-  character (LEN=*), dimension(3), parameter :: BDR_SYMBOLICVARS2D = (/ (/'x'/),(/'y'/),(/'t'/) /)
-
   ! List of variables which are evaluated by the bytecode interpreter in 3D
-  character (LEN=*), dimension(4), parameter :: BDR_SYMBOLICVARS3D = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
+  character (LEN=*), dimension(NDIM3D+1), parameter ::&
+      BDR_SYMBOLICVARS = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
 !</constantblock>
 !</constants>
 
@@ -624,37 +619,12 @@ contains
         call sys_halt()
       end select
 
-      ! How many spatial dimensions do we have?
-      select case (ndimension)
-      case (NDIM1D)
-        ! Loop over all expressions and apply them to function parser
-        do iexpression = 1, rboundaryCondition%nmaxExpressions
-          call fparser_parseFunction(rboundaryCondition%rfparser,&
-              rboundaryCondition%nmaxExpressions*(icomp-1)+iexpression,&
-              trim(adjustl(cMathExpression(iexpression))), BDR_SYMBOLICVARS1D)
-        end do
-
-      case (NDIM2D)
-        ! Loop over all expressions and apply them to function parser
-        do iexpression = 1, rboundaryCondition%nmaxExpressions
-          call fparser_parseFunction(rboundaryCondition%rfparser,&
-              rboundaryCondition%nmaxExpressions*(icomp-1)+iexpression,&
-              trim(adjustl(cMathExpression(iexpression))), BDR_SYMBOLICVARS2D)
-        end do
-
-      case (NDIM3D)
-        ! Loop over all expressions and apply them to function parser
-        do iexpression = 1, rboundaryCondition%nmaxExpressions
-          call fparser_parseFunction(rboundaryCondition%rfparser,&
-              rboundaryCondition%nmaxExpressions*(icomp-1)+iexpression,&
-              trim(adjustl(cMathExpression(iexpression))), BDR_SYMBOLICVARS3D)
-        end do
-
-      case DEFAULT
-        call output_line('Unsupported spatial dimension!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_readBoundaryCondition')
-        call sys_halt()   
-      end select
+      ! Loop over all expressions and apply them to function parser
+      do iexpression = 1, rboundaryCondition%nmaxExpressions
+        call fparser_parseFunction(rboundaryCondition%rfparser,&
+            rboundaryCondition%nmaxExpressions*(icomp-1)+iexpression,&
+            trim(adjustl(cMathExpression(iexpression))), BDR_SYMBOLICVARS)
+      end do
 
     end do ! icomp
 
@@ -3792,7 +3762,7 @@ contains
 
 
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0
       real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivt,ibct,ivar,isegment
@@ -3821,9 +3791,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
@@ -3841,9 +3813,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Get desired boundary values from parser
           do ivar = 1, nvar
@@ -3929,7 +3903,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dnx,dny,dnxL,dnxR,dnyL,dnyR,dw,dwL,dwR
@@ -3990,10 +3964,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
             
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
@@ -4025,10 +4000,11 @@ contains
               ivtR = IverticesAtBoundary(ivbd+1)
             end if
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Get desired boundary values from parser
             do ivar = 1, nvar
@@ -4321,7 +4297,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues
       real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivt,ivar,ibct,isegment
@@ -4350,9 +4326,12 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
+
           
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
@@ -4370,9 +4349,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
                     
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Get desired boundary values from parser
           do ivar = 1, nvar
@@ -4452,7 +4433,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dnx,dny,dnxL,dnxR,dnyL,dnyR,dw,dwL,dwR
@@ -4511,10 +4492,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
             
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
             
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
@@ -4546,10 +4528,11 @@ contains
               ivtR = IverticesAtBoundary(ivbd+1)
             end if
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
             
             ! Get desired boundary values from parser
             do ivar = 1, nvar
@@ -5054,7 +5037,7 @@ contains
       integer, intent(inout), optional :: istatus
       
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0,Ddiagonal
       real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic,ipos
@@ -5097,9 +5080,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
@@ -5133,9 +5118,11 @@ contains
             Daux0(ivar) = Du0(ivt,ivar)
           end do
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Get desired boundary values from parser
           do ivar = 1, nvar
@@ -5244,7 +5231,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0,Ddiagonal
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
@@ -5363,10 +5350,11 @@ contains
           case (BDR_DIRICHLET)
             ivt  = IverticesAtBoundary(ivbd)
             
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
@@ -5414,10 +5402,11 @@ contains
               Daux0(ivar) = Du0(ivt,ivar)
             end do
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Get desired boundary values from parser
             do ivar = 1, nvar
@@ -6087,7 +6076,7 @@ contains
 
 
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       integer :: ivbd,ivt,ibct,isegment
 
       ! Loop over all boundary components
@@ -6109,9 +6098,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
 
           ! Impose prescribed Dirichlet boundary conditions
           call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
@@ -6175,7 +6166,7 @@ contains
 
 
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP) :: dminValue,dmaxValue
       integer :: ivbd,ivbdFirst,ivbdLast,ivt,ibct,isegment
 
@@ -6229,10 +6220,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Impose prescribed Dirichlet boundary conditions
             call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
@@ -6297,7 +6289,7 @@ contains
 
 
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,isegment
 
@@ -6335,9 +6327,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Impose prescribed Dirichlet boundary conditions
           call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
@@ -6412,7 +6406,7 @@ contains
 
 
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,isegment,isegmentPeriodic
@@ -6522,10 +6516,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
             
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Impose prescribed Dirichlet boundary conditions
             call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
@@ -6605,7 +6600,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
       real(DP), dimension(NDIM1D) :: DbdrNormal
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
@@ -6646,9 +6641,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
@@ -6674,8 +6671,10 @@ contains
           Du(:,ivt) = Du(:,ivt)+Dr(:,ivt)/Da(:,ipos)
           
           ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Get desired boundary values from parser
           do ivar = 1, nvar
@@ -6777,7 +6776,7 @@ contains
 
       
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
@@ -6892,10 +6891,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D+1) = ttime
             
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
@@ -6934,10 +6934,11 @@ contains
             ! Predict boundary values
             Du(:,ivt) = Du(:,ivt)+Dr(:,ivt)/Da(:,ipos)
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Get desired boundary values from parser
             do ivar = 1, nvar
@@ -7080,7 +7081,7 @@ contains
       
 
       ! local variables
-      real(DP), dimension(NDIM1D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
       real(DP), dimension(NDIM1D) :: DbdrNormal,DpointNormal
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
@@ -7122,9 +7123,11 @@ contains
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
@@ -7151,9 +7154,11 @@ contains
             Du(ivar,ivt) = Du(ivar,ivt)+Dr(ivar,ivt)/Da(ivar,ivar,ipos)
           end do
           
-          ! Initialize variable values [x,time] for parser
-          DvariableValues(1) = DvertexCoords(1,ivt)
-          DvariableValues(2) = ttime
+          ! Initialize variable values [x,0,0,time] for parser
+          DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+          DvariableValues(NDIM2D)   = 0.0_DP
+          DvariableValues(NDIM3D)   = 0.0_DP
+          DvariableValues(NDIM3D+1) = ttime
           
           ! Get desired boundary values from parser
           do ivar = 1, nvar
@@ -7255,7 +7260,7 @@ contains
       
 
       ! local variables
-      real(DP), dimension(NDIM2D+1) :: DvariableValues
+      real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
       real(DP), dimension(NDIM2D) :: DbdrNormal,DpointNormal
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
@@ -7371,10 +7376,11 @@ contains
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
             
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
@@ -7415,10 +7421,11 @@ contains
               Du(ivar,ivt) = Du(ivar,ivt)+Dr(ivar,ivt)/Da(ivar,ivar,ipos)
             end do
 
-            ! Initialize variable values [x,y,time] for parser
-            DvariableValues(1) = DvertexCoords(1,ivt)
-            DvariableValues(2) = DvertexCoords(2,ivt)
-            DvariableValues(3) = ttime
+            ! Initialize variable values [x,y,0,time] for parser
+            DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
+            DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
+            DvariableValues(NDIM3D)   = 0.0_DP
+            DvariableValues(NDIM3D+1) = ttime
 
             ! Get desired boundary values from parser
             do ivar = 1, nvar
