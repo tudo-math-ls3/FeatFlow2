@@ -32,14 +32,14 @@
 !#
 !#    (r1)     (r1)   (A11  A12  B1)  (x1)
 !#    (r2)  =  (r2) - (A21  A22  B2)  (x2)
-!#    (rp)     (rp)   (B1^T B2^T   )  (xp)
+!#    (rp)     (rp)   (D1   D2     )  (xp)
 !#
 !#   Now imagine that you set the array p_DequationWeights to (1,1,-1); then,
 !#   residuals are calculated of the following system:
 !# 
 !#    (r1)     ( f1)   ( A11    A12  B1)  (x1)
 !#    (r2)  =  ( f2) - ( A21    A22  B2)  (x2)
-!#    (rp)     (-fp)   (-B1^T  -B2^T   )  (xp)
+!#    (rp)     (-fp)   (-D1    -D2     )  (xp)
 !#
 !#   i.e. the 3rd equation is multiplied by -1. This is just a small trick
 !#   to get better convergence rates by enforcing/destroying symmetry in

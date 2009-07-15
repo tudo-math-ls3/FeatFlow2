@@ -444,19 +444,22 @@ module linearsystemscalar
 
 !<constantblock description="Constants for transposing a matrix">
   
-  ! Transpose the full matrix
-  integer, parameter, public :: LSYSSC_TR_ALL       = 0
+  ! Don't transpose the matrix, simply mark the matrix as transposed
+  ! by changing the flag in imatrixSpec
+  integer, parameter, public :: LSYSSC_TR_VIRTUAL    = 0
 
   ! Transpose only the matrix structure
   integer, parameter, public :: LSYSSC_TR_STRUCTURE = 1   
 
-  ! Don't transpose the matrix, simply mark the matrix as transposed
-  ! by changing the flag in imatrixSpec
-  integer, parameter, public :: LSYSSC_TR_VIRTUAL    = 2
+  ! Transpose only the matrix entries
+  integer, parameter, public :: LSYSSC_TR_CONTENT   = 2
+
+  ! Transpose the full matrix
+  integer, parameter, public :: LSYSSC_TR_ALL       = 3
 
   ! Don't transpose the matrix. Copy the matrix in memory and mark the 
   ! matrix as transposed by changing the flag in imatrixSpec
-  integer, parameter, public :: LSYSSC_TR_VIRTUALCOPY = 3
+  integer, parameter, public :: LSYSSC_TR_VIRTUALCOPY = 4
 
 !</constantblock>
 
@@ -794,7 +797,7 @@ module linearsystemscalar
   public :: lsyssc_clearVector
   public :: lsyssc_vectorLinearComb
   public :: lsyssc_copyMatrix
-  public :: lsyssc_transposeMatrix, lsyssc_transposeMatrixInSitu
+  public :: lsyssc_transposeMatrix, lsyssc_transposeMatrixInSitu, lsyssc_transposeMatrixDirect
   public :: lsyssc_allocEmptyMatrix
   public :: lsyssc_lumpMatrixScalar
   public :: lsyssc_scaleMatrix
@@ -10673,6 +10676,150 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
+  subroutine lsyssc_transpMatEntries79double (nrow, ncol, Da, Icol, Irow, &
+      Itmp, DaDest, IrowDest, Ipermutation)
+  
+!<description>
+    ! Auxiliary routine.
+    ! This routine accepts a structure-7 or structure-9
+    ! matrix and creates the transposed matrix from it.
+    ! The 'destination matrix' is assumed to be already in transposed form.
+    ! The routine only copies the entries in transposed form from the source
+    ! to the destination matrix, ignoring the structure of the destination.
+    !
+    ! The resulting matrix is of format 9, i.e. not pivoted anymore with 
+    ! the diagonal entry in front if a structure-7 matrix is to be transposed!
+!</description>
+    
+!<input>
+    ! Number of rows in the source matrix
+    integer, intent(in) :: nrow
+    
+    ! Number of columns in the source matrix
+    integer, intent(in) :: ncol
+    
+    ! The entries of the source matrix
+    real(DP), dimension(:), intent(in) :: Da
+    
+    ! Column structure of the source matrix
+    integer, dimension(:), intent(in) :: Icol
+    
+    ! Row structure of the source matrix.
+    ! DIMENSION(nrow+1)
+    integer, dimension(:), intent(in) :: Irow
+!</input>
+    
+!<output>
+    ! The entries of the destination matrix
+    ! The array must be of the same size as Da or Icol
+    real(DP), dimension(:), intent(out) :: DaDest
+    
+    ! Temporary array. Row structure of the destination matrix.
+    ! DIMENSION(ncol+1)
+    integer, dimension(:), intent(out) :: IrowDest
+
+    ! OPTIONAL: Permutation array that specifies how to get the transposed 
+    ! matrix from the untransposed matrix. This is an array of length NA.
+    integer, dimension(:), intent(out), optional :: Ipermutation
+!</output>
+    
+!<inputoutput>
+    ! Auxiliary array.
+    ! DIMENSION(ncol)
+    integer, dimension(:), intent(inout) :: Itmp
+!</inputoutput>
+  
+!</subroutine>
+    
+    !local variables
+    integer(I32) :: i, j, isize, icolumn, ncolumn
+    
+    if ((size(Itmp) .ne. ncol) .or. (size(IrowDest) .ne. ncol+1) .or. &
+        (size(Irow) .ne. nrow+1)) then
+      print *,'lsyssc_transpMatEntries79double: array parameters have wrong size!'
+      call sys_halt()
+    end if
+    
+    ! determine the number of matrix entries
+    isize = Irow(nrow+1)-1
+    
+    ! clear row structure of the destination matrix
+    do i=1, ncol+1
+      IrowDest(i) = 0
+    end do
+    
+    ! Count how many entries <> 0 are in each column. Note this
+    ! into the IrowDest array.
+    ! This requires one loop through the matrix structure. The
+    ! corresponding number is written into KLDD, shifted by 1
+    ! (i.e. IrowDest(2) is the number of entries of the 1st column).
+    ! This helps to create the real IrowDest more easily later.
+    do i=1, isize
+      IrowDest(Icol(i)+1) = IrowDest(Icol(i)+1)+1
+    end do
+    
+    ! Now build the real IrowDest. This consists of indices, where 
+    ! each row starts. Row 1 starts at position 1:
+    IrowDest(1) = 1
+    
+    ! Adding the number of entries IrowDest(i) in the row to
+    ! IrowDest(i-1) gives the new row pointer of row i of the transposed
+    ! matrix.
+    do i=2, ncol+1
+      IrowDest(i) = IrowDest(i)+IrowDest(i-1)
+    end do
+    
+    ! That's it for IrowDest. 
+    ! Now, the matrix must be copied to DaDest in transposed form.
+    ! This requires another loop trough the matrix structure. 
+    ! Itmp receives the index of how many entries have been written 
+    ! to each row.
+    
+    ! clear auxiliary vector
+    do i=1, ncol
+      Itmp(i) = 0
+    end do
+
+    if (.not. present(Ipermutation)) then
+      do i=1, nrow
+        ! Loop through the row
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Copy the matrix entry:
+          DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
+          
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
+      end do
+    else
+      do i=1, nrow
+        ! Loop through the row
+        ncolumn = Irow(i+1)-Irow(i)
+        do j=1, ncolumn
+          ! Get the column of the item in question -> new row number.
+          icolumn = Icol(Irow(i)+j-1)
+          
+          ! Copy the matrix entry:
+          DaDest(IrowDest(icolumn)+Itmp(icolumn)) = Da(Irow(i)+j-1)
+          
+          ! Save where this entry is moved to.
+          Ipermutation(IrowDest(icolumn)+Itmp(icolumn)) = Irow(i)+j-1
+          
+          ! Increment running index of that row
+          Itmp(icolumn) = Itmp(icolumn)+1
+        end do
+      end do
+    end if
+    
+  end subroutine 
+
+  ! ***************************************************************************
+
+!<subroutine>
   subroutine lsyssc_transpMat79double (nrow, ncol, Da, Icol, Irow, &
       Itmp, DaDest, IcolDest, IrowDest, Ipermutation)
   
@@ -11027,6 +11174,15 @@ contains
       
       ! Now we can release the old matrix.
       call lsyssc_releaseMatrix(rmatrix)
+
+    case (LSYSSC_TR_CONTENT)
+      ! Sorry, that's not possible. The transpose routine needs the structure of
+      ! the original matrix, otherwise it cannot compute how to transpose
+      ! the entries!
+      call output_line('TRansposing matrix entries without structure is not possible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrixInSitu')
+      call sys_halt()
+    
     end select
       
     ! Create a hard-copy of rmatrix.
@@ -11149,6 +11305,17 @@ contains
   !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
   !     If there's no matrix in rtransposedMatrix, a new matrix structure
   !       without entries is created.
+  ! =LSYSSC_TR_CONTENT             : Transpose only the matrix content/entries; 
+  !     the structure of the transposed matrix is invalid afterwards.
+  !     If there is already a matrix in rtransposedMatrix, the content is 
+  !       overwritten or an error is thrown, depending on whether the
+  !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
+  !       Note that rtransposedMatrix may contain a valid structure
+  !       of the transposed matrix. In this case, rtransposedMatrix will
+  !       receive the transposed matrix entries, thus resulting in
+  !       a proper transposed matrix.
+  !     If there's no matrix in rtransposedMatrix, a new matrix content
+  !       without structure is created.
   ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
   !     structure, but invert the 'transposed' flag in imatrixSpec. 
   !
@@ -11187,7 +11354,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: itrans, h_Itemp
+    integer :: itrans, h_Itemp, h_Kld, h_Kcol
     integer :: ntemp
     integer, dimension(:), pointer :: p_KcolSource,p_KcolDest
     integer, dimension(:), pointer :: p_KldSource,p_KldDest
@@ -11294,7 +11461,9 @@ contains
     
     ! Now what should we do...
     select case (itrans)
+    
     case (LSYSSC_TR_STRUCTURE)
+    
       ! Only the structure is to be transposed. Which structure do we have?
       select case (rmatrix%cmatrixFormat)
       case (LSYSSC_MATRIX9)
@@ -11320,10 +11489,15 @@ contains
           ! Allocate a new KCol and a new Kld.
           ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
           ! matrix!
-          call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
-                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
-                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          if (rtransposedMatrix%h_Kcol .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          end if
           
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
@@ -11347,8 +11521,10 @@ contains
           call storage_free (h_Itemp)
 
           ! (Re-)calculate Kdiagonal
-          call storage_new ('lsyssc_transposeMatrix', 'Kdiagonal', rmatrix%NCOLS, &
-                            ST_INT, rtransposedMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+          if (rtransposedMatrix%h_Kdiagonal .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kdiagonal', rmatrix%NCOLS, &
+                ST_INT, rtransposedMatrix%h_Kdiagonal,ST_NEWBLOCK_NOINIT)
+          end if
           call storage_getbase_int(rtransposedMatrix%h_Kdiagonal,p_Kdiagonal)
           call lsyssc_rebuildKdiagonal (p_KcolDest, p_KldDest, p_Kdiagonal, &
                                         rmatrix%NCOLS)
@@ -11375,10 +11551,15 @@ contains
           ! Allocate a new KCol and a new Kld.
           ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
           ! matrix!
-          call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
-                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
-                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          if (rtransposedMatrix%h_Kcol .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          end if
 
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
@@ -11428,6 +11609,147 @@ contains
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
    
+    case (LSYSSC_TR_CONTENT)
+      ! Transpose the full matrix - structure+content
+      select case (rmatrix%cmatrixFormat)
+      case (LSYSSC_MATRIX9)
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        
+          call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
+          rtransposedMatrix%imatrixSpec = &
+            iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
+          
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
+
+        else
+          ! We really have to do some work now :)
+          ! Allocate a new Kld and Da.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+              ST_INT, h_Kld,ST_NEWBLOCK_NOINIT)
+          
+          if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                ST_NEWBLOCK_NOINIT)
+          end if
+
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
+          call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          call storage_getbase_int(h_Kld,p_KldDest)
+          
+          ! Get the data array(s)
+          call lsyssc_getbase_double(rMatrix,p_DaSource)
+          call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
+          
+          ! We need a temporary array
+          call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          call lsyssc_transpMatEntries79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                p_DaSource, p_KcolSource, p_KldSource, &
+                p_Itemp, p_DaDest, p_KldDest, Ipermutation)
+                     
+          ! Release the temp array
+          call storage_free (h_Itemp)
+          call storage_free (h_Kld)
+          
+        end if
+
+      case (LSYSSC_MATRIX7)
+        ! For matrix 7 we have a slight problem. Here, the diagonal
+        ! entry is in the front, while the transpose routine will produce
+        ! us a matrix with the diagonal entry somewhere in the middle.
+        ! Thus, we have (with that routine) no other chance than to
+        ! produce the full transposed matrix (including structure), figure 
+        ! our where the diagonal is and move it to the front.
+      
+        ! Is the source matrix saved tranposed? In that case simply copy
+        ! the data arrays, this results in the transposed matrix :)
+        if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+        
+          if (rmatrix%h_Da .ne. ST_NOHANDLE) then
+            call lsyssc_auxcopy_da (rmatrix,rtransposedMatrix)
+          end if
+
+          rtransposedMatrix%imatrixSpec = &
+            iand(rtransposedMatrix%imatrixSpec,not(LSYSSC_MSPEC_TRANSPOSED))
+          
+          if (present(Ipermutation)) then          
+            call output_line('Calculation of the permutation not possible!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+            call sys_halt()
+          end if
+
+        else
+          ! We really have to do some work now :)
+          ! Allocate a new KCol and a new Kld.
+          ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
+          ! matrix!
+          call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                            ST_INT, h_Kcol,ST_NEWBLOCK_NOINIT)
+          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                            ST_INT, h_Kld,ST_NEWBLOCK_NOINIT)
+                            
+          if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                ST_NEWBLOCK_NOINIT)
+          end if
+
+          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! the arrays for a matrix which is not yet valid!
+          call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
+          call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
+
+          call storage_getbase_int(h_Kcol,p_KcolDest)
+          call storage_getbase_int(h_Kld,p_KldDest)
+          
+          ! Get the data array(s)
+          call lsyssc_getbase_double(rMatrix,p_DaSource)
+          call storage_getbase_double(rtransposedMatrix%h_Da,p_DaDest)
+
+          ! We need a temporary array
+          call storage_new ('lsyssc_transposeMatrix','Itemp',rmatrix%NCOLS,&
+                            ST_INT, h_Itemp, ST_NEWBLOCK_NOINIT)
+          call storage_getbase_int (h_Itemp,p_Itemp)
+          
+          ! Calculate the transposed matrix structure:
+          call lsyssc_transpMat79double (rmatrix%NEQ, rmatrix%NCOLS, &
+                p_DaSource, p_KcolSource, p_KldSource, &
+                p_Itemp, p_DaDest, p_KcolDest, p_KldDest, Ipermutation)
+                     
+          ! Release the temp array
+          call storage_free (h_Itemp)
+          
+          ! Pivotise the matrix to move the diagonal element to the front.
+          call lsyssc_pivotiseMatrix7double (rmatrix%NEQ, &
+              p_KcolDest, p_KldDest, p_DaDest)
+              
+          ! Release the rest.
+          call storage_free (h_Kcol)
+          call storage_free (h_Kld)
+        end if
+      
+      case (LSYSSC_MATRIXD)
+        call output_line('Not implemented!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+        call sys_halt()
+        
+      end select
+
     case (LSYSSC_TR_ALL)
       ! Transpose the full matrix - structure+content
       select case (rmatrix%cmatrixFormat)
@@ -11456,13 +11778,21 @@ contains
           ! Allocate a new KCol and a new Kld.
           ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
           ! matrix!
-          call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
-                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
-                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
-                            rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
-                            ST_NEWBLOCK_NOINIT)
+          if (rtransposedMatrix%h_Kcol .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                ST_NEWBLOCK_NOINIT)
+          end if
 
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
@@ -11523,13 +11853,21 @@ contains
           ! Allocate a new KCol and a new Kld.
           ! The Kld must be of size NCOLS+1, not NEQ+1, since we create a transposed
           ! matrix!
-          call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
-                            ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
-                            ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
-          call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
-                            rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
-                            ST_NEWBLOCK_NOINIT)
+          if (rtransposedMatrix%h_Kcol .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kcol', rmatrix%NA, &
+                ST_INT, rtransposedMatrix%h_Kcol,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Kld .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Kld', rmatrix%NCOLS+1, &
+                ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
+          end if
+          
+          if (rtransposedMatrix%h_Da .eq. ST_NOHANDLE) then
+            call storage_new ('lsyssc_transposeMatrix', 'Da', rmatrix%NA, &
+                rtransposedMatrix%cdataType, rtransposedMatrix%h_Da,&
+                ST_NEWBLOCK_NOINIT)
+          end if
 
           ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
@@ -11562,7 +11900,9 @@ contains
         end if
       
       case (LSYSSC_MATRIXD)
-        ! Nothing to do
+        call output_line('Not implemented!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_transposeMatrix')
+        call sys_halt()
 
       case DEFAULT
         call output_line('Unsupported matrix format!',&
@@ -11810,6 +12150,11 @@ contains
   ! the entries. This can be used to attach an 'empty' matrix to a matrix
   ! structure. The number of entries NA as well as the type of the matrix
   ! cmatrixFormat must be initialised in rmatrixScalar.
+  !
+  ! Memory is allocated if either the matrix has no content attached or
+  ! if the content belongs to another matrix. In both case, a new matrix
+  ! content array is created and the matrix will be the owner of that
+  ! memory block.
 !</description>
 
 !<input>
@@ -11845,7 +12190,8 @@ contains
   real(SP), dimension(:), pointer :: p_Fa
   real(DP), dimension(:), pointer :: p_Da
   
-  if (rmatrixScalar%h_DA .ne. ST_NOHANDLE) then
+  if ((rmatrixScalar%h_DA .ne. ST_NOHANDLE) .and. &
+      (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. 0)) then
     if (present(bignoreExisting)) then
       if (bignoreExisting) return
     end if
@@ -11952,6 +12298,10 @@ contains
     print *,'lsyssc_allocEmptyMatrix: Not supported matrix structure!'
     call sys_halt()
   end select
+  
+  ! The matrix is now the owner of the memory.
+  rmatrixScalar%imatrixSpec = &
+      iand(rmatrixScalar%imatrixSpec,not(LSYSSC_MSPEC_CONTENTISCOPY))
     
   end subroutine
 
