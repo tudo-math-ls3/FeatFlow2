@@ -2461,7 +2461,7 @@ contains
     real(DP), intent(in) :: dscale
 
     ! callback routine for nonconstant coefficient matrices.
-    include 'intf_coefficientMatrixScBdr2D.inc'
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
 
     ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
     ! the matrix construction method. If not specified,
@@ -2600,8 +2600,8 @@ contains
     ! scaling factor
     real(DP), intent(in) :: dscale
 
-    ! callback routine for the function to be discretised.
-    include 'intf_coefficientVectorScBdr2D.inc'
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorScBdr2D.inc'
 !</intput>
 
 !<inputoutput>
