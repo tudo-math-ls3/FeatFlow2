@@ -12214,8 +12214,10 @@ contains
   select case (rmatrixScalar%cmatrixFormat) 
   case (LSYSSC_MATRIX9,LSYSSC_MATRIX7,LSYSSC_MATRIXD,LSYSSC_MATRIX1)
     
-    ! Check if the matrix entries exist. If not, allocate the matrix.
-    if (rmatrixScalar%h_DA .eq. ST_NOHANDLE) then
+    ! Check if the matrix entries exist and belongs to us. 
+    ! If not, allocate the matrix.
+    if ((rmatrixScalar%h_DA .eq. ST_NOHANDLE) .or. &
+        (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
     
       if (iclear .ge. LSYSSC_SETM_ZERO) then
         call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
@@ -12246,7 +12248,8 @@ contains
   case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
     
     ! Check if the matrix entries exist. If not, allocate the matrix.
-    if (rmatrixScalar%h_DA .eq. ST_NOHANDLE) then
+    if ((rmatrixScalar%h_DA .eq. ST_NOHANDLE) .or. &
+        (iand(rmatrixScalar%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0)) then
     
       if (iclear .ge. LSYSSC_SETM_ZERO) then
         select case (rmatrixScalar%cinterleavematrixFormat)
@@ -12294,7 +12297,7 @@ contains
       
     end if
     
-  case DEFAULT
+  case default
     print *,'lsyssc_allocEmptyMatrix: Not supported matrix structure!'
     call sys_halt()
   end select
