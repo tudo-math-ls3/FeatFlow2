@@ -38,7 +38,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = stationary_primaldual
+algorithm = stationary_primal
 
 #-------------------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ sreactionname =
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname =
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution

@@ -57,11 +57,11 @@ IBCT
 NCOMP
 5
 PARAMETERS
-0.5   T 1   'if(x >= 0.35 & x <= 0.65, 1, 0)'
-2.0   F 0
-2.5   T 1   '0'
-3.0   F 0
-4.0   T 1   '0'
+0.5 T  -1   'if(x >= 0.35 & x <= 0.65, 1, 0)'
+2.0 F   0
+2.5 T  -1   '0'
+3.0 F   0
+4.0 T  -1   '0'
 
 # Specify the boundary conditions for the dual problem
 [boundary_conditions_dual]
@@ -79,6 +79,3 @@ PARAMETERS
 2.5  T 0
 3.0  T 1   0.0
 4.0  F 0
-
-
-
