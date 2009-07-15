@@ -47,6 +47,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # = 101: diagonal Vanka (a new implementation of 3)
 # = 102: full Vanka (a new implementation of 5)
 #
+# The following smoothers are experimental. Use them at your own risk.
 # = 201: SP-SOR, full version
 # = 202: SP-SOR, diagonal version
 
