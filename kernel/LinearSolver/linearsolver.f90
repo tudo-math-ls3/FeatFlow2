@@ -1406,9 +1406,6 @@ module linearsolver
   
     ! The SP-SOR data structure
     type(t_spsor)       :: rdata
-  
-    ! Temporary vector to use during the solution process
-    type(t_vectorBlock) :: rtempVector
 
   end type
   
@@ -6081,11 +6078,6 @@ contains
     ! If isubgroup does not coincide with isolverSubgroup from the solver
     ! structure, skip the rest here.
     if (isubgroup .ne. rsolverNode%isolverSubgroup) return
-
-    ! Allocate a temporary vector
-    call lsysbl_createVecBlockIndMat (rsolverNode%rsystemMatrix, &
-          rsolverNode%p_rsubnodeSPSOR%rtempVector,.false.,.false.,&
-          rsolverNode%cdefaultDataType)
     
     ! And set up the SP-SOR structure
     select case(rsolverNode%p_rsubnodeSPSOR%csubtype)
@@ -6206,11 +6198,6 @@ contains
     ! Release the SP-SOR data structure
     call spsor_done(rsolverNode%p_rsubnodeSPSOR%rdata)
     
-    ! Release the temp vector and associated data if associated
-    if (rsolverNode%p_rsubnodeSPSOR%rtempVector%NEQ .ne. 0) then
-      call lsysbl_releaseVector(rsolverNode%p_rsubnodeSPSOR%rtempVector)
-    end if
-    
   end subroutine
   
   ! ***************************************************************************
@@ -6272,69 +6259,22 @@ contains
   
 !</subroutine>
 
-  ! local variables
-  type (t_vectorBlock), pointer :: p_rvector
-  type (t_matrixBlock), pointer :: p_rmatrix
-  real(DP) :: domega
-
     ! Status reset
     rsolverNode%iresult = 0
 
-    ! Getch some information
-    p_rmatrix => rsolverNode%rsystemMatrix
-
     ! Check the parameters
-    if ((rd%NEQ .eq. 0) .or. (p_rmatrix%NEQ .eq. 0) .or. &
-        (p_rmatrix%NEQ .ne. rd%NEQ) ) then
+    if ((rd%NEQ .eq. 0) .or. (rsolverNode%rsystemMatrix%NEQ .eq. 0) .or. &
+        (rsolverNode%rsystemMatrix%NEQ .ne. rd%NEQ) ) then
     
       ! Parameters wrong
       rsolverNode%iresult = 2
       return
+      
     end if
 
-    ! Damping parameter
-    domega = rsolverNode%domega
-    
-    select case(rsolverNode%p_rsubnodeSPSOR%csubtype)
-!    case(LINSOL_SPSOR_NAVST2D, LINSOL_SPSOR_NAVST2D_DIAG)
-!    
-!      ! Call SP-SOR preconditioner for 2D Navier-Stokes.
-!      call vanka_NS2D_precSPSOR(&
-!          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
-!      
-!
-!    case(LINSOL_SPSSOR_NAVST2D, LINSOL_SPSSOR_NAVST2D_DIAG)
-!    
-!      ! This is the 'critical' case. We need to catch this case here,
-!      ! as the SP-SSOR preconditioner can *not* be called via the
-!      ! vanka_conformal wrapper which is used in the 'default' case below!
-!    
-!      ! Call SP-SSOR preconditioner for 2D Navier-Stokes.
-!      call vanka_NS2D_precSPSSOR(&
-!          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
-
-
-    case default
-      
-      ! Get our temporary vector.
-      p_rvector => rsolverNode%p_rsubnodeSPSOR%rtempVector
-
-      ! The vector shares the same boundary conditions as rd!
-      ! So assign now all discretisation-related information (boundary
-      ! conditions,...) to the temporary vector.
-      call lsysbl_assignDiscrIndirect (rd, p_rvector)
-    
-      ! Clear our solution vector
-      call lsysbl_clearVector (p_rvector)
-      
-      ! Call SP-SOR solver
-      call spsor_solve(rsolverNode%p_rsubnodeSPSOR%rdata, &
-                       p_rvector, rd, domega)
-
-      ! Copy the solution vector to rd - it's our preconditioned defect now.
-      call lsysbl_copyVector (p_rvector,rd)
-    
-    end select
+    ! Call precond-routine of SP-SOR
+    call spsor_precond(rsolverNode%p_rsubnodeSPSOR%rdata, rd, &
+                       rsolverNode%domega)
   
   end subroutine
   
@@ -12675,49 +12615,27 @@ contains
       
       end select
       
-    case (LINSOL_ALG_SPSOR) 
-      ! The basic proceeding is like below: Apply the corresponding solver multiple
-      ! times to the solution- and RHS-vector to improve the solution. Let's see
-      ! which solver we have. 
-      ! If the previous IF-guess was wrong, we will leave this IF-clause and
-      ! fall back to use the preconditioner approach.
+    case (LINSOL_ALG_SPSOR)
+      ! SP-SOR smoother. We can use a fast implementation for this one, however,
+      ! we'll only use it if we don't have to print the residuals.
+      if(rsolverNode%ioutputLevel .lt. 2) then
       
-      ! Call it nmaxIterations times to perform the smoothing.
-      do i = 1, rsolverNode%nmaxIterations
-      
-        ! Probably print the residuum
-        if (rsolverNode%ioutputLevel .ge. 2) then
-          call lsysbl_copyVector(rb,rtemp)
-          call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
-          
-          dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-          if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                    
-          call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-              ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
-        end if
-      
-        ! Perform nmaxIterations:   x_n+1 = x_n + C^{-1} (b-Ax_n)
-        ! without explicitly calculating (b-Ax_n) like below.
-        call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, &
-                          rx, rb, rsolverNode%domega)
-                              
-      end do
-
-      ! Probably print the residuum
-      if (rsolverNode%ioutputLevel .ge. 2) then
-        call lsysbl_copyVector(rb,rtemp)
-        call lsysbl_blockMatVec (rmatrix, rx, rtemp, -1.0_DP, 1.0_DP)
+        ! Now make sure that we do NOT use a SP-SSOR (i.e. symmetric SP-SOR)
+        ! variant, as this would result in a fatal error...
+        select case(rsolverNode%p_rsubNodeSPSOR%csubtype)
+        case (LINSOL_SPSOR_NAVST2D, &
+              LINSOL_SPSOR_NAVST2D_DIAG)
+              
+           ! Okay, let the SP-SOR solver perform nmaxIterations
+           call spsor_solve (rsolverNode%p_rsubnodeSPSOR%rdata, rx, rb, &
+                             rsolverNode%nmaxIterations, rsolverNode%domega)
+           
+           ! And jump out of this routine
+           return
         
-        dres = lsysbl_vectorNorm (rtemp,rsolverNode%iresNorm)
-        if (.not.((dres .ge. 1E-99_DP) .and. (dres .le. 1E99_DP))) dres = 0.0_DP
-                  
-        call output_line ('Smoother: Step '//trim(sys_siL(i-1,10))//&
-            ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
+        end select
+      
       end if
-
-      ! That's it.
-      return
 
     end select
       

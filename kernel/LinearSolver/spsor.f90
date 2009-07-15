@@ -4,8 +4,57 @@
 !# ****************************************************************************
 !#
 !# <purpose>
+!# This module implements the saddle-point SOR ('SP-SOR') solver.
+!#
+!# The SP-SOR algorithm is a special solver for saddle-point systems,
+!# i.e. systems of the following structure:
+!#
+!#                        ( A  B ) * ( u ) = ( f )
+!#                        ( D  0 )   ( p )   ( g )
+!#
+!#
+!# WARNING !
+!# ---------
+!# The SP-SOR solver works only for discontinous pressure spaces!
+!# Although the 'diagonal' version of SP-SOR can also be defined for continous
+!# pressure spaces, one should not expect that the solver will necessarily
+!# converge.
+!#
+!#
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+!# SP-SOR Algorithm Description
+!# ----------------------------
+!#
+!# Basically, one SP-SOR iteration consists of two steps:
+!#
+!# Step 1: Update u:
+!# - - - - - - - - -
+!#
+!#              u_{k+1} := u_k + P^{-1} * ( f - A * u_k - B * p_k )
+!#
+!# where P is the SOR-preconditioner matrix:
+!#
+!#              P := ( 1/omega * diagonal(A) + lower_triangular(A) )
+!#
+!#
+!# Step 2: Update p:
+!# - - - - - - - - -
+!#
+!#              p_{k+1} := p_k + omega * S * ( g - D * u_{k+1} )
+!#
+!# where S is an approximation of the inverse of the Schur-Complement of A:
+!#
+!#              S \approx ( -D * A^{-1} * B )^{-1}
+!#
+!#
+!# TODO: document the matrix S
+!#
+!#
 !#
 !# The following routines can be found in this module:
+!#
+!# .) spsor_init
+!#    -> Initialises a SP-SOR data structure.
 !#
 !# .) spsor_initNavSt2D
 !#    -> Initialises a SP-SOR data structure for 2D Navier-Stokes systems.
@@ -14,10 +63,13 @@
 !#    -> Performs data-dependent initialisation of the SP-SOR solver.
 !#
 !# .) spsor_solve
-!#    -> Performs one iteration of the SP-SOR solver.
+!#    -> Performs a number of iterations of the SP-SOR solver.
+!#
+!# .) spsor_precond
+!#    -> Applies the SP-SOR / SP-SSOR preconditioner onto a defect vector.
 !#
 !# .) spsor_done
-!#    -> Releases a SP-SOR data structure.
+!#    -> Releases the SP-SOR data structure.
 !#
 !# </purpose>
 !##############################################################################
@@ -38,15 +90,17 @@ implicit none
 private
 
 public :: t_spsor
+public :: spsor_init
 public :: spsor_initNavSt2D
 public :: spsor_initData
 public :: spsor_done
 public :: spsor_solve
+public :: spsor_precond
 
 
 !<constants>
 
-!<constantblock>
+!<constantblock description="Flags for the SP-SOR solver">
 
   ! Use symmetric preconditioner (SP-SSOR)
   integer(I32), parameter, public :: SPSOR_FLAG_SYM  = 1_I32
@@ -56,13 +110,16 @@ public :: spsor_solve
 
 !</constantblock>
 
-!<constantblock>
+!<constantblock description="Internal system identifiers">
   
   ! SP-SOR solver not initialised
-  integer, parameter :: SPSOR_SYSTEM_NONE          = 0
+  integer, parameter, public :: SPSOR_SYSTEM_NONE          = 0
   
   ! SP-SOR solver for 2D Navier-Stokes systems
-  integer, parameter :: SPSOR_SYSTEM_NAVST2D       = 1
+  integer, parameter, public :: SPSOR_SYSTEM_NAVST2D       = 1
+  
+  ! SP-SOR solver for 3D Navier-Stokes systems
+  !integer, parameter, public :: SPSOR_SYSTEM_NAVST3D       = 2
   
 !</constantblock>
 
@@ -144,8 +201,11 @@ public :: spsor_solve
     ! Schur-complement matrix
     type(t_matrixScalar) :: rS
     
-    ! Tempoary scalar vector.
-    ! Is only allocated if cpressure .ne. SPSOR_PRES_Q0.
+    ! Specifies whether S is a diagonal matrix.
+    logical :: bdiagS = .false.
+    
+    ! Tempoary scalar vector of the size of the pressure space.
+    ! Is only allocated if bdiagS is FALSE.
     type(t_vectorScalar) :: rw
   
   end type
@@ -160,174 +220,211 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_initNavSt2D(rspsor, rmatrix, cflags)
+  subroutine spsor_init(rdata, rmatrix, csystem, cflags)
 
 !<description>
-  ! Initialises a SP-SOR data structure for 2D Navier-Stokes systems.
+  ! Initialises a SP-SOR data structure. This is just a wrapper for the
+  ! system-specific initialisation routines.
 !</description>
 
 !<input>
   ! The system matrix of the linear system.
-  type(t_matrixBlock), target, intent(IN) :: rmatrix
+  type(t_matrixBlock), target, intent(in) :: rmatrix
   
-  ! Optional: Flags
-  integer(I32), optional, intent(IN) :: cflags
+  ! The system for which the SP-SOR solver is to be created.
+  ! One of the SPSOR_SYSTEM_XXXX constants.
+  integer, intent(in) :: csystem
+  
+  ! Optional: Flags for the solver.
+  ! An OR-ed combination of SPSOR_FLAG_XXXX constants.
+  integer(I32), optional, intent(in) :: cflags
 !</input>
 
 !<output>
   ! The SP-SOR data structure that is to be initialised.
-  type(t_spsor), intent(OUT) :: rspsor
+  type(t_spsor), intent(out) :: rdata
 !</output>
 
 !</subroutine>
 
-  ! Some local variables
-  type(t_spatialDiscretisation), pointer :: p_rdiscrV, p_rdiscrP
-  integer(I32) :: celemP, celemV
-  integer :: ndofPres, ndofVelo, ieldist
-  logical :: bdiag
-
-    ! Set the flags
-    if(present(cflags)) rspsor%cflags = cflags
+  integer(I32) :: cflag
+  
+    cflag = 0_I32
+    if(present(cflags)) cflag = cflags
     
-    ! Set the type
-    rspsor%csystem = SPSOR_SYSTEM_NAVST2D
-
-    ! Matrix must be 3x3.
-    if ((rmatrix%nblocksPerCol .ne. 3) .or. (rmatrix%nblocksPerRow .ne. 3)) then
-      call output_line ('System matrix is not 3x3.',&
-          OU_CLASS_ERROR,OU_MODE_STD,'spsor_initNavSt2D')
+    ! Which system?
+    select case(csystem)
+    case(SPSOR_SYSTEM_NAVST2D)
+      ! 2D Navier-Stokes system
+      call spsor_initNavSt2D(rdata, rmatrix, cflag)
+      
+    case default
+      call output_line ('Invalid system identifier',&
+          OU_CLASS_ERROR,OU_MODE_STD,'spsor_init')
       call sys_halt()
-    end if
-    
-    ! Hang in the matrix pointers
-    rspsor%p_rA11 => rmatrix%RmatrixBlock(1,1)
-    rspsor%p_rA22 => rmatrix%RmatrixBlock(2,2)
-    rspsor%p_rB1 => rmatrix%RmatrixBlock(1,3)
-    rspsor%p_rB2 => rmatrix%RmatrixBlock(2,3)
-    rspsor%p_rD1 => rmatrix%RmatrixBlock(3,1)
-    rspsor%p_rD2 => rmatrix%RmatrixBlock(3,2)
-    
-    ! Are the A12/A21 sub-matrices present?
-    if(rmatrix%RmatrixBlock(1,2)%NEQ .gt. 0) then
-      rspsor%p_rA12 => rmatrix%RmatrixBlock(1,2)
-      rspsor%p_rA21 => rmatrix%RmatrixBlock(2,1)
-    end if
-    
-    ! Is the C sub-matrix present?
-    if(rmatrix%RmatrixBlock(3,3)%NEQ .gt. 0) &
-      rspsor%p_rC => rmatrix%RmatrixBlock(3,3)
-    
-    ! Todo: Perform some checks
-    
-    ! Get the total number of dofs
-    ndofVelo = rspsor%p_rD1%NCOLS
-    ndofPres = rspsor%p_rD1%NEQ
-    
-    ! Get the discretisations of velocity and pressure spaces
-    p_rdiscrV => rspsor%p_rB1%p_rspatialDiscrTest
-    p_rdiscrP => rspsor%p_rB1%p_rspatialDiscrTrial
-    
-    ! Loop over all element distributions
-    do ieldist = 1, p_rdiscrP%inumFESpaces
-    
-      ! Get the element of the spaces
-      celemV = elem_getPrimaryElement(p_rdiscrV%RelementDistr(ieldist)%celement)
-      celemP = elem_getPrimaryElement(p_rdiscrP%RelementDistr(ieldist)%celement)
+      
+    end select
 
-      ! What's the velocity element?
-      select case(celemV)
-      case(EL_P1T_2D)
-      
-        select case(rspsor%cvelocity)
-        case(SPSOR_VELO_NONE, SPSOR_VELO_P1T)
-          rspsor%cvelocity = SPSOR_VELO_P1T
-        
-        case default
-          rspsor%cvelocity = SPSOR_VELO_ARBIT
-        end select
-        
-      case(EL_Q1T_2D)
-      
-        select case(rspsor%cvelocity)
-        case(SPSOR_VELO_NONE, SPSOR_VELO_Q1T)
-          rspsor%cvelocity = SPSOR_VELO_Q1T
-        
-        case default
-          rspsor%cvelocity = SPSOR_VELO_ARBIT
-        end select
-        
-      case(EL_Q1TB_2D)
-      
-        select case(rspsor%cvelocity)
-        case(SPSOR_VELO_NONE, SPSOR_VELO_Q1TB)
-          rspsor%cvelocity = SPSOR_VELO_Q1TB
-        
-        case default
-          rspsor%cvelocity = SPSOR_VELO_ARBIT
-        end select
-      
-      case default
-        rspsor%cvelocity = SPSOR_VELO_ARBIT
-        
-      end select
-      
-      ! What's the pressure element?
-      select case(celemP)
-      case(EL_P0_2D, EL_Q0_2D)
+  end subroutine
 
-        select case(rspsor%cpressure)
-        case(SPSOR_PRES_NONE, SPSOR_PRES_P0)
-          rspsor%cpressure = SPSOR_PRES_P0
-        
-        case default
-          rspsor%cpressure = SPSOR_PRES_ARBIT
-        end select
-          
-      case default
-        rspsor%cpressure = SPSOR_PRES_ARBIT
-        
-      end select
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spsor_initData(rdata)
+
+!<description>
+  ! This subroutine performs data-dependent initialisation of the SP-SOR
+  ! solver. The data structure must have already been set up by spsor_init().
+!</description>
+
+!<inputoutput>
+  ! The SP-SOR data structure
+  type(t_spsor), intent(inout) :: rdata
+!</inputoutput>
+
+!</subroutine>
+
+    ! Okay, which SP-SOR solver do we have here?
+    select case(rdata%csystem)
+    case (SPSOR_SYSTEM_NAVST2D)
       
-    end do ! ieldist
-    
-    ! Now we need to set up the structure of the S matrix.
-    
-    ! Will S be a diagonal matrix?
-    bdiag = (rspsor%cpressure .eq. SPSOR_PRES_P0) .or. &
-            (iand(rspsor%cflags,SPSOR_FLAG_DIAG) .ne. 0_I32)
-    
-    if(bdiag) then
-    
-      ! Create a diagonal matrix
-      call lsyssc_createDiagMatrixStruc(rspsor%rS, ndofPres, &
-                                        LSYSSC_MATRIX9)
+      ! SP-SOR for 2D Navier-Stokes systems
+      call spsor_initData_NavSt2D(rdata)
 
-      ! DEBUG !
-      call lsyssc_createVector (rspsor%rw, ndofPres, .false.)
-    
-    else
-    
-      ! Call the auxiliary routine to assemble the structure of S.
-      call spsor_asmMatStructSchur(rspsor%rS, rspsor%p_rD1, rspsor%p_rB1)
-      
-      ! Allocate a temporary vector
-      call lsyssc_createVector (rspsor%rw, ndofPres, .false.)
-    
-    end if
-    
-    ! Allocate an empty matrix
-    call lsyssc_allocEmptyMatrix (rspsor%rS, LSYSSC_SETM_UNDEFINED)
+    case default
+      call output_line ('SP-SOR data structure not initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'spsor_initData')
+      call sys_halt()
 
-    ! That's it
-
+    end select
+  
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine spsor_done(rspsor)
+  subroutine spsor_solve(rdata, ru, rf, niterations, domega)
+
+!<description>
+  ! This routine performs one SP-SOR iteration.
+!</description>
+
+!<input>
+  ! The SP-SOR data structure
+  type(t_spsor), intent(in) :: rdata
+  
+  ! The right-hand-side vector
+  type(t_vectorBlock), intent(in) :: rf
+  
+  ! The number of iterations that are to be performed
+  integer, intent(in) :: niterations
+  
+  ! Optional: The relaxation parameter in range (0,2).
+  ! If not given, 1.0 is used.
+  real(DP), optional, intent(in) :: domega
+!</input>
+
+!<inputoutput>
+  ! The iteration vector that is to be updated.
+  type(t_vectorblock), intent(inout) :: ru
+!</inputoutput>
+
+!</subroutine>
+
+  real(DP) :: dom
+  
+    dom = 1.0_DP
+    ! temporary disabled
+    !if(present(domega)) dom = domega
+
+    ! Make sure we do not apply the symmetric variant ('SP-SSOR')
+    if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
+      call output_line ('SP-SSOR cannot be called via spsor_solve',&
+          OU_CLASS_ERROR,OU_MODE_STD,'spsor_solve')
+      call sys_halt()
+    end if
+    
+    ! Nothing to do?
+    if(niterations .le. 0) return
+
+    ! Okay, which SP-SOR solver do we have here?
+    select case(rdata%csystem)
+    case (SPSOR_SYSTEM_NAVST2D)
+    
+      ! Call the routine for 2D Navier-Stokes systems
+      call spsor_solve_NavSt2D(rdata, ru, rf, niterations, dom)
+      
+    case default
+      call output_line ('SP-SOR data structure not initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'spsor_solve')
+      call sys_halt()
+    
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spsor_precond(rdata, rd, domega)
+
+!<description>
+  ! This routine performs applies the SP-SOR / SP-SSOR preconditioner onto
+  ! a defect vector.
+!</description>
+
+!<input>
+  ! The SP-SOR data structure
+  type(t_spsor), intent(in) :: rdata
+  
+  ! Optional: The relaxation parameter in range (0,2).
+  ! If not given, 1.0 is used.
+  real(DP), optional, intent(in) :: domega
+!</input>
+
+!<inputoutput>
+  ! The defect vector that is to be preconditioned
+  type(t_vectorblock), intent(inout) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+  real(DP) :: dom
+  
+    dom = 1.0_DP
+    ! temporarily disabled
+    !if(present(domega)) dom = domega
+
+    ! Okay, which SP-SOR solver do we have here?
+    select case(rdata%csystem)
+    case (SPSOR_SYSTEM_NAVST2D)
+    
+      ! Do we apply SP-SOR or SP-SSOR?
+      if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
+        ! Apply SP-SSOR for 2D Navier-Stokes systems
+        call spsor_prec_sym_NavSt2D(rdata, rd, dom)
+      else
+        ! Apply SP-SOR for 2D Navier-Stokes systems
+        call spsor_prec_NavSt2D(rdata, rd, dom)
+      end if
+      
+    case default
+      call output_line ('SP-SOR data structure not initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'spsor_precond')
+      call sys_halt()
+    
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spsor_done(rdata)
 
 !<description>
   ! Releases a SP-SOR data structure and frees all allocated memory.
@@ -335,18 +432,18 @@ contains
 
 !<inputoutput>
   ! The SP-SOR data structure that is to be destroyed.
-  type(t_spsor), target, intent(INOUT) :: rspsor
+  type(t_spsor), intent(inout) :: rdata
 !</inputoutput>
 
 !</subroutine>
 
     ! Release Schur-complement matrix
-    if(lsyssc_hasMatrixStructure(rspsor%rS)) &
-      call lsyssc_releaseMatrix(rspsor%rS)
+    if(lsyssc_hasMatrixStructure(rdata%rS)) &
+      call lsyssc_releaseMatrix(rdata%rS)
     
     ! Release temporary vector
-    if(rspsor%rw%NEQ .gt. 0) &
-      call lsyssc_releaseVector(rspsor%rw)
+    if(rdata%rw%NEQ .gt. 0) &
+      call lsyssc_releaseVector(rdata%rw)
       
   end subroutine
 
@@ -354,24 +451,24 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_asmMatStructSchur(rS, rD, rB)
+  subroutine spsor_asmMatStructS(rS, rD, rB)
 
 !<description>
-  ! PRIVATE AUXILIARY ROUTINE:
-  ! Assembles the matrix structure of the Schur-Complement matrix.
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Assembles the matrix structure of the S matrix.
 !</description>
 
 !<input>
   ! The matrix D
-  type(t_matrixScalar), intent(IN) :: rD
+  type(t_matrixScalar), intent(in) :: rD
 
   ! The matrix B
-  type(t_matrixScalar), intent(IN) :: rB
+  type(t_matrixScalar), intent(in) :: rB
 !</input>
 
 !<output>
   ! The matrix S
-  type(t_matrixScalar), intent(OUT) :: rS
+  type(t_matrixScalar), intent(out) :: rS
 !</output>
 
 !</subroutine>
@@ -401,7 +498,7 @@ contains
     rS%cmatrixFormat = LSYSSC_MATRIX9
     rS%NEQ = ndofp
     rS%NCOLS = ndofp
-    call storage_new ('spsor_asmMatStructSchur', 'Kld', ndofp+1, ST_INT,&
+    call storage_new ('spsor_asmMatStructS', 'Kld', ndofp+1, ST_INT,&
                       rS%h_Kld, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rS%h_Kld, p_KldS)
     
@@ -481,7 +578,7 @@ contains
       ! Now each adjacent DOF in the first row of Iadj whose entry in Imask
       ! is equal to ind is on the same element as idofp.
       k = 0
-      do i = 1, ind
+      do i = 1, ndegB
         if(Imask(i) .eq. ind) then
           k = k+1
           Idofs(k,idofp) = Iadj(i,1)
@@ -496,7 +593,7 @@ contains
     
     ! Now we know the number of non-zeroes in S, so let's allocate column index
     ! array.
-    call storage_new ('spsor_asmMatStructSchur', 'Kcol', rS%NA, ST_INT,&
+    call storage_new ('spsor_asmMatStructS', 'Kcol', rS%NA, ST_INT,&
                       rS%h_Kcol, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rS%h_Kcol, p_KcolS)
     
@@ -520,93 +617,501 @@ contains
     deallocate(Iadj)
     
     ! Finally, set up the diagonal pointer array
-    call storage_new ('spsor_asmMatStructSchur', 'Kdiagonal', ndofp, ST_INT,&
+    call storage_new ('spsor_asmMatStructS', 'Kdiagonal', ndofp, ST_INT,&
                       rS%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rS%h_Kdiagonal, p_KdiagS)
     
     ! Build the diagonal pointer array
-    do i = 1, ndofp
-      do j = p_KldS(i), p_KldS(i+1)-1
-        if(p_KcolS(j) .ge. i) then
-          p_KdiagS(i) = j
-          exit
-        end if
-      end do ! j
-    end do
+    call lsyssc_rebuildKdiagonal(p_KcolS,p_KldS,p_KdiagS,ndofp)
     
+    ! That's it
+
+  end subroutine
+  
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  !
+  !  R O U T I N E S   F O R   2 D   N A V I E R - S T O K E S   S Y S T E M S
+  !
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+!<subroutine>
+
+  subroutine spsor_initNavSt2D(rdata, rmatrix, cflags)
+
+!<description>
+  ! Initialises a SP-SOR data structure for 2D Navier-Stokes systems.
+!</description>
+
+!<input>
+  ! The system matrix of the linear system.
+  type(t_matrixBlock), target, intent(in) :: rmatrix
+  
+  ! Flags for the SP-SOR solver.
+  integer(I32), intent(in) :: cflags
+!</input>
+
+!<output>
+  ! The SP-SOR data structure that is to be initialised.
+  type(t_spsor), intent(out) :: rdata
+!</output>
+
+!</subroutine>
+
+  ! Some local variables
+  type(t_spatialDiscretisation), pointer :: p_rdiscrV, p_rdiscrP
+  integer(I32) :: celemP, celemV
+  integer :: ndofPres, ndofVelo, ieldist
+
+    ! Set the system and flags
+    rdata%csystem = SPSOR_SYSTEM_NAVST2D
+    rdata%cflags = cflags
+    
+    ! Check if the matrix is valid
+    call spsor_checkMatrixNavSt2D(rmatrix)
+    
+    ! Hang in the matrix pointers
+    rdata%p_rA11 => rmatrix%RmatrixBlock(1,1)
+    rdata%p_rA22 => rmatrix%RmatrixBlock(2,2)
+    rdata%p_rB1 => rmatrix%RmatrixBlock(1,3)
+    rdata%p_rB2 => rmatrix%RmatrixBlock(2,3)
+    rdata%p_rD1 => rmatrix%RmatrixBlock(3,1)
+    rdata%p_rD2 => rmatrix%RmatrixBlock(3,2)
+    
+    ! Are the A12/A21 sub-matrices present?
+    if(rmatrix%RmatrixBlock(1,2)%NEQ .gt. 0) then
+      rdata%p_rA12 => rmatrix%RmatrixBlock(1,2)
+      rdata%p_rA21 => rmatrix%RmatrixBlock(2,1)
+    end if
+    
+    ! Is the C sub-matrix present?
+    if(rmatrix%RmatrixBlock(3,3)%NEQ .gt. 0) &
+      rdata%p_rC => rmatrix%RmatrixBlock(3,3)
+    
+    ! Get the total number of dofs
+    ndofVelo = rdata%p_rD1%NCOLS
+    ndofPres = rdata%p_rD1%NEQ
+    
+    ! Get the discretisation of the velocity spaces
+    p_rdiscrV => rdata%p_rB1%p_rspatialDiscrTest
+    
+    if(associated(p_rdiscrV)) then
+    
+      rdata%cvelocity = SPSOR_VELO_NONE
+    
+      ! Loop over all element distributions
+      do ieldist = 1, p_rdiscrV%inumFESpaces
+      
+        ! Get the element of the spaces
+        celemV = elem_getPrimaryElement(&
+                 p_rdiscrV%RelementDistr(ieldist)%celement)
+
+        ! What's the velocity element?
+        select case(celemV)
+        case(EL_P1T_2D)
+        
+          select case(rdata%cvelocity)
+          case(SPSOR_VELO_NONE, SPSOR_VELO_P1T)
+            rdata%cvelocity = SPSOR_VELO_P1T
+          
+          case default
+            rdata%cvelocity = SPSOR_VELO_ARBIT
+          end select
+          
+        case(EL_Q1T_2D)
+        
+          select case(rdata%cvelocity)
+          case(SPSOR_VELO_NONE, SPSOR_VELO_Q1T)
+            rdata%cvelocity = SPSOR_VELO_Q1T
+          
+          case default
+            rdata%cvelocity = SPSOR_VELO_ARBIT
+          end select
+          
+        case(EL_Q1TB_2D)
+        
+          select case(rdata%cvelocity)
+          case(SPSOR_VELO_NONE, SPSOR_VELO_Q1TB)
+            rdata%cvelocity = SPSOR_VELO_Q1TB
+          
+          case default
+            rdata%cvelocity = SPSOR_VELO_ARBIT
+            
+          end select
+        
+        case default
+          rdata%cvelocity = SPSOR_VELO_ARBIT
+          
+        end select
+        
+      end do ! ieldist
+    
+    else
+    
+      ! No velocity discretisation available
+      rdata%cvelocity = SPSOR_VELO_ARBIT
+      
+    end if
+    
+    ! Get the discretisation of the pressure space
+    p_rdiscrP => rdata%p_rB1%p_rspatialDiscrTrial
+    
+    if(associated(p_rdiscrP)) then
+    
+      rdata%cpressure = SPSOR_PRES_NONE
+      
+      ! Loop over all element distributions
+      do ieldist = 1, p_rdiscrP%inumFESpaces
+      
+        ! Get the element of the spaces
+        celemP = elem_getPrimaryElement(&
+                 p_rdiscrP%RelementDistr(ieldist)%celement)
+        
+        ! What's the pressure element?
+        select case(celemP)
+        case(EL_P0_2D, EL_Q0_2D)
+
+          select case(rdata%cpressure)
+          case(SPSOR_PRES_NONE, SPSOR_PRES_P0)
+            rdata%cpressure = SPSOR_PRES_P0
+          
+          case default
+            rdata%cpressure = SPSOR_PRES_ARBIT
+            
+          end select
+            
+        case default
+          rdata%cpressure = SPSOR_PRES_ARBIT
+          
+        end select
+        
+      end do ! ieldist
+    
+    else
+      
+      ! No pressure discretisation available
+      rdata%cpressure = SPSOR_PRES_ARBIT
+      
+    end if
+    
+    ! Now we need to set up the structure of the S matrix.
+    
+    ! Will S be a diagonal matrix?
+    rdata%bdiagS = (rdata%cpressure .eq. SPSOR_PRES_P0) .or. &
+                   (iand(rdata%cflags,SPSOR_FLAG_DIAG) .ne. 0_I32)
+    
+    if(rdata%bdiagS) then
+    
+      ! Create a diagonal matrix
+      call lsyssc_createDiagMatrixStruc(rdata%rS, ndofPres, &
+                                        LSYSSC_MATRIX9)
+    
+    else
+    
+      ! Call the auxiliary routine to assemble the structure of S.
+      call spsor_asmMatStructS(rdata%rS, rdata%p_rD1, rdata%p_rB1)
+      
+      ! Allocate a temporary vector
+      call lsyssc_createVector (rdata%rw, ndofPres, .false.)
+    
+    end if
+    
+    ! Allocate an empty matrix
+    call lsyssc_allocEmptyMatrix (rdata%rS, LSYSSC_SETM_UNDEFINED)
+
     ! That's it
 
   end subroutine
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spsor_checkMatrixNavSt2D(rmatrix, bvalid)
+
+!<description>
+  ! Checks whether a given block matrix is valid for the 2D Navier-Stokes
+  ! SP-SOR solver.
+!</description>
+
+!<input>
+  ! The system matrix that is to be checked.
+  type(t_matrixBlock), intent(in) :: rmatrix
+!</input>
+
+!<output>
+  ! OPTIONAL: Recieves whether the matrix is valid.
+  ! If the given matrix cannot be handled, then:
+  !   if given, bvalid is set to FALSE.
+  !   if not given, this routine prints an error and aborts program execution.
+  logical, optional, intent(out) :: bvalid
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  integer :: i,j
+  logical :: bHaveA12, bHaveAij
+  
+    bHaveA12 = .false.
+  
+    ! Assume that the matrix is invalid
+    if(present(bvalid)) bvalid = .false.
+  
+    ! First of all, the matrix must be 3x3
+    if((rmatrix%nblocksPerRow .ne. 3) .or. (rmatrix%nblocksPerCol .ne. 3)) then
+      if(present(bvalid)) then
+        return
+      else
+        call output_line ('Matrix must be 3x3',&
+            OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+        call sys_halt()
+      end if
+    end if
+    
+    ! Check all matrices
+    do i = 1, 3
+      do j = 1, 3
+      
+        ! Skip the block if it is empty
+        if(rmatrix%RmatrixBlock(i,j)%NEQ .le. 0) cycle
+
+        ! Make sure it's a type-9 matrix
+        if(rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9) then
+          if(present(bvalid)) then
+            return
+          else
+            call output_line ('Matrices must be of format LSYSSC_MATRIX9',&
+                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+            call sys_halt()
+          end if
+        end if
+        
+        ! Make sure it's not virtually transposed
+        if(iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,&
+                LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
+          if(present(bvalid)) then
+            return
+          else
+            call output_line ('Matrices format must not be transposed',&
+                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+            call sys_halt()
+          end if
+        end if
+
+      end do ! j
+    end do ! i
+    
+    ! Now loop over the A matrices
+    do i = 1, 2
+      do j = 1, 2
+        if(i .eq. j) then
+          
+          ! Main diagonal block
+          
+          ! Make sure the matrix exists
+          if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j))) .or. &
+             (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .le. SYS_EPSREAL)) then
+            if(present(bvalid)) then
+              return
+            else
+              call output_line ('Sub-Matrix A(' // trim(sys_sil(i,2)) // ',' // &
+                  trim(sys_sil(j,2)) // ') does not exist',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+              call sys_halt()
+            end if
+          end if
+          
+          if(i .gt. 1) then
+            ! Make all main diagonal blocks have the same structure
+            if(.not. lsyssc_isMatrixStructureShared(&
+                rmatrix%RmatrixBlock(1,1), rmatrix%RmatrixBlock(i,i))) then
+              if(present(bvalid)) then
+                return
+              else
+                call output_line ('All A(i,i) sub-matrices must share the same structure',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+                call sys_halt()
+              end if
+            end if
+          end if
+          
+        else
+        
+          ! Off-diagonal block
+          
+          if((i .eq. 1) .and. (j .eq. 2)) then
+            
+            ! Block A12 - does it exist?
+            bHaveA12 = lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j)) .and. &
+                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL)
+            
+          else
+
+            ! Off-diagonal block other than A12 - does it exist?
+            bHaveAij = lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,j)) .and. &
+                      (abs(rmatrix%RmatrixBlock(i,j)%dscaleFactor) .gt. SYS_EPSREAL)
+
+            !if(bHaveAij .xor. bHaveA12) then
+            if((bHaveAij .and. (.not. bHaveA12)) .or. ((.not. bHaveAij) .and. bHaveA12)) then
+              ! Either A12 does not exist, but Aij does - or the other way
+              if(present(bvalid)) then
+                return
+              else
+                call output_line ('Only either all or none off-diagonal A(i,j) may exist',&
+                    OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+                call sys_halt()
+              end if
+            end if
+          end if
+        end if
+      end do ! j
+    end do ! i
+    
+    ! Loop over the B matrices
+    do i = 1, 2
+    
+      ! Make sure the matrix exists
+      if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(i,3))) .or. &
+         (abs(rmatrix%RmatrixBlock(i,3)%dscaleFactor) .le. SYS_EPSREAL)) then
+        if(present(bvalid)) then
+          return
+        else
+          call output_line ('Sub-Matrix B(' // trim(sys_sil(j,2)) // ') does not exist',&
+              OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+          call sys_halt()
+        end if
+      end if
+      
+      if(i .gt. 1) then
+        ! Make all B matrices have the same structure
+        if(.not. lsyssc_isMatrixStructureShared(&
+            rmatrix%RmatrixBlock(1,3), rmatrix%RmatrixBlock(i,3))) then
+          if(present(bvalid)) then
+            return
+          else
+            call output_line ('All B(i) sub-matrices must share the same structure',&
+                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+            call sys_halt()
+          end if
+        end if
+      end if
+    end do ! j
+
+    ! Loop over the D matrices
+    do j = 1, 2
+    
+      ! Make sure the matrix exists
+      if((.not. lsyssc_hasMatrixStructure(rmatrix%RmatrixBlock(3,j))) .or. &
+         (abs(rmatrix%RmatrixBlock(3,j)%dscaleFactor) .le. SYS_EPSREAL)) then
+        if(present(bvalid)) then
+          return
+        else
+          call output_line ('Sub-Matrix D(' // trim(sys_sil(j,2)) // ') does not exist',&
+              OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+          call sys_halt()
+        end if
+      end if
+      
+      if(j .gt. 1) then
+        ! Make all D matrices have the same structure
+        if(.not. lsyssc_isMatrixStructureShared(&
+            rmatrix%RmatrixBlock(3,1), rmatrix%RmatrixBlock(3,j))) then
+          if(present(bvalid)) then
+            return
+          else
+            call output_line ('All D(j) sub-matrices must share the same structure',&
+                OU_CLASS_ERROR,OU_MODE_STD,'spsor_checkMatrixNavSt2D')
+            call sys_halt()
+          end if
+        end if
+      end if
+    end do ! j
+    
+    ! All checks passed, so the matrix is valid
+    if(present(bvalid)) bvalid = .true.
+  
+  end subroutine
+
+  ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine spsor_initData(rdata)
+  subroutine spsor_initData_NavSt2D(rdata)
 
 !<description>
   ! This subroutine performs data-dependent initialisation of the SP-SOR
-  ! solver. 
-  ! The data structure must have already been set using one of the
-  ! spsor_initXXXX routines (e.g. spsor_initNavSt2D).
+  ! solver for 2D Navier-Stokes systems. 
 !</description>
 
 !<inputoutput>
   ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
+  type(t_spsor), intent(inout) :: rdata
 !</inputoutput>
 
 !</subroutine>
 
-    ! Okay, which SP-SOR solver do we have here?
-    select case(rdata%csystem)
-    case (SPSOR_SYSTEM_NAVST2D)
-      
-      ! SP-SOR for 2D Navier-Stokes systems
-      
-      ! Do we use the diagonal or full version?
-      if(iand(rdata%cflags,SPSOR_FLAG_DIAG) .ne. 0_I32) then
+  ! local variables
+  logical :: bdone, bHaveA12
+  
 
-        ! Call the diagonal version
-        call spsor_initNavSt2D_diag(rdata)
+    ! Do we use the 'diagonal' or the 'full' SP-SOR variant?
+    if(iand(rdata%cflags,SPSOR_FLAG_DIAG) .ne. 0_I32) then
+
+      ! Call the diagonal version
+      call spsor_initData_NavSt2D_diag(rdata)
+    
+    else
+    
+      ! Do we use only P0/Q0 for pressure?
+      ! We have some fast implementations for this case...
+      select case(rdata%cpressure)
+      case (SPSOR_PRES_P0)
       
-      else
-      
-        ! Do we use ony P0/Q0 for pressure?
-        ! We have some fast implementations for this case...
-        select case(rdata%cpressure)
-        case (SPSOR_PRES_P0)
+        bdone = .false.
         
-          ! Do we even have one of our special velocity elements?
-          ! This would speed up the whole process even more...
-          select case(rdata%cvelocity)
-!          case (SPSOR_VELO_P1T)
-!            todo
-!          case (SPSOR_VELO_Q1T)
-!            todo
-!          case (SPSOR_VELO_Q1TB)
-!            todo
-        
-          case default
-            ! P0/Q0 pressure, arbitrary velocity
-            call spsor_initNavSt2D_P0_full(rdata)
-          
-          end select
+        ! Do we have the off-diagonal A-matrices?
+        bHaveA12 = associated(rdata%p_rA12)
       
-        case default
-          ! arbitrary pressure, arbitrary velocity
-          call spsor_initNavSt2D_full(rdata)
+        ! Do we even have one of our special velocity elements?
+        ! This would speed up the whole process even more...
+        select case(rdata%cvelocity)
+!        case (SPSOR_VELO_P1T)
+!          todo
+
+        case (SPSOR_VELO_Q1T)
           
+          ! Q1~/Q0 discretisation
+          if(.not. bHaveA12) then
+          
+            ! Okay, we have a special implementation for this case...
+            call spsor_initData_NavSt2D_Q1T_Q0(rdata)
+            bdone = .true.
+          
+          end if
+          
+!        case (SPSOR_VELO_Q1TB)
+!          todo
         end select
+        
+        ! If none of the above special cases applied, we'll take care of
+        ! the initialisation now...
+        if(.not. bdone) then
+        
+          ! P0/Q0 pressure, arbitrary velocity
+          call spsor_initData_NavSt2D_P0(rdata)
 
-      end if
+        end if
+      
+      case default
+    
+        ! arbitrary pressure, arbitrary velocity
+        call spsor_initData_NavSt2D_full(rdata)
 
-    case default
-      call output_line ('SP-SOR data structure not initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'spsor_initData')
-      call sys_halt()
-
-    end select
+      end select
+      
+    end if
   
   end subroutine
 
@@ -614,17 +1119,17 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_initNavSt2D_diag(rdata)
+  subroutine spsor_initData_NavSt2D_diag(rdata)
 
 !<description>
   ! Internal subroutine:
-  ! Peforms data-dependent initialisation of the diagonal SP-SOR algorithm for
-  ! 2D Navier-Stokes systems: arbitrary pressure, arbitrary velocity
+  ! Peforms data-dependent initialisation of the 'diagonal' SP-SOR algorithm
+  ! for 2D Navier-Stokes systems: arbitrary pressure, arbitrary velocity
 !</description>
 
 !<inputoutput>
   ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
+  type(t_spsor), intent(inout) :: rdata
 !</inputoutput>
 
 !</subroutine>
@@ -714,7 +1219,7 @@ contains
         k = p_KdiagA(idofu)
 
         ! Try to find the corrent entry in B1/B2
-        do i = p_KldB(idofu), p_KldB(idofu+1)
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
           if(p_KcolB(i) .eq. idofp) then
             daux1 = daux1 + (p_DB1(i)*p_DD1(j)) / p_DA11(k)
             daux2 = daux2 + (p_DB2(i)*p_DD2(j)) / p_DA22(k)
@@ -741,17 +1246,182 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_initNavSt2D_P0_full(rdata)
+  subroutine spsor_initData_NavSt2D_Q1T_Q0(rdata)
 
 !<description>
   ! Internal subroutine:
-  ! Peforms data-dependent initialisation of the SP-SOR algorithm for
-  ! 2D Navier-Stokes systems: P0/Q0 pressure, arbitrary velocity
+  ! Peforms data-dependent initialisation of the 'full' SP-SOR algorithm
+  ! for 2D Navier-Stokes systems: Q0 pressure, Q1~ velocity
 !</description>
 
 !<inputoutput>
   ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
+  type(t_spsor), intent(inout) :: rdata
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP) :: dsfA11, dsfA22, dsfB1, dsfB2, dsfD1, dsfD2, dsfC
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldB,p_KldC,p_KldD,&
+      p_KcolA,p_KcolB,p_KcolC,p_KcolD,p_KdiagC
+  real(DP), dimension(:), pointer :: p_DA11,p_DA22,p_DB1,p_DB2,&
+      p_DD1,p_DD2,p_DC,p_DS
+
+  ! Temporary local matrices
+  real(DP), dimension(4,4) :: DA1, DA2, DI1, DI2
+  real(DP), dimension(4) :: DB1, DB2, DIB1, DIB2
+  
+  ! local variables
+  logical :: bHaveC
+  real(DP) :: dc,daux1,daux2
+  integer :: idofp,idofu,i,j1,j2,k,id1,id2
+
+    ! Let's assume we do not have the optional matrices
+    bHaveC = .FALSE.
+    
+    ! Fetch the sub-matrix arrays
+    call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
+    call lsyssc_getbase_Kcol(rdata%p_rA11, p_KcolA)
+    call lsyssc_getbase_double(rdata%p_rA11, p_DA11)
+    call lsyssc_getbase_double(rdata%p_rA22, p_DA22)
+
+    call lsyssc_getbase_Kld(rdata%p_rB1, p_KldB)
+    call lsyssc_getbase_Kcol(rdata%p_rB1, p_KcolB)
+    call lsyssc_getbase_double(rdata%p_rB1, p_DB1)
+    call lsyssc_getbase_double(rdata%p_rB2, p_DB2)
+
+    call lsyssc_getbase_Kld(rdata%p_rD1, p_KldD)
+    call lsyssc_getbase_Kcol(rdata%p_rD1, p_KcolD)
+    call lsyssc_getbase_double(rdata%p_rD1, p_DD1)
+    call lsyssc_getbase_double(rdata%p_rD2, p_DD2)
+    
+    if(associated(rdata%p_rC)) then
+      bHaveC = .true.
+      call lsyssc_getbase_Kld(rdata%p_rC, p_KldC)
+      call lsyssc_getbase_Kcol(rdata%p_rC, p_KcolC)
+      call lsyssc_getbase_Kdiagonal(rdata%p_rC, p_KdiagC)
+      call lsyssc_getbase_double(rdata%p_rC, p_DC)
+    end if
+
+    call lsyssc_getbase_double(rdata%rS, p_DS)
+    
+    ! Fetch the multiplication factors
+    dsfA11 = rdata%p_rA11%dscaleFactor
+    dsfA22 = rdata%p_rA22%dscaleFactor
+    dsfB1 = rdata%p_rB1%dscaleFactor
+    dsfB2 = rdata%p_rB2%dscaleFactor
+    dsfD1 = rdata%p_rD1%dscaleFactor
+    dsfD2 = rdata%p_rD2%dscaleFactor
+    
+    if(bHaveC) then
+      dsfC = rdata%p_rC%dscaleFactor
+      if(dsfC .eq. 0.0_DP) bHaveC = .false.
+    end if
+
+    ! Let's loop over all rows of S
+    do idofp = 1, rdata%rS%NEQ
+    
+      ! Format the local matrices
+      DA1 = 0.0_DP
+      DA2 = 0.0_DP
+      DB1 = 0.0_DP
+      DB2 = 0.0_DP
+      dc = 0.0_DP
+      
+      ! Format the Schur-complement entry for this pressure DOF
+      p_DS(idofp) = 0.0_DP
+
+      ! If the C matrix exists, grab it's main diagonal entry
+      if(bHaveC) then
+        dc = dsfC*p_DC(p_KdiagC(idofp))
+      end if
+      
+      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! pressure DOF.
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+      
+        ! Get the index of the velocity DOF
+        idofu = p_KcolD(id1)
+
+        ! Calculate the local index of the velocity DOF
+        j1 = id1 - p_KldD(idofp) + 1
+        
+        ! Let's fetch the local A11/A22 matrices
+        do i = p_KldA(idofu), p_KldA(idofu+1)-1
+        
+          ! Get the column index
+          k = p_KcolA(i)
+          
+          ! Let's see if this corresponds to one of our local velocity DOFs
+          do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
+            if(k .eq. p_KcolD(id2)) then
+              ! Okay, incorporate the entries into the local matrix
+              j2 = id2 - p_KldD(idofp) + 1
+              DA1(j1,j2) = dsfA11*p_DA11(i)
+              DA2(j1,j2) = dsfA22*p_DA22(i)
+              exit
+            end if
+          end do ! id2
+        end do ! i
+
+        ! Let's fetch the local B matrices
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
+          if(p_KcolB(i) .eq. idofP) then
+            DB1(j1) = dsfB1*p_DB1(i)
+            DB2(j1) = dsfB2*p_DB2(i)
+            exit
+          end if
+        end do ! i
+      
+      end do ! id1
+      
+      ! Invert the A matrices
+      call mprim_invert4x4MatrixDirectDble(DA1, DI1)
+      call mprim_invert4x4MatrixDirectDble(DA2, DI2)
+      
+      ! Calculate A^{-1} * B
+      DIB1 = matmul(DI1, DB1)
+      DIB2 = matmul(DI2, DB2)
+      
+      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      k = 1
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        daux1 = daux1 + p_DD1(id1)*DIB1(k)
+        daux2 = daux2 + p_DD2(id1)*DIB2(k)
+        k = k+1
+      end do
+      dc = dc - dsfD1*daux1 - dsfD2*daux2
+      
+      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! in the corresponding entry in p_DS.
+      if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+      
+    end do ! idofp
+    
+    ! That's it
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spsor_initData_NavSt2D_P0(rdata)
+
+!<description>
+  ! Internal subroutine:
+  ! Peforms data-dependent initialisation of the 'full' SP-SOR algorithm
+  ! for 2D Navier-Stokes systems: P0/Q0 pressure, arbitrary velocity
+!</description>
+
+!<inputoutput>
+  ! The SP-SOR data structure
+  type(t_spsor), intent(inout) :: rdata
 !</inputoutput>
 
 !</subroutine>
@@ -872,6 +1542,9 @@ contains
       
         ! Get the index of the velocity DOF
         idofu = p_KcolD(id1)
+
+        ! Calculate the local index of the velocity DOF
+        j1 = id1 - p_KldD(idofp) + 1
         
         ! Let's fetch the local A11/A22 matrices
         do i = p_KldA(idofu), p_KldA(idofu+1)-1
@@ -883,7 +1556,6 @@ contains
           do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
             if(k .eq. p_KcolD(id2)) then
               ! Okay, incorporate the entries into the local matrix
-              j1 = id1 - p_KldD(idofp) + 1
               j2 = id2 - p_KldD(idofp) + 1
               DA(      j1,      j2) = dsfA11*p_DA11(i)
               DA(ndofV+j1,ndofV+j2) = dsfA22*p_DA22(i)
@@ -905,7 +1577,6 @@ contains
             do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
               if(k .eq. p_KcolD(id2)) then
                 ! Okay, incorporate the entries into the local matrix
-                j1 = id1 - p_KldD(idofp) + 1
                 j2 = id2 - p_KldD(idofp) + 1
                 DA(      j1,ndofV+j2) = dsfA12*p_DA12(i)
                 DA(ndofV+j1,      j2) = dsfA21*p_DA21(i)
@@ -916,9 +1587,8 @@ contains
         end if
 
         ! Let's fetch the local B matrices
-        do i = p_KldB(idofu), p_KldB(idofu+1)
+        do i = p_KldB(idofu), p_KldB(idofu+1)-1
           if(p_KcolB(i) .eq. idofP) then
-            j1 = id1 - p_KldD(idofp) + 1
             DB(      j1) = dsfB1*p_DB1(i)
             DB(ndofV+j1) = dsfB2*p_DB2(i)
             exit
@@ -963,17 +1633,17 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_initNavSt2D_full(rdata)
+  subroutine spsor_initData_NavSt2D_full(rdata)
 
 !<description>
   ! Internal subroutine:
-  ! Peforms data-dependent initialisation of the SP-SOR algorithm for
-  ! 2D Navier-Stokes systems: discontinous pressure, arbitrary velocity
+  ! Peforms data-dependent initialisation of the 'full' SP-SOR algorithm
+  ! for 2D Navier-Stokes systems: arbitrary pressure, arbitrary velocity
 !</description>
 
 !<inputoutput>
   ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
+  type(t_spsor), intent(inout) :: rdata
 !</inputoutput>
 
 !</subroutine>
@@ -1039,6 +1709,7 @@ contains
     call lsyssc_getbase_Kld(rdata%rS, p_KldS)
     call lsyssc_getbase_Kcol(rdata%rS, p_KcolS)
     call lsyssc_getbase_double(rdata%rS, p_DS)
+    call lsyssc_clearMatrix(rdata%rS)
     
     ! Fetch the multiplication factors
     dsfA11 = rdata%p_rA11%dscaleFactor
@@ -1178,7 +1849,7 @@ contains
         end if
 
         ! Let's fetch the local B matrices
-        do k = p_KldB(idofu), p_KldB(idofu+1)
+        do k = p_KldB(idofu), p_KldB(idofu+1)-1
         
           ! Get the column index
           idx = p_KcolB(k)
@@ -1196,7 +1867,7 @@ contains
       end do ! i
       
       ! Okay, try to solve the local system A*X = B
-      call DGESV(2*ndofV,1,DA,nmaxdofV,Ipivot,DB,nmaxdofV,info)
+      call DGESV(2*ndofV,ndofP,DA,nmaxdofV,Ipivot,DB,nmaxdofV,info)
       
       ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
       if(info .ne. 0) cycle
@@ -1216,9 +1887,9 @@ contains
         
           daux1 = 0.0_DP
           daux2 = 0.0_DP
-          do k = id1, id2
-            daux1 = daux1 + p_DD1(k)*DB(      k-id1+1,j)
-            daux2 = daux2 + p_DD2(k)*DB(ndofP+k-id1+1,j)
+          do k = 1, ndofV
+            daux1 = daux1 + p_DD1(id1+k-1)*DB(      k,j)
+            daux2 = daux2 + p_DD2(id1+k-1)*DB(ndofV+k,j)
           end do ! k
           DC(i,j) = DC(i,j) - dsfD1*daux1 - dsfD2*daux2
         
@@ -1231,7 +1902,7 @@ contains
       do i = 1, ndofP
         DS(i,i) = 1.0_DP
       end do
-      call DGESV(ndofP,1,DC,nmaxdofP,Ipivot,DS,nmaxdofP,info)
+      call DGESV(ndofP,ndofP,DC,nmaxdofP,Ipivot,DS,nmaxdofP,info)
       
       ! Now if the Schur-complement matrix is regular, we'll store the inverse
       ! in the corresponding entry in p_DS.
@@ -1265,58 +1936,7 @@ contains
 
 !<subroutine>
 
-  subroutine spsor_solve(rdata, rx, rf, drelax)
-
-!<description>
-  ! This routine performs one SP-SOR iteration.
-!</description>
-
-!<input>
-  ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
-  
-  ! The right-hand-side vector
-  type(t_vectorBlock), intent(IN) :: rf
-  
-  ! The relaxation parameter. Default = 1.0
-  real(DP), intent(IN) :: drelax
-!</input>
-
-!<inputoutput>
-  ! The iteration vector that is to be updated.
-  type(t_vectorblock), intent(INOUT) :: rx
-!</inputoutput>
-
-!</subroutine>
-
-    ! Make sure we do not apply the symmetric variant ('SP-SSOR')
-    if(iand(rdata%cflags, SPSOR_FLAG_SYM) .ne. 0_I32) then
-      call output_line ('SP-SSOR cannot be called via spsor_solve',&
-          OU_CLASS_ERROR,OU_MODE_STD,'spsor_solve')
-      call sys_halt()
-    end if
-
-    ! Okay, which SP-SOR solver do we have here?
-    select case(rdata%csystem)
-    case (SPSOR_SYSTEM_NAVST2D)
-    
-      ! Call the routine for 2D Navier-Stokes systems
-      call spsor_solve_NavSt2D(rdata, rx, rf, drelax)
-      
-    case default
-      call output_line ('SP-SOR data structure not initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'spsor_solve')
-      call sys_halt()
-    
-    end select
-    
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine spsor_solve_NavSt2D(rdata, rx, rf, drelax)
+  subroutine spsor_solve_NavSt2D(rdata, ru, rf, niterations, domega)
 
 !<description>
   ! INTERNAL ROUTINE:
@@ -1325,18 +1945,21 @@ contains
 
 !<input>
   ! The SP-SOR data structure
-  type(t_spsor), target, intent(INOUT) :: rdata
+  type(t_spsor), target, intent(in) :: rdata
   
   ! The right-hand-side vector
-  type(t_vectorBlock), intent(IN) :: rf
+  type(t_vectorBlock), intent(in) :: rf
   
-  ! The relaxation parameter. Default = 1.0
-  real(DP), intent(IN) :: drelax
+  ! The number of iterations that are to be performed
+  integer, intent(in) :: niterations
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
   ! The iteration vector that is to be updated.
-  type(t_vectorblock), intent(INOUT) :: rx
+  type(t_vectorblock), intent(inout) :: ru
 !</inputoutput>
 
 !</subroutine>
@@ -1354,9 +1977,10 @@ contains
   real(DP), dimension(:), pointer :: p_Du1, p_Du2, p_Dup, p_Df1, p_Df2, p_Dfp,&
       p_Dw
 
-  integer :: m,n
-  logical :: bHaveA12, bdiag
-  
+  integer :: m,n, iter
+  logical :: bHaveA12
+  real(DP) :: domegaA, domegaS
+    
     ! Let's assume we do not have the optional matrices
     bHaveA12 = .FALSE.
     
@@ -1406,78 +2030,84 @@ contains
     end if
     
     ! Fetch the vector arrays
-    call lsyssc_getbase_double(rx%RvectorBlock(1), p_Du1)
-    call lsyssc_getbase_double(rx%RvectorBlock(2), p_Du2)
-    call lsyssc_getbase_double(rx%RvectorBlock(3), p_Dup)
+    call lsyssc_getbase_double(ru%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(ru%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(ru%RvectorBlock(3), p_Dup)
     call lsyssc_getbase_double(rf%RvectorBlock(1), p_Df1)
     call lsyssc_getbase_double(rf%RvectorBlock(2), p_Df2)
     call lsyssc_getbase_double(rf%RvectorBlock(3), p_Dfp)
-    if(rdata%cpressure .ne. SPSOR_PRES_P0) then
-      call lsyssc_getbase_double(rdata%rw, p_Dw)
-    end if
-    
+    if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
+        
     ! Fetch the number of velocity and pressure DOFs
     m = rdata%p_rA11%NEQ
     n = rdata%rS%NEQ
-    
-    
-    ! Step One
-    ! --------
-    ! Solve the following equation using SOR:
-    !
-    !                        A * u = f - B*p
-    
-    ! Do we have the A12/A21 matrices?
-    if(bHaveA12) then
-    
-      ! Solve A11 * u1 = f1 - A12*u2 - B1*p
-      call spsor_aux_solveAAB(m,p_Du1,p_Du2,p_Dup,p_Df1,&
-          p_KldA,p_KcolA,p_KdiagA,p_DA11,dsfA11,&
-          p_KldA12,p_KcolA12,p_DA12,dsfA12,&
-          p_KldB,p_KcolB,p_DB1,dsfB1,drelax)
 
-      ! Solve A22 * u2 = f2 - A21*u1 - B2*p
-      call spsor_aux_solveAAB(m,p_Du2,p_Du1,p_Dup,p_Df2,&
-          p_KldA,p_KcolA,p_KdiagA,p_DA22,dsfA22,&
-          p_KldA12,p_KcolA12,p_DA21,dsfA21,&
-          p_KldB,p_KcolB,p_DB2,dsfB2,drelax)
-
-    else
+    ! Set up relaxation parameters
+    ! TODO: Find out which combination is useful!!!
+    domegaA = domega
+    !domegaA = 1.0_DP
+    domegaS = domega
+    !domegaS = 1.0_DP
     
-      ! A12/A21 are not present
-      call spsor_aux_solveAB_2D(m,p_Du1,p_Du2,p_Dup,p_Df1,p_Df2,&
-          p_KldA,p_KcolA,p_KdiagA,p_DA11,p_DA22,dsfA11,dsfA22,&
-          p_KldB,p_KcolB,p_DB1,p_DB2,dsfB1,dsfB2,drelax)
+    ! perform the desired number of iterations
+    do iter = 1, niterations
+    
+      ! Step One
+      ! --------
+      ! Solve the following equation using SOR:
+      !
+      !                        A * u = f - B*p
       
-    end if
-    
-    
-    ! Step Two
-    ! --------
-    ! Calculate:
-    !
-    !  p := p + relax * S * (g - D*u)
-    
-    ! Is S a diagonal matrix?
-    bdiag = (rdata%cpressure .eq. SPSOR_PRES_P0) .or. &
-            (iand(rdata%cflags,SPSOR_FLAG_DIAG) .ne. 0_I32)
-    if(bdiag) then
+      ! Do we have the A12/A21 matrices?
+      if(bHaveA12) then
+      
+        ! Solve A11 * u1 = f1 - A12*u2 - B1*p
+        call spsor_aux_solveAAB(m,p_Du1,p_Du2,p_Dup,p_Df1,&
+            p_KldA,p_KcolA,p_KdiagA,p_DA11,dsfA11,&
+            p_KldA12,p_KcolA12,p_DA12,dsfA12,&
+            p_KldB,p_KcolB,p_DB1,dsfB1,domegaA)
 
-      ! Calculate p := p - relax * S * (g - D*u)
-      call spsor_aux_multDDS(n,p_Du1,p_Du2,p_Dup,p_Dfp,&
-          p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2,p_DS,drelax)
+        ! Solve A22 * u2 = f2 - A21*u1 - B2*p
+        call spsor_aux_solveAAB(m,p_Du2,p_Du1,p_Dup,p_Df2,&
+            p_KldA,p_KcolA,p_KdiagA,p_DA22,dsfA22,&
+            p_KldA12,p_KcolA12,p_DA21,dsfA21,&
+            p_KldB,p_KcolB,p_DB2,dsfB2,domegaA)
 
-    else
-    
-      ! Calculate w := g - D*u
-      call spsor_aux_multDD(n,p_Du1,p_Du2,p_Dw,p_Dfp,&
-          p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
+      else
+      
+        ! A12/A21 are not present
+        call spsor_aux_solveAB_2D(m,p_Du1,p_Du2,p_Dup,p_Df1,p_Df2,&
+            p_KldA,p_KcolA,p_KdiagA,p_DA11,p_DA22,dsfA11,dsfA22,&
+            p_KldB,p_KcolB,p_DB1,p_DB2,dsfB1,dsfB2,domegaA)
+        
+      end if
+      
+      
+      ! Step Two
+      ! --------
+      ! Calculate:
+      !
+      !  p := p + omega * S * (g - D*u)
+      
+      if(rdata%bdiagS) then
 
-      ! Calculate p := p + relax * S * w
-      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
-          rx%rvectorBlock(3), drelax, 1.0_DP)
+        ! Calculate p := p - omega * S * (g - D*u)
+        call spsor_aux_solveDDS(n,p_Du1,p_Du2,p_Dup,p_Dfp,&
+            p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2,p_DS,domegaS)
+
+      else
+      
+        ! Calculate w := g - D*u
+        call spsor_aux_multDD(n,p_Du1,p_Du2,p_Dw,p_Dfp,&
+            p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
+
+        ! Calculate p := p + omega * S * w
+        call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+            ru%rvectorBlock(3), domegaS, 1.0_DP)
+      
+      end if
     
-    end if
+    end do ! iter
     
     ! That's it
     
@@ -1487,41 +2117,398 @@ contains
 
 !<subroutine>
 
+  subroutine spsor_prec_NavSt2D(rdata, rd, domega)
+
+!<description>
+  ! INTERNAL ROUTINE:
+  ! Applies the SP-SOR preconditioner for 2D Navier-Stokes systems.
+!</description>
+
+!<input>
+  ! The SP-SOR data structure
+  type(t_spsor), target, intent(in) :: rdata
+ 
+  ! The relaxation parameter. Default = 1.0
+  real(DP), intent(in) :: domega
+!</input>
+
+!<inputoutput>
+  ! The defect vector that is to be preconditioned.
+  type(t_vectorblock), intent(inout) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP) :: dsfA11, dsfA21, dsfA22, dsfD1, dsfD2
+  
+  ! access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldD,p_KldS,&
+      p_KcolA,p_KcolA12,p_KcolD,p_KcolS,p_KdiagA,p_KdiagS
+  real(DP), dimension(:), pointer :: p_DA11,p_DA21,p_DA22,&
+      p_DD1,p_DD2,p_DS
+  
+  ! vector arrays
+  real(DP), dimension(:), pointer :: p_Du1, p_Du2, p_Dup, p_Dw
+
+  integer :: m, n
+  logical :: bHaveA12
+  real(DP) :: domegaA, domegaS
+  
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    
+    ! Fetch the sub-matrix arrays
+    call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
+    call lsyssc_getbase_Kcol(rdata%p_rA11, p_KcolA)
+    call lsyssc_getbase_Kdiagonal(rdata%p_rA11, p_KdiagA)
+    call lsyssc_getbase_double(rdata%p_rA11, p_DA11)
+    call lsyssc_getbase_double(rdata%p_rA22, p_DA22)
+    
+    if(associated(rdata%p_rA12)) then
+      bHaveA12 = .true.
+      call lsyssc_getbase_Kld(rdata%p_rA12, p_KldA12)
+      call lsyssc_getbase_Kcol(rdata%p_rA12, p_KcolA12)
+      call lsyssc_getbase_double(rdata%p_rA21, p_DA21)
+    end if
+
+    call lsyssc_getbase_Kld(rdata%p_rD1, p_KldD)
+    call lsyssc_getbase_Kcol(rdata%p_rD1, p_KcolD)
+    call lsyssc_getbase_double(rdata%p_rD1, p_DD1)
+    call lsyssc_getbase_double(rdata%p_rD2, p_DD2)
+
+    call lsyssc_getbase_Kld(rdata%rS, p_KldS)
+    call lsyssc_getbase_Kcol(rdata%rS, p_KcolS)
+    call lsyssc_getbase_Kdiagonal(rdata%rS, p_KdiagS)
+    call lsyssc_getbase_double(rdata%rS, p_DS)
+    
+    ! Fetch the multiplication factors
+    dsfA11 = rdata%p_rA11%dscaleFactor
+    dsfA22 = rdata%p_rA22%dscaleFactor
+    dsfD1 = rdata%p_rD1%dscaleFactor
+    dsfD2 = rdata%p_rD2%dscaleFactor
+    
+    if(bHaveA12) then
+      dsfA21 = rdata%p_rA21%dscaleFactor
+      if(dsfA21 .eq. 0.0_DP) bHaveA12 = .false.
+    end if
+    
+    ! Fetch the vector arrays
+    call lsyssc_getbase_double(rd%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(rd%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(rd%RvectorBlock(3), p_Dup)
+    if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
+        
+    ! Fetch the number of velocity and pressure DOFs
+    m = rdata%p_rA11%NEQ
+    n = rdata%rS%NEQ
+    
+    ! Set up relaxation parameters
+    ! TODO: Find out which combination is useful!!!
+    domegaA = domega
+    !domegaA = 1.0_DP
+    domegaS = domega
+    !domegaS = 1.0_DP    
+    
+    ! Step One
+    ! --------
+    ! Solve the following equation:
+    !
+    !                        L * u = u
+    !
+    ! where L := 1/omega * diag(A) + Ltri(A)
+    
+    ! Do we have the A12/A21 matrices?
+    if(bHaveA12) then
+    
+      ! Solve for A11 * u1 = u1
+      call spsor_aux_precLA(m,p_Du1,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,dsfA11,domegaA)
+
+      ! Solve for A22 * u2 = u2 - A21 * u1
+      call spsor_aux_precLAA(m,p_Du1,p_Du2,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA22,dsfA22,p_KldA12,p_KcolA12,p_DA21,dsfA21,domegaA)
+
+    else
+    
+      ! A12/A21 are not present
+      call spsor_aux_precLA_2D(m,p_Du1,p_Du2,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,p_DA22,dsfA11,dsfA22,domegaA)
+
+    end if
+    
+    
+    ! Step Two
+    ! --------
+    ! Calculate:
+    !
+    !  p := omega * S * (p - D*u)
+    !
+    
+    if(rdata%bdiagS) then
+
+      ! Calculate p := omega * S * (p - D*u)
+      call spsor_aux_precDDS(n,p_Du1,p_Du2,p_Dup,p_KldD,p_KcolD,&
+          p_DD1,p_DD2,dsfD1,dsfD2,p_DS,domegaS)
+
+    else
+    
+      ! Calculate w := p - D*u
+      call spsor_aux_multDD(n,p_Du1,p_Du2,p_Dw,p_Dup,&
+          p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
+
+      ! Calculate p := omega * S * w
+      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+          rd%rvectorBlock(3), domegaS, 0.0_DP)
+    
+    end if
+    
+    ! That's it
+    
+  end subroutine
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine spsor_prec_sym_NavSt2D(rdata, rd, domega)
+
+!<description>
+  ! INTERNAL ROUTINE:
+  ! Applies the SP-SSOR preconditioner for 2D Navier-Stokes systems.
+!</description>
+
+!<input>
+  ! The SP-SOR data structure
+  type(t_spsor), target, intent(in) :: rdata
+ 
+  ! The relaxation parameter. Default = 1.0
+  real(DP), intent(in) :: domega
+!</input>
+
+!<inputoutput>
+  ! The defect vector that is to be preconditioned.
+  type(t_vectorblock), intent(inout) :: rd
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP) :: dsfA11, dsfA12, dsfA21, dsfA22, dsfB1, dsfB2, dsfD1, dsfD2
+  
+  ! access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldB,p_KldD,p_KldS,&
+      p_KcolA,p_KcolA12,p_KcolB,p_KcolD,p_KcolS,p_KdiagA,p_KdiagS
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22,&
+      p_DB1,p_DB2,p_DD1,p_DD2,p_DS
+  
+  ! vector arrays
+  real(DP), dimension(:), pointer :: p_Du1, p_Du2, p_Dup, p_Dw
+
+  integer :: m, n
+  logical :: bHaveA12
+  real(DP) :: domegaA, domegaS
+  
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    
+    ! Fetch the sub-matrix arrays
+    call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
+    call lsyssc_getbase_Kcol(rdata%p_rA11, p_KcolA)
+    call lsyssc_getbase_Kdiagonal(rdata%p_rA11, p_KdiagA)
+    call lsyssc_getbase_double(rdata%p_rA11, p_DA11)
+    call lsyssc_getbase_double(rdata%p_rA22, p_DA22)
+    
+    if(associated(rdata%p_rA12)) then
+      bHaveA12 = .true.
+      call lsyssc_getbase_Kld(rdata%p_rA12, p_KldA12)
+      call lsyssc_getbase_Kcol(rdata%p_rA12, p_KcolA12)
+      call lsyssc_getbase_double(rdata%p_rA12, p_DA12)
+      call lsyssc_getbase_double(rdata%p_rA21, p_DA21)
+    end if
+
+    call lsyssc_getbase_Kld(rdata%p_rB1, p_KldB)
+    call lsyssc_getbase_Kcol(rdata%p_rB1, p_KcolB)
+    call lsyssc_getbase_double(rdata%p_rB1, p_DB1)
+    call lsyssc_getbase_double(rdata%p_rB2, p_DB2)
+
+    call lsyssc_getbase_Kld(rdata%p_rD1, p_KldD)
+    call lsyssc_getbase_Kcol(rdata%p_rD1, p_KcolD)
+    call lsyssc_getbase_double(rdata%p_rD1, p_DD1)
+    call lsyssc_getbase_double(rdata%p_rD2, p_DD2)
+
+    call lsyssc_getbase_Kld(rdata%rS, p_KldS)
+    call lsyssc_getbase_Kcol(rdata%rS, p_KcolS)
+    call lsyssc_getbase_Kdiagonal(rdata%rS, p_KdiagS)
+    call lsyssc_getbase_double(rdata%rS, p_DS)
+    
+    ! Fetch the multiplication factors
+    dsfA11 = rdata%p_rA11%dscaleFactor
+    dsfA22 = rdata%p_rA22%dscaleFactor
+    dsfB1 = rdata%p_rB1%dscaleFactor
+    dsfB2 = rdata%p_rB2%dscaleFactor
+    dsfD1 = rdata%p_rD1%dscaleFactor
+    dsfD2 = rdata%p_rD2%dscaleFactor
+    
+    if(bHaveA12) then
+      dsfA12 = rdata%p_rA12%dscaleFactor
+      dsfA21 = rdata%p_rA21%dscaleFactor
+      if((dsfA12 .eq. 0.0_DP) .or. (dsfA21 .eq. 0.0_DP)) &
+        bHaveA12 = .false.
+    end if
+    
+    ! Fetch the vector arrays
+    call lsyssc_getbase_double(rd%RvectorBlock(1), p_Du1)
+    call lsyssc_getbase_double(rd%RvectorBlock(2), p_Du2)
+    call lsyssc_getbase_double(rd%RvectorBlock(3), p_Dup)
+    if(.not. rdata%bdiagS) call lsyssc_getbase_double(rdata%rw, p_Dw)
+        
+    ! Fetch the number of velocity and pressure DOFs
+    m = rdata%p_rA11%NEQ
+    n = rdata%rS%NEQ
+    
+    ! Set up relaxation parameters
+    ! TODO: Find out which combination is useful!!!
+    domegaA = domega
+    !domegaA = 1.0_DP
+    domegaS = domega
+    !domegaS = 1.0_DP
+    
+    ! Step One
+    ! --------
+    ! Solve the following equation:
+    !
+    !                        L * u = u
+    !
+    ! where L := 1/omega * diag(A) + Ltri(A)
+    
+    ! Do we have the A12/A21 matrices?
+    if(bHaveA12) then
+    
+      ! Solve for A11 * u1 = u1
+      call spsor_aux_precLA(m,p_Du1,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,dsfA11,domegaA)
+
+      ! Solve for A22 * u2 = u2 - A21 * u1
+      call spsor_aux_precLAA(m,p_Du1,p_Du2,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA22,dsfA22,p_KldA12,p_KcolA12,p_DA21,dsfA21,domegaA)
+
+    else
+    
+      ! A12/A21 are not present
+      call spsor_aux_precLA_2D(m,p_Du1,p_Du2,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,p_DA22,dsfA11,dsfA22,domegaA)
+
+    end if
+    
+    
+    ! Step Two
+    ! --------
+    ! Calculate:
+    !
+    !  p := omega * S * (p - D*u)
+    !
+    
+    ! Is S a diagonal matrix?
+    if(rdata%bdiagS) then
+
+      ! Calculate p := omega * S * (p - D*u)
+      call spsor_aux_precDDS(n,p_Du1,p_Du2,p_Dup,p_KldD,p_KcolD,&
+          p_DD1,p_DD2,dsfD1,dsfD2,p_DS,domegaS)
+
+    else
+    
+      ! Calculate w := p - D*u
+      call spsor_aux_multDD(n,p_Du1,p_Du2,p_Dw,p_Dup,&
+          p_KldD,p_KcolD,p_DD1,p_DD2,dsfD1,dsfD2)
+
+      ! Calculate p := omega * S * w
+      call lsyssc_scalarMatVec(rdata%rS, rdata%rw, &
+          rd%rvectorBlock(3), domegaS, 0.0_DP)
+    
+    end if
+    
+    ! Step Three
+    ! ----------
+    ! Solve the following equation:
+    !
+    !                        U * u = u - B*p
+    !
+    ! where L := id + ( 1/omega * diag(A) )^{-1} * Utri(A)
+    
+    ! Do we have the A12/A21 matrices?
+    if(bHaveA12) then
+    
+      ! Solve for A22 * u2 = u2 - B2*p
+      call spsor_aux_precUAB(m,p_Du2,p_Dup,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA22,dsfA22,p_KldB,p_KcolB,p_DB2,dsfB2,domegaA)
+
+      ! Solve for A11 * u1 = u2 - A12 * u2 - B1*p
+      call spsor_aux_precUAAB(m,p_Du1,p_Du2,p_Dup,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,dsfA11,p_KldA12,p_KcolA12,p_DA12,dsfA12,p_KldB,p_KcolB,&
+          p_DB1,dsfB1,domegaA)
+
+    else
+    
+      ! A12/A21 are not present
+      call spsor_aux_precUAB_2D(m,p_Du1,p_Du2,p_Dup,p_KldA,p_KcolA,p_KdiagA,&
+          p_DA11,p_DA22,dsfA11,dsfA22,p_KldB,p_KcolB,p_DB1,p_DB2,&
+          dsfB1,dsfB2,domegaA)
+
+    end if
+
+    ! That's it
+    
+  end subroutine
+
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  !
+  !       A U X I L I A R Y   R O U T I N E S   F O R   S O L V I N G
+  !
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+!<subroutine>
+
   pure subroutine spsor_aux_solveAB_2D(n,Du1,Du2,Dup,Df1,Df2,KldA,KcolA,KdiagA,&
                                        DA1,DA2,dsfA1,dsfA2,KldB,KcolB,&
-                                       DB1,DB2,dsfB1,dsfB2,drelax)
+                                       DB1,DB2,dsfB1,dsfB2,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
-  ! Solves:
-  !              ( A1  0  ) * ( u ) = ( f ) - ( B1 ) * ( p )
-  !              ( 0   A2 )   ( v )   ( g )   ( B2 )
+  ! Performs an SOR iteration on the following equation:
+  !
+  !              ( A1  0  ) * ( u1 ) = ( f1 ) - ( B1 ) * ( p )
+  !              ( 0   A2 )   ( u2 )   ( f2 )   ( B2 )
+  !
 !</description>
 
 !<inputoutput>
-  real(DP), dimension(*), intent(INOUT) :: Du1, Du2
+  real(DP), dimension(*), intent(inout) :: Du1, Du2
 !</inputoutput>
 
 !<input>
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
-  real(DP), dimension(*), intent(IN) :: Dup, Df1, Df2
+  real(DP), dimension(*), intent(in) :: Dup, Df1, Df2
   
-  integer, dimension(*), intent(IN) :: KldA, KcolA, KdiagA
-  real(DP), dimension(*), intent(IN) :: DA1, DA2
-  real(DP), intent(IN) :: dsfA1, dsfA2
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  real(DP), dimension(*), intent(in) :: DA1, DA2
+  real(DP), intent(in) :: dsfA1, dsfA2
 
-  integer, dimension(*), intent(IN) :: KldB, KcolB
-  real(DP), dimension(*), intent(IN) :: DB1, DB2
-  real(DP), intent(IN) :: dsfB1, dsfB2
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  real(DP), dimension(*), intent(in) :: DB1, DB2
+  real(DP), intent(in) :: dsfB1, dsfB2
   
-  real(DP), intent(IN) :: drelax
+  real(DP), intent(in) :: domega
 !</input>
 
 !</subroutine>
 
   integer :: i,j,k
-  real(DP) :: dt,df,dg,daux1, daux2
+  real(DP) :: dt,df,dg,daux1,daux2
   real(DP) :: dsf1,dsf2,dsb1,dsb2
   
     ! Pre-calculate scaling factors
@@ -1536,7 +2523,18 @@ contains
       ! Fetch the rhs entries
       df = Df1(i)*dsf1
       dg = Df2(i)*dsf2
-    
+      
+      ! Subtract A*u from rhs
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldA(i), KldA(i+1)-1
+        k = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(k)
+        daux2 = daux2 + DA2(j)*Du2(k)
+      end do
+      df = domega*(df - daux1)
+      dg = domega*(dg - daux2)
+
       ! Subtract B*p from rhs
       daux1 = 0.0_DP
       daux2 = 0.0_DP
@@ -1548,122 +2546,113 @@ contains
       df = df - dsb1*daux1
       dg = dg - dsb2*daux2
       
-      ! Subtract A*u from rhs
-      daux1 = 0.0_DP
-      daux2 = 0.0_DP
-      do j = KldA(i), KldA(i+1)-1
-        k = KcolA(j)
-        daux1 = daux1 + DA1(j)*Du1(k)
-        daux2 = daux2 + DA2(j)*Du2(k)
-      end do
-      df = df - daux1
-      dg = dg - daux2
-      
       ! Solve
       k = KdiagA(i)
-      Du1(i) = Du1(i) + drelax*df / DA1(k)
-      Du2(i) = Du2(i) + drelax*dg / DA2(k)
+      Du1(i) = Du1(i) + df / DA1(k)
+      Du2(i) = Du2(i) + dg / DA2(k)
     
     end do ! i
     
   end subroutine ! spsor_aux_solveAB_2D
 
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  pure subroutine spsor_aux_solveAB_3D(n,Du1,Du2,Du3,Dup,Df1,Df2,Df3,&
-!                                       KldA,KcolA,KdiagA,DA1,DA2,DA3,&
-!                                       dsfA1,dsfA2,dsfA3,KldB,KcolB,&
-!                                       DB1,DB2,DB3,dsfB1,dsfB2,dsfB3,drelax)
-!
-!!<description>
-!  ! INTERNAL AUXILIARY ROUTINE:
-!  ! Solves:
-!  !              ( A1  0  0  ) * ( u1 ) = ( f1 ) - ( B1 ) * ( p )
-!  !              ( 0   A2 0  )   ( u2 )   ( f2 )   ( B2 )
-!  !              ( 0   0  A3 )   ( u3 )   ( f3 )   ( B3 )
-!!</description>
-!
-!!<inputoutput>
-!  real(DP), dimension(*), intent(INOUT) :: Du1, Du2, Du3
-!!</inputoutput>
-!
-!!<input>
-!  integer, intent(IN) :: n
-!  
-!  real(DP), dimension(*), intent(IN) :: Dup, Df1, Df2, Df3
-!  
-!  integer, dimension(*), intent(IN) :: KldA, KcolA, KdiagA
-!  real(DP), dimension(*), intent(IN) :: DA1, DA2, DA3
-!  real(DP), intent(IN) :: dsfA1, dsfA2, dsfA3
-!
-!  integer, dimension(*), intent(IN) :: KldB, KcolB
-!  real(DP), dimension(*), intent(IN) :: DB1, DB2, DB3
-!  real(DP), intent(IN) :: dsfB1, dsfB2, dsfB3
-!  
-!  real(DP), intent(IN) :: drelax
-!!</input>
-!
-!!</subroutine>
-!
-!  integer :: i,j,k
-!  real(DP) :: dt,dfu1,dfu2,dfu3,daux1,daux2,daux3
-!  real(DP) :: dsf1,dsf2,dsf3,dsb1,dsb2,dsb3
-!  
-!    ! Pre-calculate scaling factors
-!    dsf1 = 1.0_DP / dsfA1
-!    dsf2 = 1.0_DP / dsfA2
-!    dsf3 = 1.0_DP / dsfA3
-!    dsb1 = dsfB1 / dsfA1
-!    dsb2 = dsfB2 / dsfA2
-!    dsb3 = dsfB3 / dsfA3
-!  
-!    ! Loop over all rows
-!    do i = 1, n
-!    
-!      ! Fetch the rhs entries
-!      dfu1 = Df1(i)*dsf1
-!      dfu2 = Df2(i)*dsf2
-!      dfu3 = Df3(i)*dsf3
-!
-!      ! Subtract B*p from rhs
-!      daux1 = 0.0_DP
-!      daux2 = 0.0_DP
-!      daux3 = 0.0_DP
-!      do j = KldB(i), KldB(i+1)-1
-!        dt = Dup(KcolB(j))
-!        daux1 = daux1 + DB1(j)*dt
-!        daux2 = daux2 + DB2(j)*dt
-!        daux3 = daux3 + DB3(j)*dt
-!      end do
-!      dfu1 = dfu1 - dsb1*daux1
-!      dfu2 = dfu2 - dsb2*daux2
-!      dfu3 = dfu3 - dsb3*daux3
-!      
-!      ! Subtract A*u from rhs
-!      daux1 = 0.0_DP
-!      daux2 = 0.0_DP
-!      daux2 = 0.0_DP
-!      do j = KldA(i), KldA(i+1)-1
-!        k = KcolA(j)
-!        daux1 = daux1 + DA1(j)*Du1(k)
-!        daux2 = daux2 + DA2(j)*Du2(k)
-!        daux3 = daux3 + DA3(j)*Du3(k)
-!      end do
-!      dfu1 = dfu1 - daux1
-!      dfu2 = dfu2 - daux2
-!      dfu3 = dfu3 - daux3
-!      
-!      ! Solve
-!      k = KdiagA(i)
-!      Du1(i) = Du1(i) + drelax*dfu1 / DA1(k)
-!      Du2(i) = Du2(i) + drelax*dfu2 / DA2(k)
-!      Du3(i) = Du3(i) + drelax*dfu3 / DA3(k)
-!    
-!    end do ! i
-!    
-!  end subroutine ! spsor_aux_solveAB_3D
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_solveAB_3D(n,Du1,Du2,Du3,Dup,Df1,Df2,Df3,&
+                                       KldA,KcolA,KdiagA,DA1,DA2,DA3,&
+                                       dsfA1,dsfA2,dsfA3,KldB,KcolB,&
+                                       DB1,DB2,DB3,dsfB1,dsfB2,dsfB3,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Performs an SOR iteration on the following equation:
+  !
+  !              ( A1  0  0  ) * ( u1 ) = ( f1 ) - ( B1 ) * ( p )
+  !              ( 0   A2 0  )   ( u2 )   ( f2 )   ( B2 )
+  !              ( 0   0  A3 )   ( u3 )   ( f3 )   ( B3 )
+  !
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Du1, Du2, Du3
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Dup, Df1, Df2, Df3
+  
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  real(DP), dimension(*), intent(in) :: DA1, DA2, DA3
+  real(DP), intent(in) :: dsfA1, dsfA2, dsfA3
+
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  real(DP), dimension(*), intent(in) :: DB1, DB2, DB3
+  real(DP), intent(in) :: dsfB1, dsfB2, dsfB3
+  
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: dt,dfu1,dfu2,dfu3,daux1,daux2,daux3
+  real(DP) :: dsf1,dsf2,dsf3,dsb1,dsb2,dsb3
+  
+    ! Pre-calculate scaling factors
+    dsf1 = 1.0_DP / dsfA1
+    dsf2 = 1.0_DP / dsfA2
+    dsf3 = 1.0_DP / dsfA3
+    dsb1 = dsfB1 / dsfA1
+    dsb2 = dsfB2 / dsfA2
+    dsb3 = dsfB3 / dsfA3
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      ! Fetch the rhs entries
+      dfu1 = Df1(i)*dsf1
+      dfu2 = Df2(i)*dsf2
+      dfu3 = Df3(i)*dsf3
+      
+      ! Subtract A*u from rhs
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldA(i), KldA(i+1)-1
+        k = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(k)
+        daux2 = daux2 + DA2(j)*Du2(k)
+        daux3 = daux3 + DA3(j)*Du3(k)
+      end do
+      dfu1 = domega*(dfu1 - daux1)
+      dfu2 = domega*(dfu2 - daux2)
+      dfu3 = domega*(dfu3 - daux3)
+
+      ! Subtract B*p from rhs
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dt = Dup(KcolB(j))
+        daux1 = daux1 + DB1(j)*dt
+        daux2 = daux2 + DB2(j)*dt
+        daux3 = daux3 + DB3(j)*dt
+      end do
+      dfu1 = dfu1 - dsb1*daux1
+      dfu2 = dfu2 - dsb2*daux2
+      dfu3 = dfu3 - dsb3*daux3
+      
+      ! Solve
+      k = KdiagA(i)
+      Du1(i) = Du1(i) + dfu1 / DA1(k)
+      Du2(i) = Du2(i) + dfu2 / DA2(k)
+      Du3(i) = Du3(i) + dfu3 / DA3(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_solveAB_3D
 
   ! ***************************************************************************
 
@@ -1671,36 +2660,38 @@ contains
 
   pure subroutine spsor_aux_solveAAB(n,Du1,Du2,Dup,Df,KldA,KcolA,KdiagA,&
                                      DA,dsfA,KldA2,KcolA2,DA2,dsfA2,&
-                                     KldB,KcolB,DB,dsfB,drelax)
+                                     KldB,KcolB,DB,dsfB,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
-  ! Solves:
+  ! Performs an SOR iteration on the following equation:
+  !
   !                A * u1 = f - A2 * u2 - B*p
+  !
 !</description>
 
 !<inputoutput>
-  real(DP), dimension(*), intent(INOUT) :: Du1
+  real(DP), dimension(*), intent(inout) :: Du1
 !</inputoutput>
 
 !<input>
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
-  real(DP), dimension(*), intent(IN) :: Du2, Dup, Df
+  real(DP), dimension(*), intent(in) :: Du2, Dup, Df
   
-  integer, dimension(*), intent(IN) :: KldA, KcolA, KdiagA
-  real(DP), dimension(*), intent(IN) :: DA
-  real(DP), intent(IN) :: dsfA
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  real(DP), dimension(*), intent(in) :: DA
+  real(DP), intent(in) :: dsfA
   
-  integer, dimension(*), intent(IN) :: KldA2, KcolA2
-  real(DP), dimension(*), intent(IN) :: DA2
-  real(DP), intent(IN) :: dsfA2
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  real(DP), dimension(*), intent(in) :: DA2
+  real(DP), intent(in) :: dsfA2
 
-  integer, dimension(*), intent(IN) :: KldB, KcolB
-  real(DP), dimension(*), intent(IN) :: DB
-  real(DP), intent(IN) :: dsfB
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  real(DP), dimension(*), intent(in) :: DB
+  real(DP), intent(in) :: dsfB
   
-  real(DP), intent(IN) :: drelax
+  real(DP), intent(in) :: domega
 !</input>
 
 !</subroutine>
@@ -1719,7 +2710,14 @@ contains
     
       ! Fetch the rhs entries
       df1 = Df(i)*dsf
-    
+      
+      ! Subtract A*u1 from rhs
+      daux = 0.0_DP
+      do j = KldA(i), KldA(i+1)-1
+        daux = daux + DA(j)*Du1(KcolA(j))
+      end do
+      df1 = domega*(df1 - daux)
+
       ! Subtract B*p from rhs
       daux = 0.0_DP
       do j = KldB(i), KldB(i+1)-1
@@ -1734,113 +2732,109 @@ contains
       end do
       df1 = df1 - dsa2*daux
       
-      ! Subtract A*u1 from rhs
-      daux = 0.0_DP
-      do j = KldA(i), KldA(i+1)-1
-        daux = daux + DA(j)*Du1(KcolA(j))
-      end do
-      df1 = df1 - daux
-      
       ! Solve
-      Du1(i) = Du1(i) + drelax*df1 / DA(KdiagA(i))
+      Du1(i) = Du1(i) + df1 / DA(KdiagA(i))
     
     end do ! i
     
   end subroutine ! spsor_aux_solveAAB
 
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  pure subroutine spsor_aux_solveAAAB(n,Du1,Du2,Du3,Dup,Df,KldA,KcolA,KdiagA,&
-!                                     DA,dsfA,KldA2,KcolA2,DA2,DA3,dsfA2,dsfA3,&
-!                                     KldB,KcolB,DB,dsfB,drelax)
-!
-!!<description>
-!  ! INTERNAL AUXILIARY ROUTINE:
-!  ! Solves:
-!  !                A * u1 = f - A2 * u2 - A3 * u3 - B*p
-!!</description>
-!
-!!<inputoutput>
-!  real(DP), dimension(*), intent(INOUT) :: Du1
-!!</inputoutput>
-!
-!!<input>
-!  integer, intent(IN) :: n
-!  
-!  real(DP), dimension(*), intent(IN) :: Du2, Du3, Dup, Df
-!  
-!  integer, dimension(*), intent(IN) :: KldA, KcolA, KdiagA
-!  real(DP), dimension(*), intent(IN) :: DA
-!  real(DP), intent(IN) :: dsfA
-!  
-!  integer, dimension(*), intent(IN) :: KldA2, KcolA2
-!  real(DP), dimension(*), intent(IN) :: DA2, DA3
-!  real(DP), intent(IN) :: dsfA2, dsfA3
-!
-!  integer, dimension(*), intent(IN) :: KldB, KcolB
-!  real(DP), dimension(*), intent(IN) :: DB
-!  real(DP), intent(IN) :: dsfB
-!  
-!  real(DP), intent(IN) :: drelax
-!!</input>
-!
-!!</subroutine>
-!
-!  integer :: i,j,k
-!  real(DP) :: df1,daux,daux2
-!  real(DP) :: dsa2,dsa3,dsf,dsb
-!  
-!    ! Pre-calculate scaling factors
-!    dsf = 1.0_DP / dsfA
-!    dsa2 = dsfA2 / dsfA
-!    dsa3 = dsfA3 / dsfA
-!    dsb = dsfB / dsfA
-!  
-!    ! Loop over all rows
-!    do i = 1, n
-!    
-!      ! Fetch the rhs entries
-!      df1 = Df(i)*dsf
-!    
-!      ! Subtract B*p from rhs
-!      daux = 0.0_DP
-!      do j = KldB(i), KldB(i+1)-1
-!        daux = daux + DB(j)*Dup(KcolB(j))
-!      end do
-!      df1 = df1 - dsb*daux
-!      
-!      ! Subtract A2*u2 and A3*u3 from rhs
-!      daux = 0.0_DP
-!      daux2 = 0.0_DP
-!      do j = KldA2(i), KldA2(i+1)-1
-!        k = KcolA2(j)
-!        daux  = daux  + DA2(j)*Du2(k)
-!        daux2 = daux2 + DA3(j)*Du3(k)
-!      end do
-!      df1 = df1 - dsa2*daux - dsa3*daux2
-!      
-!      ! Subtract A*u1 from rhs
-!      daux = 0.0_DP
-!      do j = KldA(i), KldA(i+1)-1
-!        daux = daux + DA(j)*Du1(KcolA(j))
-!      end do
-!      df1 = df1 - daux
-!      
-!      ! Solve
-!      Du1(i) = Du1(i) + drelax*df1 / DA(KdiagA(i))
-!    
-!    end do ! i
-!    
-!  end subroutine ! spsor_aux_solveAAAB
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_solveAAAB(n,Du1,Du2,Du3,Dup,Df,KldA,KcolA,KdiagA,&
+                                     DA,dsfA,KldA2,KcolA2,DA2,DA3,dsfA2,dsfA3,&
+                                     KldB,KcolB,DB,dsfB,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Performs an SOR iteration on the following equation:
+  !
+  !                A * u1 = f - A2 * u2 - A3 * u3 - B*p
+  !
+  ! where A2 and A3 share the same structure
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Du1
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Du2, Du3, Dup, Df
+  
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  real(DP), dimension(*), intent(in) :: DA
+  real(DP), intent(in) :: dsfA
+  
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  real(DP), dimension(*), intent(in) :: DA2, DA3
+  real(DP), intent(in) :: dsfA2, dsfA3
+
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  real(DP), dimension(*), intent(in) :: DB
+  real(DP), intent(in) :: dsfB
+  
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: df1,daux,daux2
+  real(DP) :: dsa2,dsa3,dsf,dsb
+  
+    ! Pre-calculate scaling factors
+    dsf = 1.0_DP / dsfA
+    dsa2 = dsfA2 / dsfA
+    dsa3 = dsfA3 / dsfA
+    dsb = dsfB / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      ! Fetch the rhs entries
+      df1 = Df(i)*dsf
+      
+      ! Subtract A*u1 from rhs
+      daux = 0.0_DP
+      do j = KldA(i), KldA(i+1)-1
+        daux = daux + DA(j)*Du1(KcolA(j))
+      end do
+      df1 = domega*(df1 - daux)
+
+      ! Subtract B*p from rhs
+      daux = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        daux = daux + DB(j)*Dup(KcolB(j))
+      end do
+      df1 = df1 - dsb*daux
+      
+      ! Subtract A2*u2 and A3*u3 from rhs
+      daux = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldA2(i), KldA2(i+1)-1
+        k = KcolA2(j)
+        daux  = daux  + DA2(j)*Du2(k)
+        daux2 = daux2 + DA3(j)*Du3(k)
+      end do
+      df1 = df1 - dsa2*daux - dsa3*daux2
+      
+      ! Solve
+      Du1(i) = Du1(i) + df1 / DA(KdiagA(i))
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_solveAAAB
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  pure subroutine spsor_aux_multDDS(n,Du1,Du2,Dup,Df,KldD,KcolD,DD1,DD2,&
-                                    dsfD1,dsfD2,DS,drelax)
+  pure subroutine spsor_aux_solveDDS(n,Du1,Du2,Dup,Df,KldD,KcolD,DD1,DD2,&
+                                     dsfD1,dsfD2,DS,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -1848,25 +2842,25 @@ contains
   !
   !                p := p + relax * S * (f - D1 * u1 - D2 * u2)
   !
-  ! Where S is a diagonal matrix
+  ! where S is a diagonal matrix, and D1 and D2 share the same structure
 !</description>
 
 !<inputoutput>
-  real(DP), dimension(*), intent(INOUT) :: Dup
+  real(DP), dimension(*), intent(inout) :: Dup
 !</inputoutput>
 
 !<input>
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
-  real(DP), dimension(*), intent(IN) :: Du1, Du2, Df
+  real(DP), dimension(*), intent(in) :: Du1, Du2, Df
   
-  integer, dimension(*), intent(IN) :: KldD, KcolD
-  real(DP), dimension(*), intent(IN) :: DD1, DD2
-  real(DP), intent(IN) :: dsfD1, dsfD2
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2
+  real(DP), intent(in) :: dsfD1, dsfD2
 
-  real(DP), dimension(*), intent(IN) :: DS
+  real(DP), dimension(*), intent(in) :: DS
   
-  real(DP), intent(IN) :: drelax
+  real(DP), intent(in) :: domega
 !</input>
 
 !</subroutine>
@@ -1888,74 +2882,74 @@ contains
       end do
       
       ! Solve
-      Dup(i) = Dup(i) + drelax*DS(i)*(Df(i) - dsfD1*daux1 - dsfD2*daux2)
+      Dup(i) = Dup(i) + domega*DS(i)*(Df(i) - dsfD1*daux1 - dsfD2*daux2)
     
     end do ! i
     !$omp end parallel do
     
-  end subroutine ! spsor_aux_multDDS
+  end subroutine ! spsor_aux_solveDDS
 
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  pure subroutine spsor_aux_multDDDS(n,Du1,Du2,Du3,Dup,Df,KldD,KcolD,&
-!                                     DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,drelax)
-!
-!!<description>
-!  ! INTERNAL AUXILIARY ROUTINE:
-!  ! Calculates:
-!  !
-!  !                p := p + relax * S * (f - D1 * u1 - D2 * u2 - D3 * u3)
-!  !
-!  ! Where S is a diagonal matrix
-!!</description>
-!
-!!<inputoutput>
-!  real(DP), dimension(*), intent(INOUT) :: Dup
-!!</inputoutput>
-!
-!!<input>
-!  integer, intent(IN) :: n
-!  
-!  real(DP), dimension(*), intent(IN) :: Du1, Du2, Du3, Df
-!  
-!  integer, dimension(*), intent(IN) :: KldD, KcolD
-!  real(DP), dimension(*), intent(IN) :: DD1, DD2, DD3
-!  real(DP), intent(IN) :: dsfD1, dsfD2, dsfD3
-!
-!  real(DP), dimension(*), intent(IN) :: DS
-!  
-!  real(DP), intent(IN) :: drelax
-!!</input>
-!
-!!</subroutine>
-!
-!  integer :: i,j,k
-!  real(DP) :: daux1, daux2, daux3
-!  
-!    ! Loop over all rows
-!    !$omp parallel do private(j,k,daux1,daux2,daux3) if(n .gt. 1000)
-!    do i = 1, n
-!    
-!      ! Calculate D1*u and D2*v
-!      daux1 = 0.0_DP
-!      daux2 = 0.0_DP
-!      daux3 = 0.0_DP
-!      do j = KldD(i), KldD(i+1)-1
-!        k = KcolD(j)
-!        daux1 = daux1 + DD1(j)*Du1(k)
-!        daux2 = daux2 + DD2(j)*Du2(k)
-!        daux3 = daux3 + DD3(j)*Du3(k)
-!      end do
-!      
-!      ! Solve
-!      Dup(i) = Dup(i) + drelax*DS(i)*(Df(i) - dsfD1*daux1 - dsfD2*daux2 - dsfD3*daux3)
-!    
-!    end do ! i
-!    !$omp end parallel do
-!    
-!  end subroutine ! spsor_aux_multDDDS
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_solveDDDS(n,Du1,Du2,Du3,Dup,Df,KldD,KcolD,&
+                                      DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Calculates:
+  !
+  !                p := p + relax * S * (f - D1 * u1 - D2 * u2 - D3 * u3)
+  !
+  ! where S is a diagonal matrix, and D1, D2 and D3 share the same structure
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Dup
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Du1, Du2, Du3, Df
+  
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2, DD3
+  real(DP), intent(in) :: dsfD1, dsfD2, dsfD3
+
+  real(DP), dimension(*), intent(in) :: DS
+  
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux1, daux2, daux3
+  
+    ! Loop over all rows
+    !$omp parallel do private(j,k,daux1,daux2,daux3) if(n .gt. 1000)
+    do i = 1, n
+    
+      ! Calculate D1*u and D2*v
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldD(i), KldD(i+1)-1
+        k = KcolD(j)
+        daux1 = daux1 + DD1(j)*Du1(k)
+        daux2 = daux2 + DD2(j)*Du2(k)
+        daux3 = daux3 + DD3(j)*Du3(k)
+      end do
+      
+      ! Solve
+      Dup(i) = Dup(i) + domega*DS(i)*(Df(i) - dsfD1*daux1 - dsfD2*daux2 - dsfD3*daux3)
+    
+    end do ! i
+    !$omp end parallel do
+    
+  end subroutine ! spsor_aux_solveDDDS
 
   ! ***************************************************************************
 
@@ -1968,21 +2962,23 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
-  !                w = f - D1 * u1 - D2 * u2
+  !                w := f - D1 * u1 - D2 * u2
+  !
+  ! where D1 and D2 share the same structure
 !</description>
 
 !<inputoutput>
-  real(DP), dimension(*), intent(INOUT) :: Dw
+  real(DP), dimension(*), intent(inout) :: Dw
 !</inputoutput>
 
 !<input>
-  integer, intent(IN) :: n
+  integer, intent(in) :: n
   
-  real(DP), dimension(*), intent(IN) :: Du1, Du2, Df
+  real(DP), dimension(*), intent(in) :: Du1, Du2, Df
   
-  integer, dimension(*), intent(IN) :: KldD, KcolD
-  real(DP), dimension(*), intent(IN) :: DD1, DD2
-  real(DP), intent(IN) :: dsfD1, dsfD2
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2
+  real(DP), intent(in) :: dsfD1, dsfD2
 !</input>
 
 !</subroutine>
@@ -2008,57 +3004,1038 @@ contains
     
   end subroutine ! spsor_aux_multDD
 
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  pure subroutine spsor_aux_multDDD(n,Du1,Du2,Du3,Dw,Df,KldD,KcolD,&
-!                                    DD1,DD2,DD3,dsfD1,dsfD2,dsfD3)
-!
-!!<description>
-!  ! INTERNAL AUXILIARY ROUTINE:
-!  ! Calculates:
-!  !
-!  !                w = f - D1 * u1 - D2 * u2 - D3 * u3
-!!</description>
-!
-!!<inputoutput>
-!  real(DP), dimension(*), intent(INOUT) :: Dw
-!!</inputoutput>
-!
-!!<input>
-!  integer, intent(IN) :: n
-!  
-!  real(DP), dimension(*), intent(IN) :: Du1, Du2, Du3, Df
-!  
-!  integer, dimension(*), intent(IN) :: KldD, KcolD
-!  real(DP), dimension(*), intent(IN) :: DD1, DD2, DD3
-!  real(DP), intent(IN) :: dsfD1, dsfD2, dsfD3
-!!</input>
-!
-!!</subroutine>
-!
-!  integer :: i,j,k
-!  real(DP) :: daux1, daux2, daux3
-!  
-!    ! Loop over all rows
-!    !$omp parallel do private(j,k,daux1,daux2,daux3) if(n .gt. 1000)
-!    do i = 1, n
-!    
-!      daux1 = 0.0_DP
-!      daux2 = 0.0_DP
-!      daux3 = 0.0_DP
-!      do j = KldD(i), KldD(i+1)-1
-!        k = KcolD(j)
-!        daux1 = daux1 + DD1(j)*Du1(k)
-!        daux2 = daux2 + DD2(j)*Du2(k)
-!        daux3 = daux3 + DD3(j)*Du3(k)
-!      end do
-!      Dw(i) = Df(i) - dsfD1*daux1 - dsfD2*daux2 - dsfD3*daux3
-!    
-!    end do ! i
-!    !$omp end parallel do
-!    
-!  end subroutine ! spsor_aux_multDDD
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_multDDD(n,Du1,Du2,Du3,Dw,Df,KldD,KcolD,&
+                                    DD1,DD2,DD3,dsfD1,dsfD2,dsfD3)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Calculates:
+  !
+  !                w := f - D1 * u1 - D2 * u2 - D3 * u3
+  !
+  ! where D1, D2 and D3 share the same structure
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Dw
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Du1, Du2, Du3, Df
+  
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2, DD3
+  real(DP), intent(in) :: dsfD1, dsfD2, dsfD3
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux1, daux2, daux3
+  
+    ! Loop over all rows
+    !$omp parallel do private(j,k,daux1,daux2,daux3) if(n .gt. 1000)
+    do i = 1, n
+    
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldD(i), KldD(i+1)-1
+        k = KcolD(j)
+        daux1 = daux1 + DD1(j)*Du1(k)
+        daux2 = daux2 + DD2(j)*Du2(k)
+        daux3 = daux3 + DD3(j)*Du3(k)
+      end do
+      Dw(i) = Df(i) - dsfD1*daux1 - dsfD2*daux2 - dsfD3*daux3
+    
+    end do ! i
+    !$omp end parallel do
+    
+  end subroutine ! spsor_aux_multDDD
+
+
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  !
+  ! A U X I L I A R Y   R O U T I N E S   F O R   P R E C O N D I T I O N I N G
+  !
+  ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precLA(n,Du,KldA,KcolA,KdiagA,DA,dsfA,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !                L * u = f
+  !
+  ! where L := 1/omega * diag(A) + ltri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of A
+  integer, intent(in) :: n
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factor of A
+  real(DP), intent(in) :: dsfA
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux, dsa
+  
+    ! Pre-calculate scaling factor
+    dsa = 1.0_DP / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i), k-1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = domega*(dsa*Du(i) - daux) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precLA
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precLA_2D(n,Du1,Du2,KldA,KcolA,KdiagA,DA1,DA2,&
+                                      dsfA1,dsfA2,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              ( L1  0  ) * ( u1 ) = ( f1 )
+  !              ( 0   L2 )   ( u2 )   ( f2 )
+  !
+  ! where Li := 1/omega * diag(Ai) + ltri(Ai)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side (f1,f2) of the system
+  ! On exit, the solution (u1,u2) of the system
+  real(DP), dimension(*), intent(inout) :: Du1, Du2
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+  
+  ! The matrix structure of Ai
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of Ai
+  real(DP), dimension(*), intent(in) :: DA1, DA2
+
+  ! The scaling factors of Ai
+  real(DP), intent(in) :: dsfA1, dsfA2
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: daux1,daux2,dsa1,dsa2
+  
+    ! pre-calculate scaling factors
+    dsa1 = 1.0_DP / dsfA1
+    dsa2 = 1.0_DP / dsfA2
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      k = KdiagA(i)
+    
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldA(i), k-1
+        m = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(m)
+        daux2 = daux2 + DA2(j)*Du2(m)
+      end do
+      
+      Du1(i) = domega*(dsa1*Du1(i) - daux1) / DA1(k)
+      Du2(i) = domega*(dsa2*Du2(i) - daux2) / DA2(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precLA_2D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precLA_3D(n,Du1,Du2,Du3,KldA,KcolA,KdiagA,&
+                                      DA1,DA2,DA3,dsfA1,dsfA2,dsfA3,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              ( L1  0  0  ) * ( u1 ) = ( f1 )
+  !              ( 0   L2 0  )   ( u2 )   ( f2 )
+  !              ( 0   0  L3 )   ( u3 )   ( f3 )
+  !
+  ! where Li := 1/omega * diag(Ai) + ltri(Ai)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side (f1,f2) of the system
+  ! On exit, the solution (u1,u2) of the system
+  real(DP), dimension(*), intent(inout) :: Du1, Du2, Du3
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+  
+  ! The matrix structure of Ai
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of Ai
+  real(DP), dimension(*), intent(in) :: DA1, DA2, DA3
+
+  ! The scaling factors of Ai
+  real(DP), intent(in) :: dsfA1, dsfA2, dsfA3
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: daux1,daux2,daux3,dsa1,dsa2,dsa3
+  
+    ! pre-calculate scaling factors
+    dsa1 = 1.0_DP / dsfA1
+    dsa2 = 1.0_DP / dsfA2
+    dsa3 = 1.0_DP / dsfA3
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      k = KdiagA(i)
+    
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldA(i), k-1
+        m = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(m)
+        daux2 = daux2 + DA2(j)*Du2(m)
+        daux3 = daux3 + DA3(j)*Du3(m)
+      end do
+      
+      Du1(i) = domega*(dsa1*Du1(i) - daux1) / DA1(k)
+      Du2(i) = domega*(dsa2*Du2(i) - daux2) / DA2(k)
+      Du3(i) = domega*(dsa3*Du3(i) - daux3) / DA3(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precLA_3D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precLAA(n,Du,Du2,KldA,KcolA,KdiagA,DA,dsfA,&
+                                    KldA2,KcolA2,DA2,dsfA2,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              L * u = f - A2 * u2
+  !
+  ! where L := 1/omega * diag(A) + ltri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+
+  ! The input vector u2
+  real(DP), dimension(*), intent(in) :: Du2
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factors of A
+  real(DP), intent(in) :: dsfA
+  
+  ! The matrix structure of A2
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  
+  ! The matrix data of A2
+  real(DP), dimension(*), intent(in) :: DA2
+
+  ! The scaling factors of A2
+  real(DP), intent(in) :: dsfA2
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: dom,daux,daux2
+  
+    ! pre-calculate weight factor
+    dom = domega / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      daux2 = 0.0_DP
+      do j = KldA2(i), KldA2(i+1)-1
+        daux2 = daux2 + DA2(j)*Du2(KcolA2(j))
+      end do
+
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i), k-1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = dom*(Du(i) - dsfA*daux - dsfA2*daux2) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precLAA
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precLAAA(n,Du,Du2,Du3,KldA,KcolA,KdiagA,DA,dsfA,&
+                                     KldA2,KcolA2,DA2,DA3,dsfA2,dsfA3,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              L * u = f - A2 * u2 - A3 * u3
+  !
+  ! where L := 1/omega * diag(A) + ltri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+
+  ! The input vectors u2, u3
+  real(DP), dimension(*), intent(in) :: Du2, Du3
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factor of A
+  real(DP), intent(in) :: dsfA
+
+  ! The matrix structure of A2, A3
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  
+  ! The matrix data of A2, A3
+  real(DP), dimension(*), intent(in) :: DA2, DA3
+
+  ! The scaling factors of A2, A2
+  real(DP), intent(in) :: dsfA2, dsfA3
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: dom,daux,daux2,daux3
+  
+    ! pre-calculate weight factor
+    dom = domega / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldA2(i), KldA2(i+1)-1
+        m = KcolA2(j)
+        daux2 = daux2 + DA2(j)*Du2(m)
+        daux3 = daux3 + DA3(j)*Du3(m)
+      end do
+
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i), k-1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = dom*(Du(i) - dsfA*daux - dsfA2*daux2 - dsfA3*daux3) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precLAAA
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precUAB(n,Du,Dup,KldA,KcolA,KdiagA,DA,dsfA,&
+                                    KldB,KcolB,DB,dsfB,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !                U * u = f - omega*B*p
+  !
+  ! where U := id + ( 1/omega * diag(A) )^{-1} * ltri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of A
+  integer, intent(in) :: n
+
+  ! The input vector p
+  real(DP), dimension(*), intent(inout) :: Dup
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factor of A
+  real(DP), intent(in) :: dsfA
+  
+  ! The matrix structure of B
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  
+  ! The matrix data of B
+  real(DP), dimension(*), intent(in) :: DB
+
+  ! The scaling factor of B
+  real(DP), intent(in) :: dsfB
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux,dauxb,dsb
+  
+    ! Pre-calculate scaling factor
+    dsb = (domega*dsfB) / dsfA
+  
+    ! Loop over all rows
+    do i = n, 1, -1
+    
+      dauxb = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dauxb = dauxb + DB(j)*Dup(KcolB(j))
+      end do
+    
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i+1)-1, k+1, -1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = Du(i) - (domega*daux + dsb*dauxb) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precUAB
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precUAB_2D(n,Du1,Du2,Dup,KldA,KcolA,KdiagA,&
+                                       DA1,DA2,dsfA1,dsfA2,KldB,KcolB,&
+                                       DB1,DB2,dsfB1,dsfB2,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !               ( U1  0  ) * ( u1 ) = ( f1 ) - omega * ( B1 ) * ( p )
+  !               ( 0   U2 )   ( u2 )   ( f2 )           ( B2 )
+  !
+  ! where Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side (f1,f2) of the system
+  ! On exit, the solution (u1,u2) of the system
+  real(DP), dimension(*), intent(inout) :: Du1, Du2
+!</inputoutput>
+
+!<input>
+  ! The dimension of A
+  integer, intent(in) :: n
+
+  ! The input vector p
+  real(DP), dimension(*), intent(inout) :: Dup
+  
+  ! The matrix structure of Ai
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of Ai
+  real(DP), dimension(*), intent(in) :: DA1, DA2
+
+  ! The scaling factor of Ai
+  real(DP), intent(in) :: dsfA1, dsfA2
+  
+  ! The matrix structure of Bi
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  
+  ! The matrix data of Bi
+  real(DP), dimension(*), intent(in) :: DB1, DB2
+
+  ! The scaling factor of Bi
+  real(DP), intent(in) :: dsfB1, dsfB2
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: dt,daux1,daux2,dauxb1,dauxb2,dsb1,dsb2
+  
+    ! Pre-calculate scaling factor
+    dsb1 = (domega*dsfB1) / dsfA1
+    dsb2 = (domega*dsfB2) / dsfA2
+  
+    ! Loop over all rows
+    do i = n, 1, -1
+    
+      dauxb1 = 0.0_DP
+      dauxb2 = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dt = Dup(KcolB(j))
+        dauxb1 = dauxb1 + DB1(j)*dt
+        dauxb2 = dauxb2 + DB2(j)*dt
+      end do
+    
+      k = KdiagA(i)
+    
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldA(i+1)-1, k+1, -1
+        m = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(m)
+        daux2 = daux2 + DA2(j)*Du2(m)
+      end do
+      
+      Du1(i) = Du1(i) - (domega*daux1 + dsb1*dauxb1) / DA1(k)
+      Du2(i) = Du2(i) - (domega*daux2 + dsb2*dauxb2) / DA2(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precUAB_2D
+
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precUAB_3D(n,Du1,Du2,Du3,Dup,KldA,KcolA,KdiagA,&
+                                       DA1,DA2,DA3,dsfA1,dsfA2,dsfA3,KldB,KcolB,&
+                                       DB1,DB2,DB3,dsfB1,dsfB2,dsfB3,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !               ( U1  0  0  ) * ( u1 ) = ( f1 ) - omega * ( B1 ) * ( p )
+  !               ( 0   U2 0  )   ( u2 )   ( f2 )           ( B2 )
+  !               ( 0   0  U3 )   ( u3 )   ( f3 )           ( B3 )
+  !
+  ! where Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side (f1,f2,f3) of the system
+  ! On exit, the solution (u1,u2,u3) of the system
+  real(DP), dimension(*), intent(inout) :: Du1, Du2, Du3
+!</inputoutput>
+
+!<input>
+  ! The dimension of A
+  integer, intent(in) :: n
+
+  ! The input vector p
+  real(DP), dimension(*), intent(inout) :: Dup
+  
+  ! The matrix structure of Ai
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of Ai
+  real(DP), dimension(*), intent(in) :: DA1, DA2, DA3
+
+  ! The scaling factor of Ai
+  real(DP), intent(in) :: dsfA1, dsfA2, dsfA3
+  
+  ! The matrix structure of Bi
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  
+  ! The matrix data of Bi
+  real(DP), dimension(*), intent(in) :: DB1, DB2, DB3
+
+  ! The scaling factor of Bi
+  real(DP), intent(in) :: dsfB1, dsfB2, dsfB3
+  
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: dt,daux1,daux2,daux3,dauxb1,dauxb2,dauxb3,dsb1,dsb2,dsb3
+  
+    ! Pre-calculate scaling factor
+    dsb1 = (domega*dsfB1) / dsfA1
+    dsb2 = (domega*dsfB2) / dsfA2
+    dsb3 = (domega*dsfB3) / dsfA3
+  
+    ! Loop over all rows
+    do i = n, 1, -1
+    
+      dauxb1 = 0.0_DP
+      dauxb2 = 0.0_DP
+      dauxb3 = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dt = Dup(KcolB(j))
+        dauxb1 = dauxb1 + DB1(j)*dt
+        dauxb2 = dauxb2 + DB2(j)*dt
+        dauxb3 = dauxb3 + DB3(j)*dt
+      end do
+    
+      k = KdiagA(i)
+    
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldA(i+1)-1, k+1, -1
+        m = KcolA(j)
+        daux1 = daux1 + DA1(j)*Du1(m)
+        daux2 = daux2 + DA2(j)*Du2(m)
+        daux3 = daux3 + DA3(j)*Du3(m)
+      end do
+      
+      Du1(i) = Du1(i) - (domega*daux1 + dsb1*dauxb1) / DA1(k)
+      Du2(i) = Du2(i) - (domega*daux2 + dsb2*dauxb2) / DA2(k)
+      Du3(i) = Du3(i) - (domega*daux3 + dsb3*dauxb3) / DA3(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precUAB_3D
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precUAAB(n,Du,Du2,Dup,KldA,KcolA,KdiagA,DA,dsfA,&
+                                     KldA2,KcolA2,DA2,dsfA2,KldB,KcolB,DB,&
+                                     dsfB,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              U * u = f - A2 * u2 - B * p
+  !
+  ! where U := id + ( 1/omega * diag(A) )^{-1} * utri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+
+  ! The input vector u2
+  real(DP), dimension(*), intent(in) :: Du2, Dup
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factors of A
+  real(DP), intent(in) :: dsfA
+  
+  ! The matrix structure of A2
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  
+  ! The matrix data of A2
+  real(DP), dimension(*), intent(in) :: DA2
+
+  ! The scaling factors of A2
+  real(DP), intent(in) :: dsfA2
+  
+  ! The matrix structure of B
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  
+  ! The matrix data of B
+  real(DP), dimension(*), intent(in) :: DB
+
+  ! The scaling factor of B
+  real(DP), intent(in) :: dsfB
+
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: dom,daux,daux2,dauxb
+  
+    ! pre-calculate weight factor
+    dom = domega / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      dauxb = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dauxb = dauxb + DB(j)*Dup(KcolB(j))
+      end do
+    
+      daux2 = 0.0_DP
+      do j = KldA2(i), KldA2(i+1)-1
+        daux2 = daux2 + DA2(j)*Du2(KcolA2(j))
+      end do
+
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i), k-1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = dom*(Du(i) - dsfA*daux - dsfA2*daux2 - dsfB*dauxb) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precUAAB
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precUAAAB(n,Du,Du2,Du3,Dup,KldA,KcolA,KdiagA,DA,&
+                                      dsfA,KldA2,KcolA2,DA2,DA3,dsfA2,dsfA3,&
+                                      KldB,KcolB,DB,dsfB,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  !
+  ! Solves the following system:
+  !
+  !              U * u = f - A2 * u2 - A3 * u3 - B * p
+  !
+  ! where U := id + ( 1/omega * diag(A) )^{-1} * utri(A)
+  !
+!</description>
+
+!<inputoutput>
+  ! On entry, the right-hand-side f of the system
+  ! On exit, the solution u of the system
+  real(DP), dimension(*), intent(inout) :: Du
+!</inputoutput>
+
+!<input>
+  ! The dimension of Ai
+  integer, intent(in) :: n
+
+  ! The input vector u2
+  real(DP), dimension(*), intent(in) :: Du2, Du3, Dup
+  
+  ! The matrix structure of A
+  integer, dimension(*), intent(in) :: KldA, KcolA, KdiagA
+  
+  ! The matrix data of A
+  real(DP), dimension(*), intent(in) :: DA
+
+  ! The scaling factors of A
+  real(DP), intent(in) :: dsfA
+  
+  ! The matrix structure of A2
+  integer, dimension(*), intent(in) :: KldA2, KcolA2
+  
+  ! The matrix data of A2
+  real(DP), dimension(*), intent(in) :: DA2, DA3
+
+  ! The scaling factors of A2
+  real(DP), intent(in) :: dsfA2, dsfA3
+  
+  ! The matrix structure of B
+  integer, dimension(*), intent(in) :: KldB, KcolB
+  
+  ! The matrix data of B
+  real(DP), dimension(*), intent(in) :: DB
+
+  ! The scaling factor of B
+  real(DP), intent(in) :: dsfB
+
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k,m
+  real(DP) :: dom,daux,daux2,daux3,dauxb
+  
+    ! pre-calculate weight factor
+    dom = domega / dsfA
+  
+    ! Loop over all rows
+    do i = 1, n
+    
+      dauxb = 0.0_DP
+      do j = KldB(i), KldB(i+1)-1
+        dauxb = dauxb + DB(j)*Dup(KcolB(j))
+      end do
+    
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldA2(i), KldA2(i+1)-1
+        m = KcolA2(j)
+        daux2 = daux2 + DA2(j)*Du2(m)
+        daux3 = daux3 + DA3(j)*Du3(m)
+      end do
+
+      k = KdiagA(i)
+    
+      daux = 0.0_DP
+      do j = KldA(i), k-1
+        daux = daux + DA(j)*Du(KcolA(j))
+      end do
+      
+      Du(i) = dom*(Du(i) - dsfA*daux - dsfA2*daux2 - dsfA3*daux3 &
+                         - dsfB*dauxb) / DA(k)
+    
+    end do ! i
+    
+  end subroutine ! spsor_aux_precUAAAB
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precDDS(n,Du1,Du2,Dup,KldD,KcolD,DD1,DD2,&
+                                    dsfD1,dsfD2,DS,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Calculates:
+  !
+  !                p := relax * S * (p - D1 * u1 - D2 * u2)
+  !
+  ! where S is a diagonal matrix, and D1 and D2 share the same structure
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Dup
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Du1, Du2
+  
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2
+  real(DP), intent(in) :: dsfD1, dsfD2
+
+  real(DP), dimension(*), intent(in) :: DS
+  
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux1, daux2
+  
+    ! Loop over all rows
+    !$omp parallel do private(j,k,daux1,daux2) if(n .gt. 1000)
+    do i = 1, n
+    
+      ! Calculate D1*u1 and D2*u2
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      do j = KldD(i), KldD(i+1)-1
+        k = KcolD(j)
+        daux1 = daux1 + DD1(j)*Du1(k)
+        daux2 = daux2 + DD2(j)*Du2(k)
+      end do
+      
+      ! Solve
+      Dup(i) = domega*DS(i)*(Dup(i) - dsfD1*daux1 - dsfD2*daux2)
+    
+    end do ! i
+    !$omp end parallel do
+    
+  end subroutine ! spsor_aux_precDDS
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine spsor_aux_precDDDS(n,Du1,Du2,Du3,Dup,KldD,KcolD,&
+                                     DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
+
+!<description>
+  ! INTERNAL AUXILIARY ROUTINE:
+  ! Calculates:
+  !
+  !                p := relax * S * (p - D1 * u1 - D2 * u2 - D3 * u3)
+  !
+  ! where S is a diagonal matrix, and D1, D2 and D3 share the same structure
+!</description>
+
+!<inputoutput>
+  real(DP), dimension(*), intent(inout) :: Dup
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: n
+  
+  real(DP), dimension(*), intent(in) :: Du1, Du2, Du3
+  
+  integer, dimension(*), intent(in) :: KldD, KcolD
+  real(DP), dimension(*), intent(in) :: DD1, DD2, DD3
+  real(DP), intent(in) :: dsfD1, dsfD2, dsfD3
+
+  real(DP), dimension(*), intent(in) :: DS
+  
+  real(DP), intent(in) :: domega
+!</input>
+
+!</subroutine>
+
+  integer :: i,j,k
+  real(DP) :: daux1, daux2, daux3
+  
+    ! Loop over all rows
+    !$omp parallel do private(j,k,daux1,daux2,daux3) if(n .gt. 1000)
+    do i = 1, n
+    
+      ! Calculate D1*u and D2*v
+      daux1 = 0.0_DP
+      daux2 = 0.0_DP
+      daux3 = 0.0_DP
+      do j = KldD(i), KldD(i+1)-1
+        k = KcolD(j)
+        daux1 = daux1 + DD1(j)*Du1(k)
+        daux2 = daux2 + DD2(j)*Du2(k)
+        daux3 = daux3 + DD3(j)*Du3(k)
+      end do
+      
+      ! Solve
+      Dup(i) = domega*DS(i)*(Dup(i) - dsfD1*daux1 - dsfD2*daux2 - dsfD3*daux3)
+    
+    end do ! i
+    !$omp end parallel do
+    
+  end subroutine ! spsor_aux_precDDDS
 
 end module
