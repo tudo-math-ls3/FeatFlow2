@@ -1605,7 +1605,7 @@ contains
           dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
         end do
       end do
-      
+
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
