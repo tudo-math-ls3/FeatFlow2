@@ -931,28 +931,16 @@ module linearsolver
   ! -------------- NEW IMPLEMENTATION --------------
 
   ! Simple VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_DIAG          = 101
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_DIAG = 101
 
   ! Full VANKA, 2D Navier-Stokes problem, general discretisation
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_FULL          = 102
-  
-  ! Pressure-DOF based VANKA, 2D Navier-Stokes problem
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_PDOF          = 103
-  
-  ! SP-SOR for 2D Navier-Stokes problem
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_SPSOR         = 111
-
-  ! SP-SSOR for 2D Navier-Stokes problem
-  integer, parameter, public :: LINSOL_VANKA_NAVST2D_SPSSOR        = 112
+  integer, parameter, public :: LINSOL_VANKA_NAVST2D_FULL = 102
 
   ! Simple VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_DIAG          = 121
+  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_DIAG = 121
 
   ! Full VANKA, 2D Boussinesq problem, general discretisation
-  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_FULL          = 122
-
-  ! SP-SOR for 2D Boussinesq problem
-  !integer, parameter, public :: LINSOL_VANKA_BOUSS2D_SPSOR         = 131
+  integer, parameter, public :: LINSOL_VANKA_BOUSS2D_FULL = 122
 
 !</constantblock>
 
@@ -5385,9 +5373,7 @@ contains
     
     !  ---------------- NEW IMPLEMENTATION ----------------
 
-    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL, &
-          LINSOL_VANKA_NAVST2D_PDOF, &
-          LINSOL_VANKA_NAVST2D_SPSOR, LINSOL_VANKA_NAVST2D_SPSSOR)
+    case (LINSOL_VANKA_NAVST2D_DIAG, LINSOL_VANKA_NAVST2D_FULL)
       ! Blocks (3,1) and (3,2) must not be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
@@ -5396,8 +5382,7 @@ contains
         ccompatible = LINSOL_COMP_ERRTRANSPOSED
       end if
 
-    case (LINSOL_VANKA_BOUSS2D_DIAG, LINSOL_VANKA_BOUSS2D_FULL) !, &
-          !LINSOL_VANKA_BOUSS2D_SPSOR)
+    case (LINSOL_VANKA_BOUSS2D_DIAG, LINSOL_VANKA_BOUSS2D_FULL)
       ! Blocks (3,1) and (3,2) must not be virtually transposed
       if ((iand(p_rmat%RmatrixBlock(3,1)%imatrixSpec, &
             LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
@@ -5593,24 +5578,6 @@ contains
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_FULL)
 
-!    case (LINSOL_VANKA_NAVST2D_PDOF)
-!      ! Pressure-DOF based VANKA for Navier-Stokes
-!      call vanka_initConformal (rsolverNode%rsystemMatrix,&
-!                                rsolverNode%p_rsubnodeVANKA%rvanka,&
-!                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_PDOF)
-
-    case (LINSOL_VANKA_NAVST2D_SPSOR)
-      ! SP-SOR for Navier-Stokes
-      call vanka_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_SPSOR)
-
-    case (LINSOL_VANKA_NAVST2D_SPSSOR)
-      ! SP-SSOR for Navier-Stokes
-      call vanka_initConformal (rsolverNode%rsystemMatrix,&
-                                rsolverNode%p_rsubnodeVANKA%rvanka,&
-                                VANKAPC_NAVIERSTOKES2D,VANKATP_NAVST2D_SPSSOR)
-
     case (LINSOL_VANKA_BOUSS2D_DIAG)
       ! Diagonal-type VANKA for Boussinesq
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
@@ -5622,12 +5589,6 @@ contains
       call vanka_initConformal (rsolverNode%rsystemMatrix,&
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_FULL)
-
-    !case (LINSOL_VANKA_BOUSS2D_SPSOR)
-    !  ! SP-SOR for Boussinesq
-    !  call vanka_initConformal (rsolverNode%rsystemMatrix,&
-    !                            rsolverNode%p_rsubnodeVANKA%rvanka,&
-    !                            VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_SPSOR)
 
     end select
       
@@ -5805,51 +5766,23 @@ contains
     ! Damping parameter
     domega = rsolverNode%domega
     
-    ! Check for special cases: SP-SOR and SP-SSOR Vanka variants.
-    select case(rsolverNode%p_rsubnodeVANKA%csubtypeVANKA)
-    case(LINSOL_VANKA_NAVST2D_SPSOR)
-    
-      ! Call SP-SOR preconditioner for 2D Navier-Stokes.
-      call vanka_NS2D_precSPSOR(&
-          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
-      
+    ! Get our temporary vector.
+    p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
 
-    case(LINSOL_VANKA_NAVST2D_SPSSOR)
+    ! The vector shares the same boundary conditions as rd!
+    ! So assign now all discretisation-related information (boundary
+    ! conditions,...) to the temporary vector.
+    call lsysbl_assignDiscrIndirect (rd,p_rvector)
+  
+    ! Clear our solution vector
+    call lsysbl_clearVector (p_rvector)
     
-      ! This is the 'critical' case. We need to catch this case here,
-      ! as the SP-SSOR preconditioner can *not* be called via the
-      ! vanka_conformal wrapper which is used in the 'default' case below!
-    
-      ! Call SP-SSOR preconditioner for 2D Navier-Stokes.
-      call vanka_NS2D_precSPSSOR(&
-          rsolverNode%p_rsubnodeVANKA%rvanka%rvankaNavSt2D, rd, domega)
+    ! Execute VANKA
+    call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
+        p_rvector, rd, domega)
 
-
-    case default
-      
-      ! Okay, any non-SP-SSOR Vanka. In this case we can call the
-      ! vanka_conformal wrapper routine to take care of the actual
-      ! Vanka sub-type.
-    
-      ! Get our temporary vector.
-      p_rvector => rsolverNode%p_rsubnodeVANKA%rtempVector
-
-      ! The vector shares the same boundary conditions as rd!
-      ! So assign now all discretisation-related information (boundary
-      ! conditions,...) to the temporary vector.
-      call lsysbl_assignDiscrIndirect (rd,p_rvector)
-    
-      ! Clear our solution vector
-      call lsysbl_clearVector (p_rvector)
-      
-      ! Execute VANKA
-      call vanka_conformal (rsolverNode%p_rsubnodeVANKA%rvanka, &
-          p_rvector, rd, domega)
-
-      ! Copy the solution vector to rd - it's our preconditioned defect now.
-      call lsysbl_copyVector (p_rvector,rd)
-    
-    end select
+    ! Copy the solution vector to rd - it's our preconditioned defect now.
+    call lsysbl_copyVector (p_rvector,rd)
   
   end subroutine
 
@@ -12568,12 +12501,8 @@ contains
             ! --------------- NEW IMPLEMENTATION ---------------
             LINSOL_VANKA_NAVST2D_DIAG,&
             LINSOL_VANKA_NAVST2D_FULL,&
-            LINSOL_VANKA_NAVST2D_PDOF,&
-            LINSOL_VANKA_NAVST2D_SPSOR,&
             LINSOL_VANKA_BOUSS2D_DIAG,&
-            LINSOL_VANKA_BOUSS2D_FULL)!,&
-            !LINSOL_VANKA_BOUSS2D_SPSOR&
-            !)
+            LINSOL_VANKA_BOUSS2D_FULL)
             
         ! Yes, this solver can be applied to a given solution/rhs vector directly.
         ! Call it nmaxIterations times to perform the smoothing.

@@ -192,11 +192,6 @@ module vanka
   ! Public entities imported from vanka_navst2d.f90
   public :: VANKATP_NAVST2D_DIAG
   public :: VANKATP_NAVST2D_FULL
-  public :: VANKATP_NAVST2D_PDOF
-  public :: VANKATP_NAVST2D_SPSOR
-  public :: VANKATP_NAVST2D_SPSSOR
-  public :: vanka_NS2D_precSPSOR
-  public :: vanka_NS2D_precSPSSOR
   
   ! Public entities imported from vanka_bouss2d.f90
   public :: VANKATP_BOUSS2D_DIAG
@@ -298,20 +293,20 @@ module vanka
   type t_vankaGeneral
   
     ! Number of blocks in the global matrix
-    integer                                              :: nblocks
+    integer :: nblocks
     
     ! Pointer to the block matrix
-    type(t_matrixBlock), pointer                         :: p_rmatrix
+    type(t_matrixBlock), pointer :: p_rmatrix
   
     ! Pointers to t_matrixPointer79Vanka structures specifying
     ! the submatrices and their properties.
     type(t_matrixPointer79Vanka), dimension(:,:),pointer :: p_Rmatrices
     
     ! Maximum number of local DOF's.
-    integer                              :: nmaxLocalDOFs
+    integer :: nmaxLocalDOFs
     
     ! Total number of local DOF's
-    integer                                           :: ndofsPerElement
+    integer :: ndofsPerElement
 
     ! Number of local DOF's in the element distributions of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
@@ -349,11 +344,11 @@ module vanka
     integer, dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer             :: p_DA => NULL()
+    real(DP), dimension(:), pointer :: p_DA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! A11=A22.
-    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
     integer, dimension(:), pointer :: p_KcolA12 => NULL()
@@ -366,11 +361,11 @@ module vanka
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer :: p_DA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
     integer, dimension(:), pointer :: p_KcolB => NULL()
@@ -379,20 +374,20 @@ module vanka
     integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => NULL()
     
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
     integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
@@ -436,11 +431,11 @@ module vanka
     integer, dimension(:), pointer :: p_KdiagonalA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer             :: p_DA11 => NULL()
+    real(DP), dimension(:), pointer :: p_DA11 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => NULL()
 
     ! Pointer to the column structure of the velocity matrix A11 and A22
     integer, dimension(:), pointer :: p_KcolA12 => NULL()
@@ -453,30 +448,30 @@ module vanka
 
     ! Pointer to the matrix entries of the velocity matrix A12 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA12 => NULL()
+    real(DP), dimension(:), pointer :: p_DA12 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A21 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA21 => NULL()
+    real(DP), dimension(:), pointer :: p_DA21 => NULL()
 
 
     ! Pointer to the matrix entries of the velocity matrix A44
-    real(DP), dimension(:), pointer             :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer :: p_DA44 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A55
-    real(DP), dimension(:), pointer             :: p_DA55 => NULL()
+    real(DP), dimension(:), pointer :: p_DA55 => NULL()
 
 
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
-    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => NULL()
 
     ! Pointer to diagonal entries of A33
     integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A66
     ! (if it exists).
-    real(DP), dimension(:), pointer             :: p_DA66 => NULL()
+    real(DP), dimension(:), pointer :: p_DA66 => NULL()
 
     ! Pointer to diagonal entries of A66
     integer, dimension(:), pointer :: p_KdiagonalA66 => NULL()
@@ -493,11 +488,11 @@ module vanka
 
     ! Pointer to the matrix entries of the velocity matrix A45 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA45 => NULL()
+    real(DP), dimension(:), pointer :: p_DA45 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A54 or NULL
     ! if not present
-    real(DP), dimension(:), pointer             :: p_DA54 => NULL()
+    real(DP), dimension(:), pointer :: p_DA54 => NULL()
 
 
     ! Pointer to the column structure of the mass matrix
@@ -512,23 +507,23 @@ module vanka
     ! Pointer to the matrix entries of the mass matrix at position
     ! (1,4) and (2,5) in the pimal system, or NULL if not present.
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer             :: p_DM14 => NULL()
+    real(DP), dimension(:), pointer :: p_DM14 => NULL()
 
     ! Pointer to the coupling system at position (4,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer             :: p_DR41 => NULL()
+    real(DP), dimension(:), pointer :: p_DR41 => NULL()
 
     ! Pointer to the coupling system at position (5,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer             :: p_DR52 => NULL()
+    real(DP), dimension(:), pointer :: p_DR52 => NULL()
 
     ! Pointer to the coupling system at position (4,2), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer             :: p_DR42 => NULL()
+    real(DP), dimension(:), pointer :: p_DR42 => NULL()
 
     ! Pointer to the coupling system at position (5,1), or NULL if not present
     ! Has the same structure as the mass matrix.
-    real(DP), dimension(:), pointer             :: p_DR51 => NULL()
+    real(DP), dimension(:), pointer :: p_DR51 => NULL()
 
 
     ! Pointer to the column structure of the B/D-matrices.
@@ -538,16 +533,16 @@ module vanka
     integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => NULL()
     
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => NULL()
     
 
     ! Spatial discretisation structure for X-velocity
@@ -587,15 +582,15 @@ module vanka
     integer, dimension(:), pointer :: p_KdiagonalA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A11
-    real(DP), dimension(:), pointer             :: p_DA => NULL()
+    real(DP), dimension(:), pointer :: p_DA => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A22 or NULL
     ! if A11=A22.
-    real(DP), dimension(:), pointer             :: p_DA22 => NULL()
+    real(DP), dimension(:), pointer :: p_DA22 => NULL()
 
     ! Pointer to the matrix entries of the velocity matrix A33 or NULL
     ! if A11=A33.
-    real(DP), dimension(:), pointer             :: p_DA33 => NULL()
+    real(DP), dimension(:), pointer :: p_DA33 => NULL()
 
 !    ! Pointer to the column structure of the velocity matrix A12 and A21
 !    INTEGER, DIMENSION(:), POINTER :: p_KcolA12 => NULL()
@@ -608,11 +603,11 @@ module vanka
 !
 !    ! Pointer to the matrix entries of the velocity matrix A12 or NULL
 !    ! if not present
-!    REAL(DP), DIMENSION(:), POINTER             :: p_DA12 => NULL()
+!    REAL(DP), DIMENSION(:), POINTER :: p_DA12 => NULL()
 !
 !    ! Pointer to the matrix entries of the velocity matrix A21 or NULL
 !    ! if not present
-!    REAL(DP), DIMENSION(:), POINTER             :: p_DA21 => NULL()
+!    REAL(DP), DIMENSION(:), POINTER :: p_DA21 => NULL()
 
     ! Pointer to the column structure of the B/D-matrices.
     integer, dimension(:), pointer :: p_KcolB => NULL()
@@ -621,26 +616,26 @@ module vanka
     integer, dimension(:), pointer :: p_KldB => NULL()
     
     ! Pointer to the entries of the B1-matrix
-    real(DP), dimension(:), pointer             :: p_DB1 => NULL()
+    real(DP), dimension(:), pointer :: p_DB1 => NULL()
 
     ! Pointer to the entries of the B2-matrix
-    real(DP), dimension(:), pointer             :: p_DB2 => NULL()
+    real(DP), dimension(:), pointer :: p_DB2 => NULL()
     
     ! Pointer to the entries of the B3-matrix
-    real(DP), dimension(:), pointer             :: p_DB3 => NULL()
+    real(DP), dimension(:), pointer :: p_DB3 => NULL()
 
     ! Pointer to the entries of the D1-matrix
-    real(DP), dimension(:), pointer             :: p_DD1 => NULL()
+    real(DP), dimension(:), pointer :: p_DD1 => NULL()
 
     ! Pointer to the entries of the D2-matrix
-    real(DP), dimension(:), pointer             :: p_DD2 => NULL()
+    real(DP), dimension(:), pointer :: p_DD2 => NULL()
 
     ! Pointer to the entries of the D3-matrix
-    real(DP), dimension(:), pointer             :: p_DD3 => NULL()
+    real(DP), dimension(:), pointer :: p_DD3 => NULL()
 
     ! Pointer to the matrix entries of the pressure identity matrix A44
     ! (if it exists).
-    real(DP), dimension(:), pointer             :: p_DA44 => NULL()
+    real(DP), dimension(:), pointer :: p_DA44 => NULL()
 
     ! Pointer to diagonal entries of A33
     integer, dimension(:), pointer :: p_KdiagonalA44 => NULL()
@@ -710,7 +705,7 @@ module vanka
     
     ! Configuration block with parameters for the 2D Navier-Stokes VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_NAVIERSTOKES2D.
-    type(t_vankaPointerNavSt2D) :: rvankaNavSt2D
+    type(t_vanka_NavSt2D) :: rvankaNavSt2D
 
     ! Configuration block with parameters for the 2D Boussinesq VANKA;
     ! only vaid if if cproblemClassVanka==VANKAPC_BOUSSINESQ2D.
@@ -798,7 +793,7 @@ contains
       
     case (VANKAPC_NAVIERSTOKES2D)
       ! Vanka for 2D Navier-Stokes problems
-      call vanka_initNavierStokes2D(rmatrix,rvanka%rvankaNavSt2D,csubtype)
+      call vanka_init_NavSt2D(rvanka%rvankaNavSt2D, rmatrix, csubtype)
     
     case (VANKAPC_BOUSSINESQ2D)
       ! Vanka for 2D Boussinesq problems
@@ -838,11 +833,6 @@ contains
     case (VANKAPC_GENERAL)
       ! Release data of the general VANKA
       call vanka_doneGeneralVanka (rvanka%rvankaGeneral)
-    CASE (VANKAPC_NAVIERSTOKES2D)
-      ! Vanka for 2D Navier-Stokes problems
-      CALL vanka_doneNavierStokes2D (rvanka%rvankaNavSt2D)
-      
-    ! ELSE: nothing to do.
     end select
     
   end subroutine
@@ -917,8 +907,7 @@ contains
     
     case (VANKAPC_NAVIERSTOKES2D)
       ! 2D Navier-Stokes problem.
-      call vanka_NavierStokes2D (rvanka%rvankaNavSt2D, rvector, rrhs, domega,&
-          rvanka%csubtype)
+      call vanka_solve_NavSt2D(rvanka%rvankaNavSt2D, rvector, rrhs, 1, domega)
       
     case (VANKAPC_BOUSSINESQ2D)
       ! 2D Boussinesq problem.
