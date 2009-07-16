@@ -1147,7 +1147,7 @@ contains
   integer :: idofp,idofu,i,j,k,ndofV
 
     ! Let's assume we do not have the optional matrices
-    bHaveC = .FALSE.
+    bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -1278,7 +1278,7 @@ contains
   integer :: idofp,idofu,i,j1,j2,k,id1,id2
 
     ! Let's assume we do not have the optional matrices
-    bHaveC = .FALSE.
+    bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -1446,8 +1446,8 @@ contains
   integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
 
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
-    bHaveC = .FALSE.
+    bHaveA12 = .false.
+    bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -1670,8 +1670,8 @@ contains
   integer :: id1,id2,is1
   
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
-    bHaveC = .FALSE.
+    bHaveA12 = .false.
+    bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -1980,7 +1980,7 @@ contains
   real(DP) :: domegaA, domegaS
     
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
+    bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -2154,7 +2154,7 @@ contains
   real(DP) :: domegaA, domegaS
   
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
+    bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
@@ -2309,7 +2309,7 @@ contains
   real(DP) :: domegaA, domegaS
   
     ! Let's assume we do not have the optional matrices
-    bHaveA12 = .FALSE.
+    bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
     call lsyssc_getbase_Kld(rdata%p_rA11, p_KldA)
