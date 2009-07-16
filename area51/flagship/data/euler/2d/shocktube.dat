@@ -208,7 +208,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 0.001
 
 # initial time step size
 dinitialStep = 0.001
@@ -641,7 +641,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 0
+npreadapt = 1
 
 # number of adaptation steps
 nadapt = 0

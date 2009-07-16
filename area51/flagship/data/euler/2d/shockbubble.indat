@@ -21,13 +21,6 @@ deffunc: @initsol_vel = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
 [boundary_conditions_primal]
 NBCT
 1

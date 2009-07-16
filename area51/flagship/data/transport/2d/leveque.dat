@@ -258,7 +258,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.1
+dfinalTime = 0.001
 
 # initial time step size
 dinitialStep = 0.001
@@ -691,7 +691,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 0
+npreadapt = 2
 
 # number of adaptation steps
 nadapt = 0
@@ -727,7 +727,7 @@ dcoarseningTolerance = 0.001
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 1
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is

@@ -15,7 +15,6 @@ simportdatafiles(3) =
 
 application = zpinch
 
-
 ################################################################################
 [Zpinch]
 ################################################################################
@@ -45,7 +44,6 @@ iconvToTria = 0
 
 # section name of the output configuration
 output = Output
-
 
 ################################################################################
 [Euler]
@@ -101,7 +99,11 @@ isystemPrecond = 3
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution_euler
+ssolutionname(4) = 
+  @initsol_rho
+  @initsol_vel
+  @initsol_vel
+  @initsol_Etot
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -239,7 +241,7 @@ srhsname =
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution_transport
+ssolutionname = @initsol_tracer
 
 # type of exact solution profile
 # 0 = no exact solution available

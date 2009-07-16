@@ -202,7 +202,7 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 1
 
 # initial time for the simulation
 dinitialTime = 0.0
@@ -259,10 +259,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -410,7 +410,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 1e-12
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -418,7 +418,7 @@ dperturbationStrategy = 1e-12
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 2
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
@@ -435,10 +435,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-4
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -571,7 +571,7 @@ sprecondName = LinearPrecond
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -602,7 +602,7 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -641,7 +641,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 2
+npreadapt = 1
 
 # number of adaptation steps
 nadapt = 0
@@ -677,7 +677,7 @@ dcoarseningTolerance = 1e-4
 # 4 = face-based SPR
 # 5 = limited gradient averaging
 # 6 = second-difference indicator
-ierrorestimator = 7
+ierrorestimator = 6
 
 # type or grid indicator
 # 0 = as is
@@ -696,3 +696,15 @@ nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
+
+# type of error variables
+#   density
+#   velocity_x
+#   velocity_y
+#   velocity_z
+#   energy
+#   pressure
+#   machnumber
+serrorvariable(2) =
+  density
+  pressure

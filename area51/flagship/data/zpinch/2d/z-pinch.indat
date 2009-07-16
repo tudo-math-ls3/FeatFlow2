@@ -12,32 +12,15 @@ defconst: r0    = 1.0
 defexpr:  sqr1 = SQRT(x^2+y^2)
 defexpr:  rad  = (1-t^4)
 
-# Specify the initial solution for the Euler model
-[initial_solution_euler]
-NCOMP
-4
-if(@sqr1 < _r0 - 4e-3, 1.0, if (@sqr1 > _r0 + _width + 4e-3, 0.5, 1e6))
-0.0
-0.0
-2.5
+# Specify the initial solution for the Euler model (dimensionless)
+deffunc: @initsol_rho = if(@sqr1 < _r0 - 4e-3, 1.0, if (@sqr1 > _r0 + _width + 4e-3, 0.5, 1e6)) ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 
-
-[initial_solution_euler_DIM]
-NCOMP
-4
-if(@sqr1 < _r0 - 4e-3, 1e-6, if (@sqr1 > _r0 + _width + 4e-3, 5e-7, 1.0))
-0.0
-0.0
-2.5e-6
-
-
-[initial_solution_euler_NOTUSED]
-NCOMP
-4
-if(@sqr1 < _r0 - 4e-3, 0.05, if (@sqr1 > _r0 + _width + 4e-3, 0.05, 1.0))
-0.0
-0.0
-0.025
+# Specify the initial solution for the Euler model (physical dimensions)
+#deffunc: @initsol_rho = if(@sqr1 < _r0 - 4e-3, 1e-6, if (@sqr1 > _r0 + _width + 4e-3, 5e-7, 1.0)) ; x,y,z,t
+#deffunc: @initsol_vel = 0.0 ; x,y,z,t
+#deffunc: @initsol_Etot = 2.5e-6 ; x,y,z,t
 
 
 # Specify the boundary conditions for the Euler model
@@ -57,10 +40,7 @@ PARAMETERS
 
 
 # Specify the initial solution for the scalar transport model
-[initial_solution_transport]
-NCOMP
-1
-if(@sqr1 < @rad-4e-3 | @sqr1 > @rad + _width + 4e-3, 0.0, 1e6)
+deffunc: @initsol_tracer = if(@sqr1 < @rad-4e-3 | @sqr1 > @rad + _width + 4e-3, 0.0, 1e6) ; x,y,z,t
 
 
 # Specify the boundary conditions for the scalar transport model
