@@ -1869,7 +1869,7 @@ module linearsolver
     ! If the user needs a special projection strategy, he/she can either
     ! set a pointer to a user defined projection strategy here or
     ! modify the strategy after doing linsol_initStructure().
-    type(t_interlevelProjectionBlock), pointer   :: p_rprojection => NULL()
+    type(t_interlevelProjectionBlock), pointer   :: p_rprojection => null()
     
     ! <!-- ----------------------------------------------------------------------
     ! INTERNAL VARIABLES.
@@ -6017,7 +6017,7 @@ contains
     case (LINSOL_SPSOR_NAVST2D)
       ! SP-SOR for 2D Navier-Stokes systems
       call spsor_initNavSt2D(rsolverNode%p_rsubnodeSPSOR%rdata, &
-                             rsolverNode%rsystemMatrix, 0)
+                             rsolverNode%rsystemMatrix, 0_I32)
 
     case (LINSOL_SPSOR_NAVST2D_DIAG)
       ! diagonal SP-SOR for 2D Navier-Stokes systems
