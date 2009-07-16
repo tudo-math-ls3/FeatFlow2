@@ -417,7 +417,8 @@ contains
   subroutine vanka_solve_NavSt2D (rvanka, rsol, rrhs, niterations, domega)
   
 !<description>
-  ! Performs a desired number of iterations of the Vanka solver.
+  ! Performs a desired number of iterations of the Vanka solver for
+  ! 2D Navier-Stokes problems.
 !</description>
 
 !<input>
@@ -430,9 +431,8 @@ contains
   ! The number of iterations that are to be performed
   integer, intent(in) :: niterations
   
-  ! Optional: The relaxation parameter in range (0,2).
-  ! If not given, 1.0_DP is used.
-  real(DP), optional, intent(in) :: domega
+  ! The relaxation parameter in range (0,2)
+  real(DP), intent(in) :: domega
 !</input>
 
 !<inputoutput>
@@ -448,10 +448,6 @@ contains
   integer, dimension(:), pointer :: p_IelementList
   type(t_elementDistribution), pointer :: p_relementDistrV
   type(t_elementDistribution), pointer :: p_relementDistrP
-  real(DP) :: dom
-    
-    dom = 1.0_DP
-    if(present(domega)) dom = domega
     
     ! Nothing to do?
     if(niterations .le. 0) return
