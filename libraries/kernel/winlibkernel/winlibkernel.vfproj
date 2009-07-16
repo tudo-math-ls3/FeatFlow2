@@ -33,7 +33,7 @@
 		<Configuration Name="Release ohne IPO|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.lib;$(TargetPath)" ConfigurationType="typeStaticLibrary">
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFPreBuildEventTool"/>
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true" CompileOnly="true"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="../include;../../../kernel/DOFMaintenance" PreprocessorDefinitions="HAS_INTRINSIC_IARGC;WIN32;WINDOWS" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" DisableDefaultLibSearch="true" CompileOnly="true"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFCustomBuildTool"/>
 				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
