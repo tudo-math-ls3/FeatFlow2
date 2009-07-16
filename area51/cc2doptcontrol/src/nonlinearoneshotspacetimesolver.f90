@@ -666,15 +666,16 @@ contains
     integer, dimension(:), allocatable :: Isize
     integer, dimension(6) :: Isize2
     real(DP) :: dtheta
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_matrixBlock) :: rmatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_vectorBlock), dimension(3) :: rtempVectorSol
     type(t_vectorBlock) :: rinitialCondRHS,rinitialCondSol
+    type(t_ccPreconditionerSpecials) :: rprecSpecials
     
     real(DP), dimension(:),pointer :: p_Dx, p_Db, p_Dd
 
-    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscr
     
     ilevel = p_rspaceTimeDiscr%ilevel
     
@@ -708,8 +709,12 @@ contains
     ! Create a global matrix:
     call lsysbl_createEmptyMatrix (rglobalA,6*(p_rspaceTimeDiscr%rtimeDiscr%nintervals+1))
 
-    ! Get a temporary system matrix
-    call cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(ilevel),rmatrix)
+    ! Get a temporary system matrix. Use the default preconditioner specials, that's
+    ! enough for us.
+    call cc_allocPrecSystemMatrix (rproblem,rprecSpecials,&
+        p_rspaceTimeDiscr%ilevel,rproblem%nlmin,rproblem%nlmax,&
+        p_rspaceTimeDiscr%p_rlevelInfo,CCMASM_MTP_AUTOMATIC,&
+        rblockTemp)
     
     ! Solution vectors -- for the nonlinearity (if there is one).
     ! For the previous (1), current (2) and next (3) time step.
@@ -764,11 +769,11 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Assemble the matrix. No 'previous' solution vector.
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
           
         ! Assemble the system matrix on level p_rspaceTimeDiscr%ilevel.
@@ -788,11 +793,11 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
+          isubstep,1,rnonlinearSpatialMatrix)
       
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -828,11 +833,11 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
+          isubstep,-1,rnonlinearSpatialMatrix)
 
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -863,11 +868,11 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
             
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
@@ -882,11 +887,11 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,1,rmatrixComponents)
+          isubstep,1,rnonlinearSpatialMatrix)
 
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -920,11 +925,11 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,-1,rmatrixComponents)
+          isubstep,-1,rnonlinearSpatialMatrix)
       
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         call lsysbl_duplicateMatrix (&
@@ -952,11 +957,11 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
         
         ! Assemble the matrix
         call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-            CCMASM_FLAG_NONE,rmatrix,rmatrixComponents,&
+            rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
         ! Insert the system matrix for the dual equation to our global matrix.
@@ -1136,14 +1141,14 @@ contains
 !    TYPE(t_blockDiscretisation), POINTER :: p_rdiscr
 !    REAL(DP) :: dtheta
 !    TYPE(t_matrixBlock) :: rblockTemp
-!    TYPE(t_ccmatrixComponents) :: rmatrixComponents
+!    TYPE(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
 !    TYPE(t_ccoptSpaceTimeDiscretisation), POINTER :: p_rspaceTimeDiscr
 !    
 !    ! DEBUG!!!
 !    REAL(DP), DIMENSION(:), POINTER :: p_Dx1,p_Dx2,p_Dx3,p_Db
 !    REAL(DP), DIMENSION(:), POINTER :: p_Deval1,p_Deval2,p_Deval3
 !    
-!    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+!    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscr
 !    
 !    ! Level of the discretisation
 !    ilevel = p_rspaceTimeDiscr%ilevel
@@ -1220,28 +1225,28 @@ contains
 !      dnorm = 0.0_DP
 !    END IF
 !
-!    ! Basic initialisation of rmatrixComponents with the pointers to the
+!    ! Basic initialisation of rnonlinearSpatialMatrix with the pointers to the
 !    ! matrices / discretisation structures on the current level.
 !    !
-!    ! The weights in the rmatrixComponents structure are later initialised
+!    ! The weights in the rnonlinearSpatialMatrix structure are later initialised
 !    ! according to the actual situation when the matrix is to be used.
-!    rmatrixComponents%p_rdiscretisation         => &
+!    rnonlinearSpatialMatrix%p_rdiscretisation         => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation
-!    rmatrixComponents%p_rmatrixStokes           => &
+!    rnonlinearSpatialMatrix%p_rmatrixStokes           => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-!    rmatrixComponents%p_rmatrixB1             => &
+!    rnonlinearSpatialMatrix%p_rmatrixB1             => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-!    rmatrixComponents%p_rmatrixB2             => &
+!    rnonlinearSpatialMatrix%p_rmatrixB2             => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-!    rmatrixComponents%p_rmatrixMass           => &
+!    rnonlinearSpatialMatrix%p_rmatrixMass           => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-!    rmatrixComponents%p_rmatrixIdentityPressure => &
+!    rnonlinearSpatialMatrix%p_rmatrixIdentityPressure => &
 !        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-!    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-!    rmatrixComponents%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
-!    rmatrixComponents%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
-!    rmatrixComponents%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
-!    rmatrixComponents%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
+!    rnonlinearSpatialMatrix%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+!    rnonlinearSpatialMatrix%iupwind1 = collct_getvalue_int (rproblem%rcollection,'IUPWIND1')
+!    rnonlinearSpatialMatrix%dupsam1 = collct_getvalue_real (rproblem%rcollection,'UPSAM1')
+!    rnonlinearSpatialMatrix%iupwind2 = collct_getvalue_int (rproblem%rcollection,'IUPWIND2')
+!    rnonlinearSpatialMatrix%dupsam2 = collct_getvalue_real (rproblem%rcollection,'UPSAM2')
 !    
 !    ! Loop through the substeps
 !    
@@ -1288,11 +1293,11 @@ contains
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents)
+!          isubstep,0,rnonlinearSpatialMatrix)
 !          
 !        ! Subtract: rd = rd - A11 x1
 !        irelnonl = ABS(iidxNonlin)-isubstep + 1
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !
 !        ! -----
@@ -1303,11 +1308,11 @@ contains
 !        !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,1,rmatrixComponents)
+!          isubstep,1,rnonlinearSpatialMatrix)
 !
 !        ! Subtract: rd = rd - A12 x2
 !        irelnonl = ABS(iidxNonlin)-isubstep + 1
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !
 !        ! Release the block mass matrix.
@@ -1342,13 +1347,13 @@ contains
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,-1,rmatrixComponents)
+!          isubstep,-1,rnonlinearSpatialMatrix)
 !            
 !        ! Subtract: rd = rd - Aii-1 xi-1
 !        ! Note that at this point, the nonlinearity must be evaluated
 !        ! at xi due to the discretisation scheme!!!
 !        irelnonl = ABS(iidxNonlin)-isubstep + 2
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !
 !        ! Release the block mass matrix.
@@ -1362,11 +1367,11 @@ contains
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents)
+!          isubstep,0,rnonlinearSpatialMatrix)
 !
 !        ! Subtract: rd = rd - Aii xi
 !        irelnonl = ABS(iidxNonlin)-isubstep + 2
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !            
 !        ! -----
@@ -1377,11 +1382,11 @@ contains
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,1,rmatrixComponents)
+!          isubstep,1,rnonlinearSpatialMatrix)
 !          
 !        ! Subtract: rd = rd - Aii+1 xi+1
 !        irelnonl = ABS(iidxNonlin)-isubstep + 2
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !        
 !        ! Release the block mass matrix.
@@ -1407,13 +1412,13 @@ contains
 !
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,-1,rmatrixComponents)
+!          isubstep,-1,rnonlinearSpatialMatrix)
 !          
 !        ! Subtract: rd = rd - Ann-1 xn-1
 !        ! Note that at this point, the nonlinearity must be evaluated
 !        ! at xn due to the discretisation scheme!!!
 !        irelnonl = ABS(iidxNonlin)-isubstep + 3
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !     
 !        ! -----
@@ -1424,11 +1429,11 @@ contains
 !      
 !        ! Set up the matrix weights of that submatrix.
 !        CALL cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-!          isubstep,0,rmatrixComponents)
+!          isubstep,0,rnonlinearSpatialMatrix)
 !
 !        ! Subtract: rd = rd - Ann xn
 !        irelnonl = ABS(iidxNonlin)-isubstep + 3
-!        CALL cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+!        CALL cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,&
 !            1.0_DP,rtempVectorEval(irelnonl))
 !      
 !      END IF
@@ -1631,7 +1636,7 @@ contains
     ! As we can only handle linear subproblems here, we don't have
     ! to initialise the evaluation point of the nonlinearity.
 
-    rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+    rspaceTimeMatrix%p_rspaceTimeDiscr => rspaceTimeDiscr
     rspaceTimeMatrix%cmatrixType = 0
     
     ! ---------------------------------------------------------------
@@ -1749,7 +1754,7 @@ contains
     integer :: isubstep,ilevel,itejac
     real(DP) :: dtheta,dtstep,ddefNorm,dinitDef
     logical :: bsuccess
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_vectorBlock) :: rtempVectorX1,rtempVectorX3
     type(t_spacetimeVector) :: rcurrentx,rcurrentd
@@ -1761,7 +1766,7 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx,p_Dd
     
-    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscr
     
     rspaceTimeMatrix%cmatrixType=1
     
@@ -1845,11 +1850,11 @@ contains
         
         ! Set up the matrix weights for the diagonal matrix
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Perform preconditioning of the defect with the method provided by the
         ! core equation module.
-        call cc_precondDefect (rpreconditioner,rmatrixComponents,rtempVectorD,&
+        call cc_precondSpaceDefect (rpreconditioner,rnonlinearSpatialMatrix,rtempVectorD,&
           rtempVectorX1,rtempVectorX,rtempVectorX3,&
           bsuccess,rproblem%rcollection)      
       
@@ -1984,7 +1989,7 @@ contains
     ! Specify slinearSolver as the name of the section that configures the
     ! spatial preconditioner. This is (up to now only) the name of a section
     ! containing configuration data of a linear solver.
-    call cc_initPreconditioner (rproblem,&
+    call cc_initSpacePreconditioner (rproblem,&
         rproblem%NLMIN,rproblem%NLMAX,rpreconditioner)
     call cc_configPreconditioner (rproblem,rpreconditioner,slinearSolver,&
         ctypePreconditioner)
@@ -2032,7 +2037,7 @@ contains
     ! Set the evaluation point of the matrix to the current solution
     ! vector.
 
-    rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+    rspaceTimeMatrix%p_rspaceTimeDiscr => rspaceTimeDiscr
     rspaceTimeMatrix%cmatrixType = 0
     rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
     rspaceTimeMatrix%p_rsolution => rx
@@ -2128,7 +2133,7 @@ contains
     
     ! ---------------------------------------------------------------
     ! Release the preconditioner of the nonlinear iteration
-    call cc_donePreconditioner (rpreconditioner)
+    call cc_doneSpacePreconditioner (rpreconditioner)
     
     !CALL cc_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
     !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
@@ -2287,7 +2292,7 @@ contains
       ! Create a space time matrix for the maximum level which serves as basis for
       ! setting up the defect. This is the actual system matrix, thus it doesn't
       ! contain any Newton parts!
-      rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+      rspaceTimeMatrix%p_rspaceTimeDiscr => rspaceTimeDiscr
       rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
     
       ! Create the point where to evaluate
@@ -2337,7 +2342,7 @@ contains
       ! Create a space time matrix for the maximum level which serves as basis for
       ! setting up the defect. This is the actual system matrix, thus it doesn't
       ! contain any Newton parts!
-      rspaceTimeMatrix%p_rspaceTimeDiscretisation => rspaceTimeDiscr
+      rspaceTimeMatrix%p_rspaceTimeDiscr => rspaceTimeDiscr
       rspaceTimeMatrix%ccontrolConstraints = rproblem%roptcontrol%ccontrolConstraints
       rspaceTimeMatrix%cmatrixType = 1
     
@@ -2673,7 +2678,7 @@ contains
         ! (note: this is slightly expensive in terms of memory!
         ! Probably we could use the same preconditioner for all levels,
         ! but this has still to be implemeted and is a little bit harder!)
-        call cc_initPreconditioner (rproblem,rproblem%nlmin,&
+        call cc_initSpacePreconditioner (rproblem,rproblem%nlmin,&
             ispacelev,RspatialPrecond(ilev))
         ! Specify slinearSolver as the name of the section that configures the
         ! spatial preconditioner. This is (up to now only) the name of a section
@@ -2963,7 +2968,7 @@ contains
     do ilev=1,size(RspatialPrecond)
     
       ! Pointer to the corresponding space time discretisation structure
-      RspaceTimePrecondMatrix(ilev)%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+      RspaceTimePrecondMatrix(ilev)%p_rspaceTimeDiscr => RspaceTimeDiscr(ilev)
       
       ! Configure the matrix type; standard or Newton matrix
       select case (ctypePreconditioner)
@@ -2995,7 +3000,7 @@ contains
     ! Create a space time matrix for the maximum level which serves as basis for
     ! setting up the defect. This is the actual system matrix, thus it doesn't
     ! contain any Newton parts!
-    rspaceTimeMatrix%p_rspaceTimeDiscretisation => RspaceTimeDiscr(ilev)
+    rspaceTimeMatrix%p_rspaceTimeDiscr => RspaceTimeDiscr(ilev)
     rspaceTimeMatrix%p_rsolution => rx
     
     ! That matrix also has to apply projection operators when being applied
@@ -3020,11 +3025,11 @@ contains
     !
     ! Get the initial defect: d=b-Ax
     !CALL cc_assembleSpaceTimeRHS (rproblem, &
-    !  RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, &
+    !  RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscr, rb, &
     !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
     call output_line ('NLST-Solver: Assembling the RHS vector...')
     call trhsevl_assembleRHS (rproblem, &
-      RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscretisation, rb, .false.)
+      RspaceTimePrecondMatrix(nlmax)%p_rspaceTimeDiscr, rb, .false.)
 
     ! Implement the initial condition into the RHS.
     call tbc_implementInitCondRHS (rproblem, rb, rinitialCondRHS, rtempvector)
@@ -3514,9 +3519,9 @@ contains
     
     ! Release the spatial preconditioner and temp vector on every level
     do ilev=1,size(RspatialPrecond)
-      call cc_donePreconditioner (RspatialPrecondPrimal(ilev))
-      call cc_donePreconditioner (RspatialPrecondDual(ilev))
-      call cc_donePreconditioner (RspatialPrecond(ilev))
+      call cc_doneSpacePreconditioner (RspatialPrecondPrimal(ilev))
+      call cc_doneSpacePreconditioner (RspatialPrecondDual(ilev))
+      call cc_doneSpacePreconditioner (RspatialPrecond(ilev))
     end do
 
     do ilev=1,size(RspatialPrecond)-1

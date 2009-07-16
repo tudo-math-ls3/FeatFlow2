@@ -191,7 +191,7 @@ module spacetimelinearsystem
     integer :: ccontrolConstraints = 0
   
     ! Pointer to the space time discretisation that corresponds to this matrix.
-    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscretisation => null()
+    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr => null()
   
     ! Pointer to a space-time solution vector that defines the point
     ! where the nonlinearity is evaluated when applying or calculating
@@ -240,10 +240,10 @@ contains
 !<subroutine>
 
   subroutine cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-      isubstep,irelpos,rmatrixComponents)
+      isubstep,irelpos,rnonlinearSpatialMatrix)
 
 !<description>
-  ! This routine sets up the matrix weights in the rmatrixComponents structure
+  ! This routine sets up the matrix weights in the rnonlinearSpatialMatrix structure
   ! according to the position of the corresponding submatrix.
   ! isubstep defines the timestep which is to be tackled -- which corresponds
   ! to the row in the supermatrix.
@@ -251,13 +251,13 @@ contains
   ! thus =0 means the diagonal, =1 the submatrix above the diagonal and =-1
   ! the submatrix below the diagonal.
   !
-  ! The matrix weights in rmatrixComponents are initialised based on this
+  ! The matrix weights in rnonlinearSpatialMatrix are initialised based on this
   ! information such that the 'assembleMatrix' and 'assembleDefect' routines of 
   ! the core equation will build the system matrix / defect at that position 
   ! in the supermatrix.
   !
   ! The routine does not initialise the pointers to the basic matrices/discretisation
-  ! structures in the rmatrixComponents structure. This has to be done by
+  ! structures in the rnonlinearSpatialMatrix structure. This has to be done by
   ! the caller!
 !</description>
 
@@ -284,11 +284,13 @@ contains
 !</input>
 
 !<inputoutput>
-  ! A t_ccmatrixComponents structure that defines the shape of the core
+  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
   ! equation. The weights that specify the submatrices of a small 6x6 
   ! block matrix system are initialised depending on the position
   ! specified by isubstep and nsubsteps.
-  type(t_ccmatrixComponents), intent(INOUT) :: rmatrixComponents
+  !
+  ! The structure must have been initialised with cc_initNonlinMatrix!
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
 !</inputoutput>
 
 !</subroutine>
@@ -341,7 +343,7 @@ contains
     call parlst_getvalue_double (rproblem%rparamList,'DEBUG',&
         'dtimeCoupling',dtimeCoupling,1.0_DP)
 
-    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscr
     
     dequationType = 1.0_DP
     if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
@@ -364,67 +366,19 @@ contains
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
 
     ! Clear the coefficients
-    rmatrixComponents%Diota(:,:) = 0.0_DP
-    rmatrixComponents%Dalpha(:,:) = 0.0_DP
-    rmatrixComponents%Dtheta(:,:) = 0.0_DP
-    rmatrixComponents%Dgamma(:,:) = 0.0_DP
-    rmatrixComponents%Dnewton(:,:) = 0.0_DP
-    rmatrixComponents%DgammaT(:,:) = 0.0_DP
-    rmatrixComponents%Dnewton2(:,:) = 0.0_DP
-    rmatrixComponents%DgammaT2(:,:) = 0.0_DP
-    rmatrixComponents%DnewtonT(:,:) = 0.0_DP
-    rmatrixComponents%Deta(:,:) = 0.0_DP
-    rmatrixComponents%Dtau(:,:) = 0.0_DP
-    rmatrixComponents%Dkappa(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dalpha(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtheta(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgamma(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT2(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%DnewtonT(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Deta(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtau(:,:) = 0.0_DP
+    rnonlinearSpatialMatrix%Dkappa(:,:) = 0.0_DP
 
-    ! Basic initialisation of rmatrixComponents with the pointers to the
-    ! matrices / discretisation structures on the current level.
-    !
-    ! The weights in the rmatrixComponents structure are later initialised
-    ! according to the actual situation when the matrix is to be used.
-    rmatrixComponents%p_rdiscretisation => p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes   => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixD1       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD1
-    rmatrixComponents%p_rmatrixD2       => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixD2
-    rmatrixComponents%p_rmatrixEOJ1     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ1
-    rmatrixComponents%p_rmatrixEOJ2     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ2
-    rmatrixComponents%p_rmatrixMass     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass
-    rmatrixComponents%p_rmatrixIdentityPressure => &
-        p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%p_rmatrixEOJ1     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ1
-    rmatrixComponents%p_rmatrixEOJ2     => p_rspaceTimeDiscr%p_rlevelInfo%rmatrixEOJ2
-
-    ! Get stabilisation parameters
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-
-    ! Get stabilisation parameters
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind1',rmatrixComponents%iupwind1,0)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind2',rmatrixComponents%iupwind2,0)
-    
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam1',rmatrixComponents%dupsam1,0.0_DP)
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam2',rmatrixComponents%dupsam2,0.0_DP)
-
-    ! Change the sign of dupsam2 for a consistent stabilisation.
-    ! Reason: The stablisation is added to the dual operator by the SD/
-    ! EOJ stabilisation in the following way:
-    !
-    !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
-    !
-    ! We want to *add* the stabilisation, so we have to introduce a "-" sign
-    ! in dupsam2 to get
-    !
-    !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
-    ! <=>
-    !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
-    
-    rmatrixComponents%dupsam2 = -rmatrixComponents%dupsam2
-    
     ! The first and last substep is a little bit special concerning
     ! the matrix!
     if (isubstep .eq. 0) then
@@ -440,74 +394,74 @@ contains
       
         ! The diagonal matrix.
         if (.not. bconvectionExplicit) then
-          rmatrixComponents%iprimalSol = 2
-          rmatrixComponents%idualSol = 2
-          rmatrixComponents%idualSol2 = 3
+          rnonlinearSpatialMatrix%iprimalSol = 2
+          rnonlinearSpatialMatrix%idualSol = 2
+          rnonlinearSpatialMatrix%idualSol2 = 3
         else
-          rmatrixComponents%iprimalSol = 2
-          rmatrixComponents%idualSol = 3
-          rmatrixComponents%idualSol2 = 2
+          rnonlinearSpatialMatrix%iprimalSol = 2
+          rnonlinearSpatialMatrix%idualSol = 3
+          rnonlinearSpatialMatrix%idualSol2 = 2
         end if
 
-        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%Dtheta(1,1) = 1.0_DP
-        rmatrixComponents%Dtheta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               real(1-rproblem%iequation,DP)
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = dnewton
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = dnewton
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 real(1-rproblem%iequation,DP)
                 
         end if
 
-        rmatrixComponents%Deta(1,1) = 1.0_DP
-        rmatrixComponents%Deta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%Dtau(1,1) = 1.0_DP
-        rmatrixComponents%Dtau(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
         
         ! Only difference to the usual diagonal: No coupling mass matrix
         ! from dual to the primal velocity.
-        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType)
         
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType)
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    ( dequationType)
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType)
 
             ! For Crank-Nicolson there appears a 2nd reactive term
             ! stemming from the next timestep.
 
-            rmatrixComponents%DgammaT2(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT2(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
-            !rmatrixComponents%Dgamma2(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma2(2,1) = ddualPrimalCoupling * &
             !    (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%Dnewton2(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton2(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
           end if
           
         else
         
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType)
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    ( dequationType)
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType)
           end if
         
@@ -523,8 +477,8 @@ contains
         
         !wirklich? unten nochmal!
 
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 2
+        rnonlinearSpatialMatrix%iprimalSol = 2
+        rnonlinearSpatialMatrix%idualSol = 2
         
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
@@ -533,37 +487,37 @@ contains
         ! ...
         ! No, that does not to be right. Commented out since the above works
         ! as well and should be correct due to the theory.
-        ! rmatrixComponents%idualSol = 3
+        ! rnonlinearSpatialMatrix%idualSol = 3
         
         ! Switch off any stabilisation
-        rmatrixComponents%dupsam1 = 0.0_DP
-        rmatrixComponents%dupsam2 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam1 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta)
+        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta)
         
         if (.not. bconvectionExplicit) then
         
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
         else
 
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
 
         end if
 
-        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta)
             
       end if
@@ -584,111 +538,111 @@ contains
       
         ! Matrix on the left of the diagonal.
 
-        rmatrixComponents%iprimalSol = 1
-        rmatrixComponents%idualSol = 1
+        rnonlinearSpatialMatrix%iprimalSol = 1
+        rnonlinearSpatialMatrix%idualSol = 1
 
         ! Switch off any stabilisation
-        rmatrixComponents%dupsam1 = 0.0_DP
-        rmatrixComponents%dupsam2 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam1 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(1,1) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = &
               (1.0_DP-dtheta) * dnewton
 
         else
         
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = &
               dtheta * dnewton
         
         end if
 
-        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 
       else if (irelpos .eq. 0) then    
 
         ! The diagonal matrix.
         if (.not. bconvectionExplicit) then
-          rmatrixComponents%iprimalSol = 2
-          rmatrixComponents%idualSol = 2
+          rnonlinearSpatialMatrix%iprimalSol = 2
+          rnonlinearSpatialMatrix%idualSol = 2
         else
-          rmatrixComponents%iprimalSol = 2
-          rmatrixComponents%idualSol = 3
+          rnonlinearSpatialMatrix%iprimalSol = 2
+          rnonlinearSpatialMatrix%idualSol = 3
         end if
 
-        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rmatrixComponents%Dtheta(1,1) = dtheta
-        rmatrixComponents%Dtheta(2,2) = dtheta
+        rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
+        rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
                 
         end if
 
-        rmatrixComponents%Deta(1,1) = 1.0_DP
-        rmatrixComponents%Deta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%Dtau(1,1) = 1.0_DP
-        rmatrixComponents%Dtau(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
         
-        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * dtheta 
             
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    ( dequationType) * dtheta 
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
 
             ! For Crank-Nicolson there appears a 2nd reactive term
             ! stemming from the next timestep.
 
-            rmatrixComponents%DgammaT2(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT2(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
-            !rmatrixComponents%Dgamma2(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma2(2,1) = ddualPrimalCoupling * &
             !    (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%Dnewton2(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton2(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
           end if
           
         else
         
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    ( dequationType) * dtheta 
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
         
@@ -700,9 +654,9 @@ contains
         !
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 2
-        rmatrixComponents%idualSol2 = 3
+        rnonlinearSpatialMatrix%iprimalSol = 2
+        rnonlinearSpatialMatrix%idualSol = 2
+        rnonlinearSpatialMatrix%idualSol2 = 3
         
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
@@ -711,37 +665,37 @@ contains
         ! ...
         ! No, that does not to be right. Commented out since the above works
         ! as well and should be correct due to the theory.
-        ! rmatrixComponents%idualSol = 3
+        ! rnonlinearSpatialMatrix%idualSol = 3
 
         ! Switch off any stabilisation
-        rmatrixComponents%dupsam1 = 0.0_DP
-        rmatrixComponents%dupsam2 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam1 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
-        rmatrixComponents%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(2,2) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
               
         else
         
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP)
         
         end if
 
-        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (1.0_DP-dtheta) 
             
         if (bconvectionExplicit) then
@@ -749,11 +703,11 @@ contains
           ! DON'T KNOW IF THIS IS CORRECT!!!
         
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * ( dequationType)
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    (1.0_DP-dtheta) * ( dequationType)
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (1.0_DP-dtheta) * (-dequationType)
           end if
           
@@ -774,79 +728,79 @@ contains
       
         ! Matrix on the left of the diagonal.
         
-        rmatrixComponents%iprimalSol = 1
-        rmatrixComponents%idualSol = 1
+        rnonlinearSpatialMatrix%iprimalSol = 1
+        rnonlinearSpatialMatrix%idualSol = 1
 
         ! Switch off any stabilisation
-        rmatrixComponents%dupsam1 = 0.0_DP
-        rmatrixComponents%dupsam2 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam1 = 0.0_DP
+        rnonlinearSpatialMatrix%dupsam2 = 0.0_DP
 
         ! Create the matrix
         !   -M + dt*dtheta*[-nu\Laplace u + u \grad u]
 
-        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
+        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rmatrixComponents%Dtheta(1,1) = (1.0_DP-dtheta) 
+        rnonlinearSpatialMatrix%Dtheta(1,1) = (1.0_DP-dtheta) 
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = (1.0_DP-dtheta) * dnewton
+          rnonlinearSpatialMatrix%Dnewton(1,1) = (1.0_DP-dtheta) * dnewton
           
         else
         
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
           
-          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
+          rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
           
         end if
 
-        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * (1.0_DP-dtheta) / p_rspaceTimeDiscr%dalphaC
 
       else if (irelpos .eq. 0) then    
 
         ! The diagonal matrix.
-        rmatrixComponents%iprimalSol = 2
-        rmatrixComponents%idualSol = 2
+        rnonlinearSpatialMatrix%iprimalSol = 2
+        rnonlinearSpatialMatrix%idualSol = 2
 
         ! Current formulation:
         ! -(gamma+1/dt)*M*y + (M+dt*nu*L)*lambda = -(gamma+1/dt)*z
         
-        rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-        rmatrixComponents%Dalpha(2,2) = 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+        rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP/dtstep
         
         ! No 'time coupling' here; because of the terminal condition,
         ! the mass matrix resembles not the time dependence!
         
-        rmatrixComponents%Dtheta(1,1) = dtheta
-        rmatrixComponents%Dtheta(2,2) = dtheta
+        rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
+        rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
-          rmatrixComponents%Dgamma(1,1) = &
+          rnonlinearSpatialMatrix%Dgamma(1,1) = &
               dtheta * real(1-rproblem%iequation,DP)
-          rmatrixComponents%Dgamma(2,2) = &
+          rnonlinearSpatialMatrix%Dgamma(2,2) = &
               - dtheta * real(1-rproblem%iequation,DP) 
           
-          rmatrixComponents%Dnewton(1,1) = dtheta * dnewton
-          rmatrixComponents%DnewtonT(2,2) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
                 dtheta * real(1-rproblem%iequation,DP) 
                 
         end if        
 
-        rmatrixComponents%Deta(1,1) = 1.0_DP
-        rmatrixComponents%Deta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
         
-        rmatrixComponents%Dtau(1,1) = 1.0_DP
-        rmatrixComponents%Dtau(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
         
-        rmatrixComponents%Dalpha(1,2) = dprimalDualCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
             dequationType * dtheta * 1.0_DP / p_rspaceTimeDiscr%dalphaC
-        rmatrixComponents%Dalpha(2,1) = ddualPrimalCoupling * &
+        rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             (-dequationType) * (dtheta + p_rspaceTimeDiscr%dgammaC / dtstep)
             
         if (.not. bconvectionExplicit) then
@@ -854,11 +808,11 @@ contains
           ! Weight the mass matrix by GAMMA instead of delta(T).
           ! That's the only difference to the implementation above!
           if (dnewton .ne. 0.0_DP) then
-            rmatrixComponents%DgammaT(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
                 ( dequationType) * dtheta 
-            !rmatrixComponents%Dgamma(2,1) = ddualPrimalCoupling * &
+            !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
             !    ( dequationType) * dtheta 
-            rmatrixComponents%Dnewton(2,1) = ddualPrimalCoupling * &
+            rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
                 (-dequationType) * dtheta 
           end if
 
@@ -869,15 +823,15 @@ contains
     end if
     
     ! The dumin/dumax parameters are the same for all equations. 
-    rmatrixComponents%dumin1 = rproblem%roptcontrol%dumin1
-    rmatrixComponents%dumax1 = rproblem%roptcontrol%dumax1
-    rmatrixComponents%dumin2 = rproblem%roptcontrol%dumin2
-    rmatrixComponents%dumax2 = rproblem%roptcontrol%dumax2
+    rnonlinearSpatialMatrix%dumin1 = rproblem%roptcontrol%dumin1
+    rnonlinearSpatialMatrix%dumax1 = rproblem%roptcontrol%dumax1
+    rnonlinearSpatialMatrix%dumin2 = rproblem%roptcontrol%dumin2
+    rnonlinearSpatialMatrix%dumax2 = rproblem%roptcontrol%dumax2
     
     ! General parameters.
-    rmatrixComponents%dalphaC = rproblem%roptcontrol%dalphaC
-    rmatrixComponents%ccontrolConstraints = rspaceTimeMatrix%ccontrolConstraints
-    rmatrixComponents%cmatrixType = rspaceTimeMatrix%cmatrixType
+    rnonlinearSpatialMatrix%dalphaC = rproblem%roptcontrol%dalphaC
+    rnonlinearSpatialMatrix%ccontrolConstraints = rspaceTimeMatrix%ccontrolConstraints
+    rnonlinearSpatialMatrix%cmatrixType = rspaceTimeMatrix%cmatrixType
 
   end subroutine  
   
@@ -945,8 +899,8 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscr
     real(DP) :: dtheta,dnormpart
     type(t_matrixBlock) :: rblockTemp
-    type(t_ccmatrixComponents) :: rmatrixComponents
-    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscretisation
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
+    type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     real(DP) :: dtstep
     
     ! DEBUG!!!
@@ -954,10 +908,10 @@ contains
     real(DP), dimension(:), pointer :: p_DxE1,p_DxE2,p_DxE3
     
     ! Pointer to the space time discretisation
-    p_rspaceTimeDiscretisation => rspaceTimeMatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscr
     
     ! Level of the discretisation
-    ilevel = p_rspaceTimeDiscretisation%ilevel
+    ilevel = p_rspaceTimeDiscr%ilevel
 
     ! Theta-scheme identifier.
     ! =1: implicit Euler.
@@ -965,13 +919,13 @@ contains
     dtheta = rproblem%rtimedependence%dtimeStepTheta
     
     ! Create a temp vector that contains the part of rd which is to be modified.
-    p_rdiscr => p_rspaceTimeDiscretisation%p_RlevelInfo%rdiscretisation
+    p_rdiscr => p_rspaceTimeDiscr%p_RlevelInfo%rdiscretisation
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.false.)
     
     ! The vector will be a defect vector. Assign the boundary conditions so
     ! that we can implement them.
-    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
+    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
     
     ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(1),.false.)
@@ -1031,14 +985,19 @@ contains
       dnorm = 0.0_DP
     end if
 
-    dtstep = p_rspaceTimeDiscretisation%rtimeDiscr%dtstep
+    dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
+    
+    ! Basic initialisation of our nonlinear matrix in space.
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
     
     ! Loop through the substeps
     
-    do ieqTime = 0,p_rspaceTimeDiscretisation%NEQtime-1
+    do ieqTime = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Depending on the time step scheme, initialise the current time.
-      select case (p_rspaceTimeDiscretisation%rtimeDiscr%ctype)
+      select case (p_rspaceTimeDiscr%rtimeDiscr%ctype)
       case (TDISCR_THETA)
         rproblem%rtimedependence%dtime = &
             rproblem%rtimedependence%dtimeInit + ieqTime*dtstep
@@ -1059,7 +1018,7 @@ contains
         call lsysbl_clearVector (rtempVectorD)
       end if
       
-      if (ieqTime .ne. p_rspaceTimeDiscretisation%NEQtime-1) then
+      if (ieqTime .ne. p_rspaceTimeDiscr%NEQtime-1) then
       
         ! Read the solution of the 'next' timestep and the 'next' evaluation
         ! point.
@@ -1108,10 +1067,10 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents)
+          ieqTime,0,rnonlinearSpatialMatrix)
           
         ! Subtract: rd = rd - A11 x1
-        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! -----
@@ -1122,16 +1081,16 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,1,rmatrixComponents)
+          ieqTime,1,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - A12 x2
-        call cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
 
-      else if (ieqTime .lt. p_rspaceTimeDiscretisation%NEQtime-1) then
+      else if (ieqTime .lt. p_rspaceTimeDiscr%NEQtime-1) then
 
         ! We are sonewhere in the middle of the matrix. There is a substep
         ! ieqTime+1 and a substep ieqTime-1!  Here, we have to handle the following
@@ -1153,12 +1112,12 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,-1,rmatrixComponents)
+          ieqTime,-1,rnonlinearSpatialMatrix)
             
         ! Subtract: rd = rd - Aii-1 xi-1.
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        call cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
 
         ! Release the block mass matrix.
@@ -1172,10 +1131,10 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents)
+          ieqTime,0,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - Aii xi
-        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
             
         ! -----
@@ -1186,10 +1145,10 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,1,rmatrixComponents)
+          ieqTime,1,rnonlinearSpatialMatrix)
           
         ! Subtract: rd = rd - Aii+1 xi+1
-        call cc_assembleDefect (rmatrixComponents,rtempVector(3),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
         
         ! Release the block mass matrix.
@@ -1215,12 +1174,12 @@ contains
 
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,-1,rmatrixComponents)
+          ieqTime,-1,rnonlinearSpatialMatrix)
           
         ! Subtract: rd = rd - Ann-1 xn-1
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xn due to the discretisation scheme!!!
-        call cc_assembleDefect (rmatrixComponents,rtempVector(1),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
      
         ! -----
@@ -1231,10 +1190,10 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ieqTime,0,rmatrixComponents)
+          ieqTime,0,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - Ann xn
-        call cc_assembleDefect (rmatrixComponents,rtempVector(2),rtempVectorD,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,&
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
       
       end if
@@ -1247,13 +1206,13 @@ contains
 
       if ((ieqTime .eq. 0) .and. (iand(cfilter,SPTID_FILTER_ICDEF) .ne. 0)) then
         ! Implement the initial conditions into the defect.
-        call tbc_implementInitCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
+        call tbc_implementInitCondDefSingle (p_rspaceTimeDiscr, rtempVectorD)
       end if
 
-      if ((ieqTime .eq. p_rspaceTimeDiscretisation%NEQtime-1) .and. &
+      if ((ieqTime .eq. p_rspaceTimeDiscr%NEQtime-1) .and. &
           (iand(cfilter,SPTID_FILTER_TCDEF) .ne. 0)) then
         ! Implement the initial conditions into the defect.
-        call tbc_implementTermCondDefSingle (p_rspaceTimeDiscretisation, rtempVectorD)
+        call tbc_implementTermCondDefSingle (p_rspaceTimeDiscr, rtempVectorD)
       end if
       
       ! Save the defect vector back to rd.
@@ -1296,7 +1255,7 @@ contains
     ! If dnorm is specified, normalise it.
     ! It was calculated from rspaceTimeDiscr%niterations+1 subvectors.
     if (present(dnorm)) then
-      dnorm = sqrt(dnorm / real(p_rspaceTimeDiscretisation%NEQtime,DP))
+      dnorm = sqrt(dnorm / real(p_rspaceTimeDiscr%NEQtime,DP))
     end if
     
     ! Release the temp vectors.
@@ -1342,7 +1301,7 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_problem_lvl), pointer :: p_rlevelInfo
     logical :: bconvectionExplicit
     real(DP) :: dtstep, dequationType
@@ -1382,30 +1341,8 @@ contains
     ! Set up the basic components of the Navier--Stokes matrix
     p_rlevelInfo => rspaceTimeDiscr%p_rlevelInfo
 
-    rmatrixComponents%p_rdiscretisation         => p_rlevelInfo%rdiscretisation
-    rmatrixComponents%p_rmatrixStokes           => p_rlevelInfo%rmatrixStokes          
-    rmatrixComponents%p_rmatrixB1               => p_rlevelInfo%rmatrixB1              
-    rmatrixComponents%p_rmatrixB2               => p_rlevelInfo%rmatrixB2              
-    rmatrixComponents%p_rmatrixD1               => p_rlevelInfo%rmatrixD1
-    rmatrixComponents%p_rmatrixD2               => p_rlevelInfo%rmatrixD2
-    rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1
-    rmatrixComponents%p_rmatrixEOJ2             => p_rlevelInfo%rmatrixEOJ2
-    rmatrixComponents%p_rmatrixMass             => p_rlevelInfo%rmatrixMass            
-    rmatrixComponents%p_rmatrixIdentityPressure => p_rlevelInfo%rmatrixIdentityPressure
-    rmatrixComponents%p_rmatrixEOJ1             => p_rlevelInfo%rmatrixEOJ1
-    rmatrixComponents%p_rmatrixEOJ2             => p_rlevelInfo%rmatrixEOJ2
-        
-    rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
-    
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind1',rmatrixComponents%iupwind1,0)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iUpwind2',rmatrixComponents%iupwind2,0)
-    
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam1',rmatrixComponents%dupsam1,0.0_DP)
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'dUpsam2',rmatrixComponents%dupsam2,0.0_DP)
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        p_rlevelInfo%rdiscretisation,p_rlevelInfo%rstaticInfo)
 
     ! Change the sign of dupsam2 for a consistent stabilisation.
     ! Reason: The stablisation is added to the dual operator by the SD/
@@ -1420,7 +1357,7 @@ contains
     ! <=>
     !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
     
-    rmatrixComponents%dupsam2 = -rmatrixComponents%dupsam2
+    rnonlinearSpatialMatrix%dupsam2 = -rnonlinearSpatialMatrix%dupsam2
     
     ! Set up the matrix weights the matrix in the 0th timestep.
     ! We set up only the stuff for the primal equation; for setting up
@@ -1434,19 +1371,19 @@ contains
     if (rproblem%roptcontrol%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
       
-    rmatrixComponents%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-    rmatrixComponents%Dtheta(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+    rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
     
     if (.not. bconvectionExplicit) then
-      rmatrixComponents%Dgamma(1,1) = real(1-rproblem%iequation,DP)
+      rnonlinearSpatialMatrix%Dgamma(1,1) = real(1-rproblem%iequation,DP)
     end if
 
-    rmatrixComponents%Deta(1,1) = 1.0_DP
-    rmatrixComponents%Dtau(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
         
     ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1
     call lsysbl_clearVector (rb)
-    call cc_assembleDefect (rmatrixComponents,rx,rb,-1.0_DP,rx,rx,rx)
+    call cc_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP,rx,rx,rx)
     call lsysbl_getbase_double (rb,p_Ddata)
 
   end subroutine
@@ -1498,7 +1435,7 @@ contains
 !    ! local variables
 !    INTEGER :: isubstep
 !    REAL(DP) :: dtheta
-!    TYPE(t_ccmatrixComponents) :: rmatrixComponents
+!    TYPE(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
 !    
 !    ! A temporary vector for the creation of the RHS.
 !    TYPE(t_vectorBlock) :: rtempVectorRHS

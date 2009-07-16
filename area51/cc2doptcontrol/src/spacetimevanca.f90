@@ -599,7 +599,7 @@ contains
     type(t_matrixBlock), dimension(1) :: RdbgmatrixLocalBlock
     
     ! Fetch some information
-    p_rdiscretisation => rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation
+    p_rdiscretisation => rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
     NEL = p_rdiscretisation%p_rtriangulation%NEL
     NEQ = dof_igetNDofGlobblock(p_rdiscretisation)
     NVT = p_rdiscretisation%p_rtriangulation%NVT
@@ -607,7 +607,7 @@ contains
         p_IedgesAtElement)
     
     ! Calculate the number of block that must be handled simultaneously.
-    NEQtime = rmatrix%p_rspaceTimeDiscretisation%NEQtime
+    NEQtime = rmatrix%p_rspaceTimeDiscr%NEQtime
     nblockSize = min(NEQtime,max(1,nchunkSize+1))
 
     ! Allocate memory for global matrices.
@@ -639,8 +639,10 @@ contains
     ! Allocate all the matrices/vectors we have to handle simultaneously.
     do j=1,nblockSize
       do i=-1,1
-        call cc_allocSystemMatrix (rproblem,rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo,&
-          RsystemMatrix(i,j))
+        print *,'Not implemented!'
+        stop
+        !call cc_allocSystemMatrix (rproblem,rmatrix%p_rspaceTimeDiscr%p_rlevelInfo,&
+        !  RsystemMatrix(i,j))
       end do
       
       call lsysbl_createVecBlockByDiscr (p_rdiscretisation,RrhsGlobal(j))
@@ -1028,7 +1030,7 @@ contains
       ! local variables
       integer :: i,j,k,ichunk,NEQtime,ichunkrel
       real(DP) :: dtheta
-      type(t_ccmatrixComponents) :: rmatrixComponents
+      type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
       type(t_vectorBlock), dimension(3) :: rtimeVector
       type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
 
@@ -1038,30 +1040,15 @@ contains
       call lsysbl_createVecBlockIndMat(RsystemMatrix(0,1),rtimeVector(3))
       
       ! Fetch some information
-      NEQtime = rmatrix%p_rspaceTimeDiscretisation%NEQtime
+      NEQtime = rmatrix%p_rspaceTimeDiscr%NEQtime
       dtheta = rproblem%rtimedependence%dtimeStepTheta
       
-      ! Basic initialisation of rmatrixComponents with the pointers to the
+      ! Basic initialisation of rnonlinearSpatialMatrix with the pointers to the
       ! matrices / discretisation structures on the current level.
-      !
-      ! The weights in the rmatrixComponents structure are later initialised
-      ! according to the actual situation when the matrix is to be used.
-      p_rspaceTimeDiscr => rspaceTimeMatrix%p_rspaceTimeDiscretisation
       
-      rmatrixComponents%p_rdiscretisation         => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation
-      rmatrixComponents%p_rmatrixStokes           => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes          
-      rmatrixComponents%p_rmatrixB1               => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1              
-      rmatrixComponents%p_rmatrixB2               => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB2              
-      rmatrixComponents%p_rmatrixMass             => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rmatrixMass            
-      rmatrixComponents%p_rmatrixIdentityPressure => &
-          p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure
-
-      rmatrixComponents%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+      call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+          p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
       
       ! Fetch evaluation vectors for the nonlinearity
       if (ichunkPos .gt. 1) &
@@ -1100,11 +1087,11 @@ contains
         
           ! Set up the matrix weights 
           call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-            ichunk-1,-1,rmatrixComponents)
+            ichunk-1,-1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
-              RsystemMatrix(-1,ichunkrel),rmatrixComponents,&
+          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+              RsystemMatrix(-1,ichunkrel),rnonlinearSpatialMatrix,&
               rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
           ! Include the boundary conditions into that matrix.
@@ -1135,11 +1122,11 @@ contains
         !
         ! Set up the matrix weights 
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-          ichunk-1,0,rmatrixComponents)
+          ichunk-1,0,rnonlinearSpatialMatrix)
         
         ! Set up the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
-            RsystemMatrix(0,ichunkrel),rmatrixComponents,&
+        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            RsystemMatrix(0,ichunkrel),rnonlinearSpatialMatrix,&
             rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
         ! Include the boundary conditions into that matrix.
@@ -1261,11 +1248,11 @@ contains
         
           ! Set up the matrix weights 
           call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
-            ichunk-1,1,rmatrixComponents)
+            ichunk-1,1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
-              RsystemMatrix(1,ichunkrel),rmatrixComponents,&
+          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+              RsystemMatrix(1,ichunkrel),rnonlinearSpatialMatrix,&
               rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
           ! Include the boundary conditions into that matrix.

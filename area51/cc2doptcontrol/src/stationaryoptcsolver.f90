@@ -87,7 +87,7 @@ contains
 
 !    ! local variables
 !    REAL(DP) :: dalphaC
-!    TYPE(t_ccmatrixComponents) :: rmatrix
+!    TYPE(t_nonlinearSpatialMatrix) :: rmatrix
 !    TYPE(t_ccspatialPreconditioner) :: rpreconditioner
 !    TYPE(t_vectorBlock) :: rd
 !    LOGICAL :: bsuccess

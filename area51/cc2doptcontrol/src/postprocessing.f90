@@ -155,7 +155,6 @@ contains
     type(t_boundaryRegion) :: rregion
     
     ! Divergence
-    type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
 
     ! If we have a uniform discreisation, calculate the body forces on the
@@ -199,15 +198,11 @@ contains
             rtempVector,.true.)
 
         ! Calculate divergence = B1^T u1 + B2^T u2
-        call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB1,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
         call lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(1), &
+            rproblem%RlevelInfo(rproblem%nlmax)%rstaticInfo%rmatrixD1, rvector%RvectorBlock(1), &
             rtempVector, 1.0_DP, 0.0_DP)
-        call lsyssc_transposeMatrix (rproblem%RlevelInfo(rproblem%nlmax)%rmatrixB2,&
-            rBmatrix,LSYSSC_TR_VIRTUAL)
         call lsyssc_scalarMatVec (&
-            rBmatrix, rvector%RvectorBlock(2), &
+            rproblem%RlevelInfo(rproblem%nlmax)%rstaticInfo%rmatrixD2, rvector%RvectorBlock(2), &
             rtempVector, 1.0_DP, 1.0_DP)
         
         call output_lbrk()
@@ -461,7 +456,6 @@ contains
     type(t_boundaryRegion) :: rregion
     
     ! Divergence
-    type(t_matrixScalar) :: rBmatrix
     type(t_vectorScalar), target :: rtempVector
     
     character(SYS_STRLEN) :: sgmvName,stemp

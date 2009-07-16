@@ -1681,7 +1681,7 @@ contains
     ! Local variables
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
@@ -1979,9 +1979,9 @@ contains
         !
         ! Here not necessary, since this is done in the matrix vector multiplication!
         !CALL tbc_implementInitCondDefect (&
-        !    p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
+        !    p_rmatrix%p_rspaceTimeDiscr,p_rdef,p_rsubnode%rtempVectorSpace)
         !CALL tbc_implementBCdefect (rsolverNode%p_rproblem,&
-        !   p_rmatrix%p_rspaceTimeDiscretisation,p_rdef,p_rsubnode%rtempVectorSpace)
+        !   p_rmatrix%p_rspaceTimeDiscr,p_rdef,p_rsubnode%rtempVectorSpace)
         
         ! Get the norm of the new (final?) residuum
         dfr = sptivec_vectorNorm (p_rdef,rsolverNode%iresNorm)
@@ -2351,7 +2351,7 @@ contains
     integer :: isubstep, nlmax
     real(DP) :: dtheta,dtstep
     logical :: bsuccess
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rspaceTimeMatrix
     type(t_vectorBlock) :: rtempVectorD,rtempVectorX1,rtempVectorX2,rtempVectorX3
@@ -2365,7 +2365,7 @@ contains
     
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     ! Get a pointer to our spatial preconditioner
@@ -2403,6 +2403,16 @@ contains
     rtempVectorX3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rtempVectorX3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
+    ! Basic initialisation of our nonlinear matrix in space - for defect correction
+    ! and matrix assembly in order to be used in a spatial preconditioner.
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
+
+    call cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
+      nlmax,p_rspatialPreconditioner%nlmin,p_rspatialPreconditioner%nlmax,&
+      p_rspatialPreconditioner%rprecSpecials)
+      
     ! ----------------------------------------------------------------------
     ! We use a block-Jacobi scheme for preconditioning...
     !
@@ -2455,14 +2465,14 @@ contains
 
       ! Set up the matrix weights for the diagonal matrix
       call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-        isubstep,0,rmatrixComponents)
+        isubstep,0,rnonlinearSpatialMatrix)
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.
       call stat_startTimer (rsolverNode%rtimeSpacePrecond)
-      call cc_precondDefect (&
+      call cc_precondSpaceDefect (&
           rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner,&
-          rmatrixComponents,&
+          rnonlinearSpatialMatrix,&
           rtempVectorD,rtempVectorX1,rtempVectorX2,rtempVectorX3,&
           bsuccess,rsolverNode%p_rproblem%rcollection)      
       call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
@@ -2633,7 +2643,7 @@ contains
     
     type(t_ccoptspaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
 
     ! Allocate memory for temp vectors.
     call sptivec_initVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector,&
@@ -2740,7 +2750,7 @@ contains
   ! to the diagonal block of each time step in the global space-time
   ! system. Usually, this spatial preconditioner is a linear solver
   ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with cc_precondDefect is suitable.
+  ! can be used with cc_precondSpaceDefect is suitable.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -2763,7 +2773,7 @@ contains
     integer :: isubstep,iiteration,nlmax
     real(DP) :: dtheta,dtstep,dtime
     logical :: bsuccess
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rspaceTimeMatrix
     type(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3
@@ -2785,7 +2795,7 @@ contains
     
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     ! Get a pointer to our spatial preconditioner
@@ -2869,6 +2879,16 @@ contains
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
                 (rsolverNode%ioutputLevel .ge. 2)
+
+    ! Basic initialisation of our nonlinear matrix in space - for defect correction
+    ! and matrix assembly in order to be used in a spatial preconditioner.
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
+
+    call cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
+      nlmax,p_rspatialPreconditioner%nlmin,p_rspatialPreconditioner%nlmax,&
+      p_rspatialPreconditioner%rprecSpecials)
 
     ! ----------------------------------------------------------------------
     ! We use a Block-FBGS scheme for preconditioning.
@@ -3041,9 +3061,9 @@ contains
 
           ! Create d2 = RHS - Mx1 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX1,&
             rtempVectorRHS,1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
@@ -3053,22 +3073,22 @@ contains
           
           ! Create d2 = RHS - omega*Ml3 - (1-omega)*Ml3_old
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rnonlinearSpatialMatrix)
             
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX3,&
             rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
 
-          call cc_assembleDefect (rmatrixComponents,rtempVector2X3,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector2X3,&
             rtempVectorRHS,1.0_DP-domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
 
         ! Set up the matrix weights for the diagonal matrix
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -3086,9 +3106,9 @@ contains
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        call cc_precondDefect (&
+        call cc_precondSpaceDefect (&
             rsolverNode%p_rsubnodeBlockFBSOR%p_rspatialPreconditioner,&
-            rmatrixComponents,rtempVectorRHS,&
+            rnonlinearSpatialMatrix,rtempVectorRHS,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
@@ -3171,12 +3191,12 @@ contains
         
           ! Create d2 = RHS - omega*Mx1 - (1-omega)*Mx1_old
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX1,&
             rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
 
-          call cc_assembleDefect (rmatrixComponents,rtempVector2X1,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector2X1,&
             rtempVectorRHS,1.0_DP-domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
@@ -3202,19 +3222,19 @@ contains
         
           ! Create d2 = RHS - Ml3 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX3,&
             rtempVectorRHS,1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
 
         ! Set up the matrix weights for the diagonal matrix
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -3235,9 +3255,9 @@ contains
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        call cc_precondDefect (&
+        call cc_precondSpaceDefect (&
             rsolverNode%p_rsubnodeBlockFBSOR%p_rspatialPreconditioner,&
-            rmatrixComponents,rtempVectorRHS,&
+            rnonlinearSpatialMatrix,rtempVectorRHS,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
@@ -3441,7 +3461,7 @@ contains
 
     type(t_ccoptspaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
 
     ! Allocate memory for a temp vector.
     call sptivec_initVector (rsolverNode%p_rsubnodeBlockFBGS%rtempVector,&
@@ -3547,7 +3567,7 @@ contains
   ! to the diagonal block of each time step in the global space-time
   ! system. Usually, this spatial preconditioner is a linear solver
   ! (multigrid or whatever). More precisely, any spatial preconditioner that
-  ! can be used with cc_precondDefect is suitable.
+  ! can be used with cc_precondSpaceDefect is suitable.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -3570,7 +3590,7 @@ contains
     integer :: isubstep,iiteration,nlmax
     real(DP) :: dtheta,dtstep,dtime
     logical :: bsuccess
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rspaceTimeMatrix
     type(t_vectorBlock) :: rtempVectorD1,rtempVectorD2,rtempVectorD3
@@ -3591,7 +3611,7 @@ contains
     
     ! Get a pointer to the space-time discretisation structure that defines
     ! how to apply the global system matrix.
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     p_rspaceTimeMatrix => rsolverNode%rmatrix
     
     ! Get a pointer to our spatial preconditioner
@@ -3668,6 +3688,16 @@ contains
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
                 (rsolverNode%ioutputLevel .ge. 2)
+
+    ! Basic initialisation of our nonlinear matrix in space - for defect correction
+    ! and matrix assembly in order to be used in a spatial preconditioner.
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
+
+    call cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
+      nlmax,p_rspatialPreconditioner%nlmin,p_rspatialPreconditioner%nlmax,&
+      p_rspatialPreconditioner%rprecSpecials)
 
     ! ----------------------------------------------------------------------
     ! We use a Block-FBGS scheme for preconditioning.
@@ -3843,9 +3873,9 @@ contains
 
           ! Create d2 = RHS - Mx1 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX1,&
             rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
@@ -3855,19 +3885,19 @@ contains
           
           ! Create d2 = RHS - Ml3 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rnonlinearSpatialMatrix)
             
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX3,&
             rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
 
         ! Set up the matrix weights for the diagonal matrix
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -3885,9 +3915,9 @@ contains
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        call cc_precondDefect (&
+        call cc_precondSpaceDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
-            rmatrixComponents,rtempVectorRHS,&
+            rnonlinearSpatialMatrix,rtempVectorRHS,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
@@ -3961,9 +3991,9 @@ contains
         
           ! Create d2 = RHS - Mx1 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,-1,rmatrixComponents)
+            isubstep,-1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX1,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX1,&
             rtempVectorRHS,domegaSOR,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
         end if
@@ -3989,9 +4019,9 @@ contains
         
           ! Create d2 = RHS - Ml3 
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-            isubstep,1,rmatrixComponents)
+            isubstep,1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rmatrixComponents,rtempVectorX3,&
+          call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX3,&
             rtempVectorRHS,domegaSOR,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
           
@@ -3999,10 +4029,10 @@ contains
 
         ! Set up the matrix weights for the diagonal matrix
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
-          isubstep,0,rmatrixComponents)
+          isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rmatrixComponents,rtempVectorX2,rtempVectorRHS,&
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
             1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
@@ -4023,9 +4053,9 @@ contains
         ! Perform preconditioning of the spatial defect with the method 
         ! provided by the core equation module.
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
-        call cc_precondDefect (&
+        call cc_precondSpaceDefect (&
             rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,&
-            rmatrixComponents,rtempVectorRHS,&
+            rnonlinearSpatialMatrix,rtempVectorRHS,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3),&
             bsuccess,rsolverNode%p_rproblem%rcollection)      
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
@@ -4214,20 +4244,20 @@ contains
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%NEQtime
+    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime
     do i=1,4
       call sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
     end do
   
     ! Allocate memory for a spatial temp vector.
     call lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation,&
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rsolverNode%p_rsubnodeCG%rtempVectorSpace)
     rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
   end subroutine
   
@@ -4454,7 +4484,7 @@ contains
     
     ! Get some information
     p_rsubnode => rsolverNode%p_rsubnodeCG
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
@@ -5069,14 +5099,14 @@ contains
       integer :: i
       type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     
-      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
+      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
     
       ! Nothing to do if there is Nuemann boundary here.
       if (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) return
     
       neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
-      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rmatrixStokes%NEQ
-      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rmatrixB1%NCOLS
+      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
+      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
     
       ! Create an array containing all the rows where a unit vector is to be
       ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
@@ -5120,24 +5150,35 @@ contains
 
     ! local variables  
     type(t_matrixBlock) :: rblockTemp
-    type(t_ccmatrixComponents) :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_vectorBlock) :: rvector1,rvector2,rvector3
     integer :: isubstep,ileft,iright,ix
     integer, dimension(1) :: Irows
     integer :: idiag
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
+    type(t_ccPreconditionerSpecials) :: rprecSpecials
       
-    p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
    
     ! Create a global matrix:
     call lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%NEQtime))
   
-    ! Get a temporary system matrix
-    call cc_allocSystemMatrix (rproblem,p_rspaceTimeDiscr%p_rlevelInfo,rblockTemp)
-    
+    ! Get a temporary system matrix. Use the default preconditioner specials, that's
+    ! enough for us.
+    call cc_allocPrecSystemMatrix (rproblem,rprecSpecials,&
+        p_rspaceTimeDiscr%ilevel,rproblem%nlmin,rproblem%nlmax,&
+        p_rspaceTimeDiscr%p_rlevelInfo,CCMASM_MTP_AUTOMATIC,&
+        rblockTemp)
+
     ! Attach the boundary conditions
     rblockTemp%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rblockTemp%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+
+    ! Basic initialisation of our nonlinear matrix in space - for defect correction
+    ! and matrix assembly in order to be used in a spatial preconditioner.
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
 
     ! Create a vector for evaluating the nonlinearity in the previous, current and
     ! next timestep.
@@ -5183,13 +5224,13 @@ contains
       
         ! Set up the matrix weights of that submatrix.
         call cc_setupMatrixWeights (rproblem,rsupermatrix,&
-          p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rmatrixComponents)
+          p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rnonlinearSpatialMatrix)
           
         ! Assemble the matrix in rblockTemp.
         ! Note that the weights of the matrices must be set before, otherwise
         ! the assembly routines would complain about missing matrices :-)
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,CCMASM_FLAG_NONE,&
-            rblockTemp,rmatrixComponents,rvector1,rvector2,rvector3) 
+        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            rblockTemp,rnonlinearSpatialMatrix,rvector1,rvector2,rvector3) 
 
         ! Switch of matrices that aren't needed.
         select case (ix)
@@ -5259,11 +5300,11 @@ contains
         ! IF (isubstep .NE. 0) THEN
         if (.not. lsysbl_isSubmatrixPresent (rmatrix,isubstep*6+3,isubstep*6+3)) then
           call createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+3,isubstep*6+3),&
-              p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
+              p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixTemplateFEMPressure%NEQ,1)
         end if
         if (.not. lsysbl_isSubmatrixPresent (rmatrix,isubstep*6+6,isubstep*6+6)) then
           call createPointMatrix (rmatrix%RmatrixBlock(isubstep*6+6,isubstep*6+6),&
-              p_rspaceTimeDiscr%p_rlevelInfo%rmatrixIdentityPressure%NEQ,1)
+              p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixTemplateFEMPressure%NEQ,1)
         end if
         
       end if
@@ -5790,20 +5831,20 @@ end subroutine
     ! Allocate that here! Use the default data type prescribed in the solver 
     ! structure for allocating the temp vectors.
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscretisation%NEQtime
+    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime
     do i=1,6
       call sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
     end do
     
     ! Allocate memory for a spatial temp vector.
     call lsysbl_createVecBlockByDiscr (&
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation,&
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
     rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
     rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%p_rdiscreteFBC
+        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
   end subroutine
   
@@ -6051,7 +6092,7 @@ end subroutine
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     p_rmatrix => rsolverNode%rmatrix
 
     ! Check the parameters
@@ -6644,23 +6685,23 @@ end subroutine
       !    rsolverNode%p_rsubnodeMultigrid%p_Rlevels(ilev)%&
       !        rspaceTimeDiscr%p_rlevelInfo%p_rdiscretisation)
               
-      NEQtime = p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%NEQtime
+      NEQtime = p_rmgLevel%rmatrix%p_rspaceTimeDiscr%NEQtime
               
       ! On all levels except for the maximum one, create a solution vector
       if (ilev .lt. NLMAX) then
         call sptivec_initVector (&
             p_rmgLevel%rsolutionVector,NEQtime,p_rmgLevel%&
-            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+            rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
       end if
       
       ! On all levels except for the first one, create a RHS and a temp vector
       if (ilev .gt. 1) then
         call sptivec_initVector (&
             p_rmgLevel%rrhsVector,NEQtime,p_rmgLevel%&
-            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+            rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
         call sptivec_initVector (&
             p_rmgLevel%rtempVector,NEQtime,p_rmgLevel%&
-            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+            rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
       end if
       
       ! If adaptive coarse grid correction is activated, we need a temporary
@@ -6669,12 +6710,12 @@ end subroutine
           rsolverNode%p_rsubnodeMultigrid%dalphamax) then
         call sptivec_initVector (&
             p_rmgLevel%rtempCGCvector,NEQtime,p_rmgLevel%&
-            rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation)
+            rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
       end if
       
       ! Create a block temp vector for the interlevel projection
       call lsysbl_createVecBlockByDiscr(&
-          p_rmgLevel%rmatrix%p_rspaceTimeDiscretisation%p_rlevelInfo%rdiscretisation,&
+          p_rmgLevel%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
           p_rmgLevel%rprjVector,.false.)
 
     end do
@@ -7098,7 +7139,7 @@ end subroutine
     
     ! Apply nmaxIterations times defect correction to the given solution rx.
     p_rmatrix => rsolverNode%rmatrix
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
     
     ! Do we have an iterative or one-step solver given?
     ! A 1-step solver performs the following loop nmaxIterations times, while an iterative
@@ -7244,7 +7285,7 @@ end subroutine
 
     ! Get the system matrix on the finest level:
     p_rmatrix => rsolverNode%rmatrix
-    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscretisation
+    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
 
     if (p_rsubnode%icycle .lt. 0) then
       ! Wrong cycle
@@ -7406,11 +7447,11 @@ end subroutine
           
             ! Implement boundary conditions into the defect
             call tbc_implementInitCondDefect (&
-                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
+                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscr,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
             call tbc_implementBCdefect (rsolverNode%p_rproblem,&
-                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
+                p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscr,&
                 p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                 p_rsubnode%p_Rlevels(ilev)%rprjVector)
           end if
@@ -7487,11 +7528,11 @@ end subroutine
 
                 ! Implement boundary conditions into the defect
                 call tbc_implementInitCondDefect (&
-                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 call tbc_implementBCdefect (rsolverNode%p_rproblem,&
-                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rrhsVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                     
@@ -7543,11 +7584,11 @@ end subroutine
 
                 ! Implement boundary conditions into the defect
                 call tbc_implementInitCondDefect (&
-                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
                 call tbc_implementBCdefect (rsolverNode%p_rproblem,&
-                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscr,&
                     p_rsubnode%p_Rlevels(ilev-1)%rsolutionVector,&
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector)
 
@@ -7623,18 +7664,18 @@ end subroutine
                     p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                     p_rsubnode%p_Rlevels(ilev-1)%rprjVector, &
                     p_rsubnode%p_Rlevels(ilev)%rprjVector,&
-                    p_rmatrix%p_rspaceTimeDiscretisation,&
-                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscretisation,&
+                    p_rmatrix%p_rspaceTimeDiscr,&
+                    p_rsubnode%p_Rlevels(ilev-1)%rmatrix%p_rspaceTimeDiscr,&
                     rsolverNode%p_rproblem)
                     
               ! Implement boundary conditions into the vector.
               ! It's still a defect, although a preconditioned one.
               call tbc_implementInitCondDefect (&
-                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
+                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscr,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector, &
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
               call tbc_implementBCdefect (rsolverNode%p_rproblem,&
-                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscretisation,&
+                  p_rsubnode%p_Rlevels(ilev)%rmatrix%p_rspaceTimeDiscr,&
                   p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                   p_rsubnode%p_Rlevels(ilev)%rprjVector)
 
@@ -8019,10 +8060,10 @@ end subroutine
 
       ! Implement boundary conditions into the vector.
       !CALL tbc_implementInitCondDefect (&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
       !CALL tbc_implementBCdefect (rproblem,&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
 
       ! Get the nominator
@@ -8036,10 +8077,10 @@ end subroutine
       
       ! Implement boundary conditions into the vector.
       !CALL tbc_implementInitCondDefect (&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
       !CALL tbc_implementBCdefect (rproblem,&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
 
       ! Get the denominator      
@@ -8118,10 +8159,10 @@ end subroutine
 
       ! Implement boundary conditions into the vector.
       !CALL tbc_implementInitCondDefect (&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
       !CALL tbc_implementBCdefect (rproblem,&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
 
       ! Get the nominator
@@ -8134,10 +8175,10 @@ end subroutine
       
       ! Implement boundary conditions into the vector.
       !CALL tbc_implementInitCondDefect (&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
       !CALL tbc_implementBCdefect (rproblem,&
-      !    rmatrix%p_rspaceTimeDiscretisation,&
+      !    rmatrix%p_rspaceTimeDiscr,&
       !    rtempVector, rtempSpaceVector)
 
       ! Get the denominator      

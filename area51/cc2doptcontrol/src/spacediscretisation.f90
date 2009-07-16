@@ -14,31 +14,26 @@
 !#     -> Initialise the discretisation structure inside of the problem
 !#        structure using the parameters from the INI/DAT files.
 !#
-!# 2.) cc_allocMatVec
-!#     -> Allocates memory for vectors/matrices on all levels.
+!# 2.) cc_allocMatVec / cc_generateBasicMat / cc_doneMatVec
+!#     -> Allocates/ Generates / Releases memory for vectors/matrices on all levels.
 !#
-!# 4.) cc_generateStaticMatrices
-!#     -> Assembles matrix entries of static matrices (Stokes, B)
-!#        on one level
+!# 3.) cc_allocStaticMatrices / cc_generateStaticMatrices / 
+!#     cc_releaseStaticMatrices
+!#     -> Allocates/Assembles/Releases matrix entries of static matrices 
+!#        (Stokes, B) on one level
 !#
-!# 5.) cc_generateBasicMatrices
-!#     -> Assembles the matrix entries of all static matrices on all levels.
-!#
-!# 6.) cc_generateBasicRHS
+!# 5.) cc_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
 !#        implemented
 !#
-!# 7.) cc_doneMatVec
-!#     -> Cleanup of matrices/vectors, release all memory
-!#
-!# 8.) cc_doneDiscretisation
+!# 6.) cc_doneDiscretisation
 !#     -> Cleanup of the underlying discretisation structures
 !#
-!# 9.) cc_initInitialSolution
+!# 7.) cc_initInitialSolution
 !#     -> Init solution vector according to parameters in the DAT file
 !#
-!# 10.) cc_writeSolution
-!#      -> Write solution vector as configured in the DAT file.
+!# 8.) cc_writeSolution
+!#     -> Write solution vector as configured in the DAT file.
 !#
 !# </purpose>
 !##############################################################################
@@ -439,6 +434,7 @@ contains
     ! An object for the block discretisation on one level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationMass
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisationMassPressure
     
     integer :: icubM
     character(LEN=SYS_NAMELEN) :: sstr
@@ -495,8 +491,13 @@ contains
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1),&
-          rproblem%RlevelInfo(i)%rdiscretisationMass,.true.)
-      p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
+          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass,.true.)
+      call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3), &
+          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure,.true.)
+
+      p_rdiscretisationMass => rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass
+      p_rdiscretisationMassPressure => &
+          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure
       
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'scubStokes',sstr,'')
@@ -510,6 +511,7 @@ contains
       ! Initialise the cubature formula appropriately.
       do k = 1,p_rdiscretisationMass%inumFESpaces
         p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
+        p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
       end do
 
     end do
@@ -549,7 +551,7 @@ contains
       ! -----------------------------------------------------------------------
 
       ! Release the mass matrix discretisation.
-      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rdiscretisationMass)
+      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass)
 
     end do
     
@@ -595,132 +597,25 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,cmatBuildType
+  integer :: i
   
     ! A pointer to the system matrix and the RHS/solution vectors.
-    type(t_matrixScalar), pointer :: p_rmatrixStokes
-    type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
     type(t_vectorBlock), pointer :: p_rtempVector
 
-    ! A pointer to the discretisation structure with the data.
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-  
-    ! When the jump stabilisation is used, we have to create an extended
-    ! matrix stencil!
-    cmatBuildType = BILF_MATC_ELEMENTBASED
-    
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IUPWIND1', i)
-    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
-        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
-        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
-       cmatBuildType = BILF_MATC_EDGEBASED
-
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IUPWIND2', i)
-    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
-        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
-        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
-       cmatBuildType = BILF_MATC_EDGEBASED
-  
     ! Initialise all levels...
     do i=rproblem%NLMIN,rproblem%NLMAX
 
-      ! -----------------------------------------------------------------------
-      ! Basic (Navier-) Stokes problem
-      ! -----------------------------------------------------------------------
-
-      ! Ask the problem structure to give us the discretisation structure
-      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
-      
-      ! The global system looks as follows:
-      !
-      !    ( A11       B1  M/a          )  ( u )  =  ( f1)
-      !    (      A22  B2       M/a     )  ( v )     ( f2)
-      !    ( B1^T B2^T                  )  ( p )     ( fp)
-      !    ( -M            A44  A45  B1 )  ( l1)     ( z1)
-      !    (      -M       A54  A55  B2 )  ( l2)     ( z2)
-      !    (               B1^T B2^T    )  ( xi)     ( 0 )
-      !
-      ! with Aii = L + nonlinear Convection, a=alphaC from the given equation.
-      ! We compute in advance a standard Stokes matrix L which can be added 
-      ! later to the convection matrix, resulting in the nonlinear system matrix.
-      !
-      ! At first, we create 'template' matrices that define the structure
-      ! of each of the submatrices in that global system. These matrices
-      ! are later used to 'derive' the actual Laplace/Stokes matrices
-      ! by sharing the structure (KCOL/KLD).
-      !
-      ! Get a pointer to the template FEM matrix. This is used for the
-      ! Laplace/Stokes matrix and probably for the mass matrix.
-      
-      p_rmatrixTemplateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
-
-      ! Create the matrix structure
-      call bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-                p_rmatrixTemplateFEM,cconstrType=cmatBuildType)
-
-      ! In the global system, there are two gradient matrices B1 and B2.
-      ! Create a template matrix that defines their structure.
-      p_rmatrixTemplateGradient => rproblem%RlevelInfo(i)%rmatrixTemplateGradient
-      
-      ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
-      call bilf_createMatrixStructure (&
-                p_rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
-                p_rmatrixTemplateGradient,p_rdiscretisation%RspatialDiscr(1))
-      
-      ! Ok, now we use the matrices from above to create the actual submatrices
-      ! that are used in the global system.
-      !
-      ! Get a pointer to the (scalar) Stokes matrix:
-      p_rmatrixStokes => rproblem%RlevelInfo(i)%rmatrixStokes
-      
-      ! Connect the Stokes matrix to the template FEM matrix such that they
-      ! use the same structure.
-      !
-      ! Don't create a content array yet, it will be created by 
-      ! the assembly routines later.
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateFEM,&
-                  p_rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      
-      ! Allocate memory for the entries; don't initialise the memory.
-      call lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
-      
-      ! In the global system, there are two coupling matrices B1 and B2.
-      ! Both have the structure of the template gradient matrix.
-      ! So connect the two B-matrices to the template gradient matrix
-      ! such that they share the same structure.
-      ! Create the matrices structure of the pressure using the 3rd
-      ! spatial discretisation structure in p_rdiscretisation%RspatialDiscr.
-      !
-      ! Don't create a content array yet, it will be created by 
-      ! the assembly routines later.
-      
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                  
-      call lsyssc_duplicateMatrix (p_rmatrixTemplateGradient,&
-                  rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
-      ! Allocate memory for the entries; don't initialise the memory.
-      call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
-                                           LSYSSC_SETM_UNDEFINED)
-      call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixB2,&
-                                           LSYSSC_SETM_UNDEFINED)
-                                           
-      ! -----------------------------------------------------------------------
-      ! Allocate memory for an identity matrix in the size of the pressure.
-      ! Attach a discretisation structure that describes the pressure element
-      ! as trial space.
-      call lsyssc_createDiagMatrixStruc (&
-          rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
-          rproblem%RlevelInfo(i)%rmatrixB1%NCOLS,LSYSSC_MATRIX9)
-      call lsyssc_allocEmptyMatrix (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
-          LSYSSC_SETM_UNDEFINED)
-      call lsyssc_assignDiscrDirectMat (rproblem%RlevelInfo(i)%rmatrixIdentityPressure,&
-          p_rdiscretisation%RspatialDiscr(3))
+      ! Generate the matrices on this level.
+      if (i .eq. rproblem%NLMIN) then
+        call cc_allocStaticMatrices (rproblem,&
+            rproblem%RlevelInfo(i)%rdiscretisation,&
+            rproblem%RlevelInfo(i)%rstaticInfo)
+      else
+        call cc_allocStaticMatrices (rproblem,&
+            rproblem%RlevelInfo(i)%rdiscretisation,&
+            rproblem%RlevelInfo(i)%rstaticInfo,&
+            rproblem%RlevelInfo(i-1)%rdiscretisation)
+      end if
           
       ! -----------------------------------------------------------------------
       ! Temporary vectors
@@ -769,185 +664,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_generateStaticMatrices (rproblem,rlevelInfo)
-  
-!<description>
-  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
-  ! in the specified problem structure, i.e. the entries of all matrices 
-  ! that do not change during the computation or which serve as a template for
-  ! generating other matrices.
-  !
-  ! Memory for those matrices must have been allocated before with 
-  ! allocMatVec!
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
-
-  ! A level-info structure. The static matrices in this structure are generated.
-  type(t_problem_lvl), intent(INOUT),target :: rlevelInfo
-!</inputoutput>
-
-!</subroutine>
-
-    ! A pointer to the Stokes and mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixMass
-
-    ! A pointer to the discretisation structure with the data.
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-    
-    ! Stabilisation stuff
-    type(t_jumpStabilisation) :: rjumpStabil
-    integer :: iupwind1,iupwind2
-    real(DP) :: dupsam1,dupsam2
-    
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-    ! -----------------------------------------------------------------------
-    ! Basic (Navier-) Stokes problem
-    ! -----------------------------------------------------------------------
-  
-    ! Ask the problem structure to give us the discretisation structure
-    p_rdiscretisation => rlevelInfo%rdiscretisation
-    
-    ! Get a pointer to the (scalar) Stokes matrix:
-    p_rmatrixStokes => rlevelInfo%rmatrixStokes
-    
-    call stdop_assembleLaplaceMatrix (p_rmatrixStokes,.true.,rproblem%dnu)
-    
-    ! In the global system, there are two coupling matrices B1 and B2.
-    !
-    ! Build the first pressure matrix B1.
-    call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB1,&
-        DER_FUNC,DER_DERIV_X,-1.0_DP)
-
-    ! Build the second pressure matrix B2.
-    call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixB2,&
-        DER_FUNC,DER_DERIV_Y,-1.0_DP)
-        
-    ! Transpose the B1 and B2 matrices to get D1 and D2.
-    call lsyssc_transposeMatrix (rlevelInfo%rmatrixB1,rlevelInfo%rmatrixD1,LSYSSC_TR_ALL)
-    call lsyssc_transposeMatrix (rlevelInfo%rmatrixB2,rlevelInfo%rmatrixD2,LSYSSC_TR_ALL)
-    
-    ! The structure of D1 and D2 is the same, save memory by releasing that
-    ! of D2.
-    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixD1,rlevelInfo%rmatrixD2,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
-                                
-    ! -----------------------------------------------------------------------
-    ! Mass matrices
-    ! -----------------------------------------------------------------------
-
-    p_rmatrixMass => rlevelInfo%rmatrixMass
-
-    ! If there is an existing mass matrix, release it.
-    call lsyssc_releaseMatrix (rlevelInfo%rmatrixMass)
-
-    ! Generate mass matrix. The matrix has basically the same structure as
-    ! our template FEM matrix, so we can take that.
-    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
-                p_rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
-    ! Change the discretisation structure of the mass matrix to the
-    ! correct one; at the moment it points to the discretisation structure
-    ! of the Stokes matrix...
-    call lsyssc_assignDiscrDirectMat (p_rmatrixMass,&
-        rlevelInfo%rdiscretisationMass)
-
-    ! Call the standard matrix setup routine to build the matrix.                    
-    call stdop_assembleSimpleMatrix (p_rmatrixMass,DER_FUNC,DER_FUNC)
-
-    ! -----------------------------------------------------------------------
-    ! EOJ matrix, if the edge oriented stabilisation is active
-    ! -----------------------------------------------------------------------
-
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IUPWIND1', iupwind1)
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'IUPWIND2', iupwind2)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'DUPSAM1', dupsam1)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
-                              'DUPSAM2', dupsam2)
-                              
-    if ((iupwind1 .eq. CCMASM_STAB_EDGEORIENTED3)) then
-      ! Create an empty matrix
-      call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
-          rlevelInfo%rmatrixEOJ1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_clearMatrix (rlevelInfo%rmatrixEOJ1)
-    
-      ! Set up the jump stabilisation structure.
-      ! There's not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rproblem%dnu
-      
-      ! Set stabilisation parameter
-      rjumpStabil%dgammastar = dupsam1
-      rjumpStabil%dgamma = rjumpStabil%dgammastar
-      
-      ! Matrix weight
-      rjumpStabil%dtheta = 1.0_DP
-
-      ! Call the jump stabilisation technique to stabilise that stuff.   
-      ! We can assemble the jump part any time as it's independent of any
-      ! convective parts...
-      call conv_jumpStabilisation2d (&
-                          rjumpStabil, CONV_MODMATRIX, &
-                          rlevelInfo%rmatrixEOJ1)   
-    end if
-
-    if ((iupwind2 .eq. CCMASM_STAB_EDGEORIENTED3)) then
-    
-      ! Perhaps the second matrix is like the first, then we don't
-      ! have to assemble it.
-      if ((dupsam1 .eq. dupsam2) .and. (iupwind1 .eq. iupwind2)) then
-        ! Take that from the primal space.
-        call lsyssc_duplicateMatrix (rlevelInfo%rmatrixEOJ1,rlevelInfo%rmatrixEOJ2,&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      else
-        ! Create an empty matrix
-        call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEM,&
-            rlevelInfo%rmatrixEOJ2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_clearMatrix (rlevelInfo%rmatrixEOJ2)
-
-        ! Set up the jump stabilisation structure.
-        ! There's not much to do, only initialise the viscosity...
-        rjumpStabil%dnu = rproblem%dnu
-        
-        ! Set stabilisation parameter
-        rjumpStabil%dgammastar = dupsam2
-        rjumpStabil%dgamma = rjumpStabil%dgammastar
-        
-        ! Matrix weight
-        rjumpStabil%dtheta = 1.0_DP
-
-        ! Call the jump stabilisation technique to stabilise that stuff.   
-        ! We can assemble the jump part any time as it's independent of any
-        ! convective parts...
-        call conv_jumpStabilisation2d (&
-                            rjumpStabil, CONV_MODMATRIX, &
-                            rlevelInfo%rmatrixEOJ2)   
-      end if
-    end if
-
-    ! -----------------------------------------------------------------------
-    ! Initialise the identity matrix
-    ! -----------------------------------------------------------------------
-    call lsyssc_initialiseIdentityMatrix (rlevelInfo%rmatrixIdentityPressure)
-
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine cc_generateBasicMatrices (rproblem)
+  subroutine cc_generateBasicMat (rproblem)
   
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
@@ -967,10 +684,449 @@ contains
     integer :: i
 
     do i=rproblem%NLMIN,rproblem%NLMAX
-      call cc_generateStaticMatrices (&
-          rproblem,rproblem%RlevelInfo(i))
+      call cc_generateStaticMatrices (rproblem,&
+          rproblem%RlevelInfo(i)%rdiscretisation,&
+          rproblem%RlevelInfo(i)%rstaticInfo)
     end do
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneMatVec (rproblem,rvector,rrhs)
+  
+!<description>
+  ! Releases system matrix and vectors.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(INOUT), target :: rproblem
+
+  ! A vector structure for the solution vector. The structure is cleaned up,
+  ! memory is released.
+  type(t_vectorBlock), intent(INOUT) :: rvector
+
+  ! A vector structure for the RHS vector. The structure is cleaned up,
+  ! memory is released.
+  type(t_vectorBlock), intent(INOUT) :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Release matrices and vectors on all levels
+    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+
+      ! Release the static matrices.
+      call cc_releaseStaticMatrices (rproblem%RlevelInfo(i)%rstaticInfo)
+      
+      ! Remove the temp vector that was used for interpolating the solution
+      ! from higher to lower levels in the nonlinear iteration.
+      if (i .lt. rproblem%NLMAX) then
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorPrimal)
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorDual)
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector3)
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector2)
+        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector1)
+      end if
+      
+    end do
+
+    ! Delete solution/RHS vector
+    call lsysbl_releaseVector (rvector)
+    call lsysbl_releaseVector (rrhs)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_allocStaticMatrices (rproblem,rdiscretisation,rstaticInfo,&
+      rdiscretisationCoarse)
+  
+!<description>
+  ! Allocates memory and generates the structure of all static matrices 
+  ! in rstaticInfo.
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout) :: rproblem
+  
+  ! Discretisation structure that defines how to discretise the different
+  ! operators.
+  type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+
+  ! A t_staticLevelInfo structure. The static matrices in this structure are generated.
+  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+  
+  ! OPTIONAL: Discretisation structure of the level below the level
+  ! identified by rdiscretisation. Must be specified on all levels except
+  ! for the coarse mesh.
+  type(t_blockDiscretisation), intent(in), optional :: rdiscretisationCoarse
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer :: cmatBuildType
+  integer :: i
+  
+    ! When the jump stabilisation is used, we have to create an extended
+    ! matrix stencil!
+    cmatBuildType = BILF_MATC_ELEMENTBASED
+    
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND1', i)
+    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
+        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
+        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
+       cmatBuildType = BILF_MATC_EDGEBASED
+
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND2', i)
+    if ((i .eq. CCMASM_STAB_EDGEORIENTED) .or.&
+        (i .eq. CCMASM_STAB_EDGEORIENTED2) .or. &
+        (i .eq. CCMASM_STAB_EDGEORIENTED3)) &
+       cmatBuildType = BILF_MATC_EDGEBASED
+
+    ! -----------------------------------------------------------------------
+    ! Basic (Navier-) Stokes problem
+    ! -----------------------------------------------------------------------
+
+    ! The global system looks as follows:
+    !
+    !    ( A11       B1  M/a          )  ( u )  =  ( f1)
+    !    (      A22  B2       M/a     )  ( v )     ( f2)
+    !    ( B1^T B2^T                  )  ( p )     ( fp)
+    !    ( -M            A44  A45  B1 )  ( l1)     ( z1)
+    !    (      -M       A54  A55  B2 )  ( l2)     ( z2)
+    !    (               B1^T B2^T    )  ( xi)     ( 0 )
+    !
+    ! with A = L + nonlinear Convection. We compute in advance
+    ! a standard Stokes matrix L which can be added later to the
+    ! convection matrix, resulting in the nonlinear system matrix.
+    !
+    ! At first, we create 'template' matrices that define the structure
+    ! of each of the submatrices in that global system. These matrices
+    ! are later used to 'derive' the actual Laplace/Stokes matrices
+    ! by sharing the structure (KCOL/KLD).
+    !
+    ! Get a pointer to the template FEM matrix. This is used for the
+    ! Laplace/Stokes matrix and probably for the mass matrix.
+    
+    ! Create the matrix structure
+    call bilf_createMatrixStructure (&
+              rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
+              rstaticInfo%rmatrixTemplateFEM,cconstrType=cmatBuildType)
+
+    ! Create the matrices structure of the pressure using the 3rd
+    ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
+    call bilf_createMatrixStructure (&
+              rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
+              rstaticInfo%rmatrixTemplateFEMPressure)
+
+    ! Create the matrices structure of the pressure using the 3rd
+    ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
+    call bilf_createMatrixStructure (&
+              rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
+              rstaticInfo%rmatrixTemplateGradient,&
+              rdiscretisation%RspatialDiscr(1))
+              
+    ! Transpose the B-structure to get the matrix template for the
+    ! divergence matrices.
+    call lsyssc_transposeMatrix (rstaticInfo%rmatrixTemplateGradient,&
+        rstaticInfo%rmatrixTemplateDivergence,LSYSSC_TR_STRUCTURE)
+    
+    ! Ok, now we use the matrices from above to create the actual submatrices
+    ! that are used in the global system.
+    !
+    ! Connect the Stokes matrix to the template FEM matrix such that they
+    ! use the same structure.
+    !
+    ! Don't create a content array yet, it will be created by 
+    ! the assembly routines later.
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
+                rstaticInfo%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    
+    ! Allocate memory for the entries; don't initialise the memory.
+    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+    
+    ! In the global system, there are two coupling matrices B1 and B2.
+    ! Both have the structure of the template gradient matrix.
+    ! So connect the two B-matrices to the template gradient matrix
+    ! such that they share the same structure.
+    ! Create the matrices structure of the pressure using the 3rd
+    ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
+    !
+    ! Don't create a content array yet, it will be created by 
+    ! the assembly routines later.
+    ! Allocate memory for the entries; don't initialise the memory.
+    
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateGradient,&
+        rstaticInfo%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateGradient,&
+        rstaticInfo%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+              
+    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixB1,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixB2,LSYSSC_SETM_UNDEFINED)
+
+    ! Set up memory for the divergence matrices D1 and D2.
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateDivergence,&
+        rstaticInfo%rmatrixD1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateDivergence,&
+        rstaticInfo%rmatrixD2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+
+    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixD1,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixD2,LSYSSC_SETM_UNDEFINED)
+    
+    ! The D1^T and D2^T matrices are by default the same as B1 and B2.
+    ! These matrices may be different for special VANCA variants if
+    ! B1 and B2 is different from D1 and D2 (which is actually a rare case).
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixB1,&
+        rstaticInfo%rmatrixD1T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+                
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixB2,&
+        rstaticInfo%rmatrixD2T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_generateStaticMatrices (rproblem,rdiscretisation,rstaticInfo)
+  
+!<description>
+  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
+  ! in the specified problem structure, i.e. the entries of all matrices 
+  ! that do not change during the computation or which serve as a template for
+  ! generating other matrices.
+  !
+  ! Memory for those matrices must have been allocated before with 
+  ! allocMatVec!
+!</description>
+
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout) :: rproblem
+  
+  ! Discretisation structure that defines how to discretise the different
+  ! operators.
+  type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+
+  ! A t_staticLevelInfo structure. The static matrices in this structure are generated.
+  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: j
+
+    ! Stabilisation stuff
+    type(t_jumpStabilisation) :: rjumpStabil
+    integer :: iupwind1,iupwind2
+    real(DP) :: dupsam1,dupsam2
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    
+    ! -----------------------------------------------------------------------
+    ! Basic (Navier-) Stokes problem
+    ! -----------------------------------------------------------------------
+    
+    ! The global system looks as follows:
+    !
+    !    ( A11       B1  M/a          )  ( u )  =  ( f1)
+    !    (      A22  B2       M/a     )  ( v )     ( f2)
+    !    ( B1^T B2^T                  )  ( p )     ( fp)
+    !    ( -M            A44  A45  B1 )  ( l1)     ( z1)
+    !    (      -M       A54  A55  B2 )  ( l2)     ( z2)
+    !    (               B1^T B2^T    )  ( xi)     ( 0 )
+    !
+    ! with A = L + nonlinear Convection. We compute in advance
+    ! a standard Stokes matrix L which can be added later to the
+    ! convection matrix, resulting in the nonlinear system matrix,
+    ! as well as both B-matrices.
+    
+    ! Assemble the Stokes operator:
+    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%dnu)
+    
+    ! Build the first pressure matrix B1.
+    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB1,&
+        DER_FUNC,DER_DERIV_X,-1.0_DP)
+
+    ! Build the second pressure matrix B2.
+    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB2,&
+        DER_FUNC,DER_DERIV_Y,-1.0_DP)
+    
+    ! Set up the matrices D1 and D2 by transposing B1 and B2.
+    ! For that purpose, virtually transpose B1/B2.
+    call lsyssc_transposeMatrix (rstaticInfo%rmatrixB1,&
+        rstaticInfo%rmatrixD1,LSYSSC_TR_CONTENT)
+
+    call lsyssc_transposeMatrix (rstaticInfo%rmatrixB2,&
+        rstaticInfo%rmatrixD2,LSYSSC_TR_CONTENT)
+          
+    ! -----------------------------------------------------------------------
+    ! EOJ matrix, if the edge oriented stabilisation is active
+    ! -----------------------------------------------------------------------
+
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND1', iupwind1)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'IUPWIND2', iupwind2)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'DUPSAM1', dupsam1)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+                              'DUPSAM2', dupsam2)
+                              
+    if ((iupwind1 .eq. CCMASM_STAB_EDGEORIENTED3)) then
+      ! Create an empty matrix
+      call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
+          rstaticInfo%rmatrixEOJ1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rstaticInfo%rmatrixEOJ1)
+    
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do, only initialise the viscosity...
+      rjumpStabil%dnu = rproblem%dnu
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgammastar = dupsam1
+      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+
+      ! Call the jump stabilisation technique to stabilise that stuff.   
+      ! We can assemble the jump part any time as it's independent of any
+      ! convective parts...
+      call conv_jumpStabilisation2d (&
+                          rjumpStabil, CONV_MODMATRIX, &
+                          rstaticInfo%rmatrixEOJ1)   
+    end if
+
+    if ((iupwind2 .eq. CCMASM_STAB_EDGEORIENTED3)) then
+    
+      ! Perhaps the second matrix is like the first, then we don't
+      ! have to assemble it.
+      if ((dupsam1 .eq. dupsam2) .and. (iupwind1 .eq. iupwind2)) then
+        ! Take that from the primal space.
+        call lsyssc_duplicateMatrix (rstaticInfo%rmatrixEOJ1,rstaticInfo%rmatrixEOJ2,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      else
+        ! Create an empty matrix
+        call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
+            rstaticInfo%rmatrixEOJ2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix (rstaticInfo%rmatrixEOJ2)
+
+        ! Set up the jump stabilisation structure.
+        ! There's not much to do, only initialise the viscosity...
+        rjumpStabil%dnu = rproblem%dnu
+        
+        ! Set stabilisation parameter
+        rjumpStabil%dgammastar = dupsam2
+        rjumpStabil%dgamma = rjumpStabil%dgammastar
+        
+        ! Matrix weight
+        rjumpStabil%dtheta = 1.0_DP
+
+        ! Call the jump stabilisation technique to stabilise that stuff.   
+        ! We can assemble the jump part any time as it's independent of any
+        ! convective parts...
+        call conv_jumpStabilisation2d (&
+                            rjumpStabil, CONV_MODMATRIX, &
+                            rstaticInfo%rmatrixEOJ2)   
+      end if
+    end if
+
+    ! -----------------------------------------------------------------------
+    ! Mass matrices. They are used in so many cases, it's better we always
+    ! have them available.
+    ! -----------------------------------------------------------------------
+
+    ! If there is an existing mass matrix, release it.
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMass)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMassPressure)
+
+    ! Generate mass matrix. The matrix has basically the same structure as
+    ! our template FEM matrix, so we can take that.
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
+                rstaticInfo%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEMPressure,&
+                rstaticInfo%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+                
+    ! Change the discretisation structure of the mass matrix to the
+    ! correct one; at the moment it points to the discretisation structure
+    ! of the Stokes matrix...
+    call lsyssc_assignDiscrDirectMat (rstaticInfo%rmatrixMass,&
+        rstaticInfo%rdiscretisationMass)
+    call lsyssc_assignDiscrDirectMat (rstaticInfo%rmatrixMassPressure,&
+        rstaticInfo%rdiscretisationMassPressure)
+
+    ! Call the standard matrix setup routine to build the matrix.                    
+    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMass,DER_FUNC,DER_FUNC)
+    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
+                
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_releaseStaticMatrices (rstaticInfo)
+  
+!<description>
+  ! Releases all static matrices from a t_staticLevelInfo structure.
+!</description>
+
+!<inputoutput>
+  ! A t_staticLevelInfo structure to be cleaned up.
+  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+!</inputoutput>
+
+!</subroutine>
+
+    ! If there is an existing mass matrix, release it.
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMass)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMassPressure)
+
+    ! Release Stokes, B1, B2,... matrices
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD2T)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD1T)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD2)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD1)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixB2)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixB1)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixStokes)
+    if (lsyssc_hasMatrixStructure(rstaticInfo%rmatrixEOJ2)) then
+      call lsyssc_releaseMatrix (rstaticInfo%rmatrixEOJ2)
+    end if
+    if (lsyssc_hasMatrixStructure(rstaticInfo%rmatrixEOJ1)) then
+      call lsyssc_releaseMatrix (rstaticInfo%rmatrixEOJ1)
+    end if
+    
+    ! Release the template matrices. This is the point, where the
+    ! memory of the matrix structure is released.
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateDivergence)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateGradient)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateFEM)
+    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateFEMPressure)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1468,75 +1624,6 @@ contains
 
     ! Release temp memory.
     call lsysbl_releaseVector (rvector1)
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine cc_doneMatVec (rproblem,rvector,rrhs)
-  
-!<description>
-  ! Releases system matrix and vectors.
-!</description>
-
-!<inputoutput>
-  ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
-
-  ! A vector structure for the solution vector. The structure is cleaned up,
-  ! memory is released.
-  type(t_vectorBlock), intent(INOUT) :: rvector
-
-  ! A vector structure for the RHS vector. The structure is cleaned up,
-  ! memory is released.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
-!</inputoutput>
-
-!</subroutine>
-
-    integer :: i
-
-    ! Release matrices and vectors on all levels
-    do i=rproblem%NLMAX,rproblem%NLMIN,-1
-
-      ! If there is an existing mass matrix, release it.
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
-
-      ! Release the EOJ matrices if they exist.
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ2)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixEOJ1)
-
-      ! Release Stokes, B1, B2, D1, D2 matrix
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixD2)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixD1)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
-      
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixIdentityPressure)
-      
-      ! Release the template matrices. This is the point, where the
-      ! memory of the matrix structure is released.
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateGradient)
-      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixTemplateFEM)
-      
-      ! Remove the temp vector that was used for interpolating the solution
-      ! from higher to lower levels in the nonlinear iteration.
-      if (i .lt. rproblem%NLMAX) then
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorPrimal)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorDual)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector3)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector2)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector1)
-      end if
-      
-    end do
-
-    ! Delete solution/RHS vector
-    call lsysbl_releaseVector (rvector)
-    call lsysbl_releaseVector (rrhs)
 
   end subroutine
 

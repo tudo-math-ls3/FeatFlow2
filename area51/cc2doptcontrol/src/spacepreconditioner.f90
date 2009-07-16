@@ -72,14 +72,11 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) cc_createPreconditioner
-!#     -> Creates a basic preconditioner structure for a spatial 
+!# 1.) cc_createSpacePreconditioner / cc_releasePreconditioner
+!#     -> Creates/Releases a basic preconditioner structure for a spatial 
 !#        preconditioner.
 !#
-!# 2.) cc_releasePreconditioner
-!#     -> Releases a spatial preconditioner structure
-!#
-!# 3.) cc_precondDefect
+!# 2.) cc_precondSpaceDefect
 !#     -> Executes spatial preconditioning on a given defect vector
 !#
 !# </purpose>
@@ -198,7 +195,15 @@ module spacepreconditioner
     ! This flag is set to .TRUE. if there are no Neumann boundary
     ! components. In that case, the pressure matrices of direct
     ! solvers must be changed.
-    logical :: bpressureGloballyIndefinite = .false.
+    logical :: bneedPressureDiagonalBlock = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on all levels except for the coarse mesh.
+    logical :: bneedVirtTransposedD = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on the coarse mesh.
+    logical :: bneedVirtTransposedDonCoarse = .false.
     
   end type
 
@@ -214,26 +219,14 @@ module spacepreconditioner
     ! The (linearised) system matrix for that specific level. 
     type(t_matrixBlock), pointer :: p_rmatrix => null()
 
-    ! Stokes matrix for that specific level (=nu*Laplace)
-    type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
+    ! Reference to the static matrices on this level (Stokes, B,...)
+    type(t_staticLevelInfo), pointer :: p_rstaticInfo
 
-    ! B1-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
-
-    ! B2-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
-
-    ! Mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixMass => null()
-    
     ! Temporary vectors for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
     type(t_vectorBlock), pointer :: p_rtempVector1 => null()
     type(t_vectorBlock), pointer :: p_rtempVector2 => null()
     type(t_vectorBlock), pointer :: p_rtempVector3 => null()
-
-    ! Identty matrix for the pressure
-    type(t_matrixScalar), pointer :: p_rmatrixIdentityPressure => null()
 
     ! Block matrix, which is used in the defect correction / Newton
     ! algorithm as preconditioner matrix of the correspnding underlying
@@ -243,17 +236,6 @@ module spacepreconditioner
     ! used for preconditioning.
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
     
-    ! Pointer to a D1-matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixD1 => null()
-
-    ! Pointer to a D2-matrix.
-    type(t_matrixScalar), pointer :: p_rmatrixD2 => null()
-
-    ! Pointer to a matrix for the EOJ-stabilisation for the X-velocity.
-    type(t_matrixScalar), pointer :: p_rmatrixEOJ1 => null()
-
-    ! Pointer to a matrix for the EOJ-stabilisation for the Y-velocity.
-    type(t_matrixScalar), pointer :: p_rmatrixEOJ2 => null()
   end type
 
 !</typeblock>
@@ -277,10 +259,10 @@ module spacepreconditioner
     character(LEN=SYS_STRLEN) :: spreconditionerSection = ''
     
     ! Minimum discretisation level
-    integer :: NLMIN = 0
+    integer :: nlmin = 0
     
     ! Maximum discretisation level
-    integer :: NLMAX = 0
+    integer :: nlmax = 0
     
     ! A t_ccPreconditionerSpecials structure that saves information about
     ! special 'tweaks' in matrices such that everything works.
@@ -314,13 +296,769 @@ module spacepreconditioner
 contains
   
   ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine vanka_NSOptC2D (rrhs,domega,rvector,rmatrix,IelementList,celementU,celementP)
+  
+!<description>
+!</description>
+
+!<input>
+  ! The right-hand-side vector of the system
+  type(t_vectorBlock), intent(in)         :: rrhs
+  
+  ! Matrix
+  type(t_matrixBlock), intent(in) :: rmatrix
+  
+  ! Relaxation parameter. Standard=1.0_DP.
+  real(DP), intent(in)                    :: domega
+!</input>
+
+!<inputoutput>
+  ! The initial solution vector. Is replaced by a new iterate.
+  type(t_vectorBlock), intent(inout)         :: rvector
+
+  ! A list of element numbers where VANKA should be applied to.
+  integer, dimension(:)     :: IelementList
+
+  ! Element type for the FE spaces
+  integer(I32), intent(in) :: celementU,celementP
+!</inputoutput>
+
+!</subroutine>
+
+  ! Multiplication factors
+  real(DP), dimension(6,6) :: Dmult
+  
+  ! Array for the pressure DOF's on the element
+  integer, dimension(1) :: IelIdx2
+  integer, dimension(:,:), allocatable :: IdofsP
+  real(DP), dimension(:,:), allocatable :: DaInv
+  integer, dimension(:), allocatable :: IdofsU
+  
+  ! Quick access for the matrix arrays
+  integer, dimension(:), pointer :: p_KldA11,p_KldA12,p_KldB,p_KldC,p_KldD,&
+      p_KcolA11,p_KcolA12,p_KcolB,p_KcolC,p_KcolD,p_KdiagA11
+  real(DP), dimension(:), pointer :: p_DA11,p_DA12,p_DA21,p_DA22
+  real(DP), dimension(:), pointer :: p_DA14,p_DA15,p_DA24,p_DA25
+  real(DP), dimension(:), pointer :: p_DA41,p_DA42,p_DA51,p_DA52
+  real(DP), dimension(:), pointer :: p_DA44,p_DA45,p_DA54,p_DA55
+  real(DP), dimension(:), pointer :: p_DB1,p_DB2,p_DD1,p_DD2
+  real(DP), dimension(:), pointer :: p_DB4,p_DB5,p_DD4,p_DD5
+  real(DP), dimension(:), pointer :: p_DC1, p_DC2
+  real(DP), dimension(:,:), allocatable :: DS1, DS2
+  integer, dimension(:), allocatable :: Ipiv
+
+  ! Quick access for the vector arrays
+  real(DP), dimension(:), pointer :: p_DrhsU1,p_DrhsV1,p_DrhsP1,&
+                                     p_DvecU1,p_DvecV1,p_DvecP1
+  real(DP), dimension(:), pointer :: p_DrhsU2,p_DrhsV2,p_DrhsP2,&
+                                     p_DvecU2,p_DvecV2,p_DvecP2
+  
+  ! local variables
+  logical :: bHaveA12, bHaveA45, bhaveA14,bhaveA15,bhaveA41,bhaveA51,bHaveC
+  integer :: idxu,idxp,idxp2,idofp,idofu,i,j,id1,id2,ndofu,ndofp,info,ielidx
+  real(DP) :: daux1,daux2,daux4,daux5
+  real(DP) :: dp1,dp2
+  real(DP), dimension(:,:), allocatable :: DdefectU
+  real(DP), dimension(:,:), allocatable :: DdefectP
+
+    ! Get the pointers to the vector data
+    call lsyssc_getbase_double(rvector%RvectorBlock(1), p_DvecU1)
+    call lsyssc_getbase_double(rvector%RvectorBlock(2), p_DvecV1)
+    call lsyssc_getbase_double(rvector%RvectorBlock(3), p_DvecP1)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(1), p_DrhsU1)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV1)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP1)
+
+    call lsyssc_getbase_double(rvector%RvectorBlock(4), p_DvecU2)
+    call lsyssc_getbase_double(rvector%RvectorBlock(5), p_DvecV2)
+    call lsyssc_getbase_double(rvector%RvectorBlock(6), p_DvecP2)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsU2)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(5), p_DrhsV2)
+    call lsyssc_getbase_double(rrhs%RvectorBlock(6), p_DrhsP2)
+    
+    ! Let's assume we do not have the optional matrices
+    bHaveA12 = .FALSE.
+    bHaveC = .FALSE.
+    
+    ! Get the pointers from the vanka structure
+    call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1),p_KcolA11)
+    call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,1),p_KldA11)
+    call lsyssc_getbase_Kdiagonal (rmatrix%RmatrixBlock(1,1),p_KdiagA11)
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Da11)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,2),p_Da22)
+
+    bhaveA12 = lsysbl_isSubmatrixPresent(rmatrix,1,2)
+    if (bhaveA12) then
+      call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,2),p_KldA12)
+      call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,2),p_KcolA12)
+
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,2),p_Da12)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,1),p_Da21)
+    end if
+
+    call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,3),p_KldB)
+    call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,3),p_KcolB)
+
+    call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(3,1),p_KldD)
+    call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(3,2),p_KcolD)
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,3),p_Db1)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,3),p_Db2)
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,1),p_Dd1)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,2),p_Dd2)
+    
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,4),p_Da11)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,5),p_Da22)
+
+    bhaveA45 = lsysbl_isSubmatrixPresent(rmatrix,4,5)
+    if (bhaveA45) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,5),p_Da12)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,4),p_Da21)
+    end if
+    
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,6),p_Db1)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,6),p_Db2)
+
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(6,4),p_Dd1)
+    call lsyssc_getbase_double (rmatrix%RmatrixBlock(6,5),p_Dd2)
+
+    bhaveC = lsysbl_isSubmatrixPresent(rmatrix,3,3)
+    if (bhaveC) then
+      call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(3,3),p_KldC)
+      call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(3,3),p_KcolC)
+
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(3,3),p_DC1)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(6,6),p_DC2)
+    end if
+    
+    bhaveA14 = lsysbl_isSubmatrixPresent(rmatrix,1,4)
+    if (bhaveA14) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,4),p_Da14)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,5),p_Da25)
+    end if
+
+    bhaveA15 = lsysbl_isSubmatrixPresent(rmatrix,1,5)
+    if (bhaveA14) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,5),p_Da15)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(2,4),p_Da24)
+    end if
+
+    bhaveA41 = lsysbl_isSubmatrixPresent(rmatrix,4,1)
+    if (bhaveA41) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,1),p_Da41)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,2),p_Da52)
+    end if
+
+    bhaveA51 = lsysbl_isSubmatrixPresent(rmatrix,5,1)
+    if (bhaveA51) then
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(5,1),p_Da51)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(4,2),p_Da42)
+    end if
+
+    ! Get the multiplication factors
+    Dmult = rmatrix%RmatrixBlock(:,:)%dscaleFactor
+
+    ! Take care of the 'soft-deactivation' of the sub-matrices
+    bHaveA12 = bHaveA12 .and. ((Dmult(1,2) .ne. 0.0_DP) .or. &
+                               (Dmult(2,1) .ne. 0.0_DP))
+    bHaveA45 = bHaveA45 .and. ((Dmult(4,5) .ne. 0.0_DP) .or. &
+                               (Dmult(5,4) .ne. 0.0_DP))
+    bHaveC = bHaveC .and. (Dmult(3,3) .ne. 0.0_DP)
+
+    ! Allocate an array for the pressure DOF's.
+    ndofp = elem_igetNDofLoc(celementP)
+    allocate(IdofsP(ndofp,1))
+
+    ! Allocate memory for the correction on each element.
+    ! Note that all P-dofs on one element are connected to all the V-dofs on that
+    ! element. Therefore, each row in D corresponding to an arbitrary P-dof on an
+    ! element will return all the V-dof's on that element!
+    ndofu = elem_igetNDofLoc(celementU)
+    allocate (DdefectU(ndofu,4))
+    allocate (DdefectP(ndofp,2))
+    allocate (Ds1(ndofp,ndofp))
+    allocate (Ds2(ndofp,ndofp))
+    allocate (Ipiv(ndofp))
+    allocate (DaInv(4,ndofu))
+    allocate (IdofsU(ndofu))
+    
+    ! Loop through all elements 
+    do ielidx = 1,size(IelementList)
+    
+      ! On the element, get the local DOF's in the pressure space
+      IelIdx2(1) = ielidx
+      call dof_locGlobMapping_mult(rmatrix%p_rblockDiscrTest%RspatialDiscr(3), &
+          IelIdx2, IdofsP)
+      
+      ! Get A^-1, which is a diagonal matrix in our case.
+      ! We can fetch it by going through the the first line of D corresponding to our
+      ! element.
+      ! Simultaneously get the DOF's in U.
+      idofp = IdofsP(1,1)
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        idofu = p_KcolD(id1)
+        idxu = id1 - p_KldD(idofp) + 1
+        
+        ! Save the DOF for future use.
+        IdofsU(idxu) = idofu
+
+        ! Get the main diagonal entries of the A-matrices
+        i = p_KdiagA11(idofu)
+        DaInv(1,idxu) = 1.0_DP/(Dmult(1,1)*p_DA11(i))
+        DaInv(2,idxu) = 1.0_DP/(Dmult(2,2)*p_DA22(i))
+        DaInv(3,idxu) = 1.0_DP/(Dmult(4,4)*p_DA11(i))
+        DaInv(4,idxu) = 1.0_DP/(Dmult(5,5)*p_DA22(i))
+      end do
+      
+      ! Clear the local defect, fetch the local RHS.
+      idofP = IdofsP(1,1)
+      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        idxu = id1-p_KldD(idofp)+1
+        DdefectU(idxu,1) = p_DrhsU1(IdofsU(idxu))
+        DdefectU(idxu,2) = p_DrhsV1(IdofsU(idxu))
+        DdefectU(idxu,3) = p_DrhsU2(IdofsU(idxu))
+        DdefectU(idxu,4) = p_DrhsV2(IdofsU(idxu))
+      end do
+
+      do idxp = 1, ndofp
+        idofp = IdofsP(idxp,1)
+        DdefectP(idxp,1) = p_DrhsP1(idofp)
+        DdefectP(idxp,2) = p_DrhsP2(idofp)
+      end do
+
+      ! Does the C matrix exist? If yes, then update the local RHS:
+      ! f_p := f_p - C*p
+      if(bHaveC) then
+
+        ! So let's loop all pressure DOFs on the current element
+        do idxp = 1, ndofp
+        
+          idofP = IdofsP(idxp,1)
+        
+          ! Get the corresponding RHS entry in pressure space
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          do i = p_KldC(idofp), p_KldC(idofp+1)-1
+            daux1 = daux1 + p_DC1(i)*p_DvecP1(p_KcolC(i))
+            daux2 = daux2 + p_DC2(i)*p_DvecP2(p_KcolC(i))
+          end do
+          DdefectP(idxp,1) = DdefectP(idxp,1) - Dmult(3,3)*daux1
+          DdefectP(idxp,2) = DdefectP(idxp,2) - Dmult(6,6)*daux2
+          
+        end do
+        
+      end if
+        
+      ! Create: f_u = f_u - B p - A u
+      ! with A being the diagonal velocity matrix.  
+      do idxp = 1, ndofp
+              
+        idofP = IdofsP(idxp,1)
+              
+        ! Now let's loop over the entries of row idofp in the D-matrices
+        do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+        
+          ! The column index gives us the index of a velocity DOF which is
+          ! adjacent to the current pressure dof - so get its index.
+          idofu = p_KcolD(id1)
+          idxu = id1-p_KldD(idofp)+1
+          
+          ! The first thing we want to do is to perform:
+          ! f_u := f_u - B1*p
+          ! f_v := f_v - B2*p
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          daux4 = 0.0_DP
+          daux5 = 0.0_DP
+          do i = p_KldB(idofu), p_KldB(idofu+1)-1
+            dp1 = p_DvecP1(p_KcolB(i))
+            dp2 = p_DvecP2(p_KcolB(i))
+            daux1 = daux1 + p_DB1(i)*dp1
+            daux2 = daux2 + p_DB2(i)*dp1
+            daux4 = daux4 + p_DB4(i)*dp2
+            daux5 = daux5 + p_DB5(i)*dp2
+          end do
+          DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,3)*daux1
+          DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,3)*daux2
+          DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,6)*daux4
+          DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,6)*daux5
+          
+          ! Now we'll also subtract A*u from the local RHS
+          ! f_u := f_u - A11*u
+          ! f_v := f_v - A22*v
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
+          daux4 = 0.0_DP
+          daux5 = 0.0_DP
+          do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
+            j = p_KcolA11(i)
+            daux1 = daux1 + p_DA11(i)*p_DvecU1(j)
+            daux2 = daux2 + p_DA22(i)*p_DvecV1(j)
+            daux4 = daux4 + p_DA44(i)*p_DvecU2(j)
+            daux5 = daux5 + p_DA55(i)*p_DvecV2(j)
+          end do
+          DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,1)*daux1
+          DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,2)*daux2
+          DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,4)*daux4
+          DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,5)*daux5
+          
+        end do
+        
+      end do
+          
+      ! Do the A12/A21 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA12) then
+      
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+          
+            ! f_u := f_u - A12*v
+            ! f_v := f_v - A21*u
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+              j = p_KcolA12(i)
+              daux1 = daux1 + p_DA12(i)*p_DvecV1(j)
+              daux2 = daux2 + p_DA21(i)*p_DvecU1(j)
+            end do
+            DdefectU(idofu,1) = DdefectU(idofu,1) - Dmult(1,2)*daux1
+            DdefectU(idofu,2) = DdefectU(idofu,2) - Dmult(2,1)*daux2
+            
+          end do
+        end do
+              
+      end if
+
+      ! Do the A45/A54 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA45) then
+      
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+          
+            daux1 = 0.0_DP
+            daux2 = 0.0_DP
+            do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+              j = p_KcolA12(i)
+              daux1 = daux1 + p_DA45(i)*p_DvecV2(j)
+              daux2 = daux2 + p_DA54(i)*p_DvecU2(j)
+            end do
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,5)*daux1
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,4)*daux2
+            
+          end do
+        
+        end do
+        
+      end if
+
+      ! Do the A14/A25 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA14) then
+
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+          
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
+              j = p_KcolA11(i)
+              daux4 = daux4 + p_DA14(i)*p_DvecU2(j)
+              daux5 = daux5 + p_DA25(i)*p_DvecV2(j)
+            end do
+            
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(4,5)*daux4
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(5,4)*daux5
+            
+          end do
+          
+        end do
+      
+      end if
+
+      ! Do the A15/A24 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA15) then
+
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+              j = p_KcolA12(i)
+              daux4 = daux4 + p_DA15(i)*p_DvecV2(j)
+              daux5 = daux5 + p_DA24(i)*p_DvecU2(j)
+            end do
+            
+            DdefectU(idxu,1) = DdefectU(idxu,1) - Dmult(1,5)*daux4
+            DdefectU(idxu,2) = DdefectU(idxu,2) - Dmult(2,4)*daux5
+
+          end do
+          
+        end do
+        
+      end if
+
+      ! Do the A41/A52 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA41) then
+
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA11(idofu), p_KldA11(idofu+1)-1
+              j = p_KcolA11(i)
+              daux4 = daux4 + p_DA41(i)*p_DvecU1(j)
+              daux5 = daux5 + p_DA52(i)*p_DvecV1(j)
+            end do
+            
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,1)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,2)*daux5
+
+          end do
+          
+        end do
+        
+      end if
+          
+
+      ! Do the A42/A51 matrices exist? If yes, then we will also need to
+      ! update the local defect by these matrices.
+      if(bHaveA51) then
+
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+                
+          ! Now let's loop over the entries of row idofp in the D-matrices
+          do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+
+            idofu = p_KcolD(id1)
+            idxu = id1-p_KldD(idofp)+1
+
+            daux4 = 0.0_DP
+            daux5 = 0.0_DP
+            do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
+              j = p_KcolA12(i)
+              daux4 = daux4 + p_DA42(i)*p_DvecV1(j)
+              daux5 = daux5 + p_DA51(i)*p_DvecU1(j)
+            end do
+            
+            DdefectU(idxu,3) = DdefectU(idxu,3) - Dmult(4,2)*daux4
+            DdefectU(idxu,4) = DdefectU(idxu,4) - Dmult(5,1)*daux5
+
+          end do
+          
+        end do
+        
+      end if
+      
+      ! Now we have the defect "d = f-Bp-Au". 
+      !
+      ! In the next step, we apply a local preconditioner P^-1 to get an element update:
+      !
+      !   x  =  x + omega * P^-1 d  
+      !      =  x + omega * P^-1 (f_u-Bp-Au , f_p - Du - Cp)^T
+      !
+      ! For the preconditioner, we choose
+      !   P = ( diag(A) B )
+      !       ( D       C )
+      !
+      ! from the local system matrix
+      !
+      !       ( A B )
+      !       ( D C )
+      !
+      ! The local matrices A,B,C,D are rather small. We apply a Schur complement
+      ! decomposition to get an update. For the full local systm matrix, this
+      ! has the form:
+      !
+      !  P^-1 d  = ( A B ) ^-1  ( d1 )
+      !            ( D C )      ( d2 )
+      !
+      !          = ( A^-1 ( d1 - B ( S^-1 ( d2 - DA^-1 d1 ) ) )
+      !            (                 S^-1 ( d2 - DA^-1 d1 )   )
+      !
+      ! where  S = C - D A^-1 B.
+      !
+      ! In a first step, we set upo the vector v=(d2 - DA^-1 d1)
+      ! which is later multiplied to S^-1.
+      ! The matrix A here is in our case actually the diagonal
+      ! of the original matrix.
+
+      do idxp = 1, ndofp
+      
+        idofp = IdofsP(idxp,1)
+        
+        do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+ 
+          idofu = p_KcolD(id1)
+          idxu = id1-p_KldD(idofp)+1
+
+          ! Write v into d2.
+          DdefectP(idxp,1) = DdefectP(idxp,1) - p_Dd1(id1)*DaInv(1,idxu)*DdefectU(idxu,1) &
+                                              - p_Dd2(id1)*DaInv(2,idxu)*DdefectU(idxu,2)
+          DdefectP(idxp,2) = DdefectP(idxp,2) - p_Dd4(id1)*DaInv(3,idxu)*DdefectU(idxu,3) &
+                                              - p_Dd5(id1)*DaInv(4,idxu)*DdefectU(idxu,4)
+        end do
+      end do
+      
+      ! Now, we have to apply S^-1. That means in a first step, we have to
+      ! set up S = C - D A^-1 B. We ignore the C at first as we yet don't know
+      ! if it exists.
+      do idxp = 1, ndofp
+        idofp = IdofsP(idxp,1)
+        do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+          idofu = p_KcolD(id1)
+          
+          do id2 = p_KldB(idofu), p_KldB(idofu+1)-1
+            idxp2 = id2-p_KldB(idofu)+1
+            Ds1(idxp,idxp2) = -p_Dd1(id1)*p_Db1(id2)*DaInv(1,idxu)&
+                              -p_Dd2(id1)*p_Db2(id2)*DaInv(2,idxu)
+            Ds2(idxp,idxp2) = -p_Dd4(id1)*p_Db5(id2)*DaInv(1,idxu)&
+                              -p_Dd5(id1)*p_Db5(id2)*DaInv(2,idxu)
+          end do
+        end do
+      end do
+      
+      ! If we have C, sum it up to S.
+      if(bHaveC) then
+
+        ! So let's loop all pressure DOFs on the current element
+        do idxp = 1, ndofp
+        
+          idofp = IdofsP(idxp,1)
+        
+          do id2 = p_KldC(idofp), p_KldC(idofp+1)-1
+            idxp2 = id2-p_KldC(idofp)+1
+            Ds1(idxp,idxp2) = Ds1(idxp,idxp2) + p_DC1(id2)
+            Ds2(idxp,idxp2) = Ds2(idxp,idxp2) + p_DC2(id2)
+          end do
+          
+        end do
+        
+      end if
+      
+      ! Apply S^-1 to d2 to get the update dp=S^-1 ( d2 - DA^-1 d1 )  for p.
+      call DGESV(ndofp,1,Ds1,ndofp,Ipiv,DdefectP(:,1),ndofp,info)
+      
+      ! Did DGESV fail?
+      if(info .ne. 0) cycle
+      
+      ! Get the update for u:
+      ! du = A^-1 ( d1 - B dp )
+      
+      do i=1,ndofu
+        idofu = IdofsU (i)
+        do id1 = p_KldB(idofu),p_KldB(idofu+1)-1
+          idxp = id1 - p_KldB(idofu) + 1
+          DdefectU(i,1) = DdefectU(i,1) - p_Db1(id1)*DdefectP(idxp,1)
+          DdefectU(i,2) = DdefectU(i,2) - p_Db2(id1)*DdefectP(idxp,2)
+          DdefectU(i,3) = DdefectU(i,3) - p_Db4(id1)*DdefectP(idxp,3)
+          DdefectU(i,4) = DdefectU(i,4) - p_Db5(id1)*DdefectP(idxp,4)
+        end do
+        DdefectU(i,1) = DaInv(1,i)*DdefectU(i,1)
+        DdefectU(i,2) = DaInv(2,i)*DdefectU(i,2)
+        DdefectU(i,3) = DaInv(3,i)*DdefectU(i,3)
+        DdefectU(i,4) = DaInv(4,i)*DdefectU(i,4)
+      end do
+      
+      ! Do the update: x_n+1 = x_n + omega*(du,dp)
+      do i=1,ndofu
+        idofu = IdofsU(i)
+        p_DvecU1(idofu) = p_DvecU1(idofu) + domega*DdefectU(i,1)
+        p_DvecV1(idofu) = p_DvecV1(idofu) + domega*DdefectU(i,2)
+        p_DvecU2(idofu) = p_DvecU2(idofu) + domega*DdefectU(i,3)
+        p_DvecV2(idofu) = p_DvecV2(idofu) + domega*DdefectU(i,4)
+      end do
+            
+      do i=1,ndofp
+        idofp = IdofsP(i,1)
+        p_DvecP1(idofp) = p_DvecP1(idofp) + domega*DdefectP(i,1)
+        p_DvecP2(idofp) = p_DvecP2(idofp) + domega*DdefectP(i,2)
+      end do
+
+    end do ! ielidx
+
+    ! That's it
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        rdiscretisation,rstaticLevelInfo)
+  
+  !<description>
+    ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
+    ! from the main problem and precalculated information.
+  !</description>
+
+  !<input>
+    ! Global problem structure.
+    type(t_problem), intent(inout) :: rproblem
+    
+    ! Discretisation of the level where the matrix is to be assembled.
+    type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+    
+    ! Core equation structure of one level.
+    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Initialise the matrix assembly structure rnonlinearCCMatrix 
+      ! with basic global information.
+      !
+      ! 1.) Model, stabilisation
+      rnonlinearSpatialMatrix%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+
+      ! Get stabilisation parameters
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'iUpwind1',rnonlinearSpatialMatrix%iupwind1,0)
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'iUpwind2',rnonlinearSpatialMatrix%iupwind2,0)
+      
+      call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'dUpsam1',rnonlinearSpatialMatrix%dupsam1,0.0_DP)
+      call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'dUpsam2',rnonlinearSpatialMatrix%dupsam2,0.0_DP)
+
+      ! Change the sign of dupsam2 for a consistent stabilisation.
+      ! Reason: The stablisation is added to the dual operator by the SD/
+      ! EOJ stabilisation in the following way:
+      !
+      !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
+      !
+      ! We want to *add* the stabilisation, so we have to introduce a "-" sign
+      ! in dupsam2 to get
+      !
+      !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
+      ! <=>
+      !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
+      
+      rnonlinearSpatialMatrix%dupsam2 = -rnonlinearSpatialMatrix%dupsam2
+      
+      ! 2.) Pointers to global precalculated matrices.
+      rnonlinearSpatialMatrix%p_rdiscretisation => rdiscretisation
+      rnonlinearSpatialMatrix%p_rstaticInfo => rstaticLevelInfo
+      
+    end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
+        ilev,nlmin,nlmax,rprecSpecials)
+  
+  !<description>
+    ! Prepares a rnonlinearCCMatrix structure for the assembly according
+    ! to a preconditioner. rprecSpecials specifies a couple of preconditioner
+    ! flags that configure the shape of the system matrix that the preconditioner
+    ! needs.
+    !
+    ! cc_initNonlinMatrix must have been called prior to this routine to
+    ! initialise the basic matrix. cc_preparePrecondMatrixAssembly will then
+    ! add assembly-specific parameters of the preconditioner.
+  !</description>
+
+  !<input>
+    ! Current assembly level.
+    integer, intent(in) :: ilev
+    
+    ! Minimum assembly level.
+    integer, intent(in) :: nlmin
+    
+    ! Maximum assembly level.
+    integer, intent(in) :: nlmax
+  
+    ! Structure with assembly-specific parameters of the preconditioner.
+    type(t_ccPreconditionerSpecials), intent(in) :: rprecSpecials
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Parameters for adaptive matrices for Q1~ with anisotropic elements
+      rnonlinearSpatialMatrix%iadaptiveMatrices = rprecSpecials%iadaptiveMatrices
+      rnonlinearSpatialMatrix%dadmatthreshold = rprecSpecials%dadmatthreshold
+      
+      ! Depending on the level, we have to set up information about
+      ! transposing B-matrices.
+      if (ilev .eq. nlmin) then
+        rnonlinearSpatialMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedDonCoarse
+      else
+        rnonlinearSpatialMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedD
+      end if
+      
+    end subroutine
+
+  ! ***************************************************************************
   ! Routines to create a nonlinear iteration structure, to save it
   ! to a collection, to rebuild it from there and to clean it up.
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine cc_createPreconditioner (rpreconditioner,NLMIN,NLMAX)
+  subroutine cc_createSpacePreconditioner (rpreconditioner,NLMIN,NLMAX)
   
 !<description>
   ! This routine creates a spational preconditioner structure. The structure is
@@ -355,7 +1093,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_releasePreconditioner (rpreconditioner)
+  subroutine cc_releaseSpacePreconditioner (rpreconditioner)
   
 !<description>
   ! Releases allocated memory in the spatial preconditioner structure.
@@ -378,61 +1116,9 @@ contains
 
   ! ***************************************************************************
 
-!<function>
-
-  integer(I32) function cc_getMatrixFlag (rpreconditioner,ilevel)
-  
-!<description>
-  ! Determines the matrix flag for creating submatrices of the global matrix.
-  ! The matrix flag is provided to cc_assembleMatrix in order to specify
-  ! crucial properties that the matrix must have in order to be compatible
-  ! to the preconditioner.
-!</description>
-
-!<input>
-  ! The spatial preconditioner structure.
-  type(t_ccspatialPreconditioner), intent(in) :: rpreconditioner
-  
-  ! The current spatial level.
-  integer, intent(in) :: ilevel
-!</input>
-
-!<returns>
-  ! Matrix flag for cc_assembleMatrix.
-!</returns>
-
-!</function>
-
-    cc_getMatrixFlag = 0
-    
-    ! Is that the coarse mesh?
-    if (ilevel .eq. rpreconditioner%NLMIN) then
-      ! Coarse grid solver is some kind of VANKA which needs virtually
-      ! transposed matrices?
-      if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
-        select case (rpreconditioner%rprecSpecials%icoarseGridSolverType)
-        case (1,2,3,4)
-          cc_getMatrixFlag = CCMASM_FLAG_VTBMAT
-        end select
-      end if
-    else
-      ! Smoother is some kind of VANKA which needs virtually
-      ! transposed matrices?
-      if (rpreconditioner%rprecSpecials%isolverType .eq. 1) then
-        select case (rpreconditioner%rprecSpecials%ismootherType)
-        case (2,3,4,5,6,7)
-          cc_getMatrixFlag = CCMASM_FLAG_VTBMAT
-        end select
-      end if
-    end if
-
-  end function
-
-  ! ***************************************************************************
-
   !<subroutine>
 
-    subroutine cc_precondDefect (rpreconditioner,rmatrixComponents,&
+    subroutine cc_precondSpaceDefect (rpreconditioner,rnonlinearSpatialMatrix,&
         rd,rx1,rx2,rx3,bsuccess,rcollection)
   
     use linearsystemblock
@@ -446,7 +1132,7 @@ contains
 
   !<input>
     ! Configuration of the core equation on the maximum level.
-    type(t_ccmatrixComponents), intent(IN)      :: rmatrixComponents
+    type(t_nonlinearSpatialMatrix), intent(IN)      :: rnonlinearSpatialMatrix
 
   !</input>
 
@@ -492,9 +1178,12 @@ contains
     logical :: bassembleNewton
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    
 
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
+    type(t_vectorBlock) :: rxtemp
+    integer, dimension(:), pointer :: p_IelementList
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_vec,p_def,p_da
@@ -524,7 +1213,7 @@ contains
         
         ! Assemble the preconditioner matrices in rpreconditioner
         ! on all levels that the solver uses.
-        call assembleLinsolMatrices (rpreconditioner,rmatrixComponents,&
+        call assembleLinsolMatrices (rpreconditioner,rnonlinearSpatialMatrix,&
             rcollection,bassembleNewton,rx1,rx2,rx3)
           
         ! Our 'parent' (the caller of the nonlinear solver) has prepared
@@ -581,6 +1270,15 @@ contains
         ! RHS and x a defect update to be added to a solution vector,
         ! we would have to use linsol_precondDefect instead.
         call linsol_precondDefect (p_rsolverNode,rd)
+!        call lsysbl_createVecBlockIndirect(rd,rxtemp,.true.)
+!        call storage_getbase_int(rd%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%h_IelementList,&
+!          p_IelementList)
+!        do i=1,1
+!          call vanka_NSOptC2D (rd,1.0_DP,rxtemp,Rmatrices(rpreconditioner%NLMAX),&
+!              p_IelementList,EL_EM30,EL_Q0)
+!        end do
+!        call lsysbl_copyVector (rxtemp,rd)
+!        call lsysbl_releaseVector (rxtemp)
 
         ! Release the numeric factorisation of the matrix.
         ! We don't release the symbolic factorisation, as we can use them
@@ -608,7 +1306,7 @@ contains
       
     contains
       
-      subroutine assembleLinsolMatrices (rpreconditioner,rmatrixComponents,rcollection,&
+      subroutine assembleLinsolMatrices (rpreconditioner,rnonlinearSpatialMatrix,rcollection,&
           bassembleNewton,rx1,rx2,rx3)
 
       use linearsystemblock
@@ -624,7 +1322,7 @@ contains
       type(t_ccspatialPreconditioner), intent(IN)    :: rpreconditioner
 
       ! Level independent configuration of the core equation
-      type(t_ccmatrixComponents), intent(IN)      :: rmatrixComponents
+      type(t_nonlinearSpatialMatrix), intent(IN)      :: rnonlinearSpatialMatrix
 
       ! Reference to a collection structure that contains all parameters of the
       ! discretisation (for nonlinearity, etc.).
@@ -654,7 +1352,7 @@ contains
       type(t_vectorBlock), pointer :: p_rvectorFine1,p_rvectorFine2,p_rvectorFine3
       type(t_vectorBlock), pointer :: p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3
       type(t_interlevelProjectionBlock), pointer :: p_rprojection
-      type(t_ccmatrixComponents) :: rmatrixAssembly
+      type(t_nonlinearSpatialMatrix) :: rlocalNonlSpatialMatrix
       integer, dimension(1), parameter :: Irows = (/1/)
 
       ! A filter chain for the linear solver
@@ -675,13 +1373,13 @@ contains
         ! Get the filter chain. We need that later to filter the matrices.        
         p_RfilterChain => rpreconditioner%p_RfilterChain
 
-        ! Initialise the matrix assembly structure rmatrixAssembly to describe the
+        ! Initialise the matrix assembly structure rlocalNonlSpatialMatrix to describe the
         ! matrix we want to have. We have to initialise the adaptivity constants,
         ! which are not part of the standard initialisation.
-        rmatrixAssembly = rmatrixComponents
-        rmatrixAssembly%iadaptiveMatrices = &
+        rlocalNonlSpatialMatrix = rnonlinearSpatialMatrix
+        rlocalNonlSpatialMatrix%iadaptiveMatrices = &
             rpreconditioner%rprecSpecials%iadaptiveMatrices
-        rmatrixAssembly%dadmatthreshold = &
+        rlocalNonlSpatialMatrix%dadmatthreshold = &
             rpreconditioner%rprecSpecials%dadmatthreshold
 
         ! On all levels, we have to set up the nonlinear system matrix,
@@ -750,39 +1448,25 @@ contains
 
           end if
 
-          ! Set the pointers in the rmatrixAssembly structure according
+          ! Set the pointers in the rlocalNonlSpatialMatrix structure according
           ! to the current level.
           p_rcore => rpreconditioner%RcoreEquation(ilev)
-          rmatrixAssembly%p_rdiscretisation         => &
+
+          rlocalNonlSpatialMatrix%p_rdiscretisation         => &
               p_rmatrix%p_rblockDiscrTrial
-          rmatrixAssembly%p_rmatrixStokes           => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixStokes          
-          rmatrixAssembly%p_rmatrixB1             => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB1              
-          rmatrixAssembly%p_rmatrixB2             => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixB2              
-          rmatrixAssembly%p_rmatrixD1             => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixD1
-          rmatrixAssembly%p_rmatrixD2             => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixD2
-          rmatrixAssembly%p_rmatrixEOJ1           => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixEOJ1
-          rmatrixAssembly%p_rmatrixEOJ2           => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixEOJ2
-          rmatrixAssembly%p_rmatrixMass           => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixMass            
-          rmatrixAssembly%p_rmatrixIdentityPressure => &
-              rpreconditioner%RcoreEquation(ilev)%p_rmatrixIdentityPressure
+
+          rlocalNonlSpatialMatrix%p_rstaticInfo         => &
+              rpreconditioner%RcoreEquation(ilev)%p_rstaticInfo
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           if (ilev .eq. rpreconditioner%NLMAX) then
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                cc_getMatrixFlag(rpreconditioner,ilev),p_rmatrix,rmatrixAssembly,&
+                p_rmatrix,rlocalNonlSpatialMatrix,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
           else
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                cc_getMatrixFlag(rpreconditioner,ilev),p_rmatrix,rmatrixAssembly,&
+                p_rmatrix,rlocalNonlSpatialMatrix,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
                 p_rmatrixFine)
           end if
@@ -815,7 +1499,7 @@ contains
 
         end do
         
-        if (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) then
+        if (rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock) then
           
           ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
           !
@@ -831,7 +1515,7 @@ contains
             ! the primal equation -- as long as there is not a full identity
             ! matrix in the pressure matrix (what would be the case for 
             ! the initial condition).
-            if (rmatrixAssembly%Dkappa(1,1) .eq. 0.0_DP) then
+            if (rlocalNonlSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
               ! Switch the pressure matrix on and clear it; we don't know what is inside.
               p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
               call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -844,7 +1528,7 @@ contains
             end if
 
             ! Also in the dual equation, as the BC type coincides
-            if (rmatrixAssembly%Dkappa(2,2) .eq. 0.0_DP) then
+            if (rlocalNonlSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
               ! Switch the pressure matrix on and clear it; we don't know what is inside.
               p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
               call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))
@@ -872,7 +1556,7 @@ contains
               ! the primal equation -- as long as there is not a full identity
               ! matrix in the pressure matrix (what would be the case for 
               ! the initial condition).
-              if (rmatrixAssembly%Dkappa(1,1) .eq. 0.0_DP) then
+              if (rlocalNonlSpatialMatrix%Dkappa(1,1) .eq. 0.0_DP) then
                 ! Switch the pressure matrix on and clear it; we don't know what is inside.
                 p_rmatrix%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
                 call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
@@ -885,7 +1569,7 @@ contains
               end if
 
               ! Also in the dual equation, as the BC type coincides
-              if (rmatrixAssembly%Dkappa(2,2) .eq. 0.0_DP) then
+              if (rlocalNonlSpatialMatrix%Dkappa(2,2) .eq. 0.0_DP) then
                 ! Switch the pressure matrix on and clear it; we don't know what is inside.
                 p_rmatrix%RmatrixBlock(6,6)%dscaleFactor = 1.0_DP
                 call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(6,6))

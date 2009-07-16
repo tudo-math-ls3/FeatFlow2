@@ -13,19 +13,19 @@
 !#
 !# The following routines can be found here:
 !#
-!# 1.) cc_allocSystemMatrix
+!# 1.) cc_allocPrecSystemMatrix
 !#     -> Allocates memory for the system matrix representing the 
 !#        core equation.
 !#
-!# 2.) cc_initPreconditioner
+!# 2.) cc_initSpacePreconditioner
 !#     -> Initialises a spatial preconditioner structure with parameters from
 !#        the DAT file. This is needed for preconditioning in space.
-!#     -> Extension to cc_createPreconditioner.
+!#     -> Extension to cc_createSpacePreconditioner.
 !#
-!# 3.) cc_donePreconditioner
+!# 3.) cc_doneSpacePreconditioner
 !#     -> Cleans up a spatial preconditioner structure initialised by
-!#        cc_initPreconditioner. 
-!#     -> Extension to cc_releasePreconditioner.
+!#        cc_initSpacePreconditioner. 
+!#     -> Extension to cc_releaseSpacePreconditioner.
 !#
 !# 4.) cc_configPreconditioner
 !#     -> Configures a preconditioner according to the actual situation
@@ -105,52 +105,65 @@ contains
 
 !<subroutine>
 
-  subroutine cc_allocSystemMatrix (rproblem,rlevelInfo,rmatrix)
+  subroutine cc_allocPrecSystemMatrix (rproblem,rprecSpecials,&
+      ilev,nlmin,nlmax,rlevelInfo,cmatrixType,rmatrix)
   
 !<description>
-  ! Allocates memory for the system matrix. rlevelInfo provides information
-  ! about the level where the system matrix should be created.
+  ! Allocates memory for the system matrix in a preconditioner. rlevelInfo 
+  ! provides information about the level where the system matrix should be created.
   !
   ! Before this routine is called, the structure of all matrices in
   ! rlevelInfo must have been set up!
+  !
+  ! Memory for A33 is allocated, but the submatrix is switched off by
+  ! the multiplication factor.
+  ! Memory for A12 and A21 is only allocated if necessary.
 !</description>
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(IN) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
+
+  ! Current assembly level.
+  integer, intent(in) :: ilev
+  
+  ! Minimum assembly level.
+  integer, intent(in) :: nlmin
+  
+  ! Maximum assembly level.
+  integer, intent(in) :: nlmax
 
   ! A level-info structure specifying the matrices of the problem.
-  type(t_problem_lvl), intent(IN), target :: rlevelInfo
+  type(t_problem_lvl), intent(in), target :: rlevelInfo
+  
+  ! Type of matrix.
+  ! =CCMASM_MTP_AUTOMATIC: standard matrix, A11=A22
+  ! =CCMASM_MTP_DECOUPLED: Decoupled velocity matrices A11 and A22
+  ! =CCMASM_MTP_FULLTENSOR: Full-tensor matrix with A11,A12,A21,A22 independent
+  integer, intent(in) :: cmatrixType
+
+  ! A t_ccPreconditionerSpecials structure that defines special parameters
+  ! of the preconditioner. The choice of the preconditioner may influence
+  ! the way the matrix must be set up.
+  type(t_ccPreconditionerSpecials), intent(in) :: rprecSpecials
 !</input>
 
 !<output>
   ! A block matrix that receives the basic system matrix.
-  type(t_matrixBlock), intent(OUT) :: rmatrix
+  type(t_matrixBlock), intent(out) :: rmatrix
 !</output>
-
-!</subroutine>
 
     ! local variables
   
-    ! A pointer to the system matrix and the RHS/solution vectors.
-    type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM,p_rmatrixTemplateGradient
-
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
-    ! A t_ccmatrixComponents used for defining the matrix structure
-    type(t_ccmatrixComponents) :: rmatrixAssembly
+    ! A t_nonlinearSpatialMatrix used for defining the matrix structure
+    type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
   
     ! Ask the problem structure to give us the discretisation structure
     p_rdiscretisation => rlevelInfo%rdiscretisation
     
-    ! Get a pointer to the template FEM matrix.
-    p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
-
-    ! In the global system, there are two gradient matrices B1 and B2.
-    ! Get a pointer to the template structure for these.
-    p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
-
     ! Initialise the block matrix with default values based on
     ! the discretisation.
     call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
@@ -170,49 +183,42 @@ contains
     ! structure (not the entries) with that of the template matrix.
     !
     ! We allocate the system matrix using the cc_assembleMatrix routine.
-    ! For this purpose, we have to initialise a t_ccmatrixComponents structure
+    ! For this purpose, we have to initialise a t_nonlinearSpatialMatrix structure
     ! which defines the shape of the matrix. We simply set the parameters
     ! of those terms which wshould appear in the matrix to a value <> 0,
     ! that's enough for the memory allocation.
+
+    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        rlevelInfo%rdiscretisation,rlevelInfo%rstaticInfo)
     
-    rmatrixAssembly%Dtheta(1,1) = 1.0_DP   ! A velocity block
-    rmatrixAssembly%Deta(1,1) = 1.0_DP     ! A gradient block
-    rmatrixAssembly%Dtau(1,1) = 1.0_DP     ! A divergence block
-    rmatrixAssembly%Dkappa(1,1) = 1.0_DP   ! Pressure block
+    call cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
+        ilev,nlmin,nlmax,rprecSpecials)
+    
+    rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP   ! A velocity block
+    rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP     ! A gradient block
+    rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP     ! A divergence block
+    rnonlinearSpatialMatrix%Dkappa(1,1) = 1.0_DP   ! Pressure block
     ! A Newton block, if we have Navier-Stokes. For the case
     ! that we use Newton
-    rmatrixAssembly%Dnewton(1,1) = real(1-rproblem%iequation,DP)
+    rnonlinearSpatialMatrix%Dnewton(1,1) = real(1-rproblem%iequation,DP)
     
-    rmatrixAssembly%Dtheta(2,2) = 1.0_DP   ! A velocity block
-    rmatrixAssembly%Deta(2,2) = 1.0_DP     ! A gradient block
-    rmatrixAssembly%Dtau(2,2) = 1.0_DP     ! A divergence block
+    rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP   ! A velocity block
+    rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP     ! A gradient block
+    rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP     ! A divergence block
     ! A Newton block, if we have Navier-Stokes
-    rmatrixAssembly%Dnewton(2,2) = real(1-rproblem%iequation,DP)
-    rmatrixAssembly%Dkappa(2,2) = 1.0_DP   ! Pressure block
+    rnonlinearSpatialMatrix%Dnewton(2,2) = real(1-rproblem%iequation,DP)
+    rnonlinearSpatialMatrix%Dkappa(2,2) = 1.0_DP   ! Pressure block
     
-    rmatrixAssembly%Dalpha(1,1) = 1.0_DP
-    rmatrixAssembly%Dalpha(2,1) = 1.0_DP
-    rmatrixAssembly%Dalpha(1,2) = 1.0_DP
-    rmatrixAssembly%Dalpha(2,2) = 1.0_DP
-    rmatrixAssembly%Dnewton(2,1) = real(1-rproblem%iequation,DP)
+    rnonlinearSpatialMatrix%Dalpha(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(2,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(1,2) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP
+    rnonlinearSpatialMatrix%Dnewton(2,1) = real(1-rproblem%iequation,DP)
     
-    rmatrixAssembly%p_rdiscretisation => rlevelInfo%rdiscretisation
-    rmatrixAssembly%p_rmatrixTemplateFEM => rlevelInfo%rmatrixTemplateFEM
-    rmatrixAssembly%p_rmatrixTemplateGradient => rlevelInfo%rmatrixTemplateGradient
-    rmatrixAssembly%p_rmatrixStokes => rlevelInfo%rmatrixStokes
-    rmatrixAssembly%p_rmatrixB1 => rlevelInfo%rmatrixB1
-    rmatrixAssembly%p_rmatrixB2 => rlevelInfo%rmatrixB2
-    rmatrixAssembly%p_rmatrixD1 => rlevelInfo%rmatrixD1
-    rmatrixAssembly%p_rmatrixD2 => rlevelInfo%rmatrixD2
-    rmatrixAssembly%p_rmatrixEOJ1 => rlevelInfo%rmatrixEOJ1
-    rmatrixAssembly%p_rmatrixEOJ2 => rlevelInfo%rmatrixEOJ2
-    rmatrixAssembly%p_rmatrixMass => rlevelInfo%rmatrixMass
-    rmatrixAssembly%p_rmatrixIdentityPressure => rlevelInfo%rmatrixIdentityPressure
-
     ! As matrix flag we specify 0 here. This allocates a basic matrix which is
     ! modified later for our needs.
     call cc_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
-        CCMASM_FLAG_NONE,rmatrix,rmatrixAssembly)
+        rmatrix,rnonlinearSpatialMatrix)
                                   
     ! That's it, all submatrices are set up.
       
@@ -356,6 +362,9 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
+        ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+        rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
+
       case (2)
         ! Defect correction with full VANKA preconditioning.
         !
@@ -378,6 +387,9 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rpreconditioner%calgorithm)
         
+        ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+        rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
+
       case (3)
         ! BiCGSTab with diagonal VANKA preconditioning.
         !
@@ -400,6 +412,9 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
         
+        ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+        rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
+
       case (4)
         ! BiCGSTab with full VANKA preconditioning.
         !
@@ -422,7 +437,10 @@ contains
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
 
-      case DEFAULT
+        ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+        rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
+
+      case default
       
         call output_line ('Unknown coarse grid solver.', &
             OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
@@ -452,20 +470,44 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
           case (2)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           case (3)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIRECT)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           case (4)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           case (5)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           case (6)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                 rpreconditioner%p_RfilterChain)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           case (7)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                 rpreconditioner%p_RfilterChain)
+
+            ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+            rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -490,7 +532,7 @@ contains
           call linsol_initProjMultigrid2Level(p_rlevelInfo,&
               rpreconditioner%p_Rprojection(rpreconditioner%NLMIN-1+ilev))
           
-        case DEFAULT
+        case default
         
           call output_line ('Unknown smoother.', &
               OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
@@ -607,11 +649,11 @@ contains
 
 !<subroutine>
 
-  subroutine cc_initPreconditioner (rproblem,nlmin,nlmax,rpreconditioner)
+  subroutine cc_initSpacePreconditioner (rproblem,nlmin,nlmax,rpreconditioner)
   
 !<description>
   ! Initialises the given spatial preconditioner structure rpreconditioner.
-  ! Creates the structure with cc_createPreconditioner and saves all
+  ! Creates the structure with cc_createSpacePreconditioner and saves all
   ! problem dependent parameters and matrices in it.
   !
   ! This routine initialises only the basic structure. However, it does
@@ -643,38 +685,16 @@ contains
     ! local variables
     integer :: ilevel
     logical :: bneumann
-    type(t_parlstSection), pointer :: p_rsection
 
     ! Basic initialisation of the nonlinenar iteration structure.
-    call cc_createPreconditioner (rpreconditioner,nlmin,nlmax)    
+    call cc_createSpacePreconditioner (rpreconditioner,nlmin,nlmax)    
     
     ! Assign the matrix pointers in the nonlinear iteration structure to
     ! all our matrices that we want to use.
     do ilevel = nlmin,nlmax
     
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixStokes => &
-        rproblem%RlevelInfo(ilevel)%rmatrixStokes
-        
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixB1 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixB1
-        
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixB2 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixB2
-
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixD1 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixD1
-        
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixD2 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixD2
-
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixEOJ1 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixEOJ1
-        
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixEOJ2 => &
-        rproblem%RlevelInfo(ilevel)%rmatrixEOJ2
-
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixMass => &
-        rproblem%RlevelInfo(ilevel)%rmatrixMass
+      rpreconditioner%RcoreEquation(ilevel)%p_rstaticInfo => &
+        rproblem%RlevelInfo(ilevel)%rstaticInfo
 
       rpreconditioner%RcoreEquation(ilevel)%p_rtempVector1 => &
         rproblem%RlevelInfo(ilevel)%rtempVector1
@@ -684,9 +704,6 @@ contains
 
       rpreconditioner%RcoreEquation(ilevel)%p_rtempVector3 => &
         rproblem%RlevelInfo(ilevel)%rtempVector3
-
-      rpreconditioner%RcoreEquation(ilevel)%p_rmatrixIdentityPressure => &
-        rproblem%RlevelInfo(ilevel)%rmatrixIdentityPressure
 
     end do
       
@@ -725,11 +742,11 @@ contains
 
 !<subroutine>
 
-  subroutine cc_donePreconditioner (rpreconditioner)
+  subroutine cc_doneSpacePreconditioner (rpreconditioner)
   
 !<description>
   ! Releases memory allocated in cc_initPrecoditioner..
-  ! The routine automatically calls cc_releasePreconditioner to release
+  ! The routine automatically calls cc_releaseSpacePreconditioner to release
   ! internal parameters.
 !</description>
 
@@ -784,7 +801,7 @@ contains
     if (associated(rpreconditioner%p_RfilterChain)) &
       deallocate(rpreconditioner%p_RfilterChain)
       
-    call cc_releasePreconditioner (rpreconditioner)
+    call cc_releaseSpacePreconditioner (rpreconditioner)
 
   end subroutine
 
@@ -827,9 +844,9 @@ contains
 
     ! local variables
     integer :: NLMIN,NLMAX
-    integer :: i,icomponents
+    integer :: i
     integer :: imaxmem
-    character(LEN=PARLST_MLDATA) :: ssolverName,sstring
+    character(LEN=PARLST_MLDATA) :: ssolverName
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Note in the structure which preconditioner we use and which section in
@@ -949,7 +966,6 @@ contains
     integer :: NLMIN,NLMAX
     integer :: i
     logical :: bphystranspose
-    character(LEN=PARLST_MLDATA) :: sstring,snewton
 
     ! Error indicator during initialisation of the solver
     integer :: ierror    
@@ -996,11 +1012,10 @@ contains
           end if
         
           ! Allocate memory for the basic submatrices.
-          ! The B1^T and B2^T matrices are saved as 'virtual transpose' of B1 and
-          ! B2 by default, we must change them later if necessary.
-          call cc_allocSystemMatrix (rproblem,rproblem%RlevelInfo(i),&
+          call cc_allocPrecSystemMatrix (rproblem,rpreconditioner%rprecSpecials,&
+              i,nlmin,nlmax,rproblem%RlevelInfo(i),CCMASM_MTP_AUTOMATIC,&
               rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
-        
+              
           ! Attach boundary conditions
           rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBC &
               => rproblem%RlevelInfo(i)%p_rdiscreteBC
@@ -1029,7 +1044,7 @@ contains
             ! With A12, A21, A11, A22 independent of each other!
             ! Do we have that case? If not, we have to allocate memory 
             ! for these matrices.
-            p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rmatrixTemplateFEM
+            p_rmatrixTempateFEM => rproblem%RlevelInfo(i)%rstaticInfo%rmatrixTemplateFEM
             
             ! If we have a Stokes problem, A12 and A21 don't exist, so we have nothing to
             ! do. In the Navier-Stokes case however, we have A12 and A21, so create them!
@@ -1162,7 +1177,7 @@ contains
               ! Ignore the other levels.
               bphystranspose = .true.
               
-              if (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) then
+              if (rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock) then
                 ! Activate the 3,3-block, UMFPACK needs it in case the pressure
                 ! is globally indefinite.
                 p_rmatrixPreconditioner%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
@@ -1177,7 +1192,7 @@ contains
               if (rpreconditioner%rprecSpecials%icoarseGridSolverType .eq. 0) then
                 bphystranspose = .true.
                 
-                if (rpreconditioner%rprecSpecials%bpressureGloballyIndefinite) then
+                if (rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock) then
                   ! Activate the 3,3-block, UMFPACK needs it in case the pressure
                   ! is globally indefinite.
                   p_rmatrixPreconditioner%RmatrixBlock(3,3)%dscaleFactor = 1.0_DP
@@ -1397,7 +1412,7 @@ contains
 
     ! Check if we have Neumann boundary components. If not, the matrices
     ! may have to be changed, depending on the solver.
-    rpreconditioner%rprecSpecials%bpressureGloballyIndefinite = &
+    rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock = &
       .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 
   end subroutine
