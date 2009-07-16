@@ -1,38 +1,20 @@
 # -*- mode: any-ini; -*-
-#
-# Input data for supersonic scramjet inlet
-#
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                           Supersonic Scramjet flow                           #
+################################################################################
+
 defconst: ang = 0.0
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-4
-1.0
-COS(_ang*_PI/180)
-SIN(_ang*_PI/180)
-1.0/5.04+0.5*(COS(_ang*_PI/180)^2+SIN(_ang*_PI/180)^2)
+# Specify the initial solution
+deffunc: @initsol_rho = 1.0 ; x,y,z,t
+deffunc: @initsol_vel_x = COS(_ang*_PI/180) ; x,y,z,t
+deffunc: @initsol_vel_y = SIN(_ang*_PI/180) ; x,y,z,t
+deffunc: @initsol_Etot = 1.0/5.04+0.5*(COS(_ang*_PI/180)^2+SIN(_ang*_PI/180)^2) ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    ibctyp =  0: Neumann boundary condition
-#    ibctyp =  1: Dirichlet boundary condition
-#    ibctyp =  2: Solid-wall boundary condition
-#    ibctyp =  3: Viscous-wall boundary condition
-#    ibctyp =  4: Farfield boundary condition (characteristics are computed)
-#    ibctyp =  5: Subsonic inlet boundary condition
-#    ibctyp =  6: Subsonic outlet boundary condition
-#    ibctyp =  7: Massflow inlet boundary condition
-#    ibctyp =  8: Massflow outlet boundary condition
-#    ibctyp =  9: Mach outflow boundary condition
-#    ibctyp = 10: Supersonic inlet boundary condition
-#    ibctyp = 11: Supersonic outlet boundary condition
-#    ibctyp = 12: Periodic boundary condition (symmetric)
-#    ibctyp = 13: Periodic boundary condition (anti-symmetric)
 [boundary_conditions_primal]
 NBCT
 3

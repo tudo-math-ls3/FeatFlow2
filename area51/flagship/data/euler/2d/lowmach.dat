@@ -71,7 +71,11 @@ isystemPrecond = 2
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname(4) = 
+  @initsol_rho
+  @initsol_vel_x
+  @initsol_vel_y
+  @initsol_Etot
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -79,7 +83,7 @@ ssolutionname = initial_solution
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname =
 
 #-------------------------------------------------------------------------------
 

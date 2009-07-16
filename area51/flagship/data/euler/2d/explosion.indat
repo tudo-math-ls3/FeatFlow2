@@ -26,36 +26,13 @@ defconst: x0 = 0.4
 defconst: y0 = 0.4
 defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-4
-if(@sqr1 < _r0, 5.0, 1.0)
-0.0
-0.0
-if(@sqr1 < _r0, 12.5, 2.5)
+# Specify the initial solution
+deffunc: @initsol_rho = if(@sqr1 < _r0, 5.0, 1.0) ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = if(@sqr1 < _r0, 12.5, 2.5) ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    ibctyp =  0: Neumann boundary condition
-#    ibctyp =  1: Dirichlet boundary condition
-#    ibctyp =  2: Solid-wall boundary condition
-#    ibctyp =  3: Viscous-wall boundary condition
-#    ibctyp =  4: Farfield boundary condition (characteristics are computed)
-#    ibctyp =  5: Subsonic inlet boundary condition
-#    ibctyp =  6: Subsonic outlet boundary condition
-#    ibctyp =  7: Massflow inlet boundary condition
-#    ibctyp =  8: Massflow outlet boundary condition
-#    ibctyp =  9: Mach outflow boundary condition
-#    ibctyp = 10: Supersonic inlet boundary condition
-#    ibctyp = 11: Supersonic outlet boundary condition
-#    ibctyp = 12: Periodic boundary condition (symmetric)
-#    ibctyp = 13: Periodic boundary condition (anti-symmetric)
-[boundary_conditions]
+[boundary_conditions_primal]
 NBCT
 1
 NEXPR

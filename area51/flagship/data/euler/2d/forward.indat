@@ -1,16 +1,19 @@
 # -*- mode: any-ini; -*-
-#
-# Input data for supersonic scramjet inlet
-#
-# rho0 = 1.4
-# p0   = 1.0
-# u0   = 3.0
-# v0   = 0.0
-# p0   = 1.0
-#
 
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                    Supersonic flow over forward facing step                  #
+#                                                                              #
+# rho0 = 1.4                                                                   #
+# p0   = 1.0                                                                   #
+# u0   = 3.0                                                                   #
+# v0   = 0.0                                                                   #
+# p0   = 1.0                                                                   #
+#                                                                              #
+################################################################################
 
-# Specify the initial solution by logical expressions and solution values
+# Specify the initial solution
 [initial_solution]
 NCOMP
 4

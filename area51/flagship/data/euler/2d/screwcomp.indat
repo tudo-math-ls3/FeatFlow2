@@ -18,24 +18,13 @@
 # p   = 2*10^5 N/m^2
 # u=v = 0 (medium at rest)
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-4
-200000/287/300
-0.0
-0.0
-500000
+# Specify the initial solution
+deffunc: @initsol_rho = 200000/287/300 ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = 500000 ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions]
+[boundary_conditions_primal]
 NBCT
 1
 NEXPR

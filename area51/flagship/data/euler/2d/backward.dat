@@ -76,7 +76,11 @@ isystemPrecond = 2
 isolutiontype = 1
 
 # section name of initial solution
-ssolutionname = initial_solution
+ssolutionname(4) = 
+  @initsol_rho
+  @initsol_vel
+  @initsol_vel
+  @initsol_Etot
 
 # type of exact solution profile
 # 0 = no exact solution available
@@ -84,7 +88,7 @@ ssolutionname = initial_solution
 iexactsolutiontype = 0
 
 # section name of exact solution
-sexactsolutionname = exact_solution
+sexactsolutionname =
 
 #-------------------------------------------------------------------------------
 
@@ -400,7 +404,7 @@ nmaxIterations = 30
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-isystemPrecond = 2
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -697,3 +701,15 @@ nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0
+
+# type of error variables
+#   density
+#   velocity_x
+#   velocity_y
+#   velocity_z
+#   energy
+#   pressure
+#   machnumber
+serrorvariable(2) =
+  density
+  pressure

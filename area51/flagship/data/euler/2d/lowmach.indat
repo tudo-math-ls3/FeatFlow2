@@ -20,37 +20,14 @@ defexpr:  vtang  = _ualpha*(IF(@r<_Rad/2, 2*@r/_Rad, IF(@r<_Rad, 2*(1-@r/_Rad), 
 defexpr:  v1     = _ualpha+@vtang*SIN(-@angle)
 defexpr:  v2     = @vtang*COS(@angle)
 
-# Specify the initial solution by logical expressions and solution values
-[initial_solution]
-NCOMP
-4
-@v1+@v2
-1.0
-1.0
-1.0
-
-@v1
-@v2
-@v1+@v1
-
-# Specify the exact solution by logical expressions and solution values
-[exact_solution]
-NCOMP
-4
-1.0
-0.0
-0.0
-2.5
+# Specify the initial solution
+deffunc: @initsol_rho = @v1+@v2 ; x,y,z,t
+deffunc: @initsol_vel_x = 1.0 ; x,y,z,t
+deffunc: @initsol_vel_y = 1.0 ; x,y,z,t
+deffunc: @initsol_Etot = 1.0 ; x,y,z,t
 
 # Specify the boundary conditions
-# 1. The first item of the parameter section always contains 
-#    the right value of the boundary interval.
-# 2. The second item defines whether the right endpoint belongs 
-#    to the interval (ieptyp=1) or no (ieptyp=0)
-# 3. The third item defines the boundary type: 
-#    Neumann boundary condition   ibctyp = 0
-#    Dirichlet boundary condition ibctyp = 1
-[boundary_conditions]
+[boundary_conditions_primal]
 NBCT
 1
 NEXPR
