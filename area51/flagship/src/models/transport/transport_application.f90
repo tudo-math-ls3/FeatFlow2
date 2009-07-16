@@ -349,24 +349,37 @@ contains
     call collct_init(rcollection)
 
     !  Attach the parameter list and the timers to the collection
-    call collct_setvalue_parlst(rcollection, 'rparlist', rparlist, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerSolution', rtimerSolution, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerAdaptation', rtimerAdaptation, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerTriangulation', rtimerTriangulation, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
-    call collct_setvalue_timer(rcollection, 'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
+    call collct_setvalue_parlst(rcollection,&
+        'rparlist', rparlist, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerSolution', rtimerSolution, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAdaptation', rtimerAdaptation, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerErrorEstimation', rtimerErrorEstimation, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerTriangulation', rtimerTriangulation, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyCoeff', rtimerAssemblyCoeff, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyMatrix', rtimerAssemblyMatrix, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
 
     ! Create function parser
     call fparser_create(rfparser, 100)
     
     ! Read in all constants, predefined expressions and functions from the parameter file
-    call parlst_getvalue_string(rparlist, 'transport', 'indatfile', sindatfileName)
-    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'defconst', FPAR_CONSTANT)
-    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'defexpr', FPAR_EXPRESSION)
-    call fparser_parseFileForKeyword(rfparser, sindatfileName, 'deffunc', FPAR_FUNCTION)
+    call parlst_getvalue_string(rparlist,&
+        'transport', 'indatfile', sindatfileName)
+    call fparser_parseFileForKeyword(rfparser,&
+        sindatfileName, 'defconst', FPAR_CONSTANT)
+    call fparser_parseFileForKeyword(rfparser,&
+        sindatfileName, 'defexpr', FPAR_EXPRESSION)
+    call fparser_parseFileForKeyword(rfparser,&
+        sindatfileName, 'deffunc', FPAR_FUNCTION)
 
     ! Attach the function parser to the collection
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
@@ -376,16 +389,16 @@ contains
 
     ! Initialize the abstract problem structure
     call transp_initProblem(rparlist, 'transport',&
-                            solver_getMinimumMultigridlevel(rsolver),&
-                            solver_getMaximumMultigridlevel(rsolver), rproblem)
+        solver_getMinimumMultigridlevel(rsolver),&
+        solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
     call transp_initAllProblemLevels(rparlist, 'transport', rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
     call parlst_getvalue_int(rparlist, 'transport', 'systemMatrix', systemMatrix)
-    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax, rsolver,&
-                                     systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+    call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
+        rsolver, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
     call solver_updateStructure(rsolver)
 
     ! Stop time measurement for pre-processing
@@ -404,9 +417,10 @@ contains
             
       ! The boundary conditions for the primal problem are required for all 
       ! solution strategies. So initialize them from the parameter file.
-      call parlst_getvalue_string(rparlist, 'transport', 'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_string(rparlist,&
+          'transport', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
-                                      '['//trim(sbdrcondName)//']', ndimension)
+          '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
       select case(trim(algorithm))
@@ -415,10 +429,13 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveTransientPrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
-                                         rtimestep, rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
+        call transp_solveTransientPrimal(rparlist, 'transport',&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rsolutionPrimal, rcollection)
+
+        call transp_outputSolution(rparlist, 'transport', rproblem&
+            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+            dtime=rtimestep%dTime)
         
       case ('transient_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -432,10 +449,14 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solvePseudoTransientPrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
-                                               rtimestep, rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
+        call transp_solvePseudoTransientPrimal(rparlist, 'transport',&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rsolutionPrimal, rcollection)
+
+        call transp_outputSolution(rparlist, 'transport', rproblem&
+            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+            dtime=rtimestep%dTime)
+
 
 
       case ('pseudotransient_primaldual')
@@ -450,37 +471,44 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call transp_solveSteadyStatePrimal(rparlist, 'transport', rbdrCondPrimal, rproblem,&
-                                           rtimestep, rsolver, rsolutionPrimal, rcollection)
-        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal=rsolutionPrimal, dtime=rtimestep%dTime)
+        call transp_solveSteadyStatePrimal(rparlist, 'transport',&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rsolutionPrimal, rcollection)
+
+        call transp_outputSolution(rparlist, 'transport', rproblem&
+            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+            dtime=rtimestep%dTime)
+
 
 
       case ('stationary_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call parlst_getvalue_string(rparlist, 'transport', 'sdualbdrcondname', sbdrcondName)
+        call parlst_getvalue_string(rparlist,&
+            'transport', 'sdualbdrcondname', sbdrcondName)
         call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
-                                      '['//trim(sbdrcondName)//']', ndimension)
+            '['//trim(sbdrcondName)//']', ndimension)
 
-        call transp_solveSteadyStatePrimalDual(rparlist, 'transport', rbdrCondPrimal, rbdrCondDual,&
-                                               rproblem, rtimestep, rsolver,&
-                                               rsolutionPrimal, rsolutionDual, rcollection)
-        call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax,&
-                                   rsolutionPrimal, rsolutionDual, rtimestep%dTime)
+        call transp_solveSteadyStatePrimalDual(rparlist, 'transport',&
+            rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
+            rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        call transp_outputSolution(rparlist, 'transport', rproblem&
+            %p_rproblemLevelMax, rsolutionPrimal, rsolutionDual,&
+            rtimestep%dTime)
 
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
         call sys_halt()
       end select
 
     else
 
       ! Just output the computational mesh and exit
-      call transp_outputSolution(rparlist, 'transport', rproblem%p_rproblemLevelMax)
+      call transp_outputSolution(rparlist, 'transport',&
+          rproblem%p_rproblemLevelMax)
 
     end if
 
@@ -532,8 +560,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initSolvers(rparlist, ssectionName, rtimestep,&
-      rsolver)
+  subroutine transp_initSolvers(rparlist, ssectionName,&
+      rtimestep, rsolver)
 
 !<description>
     ! This subroutine initializes the time-stepping structure
@@ -592,8 +620,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_initProblem(rparlist, ssectionName, nlmin, nlmax,&
-      rproblem)
+  subroutine transp_initProblem(rparlist, ssectionName,&
+      nlmin, nlmax, rproblem)
 
 !<description>
     ! This subroutine initializes the abstract problem structure 
@@ -635,24 +663,24 @@ contains
     
 
     ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist, ssectionName,&
-                                'diffusion', sdiffusion)
-    call parlst_getvalue_string(rparlist, ssectionName,&
-                                'convection', sconvection)
-    call parlst_getvalue_string(rparlist, ssectionName,&
-                                'trifile', rproblemDescriptor%trifile)
-    call parlst_getvalue_string(rparlist, ssectionName,&
-                                'prmfile', rproblemDescriptor%prmfile, '')
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ndimension', rproblemDescriptor%ndimension)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'ivelocitytype', ivelocitytype)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'iconvtotria', iconvToTria, 0)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'diffusion', sdiffusion)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'convection', sconvection)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'trifile', rproblemDescriptor%trifile)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ndimension', rproblemDescriptor%ndimension)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'iconvtotria', iconvToTria, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC)
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1 ! one discretisation
@@ -748,34 +776,34 @@ contains
    
     
     ! Retrieve application specific parameters from the parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'templatematrix', templateMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'systemmatrix', systemMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'jacobianmatrix', jacobianMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'transportmatrix', transportMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'coeffmatrix_s', coeffMatrix_S)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'coeffmatrix_cx', coeffMatrix_CX)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'coeffmatrix_cy', coeffMatrix_CY)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'coeffmatrix_cz', coeffMatrix_CZ)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'convectionAFC', convectionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'diffusionAFC', diffusionAFC)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'discretisation', discretisation)
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'celement', celement)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'templatematrix', templateMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'systemmatrix', systemMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'jacobianmatrix', jacobianMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_s', coeffMatrix_S)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cx', coeffMatrix_CX)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cy', coeffMatrix_CY)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'coeffmatrix_cz', coeffMatrix_CZ)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'convectionAFC', convectionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'discretisation', discretisation)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'celement', celement)
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
@@ -797,18 +825,19 @@ contains
         select case(celement)
         case (-1,1,11)
           ! P1=Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
 
         case(-2,2,12)
           ! P2=Q2 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case DEFAULT
           call output_line('Unsupported element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
         
@@ -816,39 +845,45 @@ contains
         select case(celement)
         case (1)
           ! P1 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E001, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case (2)
           ! P2 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E002, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E002, SPDISC_CUB_AUTOMATIC,&
+
+              p_rtriangulation, p_rboundary)
         case (11)
           ! Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E011, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case (12)
           ! Q2 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E013, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case (-1)
           ! mixed P1/Q1 finite elements
-          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                         EL_E001, EL_E011, SPDISC_CUB_AUTOMATIC,&
-                                         SPDISC_CUB_AUTOMATIC,&
-                                         p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_triquad(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E001, EL_E011,&
+              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case (-2)
           ! mixed P2/Q2 finite elements
-          call spdiscr_initDiscr_triquad(p_rdiscretisation%RspatialDiscr(1), &
-                                         EL_E002, EL_E013, SPDISC_CUB_AUTOMATIC,&
-                                         SPDISC_CUB_AUTOMATIC,&
-                                         p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_triquad(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E002, EL_E013,&
+              SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case DEFAULT
           call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
       
@@ -856,23 +891,25 @@ contains
         select case(celement)
         case (1)
           ! P1 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E001_3D, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case (11)
           ! Q1 finite elements
-          call spdiscr_initDiscr_simple(p_rdiscretisation%RspatialDiscr(1), &
-                                        EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
-                                        p_rtriangulation, p_rboundary)
+          call spdiscr_initDiscr_simple(p_rdiscretisation&
+              %RspatialDiscr(1), EL_E010_3D, SPDISC_CUB_AUTOMATIC,&
+              p_rtriangulation, p_rboundary)
+
         case DEFAULT
           call output_line('Unsupproted element type!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
           call sys_halt()
         end select
         
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
 
@@ -885,8 +922,10 @@ contains
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
       call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
-      call bilf_createMatrixStructure(p_rdiscretisation%RspatialDiscr(1),&
-                                      imatrixFormat, rproblemLevel%Rmatrix(templateMatrix))
+      call bilf_createMatrixStructure(p_rdiscretisation&
+          %RspatialDiscr(1), imatrixFormat, rproblemLevel&
+          %Rmatrix(templateMatrix))
+
     end if
     
 
@@ -895,12 +934,14 @@ contains
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(systemMatrix),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(systemMatrix),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+            rproblemLevel%Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(systemMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(systemMatrix), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
     end if
 
@@ -909,13 +950,16 @@ contains
     if (transportMatrix > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(transportMatrix),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
-        call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(transportMatrix),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+        call lsyssc_resizeMatrix(rproblemLevel&
+            %Rmatrix(transportMatrix), rproblemLevel&
+            %Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(transportMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(transportMatrix), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
     end if
 
@@ -932,21 +976,26 @@ contains
 
       if (lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(jacobianMatrix))) then
         if (ijacobianFormat .eq. 0) then
-          call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(jacobianMatrix),&
-                                   rproblemLevel%Rmatrix(templateMatrix),&
-                                   .false., .false., .true.)
+          call lsyssc_resizeMatrix(rproblemLevel&
+              %Rmatrix(jacobianMatrix), rproblemLevel&
+              %Rmatrix(templateMatrix), .false., .false., .true.)
         else
-          call afcstab_generateExtSparsity(rproblemLevel%Rmatrix(templateMatrix),&
-                                           rproblemLevel%Rmatrix(jacobianMatrix))
+          call afcstab_generateExtSparsity(rproblemLevel&
+              %Rmatrix(templateMatrix), rproblemLevel&
+              %Rmatrix(jacobianMatrix))
         end if
       else
         if (ijacobianFormat .eq. 0) then
-          call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                      rproblemLevel%Rmatrix(jacobianMatrix),&
-                                      LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+          call lsyssc_duplicateMatrix(rproblemLevel&
+              %Rmatrix(templateMatrix), rproblemLevel&
+              %Rmatrix(jacobianMatrix), LSYSSC_DUP_SHARE,&
+              LSYSSC_DUP_EMPTY)
+
         else
-          call afcstab_generateExtSparsity(rproblemLevel%Rmatrix(templateMatrix),&
-                                           rproblemLevel%Rmatrix(jacobianMatrix))
+          call afcstab_generateExtSparsity(rproblemLevel&
+              %Rmatrix(templateMatrix), rproblemLevel&
+              %Rmatrix(jacobianMatrix))
+
         end if
       end if     
     end if
@@ -956,32 +1005,43 @@ contains
     if (consistentMassMatrix > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(consistentMassMatrix),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
-        call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+        call lsyssc_resizeMatrix(rproblemLevel&
+            %Rmatrix(consistentMassMatrix), rproblemLevel&
+            %Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(consistentMassMatrix), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                      DER_FUNC, DER_FUNC)
+      call stdop_assembleSimpleMatrix(rproblemLevel&
+          %Rmatrix(consistentMassMatrix), DER_FUNC, DER_FUNC)
+
       
       if (lumpedMassMatrix > 0) then
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                    rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-        call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                     LSYSSC_LUMP_DIAG)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(consistentMassMatrix), rproblemLevel&
+            %Rmatrix(lumpedMassMatrix), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_COPY)
+
+        call lsyssc_lumpMatrixScalar(rproblemLevel&
+            %Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+
       end if
     elseif (lumpedMassMatrix > 0) then
-      call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                  rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                      DER_FUNC, DER_FUNC) 
-      call lsyssc_lumpMatrixScalar(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   LSYSSC_LUMP_DIAG)
+      call lsyssc_duplicateMatrix(rproblemLevel&
+          %Rmatrix(templateMatrix), rproblemLevel&
+          %Rmatrix(lumpedMassMatrix), LSYSSC_DUP_SHARE,&
+          LSYSSC_DUP_EMPTY)
+
+      call stdop_assembleSimpleMatrix(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix), DER_FUNC, DER_FUNC) 
+
+      call lsyssc_lumpMatrixScalar(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+
     end if
     
 
@@ -990,12 +1050,15 @@ contains
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_S),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
         call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(coeffMatrix_S),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+            rproblemLevel%Rmatrix(templateMatrix), .false., .false.,&
+            .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(coeffMatrix_S),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(coeffMatrix_S), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
 
       ! Get function parser from collection
@@ -1003,11 +1066,14 @@ contains
 
       select case(p_rtriangulation%ndim)
       case (NDIM1D)
-        call initDiffusionMatrix1D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix1D(p_rfparser,&
+            rproblemLevel %Rmatrix(coeffMatrix_S))
       case (NDIM2D)
-        call initDiffusionMatrix2D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix2D(p_rfparser,&
+            rproblemLevel%Rmatrix(coeffMatrix_S))
       case (NDIM3D)
-        call initDiffusionMatrix3D(p_rfparser, rproblemLevel%Rmatrix(coeffMatrix_S))
+        call initDiffusionMatrix3D(p_rfparser,&
+            rproblemLevel%Rmatrix(coeffMatrix_S))
       case DEFAULT
         call lsyssc_releaseMatrix(rproblemLevel%Rmatrix(coeffMatrix_S))
       end select
@@ -1018,16 +1084,20 @@ contains
     if (coeffMatrix_CX > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CX),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
-        call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+        call lsyssc_resizeMatrix(rproblemLevel&
+            %Rmatrix(coeffMatrix_CX), rproblemLevel&
+            %Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(coeffMatrix_CX), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CX),&
-                                      DER_DERIV3D_X, DER_FUNC)
+      call stdop_assembleSimpleMatrix(rproblemLevel&
+          %Rmatrix(coeffMatrix_CX), DER_DERIV3D_X, DER_FUNC)
+
     end if
     
 
@@ -1035,16 +1105,20 @@ contains
     if (coeffMatrix_CY > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CY),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
-        call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+        call lsyssc_resizeMatrix(rproblemLevel&
+            %Rmatrix(coeffMatrix_CY), rproblemLevel&
+            %Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(coeffMatrix_CY), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CY),&
-                                      DER_DERIV3D_Y, DER_FUNC)
+      call stdop_assembleSimpleMatrix(rproblemLevel&
+          %Rmatrix(coeffMatrix_CY), DER_DERIV3D_Y, DER_FUNC)
+
     end if
     
 
@@ -1052,16 +1126,20 @@ contains
     if (coeffMatrix_CZ > 0) then
       if (lsyssc_isMatrixStructureShared(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
                                          rproblemLevel%Rmatrix(templateMatrix))) then
-        call lsyssc_resizeMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                 rproblemLevel%Rmatrix(templateMatrix),&
-                                 .false., .false., .true.)
+        call lsyssc_resizeMatrix(rproblemLevel&
+            %Rmatrix(coeffMatrix_CZ), rproblemLevel&
+            %Rmatrix(templateMatrix), .false., .false., .true.)
+
       else
-        call lsyssc_duplicateMatrix(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                    LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        call lsyssc_duplicateMatrix(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rmatrix(coeffMatrix_CZ), LSYSSC_DUP_SHARE,&
+            LSYSSC_DUP_EMPTY)
+
       end if
-      call stdop_assembleSimpleMatrix(rproblemLevel%Rmatrix(coeffMatrix_CZ),&
-                                      DER_DERIV3D_Z, DER_FUNC)
+      call stdop_assembleSimpleMatrix(rproblemLevel&
+          %Rmatrix(coeffMatrix_CZ), DER_DERIV3D_Z, DER_FUNC)
+
     end if
 
 
@@ -1070,11 +1148,15 @@ contains
     ! needed, then they are re-generated on-the-fly.
     if (convectionAFC > 0) then
       if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
-        call gfsc_initStabilisation(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rafcstab(convectionAFC))
+        call gfsc_initStabilisation(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rafcstab(convectionAFC))
+
       else
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(convectionAFC),&
-                                         rproblemLevel%Rmatrix(templateMatrix))
+        call afcstab_resizeStabilisation(rproblemLevel&
+            %Rafcstab(convectionAFC), rproblemLevel&
+            %Rmatrix(templateMatrix))
+
         rproblemLevel%Rafcstab(convectionAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(convectionAFC)%iSpec,&
             not(AFCSTAB_SUBDIAGONALEDGES))
@@ -1085,11 +1167,15 @@ contains
     ! The same applies to the diffusive stabilization structure
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
-        call gfsc_initStabilisation(rproblemLevel%Rmatrix(templateMatrix),&
-                                    rproblemLevel%Rafcstab(diffusionAFC))
+        call gfsc_initStabilisation(rproblemLevel&
+            %Rmatrix(templateMatrix), rproblemLevel&
+            %Rafcstab(diffusionAFC))
+
       else
-        call afcstab_resizeStabilisation(rproblemLevel%Rafcstab(diffusionAFC),&
-                                         rproblemLevel%Rmatrix(templateMatrix))
+        call afcstab_resizeStabilisation(rproblemLevel&
+            %Rafcstab(diffusionAFC), rproblemLevel&
+            %Rmatrix(templateMatrix))
+
         rproblemLevel%Rafcstab(diffusionAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(diffusionAFC)%iSpec,&
             not(AFCSTAB_SUBDIAGONALEDGES))
@@ -1341,8 +1427,9 @@ contains
     do while(associated(p_rproblemLevel))
       
       ! Initialize individual problem level
-      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
-      
+      call transp_initProblemLevel(rparlist, ssectionName,&
+          p_rproblemLevel, rcollection)
+            
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
@@ -1395,8 +1482,8 @@ contains
     
     
     ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist, ssectionName,&
-                             'isolutiontype', isolutiontype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isolutiontype', isolutiontype)
 
     ! How should the solution be initialized?
     select case(isolutionType)
@@ -1407,48 +1494,54 @@ contains
 
     case (SOLUTION_ANALYTIC)
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'ssolutionname', ssolutionName)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'ssolutionname', ssolutionName)
+
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Set pointer to vertex coordinates
-      call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-      
+      call storage_getbase_double2D(rproblemLevel%rtriangulation&
+          %h_DvertexCoords, p_DvertexCoords)
+            
       ! Get number of spatial dimensions
       ndim = rproblemLevel%rtriangulation%ndim
       
       ! Initialize variable values
       Dvalue = 0.0_DP
 
-      ! Get number of equations of scalar subvector
-      neq = rvector%RvectorBlock(1)%NEQ
+      ! Set pointer to data array
       call lsyssc_getbase_double(rvector%RvectorBlock(1), p_Ddata)
       
-      ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      ! Get number of equations of scalar subvector
+      neq = rvector%RvectorBlock(1)%NEQ
       
       ! Get the number of the component used for evaluating the initial solution
       icomp = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
       ! Loop over all equations of scalar subvector
       do ieq = 1, neq
+
+        ! Set coordinates and evalution time
         Dvalue(1:ndim)   = p_DvertexCoords(:,ieq)
         Dvalue(NDIM3D+1) = dtime
+        
+        ! Evaluate the function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
       end do
       
       
     case (SOLUTION_GRAYMAP)
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'ssolutionname', ssolutionName)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'ssolutionname', ssolutionName)
 
       ! Initialize solution from portable graymap image
       call ppsol_readPGM(0, ssolutionName, rpgm)
       
       ! Set pointers
-      call storage_getbase_double2D(&
-          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+      call storage_getbase_double2D(rproblemLevel%rtriangulation&
+          %h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_double(rvector%h_Ddata, p_Ddata)
     
       ! Initialize the solution by the image data
@@ -1460,7 +1553,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
-                       OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
+          OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
       call sys_halt()
     end select
 
@@ -1597,22 +1690,27 @@ contains
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
-                             'itargetfunctype', itargetfunctype)
+        'itargetfunctype', itargetfunctype)
     
     ! How should the target functional be initialized?
     select case(itargetfunctype)
-    case (TFUNC_ZERO)
-      ! Initialize target functional by zeros
+    case (TFUNC_ZERO,&
+          TFUNC_SURFINTG)
+
+      ! Initialize target functional by zeros. The contribution of
+      ! the surfae integral comes in be weakly impose boundary conditions
       call lsysbl_clearVector(rvector)
 
 
-    case (TFUNC_VOLINTG)
+    case (TFUNC_VOLINTG,&
+          TFUNC_MIXINTG)
+
       ! Get function parser from collection structure
       p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'stargetfuncname', stargetfuncname)
+          'stargetfuncname', stargetfuncname)
 
       ! Get the number of the component used for evaluating the target functional
       icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
@@ -1626,105 +1724,12 @@ contains
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
-      ! Build the discretized target functional
-      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-                                   transp_coeffVectorAnalytic, rcollection)
-
-
-    case (TFUNC_SURFINTG)
-      ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+      ! Build the discretized target functional. The contribution of
+      ! the surfae integral comes in be weakly impose boundary conditions
+      call linf_buildVectorScalar2(rform, .true., rvector&
+          %RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
       
-      ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, ssectionName,&
-                                  'stargetfuncname', stargetfuncname)
-      call parlst_getvalue_int(rparlist, ssectionName,&
-                               'ivelocitytype', ivelocityType)
-      
-      ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
 
-      ! Prepare quick access arrays of the collection
-      rcollection%DquickAccess(1) = dtime
-      rcollection%IquickAccess(1) = icomp
-      rcollection%SquickAccess(1) = 'rfparser'
-      
-      ! Attach velocity vectors to collection structure (if any)
-      if (transp_hasVelocityVector(ivelocityType)) then
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 'velocityfield', velocityfield)
-        rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
-      end if
-
-      ! Set up the corresponding linear form
-      rform%itermCount      = 1
-      rform%Idescriptors(1) = DER_FUNC
-
-      ! Build the boundary part of the discretized target function
-      call linf_buildVectorScalarBdr2D(rform, CUB_G3_1D, .true.,&
-                                       rvector%RvectorBlock(1),&
-                                       transp_coeffVecBdrDualConst2d,&
-                                       rcollection=rcollection)
-      
-    case (TFUNC_MIXINTG)
-      ! Get function parser from collection structure
-      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
-
-      ! Get the name of the function used for evaluating the
-      ! volume integral part of the target functional
-      if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
-        call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                    stargetfuncname)
-      else
-        call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                    stargetfuncname, isubstring=1)
-      end if
-
-      ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
-            
-      ! Prepare quick access arrays of the collection
-      rcollection%DquickAccess(1) = dtime
-      rcollection%IquickAccess(1) = icomp
-      rcollection%SquickAccess(1) = 'rfparser'
-
-      ! Set up the corresponding linear form
-      rform%itermCount      = 1
-      rform%Idescriptors(1) = DER_FUNC
-
-      ! Build the discretized target functional
-      call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
-                                   transp_coeffVectorAnalytic, rcollection)
-      
-      ! Get the name of the function used for evaluating the
-      ! surface integral part of the target functional
-      if (parlst_querysubstrings(rparlist, ssectionName, 'stargetfuncname') .eq. 0) then
-        call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                    stargetfuncname)
-      else
-        call parlst_getvalue_string(rparlist, ssectionName, 'stargetfuncname',&
-                                    stargetfuncname, isubstring=2)
-      end if
-
-      ! Get the number of the component used for evaluating the target functional
-      icomp = fparser_getFunctionNumber(p_rfparser, stargetfuncname)
-
-      ! Prepare quick access arrays of the collection
-      rcollection%IquickAccess(1) = icomp
-
-      ! Attach velocity vectors to collection structure (if any)
-      if (transp_hasVelocityVector(ivelocityType)) then
-        call parlst_getvalue_int(rparlist, ssectionName,&
-                                 'velocityfield', velocityfield)
-        rcollection%p_rvectorQuickAccess1 => rproblemLevel%RvectorBlock(velocityfield)
-      end if
-      
-      ! Build the boundary part of the discretized target function
-      call linf_buildVectorScalarBdr2D(rform, CUB_G3_1D, .false.,&
-                                       rvector%RvectorBlock(1),&
-                                       transp_coeffVecBdrDualConst2d,&
-                                       rcollection=rcollection)
-      
     case DEFAULT
       call output_line('Invalid type of target functional!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_initTargetFunc')
@@ -1906,7 +1911,7 @@ contains
   subroutine transp_estimateTargetFuncError(rparlist, ssectionName,&
       rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
       rsolutionDual, rcollection, rtargetError, dtargetError, rrhs)
-
+    
 !<description>
     ! This subroutine estimates the error in the quantity of interest
 !</description>
@@ -2932,16 +2937,22 @@ contains
     ! How many spatial dimensions do we have?
     select case(rtriangulationSrc%ndim)
     case (NDIM1D)
-      call transp_hadaptCallback1D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback1D)
+      call transp_hadaptCallback1D(rcollection,&
+          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator,&
+          rcollection, transp_hadaptCallback1D)
       
     case (NDIM2D)
-      call transp_hadaptCallback2D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback2D)
+      call transp_hadaptCallback2D(rcollection,&
+          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator,&
+          rcollection, transp_hadaptCallback2D)
 
     case (NDIM3D)
-      call transp_hadaptCallback3D(rcollection, HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
-      call hadapt_performAdaptation(rhadapt, rindicator, rcollection, transp_hadaptCallback3D)
+      call transp_hadaptCallback3D(rcollection,&
+          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call hadapt_performAdaptation(rhadapt, rindicator,&
+          rcollection, transp_hadaptCallback3D)
     end select
 
     ! Do we have a destination triangulation or should the source
@@ -3065,9 +3076,9 @@ contains
     ! Initialize the solution vector and impose boundary conditions explicitly
     call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
-                             rtimestep%dinitialTime, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond,&
-                                   rsolution, rtimestep%dinitialTime)
+        rtimestep%dinitialTime, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+        rtimestep%dinitialTime)
 
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
@@ -3114,19 +3125,20 @@ contains
           do ipreadapt = 1, npreadapt
 
             ! Compute the error estimator using recovery techniques
-            call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                              rsolution, rtimestep%dinitialTime,&
-                                              relementError, derror, rcollection)
+            call transp_estimateRecoveryError(rparlist, ssectionname,&
+                p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
+                relementError, derror, rcollection)
 
             ! Perform h-adaptation and update the triangulation structure
-            call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                           relementError, rcollection)
+            call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+                %rtriangulation, relementError, rcollection)
             
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
 
             ! Generate standard mesh from raw mesh
-            call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+            call tria_initStandardMeshFromRaw(p_rproblemLevel&
+                %rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
             call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
@@ -3138,18 +3150,19 @@ contains
 
             ! Re-generate the initial solution vector and impose boundary conditions explicitly
             call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
-                                     rtimestep%dinitialTime, rsolution, rcollection)
-            call bdrf_filterVectorExplicit(rbdrCond,&
-                                           rsolution, rtimestep%dinitialTime)
+                rtimestep%dinitialTime, rsolution, rcollection)
+            call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+                rtimestep%dinitialTime)
 
             ! Re-initialize all constant coefficient matrices
-            call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+            call transp_initProblemLevel(rparlist, ssectionName,&
+                p_rproblemLevel, rcollection)
           end do
           
           ! Prepare internal data arrays of the solver structure
           call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
-          call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
-                                           SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+          call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+              systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
           call solver_updateStructure(rsolver)
 
         end if   ! npreadapt > 0
@@ -3166,13 +3179,13 @@ contains
     if (irhstype > 0) then
       call lsysbl_createVectorBlock(rsolution, rrhs)
       call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                          rtimestep%dinitialTime, rrhs, rcollection)
+          rtimestep%dinitialTime, rrhs, rcollection)
     end if
 
     ! Calculate the initial velocity field
     nlmin = solver_getMinimumMultigridlevel(rsolver)
-    call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                  rtimestep%dinitialTime, rcollection, nlmin)
+    call transp_calcVelocityField(rparlist, ssectionName,&
+        p_rproblemLevel, rtimestep%dinitialTime, rcollection, nlmin)
     
     ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
@@ -3193,8 +3206,8 @@ contains
       
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
-      call transp_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
-                                 rsolution, dtime=rtimestep%dTime)
+          call transp_outputSolution(rparlist, ssectionName,&
+          p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
       
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -3213,33 +3226,33 @@ contains
         
         if (irhstype > 0) then
           ! Explicit Runge-Kutta scheme with non-zero right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-                                   rsolution, transp_nlsolverCallback,&
-                                   rcollection, rrhs)
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, transp_nlsolverCallback,&
+              rcollection, rrhs)
         else
           ! Explicit Runge-Kutta scheme without right-hand side vector
-          call tstep_performRKStep(p_rproblemLevel, rtimestep, rsolver,&
-                                   rsolution, transp_nlsolverCallback,&
-                                   rcollection)
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, transp_nlsolverCallback,&
+              rcollection)
         end if
         
       case (TSTEP_THETA_SCHEME)
         
         if (irhstype > 0) then
           ! Two-level theta-scheme with non-zero right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                      rsolution, transp_nlsolverCallback,&
-                                      rcollection, rrhs)
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, transp_nlsolverCallback,&
+              rcollection, rrhs)
         else
           ! Two-level theta-scheme without right-hand side vector
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                      rsolution, transp_nlsolverCallback,&
-                                      rcollection)
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, transp_nlsolverCallback,&
+              rcollection)
         end if
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
         call sys_halt()
       end select
       
@@ -3263,8 +3276,8 @@ contains
         call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
-        call transp_outputSolution(rparlist, ssectionName, p_rproblemLevel,&
-                                   rsolution, dtime=rtimestep%dTime)
+        call transp_outputSolution(rparlist, ssectionName,&
+            p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(rtimerPrepostProcess)
@@ -3289,9 +3302,9 @@ contains
         call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
         
         ! Compute the error estimator using recovery techniques
-        call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                          rsolution, rtimestep%dTime,&
-                                          relementError, derror, rcollection)
+        call transp_estimateRecoveryError(rparlist, ssectionname,&
+            p_rproblemLevel, rsolution, rtimestep%dTime,&
+            relementError, derror, rcollection)
         
         ! Stop time measurement for error estimation
         call stat_stopTimer(rtimerErrorEstimation)
@@ -3312,8 +3325,8 @@ contains
         call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
         
         ! Perform h-adaptation and update the triangulation structure
-        call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                       relementError, rcollection)
+        call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+            %rtriangulation, relementError, rcollection)
         
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)
@@ -3337,8 +3350,8 @@ contains
         call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
         
         ! Generate standard mesh from raw mesh
-        call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation,&
-                                          rproblem%rboundary)
+        call tria_initStandardMeshFromRaw(p_rproblemLevel&
+            %rtriangulation, rproblem%rboundary)
         
         ! Stop time measurement for generation of the triangulation
         call stat_stopTimer(rtimerTriangulation)
@@ -3348,25 +3361,26 @@ contains
         call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
         
         ! Re-initialize all constant coefficient matrices
-        call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+        call transp_initProblemLevel(rparlist, ssectionName,&
+            p_rproblemLevel, rcollection)
         
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
-        call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
-                                         SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+        call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+            systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(rsolver)
         
         ! Re-calculate the velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                      rtimestep%dTime, rcollection, nlmin)
+        call transp_calcVelocityField(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
 
         ! Re-initialize the right-hand side vector
         if (irhstype > 0) then
           call lsysbl_resizeVectorBlock(rrhs,&
               p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                              rtimestep%dinitialTime, rrhs, rcollection)
+          call transp_initRHS(rparlist, ssectionName, p_rproblemLevel&
+              , rtimestep%dinitialTime, rrhs, rcollection)
         end if
 
         ! Stop time measurement for generation of constant coefficient matrices
@@ -3376,8 +3390,8 @@ contains
 
         ! Re-calculate the time-dependent velocity field
         nlmin = solver_getMinimumMultigridlevel(rsolver)
-        call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                      rtimestep%dTime, rcollection, nlmin)
+        call transp_calcVelocityField(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
        
       end if
       
