@@ -10,7 +10,7 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = SIN(2*_PI*x)*SIN(2*_PI*y) ; x,y,z,t
+deffunc: @initsol = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,z,t
 
 # Specify the exact solution
 deffunc: @exactsol = SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t)) ; x,y,z,t
@@ -35,8 +35,7 @@ NEXPR
 IBCT
 1
 NCOMP
-3
+2
 PARAMETERS
-1.0  F  1   -SIN(2*_PI*t)*SIN(2*_PI*(y-t))
-2.0  T  1   -SIN(2*_PI*t)*SIN(2*_PI*(x-t))
-4.0  F  0
+2.0  T  -1   SIN(2*_PI*(x-t))*SIN(2*_PI*(y-t))
+4.0  F   0

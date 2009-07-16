@@ -71,7 +71,7 @@ svelocityname(2) =
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname = 
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -79,7 +79,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname = 
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -87,7 +87,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -102,7 +102,7 @@ ssolutionname = @initsol
 # 0 = no exact solution available
 # 1 = analytical initial solution
 # 2 = PGM image
-iexactsolutiontype = 0
+iexactsolutiontype = 1
 
 # section name of exact solution
 sexactsolutionname = @exactsol
@@ -113,10 +113,13 @@ sexactsolutionname = @exactsol
 # 2 = surface integral
 # 3 = mixed volume/surface integral
 # 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname = 
+
+# section name of exacttarget functional
+sexacttargetfuncname = 
 
 
 #-------------------------------------------------------------------------------
@@ -211,7 +214,7 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 ucdsolution = out/sinusoidal
@@ -231,7 +234,7 @@ ucderror = out/sinusoidal_error
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -250,13 +253,13 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 1
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.3
 
 # initial time step size
 dinitialStep = 0.001
@@ -708,10 +711,10 @@ nsubdividemax = 0
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.05
+drefinementTolerance = 0.0
 
 # coarsening tolerance
-dcoarseningTolerance = 0.01
+dcoarseningTolerance = 0.0
 
 
 ################################################################################
