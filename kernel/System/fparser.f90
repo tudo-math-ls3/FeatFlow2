@@ -776,7 +776,7 @@ contains
     character(FPAR_EXPRLEN) :: sexpressionName
     character(FPAR_FUNCLEN) :: sfunctionName
     character(FPAR_STRLEN) :: sdata,svalue,svariable
-    integer :: iunit,ios,ipos,jpos,kpos,ivar,idatalen
+    integer :: iunit,ios,ipos,jpos,kpos,ivar,idatalen,icomp
 
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit, .true.)
@@ -791,7 +791,7 @@ contains
     ! Read through the complete input file and look for global
     ! definitions of constants and fixed expressions
     ios = 0
-    do while(ios .eq. 0)
+    readline: do while(ios .eq. 0)
 
       ! Read next line in file
       call io_readlinefromfile(iunit, sdata, idatalen, ios)
@@ -829,6 +829,12 @@ contains
           jpos = scan(sdata(1:idatalen), "=")
           sfunctionName = trim(adjustl(sdata(ipos+1:jpos-1)))
           svalue(1:) = sdata(jpos+1:idatalen)
+
+          ! Check if function name already exists
+          do icomp = 1, rfparser%ncomp
+            if (trim(adjustl(sfunctionName)) .eq.&
+                trim(rfparser%ScompName(icomp))) cycle readline
+          end do
 
           ! Concatenate multi-line expressions
           do while(ios .eq. 0)
@@ -896,7 +902,7 @@ contains
         end select
 
       end if
-    end do
+    end do readline
 
     ! Close file
     close (iunit)
