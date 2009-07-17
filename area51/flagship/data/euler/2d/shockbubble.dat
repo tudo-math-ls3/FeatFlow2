@@ -641,7 +641,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 1
+npreadapt = 3
 
 # number of adaptation steps
 nadapt = 0
