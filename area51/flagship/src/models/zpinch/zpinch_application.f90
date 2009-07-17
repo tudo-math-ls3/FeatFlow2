@@ -105,6 +105,7 @@ module zpinch_application
   use transport_callback2d
   use transport_callback3d
   use trilinearformevaluation
+  use trilinearformevaluation
   use ucd
   use zpinch_callback
   use zpinch_callback2d
@@ -647,9 +648,11 @@ contains
     
     ! local variables
     type(t_trilinearform) :: rform
+    type(t_matrixScalar) :: rmatrix
     type(t_vectorScalar) :: rvector
     integer :: lumpedMassMatrix, consistentMassMatrix
-
+    
+    
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -659,13 +662,14 @@ contains
     ! Get density distribution from the solution of the Euler model
     !  and create block vector which is attached to the collection
     call euler_getVariable(rsolutionEuler, 'density', rvector)
-
+    
     ! We have variable coefficients
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff    = .true.
 
     ! Initialize the bilinear form
     rform%itermCount = 1
+    rform%Dcoefficients(1)  = 1.0_DP
     rform%Idescriptors(1,1) = DER_FUNC
     rform%Idescriptors(2,1) = DER_FUNC
     rform%Idescriptors(3,1) = DER_FUNC
