@@ -45,7 +45,8 @@ contains
 
 !<subroutine>
 
-  subroutine flagship_hadaptCallback1D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine flagship_hadaptCallback1D(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -83,7 +84,7 @@ contains
 
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-                                      trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)))
 
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -130,7 +131,8 @@ contains
 
 !<subroutine>
 
-  subroutine flagship_hadaptCallback2D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine flagship_hadaptCallback2D(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -165,10 +167,10 @@ contains
     case(HADAPT_OPR_INITCALLBACK)
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
-
+      
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-                                      trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)))
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -925,7 +927,8 @@ contains
 
 !<subroutine>
 
-  subroutine flagship_hadaptCallback3D(rcollection, iOperation, Ivertices, Ielements)
+  subroutine flagship_hadaptCallback3D(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -963,7 +966,7 @@ contains
 
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
-                                      trim(rcollection%SquickAccess(1)))
+          trim(rcollection%SquickAccess(1)))
 
       
     case(HADAPT_OPR_DONECALLBACK)
