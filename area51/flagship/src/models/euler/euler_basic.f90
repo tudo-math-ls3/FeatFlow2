@@ -365,6 +365,21 @@ contains
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
       end do
+
+    case ('MOMENTUM_X')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(2, ieq)
+      end do
+      
+    case ('MOMENTUM_Y')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(3, ieq)
+      end do
+      
+    case ('MOMENTUM_Z')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(4, ieq)
+      end do
       
     case ('ENERGY')
       do ieq = 1, neq
@@ -458,7 +473,7 @@ contains
 
 !<subroutine>
   
-   pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
+  pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -530,6 +545,21 @@ contains
     case ('VELOCITY_Z')
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)/Ddata(ieq, 1)
+      end do
+
+    case ('MOMENTUM_X')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 2)
+      end do
+      
+    case ('MOMENTUM_Y')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 3)
+      end do
+      
+    case ('MOMENTUM_Z')
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(ieq, 4)
       end do
       
     case ('ENERGY')
