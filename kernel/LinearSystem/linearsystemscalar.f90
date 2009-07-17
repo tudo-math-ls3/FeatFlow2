@@ -238,6 +238,9 @@
 !# 68.) lsyssc_moveMatrix
 !#      -> Moves a matrix to another matrix.
 !#
+!# 69.) lsyssc_addConstant
+!#      -> Adds a constant to a vector.
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -831,6 +834,7 @@ module linearsystemscalar
   public :: lsyssc_setDataTypeMatrix
   public :: lsyssc_setDataTypeVector
   public :: lsyssc_moveMatrix
+  public :: lsyssc_addConstant
 
   public :: lsyssc_rebuildKdiagonal 
   public :: lsyssc_infoMatrix
@@ -9691,6 +9695,49 @@ contains
     do i=1,iactlength
       p_Ix(i) = p_Ix(i) + ivalue
     end do
+    
+  end subroutine
+  
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_addConstant (rvector,dvalue)
+  
+!<description>
+  ! Adds a constant to a vector.
+!</description>
+  
+!<inputoutput>
+  ! Vector to be modified.
+  type(t_vectorScalar), intent(in) :: rvector
+!</inputoutput>
+
+!<input>
+  ! Value to be added to the vector.
+  real(DP), intent(in) :: dvalue
+!</input>
+
+!</subroutine>
+    
+    ! Vector
+    real(DP), dimension(:), pointer :: p_Dx
+    
+    select case (rvector%cdataType)
+  
+    case (ST_DOUBLE) 
+      ! Get the data array
+      call lsyssc_getbase_double (rvector,p_Dx)
+    
+      ! Increase by dvalue
+      call lalg_vectorAddScalarDble (p_Dx,dvalue,rvector%NEQ)
+
+    case default
+      call output_line('Data type not implemented!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_addConstant')
+      call sys_halt()
+    
+    end select
     
   end subroutine
   
