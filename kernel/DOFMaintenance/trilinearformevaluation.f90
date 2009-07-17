@@ -32,6 +32,7 @@
 module trilinearformevaluation
 
   use fsystem
+  use genoutput
   use storage
   use linearsystemscalar
   use spatialdiscretisation
@@ -134,13 +135,15 @@ contains
   ! of a vector, since there's a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   if (rmatrixScalar%isortStrategy .gt. 0) then
-    print *,'trilf_buildMatrixScalar: Matrix-structure must be unsorted!'
+    call output_line('Matrix-structure must be unsorted!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
     call sys_halt()
   end if
 
   if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
-    print *,'trilf_buildMatrixScalar: No discretisation associated!'
+    call output_line('No discretisation associated!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
     call sys_halt()
   end if
 
@@ -168,11 +171,13 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
                                        
       case DEFAULT
-        print *,'trilf_buildMatrixScalar: Not supported matrix structure!'
+        call output_line('Not supported matrix structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
         call sys_halt()
       end select
     case DEFAULT
-      print *,'trilf_buildMatrixScalar: Single precision matrices currently not supported!'
+      call output_line('Single precision matrices currently not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
       call sys_halt()
     end select
     
@@ -200,16 +205,18 @@ contains
         call lsyssc_convertMatrix (rmatrixScalar,LSYSSC_MATRIX7)
 
       case DEFAULT
-        print *,'bilf_buildMatrixScalar: Not supported matrix structure!'
+        call output_line('Not supported matrix structure!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
         call sys_halt()
       end select
     case DEFAULT
-      print *,'bilf_buildMatrixScalar: Single precision matrices &
-              &currently not supported!'
+      call output_line('Single precision matrices currently not supported!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
       call sys_halt()
     end select
   case DEFAULT
-    print *,'bilf_buildMatrixScalar: General discretisation not implemented!'
+    call output_line('General discretisation not implemented!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrixScalar')
     call sys_halt()
   end select
 
@@ -273,7 +280,7 @@ contains
 
 !</subroutine>
 
-  ! local variables
+  ! local variablesvboxdrv
   integer :: i,i1,icurrentElementDistr,JDFG, ICUBP, IALBET, IA, IB, ifunc
   logical :: bIdenticalTrialAndTest, bIdenticalFuncAndTrial, bIdenticalFuncAndTest
   integer :: IEL, IELmax, IELset, IDOFE, JDOFE
@@ -371,7 +378,8 @@ contains
   
   if ((.not. associated(rmatrixScalar%p_rspatialDiscrTest)) .or. &
       (.not. associated(rmatrixScalar%p_rspatialDiscrTrial))) then
-    print *,'trilf_buildMatrix9d_conf2: No discretisation associated!'
+    call output_line('No discretisation associated!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
 
@@ -394,7 +402,8 @@ contains
     I1=rform%Idescriptors(1,I)
     
     if ((I1 .lt.0) .or. (I1 .gt. DER_MAXNDER)) then
-      print *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
+      call output_line('Invalid descriptor!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     endif
     
@@ -403,7 +412,8 @@ contains
     I1=rform%Idescriptors(2,I)
     
     if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-      print *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
+      call output_line('Invalid descriptor!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     endif
     
@@ -413,7 +423,8 @@ contains
     I1=rform%Idescriptors(3,I)
     
     if ((I1 .le.0) .or. (I1 .gt. DER_MAXNDER)) then
-      print *,'trilf_buildMatrix9d_conf2: Invalid descriptor'
+      call output_line('Invalid descriptor!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     endif
     
@@ -455,24 +466,28 @@ contains
   p_rdiscrFunc => rvector%p_rspatialDiscr
   
   if (.not. associated(p_rdiscrTest)) then
-    print *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
+    call output_line('No discretisation attached to the matrix!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
   
   if (.not. associated(p_rdiscrTrial)) then
-    print *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the matrix!'
+    call output_line('No discretisation attached to the matrix!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
   
   if (.not. associated(p_rdiscrFunc)) then
-    print *,'trilf_buildMatrix9d_conf2 error: No discretisation attached to the vector!'
+    call output_line('No discretisation attached to the matrix!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
   
   if ((p_rdiscrTest%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
       (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrFunc%inumFESpaces) .or. &
       (p_rdiscrTrial%inumFESpaces .ne. p_rdiscrTest%inumFESpaces)) then
-    print *,'trilf_buildMatrix9d_conf2 error: Discretisations not compatible!'
+    call output_line('Discretisations not compatible!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
     call sys_halt()
   end if
   
@@ -511,11 +526,13 @@ contains
     ! Get the number of corner vertices of the element
     NVE = elem_igetNVE(p_elementDistrTrial%celement)
     if (NVE .ne. elem_igetNVE(p_elementDistrTest%celement)) then
-      print *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
+      call output_line('Element spaces incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     end if
     if (NVE .ne. elem_igetNVE(p_elementDistrFunc%celement)) then
-      print *,'trilf_buildMatrix9d_conf2: element spaces incompatible!'
+      call output_line('Element spaces incompatible!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
       call sys_halt()
     end if
     
@@ -554,22 +571,25 @@ contains
 
       if ((ifunc.lt.0) .or. &
           (ifunc .gt. elem_getMaxDerivative(p_elementDistrFunc%celement))) then
-        print *,'trilf_buildMatrix9d_conf2: Specified function-derivative',ifunc,&
-                ' not available'
+         call output_line('Specified function-derivative '&
+             //trim(sys_siL(ifunc,10))//' not available',&
+             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
         call sys_halt()
       end if
       
       if ((IA.le.0) .or. &
           (IA .gt. elem_getMaxDerivative(p_elementDistrTrial%celement))) then
-        print *,'trilf_buildMatrix9d_conf2: Specified trial-derivative',IA,&
-                ' not available'
+        call output_line('Specified trial-derivative '&
+             //trim(sys_siL(IA,10))//' not available',&
+             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
         call sys_halt()
       end if
 
       if ((IB.le.0) .or. &
           (IB .gt. elem_getMaxDerivative(p_elementDistrTest%celement))) then
-        print *,'trilf_buildMatrix9d_conf2: Specified test-derivative',IB,&
-                ' not available'
+        call output_line('Specified test-derivative '&
+             //trim(sys_siL(IB,10))//' not available',&
+             OU_CLASS_ERROR,OU_MODE_STD,'trilf_buildMatrix9d_conf2')
         call sys_halt()
       end if
     end do
@@ -585,13 +605,15 @@ contains
     ! would lead to nonused memory blocks in these arrays during the assembly, 
     ! which reduces the speed by 50%!
     
-    allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistrTest%celement),&
-             ncubp,nelementsPerBlock))
-    allocate(DbasTrial(indofTrial,elem_getMaxDerivative(p_elementDistrTrial%celement), &
-             ncubp,nelementsPerBlock))
+    allocate(DbasTest(indofTest,&
+        elem_getMaxDerivative(p_elementDistrTest%celement),&
+        ncubp,nelementsPerBlock))
+    allocate(DbasTrial(indofTrial,&
+        elem_getMaxDerivative(p_elementDistrTrial%celement), &
+        ncubp,nelementsPerBlock))
     allocate(DbasFunc(indofTrial,&
-             elem_getMaxDerivative(p_elementDistrFunc%celement), &
-             ncubp,nelementsPerBlock))
+        elem_getMaxDerivative(p_elementDistrFunc%celement), &
+        ncubp,nelementsPerBlock))
 
     ! Allocate memory for the DOF's of all the elements.
     allocate(IdofsTest(indofTest,nelementsPerBlock))
@@ -1068,8 +1090,10 @@ contains
     deallocate(Dcoefficients)
     deallocate(IdofsTrial)
     deallocate(IdofsTest)
+    deallocate(IdofsFunc)
     deallocate(DbasTrial)
     deallocate(DbasTest)
+    deallocate(DbasFunc)
     deallocate(Kentry)
     deallocate(Dentry)
     
