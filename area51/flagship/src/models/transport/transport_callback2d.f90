@@ -245,9 +245,6 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the solution vector
-      ! is stored in the second quick access string.
-
       ! Retrieve solution vector from collection
       rsolution => rcollection%p_rvectorQuickAccess1
       call lsysbl_getbase_double(rsolution, p_Dsolution)
@@ -459,9 +456,12 @@ contains
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Dcoefficients(ipoint,iel,1))
-        call fparser_evalFunction(p_rfparser, icomp1, Dvalue, Dcoefficients(ipoint,iel,2))
-        call fparser_evalFunction(p_rfparser, icomp2, Dvalue, Dcoefficients(ipoint,iel,3))
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
+            Dcoefficients(ipoint,iel,1))
+        call fparser_evalFunction(p_rfparser, icomp1, Dvalue,&
+            Dcoefficients(ipoint,iel,2))
+        call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
+            Dcoefficients(ipoint,iel,3))
       end do
     end do
 
@@ -496,15 +496,15 @@ contains
         if (DpointPar(ipoint,iel) .eq. dminPar) then
           ! Start point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
         else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
           ! End point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
         else
           ! Inner point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
         end if
         
         ! Compute the expression from the data stored in Dcoefficients
@@ -906,30 +906,6 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-!!$    ! Compute index positions
-!!$    idx = 4*(i-1)
-!!$    jdx = 4*(j-1)
-!!$
-!!$    ! Compute velocities and energy
-!!$    ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
-!!$    vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
-!!$    Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
-!!$
-!!$    uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
-!!$    vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
-!!$    Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
-!!$
-!!$    ! Compute enthalpy
-!!$    hi = 1.4*Ei + (1-1.4)*0.5*(ui*ui+vi*vi)
-!!$    hj = 1.4*Ej + (1-1.4)*0.5*(uj*uj+vj*vj)
-!!$
-!!$    ! Compute speed of sound
-!!$    ci = sqrt(max((1.4-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-!!$    cj = sqrt(max((1.4-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-!!$
-!!$    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
-!!$                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
 
   end subroutine transp_calcMatrixPrimalConst2d
 
