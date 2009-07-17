@@ -33,13 +33,13 @@ ConsistentMassMatrix = 7
 LumpedMassMatrix = 8
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CX = 9
+CoeffMatrix_CX = 11
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CY = 10
+CoeffMatrix_CY = 12
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CZ = 11
+CoeffMatrix_CZ = 13
 
 
 ################################################################################
@@ -71,19 +71,19 @@ JacobianMatrix = 5
 TransportMatrix = 6
 
 # Position of the consistent mass matrix in the scalar matrix structure
-ConsistentMassMatrix = 7
+ConsistentMassMatrix = 9
 
 # Position of the lumped mass matrix in the scalar matrix structure
-LumpedMassMatrix = 8
+LumpedMassMatrix = 10
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CX = 9
+CoeffMatrix_CX = 11
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CY = 10
+CoeffMatrix_CY = 12
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
-CoeffMatrix_CZ = 11
+CoeffMatrix_CZ = 13
 
 # Position of the constant coefficient matrix S in the scalar matrix structure
 CoeffMatrix_S = 0

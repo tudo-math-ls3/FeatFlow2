@@ -25,11 +25,17 @@ application_euler = euler
 # scalar transport model
 application_transport = transport
 
+# file which contains the application specific data
+indatfile = data/zpinch/2d/z-pinch.indat
+
 # number of spatial dimensions
 ndimension = 2
 
 # solution algorithm
 algorithm = transient_primal
+
+# section name of Lorentz force term
+slorentzforcename = @forceterm
 
 #-------------------------------------------------------------------------------
 
@@ -340,7 +346,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_struct_AMR3_tria_DT_10E5
+ucdsolution = out/zpinch
 
 # file for UCD output of error
 ucderror = out/
@@ -382,7 +388,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.9
+dfinalTime = 1e-5
 
 # initial time step size
 dinitialStep = 1e-5
