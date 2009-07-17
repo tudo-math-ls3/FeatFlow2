@@ -1068,7 +1068,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_initAllProblemLevels(rparlist, ssectionName, rproblem, rcollection)
+  subroutine euler_initAllProblemLevels(rparlist, ssectionName,&
+      rproblem, rcollection)
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
@@ -1630,8 +1631,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_estimateRecoveryError(rparlist, ssectionName, rproblemLevel,&
-                                          rsolution, dtime, rerror, derror)
+  subroutine euler_estimateRecoveryError(rparlist, ssectionName,&
+      rproblemLevel, rsolution, dtime, rerror, derror)
 
 !<description>
     ! This subroutine estimates the error of the discrete solution by
@@ -1860,8 +1861,9 @@ contains
     !**************************************************************
     ! Compute one uniformly distributed protection layer
 
-    subroutine doProtectionLayerUniform(IverticesAtElement, IneighboursAtElement, NEL,&
-                                        dthreshold, Ddata, BisactiveElement)
+    subroutine doProtectionLayerUniform(IverticesAtElement,&
+        IneighboursAtElement, NEL, dthreshold, Ddata,&
+        BisactiveElement)
 
       integer, dimension(:,:), intent(in) :: IverticesAtElement
       integer, dimension(:,:), intent(in) :: IneighboursAtElement     
@@ -1916,14 +1918,20 @@ contains
 
 !<subroutine>
 
-  subroutine euler_adaptTriangulation(rhadapt, rtriangulationSrc,&
-      rindicator, rcollection, rtriangulationDest)
+  subroutine euler_adaptTriangulation(rparlist, ssectionName, rhadapt,&
+      rtriangulationSrc, rindicator, rcollection, rtriangulationDest)
 
 !<description>
     ! This subroutine performs h-adaptation for the given triangulation
 !</description>
 
 !<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
     ! adaptation structure
     type(t_hadapt), intent(inout) :: rhadapt
 
@@ -1964,8 +1972,11 @@ contains
       
     end if
 
-    isystemFormat = collct_getvalue_int(rcollection, 'isystemformat')
-
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'isystemformat', isystemFormat)
+    
+    ! What type of system format are we?
     select case (isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
@@ -2083,7 +2094,7 @@ contains
     type(t_solver), intent(inout), target :: rsolver
 
     ! primal solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
+    type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection    
@@ -2209,18 +2220,9 @@ contains
         call collct_setvalue_graph(rcollection, 'sparsitypattern',&
             rgraph, .true.)
         
-        ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector',&
-            rsolution, .true.)
-
-
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
-
-          ! Set the names of the template matrix and the solution vector
-          rcollection%SquickAccess(1) = 'sparsitypattern'
-          rcollection%SquickAccess(2) = 'solutionvector'
-          
+         
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
 
@@ -2229,9 +2231,16 @@ contains
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
                 relementError, derror)
 
+            ! Set the names of the template matrix
+            rcollection%SquickAccess(1) = 'sparsitypattern'
+
+            ! Attach the primal solution vector to the collection structure
+            rcollection%p_rvectorQuickAccess1 => rsolution
+
             ! Perform h-adaptation and update the triangulation structure
-            call euler_adaptTriangulation(rhadapt, p_rproblemLevel&
-                %rtriangulation, relementError, rcollection)
+            call euler_adaptTriangulation(rparlist, ssectionname,&
+                rhadapt, p_rproblemLevel%rtriangulation,&
+                relementError, rcollection)
             
             ! Release element-wise error distribution
             call lsyssc_releaseVector(relementError)
@@ -2410,17 +2419,16 @@ contains
         ! Start time measurement for mesh adaptation
         call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
         
-        ! Set the names of the template matrix and the solution vector
+        ! Set the names of the template matrix
         rcollection%SquickAccess(1) = 'sparsitypattern'
-        rcollection%SquickAccess(2) = 'solutionvector'
         
         ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector',&
-            rsolution, .true.)
+        rcollection%p_rvectorQuickAccess1 => rsolution
         
         ! Perform h-adaptation and update the triangulation structure
-        call euler_adaptTriangulation(rhadapt, p_rproblemLevel&
-            %rtriangulation, relementError, rcollection)
+        call euler_adaptTriangulation(rparlist, ssectionname,&
+            rhadapt, p_rproblemLevel%rtriangulation,&
+            relementError, rcollection)
         
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)

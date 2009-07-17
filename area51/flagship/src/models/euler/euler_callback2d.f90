@@ -140,15 +140,14 @@ module euler_callback2d
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
 
-  public :: euler_calcMatrixRusanovDEBUG2d
-
 contains
   
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -244,7 +243,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, i, j&
+      , dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -319,7 +319,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -421,7 +422,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -523,7 +525,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -654,7 +657,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -822,7 +826,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -914,7 +919,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, i, j&
+      , dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -1119,7 +1125,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, i,&
+      j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 2D
@@ -1173,7 +1180,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D
@@ -1263,7 +1271,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1339,7 +1348,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1458,7 +1468,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1608,7 +1619,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1780,7 +1792,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, i, j&
+      , dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1846,7 +1859,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1875,7 +1889,8 @@ contains
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: aux,hi,hj,ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+    real(DP) :: aux,hi,hj,ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj&
+        ,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
     
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
@@ -1952,7 +1967,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics2d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  subroutine euler_calcCharacteristics2d(U_i, U_j, Dweight, W_ij,&
+      Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 2D
@@ -1983,7 +1999,8 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj,cPow2,uPow2,vPow2,a1,a2,anorm    
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj,cPow2&
+        ,uPow2,vPow2,a1,a2,anorm    
     
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
@@ -2096,8 +2113,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues2d(DbdrNormal, DpointNormal, DbdrValue,&
-                                        ibdrCondType, Du, Du0, istatus)
+  subroutine euler_calcBoundaryvalues2d(DbdrNormal, DpointNormal,&
+      DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
     ! This subroutine computes the boundary values for a given node in 2D
@@ -2548,7 +2565,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackScalar2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine euler_hadaptCallbackScalar2d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2587,14 +2605,13 @@ contains
       ! This subroutine assumes that the name of the first solution
       ! vector is stored in the second quick access string.
 
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      ! Retrieve solution vector from colletion
+      rsolution => rcollection%p_rvectorQuickAccess1
 
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar2d')
+            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar2d')
         call sys_halt()
       end if
 
@@ -2602,7 +2619,8 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -2610,13 +2628,15 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false., .true.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
@@ -2624,7 +2644,8 @@ contains
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       do ivar = 1, NVAR2D
@@ -2634,13 +2655,15 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       do ivar = 1, NVAR2D
@@ -2652,7 +2675,8 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2669,12 +2693,14 @@ contains
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     end select
     
@@ -2684,7 +2710,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackBlock2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine euler_hadaptCallbackBlock2d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2723,14 +2750,13 @@ contains
       ! This subroutine assumes that the name of the first solution
       ! vector is stored in the second quick access string.
 
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      ! Retrieve solution vector from colletion
+      rsolution => rcollection%p_rvectorQuickAccess1
 
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock2d')
+            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock2d')
         call sys_halt()
       end if
 
@@ -2738,7 +2764,8 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -2746,13 +2773,15 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false., .true.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
@@ -2760,7 +2789,8 @@ contains
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       neq = rsolution%NEQ/NVAR2D
@@ -2771,13 +2801,15 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
-
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
+      
       
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       neq = rsolution%NEQ/NVAR2D
@@ -2790,7 +2822,8 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -2809,102 +2842,17 @@ contains
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     end select
     
   end subroutine euler_hadaptCallbackBlock2d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine euler_calcMatrixRusanovDEBUG2d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-
-!<description>
-    ! This subroutine computes the diagonal of the Galerkin matrices
-    ! and applies the Rusanov artificial viscosities in 2D
-!</description>
-
-!<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! coefficients from spatial discretization
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
-
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! node numbers
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
-!</output>
-!</subroutine>
-
-    ! local variable
-    real(DP) :: aux,hi,hj,ui,uj,vi,vj,ci,cj,Ei,Ej,mi,mj,pi,pj
-    
-    
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
-    uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
-
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
-
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
-
-!!$    mi = U_i(2)*C_ji(1)+U_i(3)*C_ji(2)
-!!$    mj = U_j(2)*C_ij(1)+U_j(3)*C_ij(2)
-!!$
-!!$    if (mi*mj > 1e-8) then
-
-!!$      ! Compute auxiliary quantities
-!!$      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-!!$      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
-      
-      ci = (GAMMA-1)*GAMMA*(Ei-0.5_DP*(ui*ui+vi*vi))
-      cj = (GAMMA-1)*GAMMA*(Ej-0.5_DP*(uj*uj+vj*vj))
-
-      if (ci < 0 .or. cj < 0) then
-        
-        D_ij = 0
-
-      else
-
-        ci = sqrt(ci); cj = sqrt(cj)
-
-        ! Compute dissipation tensor D_ij
-        aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-                   abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-
-        D_ij = aux*dscale
-
-      end if
-
-!!$    else
-!!$
-!!$      D_ij = 0
-!!$
-!!$    end if
-
-  end subroutine euler_calcMatrixRusanovDEBUG2d
  
 end module euler_callback2d

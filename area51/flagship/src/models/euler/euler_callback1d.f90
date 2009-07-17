@@ -128,7 +128,8 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin1d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkin1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -161,7 +162,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr1d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxGalerkinNoBdr1d(U_i, U_j, C_ij, C_ji, i, j&
+      , dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -197,7 +199,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -230,7 +233,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -263,7 +267,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov1d(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  subroutine euler_calcFluxRusanov1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -362,7 +367,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, i,&
+      j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 1D
@@ -394,7 +400,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D
@@ -426,7 +433,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -460,7 +468,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -493,7 +502,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, i&
+      , j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -526,7 +536,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -559,7 +570,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanovDiag1d(U_i, U_j, C_ij, C_ji, i, j&
+      , dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -592,7 +604,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov1d(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixRusanov1d(U_i, U_j, C_ij, C_ji, i, j,&
+      dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -660,8 +673,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcBoundaryvalues1d(DbdrNormal, DpointNormal, DbdrValue,&
-                                        ibdrCondType, Du, Du0, istatus)
+  subroutine euler_calcBoundaryvalues1d(DbdrNormal, DpointNormal,&
+      DbdrValue, ibdrCondType, Du, Du0, istatus)
 
 !<description>
     ! This subroutine computes the boundary values for a given node in 1D
@@ -699,7 +712,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackScalar1d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine euler_hadaptCallbackScalar1d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -738,14 +752,13 @@ contains
       ! This subroutine assumes that the name of the first solution
       ! vector is stored in the second quick access string.
 
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      ! Retrieve solution vector from colletion
+      rsolution => rcollection%p_rvectorQuickAccess1
 
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar1d')
+            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackScalar1d')
         call sys_halt()
       end if
 
@@ -753,7 +766,8 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -761,13 +775,15 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR1D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false., .true.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1),&
+            .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
@@ -775,7 +791,8 @@ contains
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR1D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       do ivar = 1, NVAR1D
@@ -785,7 +802,8 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -802,12 +820,14 @@ contains
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     end select
     
@@ -817,7 +837,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackBlock1d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine euler_hadaptCallbackBlock1d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -856,14 +877,13 @@ contains
       ! This subroutine assumes that the name of the first solution
       ! vector is stored in the second quick access string.
 
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      ! Retrieve solution vector from colletion
+      rsolution => rcollection%p_rvectorQuickAccess1
 
       ! Check if solution is stored in interleave format
       if (rsolution%nblocks .ne. NVAR1D) then
         call output_line('Vector is not in block format!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock1d')
+            OU_CLASS_WARNING,OU_MODE_STD,'euler_hadaptCallbackBlock1d')
         call sys_halt()
       end if
 
@@ -871,7 +891,8 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -879,13 +900,15 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. NVAR1D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false., .true.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1),&
+            .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
@@ -893,7 +916,8 @@ contains
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR1D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1), .false.)
+        call lsysbl_resizeVectorBlock(rsolution, NVAR1D*Ivertices(1),&
+            .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       neq = rsolution%NEQ/NVAR1D
@@ -904,7 +928,8 @@ contains
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -923,12 +948,14 @@ contains
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     end select
     
