@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains all callback functions which are required to
-!# solve the compressible Euler/Navier-Stokes equations in 2D
+!# solve the compressible Euler/Navier-Stokes equations in 2D.
 !#
 !# The following callback functions are available:
 !#
@@ -2602,9 +2602,6 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the first solution
-      ! vector is stored in the second quick access string.
-
       ! Retrieve solution vector from colletion
       rsolution => rcollection%p_rvectorQuickAccess1
 
@@ -2747,9 +2744,6 @@ contains
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
-      ! This subroutine assumes that the name of the first solution
-      ! vector is stored in the second quick access string.
-
       ! Retrieve solution vector from colletion
       rsolution => rcollection%p_rvectorQuickAccess1
 
