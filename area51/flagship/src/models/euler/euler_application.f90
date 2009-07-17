@@ -36,30 +36,34 @@
 !# The following routines are available:
 !#
 !# 1.) euler_app
-!#     -> The main routine of the application called from the main problem
-!#
-!#
-!# The following auxiliary routines are available:
-!#
-!# 1.) euler_parseCmdlArguments
-!#     -> Parses the list of commandline arguments and overwrites
-!#        parameter values from the parameter files
+!#     -> The main routine of the application called from the main
+!#        program. The routine gets all required information from the
+!#        parameter list which needs to be initialized and filled in
+!#        the main program. It then works black-box, that is, it
+!#        determines the solution algorithm to be used and performs
+!#        the simulation. The user should only have to modify this
+!#        routine if another solution algorithm is implemented.
 !#
 !# 2.) euler_initSolvers
-!#     -> Initializes the solve structures from the parameter list
+!#     -> Initializes the solve structures from the parameter list.
 !#
 !# 3.) euler_initProblem
 !#     -> Initializes the global problem structure based on the
-!#        parameter settings given by the parameter list
+!#        parameter settings given by the parameter list. This routine
+!#        is quite universal, that is, it prepares the internal
+!#        structure of the global problem and generates a linked
+!#        list of problem levels used in the multigrid hierarchy.
 !#
 !# 4.) euler_initProblemLevel
-!#     -> Initializes the individual problem levels based in the
-!#        parameter settings given by the application descriptor
+!#     -> Initializes the individual problem level based on the
+!#        parameter settings given by the parameter list.
+!#        This routine is called repeatedly by the global
+!#        initialization routine euler_initAllProblemLevels.
 !#
 !# 5.) euler_initAllProblemLevels
-!#     -> Initializes all problem levels attached to the global
+!#     -> Initializes ALL problem levels attached to the global
 !#        problem structure based on the parameter settings
-!#        given by the parameter list
+!#        given by the parameter list.
 !#
 !# 6.) euler_initSolution
 !#     -> Initializes the solution vector based on the parameter
@@ -80,6 +84,13 @@
 !# 11.) euler_solveTransientPrimal
 !#      -> Solves the primal formulation of the time-dependent 
 !#         compressible Euler equations.
+!#
+!#
+!# The following auxiliary routines are available:
+!#
+!# 1.) euler_parseCmdlArguments
+!#     -> Parses the list of commandline arguments and overwrites
+!#        parameter values from the parameter files
 !# 
 !# </purpose>
 !##############################################################################
@@ -129,15 +140,16 @@ module euler_application
 
   private
   public :: euler_app
-  public :: euler_initSolvers
+  public :: euler_adaptTriangulation
+  public :: euler_adjustParameterlist
+  public :: euler_estimateRecoveryError
+  public :: euler_initAllProblemLevels
   public :: euler_initProblem
   public :: euler_initProblemLevel
-  public :: euler_initAllProblemLevels
   public :: euler_initSolution
+  public :: euler_initSolvers
   public :: euler_outputSolution
   public :: euler_outputStatistics
-  public :: euler_estimateRecoveryError
-  public :: euler_adaptTriangulation
   public :: euler_solveTransientPrimal
   
 
@@ -224,7 +236,7 @@ contains
     character(LEN=SYS_STRLEN) :: algorithm
 
     ! local variables
-    integer :: isystemFormat,systemMatrix,ndimension
+    integer :: isystemFormat, systemMatrix, ndimension
     
 
     ! Start total time measurement
@@ -237,8 +249,9 @@ contains
     ! Start time measurement
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    ! Overwrite global configuration from command line arguments. After
-    ! this subroutine has been called, the parameter list remains unchanged.
+    ! Overwrite configuration from command line arguments. After this
+    ! subroutine has been called, the parameter list remains unchanged
+    ! unless the used updates some parameter values interactively.
     call euler_parseCmdlArguments(rparlist)
     call euler_adjustParameterlist(rparlist, 'euler')
 
@@ -268,7 +281,8 @@ contains
     ! Create function parser
     call fparser_create(rfparser, 100)
 
-    ! Read in all constants, predefined expressions and functions from the parameter file
+    ! Read in all constants, predefined expressions
+    ! and functions from the parameter file
     call parlst_getvalue_string(rparlist,&
         'euler', 'indatfile', sindatfileName)
     call fparser_parseFileForKeyword(rfparser,&
@@ -290,7 +304,8 @@ contains
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
-    call euler_initAllProblemLevels(rparlist, 'euler', rproblem, rcollection)
+    call euler_initAllProblemLevels(rparlist, 'euler',&
+        rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
     call parlst_getvalue_int(rparlist, 'euler',&
@@ -309,16 +324,14 @@ contains
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime > 0) then
+    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist,&
-          'euler', 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist,&
-          'euler', 'ndimension', ndimension)
+      call parlst_getvalue_string(rparlist, 'euler', 'algorithm', algorithm)
+      call parlst_getvalue_int(rparlist, 'euler', 'ndimension', ndimension)
       
-      ! The boundary condition for the primal problem is required for all 
-      ! solution strategies so initialize it from the parameter file
+      ! The boundary condition for the primal problem is required for
+      ! all solution strategies so initialize it from the parameter file
       call parlst_getvalue_string(rparlist,&
           'euler', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
@@ -329,7 +342,8 @@ contains
 
       case ('transient_primal')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        ! Solve the primal formulation for the time-dependent problem
+        ! Solve the primal formulation for #
+        ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call euler_solveTransientPrimal(rparlist, 'euler',&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
@@ -488,7 +502,7 @@ contains
 !</subroutine>
 
     ! section names
-    character(LEN=SYS_STRLEN) :: sinviscidName
+    character(LEN=SYS_STRLEN) :: sinviscid
 
     ! abstract problem descriptor
     type(t_problemDescriptor) :: rproblemDescriptor
@@ -503,14 +517,18 @@ contains
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'inviscid', sinviscidName)
-    call parlst_getvalue_string(rparlist,&
         ssectionName, 'trifile', rproblemDescriptor%trifile)
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'prmfile', rproblemDescriptor%prmfile, '')
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', rproblemDescriptor%ndimension)
-    
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'iconvtotria', iconvToTria, 0)
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'inviscid', sinviscid)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'inviscidAFC', inviscidAFC)
+
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1   ! one discretisation
     rproblemDescriptor%nafcstab        = 1   ! stabilisation for inviscid fluxes
@@ -522,8 +540,6 @@ contains
     rproblemDescriptor%nvectorBlock    = 0
 
     ! Check if quadrilaterals should be converted to triangles
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'iconvtotria', iconvToTria, 0)
     if (iconvToTria .ne. 0) then
       rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
                                       + PROBDESC_MSPEC_CONVTRIANGLES
@@ -531,18 +547,13 @@ contains
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
-
-    
-    ! Initialize the stabilisation structure
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'inviscidAFC', inviscidAFC)
     
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
 
       if (inviscidAFC > 0) then
-        call afcstab_initFromParameterlist(rparlist, sinviscidName,&
+        call afcstab_initFromParameterlist(rparlist, sinviscid,&
             p_rproblemLevel%Rafcstab(inviscidAFC))
       end if
       
@@ -1564,62 +1575,62 @@ contains
 !</subroutine>
 
     ! local variable
-    type(t_timer), pointer :: rtimerSolution
-    type(t_timer), pointer :: rtimerAdaptation
-    type(t_timer), pointer :: rtimerErrorEstimation
-    type(t_timer), pointer :: rtimerTriangulation
-    type(t_timer), pointer :: rtimerAssemblyCoeff
-    type(t_timer), pointer :: rtimerAssemblyMatrix
-    type(t_timer), pointer :: rtimerAssemblyVector
-    type(t_timer), pointer :: rtimerPrePostprocess 
+    type(t_timer), pointer :: p_rtimerSolution
+    type(t_timer), pointer :: p_rtimerAdaptation
+    type(t_timer), pointer :: p_rtimerErrorEstimation
+    type(t_timer), pointer :: p_rtimerTriangulation
+    type(t_timer), pointer :: p_rtimerAssemblyCoeff
+    type(t_timer), pointer :: p_rtimerAssemblyMatrix
+    type(t_timer), pointer :: p_rtimerAssemblyVector
+    type(t_timer), pointer :: p_rtimerPrePostprocess 
     real(DP) :: dtotalTime, dfraction
 
     
     ! Get timer objects from collection
-    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-    rtimerAssemblyMatrix => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
-    rtimerAssemblyVector => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
-    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerAssemblyMatrix => collct_getvalue_timer(rcollection, 'rtimerAssemblyMatrix')
+    p_rtimerAssemblyVector => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
     
     ! Output statistics
     call output_lbrk()
     call output_line('Time measurement:')
     call output_line('-----------------')
     
-    call stat_subTimers(rtimerAssemblyMatrix, rtimerSolution)
-    call stat_subTimers(rtimerAssemblyVector, rtimerSolution)
+    call stat_subTimers(p_rtimerAssemblyMatrix, p_rtimerSolution)
+    call stat_subTimers(p_rtimerAssemblyVector, p_rtimerSolution)
 
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
 
     call output_line('Time for computing solution   : '//&
-                     trim(adjustl(sys_sdE(rtimerSolution%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerSolution%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerSolution%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerSolution%delapsedCPU, 5)))//' %')
     call output_line('Time for mesh adaptivity      : '//&
-                     trim(adjustl(sys_sdE(rtimerAdaptation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerAdaptation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerAdaptation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerAdaptation%delapsedCPU, 5)))//' %')
     call output_line('Time for error estimation     : '//&
-                     trim(adjustl(sys_sdE(rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerErrorEstimation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerErrorEstimation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerErrorEstimation%delapsedCPU, 5)))//' %')
     call output_line('Time for triangulation        : '//&
-                     trim(adjustl(sys_sdE(rtimerTriangulation%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerTriangulation%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerTriangulation%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerTriangulation%delapsedCPU, 5)))//' %')
     call output_line('Time for coefficient assembly : '//&
-                     trim(adjustl(sys_sdE(rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerAssemblyCoeff%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyCoeff%delapsedCPU, 5)))//' %')
     call output_line('Time for matrix assembly      : '//&
-                     trim(adjustl(sys_sdE(rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
     call output_line('Time for vector assembly:       '//&
-                     trim(adjustl(sys_sdE(rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerAssemblyVector%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing : '//&
-                     trim(adjustl(sys_sdE(rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
-                     trim(adjustl(sys_sdE(dfraction*rtimerPrePostprocess%delapsedCPU, 5)))//' %')
+                     trim(adjustl(sys_sdE(p_rtimerPrePostprocess%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerPrePostprocess%delapsedCPU, 5)))//' %')
     call output_lbrk()
     call output_line('Time for total simulation     : '//&
                      trim(adjustl(sys_sdE(dtotalTime, 5))))
@@ -1918,7 +1929,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_adaptTriangulation(rparlist, ssectionName, rhadapt,&
+  subroutine euler_adaptTriangulation(rparlist, ssectionName, rhadapt ,&
       rtriangulationSrc, rindicator, rcollection, rtriangulationDest)
 
 !<description>
@@ -2117,12 +2128,12 @@ contains
     type(t_graph) :: rgraph
 
     ! Timer structures
-    type(t_timer), pointer :: rtimerPrePostprocess
-    type(t_timer), pointer :: rtimerSolution
-    type(t_timer), pointer :: rtimerErrorEstimation
-    type(t_timer), pointer :: rtimerAdaptation
-    type(t_timer), pointer :: rtimerTriangulation
-    type(t_timer), pointer :: rtimerAssemblyCoeff
+    type(t_timer), pointer :: p_rtimerPrePostprocess
+    type(t_timer), pointer :: p_rtimerSolution
+    type(t_timer), pointer :: p_rtimerErrorEstimation
+    type(t_timer), pointer :: p_rtimerAdaptation
+    type(t_timer), pointer :: p_rtimerTriangulation
+    type(t_timer), pointer :: p_rtimerAssemblyCoeff
 
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
@@ -2136,15 +2147,15 @@ contains
 
 
     ! Get timer structures
-    rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Start time measurement for pre-processing
-    call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
+    call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
 
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
@@ -2157,14 +2168,16 @@ contains
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Create the solution vector
-    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
-    if (p_rdiscretisation%ncomponents .ne. euler_getNVAR(p_rproblemLevel)) then
+    call lsysbl_createVectorBlock(p_rdiscretisation,&
+        rsolution, .false., ST_DOUBLE)
+    if (p_rdiscretisation%ncomponents .ne.&
+        euler_getNVAR(p_rproblemLevel)) then
       rsolution%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
       isize = rsolution%NEQ*euler_getNVAR(p_rproblemLevel)
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
     
-    ! Initialize the solution vector and impose boundary conditions explicitly
+    ! Initialize the solution vector and impose boundary conditions
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
 
@@ -2194,7 +2207,8 @@ contains
     ! Initialize the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
     
-    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
 
       call parlst_getvalue_double(rparlist,&
@@ -2250,8 +2264,6 @@ contains
                 %rtriangulation, rproblem%rboundary)
             
             ! Update the template matrix according to the sparsity pattern
-            call parlst_getvalue_int(rparlist,&
-                ssectionName, 'templateMatrix', templateMatrix)
             call grph_generateMatrix(rgraph,&
                 p_rproblemLevel%Rmatrix(templateMatrix))
             
@@ -2313,7 +2325,7 @@ contains
     call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
 
     ! Stop time measurement for pre-processing
-    call stat_stopTimer(rtimerPrePostprocess)
+    call stat_stopTimer(p_rtimerPrePostprocess)
 
     
     !---------------------------------------------------------------------------
@@ -2332,7 +2344,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! Start time measurement for solution procedure
-      call stat_startTimer(rtimerSolution, STAT_TIMERSHORT)
+      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
       
       ! Prepare quick access arrays of the collection
       rcollection%SquickAccess(1) = ssectionName
@@ -2359,7 +2371,7 @@ contains
       end select
       
       ! Stop time measurement for solution procedure
-      call stat_stopTimer(rtimerSolution)
+      call stat_stopTimer(p_rtimerSolution)
       
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
@@ -2375,14 +2387,14 @@ contains
         dtimeUCD = dtimeUCD + dstepUCD
 
         ! Start time measurement for post-processing
-        call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerPrepostProcess, STAT_TIMERSHORT)
 
         ! Export the intermediate solution
         call euler_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
-        call stat_stopTimer(rtimerPrepostProcess)
+        call stat_stopTimer(p_rtimerPrepostProcess)
         
       end if
       
@@ -2401,7 +2413,7 @@ contains
         !-----------------------------------------------------------------------
         
         ! Start time measurement for error estimation
-        call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
         
         ! Compute the error estimator using recovery techniques
         call euler_estimateRecoveryError(rparlist, ssectionname,&
@@ -2409,7 +2421,7 @@ contains
             relementError, derror)
         
         ! Stop time measurement for error estimation
-        call stat_stopTimer(rtimerErrorEstimation)
+        call stat_stopTimer(p_rtimerErrorEstimation)
 
 
         !-------------------------------------------------------------------------
@@ -2417,7 +2429,7 @@ contains
         !-------------------------------------------------------------------------
         
         ! Start time measurement for mesh adaptation
-        call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
         
         ! Set the names of the template matrix
         rcollection%SquickAccess(1) = 'sparsitypattern'
@@ -2438,7 +2450,7 @@ contains
             %Rmatrix(templateMatrix))
         
         ! Stop time measurement for mesh adaptation
-        call stat_stopTimer(rtimerAdaptation)
+        call stat_stopTimer(p_rtimerAdaptation)
 
 
         !-------------------------------------------------------------------------
@@ -2446,19 +2458,19 @@ contains
         !-------------------------------------------------------------------------
         
         ! Start time measurement for generation of the triangulation
-        call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
         
         ! Generate standard mesh from raw mesh
         call tria_initStandardMeshFromRaw(p_rproblemLevel&
             %rtriangulation, rproblem%rboundary)
         
         ! Stop time measurement for generation of the triangulation
-        call stat_stopTimer(rtimerTriangulation)
+        call stat_stopTimer(p_rtimerTriangulation)
         
         
         ! Start time measurement for generation of constant
         ! coefficient matrices
-        call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
+        call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
         
         ! Re-initialize all constant coefficient matrices
         call euler_initProblemLevel(rparlist, ssectionName,&
@@ -2479,7 +2491,7 @@ contains
         
         ! Stop time measurement for generation of constant
         ! coefficient matrices
-        call stat_stopTimer(rtimerAssemblyCoeff)
+        call stat_stopTimer(p_rtimerAssemblyCoeff)
 
       end if
 
@@ -2487,9 +2499,11 @@ contains
 
     
     ! Release adaptation structure
-    if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
-      call hadapt_releaseAdaptation(rhadapt)
-      call grph_releaseGraph(rgraph)
+    if (trim(adjustl(sadaptivityName)) .ne. '') then
+      if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
+        call hadapt_releaseAdaptation(rhadapt)
+        call grph_releaseGraph(rgraph)
+      end if
     end if
     
   end subroutine euler_solveTransientPrimal
@@ -2610,30 +2624,41 @@ contains
 
     
     ! Check if mass matrix needs to be built
-    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', imasstype)
-    call parlst_getvalue_int(rparlist, ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'imasstype', imasstype)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'imassantidiffusiontype', imassantidiffusiontype)
 
     if ((imasstype .eq. MASS_ZERO) .and. &
         (imassantidiffusiontype .eq. MASS_ZERO)) then
-      call parlst_setvalue(rparlist, ssectionName, 'ConsistentMassMatrix', '0')
-      call parlst_setvalue(rparlist, ssectionName, 'LumpedMassMatrix', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'ConsistentMassMatrix', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'LumpedMassMatrix', '0')
     end if
 
     ! Check which coefficient matrices for inviscid part need to be build
-    call parlst_getvalue_int(rparlist, ssectionName, 'ndimension', ndimension)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'ndimension', ndimension)
     
     select case(ndimension)
     case (NDIM1D)
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CY', '0')
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CY', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CZ', '0')
     case (NDIM2D)
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CZ', '0')
     case (NDIM3D)
       ! We actually need all three matrices
     case default
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CX', '0')
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CY', '0')
-      call parlst_setvalue(rparlist, ssectionName, 'CoeffMatrix_CZ', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CX', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CY', '0')
+      call parlst_setvalue(rparlist,&
+          ssectionName, 'CoeffMatrix_CZ', '0')
     end select
     
   end subroutine euler_adjustParameterlist
