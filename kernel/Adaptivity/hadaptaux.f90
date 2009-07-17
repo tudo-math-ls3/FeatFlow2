@@ -72,17 +72,17 @@
 
 module hadaptaux
 
-  use storage  
   use arraylist
+  use basicgeometry
   use binarytree
   use fsystem
   use genoutput
+  use linearalgebra
   use octree
   use quadtree
-  use storage
-  use basicgeometry
   use sort
-  use linearalgebra
+  use storage
+  use storage  
   use triangulation
 
   implicit none
@@ -139,31 +139,32 @@ module hadaptaux
 
   ! Dynamic data structures in 1D are all generated
   integer, parameter, public :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
-                                                    HADAPT_HAS_COORDS+&
-                                                    HADAPT_HAS_VERTATELEM+&
-                                                    HADAPT_HAS_NEIGHATELEM+&
-                                                    HADAPT_HAS_NODALPROP+&
-                                                    HADAPT_HAS_NELOFTYPE+&
-                                                    HADAPT_HAS_ELEMATVERTEX
+                                                            HADAPT_HAS_COORDS+&
+                                                            HADAPT_HAS_VERTATELEM+&
+                                                            HADAPT_HAS_NEIGHATELEM+&
+                                                            HADAPT_HAS_NODALPROP+&
+                                                            HADAPT_HAS_NELOFTYPE+&
+                                                            HADAPT_HAS_ELEMATVERTEX
 
   ! Dynamic data structures in 2D are all generated
   integer, parameter, public :: HADAPT_HAS_DYNAMICDATA2D  = HADAPT_HAS_PARAMETERS+&
-                                                    HADAPT_HAS_COORDS+&
-                                                    HADAPT_HAS_VERTATELEM+&
-                                                    HADAPT_HAS_NEIGHATELEM+&
-                                                    HADAPT_HAS_MIDNEIGH+&
-                                                    HADAPT_HAS_BOUNDARY+&
-                                                    HADAPT_HAS_NODALPROP+&
-                                                    HADAPT_HAS_NELOFTYPE+&
-                                                    HADAPT_HAS_ELEMATVERTEX
+                                                            HADAPT_HAS_COORDS+&
+                                                            HADAPT_HAS_VERTATELEM+&
+                                                            HADAPT_HAS_NEIGHATELEM+&
+                                                            HADAPT_HAS_MIDNEIGH+&
+                                                            HADAPT_HAS_BOUNDARY+&
+                                                            HADAPT_HAS_NODALPROP+&
+                                                            HADAPT_HAS_NELOFTYPE+&
+                                                            HADAPT_HAS_ELEMATVERTEX
+
   ! Dynamic data structures in 3D are all generated
   integer, parameter, public :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
-                                                    HADAPT_HAS_COORDS+&
-                                                    HADAPT_HAS_VERTATELEM+&
-                                                    HADAPT_HAS_NEIGHATELEM+&
-                                                    HADAPT_HAS_NODALPROP+&
-                                                    HADAPT_HAS_NELOFTYPE+&
-                                                    HADAPT_HAS_ELEMATVERTEX
+                                                            HADAPT_HAS_COORDS+&
+                                                            HADAPT_HAS_VERTATELEM+&
+                                                            HADAPT_HAS_NEIGHATELEM+&
+                                                            HADAPT_HAS_NODALPROP+&
+                                                            HADAPT_HAS_NELOFTYPE+&
+                                                            HADAPT_HAS_ELEMATVERTEX
 
   ! Cells are marked for refinement
   integer, parameter, public :: HADAPT_MARKEDREFINE     = 2**10
@@ -173,7 +174,7 @@ module hadaptaux
 
   ! Cells are marked
   integer, parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
-                                                  HADAPT_MARKEDCOARSEN
+                                                          HADAPT_MARKEDCOARSEN
   
 !</constantblock>
 
