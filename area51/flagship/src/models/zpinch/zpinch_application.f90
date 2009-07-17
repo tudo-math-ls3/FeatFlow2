@@ -648,7 +648,6 @@ contains
     
     ! local variables
     type(t_trilinearform) :: rform
-    type(t_matrixScalar) :: rmatrix
     type(t_vectorScalar) :: rvector
     integer :: lumpedMassMatrix, consistentMassMatrix
     
@@ -1767,7 +1766,7 @@ contains
           trim(sadaptivityName), 'npreadapt', npreadapt)
 
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
-        
+
         ! Initialize adaptation structure from parameter list
         call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
 
