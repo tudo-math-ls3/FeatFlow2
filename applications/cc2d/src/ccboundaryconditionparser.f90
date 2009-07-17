@@ -95,8 +95,9 @@ module ccboundaryconditionparser
   !
   ! Depending on the situation, this list may be extended by situation
   ! specific variables or variables that are only available at runtime.
-  character(LEN=10), dimension(7), parameter :: SEC_EXPRVARIABLES = &
-    (/'X    ','Y    ','Z    ','L    ','R    ','S    ','TIME '/)
+  character(LEN=10), dimension(11), parameter :: SEC_EXPRVARIABLES = &
+    (/'X     ','Y     ','Z     ','L     ','R     ','S     ','TIME  ',&
+      'MFVELX','MFVELY','MFACCX','MFACCY'/)
 
 !</constantblock>
 
@@ -159,6 +160,7 @@ contains
     integer, dimension(NDIM2D) :: IvelEqns
     type(t_collection) :: rlocalCollection
     integer(I32) :: casmComplexity
+    integer :: imovingFrame
     
     ! A local collection we use for storing named parameters during the
     ! parsing process.
@@ -287,7 +289,10 @@ contains
     ! in the callback routine.
     call cc_initCollectForAssembly (rproblem,rcoll)
     
-    ! DquickAccess(4:) is reserved for BC specific information.
+    ! DquickAccess(1)   = current simulation time
+    ! DquickAccess(2)   = minimum simulation time
+    ! DquickAccess(3)   = maximum simulation time
+    ! DquickAccess(4)   = BC specific information.
     !    
     ! Put a link to the previous collection into that local collection.
     ! That allows us to access it or to pass it to user defined callback
@@ -351,10 +356,33 @@ contains
               !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
               !  IquickAccess(3) = expression type
               !  IquickAccess(4) = expression identifier
+              !  IquickAccess(5) = imovingFrame = 0/1
               !
               ! The SquickAccess array is set up as follows:
               !  SquickAccess(1) = Name of the expression
               !
+              ! The DquickAccess array is set up as follows:
+              !  DquickAccess(5) = X-velocity of the moving frame
+              !  DquickAccess(6) = Y-velocity of the moving frame
+              !  DquickAccess(7) = X-acceleration of the moving frame
+              !  DquickAccess(8) = Y-acceleration of the moving frame
+              
+              ! Is the moving-frame formulatino active?
+              call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                  'imovingFrame',imovingFrame,0)
+                  
+              rcoll%IquickAccess(5) = imovingFrame
+                  
+              if (imovingFrame .ne. 0) then
+              
+                ! Get the velocity and acceleration from the callback routine.
+                call getMovingFrameVelocity (&
+                    rcoll%DquickAccess(5:6),rcoll%DquickAccess(7:8),rcollection)
+                   
+              else
+                rcoll%DquickAccess(5:8) = 0.0_DP
+              end if          
+              
               rcoll%IquickAccess(1) = ibctyp
               
               ! If the type is a double precision value, set the DquickAccess(4)
@@ -373,7 +401,7 @@ contains
                 ! the name of the expression to evaluate.
                 rcoll%SquickAccess(1) = sbdex1
                 
-                ! Dquickaccess(3) / IquickAccess(3) saves information
+                ! Dquickaccess(4) / IquickAccess(4) saves information
                 ! about the expression.
                 select case (iexptyp)
                 case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
@@ -444,10 +472,33 @@ contains
               !  IquickAccess(2) = 0 (undefined)
               !  IquickAccess(3) = expression type
               !  IquickAccess(4) = expression identifier
+              !  IquickAccess(5) = imovingFrame = 0/1
               !
               ! The SquickAccess array is set up as follows:
               !  SquickAccess(1) = Name of the expression
               !
+              ! The DquickAccess array is set up as follows:
+              !  DquickAccess(5) = X-velocity of the moving frame
+              !  DquickAccess(6) = Y-velocity of the moving frame
+              !  DquickAccess(7) = X-acceleration of the moving frame
+              !  DquickAccess(8) = Y-acceleration of the moving frame
+              
+              ! Is the moving-frame formulatino active?
+              call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                  'imovingFrame',imovingFrame,0)
+                  
+              rcoll%IquickAccess(5) = imovingFrame
+                  
+              if (imovingFrame .ne. 0) then
+              
+                ! Get the velocity and acceleration from the callback routine.
+                call getMovingFrameVelocity (&
+                    rcoll%DquickAccess(5:6),rcoll%DquickAccess(7:8),rcollection)
+                   
+              else
+                rcoll%DquickAccess(5:8) = 0.0_DP
+              end if          
+
               if (sbdex1 .ne. '') then
               
                 ! IquickAccess(3) saves the type of the expression
@@ -458,7 +509,7 @@ contains
                 ! the name of the expression to evaluate.
                 rcoll%SquickAccess(1) = sbdex1
                 
-                ! Dquickaccess(3) / IquickAccess(2) saves information
+                ! Dquickaccess(4) / IquickAccess(4) saves information
                 ! about the expression.
                 select case (iexptyp)
                 case (BDC_VALDOUBLE,BDC_VALPARPROFILE)
@@ -644,13 +695,14 @@ contains
   
 !</subroutine>
 
-    integer :: icomponent,iexprtyp
+    integer :: icomponent,iexprtyp,imovingFrame
     
     real(DP) :: dtime
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     dtime = rcollection%Dquickaccess(1)
+    imovingFrame = rcollection%Iquickaccess(5)
 
     ! Use boundary conditions from DAT files.
     select case (cinfoNeeded)
@@ -665,6 +717,13 @@ contains
       !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
       !  IquickAccess(3) = expression type
       !  IquickAccess(4) = expression identifier
+      !  IquickAccess(5) = imovingFrame = 0/1
+      !
+      ! The DquickAccess array is set up as follows:
+      !  DquickAccess(5) = X-velocity of the moving frame
+      !  DquickAccess(6) = Y-velocity of the moving frame
+      !  DquickAccess(7) = X-acceleration of the moving frame
+      !  DquickAccess(8) = Y-acceleration of the moving frame
       !
       ! Get from the current component of the PDE we are discretising:
       icomponent = rcollection%IquickAccess(2)
@@ -681,6 +740,7 @@ contains
       !  IquickAccess(2) = component under consideration (1=x-vel, 2=y-vel,...)
       !  IquickAccess(3) = expression type
       !  IquickAccess(4) = expression identifier
+      !  IquickAccess(5) = imovingFrame = 0/1
       !
       ! Get the type of the expression to evaluate from the 
       ! integer tag of the BC-region - if there is an expression to evaluate
@@ -698,13 +758,21 @@ contains
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
+            rcollection%DquickAccess(5:6),rcollection%DquickAccess(7:8),&
             rcollection)
+            
+        if (imovingFrame .ne. 0) then
+          ! Moving frame formulation active. Add the frame velocity to the
+          ! Dirichlet boundary conditions.
+          Dvalues(1) = Dvalues(1) + rcollection%DquickAccess(5+icomponent-1)
+        end if
     
       case (2)
         ! Normal stress / pressure drop. Evaluate the  expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
+            rcollection%DquickAccess(5:6),rcollection%DquickAccess(7:8),&
             rcollection)
             
       end select
@@ -716,7 +784,8 @@ contains
     ! Auxiliary function: Evaluate a scalar expression on the boundary.
     
     real(DP) function evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
-                                    ityp, ivalue, dvalue, dpar, stag, dtime, rcollection)
+                                    ityp, ivalue, dvalue, dpar, stag, dtime, &
+                                    DmframeVel,DmframeAcc,rcollection)
     
     ! Solution component for which the expression is evaluated.
     ! 1 = X-velocity, 2 = y-velocity,...
@@ -753,6 +822,12 @@ contains
     
     ! A compiled expression for evaluation at runtime
     type(t_fparser), pointer :: p_rparser
+    
+    ! Velocity of the moving frame (if the moving frame formulation is active)
+    real(DP), dimension(:), intent(in) :: DmframeVel
+    
+    ! Acceleration of the moving frame (if the moving frame formulation is active)
+    real(DP), dimension(:), intent(in) :: DmframeAcc
     
     ! A pointer to a collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -827,6 +902,8 @@ contains
                                             rboundaryRegion%iboundCompIdx, dpar, &
                                             BDR_PAR_01, BDR_PAR_LENGTH) 
         Rval(7) = dtime
+        Rval(8:9) = DmframeVel(1:NDIM2D)
+        Rval(10:11) = DmframeAcc(1:NDIM2D)
         
         ! Evaluate the expression. ivalue is the number of
         ! the expression to evaluate.

@@ -711,7 +711,8 @@ contains
           
           ! Set up the interlevel projection structure on all levels
           call linsol_initProjMultigrid2Level(p_rlevelInfo,&
-              rnonlinearIteration%RcoreEquation(ilev)%p_rprojection)
+              rnonlinearIteration%RcoreEquation(ilev+rnonlinearIteration%NLMIN-1)%&
+              p_rprojection)
           
         end select
       
@@ -1408,6 +1409,10 @@ contains
     ! Check if we have Neumann boundary components. If not, the matrices
     ! may have to be changed, depending on the solver.
     rprecSpecials%bneedPressureDiagonalBlock = &
+      .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
+
+    ! If there are no Neumann BC's, the pressure is indefinite.
+    rprecSpecials%bpressureIndefinite = &
       .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 
   end subroutine

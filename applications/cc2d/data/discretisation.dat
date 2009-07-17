@@ -104,7 +104,7 @@ RE                 = 1000
 # 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
 #   in every timestep of the simulation
 
-iRHS               = 0
+iRHS               = 2
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
@@ -114,6 +114,18 @@ iRHS               = 0
 # nonstationary boundary conditions.
 
 iBoundary          = 2
+
+# Activates the moving-frames formulation.
+# 0=deactivate
+# 1=activate
+# Can be used to track e.g. falling particles.
+# When activated, the callback routine getMovingFrameVelocity must return
+# the velocity and acceleration of the moving frame in every timestep.
+# The acceleration is added to the RHS of the Navier-Stokes equation
+# while the velocity influences the Dirichlet boundary condition
+# and the posiprocessing.
+
+imovingFrame = 0
 
 # ------------------------------------------------------------------------
 

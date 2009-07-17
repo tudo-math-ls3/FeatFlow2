@@ -88,6 +88,10 @@
 !#      -> Releases information stored in the collection by 
 !#         cc_initCollectForAssembly.
 !#
+!# 14.) getMovingFrameVelocity
+!#      -> If the moving frame formulation is activated, this routine
+!#         returns the velocity and acceleration of the moving frame.
+!#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
 !# framework calls cc_initCollectForAssembly to stores the current point 
@@ -105,6 +109,72 @@
 !# Note: Information stored in the quick-access array are of temporary
 !# nature and does not have to be cleaned up.
 !#
+!#  EXAMPLES
+!# ------------------------
+!# 1.) Moving frames formulation
+!#
+!#   The moving frames formulation realises a moving domain, which is equivalent
+!#   to the Lagrangian formulation of the Navier-Stokes equation. It can be
+!#   used e.g. to track falling particles in an infinite long channel or similar.
+!#   The moving frames formulation is realised as follows:
+!#
+!#   Let's assume, the domain moves with velocity v=(vx,vy) and accelleration
+!#   a=(ax,ay). This information must be returned by the function
+!#   getMovingFrameVelocity below. To activate the moving frame formulation,
+!#   the parameter imovingFrame in discretisation.dat must be set to 1.
+!#   Then, the equation is changed as follows:
+!#
+!#     (Navier-)Stokes (u,p) = f + a
+!#     div(u)                = 0
+!#
+!#     u(Dirichlet-boundary) = u0 + v
+!#
+!#   The velocity v is substracted from the postprocessing data to give
+!#   nice pictures. Both, v and a, can be accessed in the boundary condition
+!#   expressions (like L,R,S,x,y,TIME) as:
+!#
+!#     MFVELX = x-velocity
+!#     MFVELY = y-velocity
+!#     MFACCX = x-acceleration
+!#     MFACCY = y-acceleration
+!#
+!#   You can for example generate a simple fixed particle in a moving 
+!#   bench1-channel by adding the following code to getMovingFrameVelocity:
+!#
+!#     Dvelocity(1) = 0.3_DP*(tanh(dtime))
+!#     Dacceleration(1) = 0.3_DP*(1.0_DP-tanh(dtime)**2)
+!#
+!#   and the following data to the master.dat file.
+!#
+!#     ###################
+!#     [CC-DISCRETISATION]
+!#     ###################
+!#     imovingFrame = 1
+!#     
+!#     ##############
+!#     [BDEXPRESSIONS]
+!#     ##############
+!#     bdExpressions(2) =
+!#       'Dirichlet0'     0    0.0
+!#       'mpartx'        -1    '-MFVELX'
+!#   
+!#     ##############
+!#     [BDCONDITIONS]
+!#     ##############
+!#     bdComponent1(4)=
+!#        1.0  3  1  'Dirichlet0'  'Dirichlet0'
+!#        2.0  0  0                            
+!#        3.0  3  1  'Dirichlet0'  'Dirichlet0'
+!#        4.0  0  0                            
+!#     bdComponent2(1)=
+!#        4.0  3  1  'mpartx'  'Dirichlet0'
+!#   
+!#     #####################
+!#     [TIME-DISCRETISATION]
+!#     #####################
+!#     itimedependence = 1
+!#     dtimeMax = 10.0
+!#   
 !# </purpose>
 !##############################################################################
 
@@ -455,6 +525,7 @@ contains
     
   !</subroutine>
   
+    ! local variables
     real(DP) :: dtime
     
     ! In a nonstationary simulation, one can get the simulation time
@@ -542,6 +613,7 @@ contains
     
   !</subroutine>
 
+    ! local variables
     real(DP) :: dtime
     
     ! In a nonstationary simulation, one can get the simulation time
@@ -629,6 +701,7 @@ contains
     
   !</subroutine>
   
+    ! local variables
     ! REAL(DP) :: dtime
     ! REAL(DP) :: dx,dy
     !
@@ -730,6 +803,7 @@ contains
     
   !</subroutine>
   
+    ! local variables
     ! REAL(DP) :: dtime
     ! REAL(DP) :: dx,dy
     !
@@ -831,6 +905,7 @@ contains
     
   !</subroutine>
   
+    ! local variables
     ! REAL(DP) :: dtime
     ! REAL(DP) :: dx,dy
     !
@@ -932,6 +1007,7 @@ contains
   
 !</subroutine>
 
+    ! local variables
     real(DP) :: dtime,dtimeMax
     integer :: itimedependence
 
@@ -1029,6 +1105,7 @@ contains
   
 !</subroutine>
 
+    ! local variables
     real(DP) :: dtime,dtimeMax
     integer :: itimedependence
 
@@ -1126,6 +1203,7 @@ contains
   
 !</subroutine>
 
+    ! local variables
     real(DP) :: dtime,dtimeMax
     integer :: itimedependence
 
@@ -1209,6 +1287,7 @@ contains
   
 !</subroutine>
 
+    ! local variables
     ! REAL(DP) :: dtime
     ! REAL(DP) :: dx,dy
     !
@@ -1481,6 +1560,53 @@ contains
       end select
       
     end subroutine
+
+  end subroutine
+
+  ! ***************************************************************************
+  ! Moving frame formulation.
+
+!<subroutine>
+
+  subroutine getMovingFrameVelocity (Dvelocity,Dacceleration,rcollection)
+
+!<description>
+  ! This routine is called by the framework if the moving frame formulation
+  ! is activated by imovingFrame = 1. It has to return the current velocity
+  ! and the current acceleration of the moving frame in the current timestep.
+!</description>
+    
+!<inputoutput>
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), optional, intent(inout) :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Current velocity of the moving frame.
+  real(DP), dimension(:), intent(out) :: Dvelocity
+  
+  ! Current acceleration of the moving frame.
+  real(DP), dimension(:), intent(out) :: Dacceleration
+!</output>
+    
+!</subroutine>
+    
+    ! local variables
+    real(DP) :: dtime
+    
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+    else
+      dtime = 0.0_DP
+    end if
+
+    ! Default implementation: Velocity and acceleration is zero in all dimensinons.
+    Dvelocity(:) = 0.0_DP
+    
+    Dacceleration(:) = 0.0_DP
 
   end subroutine
 

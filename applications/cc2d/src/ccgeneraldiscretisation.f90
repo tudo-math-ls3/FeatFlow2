@@ -1304,6 +1304,76 @@ contains
 
 !<subroutine>
 
+  subroutine coeff_RHS_const (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! Routine that returns a constant function for additional
+    ! assembly of RHS parts in the moving frame formulation.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+    Dcoefficients(:,:,:) = rcollection%DquickAccess(1)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine cc_generateBasicRHS (rproblem,rrhs)
   
 !<description>
@@ -1330,6 +1400,11 @@ contains
     
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    
+    ! Parameters used for the moving frame formulation
+    integer :: imovingFrame
+    real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
+    type(t_collection) :: rlocalcoll
 
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
@@ -1367,6 +1442,35 @@ contains
               p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
               rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
+                           
+    ! Is the moving-frame formulatino active?
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+        'imovingFrame',imovingFrame,0)
+        
+    if (imovingFrame .ne. 0) then
+    
+      ! Get the velocity and acceleration from the callback routine.
+      call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+            
+      ! Assemble a constant RHS with the returned acceleration using the 
+      ! above coeff_RHS_const, this realises the moving frame in the 
+      ! inner of the domain. We pass the constant function in DquickAccess(1).
+      
+      ! Discretise the X-velocity part:
+      rlocalColl%DquickAccess(1) = Dacceleration(1)
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
+                rrhs%RvectorBlock(1),coeff_RHS_const,&
+                rlocalcoll)
+
+      ! And the Y-velocity part:
+      rlocalColl%DquickAccess(1) = Dacceleration(2)
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
+                rrhs%RvectorBlock(2),coeff_RHS_const,&
+                rlocalcoll)
+    
+    end if
                                 
     ! The third subvector must be zero initially - as it represents the RHS of
     ! the equation "div(u) = 0".

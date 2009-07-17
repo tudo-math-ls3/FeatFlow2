@@ -330,10 +330,14 @@ module ccnonlinearcore
     ! =2: BiCGStab with diagonal VANCA preconditioning
     integer :: icoarseGridSolverType = 1
         
+    ! This flag is set to .TRUE. the formulation needs an additional
+    ! C-block instead of the 0-block.
+    logical :: bneedPressureDiagonalBlock = .false.
+
     ! This flag is set to .TRUE. if there are no Neumann boundary
     ! components. In that case, the pressure matrices of direct
     ! solvers must be changed.
-    logical :: bneedPressureDiagonalBlock = .false.
+    logical :: bpressureIndefinite = .false.
     
     ! Set to TRUE if the preconditioner needs virtually transposed B matrices
     ! as D matrices on all levels except for the coarse mesh.
@@ -1436,7 +1440,7 @@ contains
             
         end do
         
-        if (rnonlinearIteration%rprecSpecials%bneedPressureDiagonalBlock) then
+        if (rnonlinearIteration%rprecSpecials%bpressureIndefinite) then
           
           ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
           !

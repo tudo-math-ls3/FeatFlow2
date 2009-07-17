@@ -28,6 +28,10 @@
 #    x = x-coordinate of the point on the boundary
 #    y = y-coordinate of the point on the boundary
 #    TIME = time in a nonstationary simulation
+#    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
+#    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
+#    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
+#    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
 #
 # The following constants are defined:
 #

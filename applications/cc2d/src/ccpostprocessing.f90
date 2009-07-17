@@ -815,6 +815,10 @@ contains
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
     
+    ! Parameters used for the moving frame formulation
+    integer :: imovingFrame
+    real(DP), dimension(NDIM2D) :: Dvelocity,Dacceleration
+    
     character(SYS_STRLEN) :: sfile,sfilename
     
     if (present(dtime)) then
@@ -921,9 +925,6 @@ contains
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                  'SFILENAMEUCD', sfile, '')
@@ -975,10 +976,30 @@ contains
     call ucd_addParameterList (rexport,rproblem%rparamList)
     call ucd_addCommentLine (rexport,'---------------')
 
-    ! Write velocity field
+    ! Get the velocity field
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
+    ! Is the moving-frame formulatino active?
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+        'imovingFrame',imovingFrame,0)
+        
+    ! In this case, the postprocessing data must be modified by the
+    ! moving frame velocity.
+    if (imovingFrame .ne. 0) then
+    
+      ! Get the velocity and acceleration from the callback routine.
+      call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+
+      ! Subtract the moving frame velocity from the postprocessing
+      ! data.
+      call lsyssc_addConstant (rprjVector%RvectorBlock(1),-Dvelocity(1))
+      call lsyssc_addConstant (rprjVector%RvectorBlock(2),-Dvelocity(2))
+    
+    end if
+
+    ! Write the velocity field
+
     ! CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, &
     !     p_Ddata(1:p_rtriangulation%NVT))
     ! CALL ucd_addVariableVertexBased (rexport,'Y-vel',UCD_VAR_YVELOCITY, &
@@ -1037,6 +1058,9 @@ contains
     call bcasm_releaseDiscreteBC (rdiscreteBC)
     call bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
     if (present(dtime)) then
       ! Update time stamp of last written out GMV.
       rpostprocessing%dnextTimeUCD = rpostprocessing%dnextTimeUCD+dtimeDifferenceUCD
