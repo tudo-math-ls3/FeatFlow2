@@ -210,7 +210,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback2d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -247,13 +248,13 @@ contains
       ! This subroutine assumes that the name of the solution vector
       ! is stored in the second quick access string.
 
-      ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      ! Retrieve solution vector from collection
+      rsolution => rcollection%p_rvectorQuickAccess1
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -261,7 +262,8 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -282,7 +284,8 @@ contains
                                            p_Dsolution(Ivertices(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
@@ -297,7 +300,8 @@ contains
                                             p_Dsolution(Ivertices(5)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
       
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -309,12 +313,14 @@ contains
       end if
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback2d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     end select
 
@@ -419,7 +425,7 @@ contains
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(1)))
     
     ! This subroutine assumes that the first quick access integer
     ! value holds the number of the reference function.  Moreover,
@@ -620,7 +626,7 @@ contains
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the primal solution vector and the second quick access
@@ -637,10 +643,10 @@ contains
     
     ! Evaluate the velocity field in the cubature points on the boundary
     ! and store the result in Dcoefficients(:,:,1:2)
-    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,1), p_rvelocity%RvectorBlock(1),&
-                            Dpoints, Ielements, DpointsRef)
-    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,2), p_rvelocity%RvectorBlock(2),&
-                            Dpoints, Ielements, DpointsRef)
+    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,1),&
+        p_rvelocity%RvectorBlock(1), Dpoints, Ielements, DpointsRef)
+    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,2),&
+        p_rvelocity%RvectorBlock(2), Dpoints, Ielements, DpointsRef)
 
     ! This subroutine assumes that the first quick access integer
     ! value holds the number of the reference function.  Moreover,
@@ -671,9 +677,12 @@ contains
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp,  Dvalue, Dcoefficients(ipoint,iel,3))
-        call fparser_evalFunction(p_rfparser, icomp1, Dvalue, Dcoefficients(ipoint,iel,4))
-        call fparser_evalFunction(p_rfparser, icomp2, Dvalue, Dcoefficients(ipoint,iel,5))
+        call fparser_evalFunction(p_rfparser, icomp,  Dvalue,&
+            Dcoefficients(ipoint,iel,3))
+        call fparser_evalFunction(p_rfparser, icomp1, Dvalue,&
+            Dcoefficients(ipoint,iel,4))
+        call fparser_evalFunction(p_rfparser, icomp2, Dvalue,&
+            Dcoefficients(ipoint,iel,5))
       end do
     end do
 
@@ -708,15 +717,15 @@ contains
         if (DpointPar(ipoint,iel) .eq. dminPar) then
           ! Start point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
         else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
           ! End point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
         else
           ! Inner point
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                                       ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
         end if
         
         ! Compute the expression from the data stored in Dcoefficients
@@ -849,7 +858,8 @@ contains
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
         
         ! Evaluate function parser
-        call fparser_evalFunction(p_rfparser, icomp, Dvalue, Dvalues(ipoint,iel))
+        call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
+            Dvalues(ipoint,iel))
       end do
     end do
 
@@ -927,7 +937,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst2d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixDualConst2d(u_i, u_j, C_ij, C_ji,&
+      i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -1065,7 +1076,7 @@ contains
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(1)))
     
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
@@ -1092,8 +1103,8 @@ contains
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints,&
-          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+          p_rvelocity%RvectorBlock(1), Dpoints, rdomainIntSubset&
+          %p_Ielements, rdomainIntSubset%p_DcubPtsRef)
       
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
@@ -1315,7 +1326,7 @@ contains
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
-                                       trim(rcollection%SquickAccess(1)))
+        trim(rcollection%SquickAccess(1)))
 
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector

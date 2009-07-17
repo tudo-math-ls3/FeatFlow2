@@ -103,7 +103,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixPrimalConst3d(u_i, u_j, C_ij, C_ji&
+      , i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -142,7 +143,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst3d(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixDualConst3d(u_i, u_j, C_ij, C_ji,&
+      i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -181,7 +183,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback3d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -219,12 +222,12 @@ contains
       ! is stored in the second quick access string.
 
       ! Retrieve solution vector from colletion and set pointer
-      rsolution => collct_getvalue_vec(rcollection,&
-                                        trim(rcollection%SquickAccess(2)))
+      rsolution => rcollection%p_rvectorQuickAccess1
       call lsysbl_getbase_double(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_DONECALLBACK)
@@ -232,7 +235,8 @@ contains
       nullify(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback1d(rcollection, iOperation,&
+          Ivertices, Ielements)
       
       
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
@@ -253,7 +257,8 @@ contains
                                            p_Dsolution(Ivertices(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
@@ -268,7 +273,8 @@ contains
                                             p_Dsolution(Ivertices(5)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
     
     case(HADAPT_OPR_REMOVEVERTEX)
@@ -280,12 +286,14 @@ contains
       end if
 
       ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation,&
+          Ivertices, Ielements)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback3d(rcollection, iOperation, Ivertices, Ielements)
+      call flagship_hadaptCallback3d(rcollection, iOperation,&
+          Ivertices, Ielements)
     end select
     
   end subroutine transp_hadaptCallback3d

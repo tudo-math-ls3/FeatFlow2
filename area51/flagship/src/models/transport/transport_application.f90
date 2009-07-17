@@ -1684,9 +1684,7 @@ contains
     type(t_fparser), pointer :: p_rfparser
     type(t_linearForm) :: rform
     character(LEN=SYS_STRLEN) :: stargetfuncname
-    integer :: itargetfunctype, ivelocityType, velocityfield
-    integer :: icomp
-
+    integer :: itargetfunctype, icomp
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -2602,9 +2600,12 @@ contains
                                    PPGRD_LATECHNIQUE, 0, rerror)
       
     case (ERREST_SECONDDIFF)
-      call parlst_getvalue_double(rparlist, trim(serrorestimatorName), 'dnoiseFilter', dnoiseFilter)
-      call parlst_getvalue_double(rparlist, trim(serrorestimatorName), 'dabsFilter', dabsFilter)
-      call ppind_secondDifference(rsolution%RvectorBlock(1), dnoiseFilter, dabsFilter, rerror)
+      call parlst_getvalue_double(rparlist,&
+          trim(serrorestimatorName), 'dnoiseFilter', dnoiseFilter)
+      call parlst_getvalue_double(rparlist,&
+          trim(serrorestimatorName), 'dabsFilter', dabsFilter)
+      call ppind_secondDifference(rsolution%RvectorBlock(1),&
+          dnoiseFilter, dabsFilter, rerror)
 
       derror = 1.0
 
@@ -2673,7 +2674,8 @@ contains
       call output_line('-------------------------')
 
       ! We need the global norm of the scalar error variable
-      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution%RvectorBlock(1))
+      call pperr_scalar(PPERR_H1ERROR, dsolution,&
+          rsolution %RvectorBlock(1))
 
       call output_line('Total percentage error:       '//trim(sys_sdEP(derror/dsolution,15,6)))
       
@@ -2695,8 +2697,8 @@ contains
 
       ! We need the global norm of the scalar error variable
       call lsyssc_createVector(rvectorScalar, rerror%NEQ, .true.)
-      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution%RvectorBlock(1),&
-                        relementError=rvectorScalar)
+      call pperr_scalar(PPERR_H1ERROR, dsolution, rsolution&
+          %RvectorBlock(1), relementError=rvectorScalar)
 
       call output_line('Total percentage error: '//trim(sys_sdEP(derror/dsolution,15,6)))
       call output_lbrk()
@@ -2794,16 +2796,16 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('transp_estimateRecoveryError',' BisactiveElement',&
-                       rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
-                       h_BisactiveElement, ST_NEWBLOCK_NOINIT)
+      call storage_new('transp_estimateRecoveryError',' BisactiveEleme&
+          &nt', rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+          h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
       
       ! Set pointers
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
-      call storage_getbase_int2D(&
-          rproblemLevel%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+      call storage_getbase_int2D(rproblemLevel%rtriangulation&
+          %h_IneighboursAtElement, p_IneighboursAtElement)
+      call storage_getbase_int2D(rproblemLevel%rtriangulation&
+          %h_IverticesAtElement, p_IverticesAtElement)
       call lsyssc_getbase_double(rerror, p_Ddata)
 
       ! Compute protection layers
@@ -2813,9 +2815,9 @@ contains
         p_BisActiveElement = .false.
         
         ! Compute a single-width protection layer
-        call doProtectionLayerUniform(p_IverticesAtElement, p_IneighboursAtElement,&
-                                      rproblemLevel%rtriangulation%NEL,&
-                                      dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
+        call doProtectionLayerUniform(p_IverticesAtElement,&
+            p_IneighboursAtElement, rproblemLevel%rtriangulation%NEL,&
+            dprotectLayerTolerance, p_Ddata, p_BisActiveElement)
       end do
 
       ! Release memory
@@ -3013,7 +3015,7 @@ contains
 
 !<output>
     ! primal solution vector
-    type(t_vectorBlock), intent(out) :: rsolution
+    type(t_vectorBlock), intent(out), target :: rsolution
 !</subroutine>
 
     ! Pointer to the multigrid level
@@ -3106,20 +3108,15 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this
         ! type to the callback function for h-adaptation
-        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
-        call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
-        
-        ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
-
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'templateMatrix', templateMatrix)
+        call grph_createGraphFromMatrix(p_rproblemLevel&
+            %Rmatrix(templateMatrix), rgraph)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
 
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
-
-          ! Set the names of the template matrix and the solution vector
-          rcollection%SquickAccess(1) = 'sparsitypattern'
-          rcollection%SquickAccess(2) = 'solutionvector'
           
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
@@ -3128,6 +3125,12 @@ contains
             call transp_estimateRecoveryError(rparlist, ssectionname,&
                 p_rproblemLevel, rsolution, rtimestep%dinitialTime,&
                 relementError, derror, rcollection)
+
+            ! Set the name of the template matrix
+            rcollection%SquickAccess(1) = 'sparsitypattern'
+
+            ! Attach the primal solution vector to the collection structure
+            rcollection%p_rvectorQuickAccess1 => rsolution
 
             ! Perform h-adaptation and update the triangulation structure
             call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
@@ -3141,16 +3144,20 @@ contains
                 %rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
-            call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
-            call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+            call parlst_getvalue_int(rparlist,&
+                ssectionName, 'templateMatrix', templateMatrix)
+            call grph_generateMatrix(rgraph, p_rproblemLevel&
+                %Rmatrix(templateMatrix))
 
             ! Resize the solution vector accordingly
             call lsysbl_resizeVectorBlock(rsolution, &
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
-            ! Re-generate the initial solution vector and impose boundary conditions explicitly
-            call transp_initSolution(rparlist, ssectionname, p_rproblemLevel,&
-                rtimestep%dinitialTime, rsolution, rcollection)
+            ! Re-generate the initial solution vector and impose
+            !  boundary conditions explicitly
+            call transp_initSolution(rparlist, ssectionname,&
+                p_rproblemLevel, rtimestep%dinitialTime, rsolution,&
+                rcollection)
             call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
                 rtimestep%dinitialTime)
 
@@ -3160,7 +3167,8 @@ contains
           end do
           
           ! Prepare internal data arrays of the solver structure
-          call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
+          call parlst_getvalue_int(rparlist,&
+              ssectionName, 'systemMatrix', systemMatrix)
           call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
               systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
           call solver_updateStructure(rsolver)
@@ -3317,12 +3325,11 @@ contains
         ! Start time measurement for mesh adaptation
         call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
         
-        ! Set the names of the template matrix and the solution vector
+        ! Set the name of the template matrix
         rcollection%SquickAccess(1) = 'sparsitypattern'
-        rcollection%SquickAccess(2) = 'solutionvector'
-        
+
         ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+        rcollection%p_rvectorQuickAccess1 => rsolution
         
         ! Perform h-adaptation and update the triangulation structure
         call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
@@ -3453,7 +3460,7 @@ contains
 
 !<output>
     ! primal solution vector
-    type(t_vectorBlock), intent(out) :: rsolution
+    type(t_vectorBlock), intent(out), target :: rsolution
 !</output>
 !</subroutine>
 
@@ -3536,12 +3543,14 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'templateMatrix', templateMatrix)
+        call grph_createGraphFromMatrix(p_rproblemLevel&
+            %Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
         
         ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+        rcollection%p_rvectorQuickAccess1 => rsolution
 
       end if   ! nadapt > 0
 
@@ -3624,8 +3633,9 @@ contains
       call stat_startTimer(rtimerErrorEstimation, STAT_TIMERSHORT)
 
       ! Compute the error estimator using recovery techniques
-      call transp_estimateRecoveryError(rparlist, ssectionname, p_rproblemLevel,&
-                                        rsolution, 0.0_DP, relementError, derror, rcollection)
+      call transp_estimateRecoveryError(rparlist, ssectionname,&
+          p_rproblemLevel, rsolution, 0.0_DP, relementError, derror,&
+          rcollection)
 
       ! Stop time measurement for error estimation
       call stat_stopTimer(rtimerErrorEstimation)
@@ -3638,23 +3648,23 @@ contains
       ! Start time measurement for mesh adaptation
       call stat_startTimer(rtimerAdaptation, STAT_TIMERSHORT)
       
-      ! Set the names of the template matrix and the solution vector
+      ! Set the name of the template matrix
       rcollection%SquickAccess(1) = 'sparsitypattern'
-      rcollection%SquickAccess(2) = 'solutionvector'
       
       ! Attach the primal solution vector to the collection structure
-      call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+      rcollection%p_rvectorQuickAccess1 => rsolution
       
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+          %rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph, p_rproblemLevel&
+          %Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution,&
-                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolution, p_rproblemLevel&
+          %Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -3671,7 +3681,8 @@ contains
       call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(p_rproblemLevel&
+          %rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(rtimerTriangulation)
@@ -3681,12 +3692,13 @@ contains
       call stat_startTimer(rtimerAssemblyCoeff, STAT_TIMERSHORT)
 
       ! Re-initialize all constant coefficient matrices
-      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+      call transp_initProblemLevel(rparlist, ssectionName,&
+          p_rproblemLevel, rcollection)
 
       ! Prepare internal data arrays of the solver structure
       call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
-                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+          systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
@@ -3745,7 +3757,7 @@ contains
 
 !<output>
     ! primal solution vector
-    type(t_vectorBlock), intent(out) :: rsolution
+    type(t_vectorBlock), intent(out), target :: rsolution
 !</output>
 !</subroutine>
 
@@ -3834,12 +3846,15 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
-        call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'templateMatrix', templateMatrix)
+        call grph_createGraphFromMatrix(p_rproblemLevel&
+            %Rmatrix(templateMatrix), rgraph)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
         
         ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+        rcollection%p_rvectorQuickAccess1 => rsolution
 
       end if   ! nadapt > 0
 
@@ -3937,21 +3952,21 @@ contains
       
       ! Set the names of the template matrix and the solution vector
       rcollection%SquickAccess(1) = 'sparsitypattern'
-      rcollection%SquickAccess(2) = 'solutionvector'
       
       ! Attach the primal solution vector to the collection structure
-      call collct_setvalue_vec(rcollection, 'solutionvector', rsolution, .true.)
+      rcollection%p_rvectorQuickAccess1 => rsolution
       
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+          %rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph, p_rproblemLevel&
+          %Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolution,&
-                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolution, p_rproblemLevel&
+          %Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -3968,7 +3983,8 @@ contains
       call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(p_rproblemLevel&
+          %rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(rtimerTriangulation)
@@ -3982,8 +3998,8 @@ contains
 
       ! Prepare internal data arrays of the solver structure
       call parlst_getvalue_int(rparlist, ssectionName, 'systemmatrix', systemMatrix)
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
-                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+          systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
@@ -4048,10 +4064,10 @@ contains
 
 !<output>
     ! primal solution vector
-    type(t_vectorBlock), intent(out) :: rsolutionPrimal
+    type(t_vectorBlock), intent(out), target :: rsolutionPrimal
 
     ! dual solution vector
-    type(t_vectorBlock), intent(out) :: rsolutionDual
+    type(t_vectorBlock), intent(out), target :: rsolutionDual
 !</output>
 !</subroutine>
 
@@ -4141,12 +4157,15 @@ contains
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this type
         ! to the callback function for h-adaptation
-        call parlst_getvalue_int(rparlist, ssectionName, 'templateMatrix', templateMatrix)
-        call grph_createGraphFromMatrix(p_rproblemLevel%Rmatrix(templateMatrix), rgraph)
-        call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'templateMatrix', templateMatrix)
+        call grph_createGraphFromMatrix(p_rproblemLevel&
+            %Rmatrix(templateMatrix), rgraph)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
         
         ! Attach the primal solution vector to the collection structure
-        call collct_setvalue_vec(rcollection, 'solutionvector', rsolutionPrimal, .true.)
+        rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
 
       end if   ! nadapt > 0
 
@@ -4172,8 +4191,8 @@ contains
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                    rtimestep%dTime, rcollection, nlmin)
+      call transp_calcVelocityField(rparlist, ssectionName,&
+          p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
@@ -4190,15 +4209,15 @@ contains
       if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                            0.0_DP, rrhs, rcollection)
+            0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, transp_nlsolverCallback,&
-                                    rcollection, rrhs)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolutionPrimal, transp_nlsolverCallback,&
+            rcollection, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -4209,9 +4228,9 @@ contains
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionPrimal, transp_nlsolverCallback,&
-                                    rcollection)
+        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+            rsolver, rsolutionPrimal, transp_nlsolverCallback,&
+            rcollection)
       end if
 
       ! Stop time measurement for solution procedure
@@ -4227,8 +4246,8 @@ contains
 
       ! Initialize target functional
       call lsysbl_createVectorBlock(rsolutionPrimal, rtargetFunc)      
-      call transp_initTargetFunc(rparlist, ssectionName, p_rproblemLevel,&
-                                 0.0_DP, rtargetFunc, rcollection)
+      call transp_initTargetFunc(rparlist, ssectionName,&
+          p_rproblemLevel, 0.0_DP, rtargetFunc, rcollection)
       
       ! Stop time measurement for error estimation
       call stat_stopTimer(rtimerErrorEstimation)
@@ -4261,8 +4280,8 @@ contains
 
       ! Solve the dual problem
       call tstep_performThetaStep(p_rproblemLevel, rtimestep, rsolver,&
-                                  rsolutionDual, transp_nlsolverCallback,&
-                                  rcollection, rtargetFunc)
+          rsolutionDual, transp_nlsolverCallback, rcollection,&
+          rtargetFunc)
     
       ! Release discretized target functional
       call lsysbl_releaseVector(rtargetFunc)
@@ -4282,8 +4301,8 @@ contains
       
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                    rtimestep%dTime, rcollection, nlmin)
+      call transp_calcVelocityField(rparlist, ssectionName,&
+          p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
@@ -4298,15 +4317,15 @@ contains
         ! Initialize right-hand side vector
         call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                            0.0_DP, rrhs, rcollection)
+            0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
         rcollection%SquickAccess(1) = ssectionName
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
-                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
-                                            rcollection, relementError, derror, rrhs)
+        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+            rsolutionDual, rcollection, relementError, derror, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -4317,9 +4336,9 @@ contains
         rcollection%SquickAccess(1) = ssectionName
 
         ! Compute the error in the quantity of interest
-        call transp_estimateTargetFuncError(rparlist, ssectionName, p_rproblemLevel,&
-                                            rtimestep, rsolver, rsolutionPrimal, rsolutionDual,&
-                                            rcollection, relementError, derror)
+        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+            rsolutionDual, rcollection, relementError, derror)
 
       end if
 
@@ -4336,21 +4355,21 @@ contains
       
       ! Set the names of the template matrix and the solution vector
       rcollection%SquickAccess(1) = 'sparsitypattern'
-      rcollection%SquickAccess(2) = 'solutionvector'
       
       ! Attach the primal solution vector to the collection structure
-      call collct_setvalue_vec(rcollection, 'solutionvector', rsolutionPrimal, .true.)
-      
+      rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
+
       ! Perform h-adaptation and update the triangulation structure
-      call transp_adaptTriangulation(rhadapt, p_rproblemLevel%rtriangulation,&
-                                     relementError, rcollection)
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+          %rtriangulation, relementError, rcollection)
 
       ! Update the template matrix according to the sparsity pattern
-      call grph_generateMatrix(rgraph, p_rproblemLevel%Rmatrix(templateMatrix))
+      call grph_generateMatrix(rgraph, p_rproblemLevel&
+          %Rmatrix(templateMatrix))
 
       ! Resize the solution vector accordingly
-      call lsysbl_resizeVectorBlock(rsolutionPrimal,&
-                                    p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
+      call lsysbl_resizeVectorBlock(rsolutionPrimal, p_rproblemLevel&
+          %Rmatrix(templateMatrix)%NEQ, .false.)
       
       ! Release element-wise error distribution
       call lsyssc_releaseVector(relementError)
@@ -4367,7 +4386,8 @@ contains
       call stat_startTimer(rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel%rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(p_rproblemLevel&
+          %rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(rtimerTriangulation)
@@ -4382,8 +4402,8 @@ contains
 
       ! Prepare internal data arrays of the solver structure
       call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
-      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver, systemMatrix,&
-                                       SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+          systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
       call solver_updateStructure(rsolver)
       
       ! Stop time measurement for generation of constant coefficient matrices
