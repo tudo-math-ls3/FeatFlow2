@@ -794,6 +794,21 @@ endif
 
 ################################# CoreDuo 64bit ################################
 
+ifeq ($(call match,$(ID),pc64-coreduo-linux-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
+CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
+CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
+CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
+CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS)
+endif
+endif
+
+
 ifeq ($(call match,$(ID),pc64-coreduo-linux-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
