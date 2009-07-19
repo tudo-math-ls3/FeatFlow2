@@ -340,12 +340,23 @@ fb_submitJobfile() {
 	if [ $returncode -eq 0 ]; then
 	    echo $output
 	    success=1
-	    # Catch case "Maximum number of jobs already in queue".
-	    # Currently, the message seems not related one to one to
-	    # a particular return code of the qsub command.
-	    # So, check for the screen message itself.
+
+	# Catch case "invalid credential" aka error code 171. Just
+	# re-submit in this case.
+	elif [ $returncode -eq 171 ]; then
+	    echo $output
+	    # Wait and try again
+	    iteration=`expr $iteration + 1`
+	    echo $0": Waiting 1 second, then retrying submission..."
+	    sleep 1
+
+	# Catch case "Maximum number of jobs already in queue".
+	# Currently, the message seems not related one to one to
+	# a particular return code of the qsub command.
+	# So, check for the screen message itself.
 	elif [ -n "`echo \"$output\" | grep \"$maxjobsmessage\"`" ]; then
 	    echo $output
+	    echo "(error code: $returncode)"
 	    # Wait and try again
 	    iteration=`expr $iteration + 1`
 	    echo $0": Waiting $sleeptime seconds, then retrying submission..."
