@@ -1424,9 +1424,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rgriddefWork%rmatDeform/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -1962,7 +1962,7 @@ contains
   ! and passing it to callback routines.
   type(t_evalElementSet) :: rintSubset
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest,IdofFunc
 
   ! Type of transformation from the reference to the real element 
@@ -1996,7 +1996,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = MIN(PPERR_NELEMSIM,p_rtriangulation%NEL)
     
@@ -2015,7 +2015,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .EQ. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTest = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
@@ -2043,7 +2043,7 @@ contains
       allocate(DbasTest(indofTest,elem_getMaxDerivative(p_relementDistribution%celement),&
                ncubp,nelementsPerBlock))
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTest(indofTest,nelementsPerBlock))
 
       ! Initialisation of the element set.
@@ -2076,10 +2076,10 @@ contains
         
         IELmax = MIN(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1),&
                                      p_IelementList(IELset:IELmax),IdofsTest)
                                      
@@ -2092,7 +2092,7 @@ contains
             
         p_Ddetj => rintSubset%p_Ddetj
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = IAND(cevaluationTag,NOT(EL_EVLTAG_REFPOINTS))
 
@@ -2187,7 +2187,7 @@ contains
   subroutine griddef_createRHS (rgriddefWork,rdiscretisation)
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
-  ! The discretisation is assumed to be conformal, i.e. the DOF's
+  ! The discretisation is assumed to be conformal, i.e. the DOF`s
   ! of all finite elements must 'match'. 
   ! The linear form is defined by
   !        (f,$phi_i$), i=1..*
@@ -2234,7 +2234,7 @@ contains
   ! Pointer to the vector entries
   real(dp), dimension(:), pointer :: p_DdataMon,p_DdataArea
 
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest
   integer, dimension(:,:), allocatable, target :: IdofsFunc
   
@@ -2321,7 +2321,7 @@ contains
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
+  ! this is NEL. If there are too many elements, it is at most
   ! LINF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(LINF_NELEMSIM,p_rtriangulation%NEL)
   
@@ -2340,7 +2340,7 @@ contains
     ! Cancel if this element distribution is empty.
     if (p_elementDistribution%NEL .EQ. 0) cycle
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
     indofFunc = elem_igetNDofLoc(p_elementDistributionFunc%celement)
     
@@ -2374,7 +2374,7 @@ contains
     allocate(DbasFunc(indofTest,elem_getMaxDerivative(p_elementDistributionFunc%celement),&
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsTest(indofTest,nelementsPerBlock))
     allocate(IdofsFunc(indofFunc,nelementsPerBlock))
 
@@ -2403,10 +2403,10 @@ contains
       
       IELmax = MIN(NEL,IELset-1+LINF_NELEMSIM)
     
-      ! Calculate the global DOF's into IdofsTest.
+      ! Calculate the global DOF`s into IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
                                    IdofsTest)
       call dof_locGlobMapping_mult(rdiscretisation%RspatialDiscr(1), p_IelementList(IELset:IELmax), &
@@ -2420,7 +2420,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -2466,7 +2466,7 @@ contains
       ! to integrate!
       !
       ! Loop through elements in the set and for each element,
-      ! loop through the DOF's and cubature points to calculate the
+      ! loop through the DOF`s and cubature points to calculate the
       ! integral:
       
       do IEL=1,IELmax-IELset+1
@@ -2479,7 +2479,7 @@ contains
           !
           ! Take the absolut value of the determinant of the mapping.
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
 
           OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
           
@@ -2497,7 +2497,7 @@ contains
           
           dmonVal = 1.0_dp/dmonVal - 1.0_dp/dareaVal
           
-          ! Now loop through all possible combinations of DOF's
+          ! Now loop through all possible combinations of DOF`s
           ! in the current cubature point. Incorporate the data to the FEM vector
 
           do IDOFE=1,indofTest
@@ -3767,7 +3767,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer :: ctrafotype
   real(dp), dimension(trafo_maxdimrefcoord) :: dparpoint 
   
-  ! Values of basis functions and DOF's
+  ! Values of basis functions and DOF`s
   real(DP), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
   
@@ -3786,7 +3786,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
     
-    ! get the number of local DOF's for trial and test functions
+    ! get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! number of vertices on the element
@@ -3838,7 +3838,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   if(associated(p_ielementdistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! Number of vertices on the element
@@ -3851,7 +3851,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     cevaluationTag = elem_getEvaluationTag(ieltype)
   end if
   
-  ! Calculate the global DOF's on that element into IdofsTest.
+  ! Calculate the global DOF`s on that element into IdofsTest.
   call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
   
   ! Get the element shape information
@@ -3965,7 +3965,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   integer(i32) :: ctrafotype,iresult,ilastElement,ilastEdge
   real(dp), dimension(trafo_maxdimrefcoord) :: DparPoint 
   
-  ! Values of basis functions and DOF's
+  ! Values of basis functions and DOF`s
   real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
   integer, dimension(el_maxnbas) :: Idofs
   
@@ -3984,7 +3984,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
     
-    ! get the number of local DOF's for trial and test functions
+    ! get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! number of vertices on the element
@@ -4048,7 +4048,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   if(ASSOCIATED(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! Number of vertices on the element
@@ -4061,7 +4061,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     cevaluationTag = elem_getEvaluationTag(ieltype)
   end if
   
-  ! Calculate the global DOF's on that element into IdofsTest.
+  ! Calculate the global DOF`s on that element into IdofsTest.
   call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
   
   ! Get the element shape information
@@ -4170,7 +4170,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   INTEGER(I32) :: ctrafoType
   REAL(DP), DIMENSION(TRAFO_MAXDIMREFCOORD) :: DparPoint 
   
-  ! Values of basis functions and DOF's
+  ! Values of basis functions and DOF`s
   REAL(DP), DIMENSION(EL_MAXNBAS,EL_MAXNDER) :: Dbas
   INTEGER, DIMENSION(EL_MAXNBAS) :: Idofs
   
@@ -4189,7 +4189,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     ! Element type
     ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
     
-    ! get the number of local DOF's for trial and test functions
+    ! get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! number of vertices on the element
@@ -4235,7 +4235,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
   IF(ASSOCIATED(p_IelementDistr))then
     ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(ieltype)
     
     ! Number of vertices on the element
@@ -4248,7 +4248,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,rgriddefWork,ive)
     cevaluationTag = elem_getEvaluationTag(ieltype)
   END IF
   
-  ! Calculate the global DOF's on that element into IdofsTest.
+  ! Calculate the global DOF`s on that element into IdofsTest.
   CALL dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
   
   ! Get the element shape information

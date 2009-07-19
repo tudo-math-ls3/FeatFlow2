@@ -202,7 +202,7 @@ contains
           rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationStabil, .true.)
       
       ! -----------------------------------------------------------------------
-      ! Mass matrices. They are used in so many cases, it's better we always
+      ! Mass matrices. They are used in so many cases, it is better we always
       ! have them available.
       ! -----------------------------------------------------------------------
 
@@ -692,12 +692,12 @@ contains
     ! Connect the Stokes matrix to the template FEM matrix such that they
     ! use the same structure.
     !
-    ! Don't create a content array yet, it will be created by 
+    ! Do not create a content array yet, it will be created by 
     ! the assembly routines later.
     call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
                 rstaticInfo%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
-    ! Allocate memory for the entries; don't initialise the memory.
+    ! Allocate memory for the entries; do not initialise the memory.
     call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
     
     ! In the global system, there are two coupling matrices B1 and B2.
@@ -707,9 +707,9 @@ contains
     ! Create the matrices structure of the pressure using the 3rd
     ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
     !
-    ! Don't create a content array yet, it will be created by 
+    ! Do not create a content array yet, it will be created by 
     ! the assembly routines later.
-    ! Allocate memory for the entries; don't initialise the memory.
+    ! Allocate memory for the entries; do not initialise the memory.
     
     call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateGradient,&
         rstaticInfo%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
@@ -876,7 +876,7 @@ contains
 
     ! The following call is a replacement for all the lines commented out
     ! above. It directly sets up the Laplace matrix.
-    ! If it's necessary to modify the Laplace matrix, remove this command
+    ! If it is necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
     call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%dnu)
     
@@ -947,7 +947,7 @@ contains
       ! Precompute the jump stabilisation matrix.
       !
       ! Set up the jump stabilisation structure.
-      ! There's not much to do, only initialise the viscosity...
+      ! There is not much to do, only initialise the viscosity...
       rjumpStabil%dnu = rproblem%dnu
       
       ! Set stabilisation parameter
@@ -972,7 +972,7 @@ contains
     end if
                                 
     ! -----------------------------------------------------------------------
-    ! Mass matrices. They are used in so many cases, it's better we always
+    ! Mass matrices. They are used in so many cases, it is better we always
     ! have them available.
     ! -----------------------------------------------------------------------
 
@@ -1016,7 +1016,7 @@ contains
     
     end if
       
-    ! Clean up the collection (as we are done with the assembly, that's it.
+    ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
@@ -1190,7 +1190,7 @@ contains
       !
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the block discretisation structure.
-      ! It's used for building the matrices on lower levels.
+      ! It is used for building the matrices on lower levels.
       if (i .lt. rproblem%NLMAX) then
         call lsysbl_createVecBlockByDiscr (&
             rproblem%RlevelInfo(i)%rdiscretisation,&
@@ -1341,13 +1341,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -1476,7 +1476,7 @@ contains
     ! the equation "div(u) = 0".
     call lsyssc_clearVector(rrhs%RvectorBlock(3))
                                 
-    ! Clean up the collection (as we are done with the assembly, that's it.
+    ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
@@ -1759,7 +1759,7 @@ contains
       end if
       
       ! -----
-      ! That's it, cleanup.
+      ! That is it, cleanup.
       call lsysbl_releaseVector (rsingleRHS)
       call lsysbl_releaseVector (rsingleSol)
       call lsysbl_releaseVector (rvector2)
@@ -1838,7 +1838,7 @@ contains
       call mlprj_initProjectionVec (rprojection,rvector2)
       
       ! Interpolate to the next higher level.
-      ! (Don't 'restrict'! Restriction would be for the dual space = RHS vectors!)
+      ! (Do not 'restrict'! Restriction would be for the dual space = RHS vectors!)
 
       NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
       if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)

@@ -15,9 +15,9 @@
 !# first have to be 'discretised' using the module 'DiscreteBC'!
 !#
 !# IMPORTANT NOTE:
-!# THIS MODULE IS OUTDATED AND NOT USED ANYMORE! IT'S STILL CONTENT OF THE
+!# THIS MODULE IS OUTDATED AND NOT USED ANYMORE! IT IS STILL CONTENT OF THE
 !# FEAT2 LIBRARY TO ALLOW A USER TO DEFINE ANALYTIC BONUDARY CONDITIONS ON
-!# APPLICATION LEVEL. THE KERNAL ROUTINES HOWEVER DON'T USE ANALYTICAL
+!# APPLICATION LEVEL. THE KERNAL ROUTINES HOWEVER DO NOT USE ANALYTICAL
 !# BOUNDARY CONDITIONS ANYMORE: BOUNDARY CONDITIONS ARE ALWAYS DIRECTLY
 !# ASSEMBLED INTO THEIR DISCRETE COUNTERPART SUCH THAT THEY CAN BE IMPLEMENTED
 !# INTO MATRICES/VECTORS!
@@ -25,7 +25,7 @@
 !# Neumann boundary conditions are usually imposed as 'do nothing' boundary
 !# conditions and therefore not realised in a special structure. This
 !# means, the module here realises all 'other' types of boundary conditions
-!# not being Neumann. Neumann is standard, and all other types of BC's
+!# not being Neumann. Neumann is standard, and all other types of BC`s
 !# must be imposed.
 !#
 !# Method description \\
@@ -46,7 +46,7 @@
 !# A boundary condition can be deactivated by setting the cbcRegionType flag
 !# in the boundary region to BC_DONOTHING.
 !#
-!# BC's on real boundary components in 2D \\
+!# BC`s on real boundary components in 2D \\
 !# -------------------------------------- \\
 !# Boundary conditions on real boundary components are described via a boundary
 !# region struture as defined in boundary.f90. This contains basically a minimum
@@ -55,7 +55,7 @@
 !# be attached to a real boundary segment, e.g. a full circle or a line on
 !# the boundary.
 !#
-!# BC's on fictitious boundary components \\
+!# BC`s on fictitious boundary components \\
 !# -------------------------------------- \\
 !# The concept of (analytic) fictitious boundary components is somehow
 !# different to the concept of standard bondary conditions.
@@ -64,8 +64,8 @@
 !# therefore covers a 'group of cells' inside the domain.
 !# Two basic principles drive this idea:\\
 !#
-!# a) The fictitious boundary object' is not necessary one single object like
-!#    a circle or a square. It's can even be a group of objects, all sharing
+!# a) The fictitious boundary object is not necessarily one single object like
+!#    a circle or a square. It can even be a group of objects, all sharing
 !#    the same boundary condition (e.g. 10000 flying balls, all described
 !#    by a Dirichlet-type fictitious boundary object).\\
 !#
@@ -226,7 +226,7 @@ module boundarycondition
     ! Number of equations, this BC refers to. This is usually =1 but can be
     ! higher if the BC couples multiple equations (like $u_x + u_y = c$ or so).
     ! Normally, this is the length of the Iequations list below, but the 
-    ! meaning might be different for special type BC's.
+    ! meaning might be different for special type BC`s.
     integer :: nequations = 0
     
     ! A list of up to BC_MAXEQUATIONS numbers identifying the equations,
@@ -249,7 +249,7 @@ module boundarycondition
     !
     ! e) A boundary condition like "u_x + u_y = const" on real boundary
     !   may be identified by "nequations=2" + "Iequations=[1 2]"
-    !   (let's see if that's really the case if such a thing is implemented...)
+    !   (let us see if that is really the case if such a thing is implemented...)
     !
     ! Basically, this is a list of the blocks in a block solution vector
     ! that are affected by a boundary condition. The list here is actually
@@ -381,7 +381,7 @@ contains
   
   ! OPTIONAL: The initial size of the lists saving boundary conditions.
   ! When adding boundary conditions to the rboundaryConditions structure,
-  ! if there's not enough space, the lists saving the boundary conditions
+  ! if there is not enough space, the lists saving the boundary conditions
   ! are dynamically increased (in terms of BC_LISTBLOCKSIZE). 
   integer, intent(in), optional :: ibcRegionsCount
 !</input>
@@ -663,7 +663,7 @@ contains
           rboundaryConditions%p_Rregions(iindexBC)%rboundaryRegion%cparType, &
           cactParType)
           
-      ! Check if it's inside of the region
+      ! Check if it is inside of the region
       select case (rboundaryConditions%p_Rregions(iindexBC)%cbcRegionType)
       case (BC_RTYPE_REAL,BC_RTYPE_FREE)
 

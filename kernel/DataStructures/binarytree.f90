@@ -203,7 +203,7 @@ module binarytree
     ! Handle to the path data
     integer :: h_Kpath = ST_NOHANDLE
 
-    ! Handle to the children's data
+    ! Handle to the children`s data
     integer :: h_Kchild = ST_NOHANDLE
 
     ! Handle to the tree auxiliary Integer data
@@ -1637,8 +1637,8 @@ contains
           elseif (rtree%isizeDble .eq. 1) then
             call btree_copyFromTree_arrayDble(rtree, p_DData, 1, corder)
           else
-            call output_line('A 1D-array was given but there are more than &
-                             &one components in the tree!',&
+            call output_line('A 1D-array was given but there are more than ' // &
+                             'one components in the tree!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if
@@ -1657,8 +1657,8 @@ contains
           elseif (rtree%isizeSngl .eq. 1) then
             call btree_copyFromTree_arraySngl(rtree, p_FData, 1, corder)
           else
-            call output_line('A 1D-array was given but there are more than &
-                             &one components in the tree!',&
+            call output_line('A 1D-array was given but there are more than ' // &
+                             'one components in the tree!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if
@@ -1677,8 +1677,8 @@ contains
           elseif (rtree%isizeInt .eq. 1) then
             call btree_copyFromTree_arrayInt(rtree, p_IData, 1, corder)
           else
-            call output_line('A 1D-array was given but there are more than &
-                             &one components in the tree!',&
+            call output_line('A 1D-array was given but there are more than ' // &
+                             'one components in the tree!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'btree_copyFromTree_handle')
             call sys_halt()
           end if

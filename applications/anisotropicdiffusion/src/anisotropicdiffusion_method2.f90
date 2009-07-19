@@ -89,7 +89,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
@@ -195,7 +195,7 @@ contains
     ! Set halt mode for debugging
     sys_haltmode = SYS_HALT_THROWFPE
 
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! +------------------------------------------------------------------------
     ! | READ DAT FILE PARAMETERS
@@ -240,7 +240,7 @@ contains
     call parlst_getvalue_int (rparams, '', &
                               'ioutputerror', ioutputerror, 0)
 
-    ! Get the path where to write gmv's to.
+    ! Get the path where to write gmv`s to.
     call parlst_getvalue_string (rparams, '', &
                                  'sucddir', sstring)
     read(sstring,*) sucddir
@@ -484,8 +484,8 @@ contains
       !
       ! Now we have the raw problem. What is missing is the definition of the boundary
       ! conditions.
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -534,9 +534,9 @@ contains
       ! First create an array with the matrix data (on all levels, but we
       ! only have one level here), then call the initialisation 
       ! routine to attach all these matrices.
-      ! Remark: Don't make a call like
+      ! Remark: Do not make a call like
       !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-      ! This doesn't work on all compilers, since the compiler would have
+      ! This does not work on all compilers, since the compiler would have
       ! to create a temp array on the stack - which does not always work!
       Rmatrices = (/rmatrixBlock/)
       call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -629,7 +629,7 @@ contains
     ! | POSTPROCESSING
     ! +------------------------------------------------------------------------
     !
-    ! That's it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
 
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
@@ -701,7 +701,7 @@ contains
       call sys_halt()
     end select
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -753,7 +753,7 @@ contains
     ! Release the triangulation. 
     call tria_done (rtriangulation)
     
-    ! Finally release the domain, that's it.
+    ! Finally release the domain, that is it.
     call boundary_release (rboundary)
 
     ! Release the collection
@@ -817,11 +817,11 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
@@ -838,7 +838,7 @@ contains
                                         rboundaryRegion,rdiscreteBC,&
                                         getBoundaryValues,rcollection)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                         rboundaryRegion,rdiscreteBC,&

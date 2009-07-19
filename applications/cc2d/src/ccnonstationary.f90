@@ -133,7 +133,7 @@ contains
   
 !</subroutine>
 
-    ! Fetch the parameters. Initialise with standard settings if they don't 
+    ! Fetch the parameters. Initialise with standard settings if they do not 
     ! exist.
     call parlst_getvalue_int (rparams,ssection,'itimedependence',  &
         rproblem%itimedependence, 0)
@@ -165,7 +165,7 @@ contains
 
 !<description>
   ! Makes a backup of the current flow configuration into rsnapshot.
-  ! If there is any previous data in rsnapshot, it's overwritten/updated.
+  ! If there is any previous data in rsnapshot, it is overwritten/updated.
 !</description>
 
 !<inputoutput>
@@ -396,11 +396,11 @@ contains
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
-    ! Switch off the B-matrices as we don't need them for this defect.
+    ! Switch off the B-matrices as we do not need them for this defect.
     !
-    ! Don't implement any boundary conditions when assembling this -- it's not
+    ! Do not implement any boundary conditions when assembling this -- it is not
     ! a defect vector!
-    ! The BC's are implemented at the end when the full RHS is finished...
+    ! The BC`s are implemented at the end when the full RHS is finished...
 
     call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
@@ -427,7 +427,7 @@ contains
     ! -------------------------------------------    
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
-    ! Don't implement any BC's! We need the "raw" RHS for the next timestep.
+    ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
     call cc_generateBasicRHS (rproblem,rrhs)
     
     ! Add w_3*f_{n+1} to the current RHS.     
@@ -438,7 +438,7 @@ contains
     ! into the matrices; the latter is done during the nonlinear iteration.
     call cc_implementBC (rproblem,rvector,rtempVectorRhs,.true.,.true.)
 
-    ! That's it for the RHS and solution vector.
+    ! That is it for the RHS and solution vector.
     !    
     ! The LHS is "u_{n+1} + w_1*N(u_n+1)" which results in the system matrix
     ! "M + w_1 N(.)" for the next linear system to solve. 
@@ -577,7 +577,7 @@ contains
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
 
     ! Implement the initial boundary conditions into the solution vector.
-    ! Don't implement anything to matrices or RHS vector as these are
+    ! Do not implement anything to matrices or RHS vector as these are
     ! maintained in the timeloop.
     ! Afterwards, we can start the timeloop.
     call cc_implementBC (rproblem,rvector,rrhs,.true.,.false.)
@@ -736,8 +736,8 @@ contains
           else
 
             ! Restore the flow situation to the beginning of the macrostep.
-            ! We didn't change the solution vector and the time stepping structure,
-            ! so we don't have to restore them.
+            ! We did not change the solution vector and the time stepping structure,
+            ! so we do not have to restore them.
             call cc_restoreTimestep (rsnapshotLastMacrostep,rproblem,rrhs=rrhs)
             call cc_copyPostprocessing (rpostprocessingBackup,rpostprocessing)
 
@@ -815,8 +815,8 @@ contains
           ! Do we have a time stepping algorithm that allowes recomputation?          
           select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
           case (TADTS_FIXED,TADTS_PREDICTION)
-            ! That's bad. Our solution is garbage!
-            ! We don't do anything in this case. The repetition technique will
+            ! That is bad. Our solution is garbage!
+            ! We do not do anything in this case. The repetition technique will
             ! later decide on whether to repeat the step or to stop the 
             ! computation.
             call output_line ('Nonlinear solver broke down. Solution probably garbage!',&
@@ -1079,7 +1079,7 @@ contains
       !----------------------------------------------------
       if (babortTimestep) then
       
-        ! Uh, oh, something went wrong. Let's hope we can repeat the timestep!
+        ! Uh, oh, something went wrong. Let us hope we can repeat the timestep!
         !
         ! We have to repeat the time step if
         !  a) we have repetitions left and
@@ -1087,14 +1087,14 @@ contains
         !  c1) the parameters force us to repeat a step or
         !  c2) the solver for the nonlinear iteration (predictor
         !      or corrector step) broke down
-        ! c2) is an exception to the rule that we don't repeat
+        ! c2) is an exception to the rule that we do not repeat
         ! time steps in adaptive time stepping technique 1!
         
         ! Do we have a time stepping algorithm that allowes recomputation?          
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
         case (TADTS_FIXED) 
-          ! That's bad. Our solution is most probably garbage!
-          ! We cancel the timeloop, it doesn't make any sense to continue.
+          ! That is bad. Our solution is most probably garbage!
+          ! We cancel the timeloop, it does not make any sense to continue.
           call output_line ('Solution garbage! Stopping simulation.',&
               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           call output_separator(OU_SEP_AT,&

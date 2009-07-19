@@ -68,7 +68,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -127,7 +127,7 @@ contains
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 4
@@ -214,21 +214,21 @@ contains
     
     ! Now we have the raw problem. What is missing is the definition of the boundary
     ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     
     ! In contrast to the 2D examples, we currently do not have an analytic
-    ! description of the domain's boundary, therefore we need a discrete
-    ! (mesh-dependent) description of the mesh's boundary. This can be done
+    ! description of the domain`s boundary, therefore we need a discrete
+    ! (mesh-dependent) description of the mesh`s boundary. This can be done
     ! using mesh-regions.
     !
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
     call bcasm_initDiscreteBC(rdiscreteBC)
     
-    ! Create a mesh region describing the mesh's boundary based on the
+    ! Create a mesh region describing the mesh`s boundary based on the
     ! nodal-property-array of the current triangulation.
     call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, MSHREG_IDX_ALL)
     
@@ -236,7 +236,7 @@ contains
     call bcasm_newDirichletBConMR(rdiscretisation, 1, rdiscreteBC, rmeshRegion,&
                                   getBoundaryValuesMR_3D)
     
-    ! Free the mesh region structure as we won't need it anymore
+    ! Free the mesh region structure as we will not need it anymore
     call mshreg_done(rmeshRegion)
     
     ! Hang the pointer into the vector and matrix. That way, these
@@ -284,9 +284,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrixBlock/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -306,7 +306,7 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
-    ! That's it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
 
     !
@@ -321,7 +321,7 @@ contains
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 

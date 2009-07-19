@@ -596,7 +596,7 @@ contains
         
 
       case (VELOCITY_BURGERS_SPACETIME)
-        ! nonlinear Burgers' equation in space-time
+        ! nonlinear Burgers` equation in space-time
 
         if (bbuildAFC) then
           
@@ -660,7 +660,7 @@ contains
 
 
       case (VELOCITY_BURGERS1D)
-        ! nonlinear Burgers' equation in 1D
+        ! nonlinear Burgers` equation in 1D
 
         if (bbuildAFC) then
 
@@ -688,7 +688,7 @@ contains
         
 
       case (VELOCITY_BURGERS2D)
-        ! nonlinear Burgers' equation in 2D
+        ! nonlinear Burgers` equation in 2D
 
         if (bbuildAFC) then
 
@@ -1176,7 +1176,7 @@ contains
       
 
       case (VELOCITY_BURGERS_SPACETIME)
-        ! nonlinear Burgers' equation in space-time
+        ! nonlinear Burgers` equation in space-time
         call gfsc_buildConvectionJacobian(rproblemLevel&
             %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
             transp_calcMatrixPrimalBurgersSpT2d, hstep, bStabilize,&
@@ -1204,7 +1204,7 @@ contains
         
 
       case (VELOCITY_BURGERS1D)
-        ! nonlinear Burgers' equation in 1D
+        ! nonlinear Burgers` equation in 1D
         call gfsc_buildConvectionJacobian(rproblemLevel&
             %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
             transp_calcMatrixPrimalBurgers1d, hstep, bStabilize,&
@@ -1214,7 +1214,7 @@ contains
         
 
       case (VELOCITY_BURGERS2D)
-        ! nonlinear Burgers' equation in 2D
+        ! nonlinear Burgers` equation in 2D
         call gfsc_buildConvectionJacobian(rproblemLevel&
             %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
             transp_calcMatrixPrimalBurgers2d, hstep, bStabilize,&
@@ -1448,7 +1448,7 @@ contains
 
 
     case(VELOCITY_BURGERS_SPACETIME)
-      ! nonlinear Burgers' equation in space-time
+      ! nonlinear Burgers` equation in space-time
 
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
       case (AFCSTAB_FEMFCT,&
@@ -1544,7 +1544,7 @@ contains
 
       
     case(VELOCITY_BURGERS1D)
-      ! nonlinear Burgers' equation in 1D
+      ! nonlinear Burgers` equation in 1D
       
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
       case (AFCSTAB_FEMFCT,&
@@ -1592,7 +1592,7 @@ contains
 
 
     case(VELOCITY_BURGERS2D)
-      ! nonlinear Burgers' equation in 2D
+      ! nonlinear Burgers` equation in 2D
       
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
       case (AFCSTAB_FEMFCT,&
@@ -2042,7 +2042,7 @@ contains
         !-----------------------------------------------------------------------
         ! Compute the constant right-hand side
         !
-        !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.'s$
+        !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.`s$
         !-----------------------------------------------------------------------
 
         if (rtimestep%theta .lt. 1.0_DP) then
@@ -2099,7 +2099,7 @@ contains
         !-----------------------------------------------------------------------
         ! Initialize the constant right-hand side by zeros
         !
-        !   $ rhs = "0" + b.c.'s
+        !   $ rhs = "0" + b.c.`s
         !-----------------------------------------------------------------------
 
         call lsysbl_clearVector(rrhs)
@@ -2312,7 +2312,7 @@ contains
               rvectorScalar, rcollection)
           
         case (VELOCITY_BURGERS_SPACETIME)
-          ! nonlinear Burgers' equation in space-time
+          ! nonlinear Burgers` equation in space-time
           call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
               dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
               rvectorScalar, rcollection)
@@ -2324,14 +2324,14 @@ contains
               rvectorScalar, rcollection)
           
         case (VELOCITY_BURGERS1D)
-          ! nonlinear Burgers' equation in 1D
+          ! nonlinear Burgers` equation in 1D
           
           ! @TODO: Implement weak boundary conditions
           print *, "Weak boundary conditions are not available!"
           stop
           
         case (VELOCITY_BURGERS2D)
-          ! nonlinear Burgers' equation in 2D
+          ! nonlinear Burgers` equation in 2D
           call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
               dscale, transp_coeffVecBdrPrimalBurgers2d, rvectorScalar,&
               rcollection)
@@ -2365,7 +2365,7 @@ contains
               rvectorScalar, rcollection)
           
         case (VELOCITY_BURGERS_SPACETIME)
-          ! nonlinear Burgers' equation in space-time
+          ! nonlinear Burgers` equation in space-time
 
           ! @TODO: Implement weak boundary conditions
           print *, "Weak boundary conditions are not available!"
@@ -2379,14 +2379,14 @@ contains
           stop
           
         case (VELOCITY_BURGERS1D)
-          ! nonlinear Burgers' equation in 1D
+          ! nonlinear Burgers` equation in 1D
           
           ! @TODO: Implement weak boundary conditions
           print *, "Weak boundary conditions are not available!"
           stop
           
         case (VELOCITY_BURGERS2D)
-          ! nonlinear Burgers' equation in 2D
+          ! nonlinear Burgers` equation in 2D
 
           ! @TODO: Implement weak boundary conditions
           print *, "Weak boundary conditions are not available!"
@@ -3317,13 +3317,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 !</input>
 
@@ -3453,13 +3453,13 @@ contains
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -3560,13 +3560,13 @@ contains
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 

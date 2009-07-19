@@ -96,7 +96,7 @@
 !#
 !#  c) Initialise further parameters in the core equation structure manually
 !#     (e.g. preconditioner, pointer to matrices, ...).
-!#     It's important, that the 'outer' application initialises pointers to
+!#     It is important, that the 'outer' application initialises pointers to
 !#     matrices, otherwise nothing will work!
 !#     This all has to be done with the nonlinear-iteration-structure directly.
 !#
@@ -284,9 +284,9 @@ module ccnonlinearcore
 !<typeblock>
 
   ! This type is used to save some situation specific assembly information
-  ! during the setup phase of the nonlinear solver. Here it's noted, if
+  ! during the setup phase of the nonlinear solver. Here it is noted, if
   ! and whose matrices exist and/or must be assmebled transposed to be
-  ! compatible with the preconditioner and more. It's more or less
+  ! compatible with the preconditioner and more. It is more or less
   ! a collection if different flags.
   type t_ccPreconditionerSpecials
   
@@ -781,7 +781,7 @@ contains
       !       u_(n+1)  =  u_n  +  OMEGA * C * ( f - T(u_n)u_n )
       !                =  u_n  +  OMEGA * d_n
       !
-      ! with an appropriate preconditioner C, which we don't care here.
+      ! with an appropriate preconditioner C, which we do not care here.
       ! In our case, this iteration system can be written as:
       !
       ! (u1)     (u1)                     ( (f1)   [ A         B1] (u1) )
@@ -810,7 +810,7 @@ contains
       !              < T(u^l+omegaold*Y)Y , T(u^l+omegaold*Y)Y >
       !
       ! when choosing omegaold=previous omega, which is a good choice
-      ! as one can see by linearisation (see p. 170, Turek's book).
+      ! as one can see by linearisation (see p. 170, Turek`s book).
       !
       ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
       ! scalar product <.,.>.
@@ -855,7 +855,7 @@ contains
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
           rmatrix,rnonlinearCCMatrix,rtemp1)
       
-      ! We don't have to implement any boundary conditions into the matrix
+      ! We do not have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
       ! each matrix-vector-multiplication below!
       
@@ -924,12 +924,12 @@ contains
       
       domega = dskv1 / dskv2
       
-      ! And make sure it's in the allowed range:
+      ! And make sure it is in the allowed range:
       
       domega = max(rnonlinearIteration%domegamin, &
                    min(rnonlinearIteration%domegamax,domega))
       
-      ! That's it, we have our new Omega.
+      ! That is it, we have our new Omega.
 
       ! Gather statistics
       call stat_stopTimer(rtimer)
@@ -978,7 +978,7 @@ contains
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
-    ! domega will stay at this value until it's changed again.
+    ! domega will stay at this value until it is changed again.
     real(DP), intent(inout)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
@@ -1213,7 +1213,7 @@ contains
         rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
 
         ! Release the numeric factorisation of the matrix.
-        ! We don't release the symbolic factorisation, as we can use them
+        ! We do not release the symbolic factorisation, as we can use them
         ! for the next iteration.
         call linsol_doneData (p_rsolverNode)
         
@@ -1426,7 +1426,7 @@ contains
             ! into the system matrix.
             call filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
           else
-            ! Call the matrix filter for the boundary conditions to include the BC's
+            ! Call the matrix filter for the boundary conditions to include the BC`s
             ! into the matrix.
             call matfil_discreteBC (p_rmatrix)
             call matfil_discreteFBC (p_rmatrix)
@@ -1458,7 +1458,7 @@ contains
           
             ! If we have a MG solver, We also check the coarse grid solver for 
             ! the same thing!
-            ! What we don't check is the smoother, thus we assume that smoothers
+            ! What we do not check is the smoother, thus we assume that smoothers
             ! are always solvers that allow the applicance of a filter chain.
             if (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) then
               ! Include a unit vector
@@ -1470,7 +1470,7 @@ contains
             
         else
           
-          ! The 3,3-block must be a zero-matrix. So if it's present, clear it.
+          ! The 3,3-block must be a zero-matrix. So if it is present, clear it.
           if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
             call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
           
@@ -1835,7 +1835,7 @@ contains
   ! This routine invokes the nonlinear defect correction iteration
   !     $$  x_{n+1}  =  x_n  +  J^{-1} ( b - A(x_n) x_n )  $$
   !
-  ! It's a modification of the routine nlsol_performSolve in the kernel
+  ! It is a modification of the routine nlsol_performSolve in the kernel
   ! to allow passing the problem structure to the different callback routines.
   !
   ! The defect correction loop is split into three tasks:
@@ -1940,7 +1940,7 @@ contains
       
     if ((.not. bconvergence) .and. (.not. bdivergence)) then
     
-      ! Let's do the nonlinear loop...
+      ! Let us do the nonlinear loop...
       !
       ! Initialise the domega-value for the damping of the correction
       ! as prescribed by the parameters of the solver.
@@ -1975,7 +1975,7 @@ contains
         ! If domega=0.0, the solution vector would stay unchanged. In this
         ! case, the nonlinear solver would not proceed at all, and the next
         ! iteration would behave exactly as before!
-        ! So in this case, there's nothing to do, we can stop the iteration.
+        ! So in this case, there is nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
           if (rsolverNode%ioutputLevel .ge. 1) then
             call output_line ('NLSOL: Iteration '//&

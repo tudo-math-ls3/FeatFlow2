@@ -215,7 +215,7 @@ contains
   ! The degree of D
   integer :: ndegree, neq
   
-    ! First of all, let's make sure that all necessary matrices are present.
+    ! First of all, let us make sure that all necessary matrices are present.
     if(.not. associated(rschur%p_rmatrixA11)) then
       call output_line ('Submatrix A11 is missing!', &
                         OU_CLASS_ERROR,OU_MODE_STD, 'schur_assembleApprox2D')
@@ -335,7 +335,7 @@ contains
     dtheta = rschur%dtheta
     if(dtheta .eq. 0.0_DP) return
     
-    ! Okay, let's calculate the scaling factors for the diagonal assembly
+    ! Okay, let us calculate the scaling factors for the diagonal assembly
     ! types.
     dsf1 = dtheta * (rschur%p_rmatrixD1%dscaleFactor * &
                      rschur%p_rmatrixB1%dscaleFactor) / &
@@ -405,7 +405,7 @@ contains
 !        if((p_rdiscrVelo%inumFESpaces .eq. 1) .and. &
 !           (p_rdiscrPres%inumFESpaces .eq. 1)) then
 !           
-!          ! Yes, they're uniform, so get the element identifiers.
+!          ! Yes, they are uniform, so get the element identifiers.
 !          celemVelo = p_rdiscrVelo%RelementDistr(1)%celement
 !          celemPres = p_rdiscrPres%RelementDistr(1)%celement
 !          
@@ -413,7 +413,7 @@ contains
 !
 !      end if
 !      
-!      ! Now let's see if there is an interesting combination of velocity and
+!      ! Now let us see if there is an interesting combination of velocity and
 !      ! pressure spaces that we have a special implementation for. If not, then
 !      ! there still is a 'generic' routine which we can call which performs
 !      ! exactly the same job. However, the 'generic' routine is much slower
@@ -425,7 +425,7 @@ contains
 !      
 !      else
       
-        ! Okay, we don't have a specialised version. So we'll call the 'generic'
+        ! Okay, we do not have a specialised version. So we will call the 'generic'
         ! routine, but first we need to calculate the degree of D - this is the
         ! maximum number of velocity DOFs which are adjacent to one pressure DOF.
         ! This information is needed by the 'generic' routine.
@@ -447,7 +447,7 @@ contains
       
     end select
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -566,15 +566,15 @@ contains
           ! Get the column index of B_jk
           idxB = p_IcolB(k)
           
-          ! We're current processing entry B_jk, so we're going to calculate
+          ! We are current processing entry B_jk, so we are going to calculate
           ! D_ij * A_jj * B_jk. This is only interesting if S_ik exists in the
-          ! sparsity pattern of S. So let's loop over all non-zeroes of row i
+          ! sparsity pattern of S. So let us loop over all non-zeroes of row i
           ! of S now to check whether S_ik exists and, if it exists, update its
           ! entry.
           
-          ! We'll exploit a little trick here: Since the non-zero entries of a
+          ! We will exploit a little trick here: Since the non-zero entries of a
           ! row of B and S are sorted in ascending order in respect to their
-          ! column indices, we don't need to loop through all non-zero entries
+          ! column indices, we do not need to loop through all non-zero entries
           ! of row i of S for each non-zero entry in row j of B.
           do l = inextS, p_IrowS(i+1)-1
           
@@ -594,8 +594,8 @@ contains
             
             else if(idxS .gt. idxB) then
               
-              ! If we come out here, then we're at entry S_il with l > k, so
-              ! S_ik does not exist, so let's update the next non-zero pointer
+              ! If we come out here, then we are at entry S_il with l > k, so
+              ! S_ik does not exist, so let us update the next non-zero pointer
               ! of S and exit the inner-most loop here.
               inextS = l
               exit
@@ -611,7 +611,7 @@ contains
     end do ! i
     !$omp end parallel do
     
-    ! That's it
+    ! That is it
   
   end subroutine
   
@@ -736,7 +736,7 @@ contains
     end do ! i
     !$omp end parallel do
     
-    ! That's it
+    ! That is it
   
   end subroutine
  
@@ -874,9 +874,9 @@ contains
       end do ! j
       
       ! Okay, we now have row i of D and the local matrix of A stored in
-      ! DDA1/DA2 and DA11/DA22. Now we're going to calculate D * A^-1.
+      ! DDA1/DA2 and DA11/DA22. Now we are going to calculate D * A^-1.
       ! Since D is a row vector, we stored A in transposed format in the code
-      ! above, so we'll solve now (A^T)^-1 * D^T.
+      ! above, so we will solve now (A^T)^-1 * D^T.
       call DGESV(m,1,DA11,ndegree,Ipivot,DDA1,ndegree,info1)
       call DGESV(m,1,DA22,ndegree,Ipivot,DDA2,ndegree,info2)
       
@@ -932,7 +932,7 @@ contains
     
     end do ! i
     
-    ! That's it
+    ! That is it
   
   end subroutine
   

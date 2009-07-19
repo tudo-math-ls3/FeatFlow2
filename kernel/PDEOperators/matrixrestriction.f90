@@ -7,7 +7,7 @@
 !#
 !# This module contains routines to realise a matrix restriction, i.e. the
 !# construction of coarse grid matrix operators from fine grid matrices by the
-!# Galerkin approach (c.f. p. 224ff in Turek's book).
+!# Galerkin approach (c.f. p. 224ff in Turek`s book).
 !#
 !# In the Galerkin approach a coarse grid matrix $A_{2h}$ 
 !# is build from a fine grid matrix $A_h$ with the help of the prolongation
@@ -63,7 +63,7 @@ contains
 !<description>
   ! This routine rebuilds some line in the scalar coarse grid matrix 
   ! rcoarseMatrix with the help of the Galerkin approach using the scalar 
-  ! fine grid matrix rfineMatrix. Only the lines of those DOF's will be 
+  ! fine grid matrix rfineMatrix. Only the lines of those DOF`s will be 
   ! rebuild where the elements that belong to the DOF show too high aspect 
   ! ratios.
   !
@@ -77,14 +77,14 @@ contains
   
   ! Aspect-ratio indicator. Configures when to rebuild a line of the
   ! coarse matrix by constant restriction.
-  ! <=0: do nothing, don't modify coarse grid matrix
+  ! <=0: do nothing, do not modify coarse grid matrix
   !  =1: switch depending on aspect ratio of current element
   !  =2: switch depending on aspect ratio of current element
   !      and aspect ratio of neighbour element
   integer, intent(in) :: iARindicator
   
   ! Maximum allowed aspect ratio. Rows in the matrix corresponding
-  ! to elements (i.e. a DOF's of an element) with an aspect ratio
+  ! to elements (i.e. a DOF`s of an element) with an aspect ratio
   ! larger than dARbound are rebuild with the Galerkin approach
   ! by constant restriction.
   real(DP), intent(in) :: dARbound
@@ -175,7 +175,7 @@ contains
       call sys_halt()
     end if
 
-    ! Looks good, so let's start.
+    ! Looks good, so let us start.
     !
     ! Get information about the triangulation on the coarse and fine grid.
     p_rtriaCoarse => rcoarseMatrix%p_rspatialDiscrTest%p_rtriangulation
@@ -383,7 +383,7 @@ contains
               (daspectRatio (iedge) .lt. dARbound)) cycle edgeloop      
         
           ! At least one element is out-of-bounds.
-          ! Check if it's the current element and if the neighbour element
+          ! Check if it is the current element and if the neighbour element
           ! is important or not.
 
           if ((iARindicator .eq. 1) .and. &
@@ -422,7 +422,7 @@ contains
         !       1==============O==============2
         !                 imid1=iedge1
         !
-        ! The same way, calculate the DOF's on the fine grid:
+        ! The same way, calculate the DOF`s on the fine grid:
 
         im1 =p_IedgesAtElementFine(1,iel1)
         im2 =p_IedgesAtElementFine(4,iel2)
@@ -445,7 +445,7 @@ contains
         !              im1            im2      
         !
         ! If there is a neighbour element on the coarse grid,
-        ! we have to calculate the DOF's on that neighbour element:
+        ! we have to calculate the DOF`s on that neighbour element:
 
 
         if (iadj1.ne.0) then
@@ -474,7 +474,7 @@ contains
           ! So jedge contains the local number (1..4) of the edge
           ! adjacent to iel and iadj1, looking from iadj1.
           !
-          ! As in the case of iel, calculate the DOF's on that element.
+          ! As in the case of iel, calculate the DOF`s on that element.
 
           jedge1=jedge
           jedge2=mod(jedge1,4)+1
@@ -482,7 +482,7 @@ contains
 
           ! As an example, consider jedge=jedge1=3.
           ! Then, we calculate the left and right edge jedge2 and jedge4
-          ! that correspond to the DOF's we have to take into account
+          ! that correspond to the DOF`s we have to take into account
           ! in the constant prolongation/restriction, i.e.:
           !
           ! iedge4 O----         iel1         ----O iedge2  
@@ -505,7 +505,7 @@ contains
           !        |                              |
           !        1==============O===============2  
           !
-          ! Get the global DOF's on the coarse grid corresponding to
+          ! Get the global DOF`s on the coarse grid corresponding to
           ! these two edges:
  
           imid4 =p_IedgesAtElementCoarse(jedge2,iadj1)
@@ -585,7 +585,7 @@ contains
           !      +==============O===============+  C
           !
           ! Also on the fine grid, get the global numbers of the
-          ! DOF's of the elements jel1 and jel2 that give a contribution
+          ! DOF`s of the elements jel1 and jel2 that give a contribution
           ! to the constant prolongation/restriction:
 
           im8  = p_IedgesAtElementFine(2,jel1)
@@ -625,7 +625,7 @@ contains
         end if
         
         ! Finally, the IMx variables now contain the numbers of the global 
-        ! DOF's on the following edges:
+        ! DOF`s on the following edges:
         !
         !       |     im6             im7      |
         !       +------O----- iel ----O--------+
@@ -801,7 +801,7 @@ contains
 
     end do
 
-    ! That's it.
+    ! That is it.
     
   contains
 
@@ -839,7 +839,7 @@ contains
 
       do ild=Kld(IY),Kld(IY+1)-1
         icol=Kcol(ild)
-        ! If there's column IX in this row we can stop here
+        ! If there is column IX in this row we can stop here
         if (icol .eq. IX) then
           getXYindex = ild
           return

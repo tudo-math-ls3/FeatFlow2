@@ -167,7 +167,7 @@ contains
     ! First of all, set up the Iregions array:
     do i = 1, 7
       
-      ! If the corresponding bit is set, we'll add the region, otherwise
+      ! If the corresponding bit is set, we will add the region, otherwise
       ! we will set the corresponding Iregions entry to -1.
       if(iand(cregions, int(2**(i-1),I32)) .ne. 0) then
         ! Add the region
@@ -189,7 +189,7 @@ contains
     call mshreg_recalcVerticesFromFaces(rmeshRegion)
     call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -231,7 +231,7 @@ contains
     call mshreg_recalcVerticesFromFaces(rmeshRegion)
     call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -357,7 +357,7 @@ contains
   real(DP), parameter :: tol = 0.0001_DP
 
     ! First of all, get the vertices-at-boundary array from the triangulation,
-    ! so we don't check all vertices, but only those on the boundary.
+    ! so we do not check all vertices, but only those on the boundary.
     call storage_getbase_int(rtriangulation%h_IverticesAtBoundary, &
                              p_IverticesAtBoundary)
     

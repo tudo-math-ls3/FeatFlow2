@@ -9,10 +9,10 @@
 !#
 !# 1.) hc5_initMatVec
 !#     -> Allocate memory for matrices/vectors, generate 'static' matrices that
-!#        don't change in time.
+!#        do not change in time.
 !#
 !# 2.) hc5_calcRHS 
-!#     -> Calculate RHS vector. (Doesn't implement BC's.)
+!#     -> Calculate RHS vector. (Does not implement BC`s.)
 !#
 !# 3.) hc5_doneMatVec
 !#     -> Release memory allocated in hc5_initMatVec.

@@ -79,7 +79,7 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     
     ! A set of variables describing the analytic boundary conditions.    
@@ -107,8 +107,8 @@ contains
       ! analytic boundary conditions.
       p_rdiscretisation => p_rmatrix%p_rblockDiscrTrial
       
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -136,11 +136,11 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&
          getBoundaryValues)
@@ -157,7 +157,7 @@ contains
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&
          getBoundaryValues)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
          rboundaryRegion,rproblem%RlevelInfo(i)%p_rdiscreteBC,&
@@ -221,7 +221,7 @@ contains
     ! the discretisation
     type(t_matrixBlock), pointer :: p_rmatrix
     
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     
     ! Get our the right hand side and solution from the problem structure

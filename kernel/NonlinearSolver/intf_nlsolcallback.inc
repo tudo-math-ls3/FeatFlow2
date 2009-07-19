@@ -81,7 +81,7 @@
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
-    ! domega will stay at this value until it's changed again.
+    ! domega will stay at this value until it is changed again.
     real(DP), intent(INOUT)                       :: domega
     
     ! If the preconditioning was a success. Is normally automatically set to

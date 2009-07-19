@@ -464,14 +464,14 @@ module solveraux
     ! Relative stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion
-    ! Remark: don't set depsAbs=depsRel=0!
+    ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsRel = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion
-    ! Remark: don't set depsAbs=depsRel=0!
+    ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsAbs = 0.0_DP
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
@@ -549,7 +549,7 @@ module solveraux
     ! INTERNAL: substructure for Defect correction
     type(t_solverDefcor), pointer :: p_solverDefcor => null()
 
-    ! INTERNAL: substructure for Newton's method
+    ! INTERNAL: substructure for Newton`s method
     type(t_solverNewton), pointer :: p_solverNewton => null()
   end type t_solver
 
@@ -800,7 +800,7 @@ module solveraux
 
 !<typeblock>
 
-  ! This data structure contains all local data for Newton's algorithm
+  ! This data structure contains all local data for Newton`s algorithm
 
   type t_solverNewton
 
@@ -1567,7 +1567,7 @@ contains
       nullify(rsolver%p_solverDefcor)
     end if
 
-    ! Newton's algorithm
+    ! Newton`s algorithm
     if (associated(rsolverTemplate%p_solverNewton)) then
       allocate(rsolver%p_solverNewton)
       call create_solverNewton(rsolver%p_solverNewton,&
@@ -1850,7 +1850,7 @@ contains
       nullify(rsolver%p_solverDefcor)
     end if
     
-    ! Newton's algorithm
+    ! Newton`s algorithm
     if (associated(rsolver%p_solverNewton)) then
       call release_solverNewton(rsolver%p_solverNewton)
       deallocate(rsolver%p_solverNewton)
@@ -2083,7 +2083,7 @@ contains
     end subroutine release_solverDefcor
 
     !*************************************************************
-    ! Release Newton's algorithm
+    ! Release Newton`s algorithm
     
     subroutine release_solverNewton(rprecond)
       type(t_solverNewton), intent(inout) :: rprecond
@@ -2846,7 +2846,7 @@ contains
     end subroutine remove_solverDefcor
 
     !*************************************************************
-    ! Remove temporal data from Newton's algorithm
+    ! Remove temporal data from Newton`s algorithm
 
     subroutine remove_solverNewton(rsolver)
       type(t_solverNewton), intent(inout) :: rsolver
@@ -4624,7 +4624,7 @@ contains
           end if
 
           
-          ! Ok, now the subarrays definitively exist. Let's try to initialize the
+          ! Ok, now the subarrays definitively exist. Let us try to initialize the
           ! temporal vectors from the attached matrices (if any). 
           ! We need the following layout:
           !   raux(NLMIN), raux(NLMIN),   rresc(NLMIN),   rresf(NLMIN+1),
@@ -4939,7 +4939,7 @@ contains
             ! Release template smoother
             call solver_releaseSolver(rsolverTemplateSmoother)
             
-            ! That's it, the subarray of smoothers exists and has the correct dimensions
+            ! That is it, the subarray of smoothers exists and has the correct dimensions
           end if
           
         else
@@ -6069,7 +6069,7 @@ contains
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
                     
                   elseif (Kcol(ip) .eq. jcol0) then
@@ -6078,7 +6078,7 @@ contains
                     Da(:,ip) = Da(:,ip)-A_ij*Da(:,jc)
                     ip = ip-1
 
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
                     
                   else
@@ -6090,7 +6090,7 @@ contains
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
                   end if
                 end do search1
@@ -6152,7 +6152,7 @@ contains
                     Da(:,ip) = Da(:,ip)-A_ij*Da(:,jc)
                     ip = ip-1
 
-                    ! That's it, exit searching
+                    ! That is it, exit searching
                     exit search2
                     
                   elseif (Kcol(ip) .gt. jcol0) then
@@ -6160,7 +6160,7 @@ contains
 
                   else
 
-                    ! That's it, exit searching
+                    ! That is it, exit searching
                     exit search2
                   end if
                 end do search2
@@ -6279,7 +6279,7 @@ contains
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
                     
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
                     
                   elseif (Kcol(ip) .eq. jcol0) then
@@ -6288,7 +6288,7 @@ contains
                     Da(:,ip) = Da(:,ip)-A_ij*Da(:,jc)
                     ip = ip-1
 
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
 
                   else
@@ -6300,7 +6300,7 @@ contains
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
-                    ! That's it exit searching
+                    ! That is it exit searching
                     exit search1
                   end if
                 end do search1
@@ -6362,7 +6362,7 @@ contains
                     Da(:,ip) = Da(:,ip)-A_ij*Da(:,jc)
                     ip = ip-1
 
-                    ! That's it, exit searching
+                    ! That is it, exit searching
                     exit search2
                   
                   elseif (Kcol(ip) .gt. jcol0) then
@@ -6370,7 +6370,7 @@ contains
 
                   else
 
-                    ! That's it, exit searching
+                    ! That is it, exit searching
                     exit search2
                   end if
                 end do search2
@@ -6410,7 +6410,7 @@ contains
 
         ! Perform complete LU decomposition (without pivoting)
 
-        ! Loop over columns of Crout's method
+        ! Loop over columns of Crout`s method
         do jvar = 1, nvar
           do ivar = 1, jvar-1
             a_ij = Da(ivar,jvar,ieq)

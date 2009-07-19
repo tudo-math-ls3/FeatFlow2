@@ -29,7 +29,7 @@
 !   TRIUD   : array [1..32] of integer
 ! end
 !
-! It's realised as a simple integer array:
+! It is realised as a simple integer array:
 !
 !   TRIA = array [1..SZTRIA] of integer
 !
@@ -39,7 +39,7 @@
 !   NVE = TRIA [ONVE]
 !
 ! P.S.: Some elements in the array are not used, they are reserved
-!       for future use. Furthermore we don't care about the fact that
+!       for future use. Furthermore we do not care about the fact that
 !       the basic F77 compiler only uses 6 letters. Some "names"
 !       have more than 6 letters but those compilers using only the
 !       first 6 should ignore the remaining without danger of
@@ -52,7 +52,7 @@
 ! of edge midpoints, each associated with an edge.
 !
 ! Remark: The grid is totally independent of any discretization!
-!  It's a pure coincidence if grid vertices/edges correspond to
+!  It is a pure coincidence if grid vertices/edges correspond to
 !  any quantities of Finite Element spaces!
 !
 ! The following arrays and quantities characterize a grid:
@@ -311,7 +311,7 @@
 !             NIEVT=NEL.
 !   NANT    - Number of additional nodes; normally = 0.
 !             Can be set <> 0 if there are any additional vertices 
-!             realized in DCORMG, that don't belong to a regular 
+!             realized in DCORMG, that do not belong to a regular 
 !             distribution of vertices in corners, on edges or on 
 !             elements.
 !   NFBVT   - Number of fictitious boundary vertices; normally = 0
@@ -369,7 +369,7 @@
 !  on edges (either midpoints or points at 1/3 and 2/3 of the edge, 
 !  or...), on elements (either midpoints or the 4 Gauss-points, or...)
 !  as well as additional vertices the user wants to be realized, that
-!  don't belong to any of the previous two groups.
+!  do not belong to any of the previous two groups.
 !
 !  There is a numbering introduced to number all the nodes in DCORMG
 !  as well as DCORVG when accessing them in auxiliary routines:
@@ -380,7 +380,7 @@
 !  - NVT+NVEDT+1..NVT+NVEDT+NIEVT 
 !    represent all regular distributed vertices in the inner of elements
 !  - NVT+NVEDT+NIEVT..NVT+NVEDT+NIEVT+NANT 
-!    represent all additional nodes that don't belong to regular 
+!    represent all additional nodes that do not belong to regular 
 !    distributed vertices on edges or inside of the elements.
 !  NVT+NVEDT+NIEVT+NANT is also the total number of nodes returned
 !  by TNDCNT. There is a special handling of the node-numbering
@@ -395,11 +395,11 @@
 !  - NVT+NMT+1..NVT+NMT+NEL
 !    represent all element midpoints
 !  Note that in this case the coordinates are not realized in DCORMG!
-!  The vertices are only virtual, i.e. it's possible to access their
-!  coordinates with NDE2XY, but that's all!
+!  The vertices are only virtual, i.e. it is possible to access their
+!  coordinates with NDE2XY, but that is all!
 !
 ! The numbers of regularly distributed vertices on edges/elements can
-! be directly calculated with an appropriate formula. E.g. let's assume,
+! be directly calculated with an appropriate formula. E.g. let us assume,
 ! we have n regularly distributed vertices on each edge (excluding the
 ! starting/ending point). Then the corresponding vertices on 
 ! egde E (=1..NMT) have the numbers:

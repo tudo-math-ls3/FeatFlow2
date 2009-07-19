@@ -101,7 +101,7 @@ contains
     if (present(cdataType)) cdataTypeLocal = cdataType
     if (present(cmatrixFormat)) cmatrixFormatLocal = cmatrixFormat
     
-    ! Up to now, we don't support everything!
+    ! Up to now, we do not support everything!
     ! Cancel if the input parameters want too much of us...
     if ((rsourceMatrix%nblocksPerCol .eq. 0) .or. &
         (rsourceMatrix%nblocksPerRow .eq. 0)) return
@@ -192,14 +192,14 @@ contains
     
     ! Assemble the global matrix - structure and entries.
     !
-    ! What's the destination matrix structure?
+    ! What is the destination matrix structure?
     select case (cmatrixFormatLocal)
     case (LSYSSC_MATRIX9)
     
       ! Get the basic row/column indices of the destination matrix.
       call glmatasm_getOffsets (rlocalMatrix,Icolumns,Irows)
 
-      ! Allocate a KLD in the destination matrix if we don't have a previous
+      ! Allocate a KLD in the destination matrix if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -222,7 +222,7 @@ contains
       ! Set up KLD and NA of the destination matrix
       call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),Irows)
 
-      ! Allocate a KCOL in the destination matrix if we don't have a previous
+      ! Allocate a KCOL in the destination matrix if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -241,7 +241,7 @@ contains
                                     ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kcol,&
                                     ST_NEWBLOCK_NOINIT)
                         
-      ! Allocate the data array if we don't have a previous
+      ! Allocate the data array if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -264,7 +264,7 @@ contains
       call glmatasm_KcolDa99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
                                   Icolumns, Irows)      
       
-      ! Allocate a Kdiagonal in the destination matrix if we don't have a previous
+      ! Allocate a Kdiagonal in the destination matrix if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -301,14 +301,14 @@ contains
     call glmatasm_initDestination (rlocalMatrix,rdestMatrix,&
                                    cmatrixFormatLocal,cdataTypeLocal)
     
-    ! What's the destination matrix structure?
+    ! What is the destination matrix structure?
     select case (cmatrixFormatLocal)
     case (LSYSSC_MATRIX9)
     
       ! Get the basic row/column indices of the destination matrix.
       call glmatasm_getOffsets (rlocalMatrix,Icolumns,Irows)
 
-      ! Allocate a KLD in the destination matrix if we don't have a previous
+      ! Allocate a KLD in the destination matrix if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -331,7 +331,7 @@ contains
       ! Set up KLD and NA of the destination matrix
       call glmatasm_KLD (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),Irows)
 
-      ! Allocate a KCOL in the destination matrix if we don't have a previous
+      ! Allocate a KCOL in the destination matrix if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixStructureShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -375,7 +375,7 @@ contains
     call glmatasm_initDestination (rlocalMatrix,rdestMatrix,&
                                    cmatrixFormatLocal,cdataTypeLocal)
     
-    ! What's the destination matrix structure?
+    ! What is the destination matrix structure?
     select case (cmatrixFormatLocal)
     case (LSYSSC_MATRIX9)
     
@@ -384,7 +384,7 @@ contains
 
       ! Kcol/Kld are assumed to be ok.
       !
-      ! Allocate the data array if we don't have a previous
+      ! Allocate the data array if we do not have a previous
       ! array in the correct size.
       balloc = .true.
       if ((.not. lsyssc_isMatrixContentShared (rdestMatrix%RmatrixBlock(1,1))) .and. &
@@ -463,7 +463,7 @@ contains
     rdestMatrix%NCOLS = rsourceMatrix%NCOLS
     rdestMatrix%imatrixSpec = rsourceMatrix%imatrixSpec
     
-    ! There's no appropriate discretisation or boundary condition
+    ! There is no appropriate discretisation or boundary condition
     ! structure for a global matrix! These only apply to
     ! scalar discretisations.
     nullify(rdestMatrix%p_rblockDiscrTest)
@@ -509,7 +509,7 @@ contains
     do i=1,rsourceMatrix%nblocksPerCol
     
       do j=1,rsourceMatrix%nblocksPerRow
-        ! When checking for the presence of the matrix, don't respect
+        ! When checking for the presence of the matrix, do not respect
         ! the scaling factor; we only want to get the size of the matrix 
         ! columns/rows!
         if (lsysbl_isSubmatrixPresent (rsourceMatrix,i,j,.true.)) then

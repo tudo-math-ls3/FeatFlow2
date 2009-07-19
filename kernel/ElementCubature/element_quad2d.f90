@@ -187,10 +187,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -266,10 +266,10 @@ contains
   !<output>
   
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -360,10 +360,10 @@ contains
   !<output>
   
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -439,10 +439,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -474,7 +474,7 @@ contains
   dy = Dpoint(2)
     
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -580,10 +580,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -602,7 +602,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -727,10 +727,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -751,7 +751,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -883,10 +883,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -974,11 +974,11 @@ contains
     ! Now we have to compute the derivatives on the real element by those on
     ! the reference element. This is a little bit tricky!
     !
-    ! Let's assume, out finite element function on the real element is
+    ! Let us assume, out finite element function on the real element is
     ! f(x) and the corresponding function on the reference element g(y),
     ! so x is the real coordinate and y the reference coordinate.
     ! There is a mapping s:[-1,1]->R2 that maps to the real element.
-    ! It's inverse s^{-1} maps to the reference element.
+    ! It is inverse s^{-1} maps to the reference element.
     ! We have:
     !
     !   f(x) = g(y) = g(s^{-1}(x))
@@ -1006,7 +1006,7 @@ contains
     !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
     !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
     !
-    ! This is computable now. Let's write:
+    ! This is computable now. Let us write:
     !
     !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
     !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
@@ -1159,10 +1159,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -1184,7 +1184,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -1264,11 +1264,11 @@ contains
     ! Now we have to compute the derivatives on the real element by those on
     ! the reference element. This is a little bit tricky!
     !
-    ! Let's assume, out finite element function on the real element is
+    ! Let us assume, out finite element function on the real element is
     ! f(x) and the corresponding function on the reference element g(y),
     ! so x is the real coordinate and y the reference coordinate.
     ! There is a mapping s:[-1,1]->R2 that maps to the real element.
-    ! It's inverse s^{-1} maps to the reference element.
+    ! It is inverse s^{-1} maps to the reference element.
     ! We have:
     !
     !   f(x) = g(y) = g(s^{-1}(x))
@@ -1296,7 +1296,7 @@ contains
     !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
     !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
     !
-    ! This is computable now. Let's write:
+    ! This is computable now. Let us write:
     !
     !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
     !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
@@ -1484,10 +1484,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -1512,7 +1512,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -1609,11 +1609,11 @@ contains
     ! Now we have to compute the derivatives on the real element by those on
     ! the reference element. This is a little bit tricky!
     !
-    ! Let's assume, out finite element function on the real element is
+    ! Let us assume, out finite element function on the real element is
     ! f(x) and the corresponding function on the reference element g(y),
     ! so x is the real coordinate and y the reference coordinate.
     ! There is a mapping s:[-1,1]->R2 that maps to the real element.
-    ! It's inverse s^{-1} maps to the reference element.
+    ! It is inverse s^{-1} maps to the reference element.
     ! We have:
     !
     !   f(x) = g(y) = g(s^{-1}(x))
@@ -1641,7 +1641,7 @@ contains
     !         =  Ds^{-1}(x)^T  Hg(s^{-1}(x))  Ds^{-1}(x)
     !         =  Ds^{-1}(x)^T  Hg(y)  Ds^{-1}(x)
     !
-    ! This is computable now. Let's write:
+    ! This is computable now. Let us write:
     !
     !  Ds = [ s11 s12 ] , Ds^{-1} = 1/det [  s22 -s12 ] , Hg(y) = [ g11 g12 ]
     !       [ s21 s22 ]                   [ -s21  s11 ]           [ g21 g22 ]
@@ -1819,10 +1819,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -1922,15 +1922,15 @@ contains
 ! We have the usual mapping between the reference element and the real element:
 !
 !   +-----e3----+                        +--------E3--------+
-!   |           |                       /                    \
-!   |           |       sigma          /                      \
-!   e4          e2     ------->       E4                       \
+!   |           |                       /                    \           .
+!   |           |       sigma          /                      \          .
+!   e4          e2     ------->       E4                       \         .
 !   |           |                    /                          E2
-!   |           |                   /                            \ 
-!   +-----e1----+                  /                              \
-!                                 +----_____                       \
-!                                           -----__E1_              \
-!                                                      -----_____    \
+!   |           |                   /                            \       .
+!   +-----e1----+                  /                              \      .
+!                                 +----_____                       \     .
+!                                           -----__E1_              \    .
+!                                                      -----_____    \   .
 !                                                                -----+
 !
 ! 
@@ -1945,15 +1945,15 @@ contains
 ! the opposite midpoints as vectors of the coordinate system. 
 !                                           
 !           +---------X--------+            
-!          /          ^         \           
-!         /           |vec_2     \          
-!        X--------____|___        \               
-!       /             |   -------->X    
-!      /              |     vec_1   \       
-!     /               |              \      
-!    +----_____       |               \     
-!              -----__X__              \    
-!                         -----_____    \   
+!          /          ^         \                                       .
+!         /           |vec_2     \                                      .
+!        X--------____|___        \                                     .
+!       /             |   -------->X                                    .
+!      /              |     vec_1   \                                   .
+!     /               |              \                                  .
+!    +----_____       |               \                                 .
+!              -----__X__              \                                .
+!                         -----_____    \                               .
 !                                   -----+
 !
 ! We shift both of these vectors vec_1 and vec_2 into the origin (0,0)
@@ -1961,15 +1961,15 @@ contains
 ! get violated!). So the picture we are looking at here is the following:
 !
 !   ^ xi             +---------X--------+          
-!   |               /          ^         \         
-!   |              /           |vec_2     \        
-!   |             X--------____|___        \       
-!   |            /             |   -------->X    
-!   |           /              |     vec_1   \     
-!   |          /               |              \    
-!   |         +----_____       |               \   
-!   |                   -----__X__              \  
-!   |                              -----_____    \ 
+!   |               /          ^         \                               .
+!   |              /           |vec_2     \                              .
+!   |             X--------____|___        \                             .
+!   |            /             |   -------->X                            .
+!   |           /              |     vec_1   \                           .
+!   |          /               |              \                          .
+!   |         +----_____       |               \                         .
+!   |                   -----__X__              \                        .
+!   |                              -----_____    \                       .
 !   |                                        -----+
 !   |
 !   |
@@ -2015,7 +2015,7 @@ contains
 !  m3(xi,eta) := z2
 !  m4(xi,eta) := (z1^2-z2^2)
 !
-! To evaluate these mi's in the new coordinate system, we concatenate them
+! To evaluate these mi`s in the new coordinate system, we concatenate them
 ! with the mapping r(.,.). As result, we get the four functions F1,F2,F3,F4
 ! which are defined as functions at the bottom of this routine:
 !
@@ -2034,7 +2034,7 @@ contains
 !  P3(r(x,y)) = a3 F1(x,y)  +  b3 F2(x,y)  +  c3 F3(x,y)  +  d3 F4(x,y)
 !  P4(r(x,y)) = a4 F1(x,y)  +  b4 F2(x,y)  +  c4 F3(x,y)  +  d4 F4(x,y)
 !
-! It doesn't matter whether the local coordinate system starts in (0,0) or in
+! It does not matter whether the local coordinate system starts in (0,0) or in
 ! the midpoint of the element or whereever. As the rotation of the element
 ! coincides with the rotation of the new coordinate system, the polynomial 
 ! space is unisolvent and therefore exist the above local basis functions uniquely.
@@ -2059,7 +2059,7 @@ contains
 !
 !         vij = 1/|ei| int_ei Fj(x,y) ds
 !
-! Now let's go...
+! Now let us go...
  
 !**************************************************************************
 ! Element subroutines for nonparametric Q1~ element, integral mean value
@@ -2119,10 +2119,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -2350,10 +2350,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -2571,10 +2571,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -2748,7 +2748,7 @@ contains
     else
     
       ! Use pivoting for increased numerical stability.
-      ! Don't scaled local coordinate system 
+      ! Do not scaled local coordinate system 
     
       ! Loop over the elements
       
@@ -2761,7 +2761,7 @@ contains
           DLY(IVE)=0.5_DP*(Dcoords(2,mod(IVE,4)+1,j)-Dcoords(2,IVE,j))
         end do
 
-        ! Don't scale the local coordinate system in this approach.
+        ! Do not scale the local coordinate system in this approach.
         ! Saves a little it numerical effort.
 
         CA1 = (DXM(2)-DXM(4))
@@ -2882,7 +2882,7 @@ contains
     
   else
   
-    ! Don't use pivoting.
+    ! Do not use pivoting.
     
     ! Check whether to scae the local coordinate system or not.
   
@@ -3028,7 +3028,7 @@ contains
           DLY(IVE)=0.5_DP*(Dcoords(2,mod(IVE,4)+1,j)-Dcoords(2,IVE,j))
         end do
 
-        ! Don't scale the local coordinate in this approach.
+        ! Do not scale the local coordinate in this approach.
         ! Saves a little bit numerical effort.
 
         CA1 = (DXM(2)-DXM(4))
@@ -3234,10 +3234,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -3270,7 +3270,7 @@ contains
   dy = Dpoint(2)
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -3376,10 +3376,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -3398,7 +3398,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -3535,10 +3535,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -3559,7 +3559,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -3697,10 +3697,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -3751,7 +3751,7 @@ contains
   dxy = dx**2 - dy**2
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -3866,10 +3866,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -3889,7 +3889,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -4036,10 +4036,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -4061,7 +4061,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -4248,10 +4248,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -4467,10 +4467,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -4680,10 +4680,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -4842,7 +4842,7 @@ contains
     
   else
   
-    ! Don't use pivoting.
+    ! Do not use pivoting.
     
     ! Loop over the elements
     
@@ -5049,10 +5049,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -5084,7 +5084,7 @@ contains
   dy = Dpoint(2)
     
   ! Remark: The Q1~-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -5190,10 +5190,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -5212,7 +5212,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -5349,10 +5349,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -5373,7 +5373,7 @@ contains
   !Dbas = 0.0_DP
 
   ! Remark: The Q1-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   !if function values are desired
@@ -5514,10 +5514,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -5583,7 +5583,7 @@ contains
   d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
     
   ! Remark: The Q2~-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -5763,10 +5763,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -5988,10 +5988,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -6228,10 +6228,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -6326,7 +6326,7 @@ contains
   d8 = real(1-iand(int(ishft(itwistIndex,-2)),2),DP)
     
   ! Remark: The Q2~-element always computes function value and 1st derivatives.
-  ! That's even faster than when using three IF commands for preventing
+  ! That is even faster than when using three IF commands for preventing
   ! the computation of one of the values!
       
   ! If function values are desired, calculate them.
@@ -6515,10 +6515,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -6749,10 +6749,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j,k) defines the value of the i-th 
   !   basis function of the finite element k in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.,.) is undefined.
   !REAL(DP), DIMENSION(EL_MAXNBAS,DER_MAXNDER,npoints,nelements), INTENT(out) :: Dbas
@@ -6974,10 +6974,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7133,10 +7133,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7218,7 +7218,7 @@ contains
       do i = 1, 4
       
         ! Apply inverse affine trafo on corner vertice coordinates to get
-        ! (x,y) in the element's local coordinate system.
+        ! (x,y) in the element`s local coordinate system.
         dx = ds(1,1)*(Dvert(1,i)-dr(1)) + ds(1,2)*(Dvert(2,i)-dr(2))
         dy = ds(2,1)*(Dvert(1,i)-dr(1)) + ds(2,2)*(Dvert(2,i)-dr(2))
         
@@ -7296,7 +7296,7 @@ contains
 
     end do ! iel
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -7332,10 +7332,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7514,10 +7514,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7713,10 +7713,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7731,8 +7731,8 @@ contains
   ! The basis polynomials are constructed from the following set of monomials:
   ! { 1, x, y }
   !
-  ! As the QP1 element is discontinous, the basis polynomials don't have to
-  ! fulfill any special conditions - they're simply defined as:
+  ! As the QP1 element is discontinous, the basis polynomials do not have to
+  ! fulfill any special conditions - they are simply defined as:
   !
   !  P1 (x,y,z) = 1
   !  P2 (x,y,z) = x
@@ -7824,10 +7824,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -7989,10 +7989,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -8163,10 +8163,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -8399,7 +8399,7 @@ contains
 
     end do ! iel
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -8435,10 +8435,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -8680,10 +8680,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -8931,10 +8931,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
@@ -9060,7 +9060,7 @@ contains
 !    DcubOmega1D(5) = (322.0_DP - dt) / 900.0_DP
     
     ! Set up a 3x3-point Gauss rule for 2D
-    ! Remark: We'll use the 1D rule to create the 2D rule here
+    ! Remark: We will use the 1D rule to create the 2D rule here
     k = 1
     do i = 1, NCUB1D
       do j = 1, NCUB1D
@@ -9160,7 +9160,7 @@ contains
         DedgeLen(j) = 1.0_DP / dt
       end do
       
-      ! ...and also calculate the inverse of the element's area.
+      ! ...and also calculate the inverse of the element`s area.
       dt = 0.0_DP
       do i = 1, NCUB2D
         dt = dt + DquadWeights(i)
@@ -9320,7 +9320,7 @@ contains
 
     end do ! iel
     
-    ! That's it
+    ! That is it
 
   end subroutine
 

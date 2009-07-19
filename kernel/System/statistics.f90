@@ -75,7 +75,7 @@
 !# timers) cost processor cycles when using them. As a rule of thumb,
 !#
 !# a) when you are using smaller algorithms which need exact timings and
-!#    don't want to waste time too much time in timer handling, use
+!#    do not want to waste time too much time in timer handling, use
 !#    short-term timers by calling
 !#
 !#      CALL stat_startTimer(rtimer,STAT_TIMERSHORT)
@@ -86,7 +86,7 @@
 !#    designed for long-term time measurements as (depending on the underlying
 !#    architecture) a timer may get an overflow!
 !#
-!# b) for larger algorithms which don't need exact timing, use either
+!# b) for larger algorithms which do not need exact timing, use either
 !#    a long-term timer by calling
 !#
 !#      CALL stat_startTimer(rtimer,STAT_TIMERSHORT)
@@ -302,7 +302,7 @@ contains
 !<description>
   ! Starts the given timer object. ctype specifies the type of the timer.
   ! Short-term timer are computationally more efficient than long-term
-  ! timer (they are just faster when being used), but they don't allow 
+  ! timer (they are just faster when being used), but they do not allow 
   ! to compute the total time for long-term time measurements on some 
   ! computer systems.
 !</description>
@@ -442,7 +442,7 @@ contains
       ! wall time that better suits the correct time.
       if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
       
-        ! If the difference is more that let's say 100 sec, take
+        ! If the difference is more that let us say 100 sec, take
         ! the approximated time. This should also be the case if the
         ! timer from system_clock gets more than one overflow...
         ! If the difference is less, take the exact time.

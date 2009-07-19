@@ -90,7 +90,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -146,7 +146,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -238,7 +238,7 @@ contains
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -349,7 +349,7 @@ contains
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -472,7 +472,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -557,7 +557,7 @@ contains
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -640,7 +640,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     

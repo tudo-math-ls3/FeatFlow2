@@ -189,11 +189,11 @@ module multilevelprojection
     integer(I32)                :: iprojType = MLP_PROJ_TYPE_HARDCODED
   
     ! Element type that should be assumed for the prolongation. Must fit
-    ! to the element type of the discretisation concerning the DOF's:
+    ! to the element type of the discretisation concerning the DOF`s:
     ! If element "EM30" is used e.g., prolongation for "EM30", "EM31",
     ! "E031" and "E030" is possible, although performance will suffer
     ! in using the "wrong" prolongation. An error will be displayed if
-    ! the DOF's don't fit together at all, e.g. when using $Q_1$
+    ! the DOF`s do not fit together at all, e.g. when using $Q_1$
     ! prolongation when using $Q_2$ for the discretisation.
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' prolongation
@@ -243,11 +243,11 @@ module multilevelprojection
     real(DP)                    :: dprolARboundEX3Y = 20.0_DP
 
     ! Element type that should be assumed for the restriction. Must fit
-    ! to the element type of the discretisation concerning the DOF's:
+    ! to the element type of the discretisation concerning the DOF`s:
     ! If element "EM30" is used e.g., restriction for "EM30", "EM31",
     ! "E031" and "E030" is possible, although performance will suffer
     ! in using the "wrong" restriction. An error will be displayed if
-    ! the DOF's don't fit together at all, e.g. when using $Q_1$
+    ! the DOF`s do not fit together at all, e.g. when using $Q_1$
     ! restriction when using $Q_2$ for the discretisation.
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' restriction
@@ -299,8 +299,8 @@ module multilevelprojection
 
     ! Element type that should be assumed for the interpolation of a
     ! solution to a lower level. Must fit to the element type of the 
-    ! discretisation concerning the DOF's.
-    ! An error will be displayed if the DOF's don't fit together at 
+    ! discretisation concerning the DOF`s.
+    ! An error will be displayed if the DOF`s do not fit together at 
     ! all, e.g. when using $Q_1$ interpolation when using $Q_2$ 
     ! for the discretisation.
     !
@@ -659,8 +659,8 @@ contains
   ! from a template projection structure rprojection and the discretisation
   ! structures on the coarse and fine grid and checks compatibility. 
   !
-  ! An error is thrown if either the DOF's on the coarse- and fine grid don't 
-  ! fit together (i.e. there is no compatible projection) or if they don't fit 
+  ! An error is thrown if either the DOF`s on the coarse- and fine grid do not 
+  ! fit together (i.e. there is no compatible projection) or if they do not fit 
   ! to the projection template (e.g. if ielementTypeProlongation=EL_Q1 when the
   ! actual discretisation structure uses itrialElement=EL_Q2).
   ! Standard values (e.g. ielementTypeProlongation=EL_UNDEFINED) are replaced
@@ -774,7 +774,7 @@ contains
   ! local variables
   integer :: i, nmem, nmemtotal
   
-    ! Assume that we don't need any additional memory.
+    ! Assume that we do not need any additional memory.
     nmemtotal = 0
     
     ! Now loop through all scalar projections
@@ -803,7 +803,7 @@ contains
       
       end select
       
-      ! And let's choose the maximum
+      ! And let us choose the maximum
       nmemtotal = max(nmemtotal, nmem)
   
     end do
@@ -1100,7 +1100,7 @@ contains
   ! Data arrays
   real(DP), dimension(:), pointer :: p_DuCoarse, p_DuFine
  
-    ! The vectors must be of data type DOUBLE - we don't support anything
+    ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
       call output_line ('Coarse grid vector has unsupported data type!', &
@@ -1317,7 +1317,7 @@ contains
              p_IneighboursAtElementFine,p_rtriaCoarse%NEL,p_rtriaFine%NEL)                       
                      
       case (EL_Q1T)
-        ! Q1~ prolongation, DOF's = integral mean value
+        ! Q1~ prolongation, DOF`s = integral mean value
         call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                              p_IedgesAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
@@ -1331,13 +1331,13 @@ contains
         select case (ractProjection%iprolVariant)
         case (:1) ! Standard prolongation
           if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
-            ! DOF's = integral mean values
+            ! DOF`s = integral mean values
             call mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
                 p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                 p_rtriaCoarse%NEL)
           else
-            ! DOF's = edge midpoint based
+            ! DOF`s = edge midpoint based
             call mlprj_prolUniformEx31_double (p_DuCoarse,p_DuFine, &
                 p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1354,7 +1354,7 @@ contains
                                       p_DelementAreaCoarse)
           ! (what a nasty call...)                                       
           if (iand(ractProjection%ielementTypeProlongation,int(2**16,I32)) .ne. 0) then
-            ! DOF's = integral mean values
+            ! DOF`s = integral mean values
             call mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                     p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                     p_DelementAreaCoarse,&
@@ -1365,7 +1365,7 @@ contains
                     ractProjection%dprolARboundEX3Y, &
                     ractProjection%iprolARIndicatorEX3Y)
           else
-            ! DOF's = edge midpoint based
+            ! DOF`s = edge midpoint based
             call mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
                     p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                     p_DelementAreaCoarse,&
@@ -1441,7 +1441,7 @@ contains
                   p_rtriaCoarse%NMT, p_rtriaCoarse%NAT, p_rtriaCoarse%NEL)
 
       case (EL_Q1T_3D)
-        ! Q1~ prolongation, DOF's = integral mean value
+        ! Q1~ prolongation, DOF`s = integral mean value
         call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
                              p_IfacesAtElementFine)
         call storage_getbase_int2d(p_rtriaCoarse%h_IfacesAtElement, &
@@ -1455,13 +1455,13 @@ contains
 !          SELECT CASE (ractProjection%iprolVariant)
 !          CASE (:1) ! Standard prolongation
 !            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
-!              ! DOF's = integral mean values
+!              ! DOF`s = integral mean values
 !              CALL mlprj_prolUniformEx30_double (p_DuCoarse,p_DuFine, &
 !                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
 !                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
 !                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)
 !            ELSE
-            ! DOF's = face midpoint based
+            ! DOF`s = face midpoint based
             call mlprj_prolUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
                 p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1478,7 +1478,7 @@ contains
 !                                        p_DelementAreaCoarse)
 !            ! (what a nasty call...)                                       
 !            IF (IAND(ractProjection%ielementTypeProlongation,INT(2**16,I32)) .NE. 0) THEN
-!              ! DOF's = integral mean values
+!              ! DOF`s = integral mean values
 !              CALL mlprj_prolUniformEx30ext_double (p_DuCoarse,p_DuFine, &
 !                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
 !                      p_DelementAreaCoarse,&
@@ -1489,7 +1489,7 @@ contains
 !                      ractProjection%dprolARboundEX3Y, &
 !                      ractProjection%iprolARIndicatorEX3Y)
 !            ELSE
-!              ! DOF's = edge midpoint based
+!              ! DOF`s = edge midpoint based
 !              CALL mlprj_prolUniformEx31ext_double (p_DuCoarse,p_DuFine, &
 !                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
 !                      p_DelementAreaCoarse,&
@@ -1574,7 +1574,7 @@ contains
   ! Data arrays
   real(DP), dimension(:), pointer :: p_DuCoarse, p_DuFine
  
-    ! The vectors must be of data type DOUBLE - we don't support anything
+    ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
       call output_line ('Coarse grid vector has unsupported data type!', &
@@ -1817,13 +1817,13 @@ contains
         select case (ractProjection%irestVariant)
         case (:1) ! Standard prolongation
           if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
-            ! DOF's = integral mean values
+            ! DOF`s = integral mean values
             call mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
                 p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
                 p_rtriaCoarse%NEL)          
           else
-            ! DOF's = edge midpoint based
+            ! DOF`s = edge midpoint based
             call mlprj_restUniformEx31_double (p_DuCoarse,p_DuFine, &
                 p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1840,7 +1840,7 @@ contains
                                       p_DelementAreaCoarse)
           ! (what a nasty call...)                                       
           if (iand(ractProjection%ielementTypeRestriction,int(2**16,I32)) .ne. 0) then
-            ! DOF's = integral mean values
+            ! DOF`s = integral mean values
             call mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
                     p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                     p_DelementAreaCoarse,&
@@ -1851,7 +1851,7 @@ contains
                     ractProjection%dprolARboundEX3Y, &
                     ractProjection%iprolARIndicatorEX3Y)
           else
-            ! DOF's = edge midpoint based
+            ! DOF`s = edge midpoint based
             call mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
                     p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
                     p_DelementAreaCoarse,&
@@ -1941,13 +1941,13 @@ contains
 !          SELECT CASE (ractProjection%irestVariant)
 !          CASE (:1) ! Standard prolongation
 !            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
-!              ! DOF's = integral mean values
+!              ! DOF`s = integral mean values
 !              CALL mlprj_restUniformEx30_double (p_DuCoarse,p_DuFine, &
 !                  p_IedgesAtElementCoarse,p_IedgesAtElementFine,&
 !                  p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
 !                  p_rtriaCoarse%NVT,p_rtriaFine%NVT,p_rtriaCoarse%NEL)          
 !            ELSE
-            ! DOF's = face midpoint based
+            ! DOF`s = face midpoint based
             call mlprj_restUniformEx3x_3D_double (p_DuCoarse,p_DuFine, &
                 p_IfacesAtElementCoarse,p_IfacesAtElementFine,&
                 p_IneighboursAtElementCoarse,p_IneighboursAtElementFine,&
@@ -1964,7 +1964,7 @@ contains
 !                                        p_DelementAreaCoarse)
 !            ! (what a nasty call...)                                       
 !            IF (IAND(ractProjection%ielementTypeRestriction,INT(2**16,I32)) .NE. 0) THEN
-!              ! DOF's = integral mean values
+!              ! DOF`s = integral mean values
 !              CALL mlprj_restUniformEx30ext_double (p_DuCoarse,p_DuFine, &
 !                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
 !                      p_DelementAreaCoarse,&
@@ -1975,7 +1975,7 @@ contains
 !                      ractProjection%dprolARboundEX3Y, &
 !                      ractProjection%iprolARIndicatorEX3Y)
 !            ELSE
-!              ! DOF's = edge midpoint based
+!              ! DOF`s = edge midpoint based
 !              CALL mlprj_restUniformEx31ext_double (p_DuCoarse,p_DuFine, &
 !                      p_DvertexCoordsCoarse,p_IverticesAtElementCoarse, &
 !                      p_DelementAreaCoarse,&
@@ -2059,7 +2059,7 @@ contains
   ! Data arrays
   real(DP), dimension(:), pointer :: p_DuCoarse, p_DuFine
  
-    ! The vectors must be of data type DOUBLE - we don't support anything
+    ! The vectors must be of data type DOUBLE - we do not support anything
     ! different at the moment...
     if (rcoarseVector%cdataType .ne. ST_DOUBLE) then
       call output_line ('Coarse grid vector has unsupported data type!', &
@@ -2192,8 +2192,8 @@ contains
                 p_IneighboursAtElementFine, p_rtriaCoarse%NEL,p_rtriaFine%NEL)          
                 
       case (EL_Q1T)
-        ! Q1~ interpolation, DOF's = integral mean values
-        ! We use the same routine also for interpolating Ex31 solutions - there's
+        ! Q1~ interpolation, DOF`s = integral mean values
+        ! We use the same routine also for interpolating Ex31 solutions - there is
         ! not too much difference...
         call storage_getbase_int2d(p_rtriaFine%h_IedgesAtElement, &
                              p_IedgesAtElementFine)
@@ -2260,8 +2260,8 @@ contains
         call mlprj_interpUniformQ1_3D_double (p_DuCoarse,p_DuFine,p_rtriaCoarse%NVT)
 
       case (EL_Q1T_3D)
-        ! Q1~ interpolation, DOF's = integral mean values
-        ! We use the same routine also for interpolating Ex31 solutions - there's
+        ! Q1~ interpolation, DOF`s = integral mean values
+        ! We use the same routine also for interpolating Ex31 solutions - there is
         ! not too much difference...
         call storage_getbase_int2d(p_rtriaFine%h_IfacesAtElement, &
                              p_IfacesAtElementFine)
@@ -3229,7 +3229,7 @@ contains
       DUM2 = DuCoarse(IedgesAtElementCoarse(2,IEL)+NVTcoarse)
       DUM3 = DuCoarse(IedgesAtElementCoarse(3,IEL)+NVTcoarse)
 
-      ! We have to calculate the function values in the new DOF's on the
+      ! We have to calculate the function values in the new DOF`s on the
       ! fine grid, which are located here:
       !
       !     DUC2
@@ -3386,7 +3386,7 @@ contains
       
       end if
       
-      !  That's it - next element.
+      !  That is it - next element.
       
     end do ! IEL
 
@@ -3657,7 +3657,7 @@ contains
        +     Q4*DUF11 +Q2*DUF12 +Q2*DUF13                                             &
        +dn3*(3.0_DP*Q4*DUF43 +3.0_DP*Q4*DUF31)
 
-      ! That's it - next element.
+      ! That is it - next element.
       
     end do ! IEL
 
@@ -3997,7 +3997,7 @@ contains
 !      IF (IneighboursAtElementCoarse(4,iel) .LT. iel) &
 !        DuFine(IverticesAtElementFine(2,ielh4)) = Q2*(duh4+duh1)
 !        
-!      ! Don't forget the DOF in the midpoint of the element
+!      ! Do not forget the DOF in the midpoint of the element
 !      DuFine(IverticesAtElementFine(3,iel)) = Q4*(duh1+duh2+duh3+duh4)
 !
 !    END DO
@@ -4214,12 +4214,12 @@ contains
       if (IneighboursAtElementCoarse(4,iel) .lt. iel) &
         DuFine(IverticesAtElementFine(2,ielh4)) = Q2*(duh4+duh1)
         
-      ! Don't forget the DOF in the midpoint of the element
+      ! Do not forget the DOF in the midpoint of the element
       DuFine(IverticesAtElementFine(3,iel)) = Q4*(duh1+duh2+duh3+duh4)
 
     end do
 
-    ! DOF's on the boundary get value 0.0.
+    ! DOF`s on the boundary get value 0.0.
     do iel=1,NELfine
       i1=IverticesAtElementFine(1,iel)
       i2=IverticesAtElementFine(2,iel)
@@ -4329,7 +4329,7 @@ contains
   ! Restricts a RHS vector from a fine grid to a coarse grid.
   ! Q1, uniform triangulation, double precision vector.
   ! Cellwise approach for FEAST mirror boundary.
-  ! The DOF's on the boundary are set to 0.
+  ! The DOF`s on the boundary are set to 0.
 !</description>
   
 !<input>
@@ -4392,7 +4392,7 @@ contains
         DuCoarse(i1) = DuCoarse(i1)+Q4*DuFine(i4)
     end do
     
-    ! DOF's on the boundary get value 0.0.
+    ! DOF`s on the boundary get value 0.0.
     do iel=1,NELcoarse
       i1=IverticesAtElementCoarse(1,iel)
       i2=IverticesAtElementCoarse(2,iel)
@@ -4795,7 +4795,7 @@ contains
   
 !</subroutine>
 
-  ! In the QP1 element, the DOF's in the coarse and fine grid are 
+  ! In the QP1 element, the DOF`s in the coarse and fine grid are 
   ! organised as follows:
   !
   ! +-----------+-----------+
@@ -4813,7 +4813,7 @@ contains
   ! +-----------+-----------+
   !
   ! The function value of "O" must be transported by a linear mapping to
-  ! all the X. The derivative in "O" is mapped to all "X" as it's constant
+  ! all the X. The derivative in "O" is mapped to all "X" as it is constant
   ! in the whole element. This gives the following prolongation matrix
   ! (where O=(f,u,v), Xi = (fi,ui,vi) )
   !
@@ -5014,7 +5014,7 @@ contains
   end subroutine
   
   ! ***************************************************************************
-  ! Support for Q1~ element, DOF's = integral mean values in the edges
+  ! Support for Q1~ element, DOF`s = integral mean values in the edges
   ! ***************************************************************************
 
 !<subroutine>
@@ -5072,13 +5072,13 @@ contains
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
       IM4 = IedgesAtElementCoarse(4,iel)
 
-      ! Get the values of the corresponding DOF's
+      ! Get the values of the corresponding DOF`s
       DUH1 = DuCoarse(IM1)
       DUH2 = DuCoarse(IM2)
       DUH3 = DuCoarse(IM3)
@@ -5347,7 +5347,7 @@ contains
       where(IELA(1:TRIA_MAXNME2D) .eq. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
 
       ! Now determine on which edge to switch to constant prolongation
-      ! By default, we don't use constant prolongation
+      ! By default, we do not use constant prolongation
       idoConstant = 1
       
       ! ... but if the caller wants us to switch in a special situation...
@@ -5366,13 +5366,13 @@ contains
       
       end if
       
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
       IM4 = IedgesAtElementCoarse(4,iel)
 
-      ! Get the values of the corresponding DOF's
+      ! Get the values of the corresponding DOF`s
       DUH1 = DuCoarse(IM1)
       DUH2 = DuCoarse(IM2)
       DUH3 = DuCoarse(IM3)
@@ -5385,10 +5385,10 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Now let's start with the actual prolongation
+      ! Now let us start with the actual prolongation
       ! ---------------------------------------------
       
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       IA=IedgesAtElementFine(1,IELH1)
       IB=IedgesAtElementFine(4,IELH2)
       IC=IedgesAtElementFine(2,IELH1)
@@ -5557,7 +5557,7 @@ contains
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
@@ -5570,7 +5570,7 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       I1=IedgesAtElementFine(1,IELH1)
       I2=IedgesAtElementFine(4,IELH2)
       I3=IedgesAtElementFine(1,IELH2)
@@ -5584,7 +5584,7 @@ contains
       I11=IedgesAtElementFine(2,IELH3)
       I12=IedgesAtElementFine(2,IELH4)
 
-      ! Get the values of the DOF's on the fine grid
+      ! Get the values of the DOF`s on the fine grid
       DUH1= DuFine(I1)
       DUH2= DuFine(I2)
       DUH3= DuFine(I3)
@@ -5863,7 +5863,7 @@ contains
       where(IELA(1:TRIA_MAXNME2D) .eq. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
 
       ! Now determine on which edge to switch to constant prolongation
-      ! By default, we don't use constant prolongation
+      ! By default, we do not use constant prolongation
       idoConstant = 1
       
       ! ... but if the caller wants us to switch in a special situation...
@@ -5882,10 +5882,10 @@ contains
       
       end if
 
-      ! Now let's strt with the actual restriction
+      ! Now let us strt with the actual restriction
       ! ------------------------------------------      
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
@@ -5898,7 +5898,7 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       I1=IedgesAtElementFine(1,IELH1)
       I2=IedgesAtElementFine(4,IELH2)
       I3=IedgesAtElementFine(1,IELH2)
@@ -5912,7 +5912,7 @@ contains
       I11=IedgesAtElementFine(2,IELH3)
       I12=IedgesAtElementFine(2,IELH4)
 
-      ! Get the values of the DOF's on the fine grid
+      ! Get the values of the DOF`s on the fine grid
       DUH1= DuFine(I1)
       DUH2= DuFine(I2)
       DUH3= DuFine(I3)
@@ -6061,7 +6061,7 @@ contains
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
@@ -6074,7 +6074,7 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       I1=IedgesAtElementFine(1,IELH1)
       I2=IedgesAtElementFine(4,IELH2)
       I3=IedgesAtElementFine(1,IELH2)
@@ -6088,7 +6088,7 @@ contains
       I11=IedgesAtElementFine(2,IELH3)
       I12=IedgesAtElementFine(2,IELH4)
 
-      ! Get the values of the DOF's on the fine grid
+      ! Get the values of the DOF`s on the fine grid
       DUH1= DuFine(I1)
       DUH2= DuFine(I2)
       DUH3= DuFine(I3)
@@ -6169,7 +6169,7 @@ contains
   end subroutine
 
   ! ***************************************************************************
-  ! Support for Q1~ element, DOF's = edge midpoints
+  ! Support for Q1~ element, DOF`s = edge midpoints
   ! ***************************************************************************
 
 !<subroutine>
@@ -6227,13 +6227,13 @@ contains
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
       IM4 = IedgesAtElementCoarse(4,iel)
 
-      ! Get the values of the corresponding DOF's
+      ! Get the values of the corresponding DOF`s
       DUH1 = DuCoarse(IM1)
       DUH2 = DuCoarse(IM2)
       DUH3 = DuCoarse(IM3)
@@ -6502,7 +6502,7 @@ contains
       where(IELA(1:TRIA_MAXNME2D) .eq. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
 
       ! Now determine on which edge to switch to constant prolongation
-      ! By default, we don't use constant prolongation
+      ! By default, we do not use constant prolongation
       idoConstant = 1
       
       ! ... but if the caller wants us to switch in a special situation...
@@ -6521,13 +6521,13 @@ contains
       
       end if
       
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
       IM4 = IedgesAtElementCoarse(4,iel)
 
-      ! Get the values of the corresponding DOF's
+      ! Get the values of the corresponding DOF`s
       DUH1 = DuCoarse(IM1)
       DUH2 = DuCoarse(IM2)
       DUH3 = DuCoarse(IM3)
@@ -6540,10 +6540,10 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Now let's start with the actual prolongation
+      ! Now let us start with the actual prolongation
       ! ---------------------------------------------
       
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       IA=IedgesAtElementFine(1,IELH1)
       IB=IedgesAtElementFine(4,IELH2)
       IC=IedgesAtElementFine(2,IELH1)
@@ -6711,7 +6711,7 @@ contains
     ! Loop over the coarse grid elements
     do iel=1,NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
@@ -6724,7 +6724,7 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       I1=IedgesAtElementFine(1,IELH1)
       I2=IedgesAtElementFine(4,IELH2)
       I3=IedgesAtElementFine(1,IELH2)
@@ -6738,7 +6738,7 @@ contains
       I11=IedgesAtElementFine(2,IELH3)
       I12=IedgesAtElementFine(2,IELH4)
 
-      ! Get the values of the DOF's on the fine grid
+      ! Get the values of the DOF`s on the fine grid
       DUH1= DuFine(I1)
       DUH2= DuFine(I2)
       DUH3= DuFine(I3)
@@ -7017,7 +7017,7 @@ contains
       where(IELA(1:TRIA_MAXNME2D) .eq. 0) dweight(1:TRIA_MAXNME2D) = 1.0_DP
 
       ! Now determine on which edge to switch to constant prolongation
-      ! By default, we don't use constant prolongation
+      ! By default, we do not use constant prolongation
       idoConstant = 1
       
       ! ... but if the caller wants us to switch in a special situation...
@@ -7036,10 +7036,10 @@ contains
       
       end if
 
-      ! Now let's strt with the actual restriction
+      ! Now let us strt with the actual restriction
       ! ------------------------------------------      
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM1 = IedgesAtElementCoarse(1,iel)
       IM2 = IedgesAtElementCoarse(2,iel)
       IM3 = IedgesAtElementCoarse(3,iel)
@@ -7052,7 +7052,7 @@ contains
       IELH3 = IneighboursAtElementFine(2,IELH2)
       IELH4 = IneighboursAtElementFine(2,IELH3)
 
-      ! Get the DOF's on the fine grid
+      ! Get the DOF`s on the fine grid
       I1=IedgesAtElementFine(1,IELH1)
       I2=IedgesAtElementFine(4,IELH2)
       I3=IedgesAtElementFine(1,IELH2)
@@ -7066,7 +7066,7 @@ contains
       I11=IedgesAtElementFine(2,IELH3)
       I12=IedgesAtElementFine(2,IELH4)
 
-      ! Get the values of the DOF's on the fine grid
+      ! Get the values of the DOF`s on the fine grid
       DUH1= DuFine(I1)
       DUH2= DuFine(I2)
       DUH3= DuFine(I3)
@@ -7647,7 +7647,7 @@ contains
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM(1) = IfacesAtElementCoarse(1,iel)
       IM(2) = IfacesAtElementCoarse(2,iel)
       IM(3) = IfacesAtElementCoarse(3,iel)
@@ -7655,7 +7655,7 @@ contains
       IM(5) = IfacesAtElementCoarse(5,iel)
       IM(6) = IfacesAtElementCoarse(6,iel)
 
-      ! Get the values of the corresponding DOF's
+      ! Get the values of the corresponding DOF`s
       Dx(1) = DuCoarse(IM(1))
       Dx(2) = DuCoarse(IM(2))
       Dx(3) = DuCoarse(IM(3))
@@ -7678,7 +7678,7 @@ contains
       ! the coarse grid hexahedron.
       ! Face 1
       ! Calculate scaling factor. If this face of the hexahedron belongs
-      ! to the domain's boundary (i.e. the hexahedron does not have a neighbour
+      ! to the domain`s boundary (i.e. the hexahedron does not have a neighbour
       ! at this face), then the scaling factor is 2, otherwise 1.
       dw = 1.0_DP
       if (IneighboursAtElementCoarse(1,iel) .eq. 0) dw = 2.0_DP
@@ -7900,7 +7900,7 @@ contains
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM(1) = IfacesAtElementCoarse(1,iel)
       IM(2) = IfacesAtElementCoarse(2,iel)
       IM(3) = IfacesAtElementCoarse(3,iel)
@@ -8120,7 +8120,7 @@ contains
     ! Loop over the coarse grid elements
     do iel = 1, NELcoarse
 
-      ! Get the DOF's of the coarse grid element
+      ! Get the DOF`s of the coarse grid element
       IM(1) = IfacesAtElementCoarse(1,iel)
       IM(2) = IfacesAtElementCoarse(2,iel)
       IM(3) = IfacesAtElementCoarse(3,iel)
@@ -8449,7 +8449,7 @@ contains
 
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -8644,7 +8644,7 @@ contains
 
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -8839,7 +8839,7 @@ contains
              
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -9079,7 +9079,7 @@ contains
 
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -9309,7 +9309,7 @@ contains
 
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -9528,7 +9528,7 @@ contains
 
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -9596,7 +9596,7 @@ contains
      call lsyssc_duplicateMatrix(rmass, rprojection%rmatrixMass, &
                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
      
-     ! That's it
+     ! That is it
      
   end subroutine
 
@@ -9635,7 +9635,7 @@ contains
   integer :: niter, cinfo
   real(DP), dimension(:), pointer :: p_Dtmp
   
-    ! Make sure the temporary vector's size is sufficient. For the
+    ! Make sure the temporary vector`s size is sufficient. For the
     ! prolongation, NEQ is sufficient.
     if(rtempVector%NEQ .lt. rfineVector%NEQ) then
       
@@ -9652,7 +9652,7 @@ contains
     call lsyssc_scalarMatVec (rprojection%rmatrix2Lvl, rcoarseVector, &
                               rfineVector, 1.0_DP, 0.0_DP, .false.)
     
-    ! Now get the temporary and fine mesh vector's data arrays
+    ! Now get the temporary and fine mesh vector`s data arrays
     call lsyssc_getbase_double(rtempVector, p_Dtmp)
     
     ! Call the SOR solver
@@ -9661,7 +9661,7 @@ contains
     call qsol_solveSOR(rprojection%rmatrixMass, rfineVector, p_Dtmp, &
                        cinfo, niter, dtol, rprojection%drelaxL2)
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -9705,7 +9705,7 @@ contains
   real(DP), dimension(:), pointer :: p_Da
   integer, dimension(:), pointer :: p_Kcol, p_Kld, p_Kdiag
 
-    ! Make sure the temporary vector's size is sufficient. For the
+    ! Make sure the temporary vector`s size is sufficient. For the
     ! restriction, we need 2*NEQ.
     if(rtempVector%NEQ .lt. 2*rfineVector%NEQ) then
       
@@ -9717,7 +9717,7 @@ contains
       
     end if
     
-    ! Now get the temporary and fine mesh vector's data arrays
+    ! Now get the temporary and fine mesh vector`s data arrays
     call lsyssc_getbase_double(rtempVector, p_Dtmp)
     call lsyssc_getbase_double(rfineVector, p_Dfine)
     
@@ -9749,11 +9749,11 @@ contains
     ! If everything went well, p_Dtmp(1:n) now contains the solution of
     ! the Mass system. The only thing we now need to do is to multiply
     ! the solution by the transposed 2-Level-Mass matrix to get the
-    ! restricted coarse mesh vector. Unfortunately, the solution vector's size
-    ! does not match the matrix's size, so we will perform the matrix-vector
+    ! restricted coarse mesh vector. Unfortunately, the solution vector`s size
+    ! does not match the matrix`s size, so we will perform the matrix-vector
     ! multiplication by hand here:
 
-    ! Get the coarse mesh vector's data array
+    ! Get the coarse mesh vector`s data array
     call lsyssc_getbase_double(rcoarseVector, p_Dcoarse)
     
     ! Get the arrays from the 2-Level-Mass matrix
@@ -9772,7 +9772,7 @@ contains
       end do
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -9815,7 +9815,7 @@ contains
       call lsyssc_duplicateMatrix(rmatrixInterp, rprojection%rmatrixInterp, &
                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 

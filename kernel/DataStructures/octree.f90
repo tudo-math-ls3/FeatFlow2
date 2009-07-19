@@ -989,7 +989,7 @@ contains
             ! We have found the item IVT in node INODE
             iresult = OTREE_DELETED
             
-            ! That's it
+            ! That is it
             return
           end if
         end do
@@ -1144,7 +1144,7 @@ contains
             ! We have found the item IVT in node INODE
             iresult = OTREE_FOUND
 
-            ! That's it
+            ! That is it
             return
           end if
         end do

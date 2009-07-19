@@ -97,7 +97,7 @@ module elementbase
 
     ! Array with coordinates of the points where to evaluate.
     ! The coordinates are expected on the real element.
-    ! It's assumed that:
+    ! It is assumed that:
     !  Dpoints(1)=x-coordinates,
     !  Dpoints(2)=y-coordinates.
     !  Dpoints(3)=z-coordinates (only 3d).
@@ -155,7 +155,7 @@ module elementbase
     
     ! Array with coordinates of the points where to evaluate.
     ! The coordinates are expected on the reference element.
-    ! It's assumed that:
+    ! It is assumed that:
     !  Dpoints(1,.)=x-coordinates,
     !  Dpoints(2,.)=y-coordinates.
     !  Dpoints(3,.)=y-coordinates.
@@ -167,7 +167,7 @@ module elementbase
 
     ! Array with coordinates of the points where to evaluate.
     ! The coordinates are expected on the real element.
-    ! It's assumed that:
+    ! It is assumed that:
     !  Dpoints(1,.)=x-coordinates,
     !  Dpoints(2,.)=y-coordinates.
     !  Dpoints(3,.)=z-coordinates (only 3d).

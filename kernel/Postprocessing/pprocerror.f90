@@ -410,7 +410,7 @@ contains
       end do
     end if
     
-    ! Don't we have anything to do?
+    ! Do not we have anything to do?
     if(.not. (bcalcL2 .or. bcalcH1 .or. bcalcL1)) return
     
     ! Do we have to calculate H1 errors?
@@ -448,7 +448,7 @@ contains
     Bder(DER_FUNC) = bcalcL2 .or. bcalcL1
     if(bcalcH1) Bder(ifirstDer:ilastDer) = .true.
     
-    ! Okay, let's loop over all element distributions
+    ! Okay, let us loop over all element distributions
     do ieldist = 1, p_rdiscr%inumFEspaces
     
       ! Get a pointer to the element distribution
@@ -517,7 +517,7 @@ contains
         ! Get a pointer to the current element list
         p_IcurElemList => p_IelemList(NELdone+1:NELdone+NELtodo)
         
-        ! First, let's perform the DOF-mapping
+        ! First, let us perform the DOF-mapping
         call dof_locGlobMapping_mult(p_rdiscr, p_IcurElemList, Idofs)
         
         ! Prepare the element for evaluation
@@ -542,7 +542,7 @@ contains
         ! Now loop over all vector components
         do icomp = 1, ncomp
         
-          ! Get the coefficient vector's data array
+          ! Get the coefficient vector`s data array
           call lsyssc_getbase_double(rerror%p_RvecCoeff(icomp), p_Dcoeff)
           
           ! Get the element-wise error arrays, if given
@@ -744,7 +744,7 @@ contains
     
     end do ! ieldist
     
-    ! Don't forget to take the square roots of the L2- and H1-errors
+    ! Do not forget to take the square roots of the L2- and H1-errors
     if(associated(rerror%p_DerrorL2) .and. bcalcL2) then
       do icomp = 1, ncomp
         rerror%p_DerrorL2(icomp) = sqrt(rerror%p_DerrorL2(icomp))
@@ -756,7 +756,7 @@ contains
       end do
     end if
     
-    ! That's it
+    ! That is it
 
   end subroutine pperr_scalarVec
 
@@ -780,7 +780,7 @@ contains
   ! If ffunctionReference is not specified, the routine calculates
   !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}$$
   !
-  ! If the vector rvectorScalar is not specified, it's assumed to be =0.
+  ! If the vector rvectorScalar is not specified, it is assumed to be =0.
   !
   ! If ffunctionWeight is specified, the routine calculates the
   ! desired norm over the selected subdomain and/or scales the error
@@ -864,7 +864,7 @@ contains
       call sys_halt()
     end if
     
-    ! The vector must be unsorted, otherwise we can't set up the vector.
+    ! The vector must be unsorted, otherwise we can not set up the vector.
     if (present(rvectorScalar)) then
       if (rvectorScalar%isortStrategy .gt. 0) then
         call output_line('Vector must be unsorted!',&
@@ -880,7 +880,7 @@ contains
     ! an H1-error, the corresponding element must have first derivatives!
     if(cerrortype .eq. PPERR_H1ERROR) then
       
-      ! So, let's loop through all element distributions of the spatial
+      ! So, let us loop through all element distributions of the spatial
       ! discretisation structure.
       do i = 1, p_rdiscretisation%inumFESpaces
         
@@ -890,7 +890,7 @@ contains
         ! Get the maximum derivative of the element
         imaxder = elem_getMaxDerivative(celement)
         
-        ! If the maximum derivate is 1 then the element's derivatives can
+        ! If the maximum derivate is 1 then the element`s derivatives can
         ! not be evaluated (since they are zero). We will simply return
         ! an error of -1 to indicate that the H1-error cannot be computed.
         if(imaxder .le. 1) then
@@ -1132,7 +1132,7 @@ contains
     ! the elements.
     integer(I32) :: cevaluationTag
 
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Pointer to the element-wise error
@@ -1160,7 +1160,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
                                
@@ -1184,7 +1184,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
@@ -1204,7 +1204,7 @@ contains
       ! Get the cubature formula
       call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
@@ -1245,10 +1245,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -1268,7 +1268,7 @@ contains
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -1282,7 +1282,7 @@ contains
           ! L2-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC1D, rdiscretisation, &
@@ -1323,7 +1323,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
           
           if (present(relementError)) then
@@ -1338,7 +1338,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1366,7 +1366,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1386,7 +1386,7 @@ contains
           ! L1-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC1D, rdiscretisation, &
@@ -1427,7 +1427,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
           
           if (present(relementError)) then
@@ -1442,7 +1442,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1470,7 +1470,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1490,7 +1490,7 @@ contains
           ! H1-error uses only 1st derivative of the function.
 
           if (present(ffunctionReference)) then          
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV1D_X, rdiscretisation, &
@@ -1532,7 +1532,7 @@ contains
           ! the error "w*[grad(u-u_h)](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
           
           if (present(relementError)) then
@@ -1547,7 +1547,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1575,7 +1575,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1637,7 +1637,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h) dx
 
           if (present(relementError)) then
@@ -1652,7 +1652,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1679,7 +1679,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -1737,7 +1737,7 @@ contains
           ! the error "w*f(u)(cubature pt.)"!
           !
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*f(u) dx
 
           if (present(relementError)) then
@@ -1752,7 +1752,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -1778,7 +1778,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -1924,7 +1924,7 @@ contains
     type(t_domainIntSubset) :: rintSubset
     type(t_evalElementSet) :: revalElementSet
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
@@ -1960,7 +1960,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
     
@@ -1984,7 +1984,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
@@ -2004,7 +2004,7 @@ contains
       ! Get the cubature formula
       call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
@@ -2045,10 +2045,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -2068,7 +2068,7 @@ contains
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -2082,7 +2082,7 @@ contains
           ! L2-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC, rdiscretisation, &
@@ -2123,7 +2123,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
           
           if (present(relementError)) then
@@ -2138,7 +2138,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2166,7 +2166,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2186,7 +2186,7 @@ contains
           ! L1-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC, rdiscretisation, &
@@ -2227,7 +2227,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
           
           if (present(relementError)) then
@@ -2282,7 +2282,7 @@ contains
           ! H1-error uses only 1st derivative of the function.
 
           if (present(ffunctionReference)) then          
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV_X, rdiscretisation, &
@@ -2334,7 +2334,7 @@ contains
           ! the error "w*grad(u-u_h)(cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
           
           if (present(relementError)) then
@@ -2349,7 +2349,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
@@ -2378,7 +2378,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,5)
                 
@@ -2440,7 +2440,7 @@ contains
           ! the error "w*[u-u_h] (cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h) dx
 
           if (present(relementError)) then
@@ -2455,7 +2455,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2482,7 +2482,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2540,7 +2540,7 @@ contains
           ! the error "w*f(u)(cubature pt.)"!
           !
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*f(u) dx
 
           if (present(relementError)) then
@@ -2555,7 +2555,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -2581,7 +2581,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -2727,7 +2727,7 @@ contains
     type(t_domainIntSubset) :: rintSubset
     type(t_evalElementSet) :: revalElementSet
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
@@ -2764,7 +2764,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM, p_rtriangulation%NEL)
     
@@ -2788,7 +2788,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get the number of corner vertices of the element
@@ -2808,7 +2808,7 @@ contains
       ! Get the cubature formula
       call cub_getCubature(p_relementDistribution%ccubTypeEval, p_DcubPtsRef, Domega)
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial, nelementsPerBlock))
 
       ! Allocate memory for the coefficients
@@ -2849,10 +2849,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -2872,7 +2872,7 @@ contains
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -2886,7 +2886,7 @@ contains
           ! L2-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x,y,z)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC3D, rdiscretisation, &
@@ -2927,7 +2927,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h,u-u_h) dx
           
           if (present(relementError)) then
@@ -2942,7 +2942,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2970,7 +2970,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -2990,7 +2990,7 @@ contains
           ! L1-error uses only the values of the function.
           
           if (present(ffunctionReference)) then
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! function values in the cubature points:  u(x,y,z)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_FUNC3D, rdiscretisation, &
@@ -3031,7 +3031,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*abs(u-u_h) dx
 
           if (present(relementError)) then
@@ -3046,7 +3046,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -3074,7 +3074,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -3094,7 +3094,7 @@ contains
           ! H1-error uses only 1st derivative of the function.
 
           if (present(ffunctionReference)) then          
-            ! It's time to call our coefficient function to calculate the
+            ! It is time to call our coefficient function to calculate the
             ! X-derivative values in the cubature points:  u(x,y,z)
             ! The result is saved in Dcoefficients(:,:,1)
             call ffunctionReference (DER_DERIV3D_X, rdiscretisation, &
@@ -3157,7 +3157,7 @@ contains
           ! the error "w*[grad(u-u_h)](cubature pt.)"!
           !        
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(grad(u)-grad(u_h),grad(u)-grad(u_h)) dx
 
           if (present(relementError)) then
@@ -3172,7 +3172,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
@@ -3201,7 +3201,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,7)
                 
@@ -3265,7 +3265,7 @@ contains
           ! the error "w*[u-u_h](cubature pt.)"!
           !
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*(u-u_h) dx
 
           if (present(relementError)) then
@@ -3280,7 +3280,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -3307,7 +3307,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,3)
                 
@@ -3365,7 +3365,7 @@ contains
           ! the error "w*f(u)(cubature pt.)"!
           !
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega w*f(u) dx
 
           if (present(relementError)) then
@@ -3380,7 +3380,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -3406,7 +3406,7 @@ contains
                 !
                 ! Take the absolut value of the determinant of the mapping.
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 
                 OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))*Dcoefficients(icubp,IEL,2)
                 
@@ -3464,7 +3464,7 @@ contains
   ! If ffunctionReference is not specified, the routine calculates
   !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{L_1}  \textrm{ or }  ||y||_{H_1}.$$
   !
-  ! If the vector rvectorScalar is not specified, it's assumed to be =0.
+  ! If the vector rvectorScalar is not specified, it is assumed to be =0.
   !
   ! If ffunctionWeight is specified, the routine calculates the
   ! desired norm over the selected boundary and/or scales the error
@@ -3551,7 +3551,7 @@ contains
       call sys_halt()
     end if
 
-    ! The vector must be unsorted, otherwise we can't set up the vector.
+    ! The vector must be unsorted, otherwise we can not set up the vector.
     if (present(rvectorScalar)) then
       if (rvectorScalar%isortStrategy .gt. 0) then
         call output_line('Vector must be unsorted!',&
@@ -3870,12 +3870,12 @@ contains
         ! That means, run over all the edges and sum up...
         ! (ok, if rvectorScalar is not specified, we have
         !  -u_h(x,y) in Dcoefficients(:,:,1), but as we take the square,
-        !  it doesn't matter if we have u_h or -u_h there!)
+        !  it does not matter if we have u_h or -u_h there!)
         
         derror = 0.0_DP
         do iel = 1, NELbdc
           
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -3944,12 +3944,12 @@ contains
         ! That means, run over all the edges and sum up...
         ! (ok, if rvectorScalar is not specified, we have
         !  -u_h(x,y) in Dcoefficients(:,:,1), but as we take the square,
-        !  it doesn't matter if we have u_h or -u_h there!)
+        !  it does not matter if we have u_h or -u_h there!)
         
         derror = 0.0_DP
         do iel = 1,NELbdc
       
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -4035,7 +4035,7 @@ contains
         derror = 0.0_DP
         do iel = 1,NELbdc
           
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -4104,12 +4104,12 @@ contains
         ! That means, run over all the edges and sum up...
         ! (ok, if rvectorScalar is not specified, we have
         !  -u_h(x,y) in Dcoefficients(:,:,1), but as we take the square,
-        !  it doesn't matter if we have u_h or -u_h there!)
+        !  it does not matter if we have u_h or -u_h there!)
         
         derror = 0.0_DP
         do iel = 1,NELbdc
           
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -4173,7 +4173,7 @@ contains
         derror = 0.0_DP
         do iel = 1,NELbdc
       
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -4408,7 +4408,7 @@ contains
     ! for the evaluation on the cells.
     type(t_evalElementSet) :: revalElementSet
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial,IdofsTrialRef
     
     ! Get the correct discretisation structure for the solution vector
@@ -4462,7 +4462,7 @@ contains
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
 
@@ -4503,7 +4503,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
       indofTrialRef = elem_igetNDofLoc(p_relementDistributionRef%celement)
 
@@ -4528,7 +4528,7 @@ contains
         end do
       end do
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsTrialRef(indofTrialRef,nelementsPerBlock))
 
@@ -4566,10 +4566,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
         call dof_locGlobMapping_mult(p_rdiscretisationRef, p_IelementList(IELset:IELmax), &
@@ -4583,7 +4583,7 @@ contains
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
         p_Ddetj => revalElementSet%p_Ddetj
             
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -4617,7 +4617,7 @@ contains
           ! $u_h(cubature pt.) - u_ref(cubature pt.)$
           
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega (u_h-u_ref,u_h-u_ref) dx
 
           do IEL=1,IELmax-IELset+1
@@ -4633,7 +4633,7 @@ contains
               !
               ! Take the absolut value of the determinant of the mapping.
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
               
@@ -4686,7 +4686,7 @@ contains
           ! $u_h(cubature pt.) - u_ref(cubature pt.)$
           
           ! Loop through elements in the set and for each element,
-          ! loop through the DOF's and cubature points to calculate the
+          ! loop through the DOF`s and cubature points to calculate the
           ! integral: int_Omega (u_h-u_ref,u_h-u_ref) dx
 
           do IEL=1,IELmax-IELset+1
@@ -4702,7 +4702,7 @@ contains
               !
               ! Take the absolut value of the determinant of the mapping.
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
               
@@ -4929,7 +4929,7 @@ contains
     ! for the evaluation on the cells.
     type(t_evalElementSet) :: revalElementSet
 
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
     
     ! Get the correct discretisation structure for the solution vector
@@ -4962,7 +4962,7 @@ contains
 
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPERR_NELEMSIM,p_rtriangulation%NEL)
 
@@ -4980,7 +4980,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
       ! Get the number of corner vertices of the element
@@ -5005,7 +5005,7 @@ contains
         end do
       end do
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
 
       ! Allocate memory for the coefficients.
@@ -5041,10 +5041,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
@@ -5057,7 +5057,7 @@ contains
         p_Ddetj => revalElementSet%p_Ddetj
         p_DcubPtsReal => revalElementSet%p_DpointsReal
             
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -5079,7 +5079,7 @@ contains
         ! $\hat x_h=\int_\Omega x u_h dx$
 
         ! Loop through elements in the set and for each element,
-        ! loop through the DOF's and cubature points to calculate the
+        ! loop through the DOF`s and cubature points to calculate the
         ! integral: int_Omega x*u_h dx, for x,y and z
         
         do IEL=1,IELmax-IELset+1
@@ -5092,7 +5092,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             
             OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
             
@@ -5123,7 +5123,7 @@ contains
     end do ! ielementDistr
 
     ! Ok, we have the mathematical expectation of the center of mass.
-    ! Let's compute the standard deviation.
+    ! Let us compute the standard deviation.
 
     Ddeviation = 0.0_DP
 
@@ -5152,7 +5152,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
       ! Get the number of corner vertices of the element
@@ -5177,7 +5177,7 @@ contains
         end do
       end do
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
 
       ! Allocate memory for the coefficients.
@@ -5213,10 +5213,10 @@ contains
         
         IELmax = min(NEL,IELset-1+PPERR_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
@@ -5229,7 +5229,7 @@ contains
         p_Ddetj => revalElementSet%p_Ddetj
         p_DcubPtsReal => revalElementSet%p_DpointsReal
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -5251,7 +5251,7 @@ contains
         ! $\int_\Omega ((x-\hat x_h)^2 + (y-\hat y_h)^2 + (z-\hat z_h)^2) u_h dx$
 
         ! Loop through elements in the set and for each element,
-        ! loop through the DOF's and cubature points to calculate the
+        ! loop through the DOF`s and cubature points to calculate the
         ! integral: int_Omega (x-\hat x_h)*(x-\hat x_h)*u_h dx
         ! and sum up for x,y and z
         
@@ -5268,7 +5268,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             
             OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
             

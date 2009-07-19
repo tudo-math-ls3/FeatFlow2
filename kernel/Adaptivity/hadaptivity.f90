@@ -456,7 +456,7 @@ contains
     !    (I.e. those arrays which were duplicated by a previous
     !    call to iduplicationFlag with IUPD=0.)
     !    iduplicationFlag can used to specify which data do copy
-    !    from rhadapt to rhadaptBackup. It is OR'ed with rhadaptBackup%iduplicationFlag 
+    !    from rhadapt to rhadaptBackup. It is OR`ed with rhadaptBackup%iduplicationFlag 
     !    to get the actual duplication flag. This leads to the following interpretation
     !    of iduplicationFlag:
     !     =0:  Copy all data that was copied previously. This is the usual setting.

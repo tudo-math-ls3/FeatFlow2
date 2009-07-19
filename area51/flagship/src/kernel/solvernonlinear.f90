@@ -341,7 +341,7 @@ contains
             ! Adjust solver status
             rsolver%istatus = SV_INCR_DEF
 
-            ! That's it, return
+            ! That is it, return
             return
           end if
 
@@ -722,7 +722,7 @@ contains
       p_rsolver%istatus = SV_INF_DEF
       rsolver%istatus   = SV_INF_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
       
     elseif (p_rsolver%dinitialDefect .le. p_rsolver%ddefZero) then
@@ -738,7 +738,7 @@ contains
       ! Also adjust solver status of top-most solver
       rsolver%istatus = SV_ZERO_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
     end if
 
@@ -1022,7 +1022,7 @@ contains
         ! Also adjust solver status of top-most solver
         rsolver%istatus = SV_INCR_DEF
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
 
@@ -1510,8 +1510,8 @@ contains
       !-------------------------------------------------------------------------
       ! Switched evolution relaxation (SER)
       !
-      ! From: W. Mulder and B. Van Leer. "Experiments with typical upwind 
-      ! methods for the Euler equations", J. Comp. Phys., 59(1985), 232-246.
+      ! From: W. Mulder and B. Van Leer. `Experiments with typical upwind 
+      ! methods for the Euler equations`, J. Comp. Phys., 59(1985), 232-246.
       !
       ! The new pseudo time step is computed from the following formula
       !

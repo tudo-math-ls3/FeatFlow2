@@ -85,7 +85,7 @@ contains
   
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
-  ! quads, hexas or similar); it's not allowed to mix e.g. triangles and 
+  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and 
   ! quads in this list.
   integer, dimension(:), intent(in) :: Ielements
   
@@ -124,7 +124,7 @@ contains
       ! slightly wrong, since we stop, if the error on the 'fine' mesh
       ! is small enough while we return the cubature formula of the coarse
       ! mesh, but anyway, this is only a rough approximation.
-      ! If we don't do this, there would be always at least one refinement
+      ! If we do not do this, there would be always at least one refinement
       ! what prevents the unrefined cubature rule to be used.
       !
       ! And: At most 5 refinements!
@@ -160,7 +160,7 @@ contains
   
   ! List of elements where the integration should be carried out.
   ! All elements must be of the same type!!! (i.e. all must be triangles,
-  ! quads, hexas or similar); it's not allowed to mix e.g. triangles and 
+  ! quads, hexas or similar); it is not allowed to mix e.g. triangles and 
   ! quads in this list.
   integer, dimension(:), intent(in), target :: Ielements
   
@@ -251,7 +251,7 @@ contains
           ctrafoType, DpointsRef(:,:))
       p_Ddetj => revalElementSet%p_Ddetj
 
-      ! In the next loop, we don't have to evaluate the coordinates
+      ! In the next loop, we do not have to evaluate the coordinates
       ! on the reference elements anymore.
       cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -271,7 +271,7 @@ contains
           !
           ! Take the absolut value of the determinant of the mapping.
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
           
           OM = DomegaRef(icubp)*abs(p_Ddetj(icubp,IEL))
           

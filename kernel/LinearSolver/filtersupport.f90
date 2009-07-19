@@ -89,7 +89,7 @@
 !#    Setting ifilterType=FILTER_NOFILTER stops processing the filter chain
 !#    at this position.
 !#
-!# b) There's no memory attached to filters. Therefore, no cleanup is 
+!# b) There is no memory attached to filters. Therefore, no cleanup is 
 !#    necessary.
 !#
 !# </purpose>

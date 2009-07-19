@@ -872,7 +872,7 @@ contains
     !
     !  || d_k || <= || q_k ||
     !
-    ! So (hopefully) there shouldn't be any problems here.
+    ! So (hopefully) there should not be any problems here.
 
     ! Copy the rhs to work array and reset iteration vector
     !$omp parallel do if(n .ge. 10000)
@@ -910,7 +910,7 @@ contains
       ! Check defect
       if(ddef .le. dtol2) then
         
-        ! Okay, we're done
+        ! Okay, we are done
         cinfo = QSOL_INFO_SUCCESS
         
         ! Store 'final defect'

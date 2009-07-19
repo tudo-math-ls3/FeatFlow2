@@ -116,7 +116,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -186,7 +186,7 @@ contains
     ! A simple counter variable
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 2
@@ -342,7 +342,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -493,7 +493,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release Rlevels(i)%rmatrix!
     do i=NLMIN,NLMAX
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -515,7 +515,7 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
       
-    ! That's it, rvectorBlock now contains our solution.
+    ! That is it, rvectorBlock now contains our solution.
 
     ! Calculate the error to the reference function.
     call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
@@ -533,7 +533,7 @@ contains
     call output_line('Performing L2-projection of solution to Q1 space')
     call output_lbrk()
 
-    ! We now have the solution vector, but unfortunately, it's a Q1~ solution
+    ! We now have the solution vector, but unfortunately, it is a Q1~ solution
     ! vector and what we need are the function values in the vertices of the
     ! mesh. Instead of calling the spatial-projection module to interpolate
     ! the solution we will perform a "true" L2-projection of the Q1~ solution
@@ -600,8 +600,8 @@ contains
     call lsyssc_scalarMatVec(rmatrixMassPrj, rvectorBlock%rvectorBlock(1),&
                              rvecRhsQ1, 1.0_DP, 0.0_DP)
     
-    ! At this point we won't need the matrix N anymore, as we just needed
-    ! it to get a rhs vector for our Q1 mass system - so we'll release it now.
+    ! At this point we will not need the matrix N anymore, as we just needed
+    ! it to get a rhs vector for our Q1 mass system - so we will release it now.
     call lsyssc_releaseMatrix(rmatrixMassPrj)
 
     ! As rmatrixMassPrj is free now, we will use it to store M
@@ -624,7 +624,7 @@ contains
     !                   j=1
     !
     ! This simple Defect-Correction-Loop converges quite fast (at least as
-    ! long as L is regular, that is ^_^) so there's no need to seek for
+    ! long as L is regular, that is ^_^) so there is no need to seek for
     ! solvers as CG or even multigrid here...
     !
     ! Remark:
@@ -634,7 +634,7 @@ contains
     ! without any boundary conditions and the violation of the boundary
     ! conditions in our resulting Q1 solution will be tolerable...
     !
-    ! So let's create a "lumped" mass matrix first...
+    ! So let us create a "lumped" mass matrix first...
     
     ! Create a copy of M
     call lsyssc_duplicateMatrix(rmatrixMassPrj, rlumpedMassPrj,&
@@ -646,7 +646,7 @@ contains
     ! Furthermore we need a defect vector
     call lsyssc_createVecIndMat(rmatrixMassPrj, rvecDefQ1)
     
-    ! And let's start the Defect-Correction-Loop
+    ! And let us start the Defect-Correction-Loop
     do i = 1, 50
     
       ! Calculate current defect d_i := r - M * y_i
@@ -689,7 +689,7 @@ contains
     call lsyssc_getbase_double (rvecSolQ1,p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -761,7 +761,7 @@ contains
     
     deallocate(Rlevels)
     
-    ! Finally release the domain, that's it.
+    ! Finally release the domain, that is it.
     call boundary_release (rboundary)
 
   end subroutine

@@ -205,7 +205,7 @@ contains
 !<subroutine>
   subroutine nsets_addToDASet (rset,ielement)
 !<description>
-  ! Adds an element to the set rset if it's not already part of it.
+  ! Adds an element to the set rset if it is not already part of it.
 !</description>
 
 !<inputoutput>
@@ -232,7 +232,7 @@ contains
 !<subroutine>
   subroutine nsets_removeFromDASet (rset,ielement)
 !<description>
-  ! Removes an element from the set it it's part of it.
+  ! Removes an element from the set it it is part of it.
 !</description>
 
 !<inputoutput>

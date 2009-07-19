@@ -72,7 +72,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -131,10 +131,10 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    ! As we do not use a multigrid solver here, we'll set the level
+    ! As we do not use a multigrid solver here, we will set the level
     ! to 4 instead of 7.
     NLMAX = 4
     
@@ -227,7 +227,7 @@ contains
     ! Duplicate the B1 matrix structure to the B2/B3 matrix, so use
     ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix 
     ! structure between B1, B2 and B3 (B1 is the parent and B2/B3 the child). 
-    ! Don't create a content array yet, it will be created by 
+    ! Do not create a content array yet, it will be created by 
     ! the assembly routines later.
     call lsyssc_duplicateMatrix (rmatrixB1, rmatrixB2, LSYSSC_DUP_COPY,&
                                  LSYSSC_DUP_REMOVE)
@@ -385,10 +385,10 @@ contains
     call lsysbl_clearVector(rvector)
 
     ! Now we need to implement the boundary conditions. To do this, we
-    ! first need to create a mesh region describing the mesh's boundary.
-    ! We want to prescribe Dirichlet on the cube's boundary, except for
+    ! first need to create a mesh region describing the mesh`s boundary.
+    ! We want to prescribe Dirichlet on the cube`s boundary, except for
     ! the face where the X-coordinate is 1. 
-    ! We could now manually create a mesh region based on the triangulation's
+    ! We could now manually create a mesh region based on the triangulation`s
     ! nodal-property array and then kick out everything that belongs to the
     ! right face. But we will use the dom3d_cube module, which performs
     ! this task for us.
@@ -463,9 +463,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrix/)
     call linsol_setMatrices(p_rsolverNode,Rmatrices)
@@ -528,10 +528,10 @@ contains
     call bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
                        rmeshRegion, getBoundaryValuesMR_3D)
     
-    ! Now we don't need the mesh region anymore, so release it
+    ! Now we do not need the mesh region anymore, so release it
     call mshreg_done(rmeshRegion)
 
-    ! Connect the vector to the BC's
+    ! Connect the vector to the BC`s
     rprjVector%p_rdiscreteBC => rprjDiscreteBC
     
     ! Send the vector to the boundary-condition implementation filter.
@@ -568,7 +568,7 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 

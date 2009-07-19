@@ -294,8 +294,8 @@ module hadaptaux
 
 !</constantblock>
 
-!<constantblock description="Duplication flags. Specifies which information is
-!                            shared between adaptivity structures">
+!<constantblock 
+! description="Duplication flags. Specifies which information is shared between adaptivity structures">
 
   integer(I32), parameter, public :: HADAPT_SHARE_IMARKER            = 2** 0
   integer(I32), parameter, public :: HADAPT_SHARE_IVERTEXAGE         = 2** 1

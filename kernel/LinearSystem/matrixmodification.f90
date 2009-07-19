@@ -764,7 +764,7 @@ contains
             ild    = ild-1
           end do
 
-          ! That's it! Update Kld for next column and adjust number of nonzero entries
+          ! That is it! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
         end if
@@ -917,7 +917,7 @@ contains
             ild    = ild-1
           end do
 
-          ! That's it! Update Kld for next column and adjust number of nonzero entries
+          ! That is it! Update Kld for next column and adjust number of nonzero entries
           p_Kld(ieq+1) = na+1
           na           = naIncr
         end if
@@ -1237,7 +1237,7 @@ contains
     integer, intent(in) :: iblockRow
 
     ! A list of row numbers of all the rows in block row iblockRow which are 
-    ! to be replaced by unit vectors. These numbers are not global DOF's 
+    ! to be replaced by unit vectors. These numbers are not global DOF`s 
     ! but the starting indices relative to the block row iblockRow
     ! (e.g. "1" identifies the first row in the block row iblockrow).
     integer, intent(in), dimension(:) :: Irows

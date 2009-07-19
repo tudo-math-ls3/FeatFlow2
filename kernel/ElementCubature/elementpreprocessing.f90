@@ -42,8 +42,8 @@
 !#  c) elem_generic_XXXX (eval-structure,derivatives,values)
 !#
 !#  a) will at first grab from the element the so called 'evaluation tag'.
-!#  This integer encodes a set of information that specifies 'what the element
-!#  needs' to be evaluated; e.g. whether it needs coordinates on the reference
+!#  This integer encodes a set of information that specifies `what the element
+!#  needs` to be evaluated; e.g. whether it needs coordinates on the reference
 !#  element, on the real element, if mapping between reference and real
 !#  element is needed etc.
 !#
@@ -55,9 +55,9 @@
 !#  c) finally evaluates the basis functions using the prepared structure.
 !#  The results are saved to 'values' in this example.
 !#
-!#  There's no harm in calling a elprep_prepareXXXX-routine more than once;
+!#  There is no harm in calling a elprep_prepareXXXX-routine more than once;
 !#  each call overwrites previously generated information, amd memory is
-!#  only reallocated if it's not enough. Nevertheless, when the evaluation
+!#  only reallocated if it is not enough. Nevertheless, when the evaluation
 !#  is finished elprep_releaseXXXX shall be called to release allocated memory.
 !#
 !# </purpose>
@@ -128,7 +128,7 @@ contains
 
 !<input>
   ! Evaluation tag. This is a bitfield that specifies which information is
-  ! prepared in the element set; it's a combination of EL_EVLTAG_XXXX-constants.
+  ! prepared in the element set; it is a combination of EL_EVLTAG_XXXX-constants.
   !
   ! Note: If EL_EVLTAG_REFPOINTS is not specified in this tag, the coordinates on
   ! the reference element are assumed to be initialised! Dpoints is ignored
@@ -245,7 +245,7 @@ contains
     end if 
 
     ! Is the structure initialised?
-    ! If yes, check the size of all the arrays. If it's different, deallocate
+    ! If yes, check the size of all the arrays. If it is different, deallocate
     ! and reallocate.
     if (revalElementSet%npointsPerElement .ne. 0) then
 
@@ -392,8 +392,8 @@ contains
         call sys_halt()
       end if
       
-      ! If real world coordinates must be calculated, we don't have to calculate
-      ! the Jacobian stuff here; it's done below.
+      ! If real world coordinates must be calculated, we do not have to calculate
+      ! the Jacobian stuff here; it is done below.
       if (iand(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .eq. 0) then
         call trafo_calctrafo_sim (ctrafoType,&
              nelements,npointsPerElement,revalElementSet%p_Dcoords,&
@@ -563,7 +563,7 @@ contains
 
 !<input>
   ! Evaluation tag. This is a bitfield that specifies which information is
-  ! prepared in the element set; it's a combination of EL_EVLTAG_XXXX-constants.
+  ! prepared in the element set; it is a combination of EL_EVLTAG_XXXX-constants.
   !
   ! Note: If EL_EVLTAG_REFPOINTS is not specified in this tag, the coordinates on
   ! the reference element are assumed to be initialised! Dpoints is ignored
@@ -639,8 +639,8 @@ contains
     if ((iand(cevaluationTag,EL_EVLTAG_JAC   ) .ne. 0) .or. &
         (iand(cevaluationTag,EL_EVLTAG_DETJ  ) .ne. 0)) then
         
-      ! If real world coordinates must be calculated, we don't have to calculate
-      ! the Jacobian stuff here; it's done below.
+      ! If real world coordinates must be calculated, we do not have to calculate
+      ! the Jacobian stuff here; it is done below.
       if (iand(cevaluationTag,EL_EVLTAG_REALPOINTS   ) .eq. 0) then
         call trafo_calctrafo (ctrafoType,&
              revalElement%Dcoords,revalElement%DpointRef,revalElement%Djac,revalElement%ddetj)

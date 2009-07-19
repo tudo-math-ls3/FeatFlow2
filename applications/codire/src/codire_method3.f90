@@ -419,7 +419,7 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_boundaryRegion) :: rboundaryRegion
     
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     
     ! A pointer to the domain
@@ -439,8 +439,8 @@ contains
 
     ! Now we have the raw problem. What is missing is the definition of the boundary
     ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     !
@@ -462,11 +462,11 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the 
     !   solution vector.
-    ! - Discretise the boundary condition so that the BC's can be applied
+    ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
-    ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues)
@@ -483,7 +483,7 @@ contains
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
@@ -613,9 +613,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/p_rmatrix/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -696,7 +696,7 @@ contains
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -850,7 +850,7 @@ contains
     ! PRM/TRI file
     character(LEN=SYS_STRLEN) :: sfilePRM,sfileTRI
 
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     ! Initialise the collection.
     call collct_init (rproblem%rcollection)
     
@@ -878,7 +878,7 @@ contains
                                  'sfileTRI', sstring)
     read(sstring,*) sfileTRI
 
-    ! Get the path where to write gmv's to.
+    ! Get the path where to write gmv`s to.
     call parlst_getvalue_string (rparams, 'GENERAL', &
                                  'sucddir', sstring)
     read(sstring,*) sucddir

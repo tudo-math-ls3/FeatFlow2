@@ -13,7 +13,7 @@
 !#
 !# We solve this equation in the space/time domain
 !# $(x,t) \in \Omega=[0,1]x[0,1]$. In this example, we use a direct space-time
-!# discretisation, i.e. we don't use a separate time-discretisation.
+!# discretisation, i.e. we do not use a separate time-discretisation.
 !# Instead, we replace the $t$ variable by $y$-variable of a usual
 !# 2D space discretisation, thus resulting in the formula
 !#
@@ -327,7 +327,7 @@ contains
       ! changed one of the submatrices:
       call lsysbl_updateMatStrucInfo (p_rmatrix)
       
-      ! Allocate memory for the matrix, don't calculate the entries.
+      ! Allocate memory for the matrix, do not calculate the entries.
       ! Remember hat we have a nonlinear matrix, which entries must be build
       ! in evey step of the nonlinear iteration!
       ! We fill the matrix with 1. This is necessary, as the UMFPACK solver
@@ -356,7 +356,7 @@ contains
 
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the matrix template.
-      ! It's used for building the matrices on lower levels.
+      ! It is used for building the matrices on lower levels.
       if (i .lt. rproblem%ilvmax) then
         p_rtempVector => rproblem%RlevelInfo(i)%rtempVector
         call lsysbl_createVecBlockIndMat (p_rmatrix,p_rtempVector,.false.)
@@ -438,7 +438,7 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
       
     ! A pointer to the domain
@@ -458,8 +458,8 @@ contains
       
       ! Now we have the raw problem. What is missing is the definition of the boundary
       ! conditions.
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -481,11 +481,11 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues,rproblem%rcollection)
@@ -499,13 +499,13 @@ contains
                                
       ! Edge 3 of boundary component 1.
       ! Ege 3 must be set up as Neumann boundary, which is realised as
-      ! simple 'do-$nothing'-boundary conditions. So we don't do anything with edge 3
+      ! simple 'do-$nothing'-boundary conditions. So we do not do anything with edge 3
       ! CALL boundary_createRegion(p_rboundary,1,3,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
       !     rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
       !     getBoundaryValues,rproblem%rcollection)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
@@ -689,7 +689,7 @@ contains
       ! conditions.
       call vecfil_discreteBCdef (rd)
 
-      ! That's it
+      ! That is it
   
     end subroutine
     
@@ -726,7 +726,7 @@ contains
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
-    ! domega will stay at this value until it's changed again.
+    ! domega will stay at this value until it is changed again.
     real(DP), intent(inout)                       :: domega
   
     ! If the preconditioning was a success. Is normally automatically set to
@@ -876,7 +876,7 @@ contains
         call matfil_discreteBC (p_rmatrix)
         
         ! Sort the matrix according to the attached sorting strategy -
-        ! if there's a sorting strategy attached at all
+        ! if there is a sorting strategy attached at all
         ! (this is prepared by the application).
         ! The sorting is important,
         ! - to make the matrices compatible to the vector rd (which is also
@@ -888,7 +888,7 @@ contains
         
       end do
 
-      ! Sort the matrix on the maximum level - don't forget this!
+      ! Sort the matrix on the maximum level - do not forget this!
       p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',ilvmax)
       call lsyssc_sortMatrix (p_rmatrix%RmatrixBlock(1,1),.true.,&
                               abs(p_rmatrix%RmatrixBlock(1,1)%isortStrategy))
@@ -898,7 +898,7 @@ contains
       !
       ! Resort the vector rd before solving the corresponding linear
       ! system/perform the preconditioning. Use p_rvectorTemp as temporary
-      ! vector for that purpose - it's prepared large enough.
+      ! vector for that purpose - it is prepared large enough.
       call lsysbl_sortVectorInSitu (rd,p_rvectorTemp,.true.)
       
       ! Initialise data of the solver. This in fact performs a numeric
@@ -914,15 +914,15 @@ contains
       call linsol_precondDefect (p_rsolverNode,rd)
 
       ! Release the numeric factorisation of the matrix.
-      ! We don't release the symbolic factorisation, as we can use them
+      ! We do not release the symbolic factorisation, as we can use them
       ! in the next iteration.
       call linsol_doneData (p_rsolverNode)
 
-      ! Unsort our rd again so that it's in the state it was before.
+      ! Unsort our rd again so that it is in the state it was before.
       call lsysbl_sortVectorInSitu (rd,p_rvectorTemp,.false.)
       
       ! Unsort the structure of all matrices without unsorting the entries.
-      ! This of course means throwing away all matrices, but we don't need
+      ! This of course means throwing away all matrices, but we do not need
       ! them anymore - they are reassembled in the next sweep.
       do i=ilvmin,ilvmax
         p_rmatrix => collct_getvalue_mat (p_rcollection,'SYSTEMMAT',i)
@@ -983,7 +983,7 @@ contains
     ! Now we have to build up the level information for multigrid.
     !
     ! At first, initialise a standard interlevel projection structure. We
-    ! can use the same structure for all levels. Therefore it's enough
+    ! can use the same structure for all levels. Therefore it is enough
     ! to initialise one structure using the RHS vector on the finest
     ! level to specify the shape of the PDE-discretisation.
     call mlprj_initProjectionVec (rprojection,rproblem%rrhs)
@@ -1093,7 +1093,7 @@ contains
     
     ! Before attaching the matrices to the solver and the initialisation of
     ! the problem structure, sort the matrix structure on all levels
-    ! according top the associated permutation. Don't sort the
+    ! according top the associated permutation. Do not sort the
     ! entries - there are none!
     do i=ilvmin,ilvmax
       p_rmatrix => rproblem%RlevelInfo(i)%rmatrix
@@ -1222,7 +1222,7 @@ contains
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -1410,14 +1410,14 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Laplace problem on level...
 
     NLMIN = 3
     NLMAX = 7
     
-    ! Allocate the problem structure -- it's rather large
+    ! Allocate the problem structure -- it is rather large
     allocate(p_rproblem)
     allocate(p_rproblem%RlevelInfo(1:NLMAX))
 

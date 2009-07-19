@@ -110,7 +110,7 @@
 !#
 !#    call bilf_buildMatrixScalar (rform,.true.,rmatrix)
 !#
-!#  that's it.
+!#  that is it.
 !#
 !# 2.) What is the 'manual matrix assembly'?
 !#
@@ -174,7 +174,7 @@
 !#  the elements 501..750. That way, the user has the ability to
 !#  specify element type, element numbers and cubature formula manually
 !#  without having to specify everything in a discretisation structure;
-!#  that's the reason why this assembly is called 'manual' assembly.
+!#  that is the reason why this assembly is called 'manual' assembly.
 !#
 !#  This method is extremely useful when one wants to assemble matrices with
 !#  adaptive/summed cubature formulas. Some parts of the domain can that way
@@ -238,7 +238,7 @@ module bilinearformevaluation
     ! The bilinear form specifying the underlying PDE of the discretisation.
     type(t_bilinearForm) :: rform
 
-    ! Number of local DOF's.
+    ! Number of local DOF`s.
     integer :: indofTrial
     integer :: indofTest
     
@@ -285,7 +285,7 @@ module bilinearformevaluation
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTest
     real(DP), dimension(:,:,:,:), pointer :: p_DbasTrial
     
-    ! Arrays saving the DOF's in the elements
+    ! Arrays saving the DOF`s in the elements
     integer, dimension(:,:), pointer :: p_IdofsTest
     integer, dimension(:,:), pointer :: p_IdofsTrial
 
@@ -315,12 +315,12 @@ module bilinearformevaluation
   integer, parameter, public :: BILF_MATC_ELEMENTBASED = 0
   
   ! Edge-based matrix construction. The matrix stencil is extended in such a way,
-  ! that the DOF's of one element may interact with the DOF's of all other elements
+  ! that the DOF`s of one element may interact with the DOF`s of all other elements
   ! that are adjacent via one of the edges.
   integer, parameter, public :: BILF_MATC_EDGEBASED    = 1
 
   ! Vertex-based matrix construction. The matrix stencil is extended in such a way,
-  ! that the DOF's of one element may interact with the DOF's of all other elements
+  ! that the DOF`s of one element may interact with the DOF`s of all other elements
   ! that are adjacent via one of the corner vertices.
   integer, parameter, public :: BILF_MATC_VERTEXBASED  = 2
 
@@ -544,9 +544,9 @@ contains
   ! local variables
   type(t_matrixScalar) :: rmatrixBackup
   
-  ! The matrix must be unsorted, otherwise we can't set up the matrix.
+  ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
-  ! of a vector, since there's a structure behind the matrix! So the caller
+  ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   if (rmatrixScalar%isortStrategy .gt. 0) then
     call output_line ('Matrix-structure must be unsorted!', &
@@ -674,7 +674,7 @@ contains
 !<description>
   ! This routine creates according to a given discretisation the matrix 
   ! structure of a structure-9 matrix. The discretisation is assumed to be
-  ! conformal, i.e. the DOF's of different FE spaces in the trial space
+  ! conformal, i.e. the DOF`s of different FE spaces in the trial space
   ! fit together. The function space for trial and test functions 
   ! may be different.
 !</description>
@@ -753,7 +753,7 @@ contains
   ! Size of memory currently allocated
   integer :: iallocated
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   !INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
   !INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
   integer, dimension(EL_MAXNBAS,BILF_NELEMSIM), target :: IdofsTest, IdofsTrial
@@ -792,8 +792,8 @@ contains
   end if
   rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
   
-  ! Get the #DOF's of the test space - as #DOF's of the test space is
-  ! the number of equations in our matrix. The #DOF's in the trial space
+  ! Get the #DOF`s of the test space - as #DOF`s of the test space is
+  ! the number of equations in our matrix. The #DOF`s in the trial space
   ! gives the number of columns of our matrix.
   rmatrixScalar%NCOLS         = &
       dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
@@ -830,7 +830,7 @@ contains
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
+  ! this is NEL. If there are too many elements, it is at most
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
 
@@ -863,7 +863,7 @@ contains
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
-  ! the search routine below won't work!
+  ! the search routine below will not work!
   call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
@@ -897,7 +897,7 @@ contains
   !
   ! Example: We want to add entry (1,3) to the matrix. Then
   ! we enlarge the lists as follows:
-  ! - "2" (the column number" is added to the end of Icol, i.e.
+  ! - "2" (the column number is added to the end of Icol, i.e.
   !   Icol(NEQ+1) = 3
   ! - We add a "follower" for the diagonal element by setting
   !   Iindx(1) = NEQ+1. Furthermore we set KIND(NEQ+1)=0
@@ -935,7 +935,7 @@ contains
     ! Cancel if this element distribution is empty.
     if (p_relementDistrTest%NEL .eq. 0) cycle
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
     indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
     
@@ -947,18 +947,18 @@ contains
       call sys_halt()
     end if
     
-    ! Allocate an array saving a couple of DOF's for trial and test functions
+    ! Allocate an array saving a couple of DOF`s for trial and test functions
     !ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
     !ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
     
     ! Test if trial/test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
+    ! We do not rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
     bIdenticalTrialAndTest = &
       p_relementDistrTest%celement .eq. p_relementDistrTrial%celement
       
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
     ! space IdofTest (if both spaces are identical). 
     ! We create a pointer for the trial space and not for the test space to
     ! prevent pointer-arithmetic in the innerst loop below!
@@ -977,7 +977,7 @@ contains
     NEL = p_relementDistrTest%NEL
 
     ! Set the pointers/indices to the initial position. During the
-    ! search for new DOF's, these might be changed if there's not enough
+    ! search for new DOF`s, these might be changed if there is not enough
     ! memory in the first block.    
     icurrentblock = 1
     istartidx = 0
@@ -996,7 +996,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -1012,21 +1012,21 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Call dof_locGlobMapping to get the global DOF's on our current
-      ! element (the "X" and all "O"'s). 
-      ! We don't need the local DOF's, so by setting IPAR=0,
+      ! Call dof_locGlobMapping to get the global DOF`s on our current
+      ! element (the "X" and all "O"`s). 
+      ! We do not need the local DOF`s, so by setting IPAR=0,
       ! the call will only fill KDFG.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
-      ! Calculate the DOF's of the test functions:
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
+      ! Calculate the DOF`s of the test functions:
       call dof_locGlobMapping_mult(&
           rmatrixScalar%p_rspatialDiscrTest, p_IelementList(IELset:IELmax), &
           IdofsTest)
                                    
-      ! If the DOF's for the test functions are different, calculate them, too.
+      ! If the DOF`s for the test functions are different, calculate them, too.
       if (.not.bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(&
             rmatrixScalar%p_rspatialDiscrTrial, p_IelementList(IELset:IELmax), &
@@ -1037,7 +1037,7 @@ contains
       do IEL=1,IELmax-IELset+1
         
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indofTest
 
@@ -1046,8 +1046,8 @@ contains
           
           IROW = IdofsTest(IDOFE,IEL)
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "X"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "X"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -1188,7 +1188,7 @@ contains
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
-                    ! the search routine below won't work!
+                    ! the search routine below will not work!
                     call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
@@ -1204,7 +1204,7 @@ contains
                     ! for insertion of an element at position NA!
                     !
                     ! If the new position is not in the current block,
-                    ! it's in the last block... and so set the pointer
+                    ! it is in the last block... and so set the pointer
                     ! and indices appropriately!
                     
                     if ( NA .gt. (istartidx+p_Isize (icurrentblock))) then
@@ -1258,7 +1258,7 @@ contains
     
     end do ! IELset
 
-    ! Clean up the DOF's arrays    
+    ! Clean up the DOF`s arrays    
     !DEALLOCATE(IdofsTest)
     !DEALLOCATE(IdofsTrial)
     
@@ -1391,7 +1391,7 @@ contains
 
   end do ! IEQ
   
-  ! HOORAY, THAT'S IT!
+  ! HOORAY, THAT IS IT!
   ! Deallocate all temporary memory...
   
   do i=iblocks,1,-1
@@ -1418,8 +1418,8 @@ contains
   ! structure of a structure-9 matrix. The discretisation is assumed to be
   ! uniform, i.e. there is only one combination of test- and trial functions
   ! allowed. The matrix is created by an edge-based approach, which increases
-  ! the matrix stencil in such a way, that the DOF's of one element may
-  ! interact with the DOF's of all elements that are adjacent via the
+  ! the matrix stencil in such a way, that the DOF`s of one element may
+  ! interact with the DOF`s of all elements that are adjacent via the
   ! edges.
 !</description>
 
@@ -1492,7 +1492,7 @@ contains
   ! Size of memory currently allocated
   integer :: iallocated
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
   integer, dimension(:,:), pointer :: p_IdofsTrial
   !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
@@ -1536,8 +1536,8 @@ contains
   end if
   rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
   
-  ! Get the #DOF's of the test space - as #DOF's of the test space is
-  ! the number of equations in our matrix. The #DOF's in the trial space
+  ! Get the #DOF`s of the test space - as #DOF`s of the test space is
+  ! the number of equations in our matrix. The #DOF`s in the trial space
   ! gives the number of columns of our matrix.
   rmatrixScalar%NCOLS         = &
       dof_igetNDofGlob(rmatrixScalar%p_rspatialDiscrTrial)
@@ -1576,7 +1576,7 @@ contains
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
+  ! this is NEL. If there are too many elements, it is at most
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
 
@@ -1609,7 +1609,7 @@ contains
   call storage_getbase_int (p_Ihcol(1),p_Icol)
 
   ! The new index array must be filled with 0 - otherwise
-  ! the search routine below won't work!
+  ! the search routine below will not work!
   call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                       p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
   call storage_getbase_int (p_Ihindx(1),p_Iindx)
@@ -1643,7 +1643,7 @@ contains
   !
   ! Example: We want to add entry (1,3) to the matrix. Then
   ! we enlarge the lists as follows:
-  ! - "2" (the column number" is added to the end of Icol, i.e.
+  ! - "2" (the column number is added to the end of Icol, i.e.
   !   Icol(NEQ+1) = 3
   ! - We add a "follower" for the diagonal element by setting
   !   Iindx(1) = NEQ+1. Furthermore we set KIND(NEQ+1)=0
@@ -1671,7 +1671,7 @@ contains
   p_relementDistrTest => rmatrixScalar%p_rspatialDiscrTest%RelementDistr(1)
   p_relementDistrTrial => rmatrixScalar%p_rspatialDiscrTrial%RelementDistr(1)
 
-  ! Get the number of local DOF's for trial and test functions
+  ! Get the number of local DOF`s for trial and test functions
   indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
   indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
   
@@ -1689,7 +1689,7 @@ contains
   
   ! Allocate the IadjElem array. This collects for every element 
   ! the element number itself as well as all the adjacent elements. 
-  ! (It's like a KLD-array...)
+  ! (It is like a KLD-array...)
   ! IadjCount is a pointer into this array, so we can access directly 
   ! the numbers of the elements adjacent to one element.
   ! There is
@@ -1699,18 +1699,18 @@ contains
   ! this array may need.
   allocate(IadjElem(nelementsPerBlock*(ubound(p_Kadj,1)+1)))
 
-  ! Allocate an array saving a couple of DOF's for trial and test functions
+  ! Allocate an array saving a couple of DOF`s for trial and test functions
   allocate(IdofsTrial(indofTrial,nelementsPerBlock*(ubound(p_Kadj,1)+1)))
   allocate(IdofsTest(indofTest,nelementsPerBlock*(ubound(p_Kadj,1)+1)))
   
   ! Test if trial/test functions are identical.
-  ! We don't rely on bidenticalTrialAndTest purely, as this does not
+  ! We do not rely on bidenticalTrialAndTest purely, as this does not
   ! indicate whether there are identical trial and test functions
   ! in one block!
   bIdenticalTrialAndTest = &
     p_relementDistrTest%celement .eq. p_relementDistrTrial%celement
     
-  ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+  ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
   ! space IdofTest (if both spaces are identical). 
   ! We create a pointer for the trial space and not for the test space to
   ! prevent pointer-arithmetic in the innerst loop below!
@@ -1727,7 +1727,7 @@ contains
   
 
   ! Set the pointers/indices to the initial position. During the
-  ! search for new DOF's, these might be changed if there's not enough
+  ! search for new DOF`s, these might be changed if there is not enough
   ! memory in the first block.    
   icurrentblock = 1
   istartidx = 0
@@ -1746,7 +1746,7 @@ contains
     
     ! --------------------- DOF SEARCH PHASE ------------------------
     
-    ! In a first step, we search all the DOF's on one element
+    ! In a first step, we search all the DOF`s on one element
     ! and those on the elements adjacent via an edge to this.
     ! We want to get all the DOF numbers simultaneously!
     ! For this, we first set up an array that holds all the element
@@ -1779,7 +1779,7 @@ contains
   
     ! The outstanding feature with finite elements is: A basis
     ! function for a DOF on one element has common support only
-    ! with the DOF's on the same element! E.g. for Q1:
+    ! with the DOF`s on the same element! E.g. for Q1:
     !
     !        #. . .#. . .#. . .#
     !        .     .     .     .
@@ -1795,21 +1795,21 @@ contains
     ! --> On element IEL, the basis function at "X" only interacts
     !     with the basis functions in "O". Elements in the 
     !     neighbourhood ("*") have no support, therefore we only have
-    !     to collect all "O" DOF's.
+    !     to collect all "O" DOF`s.
     !
-    ! Call dof_locGlobMapping to get the global DOF's on our current
-    ! element (the "X" and all "O"'s). 
-    ! We don't need the local DOF's, so by setting IPAR=0,
+    ! Call dof_locGlobMapping to get the global DOF`s on our current
+    ! element (the "X" and all "O"`s). 
+    ! We do not need the local DOF`s, so by setting IPAR=0,
     ! the call will only fill KDFG.
     !
     ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-    ! global DOF's of our nelemBlockCount elements simultaneously.
-    ! Calculate the DOF's of the test functions:
+    ! global DOF`s of our nelemBlockCount elements simultaneously.
+    ! Calculate the DOF`s of the test functions:
     call dof_locGlobMapping_mult(&
         rmatrixScalar%p_rspatialDiscrTest, IadjElem(1:nelemBlockCount), &
         IdofsTest)
                                  
-    ! If the DOF's for the test functions are different, calculate them, too.
+    ! If the DOF`s for the test functions are different, calculate them, too.
     if (.not.bIdenticalTrialAndTest) then
       call dof_locGlobMapping_mult(&
           rmatrixScalar%p_rspatialDiscrTrial, IadjElem(1:nelemBlockCount), &
@@ -1822,14 +1822,14 @@ contains
     do IEL=1,IELmax-IELset+1
     
       ! For building the local matrices, we have first to
-      ! loop through the test functions (the "O"'s), as these
+      ! loop through the test functions (the "O"`s), as these
       ! define the rows in the matrix.
       do IDOFE=1,indofTest
 
         ! The DOF IDOFE is now our "O".
         ! This global DOF gives us the row we have to build.
         !
-        ! The DOF's of element IEL start at position IadjPtr(IEL) in
+        ! The DOF`s of element IEL start at position IadjPtr(IEL) in
         ! the IdofsTest array. 
         IROW = IdofsTest(IDOFE,IadjPtr(IEL)) 
         
@@ -1838,8 +1838,8 @@ contains
         ! trial functions.
         do IELneighIdxJ = IadjPtr(IEL),IadjPtr(IEL+1)-1
 
-          ! Now we loop through the other DOF's on the current element
-          ! (the "X"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "X"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -1980,7 +1980,7 @@ contains
                     call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                     ! The new index array must be filled with 0 - otherwise
-                    ! the search routine below won't work!
+                    ! the search routine below will not work!
                     call storage_new ('bilf_createMatStructure9_conf', 'p_Ihindx', &
                                         p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                         ST_NEWBLOCK_ZERO)
@@ -1996,7 +1996,7 @@ contains
                     ! for insertion of an element at position NA!
                     !
                     ! If the new position is not in the current block,
-                    ! it's in the last block... and so set the pointer
+                    ! it is in the last block... and so set the pointer
                     ! and indices appropriately!
                     
                     if ( NA .gt. (istartidx+p_Isize (icurrentblock))) then
@@ -2052,7 +2052,7 @@ contains
   
   end do ! IELset
 
-  ! Clean up the DOF's arrays    
+  ! Clean up the DOF`s arrays    
   deallocate(IdofsTest)
   deallocate(IdofsTrial)
 
@@ -2183,7 +2183,7 @@ contains
 
   end do ! IEQ
   
-  ! HOORAY, THAT'S IT!
+  ! HOORAY, THAT IS IT!
   ! Deallocate all temporary memory...
   
   do i=iblocks,1,-1
@@ -2210,7 +2210,7 @@ contains
 !!<description>
 !  ! This routine calculates the entries of a finite element matrix.
 !  ! The matrix structure must be prepared with bilf_createMatrixStructure
-!  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF's
+!  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
 !  ! of all finite elements must 'match'. Trial and test functions may be
 !  ! different.
 !  ! In case the array for the matrix entries does not exist, the routine
@@ -2276,7 +2276,7 @@ contains
 !  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL
 !  REAL(DP), DIMENSION(:), POINTER :: p_DA
 !  
-!  ! An allocateable array accepting the DOF's of a set of elements.
+!  ! An allocateable array accepting the DOF`s of a set of elements.
 !  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
 !  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
@@ -2366,8 +2366,8 @@ contains
 !  ! Loop through the additive terms
 !  DO i=1,rform%itermCount
 !    ! The desriptor Idescriptors gives directly the derivative
-!    ! which is to be computed! Build template's for BDER.
-!    ! We don't compute the actual BDER here, as there might be some special
+!    ! which is to be computed! Build templates for BDER.
+!    ! We do not compute the actual BDER here, as there might be some special
 !    ! processing if trial/test functions are identical!
 !    !
 !    ! At first build the descriptors for the trial functions
@@ -2427,7 +2427,7 @@ contains
 !  
 !  ! For saving some memory in smaller discretisations, we calculate
 !  ! the number of elements per block. For smaller triangulations,
-!  ! this is NEL. If there are too many elements, it's at most
+!  ! this is NEL. If there are too many elements, it is at most
 !  ! BILF_NELEMSIM. This is only used for allocating some arrays.
 !  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
 !  
@@ -2452,7 +2452,7 @@ contains
 !    ! Cancel if this element distribution is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 !
-!    ! Get the number of local DOF's for trial and test functions
+!    ! Get the number of local DOF`s for trial and test functions
 !    indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
 !    indofTest = elem_igetNDofLoc(p_relementDistribution%itestElement)
 !    
@@ -2469,7 +2469,7 @@ contains
 !    CALL cub_getCubPoints(p_relementDistribution%ccubTypeBilForm, ncubp, Dxi, Domega)
 !    
 !    ! Allocate arrays accepting cubature point coordinates.
-!    ! It's at most as large as number of elements or length
+!    ! It is at most as large as number of elements or length
 !    ! of the element set.
 !    ALLOCATE(DcubPtsRef(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
 !    ALLOCATE(DcubPtsReal(p_rtriangulation%ndim,ncubp,nelementsPerBlock))
@@ -2502,7 +2502,7 @@ contains
 !    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
 !             ncubp,nelementsPerBlock))
 !
-!    ! Allocate memory for the DOF's of all the elements.
+!    ! Allocate memory for the DOF`s of all the elements.
 !    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
 !    ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
 !
@@ -2536,8 +2536,8 @@ contains
 !    ! need an additional array to save all the coefficients:
 !    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
 !      IF (rform%ballCoeffConstant) THEN
-!        CALL output_line ('Some oefficients are not constant &
-!            &although thy should be!', &
+!        CALL output_line ('Some coefficients are not constant ' // &
+!            'although thy should be!', &
 !            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf')
 !        CALL sys_halt()
 !      END IF
@@ -2550,15 +2550,15 @@ contains
 !    END IF
 !                    
 !    ! p_IdofsTest points either to the just created array or to the
-!    ! array with the DOF's of the trial functions - when trial and
+!    ! array with the DOF`s of the trial functions - when trial and
 !    ! test functions are identical.
-!    ! We don't rely on bidenticalTrialAndTest purely, as this does not
+!    ! We do not rely on bidenticalTrialAndTest purely, as this does not
 !    ! indicate whether there are identical trial and test functions
 !    ! in one block!
 !    bIdenticalTrialAndTest = p_relementDistribution%itrialElement .EQ. &
 !                             p_relementDistribution%itestElement
 !
-!    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+!    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
 !    ! space IdofTest (if both spaces are identical). 
 !    ! We create a pointer for the trial space and not for the test space to
 !    ! prevent pointer-arithmetic in the innerst loop below!
@@ -2597,7 +2597,7 @@ contains
 !    
 !      ! The outstanding feature with finite elements is: A basis
 !      ! function for a DOF on one element has common support only
-!      ! with the DOF's on the same element! E.g. for Q1:
+!      ! with the DOF`s on the same element! E.g. for Q1:
 !      !
 !      !        #. . .#. . .#. . .#
 !      !        .     .     .     .
@@ -2613,16 +2613,16 @@ contains
 !      ! --> On element IEL, the basis function at "X" only interacts
 !      !     with the basis functions in "O". Elements in the 
 !      !     neighbourhood ("*") have no support, therefore we only have
-!      !     to collect all "O" DOF's.
+!      !     to collect all "O" DOF`s.
 !      !
-!      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+!      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
 !      !
 !      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-!      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+!      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
 !      CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                  .TRUE.,IdofsTest)
 !                                   
-!      ! If the DOF's for the trial functions are different, calculate them, too.
+!      ! If the DOF`s for the trial functions are different, calculate them, too.
 !      IF (.NOT.bIdenticalTrialAndTest) THEN
 !        CALL dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                    .FALSE.,IdofsTrial)
@@ -2634,8 +2634,8 @@ contains
 !      ! contributions of element IEL, which are later added at the
 !      ! right positions to the elements in the global system matrix.
 !      !
-!      ! We have indofTrial trial DOF's per element and
-!      ! indofTest test DOF's per element. Therefore there are
+!      ! We have indofTrial trial DOF`s per element and
+!      ! indofTest test DOF`s per element. Therefore there are
 !      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
 !      ! "active" (i.e. have common support) on our current element, each 
 !      ! giving an additive contribution to the system matrix.
@@ -2665,8 +2665,8 @@ contains
 !
 !          JCOL0=p_KLD(p_IdofsTrial(JDOFE,IEL))
 !          
-!          ! Now we loop through the other DOF's on the current element
-!          ! (the "O"'s).
+!          ! Now we loop through the other DOF`s on the current element
+!          ! (the "O"`s).
 !          ! All these have common support with our current basis function
 !          ! and will therefore give an additive value to the global
 !          ! matrix.
@@ -2708,7 +2708,7 @@ contains
 !      ! that we have to change.
 !      ! To calculate the matrix contributions, we have to evaluate
 !      ! the elements to give us the values of the basis functions
-!      ! in all the DOF's in all the elements in our set.
+!      ! in all the DOF`s in all the elements in our set.
 !      !
 !      ! We have the coordinates of the cubature points saved in the
 !      ! coordinate array from above. Unfortunately for nonparametric
@@ -2811,7 +2811,7 @@ contains
 !            !
 !            ! Take the absolut value of the determinant of the mapping.
 !            ! In 2D, the determinant is always positive, whereas in 3D,
-!            ! the determinant might be negative -- that's normal!
+!            ! the determinant might be negative -- that is normal!
 !
 !            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
 !
@@ -2837,7 +2837,7 @@ contains
 !              ! function value with before summing up to the integral.
 !              AUX = OM * rform%Dcoefficients(IALBET)
 !            
-!              ! Now loop through all possible combinations of DOF's
+!              ! Now loop through all possible combinations of DOF`s
 !              ! in the current cubature point. The outer loop
 !              ! loops through the "X" in the above picture,
 !              ! the trial functions:
@@ -2848,8 +2848,8 @@ contains
 !                ! phi_i (our "X") in the cubature point:
 !                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
 !                
-!                !Perform an inner loop through the other DOF's
-!                ! (the "X"'s). 
+!                !Perform an inner loop through the other DOF`s
+!                ! (the "X"`s). 
 !
 !                DO IDOFE=1,indofTest
 !                
@@ -2907,7 +2907,7 @@ contains
 !            !
 !            ! Take the absolut value of the determinant of the mapping.
 !            ! In 2D, the determinant is always positive, whereas in 3D,
-!            ! the determinant might be negative -- that's normal!
+!            ! the determinant might be negative -- that is normal!
 !
 !            OM = Domega(ICUBP)*ABS(Ddetj(ICUBP,IEL))
 !
@@ -2934,7 +2934,7 @@ contains
 !              ! Get the precalculated coefficient from the coefficient array.
 !              AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
 !            
-!              ! Now loop through all possible combinations of DOF's
+!              ! Now loop through all possible combinations of DOF`s
 !              ! in the current cubature point. The outer loop
 !              ! loops through the "X" in the above picture,
 !              ! the trial functions:
@@ -2945,8 +2945,8 @@ contains
 !                ! phi_i (our "X") in the cubature point:
 !                DB = p_DbasTrial(JDOFE,IA,ICUBP,IEL)
 !                
-!                !Perform an inner loop through the other DOF's
-!                ! (the "O"'s). 
+!                !Perform an inner loop through the other DOF`s
+!                ! (the "O"`s). 
 !
 !                DO IDOFE=1,indofTest
 !                
@@ -3030,7 +3030,7 @@ contains
 !!<description>
 !  ! This routine calculates the entries of a finite element matrix.
 !  ! The matrix structure must be prepared with bilf_createMatrixStructure
-!  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF's
+!  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
 !  ! of all finite elements must 'match'. Trial and test functions may be
 !  ! different.
 !  ! In case the array for the matrix entries does not exist, the routine
@@ -3093,7 +3093,7 @@ contains
 !  INTEGER(I32), DIMENSION(:), POINTER :: p_KLD, p_KCOL
 !  REAL(DP), DIMENSION(:), POINTER :: p_DA
 !  
-!  ! An allocateable array accepting the DOF's of a set of elements.
+!  ! An allocateable array accepting the DOF`s of a set of elements.
 !  INTEGER, DIMENSION(:,:), ALLOCATABLE, TARGET :: IdofsTest, IdofsTrial
 !  INTEGER, DIMENSION(:,:), POINTER :: p_IdofsTrial
 !  !INTEGER, DIMENSION(EL_MAXNBAS,BILF_NELEMSIM), TARGET :: IdofsTest, IdofsTrial
@@ -3184,8 +3184,8 @@ contains
 !  ! Loop through the additive terms
 !  DO i=1,rform%itermCount
 !    ! The desriptor Idescriptors gives directly the derivative
-!    ! which is to be computed! Build template's for BDER.
-!    ! We don't compute the actual BDER here, as there might be some special
+!    ! which is to be computed! Build templates for BDER.
+!    ! We do not compute the actual BDER here, as there might be some special
 !    ! processing if trial/test functions are identical!
 !    !
 !    ! At first build the descriptors for the trial functions
@@ -3261,7 +3261,7 @@ contains
 !  
 !  ! For saving some memory in smaller discretisations, we calculate
 !  ! the number of elements per block. For smaller triangulations,
-!  ! this is NEL. If there are too many elements, it's at most
+!  ! this is NEL. If there are too many elements, it is at most
 !  ! BILF_NELEMSIM. This is only used for allocating some arrays.
 !  nelementsPerBlock = MIN(BILF_NELEMSIM,p_rtriangulation%NEL)
 !  
@@ -3282,7 +3282,7 @@ contains
 !    ! Cancel if this element distribution is empty.
 !    IF (p_relementDistribution%NEL .EQ. 0) CYCLE
 !
-!    ! Get the number of local DOF's for trial and test functions
+!    ! Get the number of local DOF`s for trial and test functions
 !    indofTrial = elem_igetNDofLoc(p_relementDistribution%itrialElement)
 !    indofTest = elem_igetNDofLoc(p_relementDistribution%itestElement)
 !    
@@ -3374,7 +3374,7 @@ contains
 !    ALLOCATE(DbasTrial(indofTrial,elem_getMaxDerivative(p_relementDistribution%itrialElement), &
 !             ncubp,nelementsPerBlock))
 !
-!    ! Allocate memory for the DOF's of all the elements.
+!    ! Allocate memory for the DOF`s of all the elements.
 !    ALLOCATE(IdofsTest(indofTest,nelementsPerBlock))
 !    ALLOCATE(IdofsTrial(indofTrial,nelementsPerBlock))
 !
@@ -3408,8 +3408,8 @@ contains
 !    ! need an additional array to save all the coefficients:
 !    IF (.NOT. rform%BconstantCoeff(icurrentElementDistr)) THEN
 !      IF (rform%ballCoeffConstant) THEN
-!        CALL output_line ('Some oefficients are not constant &
-!                &although thy should be!',&
+!        CALL output_line ('Some coefficients are not constant ' // &
+!                'although thy should be!',&
 !            OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
 !        CALL sys_halt()
 !      END IF
@@ -3422,15 +3422,15 @@ contains
 !    END IF
 !                    
 !    ! p_IdofsTest points either to the just created array or to the
-!    ! array with the DOF's of the trial functions - when trial and
+!    ! array with the DOF`s of the trial functions - when trial and
 !    ! test functions are identical.
-!    ! We don't rely on bidenticalTrialAndTest purely, as this does not
+!    ! We do not rely on bidenticalTrialAndTest purely, as this does not
 !    ! indicate whether there are identical trial and test functions
 !    ! in one block!
 !    bIdenticalTrialAndTest = p_relementDistribution%itrialElement .EQ. &
 !                             p_relementDistribution%itestElement
 !
-!    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+!    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
 !    ! space IdofTest (if both spaces are identical). 
 !    ! We create a pointer for the trial space and not for the test space to
 !    ! prevent pointer-arithmetic in the innerst loop below!
@@ -3478,7 +3478,7 @@ contains
 !    
 !      ! The outstanding feature with finite elements is: A basis
 !      ! function for a DOF on one element has common support only
-!      ! with the DOF's on the same element! E.g. for Q1:
+!      ! with the DOF`s on the same element! E.g. for Q1:
 !      !
 !      !        #. . .#. . .#. . .#
 !      !        .     .     .     .
@@ -3494,16 +3494,16 @@ contains
 !      ! --> On element IEL, the basis function at "X" only interacts
 !      !     with the basis functions in "O". Elements in the 
 !      !     neighbourhood ("*") have no support, therefore we only have
-!      !     to collect all "O" DOF's.
+!      !     to collect all "O" DOF`s.
 !      !
-!      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+!      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
 !      !
 !      ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-!      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+!      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
 !      CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                  .TRUE.,IdofsTest)
 !                                   
-!      ! If the DOF's for the test functions are different, calculate them, too.
+!      ! If the DOF`s for the test functions are different, calculate them, too.
 !      IF (.NOT.bIdenticalTrialAndTest) THEN
 !        CALL dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
 !                                    .FALSE.,IdofsTrial)
@@ -3517,8 +3517,8 @@ contains
 !      ! contributions of element IEL, which are later added at the
 !      ! right positions to the elements in the global system matrix.
 !      !
-!      ! We have indofTrial trial DOF's per element and
-!      ! indofTest test DOF's per element. Therefore there are
+!      ! We have indofTrial trial DOF`s per element and
+!      ! indofTest test DOF`s per element. Therefore there are
 !      ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
 !      ! "active" (i.e. have common support) on our current element, each 
 !      ! giving an additive contribution to the system matrix.
@@ -3538,20 +3538,20 @@ contains
 !      DO IEL=1,IELmax-IELset+1
 !      
 !        ! For building the local matrices, we have first to
-!        ! loop through the test functions (the "O"'s), as these
+!        ! loop through the test functions (the "O"`s), as these
 !        ! define the rows in the matrix.
 !        DO IDOFE=1,indofTest
 !        
 !          ! Row IDOFE of the local matrix corresponds 
 !          ! to row=global DOF KDFG(IDOFE) in the global matrix.
-!          ! This is one of the the "O"'s in the above picture.
+!          ! This is one of the the "O"`s in the above picture.
 !          ! Get the starting position of the corresponding row
 !          ! to JCOL0:
 !
 !          JCOL0=p_KLD(IdofsTest(IDOFE,IEL))
 !          
-!          ! Now we loop through the other DOF's on the current element
-!          ! (the "O"'s).
+!          ! Now we loop through the other DOF`s on the current element
+!          ! (the "O"`s).
 !          ! All these have common support with our current basis function
 !          ! and will therefore give an additive value to the global
 !          ! matrix.
@@ -3599,7 +3599,7 @@ contains
 !      ! that we have to change.
 !      ! To calculate the matrix contributions, we have to evaluate
 !      ! the elements to give us the values of the basis functions
-!      ! in all the DOF's in all the elements in our set.
+!      ! in all the DOF`s in all the elements in our set.
 !      !
 !
 !      ! We have the coordinates of the cubature points saved in the
@@ -3714,7 +3714,7 @@ contains
 !            !
 !            ! Take the absolut value of the determinant of the mapping.
 !            ! In 2D, the determinant is always positive, whereas in 3D,
-!            ! the determinant might be negative -- that's normal!
+!            ! the determinant might be negative -- that is normal!
 !
 !            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
 !
@@ -3739,9 +3739,9 @@ contains
 !              ! function value with before summing up to the integral.
 !              AUX = OM * rform%Dcoefficients(IALBET)
 !            
-!              ! Now loop through all possible combinations of DOF's
+!              ! Now loop through all possible combinations of DOF`s
 !              ! in the current cubature point. The outer loop
-!              ! loops through the "O"'s in the above picture,
+!              ! loops through the "O"`s in the above picture,
 !              ! the test functions:
 !
 !              DO IDOFE=1,indofTest
@@ -3750,7 +3750,7 @@ contains
 !                ! phi_i (our "O") in the cubature point:
 !                DB = DbasTest(IDOFE,IB,ICUBP,IEL)
 !                
-!                ! Perform an inner loop through the other DOF's
+!                ! Perform an inner loop through the other DOF`s
 !                ! (the "X"). 
 !
 !                DO JDOFE=1,indofTrial
@@ -3820,7 +3820,7 @@ contains
 !            !
 !            ! Take the absolut value of the determinant of the mapping.
 !            ! In 2D, the determinant is always positive, whereas in 3D,
-!            ! the determinant might be negative -- that's normal!
+!            ! the determinant might be negative -- that is normal!
 !
 !            OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
 !
@@ -3846,7 +3846,7 @@ contains
 !              ! Get the precalculated coefficient from the coefficient array.
 !              AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
 !            
-!              ! Now loop through all possible combinations of DOF's
+!              ! Now loop through all possible combinations of DOF`s
 !              ! in the current cubature point. The outer loop
 !              ! loops through the "O" in the above picture,
 !              ! the test functions:
@@ -3857,7 +3857,7 @@ contains
 !                ! phi_i (our "O") in the cubature point:
 !                DB = DbasTest(IDOFE,IB,ICUBP,IEL)
 !                
-!                ! Perform an inner loop through the other DOF's
+!                ! Perform an inner loop through the other DOF`s
 !                ! (the "X"). 
 !
 !                DO JDOFE=1,indofTrial
@@ -3943,7 +3943,7 @@ contains
 !<description>
   ! This routine calculates the entries of a finite element matrix.
   ! The matrix structure must be prepared with bilf_createMatrixStructure
-  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF's
+  ! in advance. The discretisation is assumed to be conformal, i.e. the DOF`s
   ! of all finite elements must 'match'. Trial and test functions may be
   ! different.
   ! In case the array for the matrix entries does not exist, the routine
@@ -4003,7 +4003,7 @@ contains
   integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest, IdofsTrial
   integer, dimension(:,:), pointer :: p_IdofsTrial
   
@@ -4083,8 +4083,8 @@ contains
   ! Loop through the additive terms
   do i=1,rform%itermCount
     ! The desriptor Idescriptors gives directly the derivative
-    ! which is to be computed! Build template's for BDER.
-    ! We don't compute the actual BDER here, as there might be some special
+    ! which is to be computed! Build templates for BDER.
+    ! We do not compute the actual BDER here, as there might be some special
     ! processing if trial/test functions are identical!
     !
     ! At first build the descriptors for the trial functions
@@ -4162,7 +4162,7 @@ contains
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
+  ! this is NEL. If there are too many elements, it is at most
   ! BILF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
   
@@ -4178,7 +4178,7 @@ contains
     ! Cancel if this element distribution is empty.
     if (p_relementDistrTest%NEL .eq. 0) cycle
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofTrial = elem_igetNDofLoc(p_relementDistrTrial%celement)
     indofTest = elem_igetNDofLoc(p_relementDistrTest%celement)
     
@@ -4251,7 +4251,7 @@ contains
              elem_getMaxDerivative(p_relementDistrTrial%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsTest(indofTest,nelementsPerBlock))
     allocate(IdofsTrial(indofTrial,nelementsPerBlock))
 
@@ -4273,8 +4273,8 @@ contains
     ! need an additional array to save all the coefficients:
     if (.not. rform%BconstantCoeff(icurrentElementDistr)) then
       if (rform%ballCoeffConstant) then
-        call output_line ('Some oefficients are not constant &
-                &although they should be!',&
+        call output_line ('Some coefficients are not constant ' // &
+                'although they should be!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrix9d_conf2')
         call sys_halt()
       end if
@@ -4287,15 +4287,15 @@ contains
     end if
                     
     ! p_IdofsTest points either to the just created array or to the
-    ! array with the DOF's of the trial functions - when trial and
+    ! array with the DOF`s of the trial functions - when trial and
     ! test functions are identical.
-    ! We don't rely on bidenticalTrialAndTest purely, as this does not
+    ! We do not rely on bidenticalTrialAndTest purely, as this does not
     ! indicate whether there are identical trial and test functions
     ! in one block!
     bIdenticalTrialAndTest = p_relementDistrTrial%celement .eq. &
                              p_relementDistrTest%celement
 
-    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF's of the test
+    ! Let p_IdofsTrial point either to IdofsTrial or to the DOF`s of the test
     ! space IdofTest (if both spaces are identical). 
     ! We create a pointer for the trial space and not for the test space to
     ! prevent pointer-arithmetic in the innerst loop below!
@@ -4343,7 +4343,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -4359,16 +4359,16 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscrTest, p_IelementList(IELset:IELmax), &
                                    IdofsTest)
                                    
-      ! If the DOF's for the test functions are different, calculate them, too.
+      ! If the DOF`s for the test functions are different, calculate them, too.
       if (.not.bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(p_rdiscrTrial, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
@@ -4382,8 +4382,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -4403,20 +4403,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indofTest
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(IdofsTest(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -4464,7 +4464,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -4559,7 +4559,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
 
             OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
 
@@ -4584,9 +4584,9 @@ contains
               ! function value with before summing up to the integral.
               AUX = OM * rform%Dcoefficients(IALBET)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
-              ! loops through the "O"'s in the above picture,
+              ! loops through the "O"`s in the above picture,
               ! the test functions:
 
               do IDOFE=1,indofTest
@@ -4595,7 +4595,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasTest(IDOFE,IB,ICUBP,IEL)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do JDOFE=1,indofTrial
@@ -4665,7 +4665,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
 
             OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
 
@@ -4691,7 +4691,7 @@ contains
               ! Get the precalculated coefficient from the coefficient array.
               AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
               ! loops through the "O" in the above picture,
               ! the test functions:
@@ -4702,7 +4702,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasTest(IDOFE,IB,ICUBP,IEL)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do JDOFE=1,indofTrial
@@ -4853,7 +4853,7 @@ contains
     select case (rmatrix%cmatrixFormat)
     case (LSYSSC_MATRIX1)
     
-      ! That's easy, we can directly calculate the positions
+      ! That is easy, we can directly calculate the positions
       do iel = 1,nelements
         do idofe = 1,indofTest
           do jdofe = 1,indofTrial
@@ -4879,20 +4879,20 @@ contains
       do iel = 1,nelements
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do idofe = 1,indofTest
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           jcol0=p_Kld(Irows(idofe,iel))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -4987,7 +4987,7 @@ contains
     rmatrixAssembly%celementTrial = celementTrial
     rmatrixAssembly%celementTest = celementTest
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     rmatrixAssembly%indofTrial = elem_igetNDofLoc(celementTrial)
     rmatrixAssembly%indofTest = elem_igetNDofLoc(celementTest)
     
@@ -5000,8 +5000,8 @@ contains
     ! Loop through the additive terms
     do i=1,rform%itermCount
       ! The desriptor Idescriptors gives directly the derivative
-      ! which is to be computed! Build template's for BDER.
-      ! We don't compute the actual BDER here, as there might be some special
+      ! which is to be computed! Build templates for BDER.
+      ! We do not compute the actual BDER here, as there might be some special
       ! processing if trial/test functions are identical!
       !
       ! At first build the descriptors for the trial functions
@@ -5123,7 +5123,7 @@ contains
       allocate(rmatrixAssembly%p_Dcoefficients(rmatrixAssembly%rform%itermCount,&
           rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock))
     else
-      ! We don't need memory for nonconstant coefficients
+      ! We do not need memory for nonconstant coefficients
       nullify(rmatrixAssembly%p_Dcoefficients)
     end if
 
@@ -5138,7 +5138,7 @@ contains
              elem_getMaxDerivative(rmatrixAssembly%celementTest),&
              rmatrixAssembly%ncubp,rmatrixAssembly%nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(rmatrixAssembly%p_IdofsTest(&
         rmatrixAssembly%indofTest,rmatrixAssembly%nelementsPerBlock))
 
@@ -5324,7 +5324,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -5340,16 +5340,16 @@ contains
       ! --> On element iel, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
           IelementList(IELset:IELmax), p_IdofsTest)
                                    
-      ! If the DOF's for the test functions are different, calculate them, too.
+      ! If the DOF`s for the test functions are different, calculate them, too.
       if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
             IelementList(IELset:IELmax), p_IdofsTrial)
@@ -5363,8 +5363,8 @@ contains
       ! contributions of element iel, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -5389,7 +5389,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -5399,7 +5399,7 @@ contains
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       !
-      ! If the cubature points are already initialised, don't do it again.
+      ! If the cubature points are already initialised, do not do it again.
       ! We check this by taking a look to iinitialisedElements which
       ! gives the current maximum of initialised elements.
       if (IELmax .gt. rlocalMatrixAssembly%iinitialisedElements) then
@@ -5488,7 +5488,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
 
             domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
@@ -5513,9 +5513,9 @@ contains
               ! function value with before summing up to the integral.
               daux = domega * p_DcoefficientsBilf(ialbet)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
-              ! loops through the "O"'s in the above picture,
+              ! loops through the "O"`s in the above picture,
               ! the test functions:
 
               do idofe = 1,indofTest
@@ -5524,7 +5524,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 db = p_DbasTest(idofe,ib,icubp,iel)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do jdofe = 1,indofTrial
@@ -5573,7 +5573,7 @@ contains
             !
             ! Take the absolut value of the determinant of the mapping.
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
 
             domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
@@ -5599,7 +5599,7 @@ contains
               ! Get the precalculated coefficient from the coefficient array.
               daux = domega * p_Dcoefficients(ialbet,icubp,iel)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
               ! loops through the "O" in the above picture,
               ! the test functions:
@@ -5610,7 +5610,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 db = p_DbasTest(idofe,ib,icubp,iel)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do jdofe = 1,indofTrial
@@ -5863,7 +5863,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -5879,16 +5879,16 @@ contains
       ! --> On element iel, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTest, &
           IelementList(IELset:IELmax), p_IdofsTest)
                                    
-      ! If the DOF's for the test functions are different, calculate them, too.
+      ! If the DOF`s for the test functions are different, calculate them, too.
       if (.not. rlocalMatrixAssembly%bIdenticalTrialAndTest) then
         call dof_locGlobMapping_mult(rmatrix%p_rspatialDiscrTrial, &
             IelementList(IELset:IELmax), p_IdofsTrial)
@@ -5902,8 +5902,8 @@ contains
       ! contributions of element iel, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -5928,7 +5928,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -6003,7 +6003,7 @@ contains
 
         do iel = 1,IELmax-IELset+1
           
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -6042,9 +6042,9 @@ contains
               ! function value with before summing up to the integral.
               daux = domega * p_DcoefficientsBilf(ialbet)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
-              ! loops through the "O"'s in the above picture,
+              ! loops through the "O"`s in the above picture,
               ! the test functions:
 
               do idofe = 1,indofTest
@@ -6053,7 +6053,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 db = p_DbasTest(idofe,ib,icubp,iel)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do jdofe = 1,indofTrial
@@ -6094,7 +6094,7 @@ contains
 
         do iel = 1,IELmax-IELset+1
           
-          ! Get the length of the edge. Let's use the parameter values
+          ! Get the length of the edge. Let us use the parameter values
           ! on the boundary for that purpose; this is a more general
           ! implementation than using simple lines as it will later 
           ! support isoparametric elements.
@@ -6134,7 +6134,7 @@ contains
               ! Get the precalculated coefficient from the coefficient array.
               daux = domega * p_Dcoefficients(ialbet,icubp,iel)
             
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
               ! loops through the "O" in the above picture,
               ! the test functions:
@@ -6145,7 +6145,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 db = p_DbasTest(idofe,ib,icubp,iel)
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
 
                 do jdofe = 1,indofTrial
@@ -6295,9 +6295,9 @@ contains
   integer :: ielementDistr
   integer, dimension(:), pointer :: p_IelementList
   
-  ! The matrix must be unsorted, otherwise we can't set up the matrix.
+  ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
-  ! of a vector, since there's a structure behind the matrix! So the caller
+  ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   if (rmatrix%isortStrategy .gt. 0) then
     call output_line ('Matrix-structure must be unsorted!', &
@@ -6455,9 +6455,9 @@ contains
   integer, dimension(:), pointer :: IelementList, IelementOrientation
   integer :: ibdc,ielementDistr,NELbdc,ccType
 
-  ! The matrix must be unsorted, otherwise we can't set up the matrix.
+  ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
-  ! of a vector, since there's a structure behind the matrix! So the caller
+  ! of a vector, since there is a structure behind the matrix! So the caller
   ! has to make sure, the matrix is unsorted when this routine is called.
   if (rmatrix%isortStrategy .gt. 0) then
     call output_line ('Matrix-structure must be unsorted!', &

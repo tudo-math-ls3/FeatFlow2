@@ -8,7 +8,7 @@
 !# problem with constant coefficients on a simple domain.
 !# This module is a (provisional) equivalent to the 2D example
 !# poisson2d_method7.
-!# The element used here is EM30. For GMV output, it's interpolated
+!# The element used here is EM30. For GMV output, it is interpolated
 !# to Q1 and then written to the output file.
 !# </purpose>
 !##############################################################################
@@ -63,7 +63,7 @@ contains
   ! 3.) Set up matrix
   ! 4.) Create solver structure
   ! 5.) Solve the problem
-  ! 6.) Convert the solution vector into GMV's style
+  ! 6.) Convert the solution vector into GMV`s style
   ! 7.) Write solution to GMV file
   ! 8.) Release all variables, finish
 !</description>
@@ -72,7 +72,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
@@ -136,7 +136,7 @@ contains
     type(t_blockDiscretisation) :: rprjDiscretisation
     type(t_discreteBC), target :: rdiscreteBC_Q1
 
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
     NLMAX = 4
@@ -223,21 +223,21 @@ contains
     
     ! Now we have the raw problem. What is missing is the definition of the boundary
     ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     
     ! In contrast to the 2D examples, we currently do not have an analytic
-    ! description of the domain's boundary, therefore we need a discrete
-    ! (mesh-dependent) description of the mesh's boundary. This can be done
+    ! description of the domain`s boundary, therefore we need a discrete
+    ! (mesh-dependent) description of the mesh`s boundary. This can be done
     ! using mesh-regions.
     !
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
     call bcasm_initDiscreteBC(rdiscreteBC)
     
-    ! Create a mesh region describing the mesh's boundary based on the
+    ! Create a mesh region describing the mesh`s boundary based on the
     ! nodal-property-array of the current triangulation.
     call mshreg_createFromNodalProp(rmeshRegion, rtriangulation, &
                                       MSHREG_IDX_ALL)
@@ -295,9 +295,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/rmatrixBlock/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -322,8 +322,8 @@ contains
     ! an arbitrary element to Q1 such that it can be written into a GMV file
     ! -------------------------------------------------------------------------
 
-    ! Now, Our vector block is off the way GMV's style. We need to convert the vector
-    ! to Q1 as that is the format, GMV's understands. So the task is to 
+    ! Now, Our vector block is off the way GMV`s style. We need to convert the vector
+    ! to Q1 as that is the format, GMV`s understands. So the task is to 
     ! create a Q1 solution from rvectorBlock.
     !
     ! Step 1: Create a discretisation structure for Q1, based on our
@@ -349,10 +349,10 @@ contains
     call bcasm_newDirichletBConMR(rprjDiscretisation, 1, rdiscreteBC_Q1, rmeshRegion,&
                                   getBoundaryValuesMR_3D)
     
-    ! Free the mesh region structure as we won't need it anymore
+    ! Free the mesh region structure as we will not need it anymore
     call mshreg_done(rmeshRegion)
 
-    ! Connect the vector to the BC's
+    ! Connect the vector to the BC`s
     rprjVector%p_rdiscreteBC => rdiscreteBC_Q1
 
     ! Step 5: Set up a boundary condition filter for Dirichtley boundary conditions
@@ -364,7 +364,7 @@ contains
     ! Now we have a Q1 solution in rprjVector.
     !
     ! Step 6: Write the GMV file.
-    ! That's it, rvectorBlock now contains our solution in GMV's style. 
+    ! That is it, rvectorBlock now contains our solution in GMV`s style. 
     ! We can now start the postprocessing. 
       
     ! Call the GMV library to write out a GMV file for our solution.
@@ -380,7 +380,7 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 

@@ -74,7 +74,7 @@
 !#         (mostly for debugging)
 !#
 !# 18.) spdiscr_igetNDofLocMax
-!#      -> Calculate the maximum number of local DOF's in a discretisation
+!#      -> Calculate the maximum number of local DOF`s in a discretisation
 !#
 !# 19.) spdiscr_checkCubature
 !#      -> Checks if the cubature formula of type icubType can be applied
@@ -118,7 +118,7 @@ module spatialdiscretisation
   integer, parameter, public :: SPDISC_UNIFORM   = 0
   
   ! Conformal discretisation: Elements of different FE spaces are mixed,
-  ! but the DOF's 'fit together' (e.g. quads/tri elements with same DOF's,
+  ! but the DOF`s 'fit together' (e.g. quads/tri elements with same DOF`s,
   ! isoparametric elements on the boundary).
   integer, parameter, public :: SPDISC_CONFORMAL = 1
   
@@ -204,8 +204,8 @@ module spatialdiscretisation
   ! Here, all information about the discretisation are collected (mesh
   ! information, trial functions, test functions,...).
   !
-  ! Remark: The structure realises only the discretisation of 'a scalar
-  !  equation'. For multidimensional problems, there are multiple of
+  ! Remark: The structure realises only the discretisation of `a scalar
+  !  equation`. For multidimensional problems, there are multiple of
   !  these structures, each one for one PDE. I this case, the structure
   !  is part of the block discretisation structure below and
   !  'hung into' each scalar matrix that discretises that equation.
@@ -253,7 +253,7 @@ module spatialdiscretisation
     !  number (1,2,3,...) and every quad gets a running number (1,2,3,...).
     !  These numbers are stored here, corresponding to each element.
     !
-    ! Note that the handle may be =ST_NOHANDLE. Whether it's set up or not
+    ! Note that the handle may be =ST_NOHANDLE. Whether it is set up or not
     ! depends on the discretisation. The information is usually used in
     ! the DOFMapping-routines to compute the mapping between local and
     ! global degrees of freedom.
@@ -270,17 +270,17 @@ module spatialdiscretisation
     ! Specifies whether the DOF-mapping is precomputed.
     logical                          :: bprecompiledDofMapping = .false.
     
-    ! Number of DOF's total. Only available if bprecompiledDofMapping=true.
+    ! Number of DOF`s total. Only available if bprecompiledDofMapping=true.
     integer                          :: ndof = 0
     
-    ! Specifies for every element a list of DOF's how to map a local DOF
+    ! Specifies for every element a list of DOF`s how to map a local DOF
     ! to a global DOF. p_IelementDofIdx is a list with starting indices
     ! for every element in this list.
     ! Only available if bprecompiledDofMapping=true.
     integer :: h_IelementDofs = ST_NOHANDLE
     
     ! List of starting indices. p_IelementDofIdx(iel) apecifies the index
-    ! in p_IelementDofs where the global DOF's of element iel start.
+    ! in p_IelementDofs where the global DOF`s of element iel start.
     ! DIMENSION(nelements+1).
     ! Only available if bprecompiledDofMapping=true.
     integer :: h_IelementDofIdx = ST_NOHANDLE
@@ -314,7 +314,7 @@ module spatialdiscretisation
     ! SPDISC_UNIFORM = all elements in each discretisation
     !   substructure RspatialDiscr(:) are the same.
     ! SPDISC_CONFORMAL = Elements of different FE spaces are mixed,
-    !   but the DOF's 'fit together'. Each discretisation substructure 
+    !   but the DOF`s 'fit together'. Each discretisation substructure 
     !   RspatialDiscr(:) has exactly the same number of element
     !   distributions, and each element distribution 
     !     RspatialDiscr(1)%Relementistributions(i), 
@@ -786,7 +786,7 @@ contains
   rblockDiscr%ncomponents      = ncomponents
   allocate(rblockDiscr%RspatialDiscr(ncomponents))
 
-  ! That's it.  
+  ! That is it.  
   
   end subroutine  
 
@@ -1200,14 +1200,14 @@ contains
         ! Triangular elements are in element distribution 1
         p_Iarray(i) = 1
         
-        ! This is the IelemCount(1)'th triangle
+        ! This is the IelemCount(1)-th triangle
         IelemCount(1) = IelemCount(1)+1
         p_IelementCounter(i) = IelemCount(1)
       else
         ! Quad elements are in element distribution 2
         p_Iarray(i) = 2
 
-        ! This is the IelemCount(2)'th quad
+        ! This is the IelemCount(2)-th quad
         IelemCount(2) = IelemCount(2)+1
         p_IelementCounter(i) = IelemCount(2)
       end if
@@ -1218,7 +1218,7 @@ contains
       ! Triangular elements are in element distribution 1
       p_Iarray(i) = 1
       
-      ! This is the IelemCount(1)'th triangle
+      ! This is the IelemCount(1)-th triangle
       IelemCount(1) = IelemCount(1)+1
       p_IelementCounter(i) = IelemCount(1)
     end do
@@ -1329,7 +1329,7 @@ contains
   ! type and cubature formula are changed according to the parameters.
   !
   ! The new discretisation will also be a uniform discretisation based
-  ! on the element celement. It's not a complete new structure, but a
+  ! on the element celement. It is not a complete new structure, but a
   ! 'derived' structure, i.e. it uses the same dynamic information
   ! (element lists) as rsourceDiscr.
 !</description>
@@ -1454,7 +1454,7 @@ contains
   ! type and cubature formula are changed according to the parameters.
   !
   ! The new discretisation will also be a uniform discretisation based
-  ! on the element celement. It's not a complete new structure, but a
+  ! on the element celement. It is not a complete new structure, but a
   ! 'derived' structure, i.e. it uses the same dynamic information
   ! (element lists) as rsourceDiscr.
 !</description>
@@ -1545,8 +1545,8 @@ contains
     ! Loop through the element distributions...
     do idistr = 1,rdestDiscr%inumFESpaces
     
-      ! Check the element there. If it's a triangular element,
-      ! change the element type to ielTypTri. If it's a quad
+      ! Check the element there. If it is a triangular element,
+      ! change the element type to ielTypTri. If it is a quad
       ! element, change the element type to ielTypQuad.
       nve = elem_igetNVE(rsourceDiscr%RelementDistr(idistr)%celement)
       select case (nve)
@@ -1632,7 +1632,7 @@ contains
       
         ! Release the element list there.
         ! Take care: If the current structure is a copy of another one, the
-        ! element list 'belongs' to another structure, and so we mustn't
+        ! element list 'belongs' to another structure, and so we must not
         ! delete it from memory!
         if (.not. rspatialDiscr%bisCopy) then
           if (p_relementDistr%h_IelementList .ne. ST_NOHANDLE) &
@@ -1947,7 +1947,7 @@ contains
   elemental integer function spdiscr_igetNDofLocMax(rdiscretisation)
   
 !<description>
-  ! Calculates the maximum number of local DOF's in this discretisation.
+  ! Calculates the maximum number of local DOF`s in this discretisation.
 !</description>
 
 !<input>
@@ -2194,7 +2194,7 @@ contains
     end do
     Idistributions(:,k:) = 0
     
-    ! That's it.
+    ! That is it.
     deallocate(IsortArray)
   
   end subroutine

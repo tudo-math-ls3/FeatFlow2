@@ -1531,7 +1531,7 @@ contains
       rtimestep%dStep          = max(rtimestep%dminStep,&
                                      rtimestep%dstepReductionFactor*rtimestep%dStep)
 
-      ! That's all, recompute the last step
+      ! That is all, recompute the last step
       return
     end if
 
@@ -1578,7 +1578,7 @@ contains
         rtimestep%dTime          = rtimeStep%dTime-rtimeStep%dStep
         rtimestep%dStep          = max(rtimestep%dminStep, dStepOpt)
 
-        ! That's it, recompute the last step
+        ! That is it, recompute the last step
         breject = .true.
       else
         
@@ -1690,8 +1690,8 @@ contains
       !-------------------------------------------------------------------------
       ! Switched evolution relaxation (SER)
       !
-      ! From: W. Mulder and B. Van Leer. "Experiments with typical upwind 
-      ! methods for the Euler equations", J. Comp. Phys., 59(1985), 232-246.
+      ! From: W. Mulder and B. Van Leer. `Experiments with typical upwind 
+      ! methods for the Euler equations`, J. Comp. Phys., 59(1985), 232-246.
       ! The actual relaxation of the time step is performed by the 
       ! relaxation subroutine which is called from within the nonlinear
       ! solver. Here, we only update data for the next time step.

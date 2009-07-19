@@ -34,10 +34,10 @@
 !# the .INI file is build up by different sections.
 !# Each section starts with the section name enclosed by
 !# brackets ('[...]'), followed by a list of parameters 
-!# if the form "name=parameter". There's one unnamed parameter
+!# if the form "name=parameter". There is one unnamed parameter
 !# block at the beginning of the file.
 !#
-!# There's at most one parameter per line. The parameter names 
+!# There is at most one parameter per line. The parameter names 
 !# are case-insensitive. Allowed characters for parameter names
 !# are: 'A'..'Z', '0'..'9', '-', '_', '(', ')'.
 !#
@@ -92,7 +92,7 @@
 !# NLMIN=1
 !# NLMAX=$NLMAXENV
 !# -------------------------snip------------------------------
-!# In this case, it's assumed that $NLMAXENV is an environment
+!# In this case, it is assumed that $NLMAXENV is an environment
 !# variable of the system where the program runs. So when NLMAX
 !# is requested, the value of the environment variable $NLMAXENV
 !# is returned.
@@ -299,7 +299,7 @@ module paramlist
   
   type t_parlist
   
-    ! Actual number of sections in the parameter list. There's at least
+    ! Actual number of sections in the parameter list. There is at least
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is not initialised.
     integer :: isectionCount = 0
@@ -575,7 +575,7 @@ contains
   ! Allocate a first set of sections
   allocate(rparlist%p_Rsections(PARLST_NSECTIONS))
   
-  ! Initialise the first section - it's the unnamed one.
+  ! Initialise the first section - it is the unnamed one.
   call parlst_initsection (rparlist%p_Rsections(1),'')
   
   end subroutine
@@ -1874,7 +1874,7 @@ contains
   
 !<description>
   ! Adds a parameter to a section rsection.
-  ! If the parameter exists, it's overwritten.
+  ! If the parameter exists, it is overwritten.
 !</description>
   
 !<inputoutput> 
@@ -2310,7 +2310,7 @@ contains
     ios = 0
     
 30  continue    
-    ! Don't do anything in case of an error
+    ! Do not do anything in case of an error
     if ((ios .eq. 0) .and. (isize .ge. 1)) then
     
       ilinelen = ilinelen + 1
@@ -2358,13 +2358,13 @@ contains
   ! Line number
   integer, intent(in) :: ilinenum
   
-  ! Section name, if it's a section
+  ! Section name, if it is a section
   character(LEN=*), intent(inout) :: ssecname
   
-  ! Parameter name, if it's a parameter
+  ! Parameter name, if it is a parameter
   character(LEN=*), intent(inout) :: sparamname
   
-  ! Parameter value, if it's a parameter
+  ! Parameter value, if it is a parameter
   character(LEN=*), intent(inout) :: svalue
   
   ! OPTIONAL: Filename of the file to be parsed.
@@ -2477,7 +2477,7 @@ contains
           read(slen,*) isubstring
           
           if (isubstring .le. 0) then
-            ! Oh, only one line. User want's to cheat :-)
+            ! Oh, only one line. User wants to cheat :-)
             isubstring = 0
             
             ityp = 2
@@ -2509,7 +2509,7 @@ contains
         
         ityp = 4
         
-        ! Get the parameter value. Don't get a parameter name; there is none.
+        ! Get the parameter value. Do not get a parameter name; there is none.
         svalue = adjustl(sbuf(1:ltr))
        
       end if
@@ -2707,7 +2707,7 @@ contains
             OU_CLASS_WARNING,OU_MODE_STD,'parlst_readfromfile')
       end if
 
-      ! Check if there's a parameter "simportdatafiles" available in the
+      ! Check if there is a parameter "simportdatafiles" available in the
       ! parameter list. It must be present in the unnamed section.
       call parlst_fetchparameter(rparlist%p_Rsections(1), "SIMPORTDATAFILES", iidxsubfiles)
       
@@ -3413,11 +3413,11 @@ contains
         if (sstring(i:i) .eq. "%") then
           ! Did we already found the "%"?
           if (bstartfound) then
-            ! That's our escape sequence. Don't do anything, just
+            ! That is our escape sequence. Do not do anything, just
             ! return to 'normal' mode.
             bstartfound = .false.
           else
-            ! That's probably the beginning of a token.
+            ! That is probably the beginning of a token.
             bstartfound = .true.
           end if
           
@@ -3428,7 +3428,7 @@ contains
         ! The next things only execute if we are close to a token...
         if (bstartfound) then
           if (sstring(i:I) .eq. "{") then
-            ! Yes, that's a token.
+            ! Yes, that is a token.
             istart = i-1
             
             ! Find the end of the token and probably the dot/colon
@@ -3472,7 +3472,7 @@ contains
                   end if
                 end if
                 
-                ! That's it.
+                ! That is it.
                 return
                 
               end if

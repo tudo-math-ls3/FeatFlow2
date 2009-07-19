@@ -39,7 +39,7 @@ module domainintegration
 !<typeblock>
 
   ! This structure is used during integration over a domain by the integration
-  ! routines. It's passed to callback routines to inform them, which elements
+  ! routines. It is passed to callback routines to inform them, which elements
   ! are currently in progress, which points are currently in progress,
   ! what are the properties of the mappings between the reference element
   ! and all real elements in progress, etc.
@@ -72,7 +72,7 @@ module domainintegration
     
     ! An array containing the the degrees of freedom on all the
     ! elements. For multilinear forms (bilinear, trilinear), this is a pointer
-    ! to the DOF's of the trial space.
+    ! to the DOF`s of the trial space.
     ! DIMENSION(#dofPerElement,nelements)
     integer, dimension(:,:), pointer :: p_IdofsTrial => null()
     
@@ -180,7 +180,7 @@ contains
     allocate(rintSubset%p_DCoords(ndimSpace,nverticesPerElement,nelements))
 
     ! Allocate arrays accepting cubature point coordinates.
-    ! It's at most as large as number of elements or length
+    ! It is at most as large as number of elements or length
     ! of the element set.
     ! Check the coordinate system to find out what coordinate
     ! dimension to use
@@ -251,7 +251,7 @@ contains
     rintSubset%ielementStartIdx     = 1
     
     ! Let the pointers of the integration structure point to
-    ! the structures of the evaluation set. We don't need the same arrays twice.
+    ! the structures of the evaluation set. We do not need the same arrays twice.
     rintSubset%p_Dcoords => revalElementSet%p_Dcoords
     rintSubset%p_DcubPtsRef => revalElementSet%p_DpointsRef
     rintSubset%p_DcubPtsReal => revalElementSet%p_DpointsReal
@@ -293,7 +293,7 @@ contains
       ! Deallocate memory for corner coordinates
       deallocate(rintSubset%p_DCoords)
     else
-      ! The pointers belong to the evaluation set, so we mustn't deallocate here!
+      ! The pointers belong to the evaluation set, so we must not deallocate here!
       nullify(rintSubset%p_Ddetj)
       nullify(rintSubset%p_Djac)
       nullify(rintSubset%p_DcubPtsReal)

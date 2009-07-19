@@ -947,7 +947,7 @@ contains
             ! We have found the item IVT in node INODE
             iresult = QTREE_DELETED
             
-            ! That's it
+            ! That is it
             return
           end if
         end do
@@ -1102,7 +1102,7 @@ contains
             ! We have found the item IVT in node INODE
             iresult = QTREE_FOUND
             
-            ! That's it
+            ! That is it
             return
           end if
         end do
@@ -1927,7 +1927,7 @@ contains
               ! We have updated the item IVT in node INODE
               iresult = QTREE_MOVED
               
-              ! That's it
+              ! That is it
               return
             end if
             
@@ -1941,7 +1941,7 @@ contains
             ! We have found the item IVT in node INODE
             iresult = QTREE_DELETED
             
-            ! That's it
+            ! That is it
             return
           end if
         end do

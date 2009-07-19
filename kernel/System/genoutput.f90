@@ -157,7 +157,7 @@
 !#   CALL output_line('A message only to the benchmark log.', &
 !#                    OU_CLASS_MSG,OU_MODE_BENCHLOG)
 !#
-!# This writes a message directly to the benchmark log file. It's also possible
+!# This writes a message directly to the benchmark log file. It is also possible
 !# to write out data to the standard terminal plus the benchmark log file
 !# by combining the output mode constants:
 !#
@@ -293,7 +293,7 @@ module genoutput
 !<globals>
 
   ! Current benchmark file logging policy.
-  ! =0: None. Don't log anything to the benchmark log file.
+  ! =0: None. Do not log anything to the benchmark log file.
   ! =1: Standard. Write data to benchmark log file if OU_BENCHLOG is specified
   !     in coutputMode.
   ! =2: Full. Write everything into the benchmark log file independent on whether
@@ -332,7 +332,7 @@ contains
     ! This routine opens a file sfilename for writing. This is 
     ! usually used to create a log file. The routine will return a
     ! handle iunit with an output channel where text can be written to.
-    ! If the file exists, it's overwritten.
+    ! If the file exists, it is overwritten.
     !
     ! As long as this routine is not called, all output is redirected
     ! only to the standard output channel.
@@ -369,9 +369,9 @@ contains
           action="write")
 
     if (istatus .ne. 0) then
-      write (unit=*, fmt=*) 'Error: io_openFileForWriting. &
-                            &Error while opening file "',&
-                            trim(sfilename), '". ***'
+      write (unit=*, fmt=*) &
+          'Error: io_openFileForWriting. Error while opening file "',&
+          trim(sfilename), '". ***'
       iunit = -1
     endif
 
@@ -797,7 +797,7 @@ contains
 
 !</subroutine>
 
-    ! REMARK: Don't rename 'smsg' to 'smessage' -- this does not comply
+    ! REMARK: Do not rename 'smsg' to 'smessage' -- this does not comply
     ! with the Fortran standard and will give you an ambigious interface
     ! in output_line as Fortran cannot distinguish between output_line_std
     ! and output_line_feast anymore in that case! (as all parameter names

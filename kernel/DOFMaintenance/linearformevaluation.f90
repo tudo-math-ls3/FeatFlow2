@@ -68,7 +68,7 @@
 !#
 !#    call linf_buildVectorScalar (rdiscretisation,rform,.true.,rvector,coeff_RHS)
 !#
-!#  where coeff_RHS is a callback routine returning the RHS function. That's it.
+!#  where coeff_RHS is a callback routine returning the RHS function. That is it.
 !#
 !# 2.) What is the 'manual matrix assembly'?
 !#
@@ -123,7 +123,7 @@
 !#  the elements 501..750. That way, the user has the ability to
 !#  specify element type, element numbers and cubature formula manually
 !#  without having to specify everything in a discretisation structure;
-!#  that's the reason why this assembly is called 'manual' assembly.
+!#  that is the reason why this assembly is called 'manual' assembly.
 !#
 !#  This method is extremely useful when one wants to assemble vectors with
 !#  adaptive/summed cubature formulas. Some parts of the domain can that way
@@ -170,7 +170,7 @@ module linearformevaluation
     ! The bilinear form specifying the underlying PDE of the discretisation.
     type(t_linearForm) :: rform
 
-    ! Number of local DOF's.
+    ! Number of local DOF`s.
     integer :: indof
     
     ! Array to tell the element which derivatives to calculate.
@@ -210,7 +210,7 @@ module linearformevaluation
     ! Arrays for the basis function values in the cubature points
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     
-    ! Arrays saving the DOF's in the elements
+    ! Arrays saving the DOF`s in the elements
     integer, dimension(:,:), pointer :: p_Idofs
 
     ! Element set used for evaluating elements
@@ -294,12 +294,12 @@ contains
 !</subroutine>
   
   ! If the vector is not set up as new vector, it has to be unsorted.
-  ! If it's a new vector, we switch off the sorting.
+  ! If it is a new vector, we switch off the sorting.
   if (bclear) then
     rvectorScalar%isortStrategy = -abs(rvectorScalar%isortStrategy)
   end if
   
-  ! The vector must be unsorted, otherwise we can't set up the vector.
+  ! The vector must be unsorted, otherwise we can not set up the vector.
   if (rvectorScalar%isortStrategy .gt. 0) then
     call output_line('Vector must be unsorted!',&
                      OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar')
@@ -339,7 +339,7 @@ contains
 
 !<description>
   ! This routine calculates the entries of a discretised finite element vector.
-  ! The discretisation is assumed to be conformal, i.e. the DOF's
+  ! The discretisation is assumed to be conformal, i.e. the DOF`s
   ! of all finite elements must 'match'. 
   ! The linear form is defined by
   !        (f,$phi_i$), i=1..*
@@ -401,7 +401,7 @@ contains
   ! Pointer to the vector entries
   real(DP), dimension(:), pointer :: p_Ddata
 
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTest
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -522,7 +522,7 @@ contains
   
   ! For saving some memory in smaller discretisations, we calculate
   ! the number of elements per block. For smaller triangulations,
-  ! this is NEL. If there are too many elements, it's at most
+  ! this is NEL. If there are too many elements, it is at most
   ! LINF_NELEMSIM. This is only used for allocating some arrays.
   nelementsPerBlock = min(LINF_NELEMSIM, p_rtriangulation%NEL)
   
@@ -536,7 +536,7 @@ contains
     ! Cancel if this element distribution is empty.
     if (p_elementDistribution%NEL .eq. 0) cycle
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofTest = elem_igetNDofLoc(p_elementDistribution%celement)
     
     ! Get from the trial element space the type of coordinate system
@@ -584,7 +584,7 @@ contains
     allocate(DbasTest(indofTest,elem_getMaxDerivative(p_elementDistribution%celement),&
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsTest(indofTest,nelementsPerBlock))
 
     ! Allocate memory for the coefficients
@@ -616,10 +616,10 @@ contains
       
       IELmax = min(NEL,IELset-1+LINF_NELEMSIM)
     
-      ! Calculate the global DOF's into IdofsTest.
+      ! Calculate the global DOF`s into IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rdiscretisation, p_IelementList(IELset:IELmax), &
                                    IdofsTest)
       
@@ -629,7 +629,7 @@ contains
       ! that we have to change.
       ! To calculate the vector contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -664,7 +664,7 @@ contains
           
       p_Ddetj => revalElementSet%p_Ddetj
 
-      ! Now it's time to call our coefficient function to calculate the
+      ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
       call domint_initIntegrationByEvalSet (revalElementSet,rintSubset)
       rintSubset%ielementDistribution = icurrentElementDistr
@@ -695,7 +695,7 @@ contains
       ! to integrate!
       !
       ! Loop through elements in the set and for each element,
-      ! loop through the DOF's and cubature points to calculate the
+      ! loop through the DOF`s and cubature points to calculate the
       ! integral:
       
       do IEL = 1,IELmax-IELset+1
@@ -715,7 +715,7 @@ contains
           !
           ! Take the absolut value of the determinant of the mapping.
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
 
           OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
 
@@ -741,7 +741,7 @@ contains
             ! Get the precalculated coefficient from the coefficient array.
             AUX = OM * Dcoefficients(IALBET,ICUBP,IEL)
           
-            ! Now loop through all possible combinations of DOF's
+            ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
 
             do IDOFE = 1,indofTest
@@ -861,7 +861,7 @@ contains
                      OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
   end if
 
-  ! The vector must be unsorted, otherwise we can't set up the vector.
+  ! The vector must be unsorted, otherwise we can not set up the vector.
   if (rvectorScalar%isortStrategy .gt. 0) then
     call output_line('Vector must be unsorted!',&
                      OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalarBdr2D')
@@ -1057,7 +1057,7 @@ contains
         rvectorAssembly%nelementsPerBlock = nelementsPerBlock
     rvectorAssembly%celement = celement
     
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     rvectorAssembly%indof = elem_igetNDofLoc(celement)
     
     ! Which derivatives of basis functions are needed?
@@ -1068,8 +1068,8 @@ contains
     ! Loop through the additive terms
     do i = 1,rform%itermCount
       ! The desriptor Idescriptors gives directly the derivative
-      ! which is to be computed! Build template's for BDER.
-      ! We don't compute the actual BDER here, as there might be some special
+      ! which is to be computed! Build templates for BDER.
+      ! We do not compute the actual BDER here, as there might be some special
       ! processing if trial/test functions are identical!
       !
       ! At first build the descriptors for the trial functions
@@ -1164,7 +1164,7 @@ contains
              elem_getMaxDerivative(rvectorAssembly%celement),&
              rvectorAssembly%ncubp,rvectorAssembly%nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(rvectorAssembly%p_Idofs(&
         rvectorAssembly%indof,rvectorAssembly%nelementsPerBlock))
 
@@ -1312,7 +1312,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -1328,12 +1328,12 @@ contains
       ! --> On element iel, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -1341,7 +1341,7 @@ contains
       
       ! To calculate the element contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -1351,7 +1351,7 @@ contains
       ! In the first loop, calculate the coordinates on the reference element.
       ! In all later loops, use the precalculated information.
       !
-      ! If the cubature points are already initialised, don't do it again.
+      ! If the cubature points are already initialised, do not do it again.
       ! We check this by taking a look to iinitialisedElements which
       ! gives the current maximum of initialised elements.
       if (IELmax .gt. rlocalVectorAssembly%iinitialisedElements) then
@@ -1376,7 +1376,7 @@ contains
           rlocalVectorAssembly%p_DcubPtsRef(:,1:ncubp))
       p_Ddetj => p_revalElementSet%p_Ddetj
       
-      ! Now it's time to call our coefficient function to calculate the
+      ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorSc_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet,rintSubset)
@@ -1406,7 +1406,7 @@ contains
       ! to integrate!
       !
       ! Loop through elements in the set and for each element,
-      ! loop through the DOF's and cubature points to calculate the
+      ! loop through the DOF`s and cubature points to calculate the
       ! integral:
 
       do iel = 1,IELmax-IELset+1
@@ -1426,7 +1426,7 @@ contains
           !
           ! Take the absolut value of the determinant of the mapping.
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
 
           domega = p_Domega(icubp)*abs(p_Ddetj(icubp,iel))
 
@@ -1452,7 +1452,7 @@ contains
             ! Get the precalculated coefficient from the coefficient array.
             daux = domega * p_Dcoefficients(ialbet,icubp,iel)
           
-            ! Now loop through all possible combinations of DOF's
+            ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
 
             do idofe = 1,indof
@@ -1671,7 +1671,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -1687,12 +1687,12 @@ contains
       ! --> On element iel, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(IELset:IELmax), p_Idofs)
                                    
@@ -1700,7 +1700,7 @@ contains
       
       ! To calculate the element contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -1718,7 +1718,7 @@ contains
           IelementList(IELset:IELmax), rlocalVectorAssembly%ctrafoType, &
           DpointsRef=DpointsRef)
       
-      ! Now it's time to call our coefficient function to calculate the
+      ! Now it is time to call our coefficient function to calculate the
       ! function values in the cubature points:
       if (present(fcoeff_buildVectorScBdr2D_sim)) then
         call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
@@ -1749,7 +1749,7 @@ contains
       ! to integrate!
       !
       ! Loop through elements in the set and for each element,
-      ! loop through the DOF's and cubature points to calculate the
+      ! loop through the DOF`s and cubature points to calculate the
       ! integral:
 
       do iel = 1,IELmax-IELset+1
@@ -1761,7 +1761,7 @@ contains
         ! Clear the output vector.
         DlocalData(1:indof) = 0.0_DP
 
-        ! Get the length of the edge. Let's use the parameter values
+        ! Get the length of the edge. Let us use the parameter values
         ! on the boundary for that purpose; this is a more general
         ! implementation than using simple lines as it will later 
         ! support isoparametric elements.
@@ -1801,7 +1801,7 @@ contains
             ! Get the precalculated coefficient from the coefficient array.
             daux = domega * p_Dcoefficients(ialbet,icubp,iel)
           
-            ! Now loop through all possible combinations of DOF's
+            ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
 
             do idofe = 1,indof
@@ -1910,7 +1910,7 @@ contains
                      OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')
   end if
 
-  ! The vector must be unsorted, otherwise we can't set up the vector.
+  ! The vector must be unsorted, otherwise we can not set up the vector.
   if (rvectorScalar%isortStrategy .gt. 0) then
     call output_line('Vector must be unsorted!',&
                      OU_CLASS_ERROR,OU_MODE_STD,'linf_buildVectorScalar2')

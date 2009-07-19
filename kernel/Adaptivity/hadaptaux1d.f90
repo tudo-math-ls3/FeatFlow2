@@ -66,7 +66,7 @@
 !#
 !#     In 1D, grid refinement is very easy. Each element (i.e. line)
 !#     is subdivided into two similar lines, and a new vertex is
-!#     inserted at the midpoint of the element. That's it.
+!#     inserted at the midpoint of the element. That is it.
 !#
 !# 2.) 
 
@@ -236,10 +236,10 @@ contains
     ! elements can only be coarsened if this subset results from a previous
     ! refinement step. In other words, the grid cannot become coarser than the
     ! initial triangulation. Moreover, one recoarsening step can only "undo"
-    ! what one refinement step can "do". This is in contrast to other "node-
-    ! removal" techniques, which remove all superficial vertices and retriangulate
-    ! the generated "holes". However, such algorithms cannot guarantee a grid
-    ! hierarchy between refined and recoarsened grids.
+    ! what one refinement step can "do". This is in contrast to other 
+    ! "node-removal" techniques, which remove all superficial vertices and 
+    ! retriangulate the generated "holes". However, such algorithms cannot 
+    ! guarantee a grid hierarchy between refined and recoarsened grids.
 !</description>
 
 !<input>
@@ -263,8 +263,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA1D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDREFINE) .ne.&
                             HADAPT_MARKEDREFINE) then
-      call output_line('Dynamic data structures are not &
-                       & generated or no marker for grid refinement exists!',&
+      call output_line('Dynamic data structures are not ' // &
+                       'generated or no marker for grid refinement exists!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markCoarsening1D')
       call sys_halt()
     end if
@@ -440,8 +440,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA1D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDREFINE) .ne.&
                             HADAPT_MARKEDREFINE) then
-      call output_line('Dynamic data structures are not generated &
-                       &or no marker for refinement is available!',&
+      call output_line('Dynamic data structures are not generated ' // &
+                       'or no marker for refinement is available!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refine1D')
       call sys_halt()
     end if
@@ -518,8 +518,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA1D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDCOARSEN) .ne.&
                             HADAPT_MARKEDCOARSEN) then
-      call output_line('Dynamic data structures are not generated &
-                       &or no marker for coarsening is available!',&
+      call output_line('Dynamic data structures are not generated ' // &
+                       'or no marker for coarsening is available!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen1D')
       call sys_halt()
     end if
@@ -872,8 +872,8 @@ contains
       ! Element is not the last one. Then the element that should be removed must
       ! have a smaller element number. If this is not the case, something is wrong.
       if (iel > ielReplace) then
-        call output_line('Number of replacement element must not be smaller than that of&
-                         & the removed elements!',&
+        call output_line('Number of replacement element must not be smaller than that of' // &
+                         ' the removed elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_element1D')
         call sys_halt()
       end if

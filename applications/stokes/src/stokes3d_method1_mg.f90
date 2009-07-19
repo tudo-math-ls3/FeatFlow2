@@ -106,7 +106,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -170,7 +170,7 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 2
@@ -297,7 +297,7 @@ contains
       ! Duplicate the B1 matrix structure to the B2/B3 matrix, so use
       ! lsyssc_duplicateMatrix to create B2/B3. Share the matrix 
       ! structure between B1 and B2/B3 (B1 is the parent and B2/B3 the children). 
-      ! Don't create a content array yet, it will be created by 
+      ! Do not create a content array yet, it will be created by 
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
@@ -467,10 +467,10 @@ contains
     do i = NLMIN, NLMAX
 
       ! Now we need to implement the boundary conditions. To do this, we
-      ! first need to create a mesh region describing the mesh's boundary.
-      ! We want to prescribe Dirichlet on the cube's boundary, except for
+      ! first need to create a mesh region describing the mesh`s boundary.
+      ! We want to prescribe Dirichlet on the cube`s boundary, except for
       ! the face where the X-coordinate is 1. 
-      ! We could now manually create a mesh region based on the triangulation's
+      ! We could now manually create a mesh region based on the triangulation`s
       ! nodal-property array and then kick out everything that belongs to the
       ! right face. But we will use the dom3d_cube module, which performs
       ! this task for us.
@@ -507,7 +507,7 @@ contains
       ! according to the boundary conditions.
       call matfil_discreteBC (Rlevels(i)%rmatrix)
       
-      ! Don't forget to release the mesh region
+      ! Do not forget to release the mesh region
       call mshreg_done(rmeshRegion)
     
     end do
@@ -583,7 +583,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release Rlevels(i)%rmatrix!
     do i=NLMIN,NLMAX
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -656,10 +656,10 @@ contains
     call bcasm_newDirichletBConMR(rprjDiscretisation, 3, rprjDiscreteBC, &
                        rmeshRegion, getBoundaryValuesMR_3D)
 
-    ! Now we don't need the mesh region anymore, so release it
+    ! Now we do not need the mesh region anymore, so release it
     call mshreg_done(rmeshRegion)
 
-    ! Connect the vector to the BC's
+    ! Connect the vector to the BC`s
     rprjVector%p_rdiscreteBC => rprjDiscreteBC
     
     ! Send the vector to the boundary-condition implementation filter.
@@ -696,7 +696,7 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 

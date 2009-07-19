@@ -8,10 +8,10 @@
 !# formulas for 1D, 2D and 3D included.
 !#
 !# A cubature formula is identified by its cubature ID CUB_xxxx.
-!# By calling cub_getCubPoints with one of the ID's, one gets the coordinates
+!# By calling cub_getCubPoints with one of the ID`s, one gets the coordinates
 !# and weights of that specific cubature formula on the reference element
 !# (either $[-1,1]^2$ or the triangle $(0,0), (0,1), (1,0)$ (depending
-!# on whether it's a cubature formulas for triangles or quadrilaterals.
+!# on whether it is a cubature formulas for triangles or quadrilaterals.
 !#
 !# Furthermore, the routine cub_igetID allows to translate a string into
 !# a cubature formula ID.
@@ -135,7 +135,7 @@
 !#     ! Get trapezoidal rule for quads
 !#     call cub_getCubature(CUB_TRZ, Dpoints, Domega)
 !#
-!#     ! Don't forget to deallocate Dpoints and Domega after you used them!
+!#     ! Do not forget to deallocate Dpoints and Domega after you used them!
 !#
 !# </code>
 !#
@@ -153,7 +153,7 @@
 !#
 !# Standard and summed cubature formulas differ only in Bit 16-29 which
 !# encodes a refinement level of the reference element; if this is set to a
-!# value > 0, the cubature formula is summed, otherwise it's without summing.
+!# value > 0, the cubature formula is summed, otherwise it is without summing.
 !#
 !# </purpose>
 !##############################################################################
@@ -959,7 +959,7 @@ contains
       ndim = 0
       npts = 0
       
-      ! Okay, let's see what cubature rule we have here...
+      ! Okay, let us see what cubature rule we have here...
       select case(cstdCubType)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -1234,14 +1234,14 @@ contains
           call sys_halt()
       end select
       
-      ! Release memory, that's it.
+      ! Release memory, that is it.
       
       deallocate(DomegaLocal)
       deallocate(DpointsLocal)
     
     end if
     
-    ! That's it
+    ! That is it
     
   contains
   

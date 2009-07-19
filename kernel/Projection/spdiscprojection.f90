@@ -158,9 +158,9 @@ contains
     if (p_rsourceDiscr%RelementDistr(1)%celement .eq. &
         p_rdestDiscr%RelementDistr(1)%celement) then
         
-      ! Ok, that's easy.
+      ! Ok, that is easy.
       ! Copy the vector data but prevent structural data from being overwritten.
-      ! Let's hope the vectors have the same length :)
+      ! Let us hope the vectors have the same length :)
       ! (otherwise the copy-routine will quit)
       call lsyssc_duplicateVector (rsourceVector,rdestVector,&
           LSYSSC_DUP_IGNORE,LSYSSC_DUP_COPYOVERWRITE)
@@ -229,9 +229,9 @@ contains
         call spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
                                p_IelementsAtVertexIdx,p_IelementsAtVertex)
       case (EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
-        ! That's a little bit harder. We have to convert an FE space with DOF's
+        ! That is a little bit harder. We have to convert an FE space with DOF`s
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
-        ! is treated as if the DOF's were in the edge midpoints. The error
+        ! is treated as if the DOF`s were in the edge midpoints. The error
         ! is negligible.
         !
         ! Get geometric information from the triangulation.
@@ -311,9 +311,9 @@ contains
         call spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
       case (EL_Q1T_3D)
-        ! That's a little bit harder. We have to convert an FE space with DOF's
+        ! That is a little bit harder. We have to convert an FE space with DOF`s
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
-        ! is treated as if the DOF's were in the edge midpoints. The error
+        ! is treated as if the DOF`s were in the edge midpoints. The error
         ! is negligible.
         !
         ! Get geometric information from the triangulation.
@@ -508,19 +508,19 @@ contains
     ! Loop through the elements
     do iel=1,NEL
     
-      ! Get the global DOF's on the current element in the E030 space
+      ! Get the global DOF`s on the current element in the E030 space
       IM1 = IedgesAtElement(1,iel)
       IM2 = IedgesAtElement(2,iel)
       IM3 = IedgesAtElement(3,iel)
       IM4 = IedgesAtElement(4,iel)
       
-      ! Get the global DOF's on the current element in the Q1 space
+      ! Get the global DOF`s on the current element in the Q1 space
       IV1 = IverticesAtElement(1,iel)
       IV2 = IverticesAtElement(2,iel)
       IV3 = IverticesAtElement(3,iel)
       IV4 = IverticesAtElement(4,iel)
       
-      ! Get the values of the DOF's in the E030 space
+      ! Get the values of the DOF`s in the E030 space
       DUH1 = Dsource(IM1)
       DUH2 = Dsource(IM2)
       DUH3 = Dsource(IM3)
@@ -602,19 +602,19 @@ contains
     ! Loop through the elements
     do iel=1,NEL
     
-      ! Get the global DOF's on the current element in the E030 space
+      ! Get the global DOF`s on the current element in the E030 space
       IM1 = IedgesAtElement(1,iel)
       IM2 = IedgesAtElement(2,iel)
       IM3 = IedgesAtElement(3,iel)
       IM4 = IedgesAtElement(4,iel)
       
-      ! Get the global DOF's on the current element in the Q1 space
+      ! Get the global DOF`s on the current element in the Q1 space
       IV1 = IverticesAtElement(1,iel)
       IV2 = IverticesAtElement(2,iel)
       IV3 = IverticesAtElement(3,iel)
       IV4 = IverticesAtElement(4,iel)
       
-      ! Get the values of the DOF's in the E030 space
+      ! Get the values of the DOF`s in the E030 space
       DUH1 = Dsource(IM1)
       DUH2 = Dsource(IM2)
       DUH3 = Dsource(IM3)
@@ -690,7 +690,7 @@ contains
     ! Loop through the elements
     do iel=1,NEL
     
-      ! Get the global DOF's on the current element in the Q1 space
+      ! Get the global DOF`s on the current element in the Q1 space
       IV1 = IverticesAtElement(1,iel)
       IV2 = IverticesAtElement(2,iel)
       IV3 = IverticesAtElement(3,iel)
@@ -773,13 +773,13 @@ contains
     ! Loop through the elements
     do iel=1,NEL
     
-      ! Get the global DOF's on the current element in the E030 space
+      ! Get the global DOF`s on the current element in the E030 space
       F(1:6) = IfacesAtElement(1:6,iel)
       
-      ! Get the global DOF's on the current element in the Q1 space
+      ! Get the global DOF`s on the current element in the Q1 space
       V(1:8) = IverticesAtElement(1:8,iel)
       
-      ! Get the values of the DOF's in the E030 space
+      ! Get the values of the DOF`s in the E030 space
       D(1:6) = Dsource(F(1:6))
       
       ! Bilinear interpolation gives what we have to add to the
@@ -841,7 +841,7 @@ contains
       call sys_halt()
     end if
     
-    ! Apply spdp_projectSolutionScalar to every subvector, that's all
+    ! Apply spdp_projectSolutionScalar to every subvector, that is all
     do i=1,rsourceVector%nblocks
       call spdp_projectSolutionScalar (rsourceVector%RvectorBlock(i),&
                                        rdestVector%RvectorBlock(i))
@@ -994,7 +994,7 @@ contains
       call sys_halt()
     end if
     
-    ! Get the coefficient vector's data array
+    ! Get the coefficient vector`s data array
     call lsyssc_getbase_double(rvector, p_Dx)
     
     ! Now get the triangulation
@@ -1140,7 +1140,7 @@ contains
     
     end do
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -1205,7 +1205,7 @@ contains
       call sys_halt()
     end if
     
-    ! Get the coefficient vector's data array
+    ! Get the coefficient vector`s data array
     call lsyssc_getbase_double(rvector, p_Dx)
     
     ! Now get the triangulation
@@ -1324,7 +1324,7 @@ contains
     
     end do ! ied
     
-    ! That's it
+    ! That is it
 
   end subroutine
   

@@ -90,7 +90,7 @@ contains
     ! the discretisation
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_discreteFBC), pointer :: p_rdiscreteFBC
     
@@ -131,12 +131,12 @@ contains
     rrhs%p_rdiscreteBC => p_rdiscreteBC
     rvector%p_rdiscreteBC => p_rdiscreteBC
 
-    ! The same with the fictitious boundary BC's
+    ! The same with the fictitious boundary BC`s
     p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscreteFBC
     rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
     
-    ! Call the update routine to assemble the BC's.
+    ! Call the update routine to assemble the BC`s.
     call cc_updateDiscreteBC (rproblem)
                 
   end subroutine
@@ -148,7 +148,7 @@ contains
   subroutine cc_updateDiscreteBC (rproblem)
   
 !<description>
-  ! This updates the discrete version of the boundary conditions. The BC's
+  ! This updates the discrete version of the boundary conditions. The BC`s
   ! are reassembled according to the current situation of the simulation.
 !</description>
 
@@ -177,7 +177,7 @@ contains
       ! analytic boundary conditions.
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
-      ! Clear the last discretised BC's. We are reassembling them.
+      ! Clear the last discretised BC`s. We are reassembling them.
       call bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       call bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
       
@@ -191,7 +191,7 @@ contains
 
     end do
 
-    ! Clean up the collection (as we are done with the assembly, that's it.
+    ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
@@ -211,17 +211,17 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! A vector structure for the solution vector. The discrete BC's are implemented
+  ! A vector structure for the solution vector. The discrete BC`s are implemented
   ! into that.
   type(t_vectorBlock), intent(inout) :: rvector
 
-  ! A vector structure for the RHS vector. The discrete BC's are implamented into that.
+  ! A vector structure for the RHS vector. The discrete BC`s are implamented into that.
   type(t_vectorBlock), intent(inout) :: rrhs
   
-  ! Whether to implement the BC's into the solution vector or not
+  ! Whether to implement the BC`s into the solution vector or not
   logical, intent(in) :: bsolvector
 
-  ! Whether to implement the BC's into the solution vector or not
+  ! Whether to implement the BC`s into the solution vector or not
   logical, intent(in) :: brhsvector
 !</inputoutput>
 
@@ -263,7 +263,7 @@ contains
     end if
     
     ! Implementation of boundary conditions into matrices deactivated.
-    ! It's simply not used as the global matrices are actually not used outside
+    ! It is simply not used as the global matrices are actually not used outside
     ! of the nonlinear iteration!
     !
     !  IF (bmatrices) THEN
@@ -310,7 +310,7 @@ contains
         deallocate(rproblem%RlevelInfo(i)%p_rdiscreteBC)
       end if
       
-      ! as well as the discrete version of the BC's for fictitious boundaries
+      ! as well as the discrete version of the BC`s for fictitious boundaries
       if (associated(rproblem%RlevelInfo(i)%p_rdiscreteFBC)) then
         call bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
         deallocate(rproblem%RlevelInfo(i)%p_rdiscreteFBC)

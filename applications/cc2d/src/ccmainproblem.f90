@@ -106,7 +106,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
@@ -117,7 +117,7 @@ contains
     ! Start the timer
     call stat_startTimer(rtimerTotal)
     
-    ! Allocate memory fo rthe problem structure -- it's rather large!
+    ! Allocate memory fo rthe problem structure -- it is rather large!
     allocate (p_rproblem)
     
     ! Initialise the collection
@@ -280,8 +280,8 @@ contains
       call cc_generateBasicRHS (p_rproblem,rrhs)
       
       ! Initialise the boundary conditions, but 
-      ! don't implement any boundary conditions as the nonstationary solver
-      ! doesn't like this.
+      ! do not implement any boundary conditions as the nonstationary solver
+      ! does not like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating discrete boundary conditions of first time step...')
@@ -387,7 +387,7 @@ contains
     call output_line ("Total number of calculated timesteps:   "//&
       trim(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
 
-    ! That's it.    
+    ! That is it.    
     deallocate(p_rproblem)
     
   end subroutine

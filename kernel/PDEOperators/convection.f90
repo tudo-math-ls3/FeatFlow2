@@ -169,20 +169,20 @@ module convection
     real(DP) :: dnu = 1.0_DP
     
     ! Weighting factor for the mass matrix.
-    ! =0.0: don't incorporate mass matrix into the operator.
+    ! =0.0: do not incorporate mass matrix into the operator.
     real(DP) :: dalpha = 0.0_DP
     
     ! Weighting factor for the Stokes matrix. (Stokes matrix = dnu*Laplace)
-    ! =0.0: don't incorporate Stokes matrix into the operator.
+    ! =0.0: do not incorporate Stokes matrix into the operator.
     real(DP) :: dbeta = 0.0_DP
     
     ! Weighting factor for the convective part.
-    ! =0.0: don't incorporate convective part (=Stokes problem)
+    ! =0.0: do not incorporate convective part (=Stokes problem)
     ! =1.0: incorporate full convective part (=Navier Stokes problem)
     real(DP) :: ddelta = 1.0_DP
 
     ! Weighting factor for the transposed convective part.
-    ! =0.0: don't incorporate transposed convective part
+    ! =0.0: do not incorporate transposed convective part
     ! =1.0: incorporate full transposed convective part
     real(DP) :: ddeltaTransposed = 0.0_DP
     
@@ -256,31 +256,31 @@ module convection
     logical :: bconstAlpha = .true.
     
     ! Weighting factor for the mass matrix M.
-    ! =0.0: don't incorporate mass matrix into the operator.
+    ! =0.0: do not incorporate mass matrix into the operator.
     ! This factor is multiplied to a probably nonconstant alpha
     ! specified by the callback routine!
     real(DP) :: dalpha = 0.0_DP
 
     ! Weighting factor for the Stokes matrix nu*div(grad(.)) = nu*Laplace.
-    ! =0.0: don't incorporate Stokes matrix into the operator.
+    ! =0.0: do not incorporate Stokes matrix into the operator.
     ! This factor is multiplied to a probably nonconstant dnu
     ! specified by the callback routine!
     real(DP) :: dbeta = 0.0_DP
     
     ! Weighting factor for the transposed Stokes matrix
     ! nu*div(grad(.)^T) which is typically used in the deformatino tensor.
-    ! =0.0: don't incorporate.
+    ! =0.0: do not incorporate.
     ! This factor is multiplied to a probably nonconstant dnu
     ! specified by the callback routine!
     real(DP) :: dbetaT = 0.0_DP    
     
     ! Weighting factor for the convective part u*gread(.).
-    ! =0.0: don't incorporate convective part (=Stokes problem)
+    ! =0.0: do not incorporate convective part (=Stokes problem)
     ! =1.0: incorporate full convective part (=Navier Stokes problem)
     real(DP) :: ddelta = 0.0_DP
 
     ! Weighting factor for the transposed convective part (u^T)*grad(.).
-    ! =0.0: don't incorporate transposed convective part
+    ! =0.0: do not incorporate transposed convective part
     ! =1.0: incorporate full transposed convective part
     real(DP) :: ddeltaT = 0.0_DP
     
@@ -569,7 +569,7 @@ contains
     
     ! Call the actual calculation routine.
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
-    ! if rsolution is not present -- some compilers don't like that ^^
+    ! if rsolution is not present -- some compilers do not like that ^^
 
     call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
     call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
@@ -649,8 +649,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -822,7 +822,7 @@ contains
     !
     !         n(z,u,v) = ( (z*grad (.))u , v )_Omega
     !
-    !     Let's assume we have two elements next to each other:
+    !     Let us assume we have two elements next to each other:
     !
     !       X---------------X---------------X
     !       |            /  |               |
@@ -867,13 +867,13 @@ contains
     !      But there we need it because of an integration along this
     !      edge with simple Gauss rule.)
     !
-    !     What's the approach here? As said, u_upw is reconstructed
+    !     What is the approach here? As said, u_upw is reconstructed
     !     from u_1 and u_2 by a simple mean formula:
     !
     !          u_upw = Lambda u_l  + (1-Lambda) u_k
     !
     !     What is Lambda? 0 < Lambda < 1 is chosen depending on the flow
-    !     crossing the diagonal Glk. More precisely, it's chosen
+    !     crossing the diagonal Glk. More precisely, it is chosen
     !     depending on the flow:
     !       Flow direction       lambda        u_upw
     !          Bk -> Bl            ~0          ~u_k
@@ -959,7 +959,7 @@ contains
 
       do II=1,4
         
-        ! Get the number of the II'th edge - which is at the same time the
+        ! Get the number of the II-th edge - which is at the same time the
         ! DOF in the velocity vector(s).
         I = p_Kmid(II,iel)
           
@@ -1125,7 +1125,7 @@ contains
         
       end do ! II
         
-      ! What have we calculated up to here? Let's collect...
+      ! What have we calculated up to here? Let us collect...
       !
       ! Dflux        - The flux along the edges of the triangles
       ! IlocalMatrix - The indices in the matrix A of the entries that
@@ -1180,7 +1180,7 @@ contains
           ! The user wants Samarskji-Upwind.
           ! Take dupsre, the dupsam-parameter, weighted by 1/nu.
           ! Remember: In the previous calculation of the line-integral
-          ! to calculate t, we didn't incorporate 1/nu - this is 
+          ! to calculate t, we did not incorporate 1/nu - this is 
           ! repaired here:
           !
           ! Analyze the two fluxes on the edges of the triangle.
@@ -1206,7 +1206,7 @@ contains
 
           ! Simple Upwinding scheme.
           ! The corresponding lambda (wighting factor of the
-          ! "adjacent velocities) is either 0 or 1, depending on
+          ! "adjacent velocities") is either 0 or 1, depending on
           ! whether the flux goes "into" or "out of" the triangle
           ! on that edge.
 
@@ -1341,7 +1341,7 @@ contains
   ! The switch cdef decides on whether the routine sets up the nonlinear
   ! defect, the nonlinear matrix or both.
   !
-  ! If the operator is to be applied to a defect vector, it's applied
+  ! If the operator is to be applied to a defect vector, it is applied
   ! to all components in the vector!
   ! (Note: In a Navier-Stokes case e.g., the rdefect/rsolution vectors
   ! must therefore only contain the velocity components, not the pressure!
@@ -1474,7 +1474,7 @@ contains
     end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
-    ! if rsolution is not present -- some compilers don't like that ^^
+    ! if rsolution is not present -- some compilers do not like that ^^
 
     call lsyssc_getbase_double (rvecPrimary%RvectorBlock(1),p_DvelX1)
     call lsyssc_getbase_double (rvecPrimary%RvectorBlock(2),p_DvelY1)
@@ -1584,8 +1584,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -1752,7 +1752,7 @@ contains
   ! Arrays for saving Jacobian determinants 
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -1770,7 +1770,7 @@ contains
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
   
-  ! An array with local DELTA's, each DELTA for one element
+  ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
@@ -1786,7 +1786,7 @@ contains
     Bder(DER_DERIV_X) = .true.
     Bder(DER_DERIV_Y) = .true.
 
-    ! For ALE we don't even need so much
+    ! For ALE we do not even need so much
     BderALE = .false.
     BderALE(DER_FUNC) = .true.
     
@@ -1806,19 +1806,19 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
-    ! Get the number of local DOF's for trial/test functions.
+    ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
     indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
-    ! Get the number of local DOF's Q1 -- we need them for ALE.
+    ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
     
-    ! Number of local DOF's
+    ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
@@ -1865,17 +1865,17 @@ contains
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
     allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsALE(indofALE,nelementsPerBlock))
     
-    ! Allocate memory for array with local DELTA's
+    ! Allocate memory for array with local DELTA`s
     allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
@@ -1917,7 +1917,7 @@ contains
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
-    ! Round up the norm to 1D-8 if it's too small...
+    ! Round up the norm to 1D-8 if it is too small...
 
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
@@ -1956,7 +1956,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -1972,12 +1972,12 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
@@ -1988,11 +1988,11 @@ contains
                                     IdofsALE)
       end if
       
-      ! Calculate local DELTA's for streamline diffusion method.
-      ! (cf. p. 121 in Turek's CFD book).
+      ! Calculate local DELTA`s for streamline diffusion method.
+      ! (cf. p. 121 in Turek`s CFD book).
       ! For every element, we need a local DELTA.
       ! Every local delta is weighted by the global "ddelta".
-      ! If ddelta=0, we don't do anything as this disables the
+      ! If ddelta=0, we do not do anything as this disables the
       ! nonlinear term.
       ! If UPSAM=0.0, we have a central-difference like discretisation, which
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -2011,8 +2011,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -2032,20 +2032,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(Idofs(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -2091,7 +2091,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
       !
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -2131,7 +2131,7 @@ contains
       ! basis functions in the above terms instead of u_h and v_h.
       ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
-      ! DOF's as:
+      ! DOF`s as:
       ! 
       !   n_h (u_h, Phi_j, Phi_i) 
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
@@ -2160,7 +2160,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
@@ -2192,7 +2192,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -2250,7 +2250,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -2292,7 +2292,7 @@ contains
           ! Normally, we have to take the absolut value of the determinant 
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
           ! But because this routine only works in 2D, we can skip
           ! the ABS here!
 
@@ -2327,7 +2327,7 @@ contains
           !
           ! Summing up over all pairs of multiindices.
           !
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF`s i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
           do IDOFE=1,indof
@@ -2358,7 +2358,7 @@ contains
 
             HSUMI = HBASI2*du1loc + HBASI3*du2loc
 
-            ! Inner loop over the DOF's j=1..indof, which corresponds to
+            ! Inner loop over the DOF`s j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
             do JDOFE=1,indof
@@ -2400,7 +2400,7 @@ contains
                 !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                 !
                 ! But as v is already incorporated into DVelocity,
-                ! we don't have to worry about that.
+                ! we do not have to worry about that.
 
                 HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
     
@@ -2440,7 +2440,7 @@ contains
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
-              ! loop over all DOF's is finished, each entry contains
+              ! loop over all DOF`s is finished, each entry contains
               ! the calculated integral.
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
@@ -2555,8 +2555,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -2726,7 +2726,7 @@ contains
   ! Arrays for saving Jacobian determinants 
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -2744,7 +2744,7 @@ contains
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
   
-  ! An array with local DELTA's, each DELTA for one element
+  ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
@@ -2760,7 +2760,7 @@ contains
     Bder(DER_DERIV_X) = .true.
     Bder(DER_DERIV_Y) = .true.
 
-    ! For ALE we don't even need so much
+    ! For ALE we do not even need so much
     BderALE = .false.
     BderALE(DER_FUNC) = .true.
     
@@ -2780,19 +2780,19 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
-    ! Get the number of local DOF's for trial/test functions.
+    ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
     indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
-    ! Get the number of local DOF's Q1 -- we need them for ALE.
+    ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(p_relementDistribution%celement)
     
-    ! Number of local DOF's
+    ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
@@ -2840,17 +2840,17 @@ contains
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
     allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsALE(indofALE,nelementsPerBlock))
     
-    ! Allocate memory for array with local DELTA's
+    ! Allocate memory for array with local DELTA`s
     allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
@@ -2892,7 +2892,7 @@ contains
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
-    ! Round up the norm to 1D-8 if it's too small...
+    ! Round up the norm to 1D-8 if it is too small...
 
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
@@ -2931,7 +2931,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -2947,12 +2947,12 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
@@ -2963,11 +2963,11 @@ contains
                                     IdofsALE)
       end if
       
-      ! Calculate local DELTA's for streamline diffusion method.
-      ! (cf. p. 121 in Turek's CFD book).
+      ! Calculate local DELTA`s for streamline diffusion method.
+      ! (cf. p. 121 in Turek`s CFD book).
       ! For every element, we need a local DELTA.
       ! Every local delta is weighted by the global "ddelta".
-      ! If ddelta=0, we don't do anything as this disables the
+      ! If ddelta=0, we do not do anything as this disables the
       ! nonlinear term.
       ! If UPSAM=0.0, we have a central-difference like discretisation, which
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -2986,8 +2986,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -3007,20 +3007,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(Idofs(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -3066,7 +3066,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
       !
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -3106,7 +3106,7 @@ contains
       ! basis functions in the above terms instead of u_h and v_h.
       ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
-      ! DOF's as:
+      ! DOF`s as:
       ! 
       !   n_h (u_h, Phi_j, Phi_i) 
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
@@ -3135,7 +3135,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
@@ -3167,7 +3167,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -3225,7 +3225,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -3267,7 +3267,7 @@ contains
           ! Normally, we have to take the absolut value of the determinant 
           ! of the mapping here!
           ! In 2D, the determinant is always positive, whereas in 3D,
-          ! the determinant might be negative -- that's normal!
+          ! the determinant might be negative -- that is normal!
           ! But because this routine only works in 2D, we can skip
           ! the ABS here!
 
@@ -3302,7 +3302,7 @@ contains
           !
           ! Summing up over all pairs of multiindices.
           !
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF`s i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
           do IDOFE=1,indof
@@ -3333,7 +3333,7 @@ contains
 
             HSUMI = HBASI2*du1loc + HBASI3*du2loc
 
-            ! Inner loop over the DOF's j=1..indof, which corresponds to
+            ! Inner loop over the DOF`s j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
             do JDOFE=1,indof
@@ -3375,7 +3375,7 @@ contains
                 !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                 !
                 ! But as v is already incorporated into DVelocity,
-                ! we don't have to worry about that.
+                ! we do not have to worry about that.
 
                 HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
     
@@ -3415,7 +3415,7 @@ contains
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
-              ! loop over all DOF's is finished, each entry contains
+              ! loop over all DOF`s is finished, each entry contains
               ! the calculated integral.
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
@@ -3736,7 +3736,7 @@ contains
     end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
-    ! if rsolution is not present -- some compilers don't like that ^^
+    ! if rsolution is not present -- some compilers do not like that ^^
 
     call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
     call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
@@ -3832,8 +3832,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -4028,7 +4028,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -4057,7 +4057,7 @@ contains
   real(DP), dimension(:,:,:), allocatable :: DvelocityUderiv
   real(DP), dimension(:,:,:), allocatable :: DvelocityVderiv
   
-  ! An array with local DELTA's, each DELTA for one element
+  ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
@@ -4073,7 +4073,7 @@ contains
     Bder(DER_DERIV_X) = .true.
     Bder(DER_DERIV_Y) = .true.
 
-    ! For ALE we don't even need so much
+    ! For ALE we do not even need so much
     BderALE = .false.
     BderALE(DER_FUNC) = .true.
     BderALE(DER_DERIV_X) = .true.
@@ -4096,19 +4096,19 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
                                 p_IedgesAtElement)
     
-    ! Get the number of local DOF's for trial/test functions.
+    ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
     indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
-    ! Get the number of local DOF's Q1 -- we need them for ALE.
+    ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1)
     
-    ! Number of local DOF's
+    ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
@@ -4188,17 +4188,17 @@ contains
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
     allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsALE(indofALE,nelementsPerBlock))
     
-    ! Allocate memory for array with local DELTA's
+    ! Allocate memory for array with local DELTA`s
     allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
@@ -4272,7 +4272,7 @@ contains
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
-    ! Round up the norm to 1D-8 if it's too small...
+    ! Round up the norm to 1D-8 if it is too small...
     !%OMP SINGLE
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
@@ -4325,7 +4325,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -4341,12 +4341,12 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
@@ -4357,11 +4357,11 @@ contains
                                     IdofsALE)
       end if
       
-      ! Calculate local DELTA's for streamline diffusion method.
-      ! (cf. p. 121 in Turek's CFD book).
+      ! Calculate local DELTA`s for streamline diffusion method.
+      ! (cf. p. 121 in Turek`s CFD book).
       ! For every element, we need a local DELTA.
       ! Every local delta is weighted by the global "ddelta".
-      ! If ddelta=0, we don't do anything as this disables the
+      ! If ddelta=0, we do not do anything as this disables the
       ! nonlinear term.
       ! If UPSAM=0.0, we have a central-difference like discretisation, which
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -4380,8 +4380,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -4401,20 +4401,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(Idofs(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -4470,20 +4470,20 @@ contains
           do IEL=1,IELmax-IELset+1
           
             ! For building the local matrices, we have first to
-            ! loop through the test functions (the "O"'s), as these
+            ! loop through the test functions (the "O"`s), as these
             ! define the rows in the matrix.
             do IDOFE=1,indof
             
               ! Row IDOFE of the local matrix corresponds 
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
-              ! This is one of the the "O"'s in the above picture.
+              ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
               ! to JCOL0:
 
               JCOL0=p_KLD12(Idofs(IDOFE,IEL))
               
-              ! Now we loop through the other DOF's on the current element
-              ! (the "O"'s).
+              ! Now we loop through the other DOF`s on the current element
+              ! (the "O"`s).
               ! All these have common support with our current basis function
               ! and will therefore give an additive value to the global
               ! matrix.
@@ -4534,7 +4534,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -4587,7 +4587,7 @@ contains
       ! basis functions in the above terms instead of u_h and v_h.
       ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
-      ! DOF's as:
+      ! DOF`s as:
       ! 
       !   n_h (u_h, Phi_j, Phi_i) 
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
@@ -4618,7 +4618,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
@@ -4655,7 +4655,7 @@ contains
               du2locx = 0.0_DP
               du2locy = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -4695,7 +4695,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -4730,7 +4730,7 @@ contains
               du2locx = 0.0_DP
               du2locy = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -4795,7 +4795,7 @@ contains
             du1loc = 0.0_DP
             du2loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -4830,7 +4830,7 @@ contains
               du2locx = 0.0_DP
               du2locy = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -4898,7 +4898,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -4933,7 +4933,7 @@ contains
             !
             ! Summing up over all pairs of multiindices.
             !
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -4964,7 +4964,7 @@ contains
 
               HSUMI = HBASI2*du1loc + HBASI3*du2loc
 
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -4994,7 +4994,7 @@ contains
                 !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                 !
                 ! But as v is already incorporated into DVelocity,
-                ! we don't have to worry about that.
+                ! we do not have to worry about that.
 
                 HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
     
@@ -5024,7 +5024,7 @@ contains
       
                 ! Weighten the calculated value AH by the cubature
                 ! weight OM and add it to the local matrix. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
@@ -5057,7 +5057,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -5067,7 +5067,7 @@ contains
             du1loc = Dvelocity (1,ICUBP,IEL)
             du2loc = Dvelocity (2,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -5080,7 +5080,7 @@ contains
               HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
               HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -5105,7 +5105,7 @@ contains
       
                 ! Weighten the calculated value AH by the cubature
                 ! weight OM and add it to the local matrix. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL)+OM*AH
@@ -5141,7 +5141,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -5153,7 +5153,7 @@ contains
             du2locx = DvelocityVderiv (1,ICUBP,IEL)
             du2locy = DvelocityVderiv (2,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -5164,7 +5164,7 @@ contains
             
               HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -5214,7 +5214,7 @@ contains
       
                 ! Weighten the calculated value AHxy by the cubature
                 ! weight OM and add it to the local matrices. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -5253,7 +5253,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -5263,7 +5263,7 @@ contains
             du1loc = Dvelocity (1,ICUBP,IEL)
             du2loc = Dvelocity (2,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -5276,7 +5276,7 @@ contains
               HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
               HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -5299,7 +5299,7 @@ contains
       
                 ! Weighten the calculated value AHxy by the cubature
                 ! weight OM and add it to the local matrices. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -5338,7 +5338,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -5350,7 +5350,7 @@ contains
             du2locx = DvelocityVderiv (1,ICUBP,IEL)
             du2locy = DvelocityVderiv (2,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -5361,7 +5361,7 @@ contains
             
               HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -5389,7 +5389,7 @@ contains
       
                 ! Weighten the calculated value AHxy by the cubature
                 ! weight OM and add it to the local matrices. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -5676,11 +5676,11 @@ contains
         iel = Ielements(ielidx)
 
         ! Loop through the local degrees of freedom on element IEL.
-        ! Sum up the velocities on these DOF's. This will result
+        ! Sum up the velocities on these DOF`s. This will result
         ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
         ! through element IEL.
 
-        ! For elements whose DOF's represent directly the velocity, U1/U2 
+        ! For elements whose DOF`s represent directly the velocity, U1/U2 
         ! represent the mean velocity
         ! along an egde/on the midpoint of each edge, so U1/U2 is
         ! clearly an approximation to the velocity in element T.
@@ -5712,7 +5712,7 @@ contains
           ! Calculate the local h from the area of the element
           dlocalH = sqrt(p_DelementVolume(iel))
 
-          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+          ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
           if (dupsam .lt. 0.0_DP) then
 
@@ -5749,11 +5749,11 @@ contains
         iel = Ielements(ielidx)
 
         ! Loop through the local degrees of freedom on element IEL.
-        ! Sum up the velocities on these DOF's. This will result
+        ! Sum up the velocities on these DOF`s. This will result
         ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
         ! through element IEL.
 
-        ! For elements whose DOF's represent directly the velocity, U1/U2 
+        ! For elements whose DOF`s represent directly the velocity, U1/U2 
         ! represent the mean velocity
         ! along an egde/on the midpoint of each edge, so U1/U2 is
         ! clearly an approximation to the velocity in element T.
@@ -5789,7 +5789,7 @@ contains
           call getLocalMeshWidthQuad (dlocalH,dunorm, du1, du2, iel, &
               p_IverticesAtElement,p_DvertexCoords)
 
-          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+          ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
           if (dupsam .lt. 0.0_DP) then
 
@@ -5875,8 +5875,8 @@ contains
 
     dalphaMax=0.0_DP
     
-    ! In the next step, we calculate the 'maximum possible mesh with
-    ! in direction of the flow'; this is the maximum possible length
+    ! In the next step, we calculate the `maximum possible mesh with
+    ! in direction of the flow`; this is the maximum possible length
     ! that a particle can cross in the current element.
     ! The picture in mind is the following:
     !
@@ -6257,7 +6257,7 @@ contains
     end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
-    ! if rsolution is not present -- some compilers don't like that ^^
+    ! if rsolution is not present -- some compilers do not like that ^^
 
     call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
     call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
@@ -6330,8 +6330,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -6515,7 +6515,7 @@ contains
   ! Arrays for saving Jacobian determinants 
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -6533,7 +6533,7 @@ contains
   ! Pointer to the velocity field in the cubature points.
   real(DP), dimension(:,:,:), allocatable :: Dvelocity
   
-  ! An array with local DELTA's, each DELTA for one element
+  ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
@@ -6550,7 +6550,7 @@ contains
     Bder(DER_DERIV3D_Y) = .true.
     Bder(DER_DERIV3D_Z) = .true.
 
-    ! For ALE we don't even need so much
+    ! For ALE we do not even need so much
     BderALE = .false.
     BderALE(DER_FUNC3D) = .true.
     
@@ -6570,19 +6570,19 @@ contains
     !call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
     !                            p_IedgesAtElement)
     
-    ! Get the number of local DOF's for trial/test functions.
+    ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
     indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
-    ! Get the number of local DOF's Q1 -- we need them for ALE.
+    ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1_3D)
     
-    ! Number of local DOF's
+    ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
@@ -6631,17 +6631,17 @@ contains
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
     allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsALE(indofALE,nelementsPerBlock))
     
-    ! Allocate memory for array with local DELTA's
+    ! Allocate memory for array with local DELTA`s
     allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
@@ -6683,7 +6683,7 @@ contains
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
-    ! Round up the norm to 1D-8 if it's too small...
+    ! Round up the norm to 1D-8 if it is too small...
 
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
@@ -6724,7 +6724,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -6740,12 +6740,12 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
@@ -6756,11 +6756,11 @@ contains
                                     IdofsALE)
       end if
       
-      ! Calculate local DELTA's for streamline diffusion method.
-      ! (cf. p. 121 in Turek's CFD book).
+      ! Calculate local DELTA`s for streamline diffusion method.
+      ! (cf. p. 121 in Turek`s CFD book).
       ! For every element, we need a local DELTA.
       ! Every local delta is weighted by the global "ddelta".
-      ! If ddelta=0, we don't do anything as this disables the
+      ! If ddelta=0, we do not do anything as this disables the
       ! nonlinear term.
       ! If UPSAM=0.0, we have a central-difference like discretisation, which
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -6793,8 +6793,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -6814,20 +6814,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(Idofs(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -6873,7 +6873,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
       !
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -6914,7 +6914,7 @@ contains
       ! basis functions in the above terms instead of u_h and v_h.
       ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
-      ! DOF's as:
+      ! DOF`s as:
       ! 
       !   n_h (u_h, Phi_j, Phi_i) 
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
@@ -6944,7 +6944,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
@@ -6979,7 +6979,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -7040,7 +7040,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -7117,7 +7117,7 @@ contains
           !
           ! Summing up over all pairs of multiindices.
           !
-          ! Outer loop over the DOF's i=1..indof on our current element, 
+          ! Outer loop over the DOF`s i=1..indof on our current element, 
           ! which corresponds to the basis functions Phi_i:
 
           do IDOFE=1,indof
@@ -7149,7 +7149,7 @@ contains
 
             HSUMI = HBASI2*du1loc + HBASI3*du2loc + HBASI4*du3loc
 
-            ! Inner loop over the DOF's j=1..indof, which corresponds to
+            ! Inner loop over the DOF`s j=1..indof, which corresponds to
             ! the basis function Phi_j:
 
             do JDOFE=1,indof
@@ -7192,7 +7192,7 @@ contains
                 !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                 !
                 ! But as v is already incorporated into DVelocity,
-                ! we don't have to worry about that.
+                ! we do not have to worry about that.
 
                 HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc+HBASJ4*du3loc
     
@@ -7232,7 +7232,7 @@ contains
 
               ! Weighten the calculated value AH by the cubature
               ! weight OM and add it to the local matrix. After the
-              ! loop over all DOF's is finished, each entry contains
+              ! loop over all DOF`s is finished, each entry contains
               ! the calculated integral.
 
               Dentry(JDOFE,IDOFE) = Dentry(JDOFE,IDOFE)+OM*AH
@@ -7601,7 +7601,7 @@ contains
     end if
     
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
-    ! if rsolution is not present -- some compilers don't like that ^^
+    ! if rsolution is not present -- some compilers do not like that ^^
 
     call lsyssc_getbase_double (p_rvelX1,p_DvelX1)
     call lsyssc_getbase_double (p_rvelY1,p_DvelY1)
@@ -7681,8 +7681,8 @@ contains
   ! term is modified to include the mesh velocity.\\
   !
   ! For a reference about the ALE method, see
-  ! [Duarte, Formaz, Natesan; "Arbitrary Lagrangian-Euler Method 
-  ! for Navier-Stokes equations with moving boundaries";
+  ! [Duarte, Formaz, Natesan; `Arbitrary Lagrangian-Euler Method 
+  ! for Navier-Stokes equations with moving boundaries`;
   ! Comput. Methods Appl. Mech. Engrg. 193 (2004), 4819-4836]
   !
   ! Remarks:\\
@@ -7883,7 +7883,7 @@ contains
   ! Arrays for saving Jacobian determinants and matrices
   real(DP), dimension(:,:), pointer :: p_Ddetj
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: Idofs, IdofsALE
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -7917,7 +7917,7 @@ contains
   real(DP), dimension(:,:,:), allocatable :: DvelocityVderiv
   real(DP), dimension(:,:,:), allocatable :: DvelocityWderiv
   
-  ! An array with local DELTA's, each DELTA for one element
+  ! An array with local DELTA`s, each DELTA for one element
   real(DP), dimension(:), allocatable :: DlocalDelta
 
   ! Type of transformation from the reference to the real element 
@@ -7934,7 +7934,7 @@ contains
     Bder(DER_DERIV3D_Y) = .true.
     Bder(DER_DERIV3D_Z) = .true.
 
-    ! For ALE we don't even need so much
+    ! For ALE we do not even need so much
     BderALE = .false.
     BderALE(DER_FUNC3D) = .true.
     BderALE(DER_DERIV3D_X) = .true.
@@ -7957,19 +7957,19 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IfacesAtElement,&
                                 p_IfacesAtElement)
     
-    ! Get the number of local DOF's for trial/test functions.
+    ! Get the number of local DOF`s for trial/test functions.
     ! We assume trial and test functions to be the same.
     indof = elem_igetNDofLoc(p_relementDistribution%celement)
 
-    ! Get the number of local DOF's Q1 -- we need them for ALE.
+    ! Get the number of local DOF`s Q1 -- we need them for ALE.
     indofALE = elem_igetNDofLoc(EL_Q1_3D)
     
-    ! Number of local DOF's
+    ! Number of local DOF`s
     NVE = elem_igetNVE(p_relementDistribution%celement)
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
     
@@ -8044,17 +8044,17 @@ contains
     allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistribution%celement), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(Idofs(indof,nelementsPerBlock))
     
     ! The same for the ALE-space
     allocate(DbasALE(indofALE,elem_getMaxDerivative(EL_Q1_3D), &
              ncubp,nelementsPerBlock))
 
-    ! Allocate memory for the DOF's of all the elements.
+    ! Allocate memory for the DOF`s of all the elements.
     allocate(IdofsALE(indofALE,nelementsPerBlock))
     
-    ! Allocate memory for array with local DELTA's
+    ! Allocate memory for array with local DELTA`s
     allocate(DlocalDelta(nelementsPerBlock))
 
     ! Allocate an array saving the local matrices for all elements
@@ -8126,7 +8126,7 @@ contains
     
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX. 
-    ! Round up the norm to 1D-8 if it's too small...
+    ! Round up the norm to 1D-8 if it is too small...
     !§OMP SINGLE
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
@@ -8181,7 +8181,7 @@ contains
     
       ! The outstanding feature with finite elements is: A basis
       ! function for a DOF on one element has common support only
-      ! with the DOF's on the same element! E.g. for Q1:
+      ! with the DOF`s on the same element! E.g. for Q1:
       !
       !        #. . .#. . .#. . .#
       !        .     .     .     .
@@ -8197,12 +8197,12 @@ contains
       ! --> On element IEL, the basis function at "X" only interacts
       !     with the basis functions in "O". Elements in the 
       !     neighbourhood ("*") have no support, therefore we only have
-      !     to collect all "O" DOF's.
+      !     to collect all "O" DOF`s.
       !
-      ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+      ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-      ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+      ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
       call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                   Idofs)
                                   
@@ -8213,11 +8213,11 @@ contains
                                     IdofsALE)
       end if
       
-      ! Calculate local DELTA's for streamline diffusion method.
-      ! (cf. p. 121 in Turek's CFD book).
+      ! Calculate local DELTA`s for streamline diffusion method.
+      ! (cf. p. 121 in Turek`s CFD book).
       ! For every element, we need a local DELTA.
       ! Every local delta is weighted by the global "ddelta".
-      ! If ddelta=0, we don't do anything as this disables the
+      ! If ddelta=0, we do not do anything as this disables the
       ! nonlinear term.
       ! If UPSAM=0.0, we have a central-difference like discretisation, which
       ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -8247,8 +8247,8 @@ contains
       ! contributions of element IEL, which are later added at the
       ! right positions to the elements in the global system matrix.
       !
-      ! We have indofTrial trial DOF's per element and
-      ! indofTest test DOF's per element. Therefore there are
+      ! We have indofTrial trial DOF`s per element and
+      ! indofTest test DOF`s per element. Therefore there are
       ! indofTrial*indofTest tupel of basis-/testfunctions (phi_i,psi_j) 
       ! "active" (i.e. have common support) on our current element, each 
       ! giving an additive contribution to the system matrix.
@@ -8268,20 +8268,20 @@ contains
       do IEL=1,IELmax-IELset+1
       
         ! For building the local matrices, we have first to
-        ! loop through the test functions (the "O"'s), as these
+        ! loop through the test functions (the "O"`s), as these
         ! define the rows in the matrix.
         do IDOFE=1,indof
         
           ! Row IDOFE of the local matrix corresponds 
           ! to row=global DOF KDFG(IDOFE) in the global matrix.
-          ! This is one of the the "O"'s in the above picture.
+          ! This is one of the the "O"`s in the above picture.
           ! Get the starting position of the corresponding row
           ! to JCOL0:
 
           JCOL0=p_KLD(Idofs(IDOFE,IEL))
           
-          ! Now we loop through the other DOF's on the current element
-          ! (the "O"'s).
+          ! Now we loop through the other DOF`s on the current element
+          ! (the "O"`s).
           ! All these have common support with our current basis function
           ! and will therefore give an additive value to the global
           ! matrix.
@@ -8327,7 +8327,7 @@ contains
       ! that we have to change.
       ! To calculate the matrix contributions, we have to evaluate
       ! the elements to give us the values of the basis functions
-      ! in all the DOF's in all the elements in our set.
+      ! in all the DOF`s in all the elements in our set.
 
       ! Get the element evaluation tag of all FE spaces. We need it to evaluate
       ! the elements later. All of them can be combined with OR, what will give
@@ -8381,7 +8381,7 @@ contains
       ! basis functions in the above terms instead of u_h and v_h.
       ! Assuming the representation u_h=sum_j(u_j*Phi_j) and 
       ! v_h=sum_i(u_i,Phi_i), the above term is evaluated in the
-      ! DOF's as:
+      ! DOF`s as:
       ! 
       !   n_h (u_h, Phi_j, Phi_i) 
       ! + sum_T ( delta_T ( u_h*grad Phi_j, u_h*grad Phi_i )_T )
@@ -8413,7 +8413,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (test) basis function 
@@ -8457,7 +8457,7 @@ contains
               du3locy = 0.0_DP
               du3locz = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -8508,7 +8508,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -8550,7 +8550,7 @@ contains
               du3locy = 0.0_DP
               du3locz = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -8627,7 +8627,7 @@ contains
             du2loc = 0.0_DP
             du3loc = 0.0_DP
           
-            ! Perform a loop through the trial DOF's.
+            ! Perform a loop through the trial DOF`s.
             do JDOFE=1,indof
 
               ! Get the value of the (trial) basis function 
@@ -8669,7 +8669,7 @@ contains
               du3locy = 0.0_DP
               du3locz = 0.0_DP
             
-              ! Perform a loop through the trial DOF's.
+              ! Perform a loop through the trial DOF`s.
               do JDOFE=1,indof
 
                 ! Get the value of the (trial) basis function 
@@ -8745,7 +8745,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -8781,7 +8781,7 @@ contains
             !
             ! Summing up over all pairs of multiindices.
             !
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -8813,7 +8813,7 @@ contains
 
               HSUMI = HBASI2*du1loc + HBASI3*du2loc + HBASI4*du3loc
 
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -8844,7 +8844,7 @@ contains
                 !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                 !
                 ! But as v is already incorporated into DVelocity,
-                ! we don't have to worry about that.
+                ! we do not have to worry about that.
 
                 HSUMJ = HBASJ2*du1loc + HBASJ3*du2loc + HBASJ4*du3loc
     
@@ -8874,7 +8874,7 @@ contains
       
                 ! Weighten the calculated value AH by the cubature
                 ! weight OM and add it to the local matrix. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL) + OM*AH
@@ -8905,7 +8905,7 @@ contains
             ! Normally, we have to take the absolut value of the determinant 
             ! of the mapping here!
             ! In 2D, the determinant is always positive, whereas in 3D,
-            ! the determinant might be negative -- that's normal!
+            ! the determinant might be negative -- that is normal!
             ! But because this routine only works in 2D, we can skip
             ! the ABS here!
 
@@ -8916,7 +8916,7 @@ contains
             du2loc = Dvelocity (2,ICUBP,IEL)
             du3loc = Dvelocity (3,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -8930,7 +8930,7 @@ contains
               HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
               HBASI4 = Dbas(IDOFE,4,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
 
               do JDOFE=1,indof
@@ -8956,7 +8956,7 @@ contains
       
                 ! Weighten the calculated value AH by the cubature
                 ! weight OM and add it to the local matrix. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 Dentry(JDOFE,IDOFE,IEL) = Dentry(JDOFE,IDOFE,IEL) + OM*AH
@@ -8998,7 +8998,7 @@ contains
             du3locy = DvelocityWderiv (2,ICUBP,IEL)
             du3locz = DvelocityWderiv (3,ICUBP,IEL)
             
-            ! Outer loop over the DOF's i=1..indof on our current element, 
+            ! Outer loop over the DOF`s i=1..indof on our current element, 
             ! which corresponds to the basis functions Phi_i:
 
             do IDOFE=1,indof
@@ -9008,7 +9008,7 @@ contains
               ! current DOF into HBASIy:
               HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
              
-              ! Inner loop over the DOF's j=1..indof, which corresponds to
+              ! Inner loop over the DOF`s j=1..indof, which corresponds to
               ! the basis function Phi_j:
               do JDOFE=1,indof
                 
@@ -9076,7 +9076,7 @@ contains
       
                 ! Weighten the calculated value AHxy by the cubature
                 ! weight OM and add it to the local matrices. After the
-                ! loop over all DOF's is finished, each entry contains
+                ! loop over all DOF`s is finished, each entry contains
                 ! the calculated integral.
 
                 DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -9391,11 +9391,11 @@ contains
   integer :: idof
 
     ! Loop through the local degrees of freedom on element IEL.
-    ! Sum up the velocities on these DOF's. This will result
+    ! Sum up the velocities on these DOF`s. This will result
     ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
     ! through element IEL.
 
-    ! For elements whose DOF's represent directly the velocity, U1/U2 
+    ! For elements whose DOF`s represent directly the velocity, U1/U2 
     ! represent the mean velocity
     ! along an egde/on the midpoint of each edge, so U1/U2 is
     ! clearly an approximation to the velocity in element T.
@@ -9427,7 +9427,7 @@ contains
       ! dlocalH = h = h_T on our element T=IEL:
       call getLocalMeshWidthHexa (dlocalH,Du,dunorm,IEL,Kvert,Dcorvg)
 
-      ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+      ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
       if (UPSAM.lt.0.0_DP) then
 
@@ -9534,7 +9534,7 @@ contains
     call getHexaVolume(dlocalH,IEL,Kvert,Dcorvg)
     dlocalH = dlocalH**(1.0_DP / 3.0_DP)
    
-    ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+    ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
     if (UPSAM.lt.0.0_DP) then
 
       ! For UPSAM<0, we use simple calculation of ddelta:        
@@ -9543,11 +9543,11 @@ contains
     else
     
       ! Loop through the local degrees of freedom on element IEL.
-      ! Sum up the velocities on these DOF's. This will result
+      ! Sum up the velocities on these DOF`s. This will result
       ! in the vector (DU1,DU2) representing the (mean) X/Y-velocity
       ! through element IEL.
 
-      ! For elements whose DOF's represent directly the velocity, U1/U2 
+      ! For elements whose DOF`s represent directly the velocity, U1/U2 
       ! represent the mean velocity
       ! along an egde/on the midpoint of each edge, so U1/U2 is
       ! clearly an approximation to the velocity in element T.
@@ -9638,7 +9638,7 @@ contains
   !                        |      t2     |
   !                        1------a------2
   !
-  ! The face midpoint (+) will be calculated as the average of the face's
+  ! The face midpoint (+) will be calculated as the average of the face`s
   ! four corner vertices.
   ! The tangential vectors will be approximated by the vector between
   ! the midpoints of two opposite edges, i.e. t1 := b-d, t2 := c-a.
@@ -10492,7 +10492,7 @@ contains
         conv_sdIncorpToDefect2D,rincorporateCollection,&
         ffunctionCoefficient,rcollection)
         
-    ! Note: When calculating the defect, it doesn't matter if
+    ! Note: When calculating the defect, it does not matter if
     ! one uses a call to lsyssc_isMatrixContentShared or .TRUE. in the above
     ! call, but the latter case probably needs slightly more time.
 
@@ -10550,7 +10550,7 @@ contains
       ! Weight for the local matrices
       real(DP), intent(in) :: dtheta
       
-      ! The DOF's on all elements the routine should work on
+      ! The DOF`s on all elements the routine should work on
       integer, dimension(:,:), intent(in) :: Idofs
 
       ! Temporary arrays for positions of the local matrices in 
@@ -10645,7 +10645,7 @@ contains
     ! A pointer to an element-number list
     integer, dimension(:), pointer :: p_IelementList
 
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: Idofs
 
     ! Allocateable arrays for the values of the basis functions - 
@@ -10661,7 +10661,7 @@ contains
     real(DP), dimension(:,:,:), allocatable :: DentryA21
     real(DP), dimension(:,:,:), allocatable :: DentryA22
     
-    ! An array with local DELTA's, each DELTA for one element
+    ! An array with local DELTA`s, each DELTA for one element
     real(DP), dimension(:), allocatable :: DlocalDelta
     
     ! An array for the viscosity coefficients in all cubature points on
@@ -10680,7 +10680,7 @@ contains
     ! Variables specifying the current element set
     integer :: IELset,IELmax
     
-    ! Number of DOF's in the current element distribution
+    ! Number of DOF`s in the current element distribution
     integer :: indof
     
     ! Type of the element; may be triangle (3) or quad (4)
@@ -10783,7 +10783,7 @@ contains
       call storage_getbase_int (p_relementDistr%h_IelementList, &
                                 p_IelementList)
     
-      ! Get the number of local DOF's for trial/test functions.
+      ! Get the number of local DOF`s for trial/test functions.
       ! We assume trial and test functions to be the same.
       indof = elem_igetNDofLoc(p_relementDistr%celement)
     
@@ -10793,7 +10793,7 @@ contains
   
       ! For saving some memory in smaller discretisations, we calculate
       ! the number of elements per block. For smaller triangulations,
-      ! this is NEL. If there are too many elements, it's at most
+      ! this is NEL. If there are too many elements, it is at most
       ! BILF_NELEMSIM. This is only used for allocating some arrays.
       nelementsPerBlock = min(BILF_NELEMSIM,p_rtriangulation%NEL)
       
@@ -10815,16 +10815,16 @@ contains
       allocate(Dbas(indof,elem_getMaxDerivative(p_relementDistr%celement), &
                ncubp,nelementsPerBlock))
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(Idofs(indof,nelementsPerBlock))
       
-      ! Allocate memory for array with local DELTA's
+      ! Allocate memory for array with local DELTA`s
       allocate(DlocalDelta(nelementsPerBlock))
       call lalg_clearVectorDble (DlocalDelta,nelementsPerBlock)
 
       ! Allocate memory for the coefficients.
       ! If the coefficient is constant, fill it with the value.
-      ! Otherwise, it's filled with the values later.
+      ! Otherwise, it is filled with the values later.
       allocate(Dnu(ncubp,nelementsPerBlock))
       if (rconfig%bconstNu) then
         Dnu(:,:) = rconfig%dnu
@@ -10864,10 +10864,10 @@ contains
         ! Number of the last element in the current set
         IELmax = min(size(p_IelementList),IELset-1+BILF_NELEMSIM)
 
-        ! Calculate the global DOF's into IdofsTrial / IdofsTest.
+        ! Calculate the global DOF`s into IdofsTrial / IdofsTest.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our BILF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our BILF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscr, p_IelementList(IELset:IELmax), &
                                     Idofs)
                                     
@@ -10875,7 +10875,7 @@ contains
         ! that we have to change.
         ! To calculate the matrix contributions, we have to evaluate
         ! the elements to give us the values of the basis functions
-        ! in all the DOF's in all the elements in our set.
+        ! in all the DOF`s in all the elements in our set.
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
@@ -10930,7 +10930,7 @@ contains
                 du1loc = 0.0_DP
                 du2loc = 0.0_DP
               
-                ! Perform a loop through the trial DOF's.
+                ! Perform a loop through the trial DOF`s.
                 do JDOFE=1,indof
 
                   ! Get the value of the (test) basis function 
@@ -10974,7 +10974,7 @@ contains
                 du2locx = 0.0_DP
                 du2locy = 0.0_DP
               
-                ! Perform a loop through the trial DOF's.
+                ! Perform a loop through the trial DOF`s.
                 do JDOFE=1,indof
 
                   ! Get the value of the (test) basis function 
@@ -11041,11 +11041,11 @@ contains
           call domint_doneIntegration (rintSubset)
         end if
 
-        ! Calculate local DELTA's for streamline diffusion method.
-        ! (cf. p. 121 in Turek's CFD book).
+        ! Calculate local DELTA`s for streamline diffusion method.
+        ! (cf. p. 121 in Turek`s CFD book).
         ! For every element, we need a local DELTA.
         ! Every local delta is weighted by the global "ddelta".
-        ! If ddelta=0, we don't do anything as this disables the
+        ! If ddelta=0, we do not do anything as this disables the
         ! nonlinear term.
         ! If UPSAM=0.0, we have a central-difference like discretisation, which
         ! is one can see as the local stabilisation weight Delta is also = 0.0.
@@ -11072,7 +11072,7 @@ contains
         ! we must clear everything, otherwise only Dentry.
         select case (inonlinComplexity)
         case (0,1)
-          ! There's only data for A11
+          ! There is only data for A11
           DentryA11 = 0.0_DP
         case (2)
           DentryA11 = 0.0_DP
@@ -11110,7 +11110,7 @@ contains
                 ! Normally, we have to take the absolut value of the determinant 
                 ! of the mapping here!
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 ! But because this routine only works in 2D, we can skip
                 ! the ABS here!
 
@@ -11145,7 +11145,7 @@ contains
                 !
                 ! Summing up over all pairs of multiindices.
                 !
-                ! Outer loop over the DOF's i=1..indof on our current element, 
+                ! Outer loop over the DOF`s i=1..indof on our current element, 
                 ! which corresponds to the basis functions Phi_i:
 
                 do IDOFE=1,indof
@@ -11176,7 +11176,7 @@ contains
 
                   HSUMI = HBASI2*du1loc + HBASI3*du2loc
 
-                  ! Inner loop over the DOF's j=1..indof, which corresponds to
+                  ! Inner loop over the DOF`s j=1..indof, which corresponds to
                   ! the basis function Phi_j:
 
                   do JDOFE=1,indof
@@ -11206,7 +11206,7 @@ contains
                     !     ( grad(Phi_j)_2   (DU2-DU2MV) )
                     !
                     ! But as v is already incorporated into DVelocity,
-                    ! we don't have to worry about that.
+                    ! we do not have to worry about that.
 
                     HSUMJ = HBASJ2*du1loc+HBASJ3*du2loc
         
@@ -11236,7 +11236,7 @@ contains
           
                     ! Weighten the calculated value AH by the cubature
                     ! weight OM and add it to the local matrix. After the
-                    ! loop over all DOF's is finished, each entry contains
+                    ! loop over all DOF`s is finished, each entry contains
                     ! the calculated integral.
 
                     DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11322,13 +11322,13 @@ contains
                 ! Normally, we have to take the absolut value of the determinant 
                 ! of the mapping here!
                 ! In 2D, the determinant is always positive, whereas in 3D,
-                ! the determinant might be negative -- that's normal!
+                ! the determinant might be negative -- that is normal!
                 ! But because this routine only works in 2D, we can skip
                 ! the ABS here!
 
                 OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
-                ! Outer loop over the DOF's i=1..indof on our current element, 
+                ! Outer loop over the DOF`s i=1..indof on our current element, 
                 ! which corresponds to the basis functions Phi_i:
 
                 do IDOFE=1,indof
@@ -11341,7 +11341,7 @@ contains
                   HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
                   HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
                  
-                  ! Inner loop over the DOF's j=1..indof, which corresponds to
+                  ! Inner loop over the DOF`s j=1..indof, which corresponds to
                   ! the basis function Phi_j:
 
                   do JDOFE=1,indof
@@ -11366,7 +11366,7 @@ contains
           
                     ! Weighten the calculated value AH by the cubature
                     ! weight OM and add it to the local matrix. After the
-                    ! loop over all DOF's is finished, each entry contains
+                    ! loop over all DOF`s is finished, each entry contains
                     ! the calculated integral.
 
                     DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11444,13 +11444,13 @@ contains
               ! Normally, we have to take the absolut value of the determinant 
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
               OM = Domega(ICUBP)*p_Ddetj(ICUBP,IEL)
 
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF`s i=1..indof on our current element, 
               ! which corresponds to the basis functions Phi_i:
 
               do IDOFE=1,indof
@@ -11462,7 +11462,7 @@ contains
                 HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
                 HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
                 
-                ! Inner loop over the DOF's j=1..indof, which corresponds to
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
 
                 do JDOFE=1,indof
@@ -11484,11 +11484,11 @@ contains
                   AH11 = dnuloc*(HBASI2*HBASJ2)
                   AH12 = dnuloc*(HBASI3*HBASJ2)
                   AH21 = dnuloc*(HBASI2*HBASJ3)
-                  ! AH22 = AH11, so don't compute.
+                  ! AH22 = AH11, so do not compute.
         
                   ! Weighten the calculated value AH by the cubature
                   ! weight OM and add it to the local matrix. After the
-                  ! loop over all DOF's is finished, each entry contains
+                  ! loop over all DOF`s is finished, each entry contains
                   ! the calculated integral.
 
                   DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11527,7 +11527,7 @@ contains
               ! Normally, we have to take the absolut value of the determinant 
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
@@ -11539,7 +11539,7 @@ contains
               du2locx = DvelocityVderiv (1,ICUBP,IEL)
               du2locy = DvelocityVderiv (2,ICUBP,IEL)
               
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF`s i=1..indof on our current element, 
               ! which corresponds to the basis functions Phi_i:
 
               do IDOFE=1,indof
@@ -11550,7 +11550,7 @@ contains
               
                 HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
                
-                ! Inner loop over the DOF's j=1..indof, which corresponds to
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
 
                 do JDOFE=1,indof
@@ -11600,7 +11600,7 @@ contains
         
                   ! Weighten the calculated value AHxy by the cubature
                   ! weight OM and add it to the local matrices. After the
-                  ! loop over all DOF's is finished, each entry contains
+                  ! loop over all DOF`s is finished, each entry contains
                   ! the calculated integral.
 
                   DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11639,7 +11639,7 @@ contains
               ! Normally, we have to take the absolut value of the determinant 
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
@@ -11649,7 +11649,7 @@ contains
               du1loc = Dvelocity (1,ICUBP,IEL)
               du2loc = Dvelocity (2,ICUBP,IEL)
               
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF`s i=1..indof on our current element, 
               ! which corresponds to the basis functions Phi_i:
 
               do IDOFE=1,indof
@@ -11662,7 +11662,7 @@ contains
                 HBASI2 = Dbas(IDOFE,2,ICUBP,IEL)
                 HBASI3 = Dbas(IDOFE,3,ICUBP,IEL)
                
-                ! Inner loop over the DOF's j=1..indof, which corresponds to
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
 
                 do JDOFE=1,indof
@@ -11685,7 +11685,7 @@ contains
         
                   ! Weighten the calculated value AHxy by the cubature
                   ! weight OM and add it to the local matrices. After the
-                  ! loop over all DOF's is finished, each entry contains
+                  ! loop over all DOF`s is finished, each entry contains
                   ! the calculated integral.
 
                   DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11724,7 +11724,7 @@ contains
               ! Normally, we have to take the absolut value of the determinant 
               ! of the mapping here!
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               ! But because this routine only works in 2D, we can skip
               ! the ABS here!
 
@@ -11736,7 +11736,7 @@ contains
               du2locx = DvelocityVderiv (1,ICUBP,IEL)
               du2locy = DvelocityVderiv (2,ICUBP,IEL)
               
-              ! Outer loop over the DOF's i=1..indof on our current element, 
+              ! Outer loop over the DOF`s i=1..indof on our current element, 
               ! which corresponds to the basis functions Phi_i:
 
               do IDOFE=1,indof
@@ -11747,7 +11747,7 @@ contains
               
                 HBASI1 = Dbas(IDOFE,1,ICUBP,IEL)
                
-                ! Inner loop over the DOF's j=1..indof, which corresponds to
+                ! Inner loop over the DOF`s j=1..indof, which corresponds to
                 ! the basis function Phi_j:
 
                 do JDOFE=1,indof
@@ -11775,7 +11775,7 @@ contains
         
                   ! Weighten the calculated value AHxy by the cubature
                   ! weight OM and add it to the local matrices. After the
-                  ! loop over all DOF's is finished, each entry contains
+                  ! loop over all DOF`s is finished, each entry contains
                   ! the calculated integral.
 
                   DentryA11(JDOFE,IDOFE,IEL) = DentryA11(JDOFE,IDOFE,IEL)+OM*AH11
@@ -11924,7 +11924,7 @@ contains
         ! As the element is a tri, multiply the volume by 2.
         dlocalH = sqrt(2.0_DP*p_DelementVolume(iel))
 
-        ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+        ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
         if (cstabiltype .eq. 0) then
 
@@ -12052,7 +12052,7 @@ contains
           ! Calculate the local h from the area of the element
           dlocalH = sqrt(p_DelementVolume(iel))
 
-          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+          ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
           if (cstabiltype .eq. 0) then
 
@@ -12128,7 +12128,7 @@ contains
           call getLocalMeshWidthQuad (dlocalH,dunorm, du1, du2, iel, &
               p_IverticesAtElement,p_DvertexCoords)
 
-          ! Calculate ddelta... (cf. p. 121 in Turek's CFD book)
+          ! Calculate ddelta... (cf. p. 121 in Turek`s CFD book)
 
           if (cstabiltype .eq. 0) then
 
@@ -12183,7 +12183,7 @@ contains
   ! Values of the local matrices.
   real(DP), dimension(:,:,:), intent(in) :: DentryA11,DentryA12,DentryA21,DentryA22
   
-  ! The DOF's on all elements the routine should work on
+  ! The DOF`s on all elements the routine should work on
   integer, dimension(:,:), intent(in) :: Idofs
   
   ! Collection structure. p_rmatrixQuickAccess1 points to the matrix
@@ -12212,7 +12212,7 @@ contains
       call lsyssc_getbase_double (rcollection%p_rmatrixQuickAccess1%RmatrixBlock(1,1),&
           p_Da11)
     
-      ! There's only data for A11
+      ! There is only data for A11
       do IEL=1,nelements
         do IDOFE=1,indof
           do JDOFE=1,indof
@@ -12317,7 +12317,7 @@ contains
   ! Values of the local matrices.
   real(DP), dimension(:,:,:), intent(in) :: DentryA11,DentryA12,DentryA21,DentryA22
   
-  ! The DOF's on all elements the routine should work on
+  ! The DOF`s on all elements the routine should work on
   integer, dimension(:,:), intent(in) :: Idofs
 
   ! Collection structure. p_rmatrixQuickAccess1 points to the matrix
@@ -12344,7 +12344,7 @@ contains
     select case (inonlinComplexity)
     case (0,1)
     
-      ! There's only data for A11
+      ! There is only data for A11
       do IEL=1,nelements
         do IDOFE=1,indof
           idfg=Idofs(IDOFE,IEL)

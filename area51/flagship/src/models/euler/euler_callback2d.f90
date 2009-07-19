@@ -2163,8 +2163,8 @@ contains
 
       ! The wall boundary conditions follow algorithm II from the paper
       !
-      !    "High-order accurate implementation of solid wall
-      !     boundary conditions in curved geometries"
+      !    `High-order accurate implementation of solid wall
+      !     boundary conditions in curved geometries`
       !     L. Krivodonova and M. Berger, J. Comput. Physics 211, (2006) 492-512
       !
       ! From the computed primitive values U=[rho, v1, v2, p] the boundary
@@ -2187,8 +2187,8 @@ contains
       ! at startup and the normal velocity is gradually driven to zero as the
       ! flow evolves. This technique is presented and analyzed by Lyra:
       !
-      !    "Unstructured Grid Adaptive Algorithms for 
-      !     Fluid Dynamics and Heat Conduction"
+      !    `Unstructured Grid Adaptive Algorithms for 
+      !     Fluid Dynamics and Heat Conduction`
       !     P.R.M. Lyra, PhD thesis, University of Wales, Swansea, 1994.
       !
       ! In the framework of algorithm II by Krivodonova and Berger the boundary
@@ -2333,14 +2333,14 @@ contains
 
       end do newton
 
-      ! Check if Newton's method converged
+      ! Check if Newton`s method converged
       if (ite .ge. 100) then
         if (present(istatus)) then
           istatus = -ibdrCondType
           return
         else
-          call output_line('Riemann solver failed due to divergence in&
-                           & Newton-Raphson iteration',&
+          call output_line('Riemann solver failed due to divergence in' // &
+                           ' Newton-Raphson iteration',&
                            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
           call sys_halt()
         end if
@@ -2517,8 +2517,8 @@ contains
 
       ! The subsonic outlet conditions follow the thesis
       !
-      ! "Adaptive Finite Element Solution Algorithm
-      !  for the Euler Equations", R.A. Shapiro
+      ! `Adaptive Finite Element Solution Algorithm
+      !  for the Euler Equations`, R.A. Shapiro
 
       ! The specified exit static/pressure is Deval=[ps]
       ps = DbdrValue(1)

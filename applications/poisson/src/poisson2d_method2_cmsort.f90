@@ -365,7 +365,7 @@ contains
     call lsysbl_createVecBlockIndirect (p_rrhs, p_rvector, .true.)
     
     ! Install the resorting strategy in the RHS- and the solution
-    ! vector, but don't resort them yet!
+    ! vector, but do not resort them yet!
     ! We resort the vectors just before solving.
     IsortStrategy(1) = p_rmatrix%RmatrixBlock(1,1)%isortStrategy
     call lsysbl_setSortStrategy (p_rrhs,IsortStrategy,h_Iresort)
@@ -399,7 +399,7 @@ contains
     type(t_vectorBlock), pointer :: p_rrhs,p_rvector
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
-    ! Pointer to structure for saving discrete BC's:
+    ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
 
     ! A boundary region
@@ -432,11 +432,11 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the 
     !   solution vector.
-    ! - Discretise the boundary condition so that the BC's can be applied
+    ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
-    ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
@@ -453,7 +453,7 @@ contains
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
         getBoundaryValues_2D,rproblem%rcollection)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
         rboundaryRegion,rproblem%RlevelInfo(1)%rdiscreteBC,&
@@ -566,7 +566,7 @@ contains
       ! The vectors are assumed to know how they are resorted (the strategy
       ! is already attached to them). So call the resorting routines
       ! to resort them as necessary!
-      ! We use the first subvector of rtempBlock as temporary data; it's
+      ! We use the first subvector of rtempBlock as temporary data; it is
       ! large enough, as we only have one block.
       call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.true.)
       call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.true.)
@@ -601,9 +601,9 @@ contains
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
     ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
+    ! Remark: Do not make a call like
     !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
+    ! This does not work on all compilers, since the compiler would have
     ! to create a temp array on the stack - which does not always work!
     Rmatrices = (/p_rmatrix/)
     call linsol_setMatrices(p_RsolverNode,Rmatrices)
@@ -633,7 +633,7 @@ contains
     
     ! Unsort the vectors again in case they were resorted before calling 
     ! the solver. 
-    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
     call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
     call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.false.)
@@ -697,7 +697,7 @@ contains
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -858,7 +858,7 @@ contains
     ! A problem structure for our problem
     type(t_problem), target :: rproblem
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     ! We want to solve our Poisson problem on level...
     NLMAX = 7
     

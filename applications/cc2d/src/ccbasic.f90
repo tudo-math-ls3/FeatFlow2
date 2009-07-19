@@ -150,11 +150,11 @@ module ccbasic
     type(t_vectorBlock) :: rtempVector
 
     ! A variable describing the discrete boundary conditions fo the velocity.
-    ! Points to NULL until the BC's are discretised for the first time.
+    ! Points to NULL until the BC`s are discretised for the first time.
     type(t_discreteBC), pointer :: p_rdiscreteBC => null()
   
     ! A structure for discrete fictitious boundary conditions
-    ! Points to NULL until the BC's are discretised for the first time.
+    ! Points to NULL until the BC`s are discretised for the first time.
     type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
     
     ! This flag signales whether there are Neumann boundary components
@@ -387,7 +387,7 @@ module ccbasic
 !    - Matrices and
 !    - Temporary vectors
 ! This problem structure is available only in the top-level routines of
-! the CC2D module; it's not available in any callback routines.
+! the CC2D module; it is not available in any callback routines.
 ! Parameters for callback routines are passed through the collection
 ! structure rcollection, which is part of the problem structure.
 !

@@ -73,12 +73,12 @@
     ! in Ielements.
     real(DP), dimension(NDIM2D,npointsPerElement,nelements), intent(IN) :: DcubPtsReal
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in trial space,nelements)
     integer(PREC_DOFIDX), dimension(:,:) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
     integer(PREC_DOFIDX), dimension(:,:) :: IdofsTest
     
     ! The Jacobian matrix of the mapping between the reference and each

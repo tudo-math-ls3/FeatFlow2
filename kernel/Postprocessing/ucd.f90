@@ -41,7 +41,7 @@
 !#      -> Allows to specify for every cell a material id.
 !#
 !#  9.) ucd_setMaterials
-!#      -> Allows to specify material names for the material id's that
+!#      -> Allows to specify material names for the material ID`s that
 !#         are assigned to cells/vertices in ucd_setVertexMaterial and
 !#         ucd_setCellMaterial, respectively.
 !#
@@ -414,7 +414,7 @@ module ucd
     
     ! A list of handles to tracer data. Each handle identifies an
     ! "array[1..#tracers] of double", which specifies data for each
-    ! tracer. p_StracerVariableNames[i] os the name of the i'th array.
+    ! tracer. p_StracerVariableNames[i] os the name of the i-th array.
     integer, dimension(:), pointer :: p_HtracerVariables => null()
     
     ! A handle to an array containing for every cell a cell material id.
@@ -593,7 +593,7 @@ contains
     ! And get a pointer to them
     call storage_getbase_double2D(rrefine%h_DvertexCoords, p_DnewVerts)
     
-    ! Get pointers to the triangulation's arrays
+    ! Get pointers to the triangulation`s arrays
     call storage_getbase_double2D(rtria%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_int2D(rtria%h_IverticesAtEdge, p_IvertsAtEdge)
     call storage_getbase_int2D(rtria%h_IedgesAtElement, p_IedgesAtElement)
@@ -730,7 +730,7 @@ contains
         ! K => NEL + 3*(IEL - 1) + 2
         ! L => NEL + 3*(IEL - 1) + 3
         
-        ! Get the element's mid-point offset
+        ! Get the element`s mid-point offset
         ivt = rtria%NVT + off + i
         ! Quad I
         p_InewVertsAtElement(1, i) = p_IvertsAtElement(1, i)
@@ -760,7 +760,7 @@ contains
     
     end do
     
-    ! That's it
+    ! That is it
     
   end subroutine
 
@@ -1084,7 +1084,7 @@ contains
     ! Release all tracer information
     call ucd_removeTracers (rexport)
 
-    ! Don't deallocate the tringulation -- we are not the owner!!! :-)
+    ! Do not deallocate the tringulation -- we are not the owner!!! :-)
 
   end subroutine
 
@@ -1178,7 +1178,7 @@ contains
   subroutine ucd_setMaterials (rexport,SmaterialsCells,SmaterialsVert)
   
 !<description>
-  ! This routine allows to specify names for material id's.
+  ! This routine allows to specify names for material ID`s.
   ! SmaterialsCells is a list of material names for cells and
   ! SmaterialsVert a list of material names for vertices/nodes. 
   ! SmaterialsCell(i)/SmaterialsVert(i) is the 
@@ -1193,11 +1193,11 @@ contains
  
 !<input>
   ! Array with strings for the cell materials.
-  ! The i'th string specifies a material id of material i.
+  ! The i-th string specifies a material id of material i.
   character(LEN=SYS_NAMELEN), dimension(:), intent(in) :: SmaterialsCells
   
   ! OPTIONAL: Array with strings for the vertex/node materials.
-  ! The i'th string specifies a material id of material i.
+  ! The i-th string specifies a material id of material i.
   ! If not specified, the same material names will be used for both,
   ! cells and vertices.
   character(LEN=SYS_NAMELEN), dimension(:), intent(in), optional :: SmaterialsVert
@@ -1591,7 +1591,7 @@ contains
         
         end do ! icoor
         
-        ! If there are not enough coordinates, we must add 0's -- as
+        ! If there are not enough coordinates, we must add 0`s -- as
         ! GMV always expects 3D data.
 
         do icoor = ubound(p_DvertexCoords,1)+1 , 3
@@ -1980,7 +1980,7 @@ contains
           end do
           
           if (rexport%hIcellMaterial .ne. ST_NOHANDLE) then
-            ! Write a list of material id's. For every cell, we specify its
+            ! Write a list of material ID`s. For every cell, we specify its
             ! material by the material number.
             call storage_getbase_int (rexport%hIcellMaterial,p_Idata)
             do i=1,size(p_Idata)
@@ -2002,7 +2002,7 @@ contains
           end do
           
           if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
-            ! Write a list of material id's. For every vertex, we specify its
+            ! Write a list of material ID`s. For every vertex, we specify its
             ! material by the material number.
             call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
             do i=1,size(p_Idata)
@@ -2023,7 +2023,7 @@ contains
           end if
           
           if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
-            ! Write a list of material id's. For every vertex, we specify its
+            ! Write a list of material ID`s. For every vertex, we specify its
             ! material by the material number.
             call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
             do i=1,size(p_Idata)
@@ -2054,7 +2054,7 @@ contains
             
             call storage_getbase_double (rexport%p_Hvariables(i),p_Ddata)
             
-            ! Don't be confused! ivt=number of cell, as we are in the 
+            ! Do not be confused! ivt=number of cell, as we are in the 
             ! 'cell-oriented' case here!!!
             do ivt=1,rexport%ncells
               write (MFILE,rexport%sdataFormat) p_Ddata(ivt)
@@ -2075,7 +2075,7 @@ contains
               end if
             end do
               if (j .gt. rexport%nvariables) then
-                ! Not found. Write out 0's instead.
+                ! Not found. Write out 0`s instead.
                 do ivt=1,rexport%ncells
                   write (MFILE,rexport%sdataFormat) 0.0_DP
                 end do
@@ -2096,7 +2096,7 @@ contains
                 end if
               end do
               if (j .gt. rexport%nvariables) then
-                ! Not found. Write out 0's instead.
+                ! Not found. Write out 0`s instead.
                 do ivt=1,rexport%ncells
                   write (MFILE,rexport%sdataFormat) 0.0_DP
                 end do
@@ -2133,7 +2133,7 @@ contains
               end if
             end do
             if (j .gt. rexport%nvariables) then
-              ! Not found. Write out 0's instead.
+              ! Not found. Write out 0`s instead.
               do ivt=1,rexport%nvertices
                 write (MFILE,rexport%sdataFormat) 0.0_DP
               end do
@@ -2154,7 +2154,7 @@ contains
               end if
             end do
             if (j .gt. rexport%nvariables) then
-              ! Not found. Write out 0's instead.
+              ! Not found. Write out 0`s instead.
               do ivt=1,rexport%nvertices
                 write (MFILE,rexport%sdataFormat) 0.0_DP
               end do
@@ -3029,7 +3029,7 @@ contains
         end do
         
         if (rexport%hIcellMaterial .ne. ST_NOHANDLE) then
-          ! Write a list of material id's. For every cell, we specify its
+          ! Write a list of material ID`s. For every cell, we specify its
           ! material by the material number.
           call storage_getbase_int (rexport%hIcellMaterial,p_Idata)
           do i=1,size(p_Idata)
@@ -3050,7 +3050,7 @@ contains
         end do
         
         if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
-          ! Write a list of material id's. For every vertex, we specify its
+          ! Write a list of material ID`s. For every vertex, we specify its
           ! material by the material number.
           call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
           do i=1,size(p_Idata)
@@ -3070,7 +3070,7 @@ contains
         end if
         
         if (rexport%hIvertexMaterial .ne. ST_NOHANDLE) then
-          ! Write a list of material id's. For every vertex, we specify its
+          ! Write a list of material ID`s. For every vertex, we specify its
           ! material by the material number.
           call storage_getbase_int (rexport%hIvertexMaterial,p_Idata)
           do i=1,size(p_Idata)
@@ -3103,7 +3103,7 @@ contains
           ! Allocate temporal memory
           allocate(X(rexport%ncells), Y(rexport%ncells), Z(rexport%ncells))
           
-          ! Don't be confused! ivt=number of cell, as we are in the 
+          ! Do not be confused! ivt=number of cell, as we are in the 
           ! 'cell-oriented' case here!!!
           do ivt=1,rexport%ncells
             X(ivt) = p_Ddata(ivt)
@@ -3124,7 +3124,7 @@ contains
             end if
           end do
           if (j .gt. rexport%nvariables) then
-            ! Not found. Write out 0's instead.
+            ! Not found. Write out 0`s instead.
             do ivt=1,rexport%ncells
               Y(ivt) = 0.0E0
             end do
@@ -3145,7 +3145,7 @@ contains
             end if
           end do
           if (j .gt. rexport%nvariables) then
-            ! Not found. Write out 0's instead.
+            ! Not found. Write out 0`s instead.
             do ivt=1,rexport%ncells
               Z(ivt) = 0.0E0
             end do
@@ -3189,7 +3189,7 @@ contains
             end if
           end do
           if (j .gt. rexport%nvariables) then
-            ! Not found. Write out 0's instead.
+            ! Not found. Write out 0`s instead.
             do ivt=1,rexport%nvertices
               Y(ivt) = 0.0E0
             end do
@@ -3210,7 +3210,7 @@ contains
             end if
           end do
           if (j .gt. rexport%nvariables) then
-            ! Not found. Write out 0's instead.
+            ! Not found. Write out 0`s instead.
             do ivt=1,rexport%nvertices
               Z(ivt) = 0.0E0
             end do
@@ -4129,7 +4129,7 @@ contains
         
       end if
       
-      ! That's it
+      ! That is it
 
     end subroutine
     
@@ -4487,7 +4487,7 @@ contains
       call sys_halt()
     end if
     
-    ! Let's create a new vector first
+    ! Let us create a new vector first
     if (.not. associated(rexport%p_Ivectors)) then
       call ucd_moreVectors(rexport)
     endif
@@ -4533,7 +4533,7 @@ contains
       rexport%p_Ivectors(4,rexport%nvectors) = 0
     end if
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -4576,7 +4576,7 @@ contains
       call sys_halt()
     end if
     
-    ! Let's create a new vector first
+    ! Let us create a new vector first
     if (.not. associated(rexport%p_Ivectors)) then
       call ucd_moreVectors(rexport)
     endif
@@ -4622,7 +4622,7 @@ contains
       rexport%p_Ivectors(4,rexport%nvectors) = 0
     end if
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -5004,7 +5004,7 @@ contains
     if (present(ssimTimeFormat)) then
       rexport%ssimTimeFormat = ssimTimeFormat
       
-      ! Text the output format string -- to be sure it's valid.
+      ! Text the output format string -- to be sure it is valid.
       ! If not, a compiler error is thrown here! This is either
       ! a runtime error or simply a message on the screen.
       write(stext,ssimTimeFormat) 0.0_DP
@@ -5053,7 +5053,7 @@ contains
     ! Copy the output format string and overwrite the standard setting.
     rexport%sdataFormat = sformat
     
-    ! Text the output format string -- to be sure it's valid.
+    ! Text the output format string -- to be sure it is valid.
     ! If not, a compiler error is thrown here! This is either
     ! a runtime error or simply a message on the screen.
     write(stext,sformat) 0.0_DP
@@ -5791,7 +5791,7 @@ contains
       read(mfile,*) Dy(:)
       read(mfile,*) Dz(:)
       
-      ! 2D or 3D mesh? It's 3D as soon as one Z-coordinate is <> 0
+      ! 2D or 3D mesh? It is 3D as soon as one Z-coordinate is <> 0
       rtriangulation%ndim = NDIM2D
       do i=1,n
         if (Dz(i) .ne. 0.0_DP) then
@@ -5854,7 +5854,7 @@ contains
       rtriangulation%InelOfType(:) = 0
       
       ! Allocate memory for connectivity. We support up to TRIA_MAXNVE
-      ! vertices per element and don't know a-priori
+      ! vertices per element and do not know a-priori
       allocate(IverticesAtElement(TRIA_MAXNVE,n))
       
       ! Read the next n cell data tags.
@@ -5891,7 +5891,7 @@ contains
         p_Idata2D(1:nmaxnve,i) = IverticesAtElement(1:nmaxnve,i)
       end do
       
-      ! We don't need IverticesAtElement anymore...
+      ! We do not need IverticesAtElement anymore...
       deallocate(IverticesAtElement)
 
       select case (rtriangulation%ndim)
@@ -6038,10 +6038,10 @@ contains
               iveprevious = mod(ive+nve-2,nve)+1
               ivenext = mod(ive,nve)+1
               
-              ! On that element, check the edge following the vertex if it's a boundary edge.
+              ! On that element, check the edge following the vertex if it is a boundary edge.
               if (p_IneighboursAtElement(ive,iel) .eq. 0) then
               
-                ! Yes, that's a boundary edge. does it lead to a vertex that we haven't had?
+                ! Yes, that is a boundary edge. does it lead to a vertex that we have not had?
                 if (p_InodalProperty(p_IverticesAtElement(ivenext,iel)) .eq. -1) then
                   ! Yes! That node is now a boundary node. We continue with it.
                   ivt2 = p_IverticesAtElement(ivenext,iel)
@@ -6050,10 +6050,10 @@ contains
               
               end if
                 
-              ! No, it's not. Check the previous edge
+              ! No, it is not. Check the previous edge
               if (p_IneighboursAtElement(iveprevious,iel) .eq. 0) then
               
-                ! Yes, that's a boundary edge. does it lead to a vertex that we haven't had?
+                ! Yes, that is a boundary edge. does it lead to a vertex that we have not had?
                 if (p_InodalProperty(p_IverticesAtElement(iveprevious,iel)) .eq. -1) then
                   ! Yes! That node is now a boundary node. We continue with it.
                   ivt2 = p_IverticesAtElement(iveprevious,iel)
@@ -6114,7 +6114,7 @@ contains
       ! Clear the array -- we have no parameter values!
       call lalg_clearVectorDble (p_DvertexParameterValue)
     
-      ! InodalProperty is completely classified -- that's it.
+      ! InodalProperty is completely classified -- that is it.
     
     end subroutine
 
@@ -6150,7 +6150,7 @@ contains
     ! Start the output
     select case(rexport%coutputFormat)
     case (UCD_FORMAT_GMV,UCD_FORMAT_AVS,UCD_FORMAT_VTK)
-      ! Here it's ok to change the filename
+      ! Here it is ok to change the filename
       rexport%sfilename = sfilename
     case DEFAULT
       call output_line ('Cannot change filename', &
@@ -6225,7 +6225,7 @@ contains
           call lalg_copyVectorDble (p_Ddata,Ddata(1:size(p_Ddata)))
         end if
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     

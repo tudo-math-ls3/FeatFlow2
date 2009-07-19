@@ -589,7 +589,7 @@ contains
     
     end do ! idofp
     
-    ! Now we know the number of non-zeroes in S, so let's allocate column index
+    ! Now we know the number of non-zeroes in S, so let us allocate column index
     ! array.
     call storage_new ('spsor_asmMatStructS', 'Kcol', rS%NA, ST_INT,&
                       rS%h_Kcol, ST_NEWBLOCK_NOINIT)
@@ -622,7 +622,7 @@ contains
     ! Build the diagonal pointer array
     call lsyssc_rebuildKdiagonal(p_KcolS,p_KldS,p_KdiagS,ndofp)
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -705,7 +705,7 @@ contains
         celemV = elem_getPrimaryElement(&
                  p_rdiscrV%RelementDistr(ieldist)%celement)
 
-        ! What's the velocity element?
+        ! What is the velocity element?
         select case(celemV)
         case(EL_P1T_2D)
         
@@ -766,7 +766,7 @@ contains
         celemP = elem_getPrimaryElement(&
                  p_rdiscrP%RelementDistr(ieldist)%celement)
         
-        ! What's the pressure element?
+        ! What is the pressure element?
         select case(celemP)
         case(EL_P0_2D, EL_Q0_2D)
 
@@ -818,7 +818,7 @@ contains
     ! Allocate an empty matrix
     call lsyssc_allocEmptyMatrix (rdata%rS, LSYSSC_SETM_UNDEFINED)
 
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -875,7 +875,7 @@ contains
         ! Skip the block if it is empty
         if(rmatrix%RmatrixBlock(i,j)%NEQ .le. 0) cycle
 
-        ! Make sure it's a type-9 matrix
+        ! Make sure it is a type-9 matrix
         if(rmatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIX9) then
           if(present(bvalid)) then
             return
@@ -886,7 +886,7 @@ contains
           end if
         end if
         
-        ! Make sure it's not virtually transposed
+        ! Make sure it is not virtually transposed
         if(iand(rmatrix%RmatrixBlock(i,j)%imatrixSpec,&
                 LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
           if(present(bvalid)) then
@@ -1093,7 +1093,7 @@ contains
 !          todo
         end select
         
-        ! If none of the above special cases applied, we'll take care of
+        ! If none of the above special cases applied, we will take care of
         ! the initialisation now...
         if(.not. bdone) then
         
@@ -1146,7 +1146,7 @@ contains
   real(DP) :: dc,daux1,daux2
   integer :: idofp,idofu,i,j,k,ndofV
 
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
@@ -1187,7 +1187,7 @@ contains
       if(dsfC .eq. 0.0_DP) bHaveC = .false.
     end if
 
-    ! Let's loop over all rows of S
+    ! Let us loop over all rows of S
     do idofp = 1, rdata%rS%NEQ
     
       ! Format the local matrices
@@ -1199,12 +1199,12 @@ contains
       ! Fetch the number of velocity DOFs adjacent to this pressure DOF
       ndofV = p_KldD(idofp+1) - p_KldD(idofp)
       
-      ! If the C matrix exists, grab it's main diagonal entry
+      ! If the C matrix exists, grab it is main diagonal entry
       if(bHaveC) then
         dc = dsfC*p_DC(p_KdiagC(idofp))
       end if
       
-      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! Let us loop over all velocity DOFs which are adjacent to the current
       ! pressure DOF.
       daux1 = 0.0_DP
       daux2 = 0.0_DP
@@ -1227,16 +1227,16 @@ contains
       
       end do ! id1
       
-      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
       dc = dc - dsf1*daux1 - dsf2*daux2
       
-      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
       if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
       
     end do ! idofp
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1277,7 +1277,7 @@ contains
   real(DP) :: dc,daux1,daux2
   integer :: idofp,idofu,i,j1,j2,k,id1,id2
 
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .false.
     
     ! Fetch the sub-matrix arrays
@@ -1319,7 +1319,7 @@ contains
       if(dsfC .eq. 0.0_DP) bHaveC = .false.
     end if
 
-    ! Let's loop over all rows of S
+    ! Let us loop over all rows of S
     do idofp = 1, rdata%rS%NEQ
     
       ! Format the local matrices
@@ -1332,12 +1332,12 @@ contains
       ! Format the Schur-complement entry for this pressure DOF
       p_DS(idofp) = 0.0_DP
 
-      ! If the C matrix exists, grab it's main diagonal entry
+      ! If the C matrix exists, grab it is main diagonal entry
       if(bHaveC) then
         dc = dsfC*p_DC(p_KdiagC(idofp))
       end if
       
-      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! Let us loop over all velocity DOFs which are adjacent to the current
       ! pressure DOF.
       do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
       
@@ -1347,13 +1347,13 @@ contains
         ! Calculate the local index of the velocity DOF
         j1 = id1 - p_KldD(idofp) + 1
         
-        ! Let's fetch the local A11/A22 matrices
+        ! Let us fetch the local A11/A22 matrices
         do i = p_KldA(idofu), p_KldA(idofu+1)-1
         
           ! Get the column index
           k = p_KcolA(i)
           
-          ! Let's see if this corresponds to one of our local velocity DOFs
+          ! Let us see if this corresponds to one of our local velocity DOFs
           do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
             if(k .eq. p_KcolD(id2)) then
               ! Okay, incorporate the entries into the local matrix
@@ -1365,7 +1365,7 @@ contains
           end do ! id2
         end do ! i
 
-        ! Let's fetch the local B matrices
+        ! Let us fetch the local B matrices
         do i = p_KldB(idofu), p_KldB(idofu+1)-1
           if(p_KcolB(i) .eq. idofP) then
             DB1(j1) = dsfB1*p_DB1(i)
@@ -1384,7 +1384,7 @@ contains
       DIB1 = matmul(DI1, DB1)
       DIB2 = matmul(DI2, DB2)
       
-      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
       daux1 = 0.0_DP
       daux2 = 0.0_DP
       k = 1
@@ -1395,13 +1395,13 @@ contains
       end do
       dc = dc - dsfD1*daux1 - dsfD2*daux2
       
-      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
       if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
       
     end do ! idofp
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1445,7 +1445,7 @@ contains
   real(DP) :: dc,daux1,daux2
   integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
 
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     bHaveC = .false.
     
@@ -1510,12 +1510,12 @@ contains
     end do ! idofp
     nmaxdofV = 2*nmaxdofV
     
-    ! Okay, let's allocate the temporary data
+    ! Okay, let us allocate the temporary data
     allocate(DA(nmaxdofV,nmaxdofV))
     allocate(DB(nmaxdofV))
     allocate(Ipivot(nmaxdofV))
     
-    ! Let's loop over all rows of S
+    ! Let us loop over all rows of S
     do idofp = 1, rdata%rS%NEQ
     
       ! Format the local matrices
@@ -1529,12 +1529,12 @@ contains
       ! Fetch the number of velocity DOFs adjacent to this pressure DOF
       ndofV = p_KldD(idofp+1) - p_KldD(idofp)
       
-      ! If the C matrix exists, grab it's main diagonal entry
+      ! If the C matrix exists, grab it is main diagonal entry
       if(bHaveC) then
         dc = dsfC*p_DC(p_KdiagC(idofp))
       end if
       
-      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! Let us loop over all velocity DOFs which are adjacent to the current
       ! pressure DOF.
       do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
       
@@ -1544,13 +1544,13 @@ contains
         ! Calculate the local index of the velocity DOF
         j1 = id1 - p_KldD(idofp) + 1
         
-        ! Let's fetch the local A11/A22 matrices
+        ! Let us fetch the local A11/A22 matrices
         do i = p_KldA(idofu), p_KldA(idofu+1)-1
         
           ! Get the column index
           k = p_KcolA(i)
           
-          ! Let's see if this corresponds to one of our local velocity DOFs
+          ! Let us see if this corresponds to one of our local velocity DOFs
           do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
             if(k .eq. p_KcolD(id2)) then
               ! Okay, incorporate the entries into the local matrix
@@ -1565,13 +1565,13 @@ contains
         ! Do the A12/A21 matrices exist? If yes, then we also need to grab
         ! their local sub-matrices.
         if(bHaveA12) then
-          ! Let's fetch the local A12/A21 matrices
+          ! Let us fetch the local A12/A21 matrices
           do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
           
             ! Get the column index
             k = p_KcolA12(i)
             
-            ! Let's see if this corresponds to one of our local velocity DOFs
+            ! Let us see if this corresponds to one of our local velocity DOFs
             do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
               if(k .eq. p_KcolD(id2)) then
                 ! Okay, incorporate the entries into the local matrix
@@ -1584,7 +1584,7 @@ contains
           end do ! i
         end if
 
-        ! Let's fetch the local B matrices
+        ! Let us fetch the local B matrices
         do i = p_KldB(idofu), p_KldB(idofu+1)-1
           if(p_KcolB(i) .eq. idofP) then
             DB(      j1) = dsfB1*p_DB1(i)
@@ -1601,7 +1601,7 @@ contains
       ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
       if(info .ne. 0) cycle
       
-      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
       daux1 = 0.0_DP
       daux2 = 0.0_DP
       k = 1
@@ -1612,7 +1612,7 @@ contains
       end do
       dc = dc - dsfD1*daux1 - dsfD2*daux2
       
-      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
       if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
       
@@ -1623,7 +1623,7 @@ contains
     deallocate(DB)
     deallocate(DA)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1669,7 +1669,7 @@ contains
   integer :: irow,idofp,idofu,i,j,k,idx,nmaxdofV,nmaxdofP,ndofV,ndofP,info
   integer :: id1,id2,is1
   
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     bHaveC = .false.
     
@@ -1739,7 +1739,7 @@ contains
     end do ! idofp
     nmaxdofV = 2*nmaxdofV
     
-    ! Okay, let's allocate the auxiliary arrays
+    ! Okay, let us allocate the auxiliary arrays
     allocate(DA(nmaxdofV,nmaxdofV))
     allocate(DB(nmaxdofV,nmaxdofP))
     allocate(DC(nmaxdofP,nmaxdofP))
@@ -1748,7 +1748,7 @@ contains
     allocate(IdofsV(nmaxdofV))
     allocate(IdofsP(nmaxdofP))
     
-    ! Let's loop over all rows of S
+    ! Let us loop over all rows of S
     do irow = 1, rdata%rS%NEQ
     
       ! Check the first non-zero entry of S. If its column index is less
@@ -1776,7 +1776,7 @@ contains
         IdofsP(i-k+1) = p_KcolS(i)
       end do ! i
       
-      ! If the C matrix exists, grab it's main diagonal entry
+      ! If the C matrix exists, grab it is main diagonal entry
       if(bHaveC) then
       
         ! Loop over all local pressure DOFs
@@ -1791,7 +1791,7 @@ contains
             ! Get the index of the pressure DOF
             idx = p_KcolC(k)
             
-            ! Let's see if this corresponds to one of our local pressure DOFs
+            ! Let us see if this corresponds to one of our local pressure DOFs
             do j = 1, ndofP
               if(idx .eq. IdofsP(j)) then
                 DC(i,j) = dsfC*p_DC(k)
@@ -1803,20 +1803,20 @@ contains
 
       end if
       
-      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! Let us loop over all velocity DOFs which are adjacent to the current
       ! pressure DOF.
       do i = 1, ndofV
       
         ! Get the index of the velocity DOF
         idofu = IdofsV(i)
         
-        ! Let's fetch the local A11/A22 matrices
+        ! Let us fetch the local A11/A22 matrices
         do k = p_KldA(idofu), p_KldA(idofu+1)-1
         
           ! Get the column index
           idx = p_KcolA(k)
           
-          ! Let's see if this corresponds to one of our local velocity DOFs
+          ! Let us see if this corresponds to one of our local velocity DOFs
           do j = 1, ndofV
             if(idx .eq. IdofsV(j)) then
               DA(      i,      j) = dsfA11*p_DA11(k)
@@ -1829,13 +1829,13 @@ contains
         ! Do the A12/A21 matrices exist? If yes, then we also need to grab
         ! their local sub-matrices.
         if(bHaveA12) then
-          ! Let's fetch the local A12/A21 matrices
+          ! Let us fetch the local A12/A21 matrices
           do k = p_KldA12(idofu), p_KldA12(idofu+1)-1
           
             ! Get the column index
             idx = p_KcolA12(k)
             
-            ! Let's see if this corresponds to one of our local velocity DOFs
+            ! Let us see if this corresponds to one of our local velocity DOFs
             do j = 1, ndofV
               if(idx .eq. IdofsV(j)) then
                 DA(      i,ndofV+j) = dsfA12*p_DA12(k)
@@ -1846,13 +1846,13 @@ contains
           end do ! k
         end if
 
-        ! Let's fetch the local B matrices
+        ! Let us fetch the local B matrices
         do k = p_KldB(idofu), p_KldB(idofu+1)-1
         
           ! Get the column index
           idx = p_KcolB(k)
           
-          ! Let's see if this corresponds to one of our local pressure DOFs
+          ! Let us see if this corresponds to one of our local pressure DOFs
           do j = 1, ndofP
             if(idx .eq. IdofsP(j)) then
               DB(      i,j) = dsfB1*p_DB1(k)
@@ -1870,7 +1870,7 @@ contains
       ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
       if(info .ne. 0) cycle
       
-      ! Okay, let's calculate the Schur-complement C := C - D * A^-1 * B
+      ! Okay, let us calculate the Schur-complement C := C - D * A^-1 * B
       ! Loop over all local pressure DOFs
       do i = 1, ndofP
       
@@ -1902,7 +1902,7 @@ contains
       end do
       call DGESV(ndofP,ndofP,DC,nmaxdofP,Ipivot,DS,nmaxdofP,info)
       
-      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
       if(info .ne. 0) cycle
       
@@ -1926,7 +1926,7 @@ contains
     deallocate(DB)
     deallocate(DA)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1979,7 +1979,7 @@ contains
   logical :: bHaveA12
   real(DP) :: domegaA, domegaS
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
@@ -2107,7 +2107,7 @@ contains
     
     end do ! iter
     
-    ! That's it
+    ! That is it
     
   end subroutine
 
@@ -2153,7 +2153,7 @@ contains
   logical :: bHaveA12
   real(DP) :: domegaA, domegaS
   
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
@@ -2261,7 +2261,7 @@ contains
     
     end if
     
-    ! That's it
+    ! That is it
     
   end subroutine
 
@@ -2308,7 +2308,7 @@ contains
   logical :: bHaveA12
   real(DP) :: domegaA, domegaS
   
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     
     ! Fetch the sub-matrix arrays
@@ -2456,7 +2456,7 @@ contains
 
     end if
 
-    ! That's it
+    ! That is it
     
   end subroutine
 

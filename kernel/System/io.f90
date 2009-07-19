@@ -322,7 +322,7 @@ contains
       ios = 0
       
 30    continue    
-      ! Don't do anything in case of an error
+      ! Do not do anything in case of an error
       if (ios .eq. 0) then
         
         ilinelen = ilinelen + 1
@@ -363,11 +363,11 @@ contains
   
     integer :: i
   
-    ! Find the last "/" or "\" in sfile.
-    ! Note that we specified "\\" and not "\" because the PGI compiler
+    ! Find the last "/" or "\" in sfile.                                (!" cpp fix)
+    ! Note that we specified "\\" and not "\" because the PGI compiler  (!" cpp fix)
     ! (stupid thing) would otherwise use the backslash to escape the quote
-    ! character. So PGI sees "/\" and other compiler see "/\\", but this
-    ! doesn't matter since the string must only contain a couple of
+    ! character. So PGI sees "/\" and other compiler see "/\\", but this (!" cpp fix)
+    ! does not matter since the string must only contain a couple of
     ! delimiters which may occur more than once in the string.
     i = scan(sfile,"/\\",.true.)
     if (i .ne. 0) then

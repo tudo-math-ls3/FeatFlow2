@@ -6,7 +6,7 @@
 !# <purpose>
 !# This module contains routines to initialise a linear solver for a given
 !# situation. On one hand, it provides initialisation routines for standard
-!# solver settings. On the other hand, there's a parser included which can
+!# solver settings. On the other hand, there is a parser included which can
 !# read user-defined text files from hard disc that configure the setting of
 !# a solver.
 !#
@@ -291,7 +291,7 @@ contains
     
     ! Ok, we have the section where we can get parameters from.
     ! Get the solver type we should set up.
-    ! Let's hope the parameter 'isolverType' exists! That one is
+    ! Let us hope the parameter 'isolverType' exists! That one is
     ! mandatory; if not, the get-routine will stop.
     call parlst_getvalue_int (p_rsection, 'isolverType', isolverType)
 
@@ -427,7 +427,7 @@ contains
       !  spostSmootherName                -> Name of the postsmoother section
       !  scoarseGridSolver                -> Name of the coarse grid solver section
       !
-      ! Ok, that's the most complicated one :-)
+      ! Ok, that is the most complicated one :-)
       ! At first, initialise the solver:
       call linsol_initMultigrid (p_rsolverNode,p_Rfilter)
       
@@ -485,7 +485,7 @@ contains
       ! Build all levels. Level 1 receives the coarse grid solver.
       do ilev = 1,nlevels
         
-        ! Where we have a coarse grid solver (level 1), we don't need smoothers.
+        ! Where we have a coarse grid solver (level 1), we do not need smoothers.
         if (associated(p_rcoarsegridsolver)) then
           nullify(p_rpresmoother)
           nullify(p_rpostsmoother)

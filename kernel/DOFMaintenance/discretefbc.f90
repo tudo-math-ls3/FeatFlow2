@@ -9,13 +9,13 @@
 !# are an element-dependent way to represent analytical 'boundary conditions' 
 !# in a general sense. After 'discretising', the boundary condition can quickly
 !# be implemented into a vector. Therefore, one can see discrete boundary
-!# conditions also as a kind of 'precalculated boundary conditions of 
-!# fictitious boundary objects'. This is exploited e.g. in the filter approach,
+!# conditions also as a kind of `precalculated boundary conditions of 
+!# fictitious boundary objects`. This is exploited e.g. in the filter approach,
 !# where a filter routine 'applies' a discrete FBC to a vector. 
 !#
 !# Usually, one fictitious boundary object may consist of multiple subobjects
 !# like balls or general shapes) which all share the same boundary condition.
-!# 'Discretising' this means collecting all the DOF's that are affected by
+!# 'Discretising' this means collecting all the DOF`s that are affected by
 !# such an object as well as specifying a strategy how to modify matrix,
 !# solution and/or RHS vector.
 !# 
@@ -43,14 +43,14 @@ module discretefbc
 
 !<constantblock description="General constants concerning filters">
 
-  ! A standard length for arrays holding a set of discretised BC's
+  ! A standard length for arrays holding a set of discretised BC`s
   integer, parameter, public :: DISCFBC_MAXDISCBC         =  32
 
 !</constantblock>
 
 !<constantblock description="The type identifier for discrete boundary conditions">
 
-  ! undefined discrete BC's
+  ! undefined discrete BC`s
   integer, parameter, public :: DISCFBC_TPUNDEFINED    = 0
 
   ! Discrete Dirichlet boundary conditions
@@ -58,7 +58,7 @@ module discretefbc
   
 !</constantblock>
 
-!<constantblock description="Type identifiers for the callback routine during discretisation of FBC's">
+!<constantblock description="Type identifiers for the callback routine during discretisation of FBC`s">
   
   ! Calculate the function value in corner vertices of elements in the object
   integer, parameter, public :: DISCFBC_NEEDFUNC           = 0
@@ -90,7 +90,7 @@ module discretefbc
   ! This structure describes the typical way, Dirichlet boundary conditions
   ! for fictitious boundary components can be discretised. 
   ! This is done by two arrays: one array is a list of all
-  ! DOF's that refer do Dirichlet nodes. The second array refers to the value
+  ! DOF`s that refer do Dirichlet nodes. The second array refers to the value
   ! that must be imposed in this DOF.
   ! The variable Icomponents receives a list of all components in the solution
   ! vector that are affected by this bonudary condition.
@@ -108,9 +108,9 @@ module discretefbc
     ! Number of Dirichlet nodes; may be different from the length of the array!
     integer :: nDOF = 0
     
-    ! Handle to array with all DOF's that refer to Dirichlet nodes
+    ! Handle to array with all DOF`s that refer to Dirichlet nodes
     !   array [1..*] of integer
-    ! p_IdirichletDOFs(i) is the number of the i'th DOF that is to be overwritten
+    ! p_IdirichletDOFs(i) is the number of the i-th DOF that is to be overwritten
     ! by the 'Dirichlet replacement' filter. 
     integer :: h_IdirichletDOFs   = ST_NOHANDLE
     
@@ -130,15 +130,15 @@ module discretefbc
   ! on fictitious boundary components.
   ! A type identifier decides on which boundary conditions this structure
   ! describes. Depending on the type, one of the information blocks
-  ! is filled with data about the discrete BC's.
+  ! is filled with data about the discrete BC`s.
   
   type t_discreteFBCEntry
     
-    ! The type identifier. Identifies the type of discrete BC's, this
+    ! The type identifier. Identifies the type of discrete BC`s, this
     ! structure describes.
     integer                             :: itype = DISCFBC_TPUNDEFINED
     
-    ! Structure for discrete Dirichlet BC's.
+    ! Structure for discrete Dirichlet BC`s.
     ! Only valid if itype=DISCBC_TPDIRICHLET.
     type(t_discreteFBCDirichlet)        :: rdirichletFBCs
     

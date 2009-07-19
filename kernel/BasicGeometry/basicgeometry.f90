@@ -244,7 +244,7 @@ contains
       rcoordSys%dscalingFactor = 1.0_DP
     endif
   
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -298,7 +298,7 @@ contains
     DpointOut(2) = (rcoordSys%dscalingFactor * DpointOut(2)) + &
                     rcoordSys%Dorigin(2)
 
-    ! That's it!
+    ! That is it!
 
   end subroutine
 
@@ -370,7 +370,7 @@ contains
 
     end if
 
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -447,7 +447,7 @@ contains
       rcoordSys%dscalingFactor = 1.0_DP
     endif
   
-    ! That's it
+    ! That is it
   
   end subroutine
 

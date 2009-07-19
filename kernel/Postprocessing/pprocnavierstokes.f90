@@ -147,11 +147,11 @@ contains
     ! Determine the shape of the cubature rule
     select case(cub_igetShape(ccub))
     case (BGEOM_SHAPE_LINE)
-      ! It's a 1D cubature formula - call line integration version.
+      ! It is a 1D cubature formula - call line integration version.
       call ppns2D_bdforces_uni_line(rvector,rregion,Dforces,ccub,df1,df2,cformulation)
     
     case (BGEOM_SHAPE_TRIA, BGEOM_SHAPE_QUAD)
-      ! It's a 2D cubature formula - call volume integration version.
+      ! It is a 2D cubature formula - call volume integration version.
       call ppns2D_bdforces_uni_vol(rvector,rregion,Dforces,ccub,df1,df2)
     
     case default
@@ -172,7 +172,7 @@ contains
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
   ! boundary for a vector rvector with the solution of the 2D
-  ! (Navier-)Stokes equation. It's assumed that
+  ! (Navier-)Stokes equation. It is assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity,
   !   rvector%rvectorBlock(3) = pressure.
@@ -246,13 +246,13 @@ contains
   ! Element type identifier for U and P
   integer(I32) :: ielemU, ielemP
   
-  ! Number of local DOF's in U and P
+  ! Number of local DOF`s in U and P
   integer :: idoflocU, idoflocP
   
   ! Triangulation
   type (t_triangulation), pointer :: p_rtriangulation
   
-  ! An accepting the DOF's of an element.
+  ! An accepting the DOF`s of an element.
   integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
   
   ! Coordinates of the coordinates of an element
@@ -374,7 +374,7 @@ contains
     ! Before, we need some additional information about the triangulation
     ! and about our element!
     !
-    ! Number of local DOF's:
+    ! Number of local DOF`s:
     
     idoflocU = elem_igetNDofLoc(ielemU)
     idoflocP = elem_igetNDofLoc(ielemP)
@@ -385,7 +385,7 @@ contains
     ! Allocate memory for the coordinates of the element
     allocate(DCoords(NDIM2D,max(elem_igetNVE(ielemU),elem_igetNVE(ielemP))))
     
-    ! The triangulation - it's the same for U and P
+    ! The triangulation - it is the same for U and P
     p_rtriangulation => p_rdiscrU%p_rtriangulation
 
     ! The arrays which contain the elements and edge numbers on the boundary
@@ -524,7 +524,7 @@ contains
         ! Map the coordinates in a proper 2D array
         DpointsRef (1:NDIM2D,1:ncubp) = transpose(Dxi2D(1:ncubp,1:NDIM2D))
                 
-        ! For the integration, we need the global DOF's on our element
+        ! For the integration, we need the global DOF`s on our element
         ! for U and P:
         
         call dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
@@ -535,7 +535,7 @@ contains
             p_DvertexCoordinates(1:NDIM2D, p_IverticesAtElement (1:nlocaledges,iel))
         
         ! Calculate the transformation for all points on the current element.
-        ! If we have only parametric elements, we don't have to calculate
+        ! If we have only parametric elements, we do not have to calculate
         ! the real coordinates of the points.
         if (bnonparU .or. bnonparP) then
           call trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
@@ -579,7 +579,7 @@ contains
               
             dweight = Domega(icubp)*0.5_DP*dedgelen
             
-            ! Loop through the DOF's on our element and calculate
+            ! Loop through the DOF`s on our element and calculate
             ! the tangential U as well as P.
             dut = 0.0_DP
             do idfl=1,idoflocU
@@ -627,7 +627,7 @@ contains
               
             dweight = Domega(icubp)*0.5_DP*dedgelen
             
-            ! Loop through the DOF's on our element and calculate
+            ! Loop through the DOF`s on our element and calculate
             ! the tangential U as well as P.
             dval1 = 0.0_DP
             dval2 = 0.0_DP
@@ -677,7 +677,7 @@ contains
               
             dweight = Domega(icubp)*0.5_DP*dedgelen
             
-            ! Loop through the DOF's on our element and calculate
+            ! Loop through the DOF`s on our element and calculate
             ! the tangential U as well as P.
             dval1 = 0.0_DP
             dval2 = 0.0_DP
@@ -740,7 +740,7 @@ contains
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
   ! boundary for a vector rvector with the solution of the 2D
-  ! (Navier-)Stokes equation. It's assumed that
+  ! (Navier-)Stokes equation. It is assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity,
   !   rvector%rvectorBlock(3) = pressure.
@@ -790,13 +790,13 @@ contains
   ! Element type identifier for U and P
   integer(I32) :: ielemU, ielemP
   
-  ! Number of local DOF's in U and P
+  ! Number of local DOF`s in U and P
   integer :: idoflocU, idoflocP
   
   ! Triangulation
   type (t_triangulation), pointer :: p_rtriangulation
   
-  ! An accepting the DOF's of an element.
+  ! An accepting the DOF`s of an element.
   integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
   
   ! Coordinates of the coordinates of an element
@@ -921,7 +921,7 @@ contains
     ! Before, we need some additional information about the triangulation
     ! and about our element!
     !
-    ! Number of local DOF's:
+    ! Number of local DOF`s:
     
     idoflocU = elem_igetNDofLoc(ielemU)
     idoflocP = elem_igetNDofLoc(ielemP)
@@ -933,7 +933,7 @@ contains
     allocate(Dcoords(NDIM2D,max(elem_igetNVE(ielemU),elem_igetNVE(ielemP))))
 
     
-    ! The triangulation - it's the same for U and P
+    ! The triangulation - it is the same for U and P
     p_rtriangulation => p_rdiscrU%p_rtriangulation
 
     ! The arrays which contain the elements and edge numbers on the boundary
@@ -1058,7 +1058,7 @@ contains
 !          dary =  0.0_DP
 !        end select
         
-        ! Okay, now let's build the local alpha vector
+        ! Okay, now let us build the local alpha vector
         Dalpha = 0.0_DP
         select case(elem_getPrimaryElement(ielemU))
         case(EL_P1,EL_P2)
@@ -1086,7 +1086,7 @@ contains
         end select
 
                 
-        ! For the integration, we need the global DOF's on our element
+        ! For the integration, we need the global DOF`s on our element
         ! for U and P:
         call dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
         call dof_locGlobMapping(p_rdiscrP, iel, IdofsP)
@@ -1096,7 +1096,7 @@ contains
             p_DvertexCoordinates(1:NDIM2D, p_IverticesAtElement (1:nlocaledges,iel))
         
         ! Calculate the transformation for all points on the current element.
-        ! If we have only parametric elements, we don't have to calculate
+        ! If we have only parametric elements, we do not have to calculate
         ! the real coordinates of the points.
         if (bnonparU .or. bnonparP) then
           call trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
@@ -1202,7 +1202,7 @@ contains
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
   ! boundary for a vector rvector with the solution of the 2D
-  ! (Navier-)Stokes equation. It's assumed that
+  ! (Navier-)Stokes equation. It is assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity,
   !   rvector%rvectorBlock(3) = pressure.
@@ -1385,7 +1385,7 @@ contains
     Bder(DER_DERIV2D_X) = .true.
     Bder(DER_DERIV2D_Y) = .true.
     
-    ! The triangulation - it's the same for U and P
+    ! The triangulation - it is the same for U and P
     p_rtriangulation => rvector%p_rblockDiscr%RspatialDiscr(1)%p_rtriangulation
 
     ! The arrays which contain the elements and edge numbers on the boundary
@@ -1461,7 +1461,7 @@ contains
         end do
       end if
       
-      ! What's the current element type?
+      ! What is the current element type?
       celement = p_rdiscr%RelementDistr(ieldistr)%celement
       
       ! Transformation
@@ -1487,14 +1487,14 @@ contains
       ! Initialise an element set
       call elprep_init (revalElementSet)
       
-      ! Allocate memory for the DOF's on all these elements.
-      ! Let's hope, there are not too many, otherwise the routine may have
+      ! Allocate memory for the DOF`s on all these elements.
+      ! Let us hope, there are not too many, otherwise the routine may have
       ! to be rewritten to work in chunks
       ndofs = elem_igetNDofLoc(celement)
       allocate(Idofs(ndofs,nelements))
       allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,nelements))
     
-      ! With the DOF-Mapping, get the DOF's.
+      ! With the DOF-Mapping, get the DOF`s.
       call dof_locGlobMapping_mult(p_rdiscr, IcurrentElementSet(1:nelements), Idofs)
 
       ! Prepare an element set for evaluation on the current set
@@ -1578,7 +1578,7 @@ contains
         end do
       end if
       
-      ! What's the current element type?
+      ! What is the current element type?
       celement = p_rdiscr%RelementDistr(ieldistr)%celement
       
       ! Transformation
@@ -1604,14 +1604,14 @@ contains
       ! Initialise an element set
       call elprep_init (revalElementSet)
       
-      ! Allocate memory for the DOF's on all these elements.
-      ! Let's hope, there are not too many, otherwise the routine may have
+      ! Allocate memory for the DOF`s on all these elements.
+      ! Let us hope, there are not too many, otherwise the routine may have
       ! to be rewritten to work in chunks
       ndofs = elem_igetNDofLoc(celement)
       allocate(Idofs(ndofs,nelements))
       allocate(Dbas(ndofs,elem_getMaxDerivative(celement),ncubp,nelements))
     
-      ! With the DOF-Mapping, get the DOF's.
+      ! With the DOF-Mapping, get the DOF`s.
       call dof_locGlobMapping_mult(p_rdiscr, IcurrentElementSet(1:nelements), Idofs)
 
       ! Prepare an element set for evaluation on the current set
@@ -1673,7 +1673,7 @@ contains
       
         do icubp = 1,ncubp
         
-          ! Get dpf1 in the cubature point. It's an additional weight.
+          ! Get dpf1 in the cubature point. It is an additional weight.
           dpf1 = Dvalues(icubp,iel,6)
         
           ! Calculate the OMEGA for the integration by multiplication
@@ -1800,7 +1800,7 @@ contains
             
           dweight = Domega(icubp)*0.5_DP*dedgelen
           
-          ! Loop through the DOF's on our element and calculate
+          ! Loop through the DOF`s on our element and calculate
           ! the tangential U as well as P.
           dval1 =   2.0_DP*Dvalues(icubp,iel,1) * Dnormal(1) &
                   + Dvalues(icubp,iel,2) * Dnormal(2) &
@@ -1849,7 +1849,7 @@ contains
 !<description>
   ! Calculates the drag-/lift-forces acting on a part of the real
   ! boundary for a vector rvector with the solution of the 3D
-  ! (Navier-)Stokes equation. It's assumed that
+  ! (Navier-)Stokes equation. It is assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity,
   !   rvector%rvectorBlock(3) = Z-velocity,
@@ -1918,13 +1918,13 @@ contains
   ! Element type identifier for U and P
   integer(I32) :: ielemU, ielemP
   
-  ! Number of local DOF's in U and P
+  ! Number of local DOF`s in U and P
   integer :: idoflocU, idoflocP
   
   ! Triangulation
   type (t_triangulation), pointer :: p_rtria
   
-  ! An accepting the DOF's of an element.
+  ! An accepting the DOF`s of an element.
   integer, dimension(EL_MAXNBAS), target :: IdofsU, IdofsP
   
   ! Coordinates of the vertices
@@ -2038,11 +2038,11 @@ contains
     ! Before, we need some additional information about the triangulation
     ! and about our element!
     !
-    ! Number of local DOF's:
+    ! Number of local DOF`s:
     idoflocU = elem_igetNDofLoc(ielemU)
     idoflocP = elem_igetNDofLoc(ielemP)
     
-    ! The triangulation - it's the same for U and P
+    ! The triangulation - it is the same for U and P
     p_rtria => p_rdiscrU%p_rtriangulation
     
     ! Get a pointer to the elements-at-face array
@@ -2128,13 +2128,13 @@ contains
       ! Map the coordinates in a proper 3D array
       DpointsRef (1:NDIM3D,1:ncubp) = transpose(Dxi3D(1:ncubp,1:NDIM3D))
               
-      ! For the integration, we need the global DOF's on our element
+      ! For the integration, we need the global DOF`s on our element
       ! for U and P:
       call dof_locGlobMapping(p_rdiscrU, iel, IdofsU)
       call dof_locGlobMapping(p_rdiscrP, iel, IdofsP)
       
       ! Calculate the transformation for all points on the current element.
-      ! If we have only parametric elements, we don't have to calculate
+      ! If we have only parametric elements, we do not have to calculate
       ! the real coordinates of the points.
       if (bnonparU .or. bnonparP) then
         call trafo_calctrafo_mult (ctrafoU,ncubp,Dcoords,&
@@ -2191,7 +2191,7 @@ contains
         ! mapping.
         dweight = Domega(icubp)*Ddetj_face(icubp)
         
-        ! Loop through the DOF's on our element and calculate
+        ! Loop through the DOF`s on our element and calculate
         ! U as well as P.
         du1 = 0.0_DP
         du2 = 0.0_DP
@@ -2236,7 +2236,7 @@ contains
     ! Deallocate memory, finish.
     deallocate(Dnormal)
     
-    ! That's it
+    ! That is it
     
     contains
     
@@ -2357,7 +2357,7 @@ contains
 
 !<description>
   ! Calculates the streamfunction of a 2D velocity field rvector.
-  ! It's assumed that
+  ! It is assumed that
   !   rvector%rvectorBlock(1) = X-velocity,
   !   rvector%rvectorBlock(2) = Y-velocity
   !
@@ -2461,7 +2461,7 @@ contains
       call sys_halt()
     end if
 
-    ! Let's go. Note that we perform the same computation for all,
+    ! Let us go. Note that we perform the same computation for all,
     ! parametric and nonparametric, point-based and integral-mean-value
     ! based Q1~ solutions. Gives a slight error, but the final Q1
     ! representation is not exact anyway!
@@ -2525,8 +2525,8 @@ contains
         if (p_Iind(jve) .ge. 1) ilastMarked=ive
       end do
 
-      ! If all four vertices are marked, there's nothing to calculate
-      ! on the element. If no vertex is marked, we can't calculate
+      ! If all four vertices are marked, there is nothing to calculate
+      ! on the element. If no vertex is marked, we can not calculate
       ! anything on the current element. In both cases skip the
       ! computation and search for a better element:
 
@@ -2542,7 +2542,7 @@ contains
 
         ! Now on the current element iel, on all (corner) vertices the
         ! streamfunction is calculated. We go on looking to the adjacent
-        ! elements of iel if there's an element where the streamfunction
+        ! elements of iel if there is an element where the streamfunction
         ! is not calculated in all vertices...
 
       end if
@@ -2550,7 +2550,7 @@ contains
       ! Now we make a 'greedy' search from the current element to find
       ! as many other elements as possible where we can calculate the
       ! streamfunction.
-      ! Look onto the adjacent elements of the current element if there's
+      ! Look onto the adjacent elements of the current element if there is
       ! a suitable neighbour element where we can continue the calculation.
       
       neighbourloop: do
@@ -2676,7 +2676,7 @@ contains
 
         ! If that vertex is not marked, the streamfunction is not
         ! calculated there. Otherwise we are just looking at two 
-        ! marked neighboured vertices, so there's nothing to gain here. 
+        ! marked neighboured vertices, so there is nothing to gain here. 
 
         if (Imarkers(inextvertex) .eq. 0) then
         

@@ -275,7 +275,7 @@ contains
     end select
   end if
 
-  ! Make sure it's in the interval given by the dalphaMin/dalphaMax
+  ! Make sure it is in the interval given by the dalphaMin/dalphaMax
   dalpha = max(min(dalpha,rcoarseGridCorrection%dalphaMax), &
                           rcoarseGridCorrection%dalphaMin)
 
@@ -334,7 +334,7 @@ contains
     real(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
-    ! (c.f. p. 206 in Turek's book):
+    ! (c.f. p. 206 in Turek`s book):
     !
     !             ( f_k - A_k x_k  ,  corr_k )
     ! alpha_k := -------------------------------------
@@ -431,7 +431,7 @@ contains
     integer :: irow
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
-    ! (c.f. p. 206 in Turek's book):
+    ! (c.f. p. 206 in Turek`s book):
     !
     !             ( f_k - A_k x_k  ,  corr_k )
     ! alpha_k := -------------------------------------
@@ -533,7 +533,7 @@ contains
     real(DP) :: a,b
 
     ! We calculate the optimal alpha by energy minimisation, i.e.
-    ! (c.f. p. 206 in Turek's book):
+    ! (c.f. p. 206 in Turek`s book):
     !
     !             ( f_k - A_k x_k  ,  A_k corr_k )
     ! alpha_k := -------------------------------------

@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains a realisation of 1D time-stepping schemes used 
-!# for the time discretisation of PDE's. Examples for this are Explicit Euler,
+!# for the time discretisation of PDE`s. Examples for this are Explicit Euler,
 !# Crank Nicolson or the Fractional Step Theta scheme.
 !#
 !# The basic time stepping is governed by the structure t_explicitTimeStepping,
@@ -36,7 +36,7 @@
 !#
 !# How to use this module?
 !#
-!# Well, that's simple. It's like this:
+!# Well, that is simple. It is like this:
 !#
 !#    TYPE(t_explicitTimeStepping) :: tstepping
 !#
@@ -54,7 +54,7 @@
 !#
 !# First initialise the time stepping scheme by timstp_init, then call
 !# timstp_nextSubstep in a loop to proceed from time dcurrentTime
-!# to time dcurrentTime+dtstep. That's all.
+!# to time dcurrentTime+dtstep. That is all.
 !#
 !# The time stepping structure contains definitions for various constants that
 !# are to be used in front of the different terms in the PDE. See the 
@@ -204,7 +204,7 @@ module timestepping
     ! (instead of a combination of dweightNewRHS and dweightOldRHS).
     real(DP)                 :: dweightStationaryRHS
     
-    ! "Adjungated" parameter Theta' of the Theta scheme.
+    ! "Adjungated" parameter Theta` of the Theta scheme.
     ! Only used internally in the Fractional Step scheme.
     ! Standard = 0.0 = no fractional step used.
     real(DP)                 :: dthetaPrime = 0.0
@@ -357,7 +357,7 @@ contains
       ! The FS Theta-Scheme uses by theory 4 parameters:           
       !                                                            
       !   Theta   = 1 - sqrt(2) / 2                                
-      !   Theta'  = 1 - 2 * Theta                                  
+      !   Theta`  = 1 - 2 * Theta                                  
       !   alpha   = ( 1 - 2 * Theta ) / ( 1 - Theta )              
       !   beta    = 1 - alpha                                      
       !                                                            

@@ -132,7 +132,7 @@ contains
     call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMIN', dtimemin, 0.0_DP)
     call parlst_getvalue_double (rparams, 'TIMESTEPPING', 'DTIMEMAX', dtimemax, 1.0_DP)
     
-    ! Get the path where to write gmv's to.
+    ! Get the path where to write gmv`s to.
     call parlst_getvalue_string (rparams, 'GENERAL', &
                                  'sucddir', sstring,'''./pre/QUAD.prm''')
     read(sstring,*) rproblem%sucddir
@@ -230,7 +230,7 @@ contains
     call lsysbl_createVecBlockIndirect (rproblem%rrhs,rrhs,.false.)
     call lsysbl_createVecBlockIndirect (rproblem%rrhs,rvector,.true.)
 
-    ! Calculate the initial RHS, don't incorporate any BC's.
+    ! Calculate the initial RHS, do not incorporate any BC`s.
     call hc5_calcRHS (rproblem,rrhs)  
     
     ! Discretise the boundary conditions

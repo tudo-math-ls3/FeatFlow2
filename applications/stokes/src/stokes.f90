@@ -113,7 +113,7 @@ program stokes
   call stokes3d_1_mg
 
   ! As the following two examples are Navier-Stokes examples rather than
-  ! Stokes, they're commented out by default.
+  ! Stokes, they are commented out by default.
 
   ! Call the problem to solve. 2d navier-stokes 1:
 !  call output_lbrk()

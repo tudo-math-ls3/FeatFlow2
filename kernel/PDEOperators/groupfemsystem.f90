@@ -260,7 +260,7 @@ contains
       call gfsys_initStabilisationScalar(&
           rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
 
-      ! That's it
+      ! That is it
       return
     end if
     

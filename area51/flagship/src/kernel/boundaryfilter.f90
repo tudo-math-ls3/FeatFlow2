@@ -1503,8 +1503,8 @@ contains
           
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
-          call output_line('Unable to handle periodic boundary conditi&
-              &ons for diagonal matrix!', OU_CLASS_WARNING&
+          call output_line('Unable to handle periodic boundary conditi' // &
+              'ons for diagonal matrix!', OU_CLASS_WARNING&
               ,OU_MODE_STD,'filtermatrix_MatD_1D')
           call sys_halt()
           
@@ -1515,7 +1515,7 @@ contains
           
         case DEFAULT
           ! Replace column by [0,...,0,diag(A),0,...,0]
-          ! That's easy, since we are a diagonal matrix.
+          ! That is easy, since we are a diagonal matrix.
           
         end select
       end do
@@ -1613,8 +1613,8 @@ contains
 
           case (BDR_PERIODIC,&
                 BDR_ANTIPERIODIC)
-            call output_line('Unable to handle periodic boundary condi&
-                &tions for diagonal matrix!', OU_CLASS_WARNING&
+            call output_line('Unable to handle periodic boundary condi' // &
+                'tions for diagonal matrix!', OU_CLASS_WARNING&
                 ,OU_MODE_STD,'filtermatrix_MatD_2D')
             call sys_halt()
             
@@ -1625,7 +1625,7 @@ contains
 
           case DEFAULT
             ! Replace column by [0,...,0,diag(A),0,...,0]
-            ! That's easy, since we are a diagonal matrix.
+            ! That is easy, since we are a diagonal matrix.
             
           end select
         end do
@@ -3577,7 +3577,7 @@ contains
       call bdrf_filterVectorScalarExplicit(rboundaryCondition,&
           rvector%RvectorBlock(1), ttime, fcb_calcBoundaryvalues,&
           istatus, rboundary, rtriangulation)
-      ! That's it, return
+      ! That is it, return
       return
     end if
     
@@ -4728,7 +4728,7 @@ contains
             istatus, rboundary, rtriangulation)
       end if
 
-      ! That's it, return
+      ! That is it, return
       return
     end if
 

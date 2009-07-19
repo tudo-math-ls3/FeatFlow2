@@ -37,7 +37,7 @@ module scalarpde
   
   ! A structure for a scalar bilinear form.
   !
-  ! Example: Let's take a look at the 2D equation
+  ! Example: Let us take a look at the 2D equation
   !
   !    $   \int_{\Omega}  ( \nabla u , \nabla v )  dx $
   !    $ = \int_{\Omega}  1*u_x*v_x  +  1*u_y*v_y  dx $
@@ -91,7 +91,7 @@ module scalarpde
   
   ! A structure for a scalar trilinear form.
   !
-  ! Example: For w:R2->R let's take a look at the 2D equation
+  ! Example: For w:R2->R let us take a look at the 2D equation
   !
   !    $   \int_{\Omega}  w ( \nabla u , \nabla v )  dx $
   !    $ = \int_{\Omega}  ( F(w) \nabla u , \nabla v )  dx $
@@ -159,7 +159,7 @@ module scalarpde
   
   ! A structure for a scalar linear form.
   !
-  ! Example: Let's take a look at the 2D equation
+  ! Example: Let us take a look at the 2D equation
   !
   !    $   \int_{\Omega}  ( f, v )   dx $
   !    $ = \int_{\Omega}  1*f*v      dx $

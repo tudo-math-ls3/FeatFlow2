@@ -397,12 +397,12 @@ contains
     end do
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
-    ! let's hope a point is not moved more than imaxIter elements in 
+    ! let us hope a point is not moved more than imaxIter elements in 
     ! one step...
     ieliteration: do ite = 1,imaxIter
     
       ! Check if the point is in the element.
-      ! bcheck will be set to TRUE if that's the case.
+      ! bcheck will be set to TRUE if that is the case.
       if (ive .eq. TRIA_NVETRI2D+1) then
         call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
       else
@@ -430,7 +430,7 @@ contains
       
         if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
         
-        ! Don't jump back to the old element
+        ! Do not jump back to the old element
         if (IneighboursAtElement(ive,iel) .ne. ielold) then
           
           ! Calculate point of intersection the edge ive.
@@ -481,7 +481,7 @@ contains
     
     ! No face was found through which we could left the element.
     ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
-    ! and so indeed the point (dx,dy)! That's it.
+    ! and so indeed the point (dx,dy)! That is it.
     ! iel already has the element number, we only have to set the optional
     ! argiments.
     iel = 0
@@ -623,7 +623,7 @@ contains
         ! iel may be zero after that, as in "circle" domains it 
         ! may happen that the point on the higher level is in the domain 
         ! while the point on the lower level is not!
-        ! Let's hope that the domain is somehow convex so that
+        ! Let us hope that the domain is somehow convex so that
         ! raytracing works in the next sweep...
         
       end if
@@ -633,7 +633,7 @@ contains
       ! the element with number iel on the fine grid is one subelement
       ! of element iel on the coarse grid, so the search should be quick!
       !
-      ! If other refinement strategies are used, let's hope element iel on 
+      ! If other refinement strategies are used, let us hope element iel on 
       ! the fine grid is nearby Dpoint, so raytracing is not too expensive...
     
     end do

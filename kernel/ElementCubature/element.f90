@@ -69,7 +69,7 @@
 !#     -> The multiple-point/element-evaluation routine for a generic element.\\
 !#
 !# 11.) elem_getEvaluationTag
-!#     -> Returns for an element it's 'evaluation tag'. This is a bitfield
+!#     -> Returns for an element it is 'evaluation tag'. This is a bitfield
 !#        which encodes what information an element needs if one wants
 !#        to evaluate it in a point.
 !#
@@ -79,7 +79,7 @@
 !#
 !#  FAQ - Some explainations
 !# --------------------------
-!# 1.) What is an element and what are Degrees Of Freedoms (DOF's)?
+!# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
 !#
 !#   Imagine a triangulation of a domain with quadrilateral polygons, e.g.
 !#   rectangles or even squares. Take for example four of these squares and
@@ -108,8 +108,8 @@
 !#   where the coefficients $u_i$ can be modified to change the whole
 !#   function. This set ${u_i}$ are called "Degrees of Freedom" of the FE
 !#   function $u$. If the $\phi_i$ are chosen to be =1 in the center
-!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by "lucky 
-!#   chance" the $u_i$ are exactly the values of $u$ in these points --
+!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by `lucky 
+!#   chance` the $u_i$ are exactly the values of $u$ in these points --
 !#   $u_i = u(x_i,y_i)$.
 !#
 !#   An "element" in the sense of this library focuses on one single
@@ -132,7 +132,7 @@
 !#        CALL sys_halt()
 !#      END IF
 !#
-!#   No you don't need to. The simplest method for such element families:
+!#   No you do not need to. The simplest method for such element families:
 !#   Use elem_getPrimaryElement! This returns an element identifier
 !#   identifying all elements 'of the same type'. The above can be
 !#   shortened this way to:
@@ -178,7 +178,7 @@
 !#               Q1T: Bit 16 =1: element nonconformal, integral mean value based, 
 !#                           =0: element conformal, midpoint value based
 !#                    Bit 17:=0: Standard handling
-!#                           =1: For nonparametric element: Don't use pivoting when 
+!#                           =1: For nonparametric element: Do not use pivoting when 
 !#                               solving local 4x4 / 6x6 systems; faster but less
 !#                               stable on cruel elements.
 !#                    Bit 18:=0: Standard handling
@@ -225,7 +225,7 @@
 !#
 !#     if ( (celement .eq. EL_E030) .OR. (celement .eq. EL_EM30). OR. ...) then ...
 !# 
-!#   When it's clear that it's a $\tilde Q_1$ element, one can have a closer
+!#   When it is clear that it is a $\tilde Q_1$ element, one can have a closer
 !#   look which variant it is -- if this is necessary.
 !#
 !#   Final note: For implementational reasons, the bits 8+9+16..31 coincide --
@@ -583,7 +583,7 @@ module element
 !<constantblock description="maximal values">
 
   ! DEPRECATED: Maximum number of basic functions = maximum number of
-  ! local DOF's per element.
+  ! local DOF`s per element.
   ! Do not use this constant anymore - determine the number of local basis
   ! functions dynamically using the 'elem_igetNDofLoc' routine!
   integer, parameter, public :: EL_MAXNBAS = 27
@@ -785,7 +785,7 @@ contains
 !</input>
 
 !<result>
-  ! The number of local DOF's on this element.
+  ! The number of local DOF`s on this element.
 !</result>
 
 !</function>
@@ -923,18 +923,18 @@ contains
 !</input>
 
 !<output>
-  ! Number of DOF's assigned to the vertices on one element.
+  ! Number of DOF`s assigned to the vertices on one element.
   integer, intent(out) :: ndofAtVertices
   
-  ! Number of DOF's assigned to the edges on one element.
+  ! Number of DOF`s assigned to the edges on one element.
   ! Is always 0 for 1D element types.
   integer, intent(out) :: ndofAtEdges
   
-  ! Number of DOF's assigned to the faces on one element.
+  ! Number of DOF`s assigned to the faces on one element.
   ! Is always 0 for 1D/2D element types.
   integer, intent(out) :: ndofAtFaces
   
-  ! Number of DOF's assigned to one element, which do not belong to
+  ! Number of DOF`s assigned to one element, which do not belong to
   ! vertices or edges.
   integer, intent(out) :: ndofAtElement
 
@@ -1384,7 +1384,7 @@ contains
       ! Function + 1st derivative
       elem_getMaxDerivative = 4
     case default
-      ! We don't know
+      ! We do not know
       elem_getMaxDerivative = DER_MAXNDER
     end select
 
@@ -1656,10 +1656,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -1853,10 +1853,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
   !   basis function of the finite element in the point (dx,dy) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
   real(DP), dimension(:,:), intent(out) :: Dbas
@@ -2033,10 +2033,10 @@ contains
   
 !<output>
   ! Value/derivatives of basis functions. 
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:), intent(out) :: Dbas
@@ -2187,7 +2187,7 @@ contains
   ! The coordinates are expected 
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
-  ! It's assumed that:
+  ! It is assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -2206,10 +2206,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npoints,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out) :: Dbas
@@ -2365,10 +2365,10 @@ contains
 !<output>
   ! Value/derivatives of basis functions. 
   ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
-  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i'th 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
   !   basis function of the finite element in the point Dcoords(j) on the 
   !   reference element,
-  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i'th
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
   !   basis function,...
   ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
   real(DP), dimension(:,:,:,:), intent(out) :: Dbas

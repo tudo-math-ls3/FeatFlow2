@@ -704,7 +704,7 @@ contains
   real(DP) :: dc,daux1,daux2
   integer :: idofp,idofu,i,j1,j2,k,id1,id2,nmaxdofV,ndofV,info
 
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .FALSE.
     bHaveC = .FALSE.
     
@@ -753,12 +753,12 @@ contains
     end do ! idofp
     nmaxdofV = 2*nmaxdofV
     
-    ! Okay, let's allocate the temporary data
+    ! Okay, let us allocate the temporary data
     allocate(DA(nmaxdofV,nmaxdofV))
     allocate(DB(nmaxdofV))
     allocate(Ipivot(nmaxdofV))
     
-    ! Let's loop over the pressure DOFs
+    ! Let us loop over the pressure DOFs
     do idofp = 1, rvanka%ndofPres
     
       ! Format the local matrices
@@ -772,25 +772,25 @@ contains
       ! Fetch the number of velocity DOFs adjacent to this pressure DOF
       ndofV = p_KldD(idofp+1) - p_KldD(idofp)
       
-      ! If the C matrix exists, grab it's main diagonal entry
+      ! If the C matrix exists, grab it is main diagonal entry
       if(bHaveC) then
         dc = Dmult(3,3)*p_DC(p_KdiagC(idofp))
       end if
       
-      ! Let's loop over all velocity DOFs which are adjacent to the current
+      ! Let us loop over all velocity DOFs which are adjacent to the current
       ! pressure DOF.
       do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
       
         ! Get the index of the velocity DOF
         idofu = p_KcolD(id1)
         
-        ! Let's fetch the local A11/A22 matrices
+        ! Let us fetch the local A11/A22 matrices
         do i = p_KldA(idofu), p_KldA(idofu+1)-1
         
           ! Get the column index
           k = p_KcolA(i)
           
-          ! Let's see if this corresponds to one of our local velocity DOFs
+          ! Let us see if this corresponds to one of our local velocity DOFs
           do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
             if(k .eq. p_KcolD(id2)) then
               ! Okay, incorporate the entries into the local matrix
@@ -806,13 +806,13 @@ contains
         ! Do the A12/A21 matrices exist? If yes, then we also need to grab
         ! their local sub-matrices.
         if(bHaveA12) then
-          ! Let's fetch the local A12/A21 matrices
+          ! Let us fetch the local A12/A21 matrices
           do i = p_KldA12(idofu), p_KldA12(idofu+1)-1
           
             ! Get the column index
             k = p_KcolA12(i)
             
-            ! Let's see if this corresponds to one of our local velocity DOFs
+            ! Let us see if this corresponds to one of our local velocity DOFs
             do id2 = p_KldD(idofp), p_KldD(idofp+1)-1
               if(k .eq. p_KcolD(id2)) then
                 ! Okay, incorporate the entries into the local matrix
@@ -826,7 +826,7 @@ contains
           end do ! i
         end if
 
-        ! Let's fetch the local B matrices
+        ! Let us fetch the local B matrices
         do i = p_KldB(idofu), p_KldB(idofu+1)
           if(p_KcolB(i) .eq. idofP) then
             j1 = id1 - p_KldD(idofp) + 1
@@ -844,7 +844,7 @@ contains
       ! Did LAPACK fail? If yes, simply continue with the next pressure DOF.
       if(info .ne. 0) cycle
       
-      ! Okay, let's calculate the Schur-complement dc = C - D * A^-1 * B
+      ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
       daux1 = 0.0_DP
       daux2 = 0.0_DP
       k = 1
@@ -855,7 +855,7 @@ contains
       end do
       dc = dc - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
       
-      ! Now if the Schur-complement matrix is regular, we'll store the inverse
+      ! Now if the Schur-complement matrix is regular, we will store the inverse
       ! in the corresponding entry in p_DS.
       
       ! Remark:
@@ -878,7 +878,7 @@ contains
     deallocate(DB)
     deallocate(DA)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -975,7 +975,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .false.
     bHaveC = .false.
     bHaveM = .false.
@@ -1043,7 +1043,7 @@ contains
     ! Now which of the optional matrices are present?
     ! In the following if-tree we will take care of the most common combinations,
     ! and if none of them fits, there is an else-case which can take care of any
-    ! combination - but it's a bit slower.
+    ! combination - but it is a bit slower.
 !    if((.not. bHaveA12) .and. (.not. bHaveC) .and. bHaveM .and. (.not. bHaveK)) then
 !    else if((.not. bHaveA12) .and. (.not. bHaveC) .and. (.not. bHaveM) .and. bHaveK) then
 !    else if((.not. bHaveA12) .and. bHaveC .and. (.not. bHaveM) .and. bHaveK) then
@@ -1071,7 +1071,7 @@ contains
           Dft(i) = p_DrhsT(IdofT(i))   ! f_t
         end do
         
-        ! Let's update the local RHS vector by subtracting A*u from it:
+        ! Let us update the local RHS vector by subtracting A*u from it:
         ! f_u := f_u - A11*u
         ! f_v := f_v - A22*v
         do k = 1, ndofV
@@ -1425,7 +1425,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .false.
     bHaveM = .false.
     bHaveK = .false.
@@ -1508,7 +1508,7 @@ contains
           Dft(i) = p_DrhsT(IdofT(i))   ! f_t
         end do
         
-        ! Let's update the local RHS vector by subtracting A*u from it:
+        ! Let us update the local RHS vector by subtracting A*u from it:
         ! f_u := f_u - A11*u
         ! f_v := f_v - A22*v
         do k = 1, ndofV
@@ -1853,7 +1853,7 @@ contains
   real(DP) :: daux, daux1, daux2
   logical :: bHaveC, bHaveM, bHaveK
   
-  ! variables for LAPACK's DGESV routine
+  ! variables for LAPACK`s DGESV routine
   integer, dimension(ndof) :: Ipivot
   integer :: info
 
@@ -1873,7 +1873,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     call lsyssc_getbase_double(rrhs%RvectorBlock(4), p_DrhsT)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .false.
     bHaveM = .false.
     bHaveK = .false.
@@ -1952,7 +1952,7 @@ contains
       ! Clear the local system matrix
       Da = 0.0_DP
       
-      ! Let's update the local RHS vector by subtracting A*u from it:
+      ! Let us update the local RHS vector by subtracting A*u from it:
       ! f_u := f_u - A11*u
       ! f_v := f_v - A22*v
       p = ndofV

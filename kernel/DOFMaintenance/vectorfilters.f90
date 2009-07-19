@@ -99,11 +99,11 @@
 !#
 !#  9.) vecfil_discreteNLSlipBCdef
 !#      -> Nonlinear filter
-!#      -> Implements discrete nonlinear slip BC's into a scalar defect vector.
+!#      -> Implements discrete nonlinear slip BC`s into a scalar defect vector.
 !#
 !# 10.) vecfil_discreteNLPDropBCrhs
 !#      -> Nonlinear filter
-!#      -> Implements discrete pressure drop BC's into a RHS vector.
+!#      -> Implements discrete pressure drop BC`s into a RHS vector.
 !#
 !# 11.) vecfil_subvectorSmallL1To0
 !#      -> Linear filter
@@ -112,10 +112,10 @@
 !# Auxiliary routines, usually not called by the main program:
 !#
 !#  1.) vecfil_imposeDirichletBC
-!#      -> Implements discrete Dirichlet BC's into a scalar vector.
+!#      -> Implements discrete Dirichlet BC`s into a scalar vector.
 !#
 !#  2.) vecfil_imposeDirichletDefectBC
-!#      -> Implements discrete Dirichlet BC's into a scalar defect vector.
+!#      -> Implements discrete Dirichlet BC`s into a scalar defect vector.
 !#
 !#  3.)  vecfil_imposeDirichletFBC (rx,icomponent,rdbcStructure)
 !#      -> Implements discrete Dirichlet fictitious boundary conditions into a 
@@ -125,10 +125,10 @@
 !#      -> Normalises a scalar vector to bring it into the space $L^2_0$.
 !#
 !#  5.) vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
-!#      -> Implements discrete pressure drop BC's into a block vector.
+!#      -> Implements discrete pressure drop BC`s into a block vector.
 !#
 !#  6.) vecfil_imposeNLSlipDefectBC 
-!#      -> Implements discrete nonlinear slip BC's into a scalar defect vector
+!#      -> Implements discrete nonlinear slip BC`s into a scalar defect vector
 !#         as configured in the slip BC structure.
 !#
 !#  7.) vecfil_normaliseSmallL1To0Sca (rx)
@@ -184,11 +184,11 @@ contains
   subroutine vecfil_imposeDirichletBC (rx,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet BC's into a scalar vector.
+  ! Implements discrete Dirichlet BC`s into a scalar vector.
 !</description>
 
 !<input>
-  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteBCDirichlet), intent(in), target  :: rdbcStructure
 !</input>
 
@@ -208,8 +208,8 @@ contains
     real(DP), dimension(:), pointer    :: p_val
     integer, dimension(:), pointer :: p_Iperm
 
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rdbcStructure%nDOF .eq. 0) return
 
@@ -250,7 +250,7 @@ contains
       call sys_halt()
     end if
 
-    ! Only handle nDOF DOF's, not the complete array!
+    ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
@@ -282,11 +282,11 @@ contains
   subroutine vecfil_imposeDirichletDefectBC (rx,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet BC's into a scalar defect vector.
+  ! Implements discrete Dirichlet BC`s into a scalar defect vector.
 !</description>
 
 !<input>
-  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteBCDirichlet), intent(in),target  :: rdbcStructure
 !</input>
 
@@ -303,8 +303,8 @@ contains
     integer, dimension(:), pointer :: p_idx
     integer, dimension(:), pointer :: p_Iperm
     
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rdbcStructure%nDOF .eq. 0) return
 
@@ -333,10 +333,10 @@ contains
       call sys_halt()
     end if
 
-    ! Impose the BC-DOF's directly - more precisely, into the
+    ! Impose the BC-DOF`s directly - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     !
-    ! Only handle nDOF DOF's, not the complete array!
+    ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
@@ -373,7 +373,7 @@ contains
 !</description>
 
 !<input>
-  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteFBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Index of the solution component in rdbcStructure\%Icomponent
@@ -396,8 +396,8 @@ contains
     real(DP), dimension(:,:), pointer    :: p_val
     integer, dimension(:), pointer :: p_Iperm
 
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rdbcStructure%nDOF .eq. 0) return
 
@@ -433,7 +433,7 @@ contains
       call sys_halt()
     end if
 
-    ! Only handle nDOF DOF's, not the complete array!
+    ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
@@ -470,7 +470,7 @@ contains
 !</description>
 
 !<input>
-  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteFBCDirichlet), intent(in),target  :: rdbcStructure
 !</input>
 
@@ -487,8 +487,8 @@ contains
     integer, dimension(:), pointer :: p_idx
     integer, dimension(:), pointer :: p_Iperm
     
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rdbcStructure%nDOF .eq. 0) return
 
@@ -517,10 +517,10 @@ contains
       call sys_halt()
     end if
 
-    ! Impose the BC-DOF's directly - more precisely, into the
+    ! Impose the BC-DOF`s directly - more precisely, into the
     ! components of the subvector that is indexed by icomponent.
     !
-    ! Only handle nDOF DOF's, not the complete array!
+    ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
@@ -727,12 +727,12 @@ contains
   subroutine vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
   
 !<description>
-  ! Implements discrete pressure drop BC's into a block vector.
+  ! Implements discrete pressure drop BC`s into a block vector.
 !</description>
 
 !<input>
   ! The t_discreteBCpressureDrop that describes the discrete pressure 
-  ! drop BC's
+  ! drop BC`s
   type(t_discreteBCpressureDrop), intent(in), target  :: rpdbcStructure
   
   ! Weighting factor for time-dependent problems.
@@ -757,8 +757,8 @@ contains
     real(DP), dimension(:,:), pointer    :: p_val
     integer, dimension(:), pointer :: p_Iperm
 
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rpdbcStructure%nDOF .eq. 0) return
 
@@ -791,7 +791,7 @@ contains
         call sys_halt()
       end if
 
-      ! Only handle nDOF DOF's, not the complete array!
+      ! Only handle nDOF DOF`s, not the complete array!
       ! Probably, the array is longer (e.g. has the length of the vector), but
       ! contains only some entries...
 
@@ -826,7 +826,7 @@ contains
   subroutine vecfil_imposeNLSlipDefectBC (rx,rslipBCStructure)
   
 !<description>
-  ! Implements discrete nonlinear slip BC's into a scalar defect vector
+  ! Implements discrete nonlinear slip BC`s into a scalar defect vector
   ! as configured in the slip BC structure.
   ! This routine performs a special filtering to the defect vector
   ! of the type $r_m := r_m - (n*r_m)*n$ as described in
@@ -836,7 +836,7 @@ contains
 !</description>
 
 !<input>
-  ! The t_discreteBCSlip that describes the discrete Dirichlet BC's
+  ! The t_discreteBCSlip that describes the discrete Dirichlet BC`s
   type(t_discreteBCSlip), intent(in), target  :: rslipBCStructure
 !</input>
 
@@ -857,8 +857,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_Dnormals
     real(DP) :: d
     
-    ! If nDOF=0, there are no DOF's the current boundary condition segment,
-    ! so we don't have to do anything. Maybe the case if the user selected
+    ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+    ! so we do not have to do anything. Maybe the case if the user selected
     ! a boundary region that is just too small.
     if (rslipBCStructure%nDOF .eq. 0) return
     
@@ -913,10 +913,10 @@ contains
 
     call storage_getbase_double2d(rslipBCStructure%h_DnormalVectors,p_Dnormals)
 
-    ! Impose the BC-DOF's directly - more precisely, into the
+    ! Impose the BC-DOF`s directly - more precisely, into the
     ! components of all the subvectors.
     !
-    ! Only handle nDOF DOF's, not the complete array!
+    ! Only handle nDOF DOF`s, not the complete array!
     ! Probably, the array is longer (e.g. has the length of the vector), but
     ! contains only some entries...
 
@@ -964,11 +964,11 @@ contains
   subroutine vecfil_imposeFeastMirrorBC (rx,rfmbcStructure)
   
 !<description>
-  ! Implements discrete Feast Mirror BC's into a scalar vector.
+  ! Implements discrete Feast Mirror BC`s into a scalar vector.
 !</description>
 
 !<input>
-  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
+  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC`s
   type(t_discreteBCFeastMirror), intent(in), target  :: rfmbcStructure
 !</input>
 
@@ -1015,27 +1015,27 @@ contains
   ! Get the vector data
   call lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
   
-  ! Get pointers to the list of DOF's that belong to that region and have
+  ! Get pointers to the list of DOF`s that belong to that region and have
   ! to be tackled.
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
 
   if ((rfmbcStructure%isubtype .eq. 1) .or. (rfmbcStructure%isubtype .eq. 3)) then
-    ! The DOF's should be treated as Dirichlet-DOF's.
+    ! The DOF`s should be treated as Dirichlet-DOF`s.
     ! Only the matrix is modified according to the FEAST mirror bondary conditions!
     !
     ! For the implementation, we just set dmirrorWeight to 0.0.
-    ! This clears all DOF entries and thus treats the DOF's like Dirichlet DOF's.
+    ! This clears all DOF entries and thus treats the DOF`s like Dirichlet DOF`s.
     dmirrorWeight = 0.0_DP
   end if
   
   ! The vector entry corresponds to the DOF. For every DOF decide on
-  ! whether it's on the FEAST mirror boundary component or not.
+  ! whether it is on the FEAST mirror boundary component or not.
   ! If yes, double the entry entry.
   
   ! Is the vector sorted?
   if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
     
-    ! Loop through the DOF's. Each DOF gives us the number of an entry
+    ! Loop through the DOF`s. Each DOF gives us the number of an entry
     ! which is to be doubled.
     do i=1,size(p_ImirrorDOFs)
       p_Dvec(p_ImirrorDOFs(i)) = dmirrorWeight * p_Dvec(p_ImirrorDOFs(i))
@@ -1043,7 +1043,7 @@ contains
     
   else
   
-    ! Ok, vector is sorted, so we have to filter all the DOF's through the
+    ! Ok, vector is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
     !
     ! Get the permutation (or more precisely, the inverse permutation)
@@ -1053,7 +1053,7 @@ contains
         rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
     p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
     
-    ! Loop through the DOF's. Each DOF gives us the number of an entry
+    ! Loop through the DOF`s. Each DOF gives us the number of an entry
     ! which is to be doubled.
     do i=1,size(p_ImirrorDOFs)
       p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = dmirrorWeight * p_Dvec(p_Iperm(p_ImirrorDOFs(i)))
@@ -1070,11 +1070,11 @@ contains
   subroutine vecfil_imposeFeastMirrorDefBC (rx,rfmbcStructure)
   
 !<description>
-  ! Implements discrete Feast Mirror BC's into a scalar defect vector.
+  ! Implements discrete Feast Mirror BC`s into a scalar defect vector.
 !</description>
 
 !<input>
-  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC's
+  ! The t_discreteBCFeastMirror that describes the discrete Feast Mirror BC`s
   type(t_discreteBCFeastMirror), intent(in), target  :: rfmbcStructure
 !</input>
 
@@ -1115,21 +1115,21 @@ contains
   ! Get the vector data
   call lsyssc_getbase_double (rx%RvectorBlock(rfmbcStructure%icomponent),p_Dvec)
   
-  ! Get pointers to the list of DOF's that belong to that region and have
+  ! Get pointers to the list of DOF`s that belong to that region and have
   ! to be tackled.
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
 
   if ((rfmbcStructure%isubtype .eq. 1) .or. (rfmbcStructure%isubtype .eq. 3)) then
-    ! The DOF's should be treated as Dirichlet-DOF's.
+    ! The DOF`s should be treated as Dirichlet-DOF`s.
     !
     ! The vector entry corresponds to the DOF. For every DOF decide on
-    ! whether it's on the FEAST mirror boundary component or not.
+    ! whether it is on the FEAST mirror boundary component or not.
     ! If yes, put the entry to zero.
     
     ! Is the vector sorted?
     if (rx%RvectorBlock(rfmbcStructure%icomponent)%isortStrategy .le. 0) then
       
-      ! Loop through the DOF's. Each DOF gives us the number of an entry
+      ! Loop through the DOF`s. Each DOF gives us the number of an entry
       ! which is to be doubled.
       do i=1,size(p_ImirrorDOFs)
         p_Dvec(p_ImirrorDOFs(i)) = 0.0_DP
@@ -1137,7 +1137,7 @@ contains
       
     else
     
-      ! Ok, vector is sorted, so we have to filter all the DOF's through the
+      ! Ok, vector is sorted, so we have to filter all the DOF`s through the
       ! permutation before using them for implementing boundary conditions.
       !
       ! Get the permutation (or more precisely, the inverse permutation)
@@ -1147,7 +1147,7 @@ contains
           rx%RvectorBlock(rfmbcStructure%icomponent)%h_IsortPermutation,p_Iperm)
       p_Iperm => p_Iperm(rx%RvectorBlock(rfmbcStructure%icomponent)%NEQ+1:)
       
-      ! Loop through the DOF's. Each DOF gives us the number of an entry
+      ! Loop through the DOF`s. Each DOF gives us the number of an entry
       ! which is to be doubled.
       do i=1,size(p_ImirrorDOFs)
         p_Dvec(p_Iperm(p_ImirrorDOFs(i))) = 0.0_DP
@@ -1211,7 +1211,7 @@ contains
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, p_rdiscreteBC%inumEntriesUsed
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
@@ -1228,7 +1228,7 @@ contains
             p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
       case (DISCBC_TPPRESSUREDROP)  
-        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
 
       case (DISCBC_TPSLIP)  
         ! Nothing to do
@@ -1296,7 +1296,7 @@ contains
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, p_rdiscreteBC%inumEntriesUsed
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
@@ -1342,14 +1342,14 @@ contains
   subroutine vecfil_discreteNLPDropBCrhs (rx,dtimeWeight,rdiscreteBC)
 
 !<description>
-  ! Implements discrete pressure drop BC's into a block RHS vector.
+  ! Implements discrete pressure drop BC`s into a block RHS vector.
   ! To be called inside of a nonlinear or time-stepping loop.
   ! This routine performs a special filtering to the RHS vector
   ! of the type $r_m := r_m - \sum_j P_j \int_{S_j} \phi n ds$ as described 
-  ! on page 257 (235) Turek's book.
+  ! on page 257 (235) Turek`s book.
   !
   ! The filtering is applied to the boundary components configured
-  ! for pressure drop when setting up the BC's.
+  ! for pressure drop when setting up the BC`s.
 !</description>
   
 !<input>
@@ -1397,13 +1397,13 @@ contains
       dtweight = 1.0_DP
     end if
     ! Note: Time-step weight not used by any filter up to now!
-    ! Perhaps in a later implementation it's needed anywhere...
+    ! Perhaps in a later implementation it is needed anywhere...
     
     ! Now loop through all entries in this list:
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, p_rdiscreteBC%inumEntriesUsed
     
-      ! Only implement discrete pressure drop BC's.
+      ! Only implement discrete pressure drop BC`s.
       if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPPRESSUREDROP) then
         call vecfil_imposePressureDropBC (rx,dtweight,&
             p_rdiscreteBC%p_RdiscBCList(i)%rpressureDropBCs)        
@@ -1465,7 +1465,7 @@ contains
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, p_rdiscreteBC%inumEntriesUsed
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_rdiscreteBC%p_RdiscBCList(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
@@ -1482,11 +1482,11 @@ contains
             p_rdiscreteBC%p_RdiscBCList(i)%rdirichletBCs)
         
       case (DISCBC_TPPRESSUREDROP)  
-        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
         
       case (DISCBC_TPSLIP)
         ! Slip boundary conditions in the linear case are implemented
-        ! in a nonlinear loop - so there's nothing to do here.
+        ! in a nonlinear loop - so there is nothing to do here.
                 
       case (DISCBC_TPFEASTMIRROR)
         ! Routine is on purpose not commented in! Not used for now!
@@ -1511,7 +1511,7 @@ contains
   subroutine vecfil_discreteNLSlipBCdef (rx,rdiscreteBC)
 
 !<description>
-  ! Implements discrete nonlinear slip BC's into a defect vector.
+  ! Implements discrete nonlinear slip BC`s into a defect vector.
   ! Nonlinear filter, to be called inside of a nonlinear loop.
   ! This routine performs a special filtering to the defect vector
   ! of the type $r_m := r_m - (n*r_m)*n$ as described in
@@ -1559,7 +1559,7 @@ contains
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, p_rdiscreteBC%inumEntriesUsed
     
-      ! Only implement discrete slip BC's.
+      ! Only implement discrete slip BC`s.
       if (p_rdiscreteBC%p_RdiscBCList(i)%itype .eq. DISCBC_TPSLIP) then
         call vecfil_imposeNLSlipDefectBC (rx,p_rdiscreteBC%p_RdiscBCList(i)%rslipBCs)          
       end if
@@ -1578,8 +1578,8 @@ contains
   subroutine vecfil_discreteFBCsol (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the 'impose discrete fictitious boundary conditions 
-  ! to solution' filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions 
+  ! to solution` filter. 
   ! This filter imposes the discrete fictitious boundary conditions rdiscreteFBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
   ! which are  associated to the vector rx (with rx%p_discreteBC) to this 
@@ -1621,7 +1621,7 @@ contains
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_RdiscreteFBC(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
@@ -1665,8 +1665,8 @@ contains
   subroutine vecfil_discreteFBCrhs (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the 'impose discrete fictitious boundary conditions 
-  ! to RHS' filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions 
+  ! to RHS` filter. 
   ! This filter imposes the discrete fictitious boundary conditions rdiscreteFBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
   ! which are  associated to the vector rx (with rx%p_discreteFBC) to this 
@@ -1708,7 +1708,7 @@ contains
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_RdiscreteFBC(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
@@ -1752,8 +1752,8 @@ contains
   subroutine vecfil_discreteFBCdef (rx,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the 'impose discrete fictitious boundary conditions 
-  ! to defect' filter. 
+  ! This routine realises the `impose discrete fictitious boundary conditions 
+  ! to defect` filter. 
   ! This filter imposes the discrete fictitious boundary conditions rdiscretFeBC
   ! (if specified) or (if rdiscreteFBC is not specified) the boundary conditions
   ! which are  associated to the defect vector rx (with rx%p_discreteFBC) to 
@@ -1795,7 +1795,7 @@ contains
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_RdiscreteFBC(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
@@ -1803,7 +1803,7 @@ contains
       case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions. Not time-dependent.
         
-        ! Loop over all blocks where to implement these FBC's.
+        ! Loop over all blocks where to implement these FBC`s.
         do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)
         
@@ -1862,7 +1862,7 @@ contains
       call sys_halt()
     end if
       
-    ! Don't use one single IF here as this may lead to errors depending
+    ! Do not use one single IF here as this may lead to errors depending
     ! on the compiler (subvector=0 and access to vector(isubvector)).
     if ((rx%RvectorBlock(isubvector)%h_Ddata .eq. ST_NOHANDLE) .or. &
         (rx%RvectorBlock(isubvector)%NEQ .le. 0)) &
@@ -1904,7 +1904,7 @@ contains
       call sys_halt()
     end if
       
-    ! Don't use one single IF here as this may lead to errors depending
+    ! Do not use one single IF here as this may lead to errors depending
     ! on the compiler (subvector=0 and access to vector(isubvector)).
     if ((rx%RvectorBlock(isubvector)%h_Ddata .eq. ST_NOHANDLE) .or. &
         (rx%RvectorBlock(isubvector)%NEQ .le. 0)) &

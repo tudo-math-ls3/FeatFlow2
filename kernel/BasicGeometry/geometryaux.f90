@@ -188,9 +188,9 @@ contains
     !
     ! The formula was discovered by Pierre Varignon and first published in 1731.
     !
-    ! "In modern linear algebra, as already noted, the area of a planar parallelogram 
+    ! `In modern linear algebra, as already noted, the area of a planar parallelogram 
     !  is the magnitude of the cross product of two adjacent edge vectors.  So, for 
-    !  any 3D planar parallelogram V0V1V2V3, we have:"
+    !  any 3D planar parallelogram V0V1V2V3, we have:`
     !
     !     A(V0V1V2V3) = 2 A(M0M1M2M3)
     !                 = 2 | (V1-V0) X (V3-V0) |     (cross product)
@@ -210,16 +210,16 @@ contains
     !     V0                V1
     !
     !
-    ! "Next, for an arbitrary quadrilateral, one can compute its area using a 
+    ! `Next, for an arbitrary quadrilateral, one can compute its area using a 
     !  parallelogram discovered by Pierre Varignon (first published in 1731). 
-    !  It is amazing that the Greeks missed Varignon's simple result which was 
+    !  It is amazing that the Greeks missed Varignon`s simple result which was 
     !  discovered 2000 years after Euclid!  Given any quadrilateral, one can take 
     !  the midpoints of its 4 edges to get 4 vertices which form a new quadrilateral.  
     !  It is then easy to show that this midpoint quadrilateral is always a 
     !  parallelogram, called the "Varignon parallelogram", and that its area is 
     !  exactly one-half the area of the original quadrilateral.  So, for a 
     !  quadrilateral Q=V0V1V2V3, let this parallelogram have midpoint vertices 
-    !  M0M1M2M3 as shown in the diagram:"
+    !  M0M1M2M3 as shown in the diagram:`
     !
     !     V3         M2          V2
     !       +---------X---------+
@@ -233,12 +233,12 @@ contains
     !       +---------X---------+
     !     V0         M0          V1
     !
-    ! "From elementary geometry, we know that in triangle V0V1V2 the midpoint 
+    ! `From elementary geometry, we know that in triangle V0V1V2 the midpoint 
     !  line M0M1 is parallel to the base V0V2.  In triangle V0V1V2V3, the line M3M2 
     !  is parallel to that same base V0V2.  Thus, M0M1 and M3M2 are parallel to each other.  
     !  Similarly, M0M3 and M1M2 are parallel, which shows that M0M1M2M3 is a parallelogram.  
-    !  The area relation is also easy to demonstrate, and we can compute the quadrilateral's 
-    !  area as:"
+    !  The area relation is also easy to demonstrate, and we can compute the quadrilateral`s 
+    !  area as:`
     !
     !     A(V0V1V2V3) = 2 A(M0M1M2M3)
     !                 = 2 | (M1-M0) X (M3-M0) |     (cross product)
@@ -247,13 +247,13 @@ contains
     !                 = ...
     !                 = (x2-x0)(y3-y1) - (x3-x1)(y2-y0) 
     !
-    ! "This formula for an arbitrary quadrilateral is just as efficient as the one for an 
+    ! `This formula for an arbitrary quadrilateral is just as efficient as the one for an 
     !  arbitrary triangle, using only 2 multiplications and 5 additions.  For simple 
     !  quadrilaterals, the area is positive when the vertices are oriented counterclockwise, 
     !  and negative when they are clockwise.  However, it also works for nonsimple 
     !  quadrilaterals and is equal to the difference in area of the two regions the 
     !  quadrilateral bounds.  For example, in the following diagram where I is the 
-    !  self-intersection point of a nonsimple quadrilateral V0V1V2V3, we have:"
+    !  self-intersection point of a nonsimple quadrilateral V0V1V2V3, we have:`
     !
     !     A(V0V1V2V3) = A(V0V1I) + A(IV2V3)
     !                 = A(V0V1I) + A(IV2V2)
@@ -264,9 +264,9 @@ contains
     !           \       /       
     !             \   /         
     !               + I             
-    !             /   \          
-    !           /       \        
-    !         /           \      
+    !             /   \                 .
+    !           /       \               .
+    !         /           \             .
     !       +--------------+
     !     V0                 V1
     
@@ -468,7 +468,7 @@ contains
 
   ! Returns the type of intersection between the rays.
   ! =-1: The rays are the same
-  ! = 0: The rays don't intersect.
+  ! = 0: The rays do not intersect.
   ! = 1: The rays intersect in exactly one point.
   integer, intent(out) :: iintersect
   
@@ -512,7 +512,7 @@ contains
 
     ddet = dx1*dy2-dx1*dy3-dx0*dy2+dx0*dy3-dy1*dx2+dy1*dx3+dy0*dx2-dy0*dx3 
        
-    ! If it's =0, the lines are the same or completely different...
+    ! If it is =0, the lines are the same or completely different...
         
     if (ddet .eq. 0.0_DP) then
        
@@ -613,12 +613,12 @@ contains
       ! multiplying distance vectors with corresponding normal vectors.
       ! The sign of this scalar product determines whether we are
       ! 'left' or 'right' of the edge (because of the cosine formula).
-      ! If the point is "righthand" of all four edges, it's inside 
+      ! If the point is "righthand" of all four edges, it is inside 
       ! of the element.
 
       dsproduct = dxdist*dxnormal + dydist*dynormal
 
-      ! Actually we have to check against <=0, but it's more advisable
+      ! Actually we have to check against <=0, but it is more advisable
       ! to check against something that is 'near' 0 in terms
       ! of machine exactness...
       binside = binside .and. (dsproduct .le. SYS_EPSREAL*100.0_DP)

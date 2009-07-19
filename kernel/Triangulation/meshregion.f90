@@ -11,7 +11,7 @@
 !# The following routines can be found here:
 !#
 !#  1.) mshreg_createFromNodalProp
-!#      -> Creates a mesh region based on the triangulation's
+!#      -> Creates a mesh region based on the triangulation`s
 !#         nodal property array.
 !#
 !#  2.) mshreg_createFromHitTest
@@ -263,7 +263,7 @@ module meshregion
 
     end if
     
-    ! That's it
+    ! That is it
     
   end subroutine mshreg_aux_calcIdxArray1
 
@@ -373,7 +373,7 @@ module meshregion
 
     end if
     
-    ! That's it
+    ! That is it
     
   end subroutine mshreg_aux_calcIdxArray2
 
@@ -480,7 +480,7 @@ module meshregion
     
     end if
 
-    ! That's it
+    ! That is it
 
   end subroutine mshreg_createFromNodalProp
   
@@ -505,7 +505,7 @@ module meshregion
   ! property array. May also be MSHREG_IDX_NONE or MSHREG_IDX_ALL.
   integer(I32), intent(in)                       :: cidxCalc
   
-  ! If .TRUE., then only the cells which belong to the triangulation's
+  ! If .TRUE., then only the cells which belong to the triangulation`s
   ! boundary are hit-tested, otherwise all cells are hit-tested.
   logical, intent(in)                            :: bonlyBndry
   
@@ -806,7 +806,7 @@ module meshregion
     
     end if
 
-    ! That's it
+    ! That is it
 
   end subroutine mshreg_createFromHitTest
   
@@ -875,7 +875,7 @@ module meshregion
     rmeshRegion%h_IfaceIdx = ST_NOHANDLE
     rmeshRegion%h_IelementIdx = ST_NOHANDLE
     
-    ! That's it
+    ! That is it
 
   end subroutine mshreg_done
   
@@ -888,7 +888,7 @@ module meshregion
 !<description>
   ! Recalculates the vertice index array from the edge index array.
   ! The operator mask parameter decides which vertices will be added into
-  ! the mesh region's vertice index array:
+  ! the mesh region`s vertice index array:
   ! 1. coperatorMask = MSHREG_MASK_KICK:
   !    The old vertice index array is deleted (if it exists), and every
   !    vertice that belongs to an edge in the mesh region will be added to
@@ -901,7 +901,7 @@ module meshregion
   ! 3. coperatorMask = MSHREG_MASK_AND:
   ! -> Every vertice that already exists in the mesh region and that belongs
   !    to an edge in the mesh region will be added to vertice index array.
-  !    This implies that if the mesh region's vertice index array is empty
+  !    This implies that if the mesh region`s vertice index array is empty
   !    on entry, it will also be empty on exit.
 !</description>
 
@@ -993,7 +993,7 @@ module meshregion
       
     end do
     
-    ! Now let's see what to do with the old vertices
+    ! Now let us see what to do with the old vertices
     if (rmeshRegion%h_IvertexIdx .ne. ST_NOHANDLE) then
     
       ! Get the old vertices index array
@@ -1018,7 +1018,7 @@ module meshregion
 
       end select
       
-      ! Now let's destroy the old vertex index array
+      ! Now let us destroy the old vertex index array
       if ((rmeshRegion%h_IvertexIdx .ne. ST_NOHANDLE) .and. &
           (iand(rmeshRegion%cshareFlags, MSHREG_IDX_VERTEX) .eq. 0)) then
           
@@ -1041,7 +1041,7 @@ module meshregion
     ! And release the vertex map
     deallocate(Imap)
     
-    ! That's it
+    ! That is it
     
   end subroutine mshreg_recalcVerticesFromEdges
 
@@ -1054,7 +1054,7 @@ module meshregion
 !<description>
   ! Recalculates the vertice index array from the face index array.
   ! The operator mask parameter decides which vertices will be added into
-  ! the mesh region's vertice index array:
+  ! the mesh region`s vertice index array:
   ! 1. coperatorMask = MSHREG_MASK_KICK:
   !    The old vertice index array is deleted (if it exists), and every
   !    vertice that belongs to a face in the mesh region will be added to
@@ -1067,7 +1067,7 @@ module meshregion
   ! 3. coperatorMask = MSHREG_MASK_AND:
   ! -> Every vertice that already exists in the mesh region and that belongs
   !    to a face in the mesh region will be added to vertice index array.
-  !    This implies that if the mesh region's vertice index array is empty
+  !    This implies that if the mesh region`s vertice index array is empty
   !    on entry, it will also be empty on exit.
 !</description>
 
@@ -1165,7 +1165,7 @@ module meshregion
       
     end do
     
-    ! Now let's see what to do with the old vertices
+    ! Now let us see what to do with the old vertices
     if (rmeshRegion%h_IvertexIdx .ne. ST_NOHANDLE) then
     
       ! Get the old vertices index array
@@ -1190,7 +1190,7 @@ module meshregion
         
       end select
       
-      ! Now let's destroy the old vertex index array
+      ! Now let us destroy the old vertex index array
       if ((rmeshRegion%h_IvertexIdx .ne. ST_NOHANDLE) .and. &
           (iand(rmeshRegion%cshareFlags, MSHREG_IDX_VERTEX) .eq. 0)) then
           
@@ -1213,7 +1213,7 @@ module meshregion
     ! And release the vertex map
     deallocate(Imap)
     
-    ! That's it
+    ! That is it
     
   end subroutine mshreg_recalcVerticesFromFaces
 
@@ -1226,7 +1226,7 @@ module meshregion
 !<description>
   ! Recalculates the edge index array from the face index array.
   ! The operator mask parameter decides which edges will be added into
-  ! the mesh region's edge index array:
+  ! the mesh region`s edge index array:
   ! 1. coperatorMask = MSHREG_MASK_KICK:
   !    The old edge index array is deleted (if it exists), and every
   !    edge that belongs to a face in the mesh region will be added to
@@ -1239,7 +1239,7 @@ module meshregion
   ! 3. coperatorMask = MSHREG_MASK_AND:
   ! -> Every edge that already exists in the mesh region and that belongs
   !    to a face in the mesh region will be added to edge index array.
-  !    This implies that if the mesh region's edge index array is empty
+  !    This implies that if the mesh region`s edge index array is empty
   !    on entry, it will also be empty on exit.
 !</description>
 
@@ -1336,7 +1336,7 @@ module meshregion
       
     end do
     
-    ! Now let's see what to do with the old edges
+    ! Now let us see what to do with the old edges
     if (rmeshRegion%h_IedgeIdx .ne. ST_NOHANDLE) then
     
       ! Get the old edge index array
@@ -1361,7 +1361,7 @@ module meshregion
         
       end select
       
-      ! Now let's destroy the old edge index array
+      ! Now let us destroy the old edge index array
       if (iand(rmeshRegion%cshareFlags, MSHREG_IDX_EDGE) .eq. 0) then
           call storage_free(rmeshRegion%h_IedgeIdx)
       end if
@@ -1381,7 +1381,7 @@ module meshregion
     ! And release the edge map
     deallocate(Imap)
     
-    ! That's it
+    ! That is it
     
   end subroutine mshreg_recalcEdgesFromFaces
 
@@ -1430,7 +1430,7 @@ module meshregion
       call sys_halt()
     end if
     
-    ! Don't we have any edges here?
+    ! Do not we have any edges here?
     if (rmeshRegion%NMT .le. 0) return
     
     ! In 2D the task of calculating the normal vectors is quite easy,
@@ -1471,7 +1471,7 @@ module meshregion
       
     end do
     
-    ! That's it
+    ! That is it
   
   end subroutine mshreg_calcBoundaryNormals2D
   
@@ -1524,7 +1524,7 @@ module meshregion
       call sys_halt()
     end if
     
-    ! Don't we have any faces here?
+    ! Do not we have any faces here?
     if (rmeshRegion%NAT .le. 0) return
     
     ! Get a pointer to the faces-at-element array
@@ -1605,7 +1605,7 @@ module meshregion
       
     end do
     
-    ! That's it
+    ! That is it
   
   end subroutine mshreg_calcBoundaryNormals3D
   

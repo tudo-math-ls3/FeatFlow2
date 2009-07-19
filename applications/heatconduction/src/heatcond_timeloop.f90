@@ -15,7 +15,7 @@
 !#     -> Calculate the solution of the next timestep.
 !#
 !# 3.) hc5_postprocessing
-!#     -> Perform postprocessing (write GMV's,...)
+!#     -> Perform postprocessing (write GMV`s,...)
 !#
 !# 4.) hc5_timeloop
 !#     Start the nonstationary solver, perform the time stepping.
@@ -149,7 +149,7 @@ contains
          rproblem%rtimedependence%rtimestepping%dweightOldRHS,0.0_DP)
     
     ! Synchronise the sorting of the vectors according to the system matrix.
-    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we have only one block.
     call lsysbl_synchroniseSortMatVec (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
     call lsysbl_synchroniseSortMatVec (p_rmatrix,rvector,rtempBlock%RvectorBlock(1))
@@ -178,7 +178,7 @@ contains
     call lsysbl_vectorLinearComb(rrhs,p_rrhs,&
          rproblem%rtimedependence%rtimestepping%dweightNewRHS,1.0_DP)
 
-    ! That's it for the RHS vector.
+    ! That is it for the RHS vector.
     !
     ! The LHS "u_{n+1} + w_1*N(u_n+1)" results in the system matrix
     ! "M + w_1 N(.)" for the next linear system to solve. Set up that system
@@ -221,7 +221,7 @@ contains
     call linsol_initData (p_rsolverNode,ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     
-    ! Synchronise p_rrhs with the matrix so it's compatible to the linear system.
+    ! Synchronise p_rrhs with the matrix so it is compatible to the linear system.
     call lsysbl_synchroniseSortMatVec (p_rmatrix,p_rrhs,rtempBlock%RvectorBlock(1))
 
     ! Finally solve the system. As we want to solve Ax=b with
@@ -238,7 +238,7 @@ contains
     
     ! Unsort the vectors again in case they were resorted before calling 
     ! the solver.
-    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
     call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
     call lsysbl_sortVectorInSitu (rvector,rtempBlock%RvectorBlock(1),.false.)
@@ -304,7 +304,7 @@ contains
     call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -339,7 +339,7 @@ contains
   integer :: iiteration
   real(DP) :: dtime
   
-    ! Let's start the timeloop
+    ! Let us start the timeloop
   
     iiteration = 1
     rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimemin

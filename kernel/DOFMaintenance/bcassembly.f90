@@ -7,7 +7,7 @@
 !# This module contains routines to discretise analytically given boundary
 !# conditions. Analytically given boundary conditions are 'discretised', i.e.
 !# a discrete version (realised by the structure t_discreteBCEntry in the case
-!# of BC's on the real boundary and by the structure t_discreteFBCEntry in 
+!# of BC`s on the real boundary and by the structure t_discreteFBCEntry in 
 !# the case of fictitious boundary) is calculated.
 !# This structure is used during the solution process to impose the boundary
 !# conditions into the solution vector. Therefore, this module contains
@@ -25,11 +25,11 @@
 !#     -> Initialise a structure collecting discrete boundary conditions.
 !#
 !# 2.) bcasm_clearDiscreteBC
-!#     -> Clear a structure with discrete BC's. Release memory that is used
-!#        by the discrete BC's but don't destroy the structure itself.
+!#     -> Clear a structure with discrete BC`s. Release memory that is used
+!#        by the discrete BC`s but do not destroy the structure itself.
 !#
 !# 3.) bcasm_releaseDiscreteBC
-!#     -> Release a structure with discrete BC's; deallocates all used memory.
+!#     -> Release a structure with discrete BC`s; deallocates all used memory.
 !#
 !# 4.) bcasm_newDirichletBC_1D
 !#     -> Discretises dirichlet boundary conditions for a 1D discretisation.
@@ -52,11 +52,11 @@
 !#        boundary boundary conditions.
 !#
 !# 10.) bcasm_clearDiscreteFBC
-!#     -> Clear a structure with discrete FBC's. Release memory that is used
-!#        by the discrete FBC's but don't destroy the structure itself.
+!#     -> Clear a structure with discrete FBC`s. Release memory that is used
+!#        by the discrete FBC`s but do not destroy the structure itself.
 !#
 !# 11.) bcasm_releaseDiscreteFBC
-!#      -> Release a structure with discrete FBC's; deallocates all used memory.
+!#      -> Release a structure with discrete FBC`s; deallocates all used memory.
 !#
 !# 12.) bcasm_newDirichletBConFBD
 !#      -> Discretises dirichlet boundary conditions on a 2D fictitious boundary domain
@@ -111,24 +111,24 @@ module bcassembly
 
 !<constants>
 
-!<constantblock description="Complexity of the discretised BC's">
+!<constantblock description="Complexity of the discretised BC`s">
 
-  ! Discretise BC's for implementing them into a defect vector
+  ! Discretise BC`s for implementing them into a defect vector
   integer(I32), parameter, public :: BCASM_DISCFORDEF = 2**0
 
-  ! Discretise BC's for implementing them into a solution vector
+  ! Discretise BC`s for implementing them into a solution vector
   integer(I32), parameter, public :: BCASM_DISCFORSOL = 2**1
 
-  ! Discretise BC's for implementing them into a RHS vector
+  ! Discretise BC`s for implementing them into a RHS vector
   integer(I32), parameter, public :: BCASM_DISCFORRHS = 2**2
 
-  ! Discretise BC's for implementing them into a matrix
+  ! Discretise BC`s for implementing them into a matrix
   integer(I32), parameter, public :: BCASM_DISCFORMAT = 2**3
 
-  ! Discretise BC's for implementing them into matrix and defect vector
+  ! Discretise BC`s for implementing them into matrix and defect vector
   integer(I32), parameter, public :: BCASM_DISCFORDEFMAT = BCASM_DISCFORDEF + BCASM_DISCFORMAT
   
-  ! Discretise BC's for implementing them into everything
+  ! Discretise BC`s for implementing them into everything
   integer(I32), parameter, public :: BCASM_DISCFORALL = BCASM_DISCFORDEF + BCASM_DISCFORSOL + &
                                                 BCASM_DISCFORRHS + BCASM_DISCFORMAT
 
@@ -149,7 +149,7 @@ module bcassembly
 
 !<typeblock>
   ! Configuration block for FEAST mirror boundary  conditions. This type of
-  ! boundary condition is very special since it's level dependent and needs
+  ! boundary condition is very special since it is level dependent and needs
   ! special parameters which are not known by the analytical definition.
   type t_configDiscreteFeastMirrorBC
   
@@ -160,7 +160,7 @@ module bcassembly
     
     ! Subtype of the FEAST mirror boundary conditions.
     ! =0: apply to matrix and defect vectors.
-    ! =1: apply only to matrix; apply Dirichlete BC's to defect vectors
+    ! =1: apply only to matrix; apply Dirichlete BC`s to defect vectors
     integer :: isubtype
     
   end type
@@ -252,7 +252,7 @@ contains
   subroutine bcasm_clearDiscreteBC(rdiscreteBC)
 
 !<description>
-  ! Removes all information about discrete BC's from the rdiscreteBC structure.
+  ! Removes all information about discrete BC`s from the rdiscreteBC structure.
   ! Afterwards, the structure is ready to take a new set of discretised
   ! boundary conditions.
 !</description>
@@ -376,7 +376,7 @@ contains
   subroutine bcasm_clearDiscreteFBC(rdiscreteFBC)
 
 !<description>
-  ! Removes all information about discrete BC's from the rdiscreteBC structure.
+  ! Removes all information about discrete BC`s from the rdiscreteBC structure.
   ! Afterwards, the structure is ready to take a new set of discretised
   ! boundary conditions.
 !</description>
@@ -458,12 +458,12 @@ contains
 !</description>
 
 !<inputoutput>
-  ! Discrete BC structure containing the discrete BC's.
+  ! Discrete BC structure containing the discrete BC`s.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !<output>
-  ! Optional: Index of the newly created entry for discrete BC's.
+  ! Optional: Index of the newly created entry for discrete BC`s.
   integer, intent(out), optional :: iindex
 !</output>
 
@@ -512,12 +512,12 @@ contains
 !</description>
 
 !<inputoutput>
-  ! Discrete FBC structure containing the discrete BC's.
+  ! Discrete FBC structure containing the discrete BC`s.
   type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 
 !<output>
-  ! Optional: Index of the newly created entry for discrete BC's.
+  ! Optional: Index of the newly created entry for discrete BC`s.
   integer, intent(out), optional :: iindex
 !</output>
 
@@ -576,7 +576,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
   
@@ -682,7 +682,7 @@ contains
       select case(ielemType)
       case (EL_P0_1D)
         ! P0_1D element
-        ! This is the easy case - there's only one DOF per element and this
+        ! This is the easy case - there is only one DOF per element and this
         ! is the one we are searching for...
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
@@ -762,7 +762,7 @@ contains
       select case(ielemType)
       case (EL_P0_1D)
         ! P0_1D element
-        ! This is the easy case - there's only one DOF per element and this
+        ! This is the easy case - there is only one DOF per element and this
         ! is the one we are searching for...
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
         iDOF = IDOFs(1)
@@ -799,7 +799,7 @@ contains
     
     end if
     
-    ! That's it
+    ! That is it
       
   end subroutine
 
@@ -944,7 +944,7 @@ contains
         ! We completed the current region successfully
         ifoundRegions = ifoundRegions + 1
         
-        ! Decrement icount. If it's still > 0, there's another region
+        ! Decrement icount. If it is still > 0, there is another region
         ! in dbegin/dend that may contain points
         icount = icount - 1
         
@@ -968,7 +968,7 @@ contains
     ! Complete the region and finish.
     icount = ifoundRegions + 1
   else 
-    ! No we aren't. So we were awaiting points for another part of the region
+    ! No we are not. So we were awaiting points for another part of the region
     ! that never came! Reset the last index pair and quit.
     IminIndex(ifoundRegions+1) = 0
     ImaxIndex(ifoundRegions+1) = -1
@@ -1133,7 +1133,7 @@ contains
         ! We completed the current region successfully
         ifoundRegions = ifoundRegions + 1
         
-        ! Decrement icount. If it's still > 0, there's another region
+        ! Decrement icount. If it is still > 0, there is another region
         ! in dbegin/dend that may contain points
         icount = icount - 1
         
@@ -1157,7 +1157,7 @@ contains
     ! Complete the region and finish.
     icount = ifoundRegions + 1
   else 
-    ! No we aren't. So we were awaiting points for another part of the region
+    ! No we are not. So we were awaiting points for another part of the region
     ! that never came! Reset the last index pair and quit.
     IminIndex(ifoundRegions+1) = 0
     ImaxIndex(ifoundRegions+1) = -1
@@ -1196,9 +1196,9 @@ contains
   ! The routine will search all elements that touch (with a vertex or an edge)
   ! the boundary region. All these elements are written to IelList.
   ! If a vertex of the element touches it, the corresponding entry in IvtLocal 
-  ! is set to the local vertex number of that vertex, otherwise it's set to to 0.
+  ! is set to the local vertex number of that vertex, otherwise it is set to to 0.
   ! If an edge of the element touches it, the corresponding entry in IvtLocal 
-  ! is set to the local edge number of that edge, otherwise it's set to to 0.
+  ! is set to the local edge number of that edge, otherwise it is set to to 0.
   !
   ! If neighter IvtLocal nor IedgeLocal is present, the routine calculates
   ! the maximum number of elements that the boundary region covers, including
@@ -1402,7 +1402,7 @@ contains
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
-  ! discretise only parts of the BC's, e.g. only setting up those
+  ! discretise only parts of the BC`s, e.g. only setting up those
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
@@ -1411,7 +1411,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -1515,14 +1515,14 @@ contains
     ! We have Dirichlet boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPDIRICHLET
     
-    ! Fill the structure for discrete Dirichlet BC's in the
+    ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rdirichletBCs => p_rdiscreteBCentry%rdirichletBCs
     
     p_rdirichletBCs%icomponent = iequation
     Icomponents(1) = iequation
     
-    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     !
     ! As we are in 2D, we can use parameter values at first to figure out,
@@ -1548,9 +1548,9 @@ contains
       return
     end if
                                    
-    ! Reserve some memory to save temporarily all DOF's of all boundary
+    ! Reserve some memory to save temporarily all DOF`s of all boundary
     ! elements.
-    ! We handle all boundary elements simultaneously - let's hope that there are 
+    ! We handle all boundary elements simultaneously - let us hope that there are 
     ! never so many elements on the boundary that our memory runs out :-)
     allocate (Idofs(EL_MAXNBAS,icount))
     
@@ -1563,9 +1563,9 @@ contains
 
     ! Now the elements with indices iminidx..imaxidx in the ItrialElements
     ! of the triangulation are on the boundary. Some elements may appear
-    ! twice (on edges e.g.) but we don't care.
+    ! twice (on edges e.g.) but we do not care.
     !
-    ! Ask the DOF-mapping routine to get us those DOF's belonging to elements
+    ! Ask the DOF-mapping routine to get us those DOF`s belonging to elements
     ! on the boundary.
     !
     ! The 'mult' call only works on uniform discretisations. We cannot assume
@@ -1589,7 +1589,7 @@ contains
       ! Index in the boundary arrays.
       I = IelementsAtBoundaryIdx (ielidx)
       
-      ! Get the element type in case we don't have a uniform triangulation.
+      ! Get the element type in case we do not have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
       if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
         celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
@@ -1623,7 +1623,7 @@ contains
       dpar = -1.0_DP
     
       ! Now the element-dependent part. For each element type, we have to
-      ! figure out which DOF's are on the boundary!
+      ! figure out which DOF`s are on the boundary!
       !
       ! We proceed as follows: We figure out, which DOF is on the
       ! boundary. Then, we ask our computation routine to calculate
@@ -1837,7 +1837,7 @@ contains
         end if
 
       case (EL_QP1)
-        ! Three DOF's: Function value in the element midpoint 
+        ! Three DOF`s: Function value in the element midpoint 
         ! and derivatives.
         ! Either the edge or an adjacent vertex is on the boundary.
         
@@ -2104,7 +2104,7 @@ contains
     
     if (icount .gt. 0) then
     
-      ! Allocate arrays for storing these DOF's and their values - if values are
+      ! Allocate arrays for storing these DOF`s and their values - if values are
       ! computed.
       call storage_new('bcasm_newDirichletBConRealBd', 'h_IdirichletDOFs', &
                       icount, ST_INT, p_rdirichletBCs%h_IdirichletDOFs, &
@@ -2118,7 +2118,7 @@ contains
         call storage_getbase_double(p_rdirichletBCs%h_DdirichletValues,p_DdirichletValues)
       end if
       
-      ! Transfer the DOF's and their values to these arrays.
+      ! Transfer the DOF`s and their values to these arrays.
       icount = 0
       do J=1,size(Idofs,2)
         do I=1,size(Idofs,1)
@@ -2134,7 +2134,7 @@ contains
     
     else
     
-      ! Let's hope there is nothing saved here :-)
+      ! Let us hope there is nothing saved here :-)
       p_rdirichletBCs%h_IdirichletDOFs = ST_NOHANDLE
       p_rdirichletBCs%h_DdirichletValues = ST_NOHANDLE
     
@@ -2209,7 +2209,7 @@ contains
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
-  ! discretise only parts of the BC's, e.g. only setting up those
+  ! discretise only parts of the BC`s, e.g. only setting up those
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
@@ -2218,7 +2218,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -2253,8 +2253,8 @@ contains
     ! 'enough' points in the boundary region and if the discretisation is
     ! done with Q1!
     
-    ! The BC's only exist as modification of the matrix.
-    ! If we should not compute them for the matrix/defect, we don't 
+    ! The BC`s only exist as modification of the matrix.
+    ! If we should not compute them for the matrix/defect, we do not 
     ! have to do anything.
     if (iand(casmComplexity,BCASM_DISCFORMAT) .eq. 0) return
 
@@ -2291,7 +2291,7 @@ contains
     ! We have FEAST mirror boundary conditions
     p_rdiscreteBCentry%itype = DISCBC_TPFEASTMIRROR
     
-    ! Fill the structure for discrete Dirichlet BC's in the
+    ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rfeastMirrorBCs => p_rdiscreteBCentry%rfeastMirrorBCs
     
@@ -2301,7 +2301,7 @@ contains
     p_rfeastMirrorBCs%icoarseningLevel = rconfigFeastMirrorBC%icoarseningLevel
     p_rfeastMirrorBCs%isubtype = rconfigFeastMirrorBC%isubtype
     
-    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     !
     ! As we are in 2D, we can use parameter values at first to figure out,
@@ -2322,13 +2322,13 @@ contains
       return
     end if
     
-    ! Allocate an array for all the DOF's
+    ! Allocate an array for all the DOF`s
     call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFs', &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFs,p_ImirrorDOFs)
     
-    ! Put all DOF's in that array.
+    ! Put all DOF`s in that array.
     do i=1,icount
       p_ImirrorDOFs(i) = p_IverticesAtElement (&
           IverticesAtBoundaryIdx(i),IelementsAtBoundary(i))
@@ -2337,24 +2337,24 @@ contains
     ! Sort the array for quicker access.
     call sort_int(p_ImirrorDOFs)
     
-    ! p_ImirrorDOFs contains all BC's that have to be processed.
-    ! But it does not contain all DOF's that are to be doubled in the matrix.
+    ! p_ImirrorDOFs contains all BC`s that have to be processed.
+    ! But it does not contain all DOF`s that are to be doubled in the matrix.
     !
     ! Duplicate the boundary region and include start- and endpoint
     rboundaryRegionClosed = rboundaryRegion
     rboundaryRegionClosed%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
     
-    ! Then collect all DOF's inside of that like above.
+    ! Then collect all DOF`s inside of that like above.
     call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegionClosed, &
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
                                    
-    ! Allocate an array for all the DOF's
+    ! Allocate an array for all the DOF`s
     call storage_new('bcasm_discrBCFeastMirror', 'h_ImirrorDOFsClosed', &
                     icount, ST_INT, &
                     p_rfeastMirrorBCs%h_ImirrorDOFsClosed, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(p_rfeastMirrorBCs%h_ImirrorDOFsClosed,p_ImirrorDOFs)
     
-    ! Put all DOF's in that array.
+    ! Put all DOF`s in that array.
     do i=1,icount
       p_ImirrorDOFs(i) = p_IverticesAtElement (&
           IverticesAtBoundaryIdx(i),IelementsAtBoundary(i))
@@ -2433,7 +2433,7 @@ contains
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
-  ! discretise only parts of the BC's, e.g. only setting up those
+  ! discretise only parts of the BC`s, e.g. only setting up those
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
@@ -2442,7 +2442,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -2480,15 +2480,15 @@ contains
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
 
-    ! Pressure drop BC's only exist as modification of the RHS.
-    ! If we should not compute them for the RHS, we don't have to do anything.
+    ! Pressure drop BC`s only exist as modification of the RHS.
+    ! If we should not compute them for the RHS, we do not have to do anything.
     if (iand(casmComplexity,BCASM_DISCFORRHS) .eq. 0) return
 
     ! Get a new BC entry
     call bcasm_newBCentry(rdiscreteBC, iidx)
     p_rdiscreteBCentry => rdiscreteBC%p_RdiscBCList(iidx)
 
-    ! Fill the structure for discrete pressure drop BC's in the
+    ! Fill the structure for discrete pressure drop BC`s in the
     ! t_discreteBCEntry structure
     p_rpressureDropBCs => p_rdiscreteBCentry%rpressureDropBCs
     
@@ -2529,7 +2529,7 @@ contains
     allocate(p_rpressureDropBCs%Icomponents(1:NDIM2D))
     p_rpressureDropBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
     
-    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
@@ -2548,7 +2548,7 @@ contains
     ! Total number of edges?
     p_rpressureDropBCs%nDOF = icount
 
-    ! Allocate memory to save the DOF's as well as all modifiers.
+    ! Allocate memory to save the DOF`s as well as all modifiers.
     call storage_new('bcasm_discrBCpressureDrop', 'h_IpressureDropDOFs', &
                     icount, ST_INT, p_rpressureDropBCs%h_IpressureDropDOFs, &
                     ST_NEWBLOCK_NOINIT)
@@ -2567,7 +2567,7 @@ contains
     call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     NVT = p_rtriangulation%NVT
 
-    ! Now calculate the pressure drop integral; cf. p. 257 (235) in Turek's book:
+    ! Now calculate the pressure drop integral; cf. p. 257 (235) in Turek`s book:
     !
     ! The pressure drop boundary condition has to implement
     !
@@ -2595,12 +2595,12 @@ contains
                             - p_DvertexCoords(1:NDIM2D,ipoint1)
                             
       ! Get the inner normal vector. This compensates the '-' sign in front of
-      ! the RHS in the formula on poage 269 in Turek's book where the outer
+      ! the RHS in the formula on poage 269 in Turek`s book where the outer
       ! normal vector is used.
       Dnormal(1) = -Dtangential(2)
       Dnormal(2) =  Dtangential(1)
       
-      ! Don't scale the normal vector! The scaling factor cancels out later
+      ! Do not scale the normal vector! The scaling factor cancels out later
       ! when calculating the integral on the edge with the midpoint rule!
       !
       ! At first, we ask the boundary-value routine to give us the
@@ -2686,7 +2686,7 @@ contains
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
-  ! discretise only parts of the BC's, e.g. only setting up those
+  ! discretise only parts of the BC`s, e.g. only setting up those
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
@@ -2695,7 +2695,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -2733,9 +2733,9 @@ contains
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
 
-    ! Pressure drop BC's only exist as modification of the defect vector
+    ! Pressure drop BC`s only exist as modification of the defect vector
     ! and matrix.
-    ! If we should not compute them for the matrix/defect, we don't 
+    ! If we should not compute them for the matrix/defect, we do not 
     ! have to do anything.
     if (iand(casmComplexity,BCASM_DISCFORDEFMAT) .eq. 0) return
 
@@ -2743,7 +2743,7 @@ contains
     call bcasm_newBCentry(rdiscreteBC, iidx)
     p_rdiscreteBCentry => rdiscreteBC%p_RdiscBCList(iidx)
 
-    ! Fill the structure for discrete pressure drop BC's in the
+    ! Fill the structure for discrete pressure drop BC`s in the
     ! t_discreteBCEntry structure
     p_rslipBCs => p_rdiscreteBCentry%rslipBCs
     
@@ -2784,10 +2784,10 @@ contains
     allocate(p_rslipBCs%Icomponents(1:NDIM2D))
     p_rslipBCs%Icomponents(1:NDIM2D) = Iequations(1:NDIM2D)
     
-    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
-    ! We have to deal with all DOF's on the boundary. This is highly element
+    ! We have to deal with all DOF`s on the boundary. This is highly element
     ! dependent and therefore a little bit tricky :(
     ! But here we restrict to Q1~ only, which makes life a little bit easier.
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
@@ -2806,7 +2806,7 @@ contains
     ! Total number of edges?
     p_rslipBCs%nDOF = icount
 
-    ! Allocate memory to save the DOF's as well as all modifiers.
+    ! Allocate memory to save the DOF`s as well as all modifiers.
     call storage_new('bcasm_discrBCSlip', 'h_IpressureDropDOFs', &
                     icount, ST_INT, p_rslipBCs%h_IslipDOFs, &
                     ST_NEWBLOCK_NOINIT)
@@ -2825,7 +2825,7 @@ contains
     call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     NVT = p_rtriangulation%NVT
 
-    ! Now calculate the pressure drop integral; cf. p. 257 (235) in Turek's book:
+    ! Now calculate the pressure drop integral; cf. p. 257 (235) in Turek`s book:
     !
     ! The pressure drop boundary condition has to implement
     !
@@ -2942,7 +2942,7 @@ contains
 
   ! Optional: A combination of BCASM_DISCFORxxx constants that specify
   ! the complexity of the discretisation that is to perform. This allows to
-  ! discretise only parts of the BC's, e.g. only setting up those
+  ! discretise only parts of the BC`s, e.g. only setting up those
   ! information that are necessary for filtering defect vectors.
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
@@ -3010,7 +3010,7 @@ contains
     ! We have Dirichlet boundary conditions
     p_rdiscreteFBCentry%itype = DISCFBC_TPDIRICHLET
     
-    ! Fill the structure for discrete Dirichlet BC's in the
+    ! Fill the structure for discrete Dirichlet BC`s in the
     ! t_discreteBCEntry structure
     p_rdirichletFBCs => p_rdiscreteFBCentry%rdirichletFBCs
     
@@ -3022,7 +3022,7 @@ contains
     ! Allocate memory for intermediate values
     allocate(p_Dsubset(FBCASM_MAXSIM,1,nequations))
     
-    ! We have to collect all DOF's and their values that belong to our current
+    ! We have to collect all DOF`s and their values that belong to our current
     ! fictitious boundary object. Depending on the element type we will loop
     ! through all vertices, edges and elements in the triangulation
     ! to collect all the important values.
@@ -3058,7 +3058,7 @@ contains
           (celement .eq. EL_P2) .or. &
           (celement .eq. EL_Q2)) then
       
-        ! Let's start to collect values. This is a rather element-dependent
+        ! Let us start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
         ! P1/Q1/Q2 discretisation
         do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
@@ -3086,7 +3086,7 @@ contains
                                       rblockDiscretisation,&
                                       Revaluation, rcollection)
                                       
-          ! Transfer the DOF's that are affected
+          ! Transfer the DOF`s that are affected
 
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             
@@ -3118,7 +3118,7 @@ contains
       ! Calculate values in the face midpoints / / integral mean values for Q1~
       if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
       
-        ! Let's start to collect values. This is a rather element-dependent
+        ! Let us start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
         ! P1/Q1/Q2 discretisation
         do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
@@ -3151,7 +3151,7 @@ contains
                                       rblockDiscretisation,&
                                       Revaluation, rcollection)
                                       
-          ! Transfer the DOF's that are affected
+          ! Transfer the DOF`s that are affected
 
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             
@@ -3186,7 +3186,7 @@ contains
     if(p_rspatialDiscretisation%ndimension .eq. NDIM3D)then
       if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then      
       
-        ! Let's start to collect values. This is a rather element-dependent
+        ! Let us start to collect values. This is a rather element-dependent
         ! part. At first, loop through the vertices in case we have a
         ! Q1/Q2 discretisation
         do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
@@ -3214,7 +3214,7 @@ contains
                                       rblockDiscretisation,&
                                       Revaluation, rcollection)
                                       
-          ! Transfer the DOF's that are affected
+          ! Transfer the DOF`s that are affected
 
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             
@@ -3246,7 +3246,7 @@ contains
       ! Calculate values in the face midpoints / / integral mean values for Q1~
       if(elem_getPrimaryElement(celement) .eq. EL_Q1T_3D)then
       
-        ! Let's start to collect values. This is a rather element-dependent
+        ! Let us start to collect values. This is a rather element-dependent
         ! part. 
         do isubsetStart = 1,p_rtriangulation%NAT,FBCASM_MAXSIM
         
@@ -3278,7 +3278,7 @@ contains
                                       rblockDiscretisation,&
                                       Revaluation, rcollection)
                                       
-          ! Transfer the DOF's that are affected
+          ! Transfer the DOF`s that are affected
 
           if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
             
@@ -3318,7 +3318,7 @@ contains
       ! Reallocate to save memory. Store the final handles in the structure.
       if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
         ! In the 2D-array, the size of the 2nd dimension is changed to the
-        ! number of DOF's.
+        ! number of DOF`s.
         call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
                               h_Ddofs, ST_NEWBLOCK_NOINIT)
         p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
@@ -3421,7 +3421,7 @@ contains
 
 !<inputoutput>
   ! A t_discreteBC structures, representing the boundary discretised 
-  ! in a discretisation-dependent way. The new BC's are added to this structure.
+  ! in a discretisation-dependent way. The new BC`s are added to this structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -3561,7 +3561,7 @@ contains
       iregionNEL = 0
     end if
 
-    ! Get a new entry for the BC's.
+    ! Get a new entry for the BC`s.
     call bcasm_newBCentry (rdiscreteBC,iidx)
     
     ! Get the next discrete BC entry
@@ -3782,7 +3782,7 @@ contains
         ! happened...
         if (idof .eq. 0) cycle
         
-        ! Let's check if we have already processed this dof.
+        ! Let us check if we have already processed this dof.
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
         if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
@@ -3799,7 +3799,7 @@ contains
         ! And mark the DOF as 'processed' in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
         
-        ! Let's go for the next element adjacent to the vertice
+        ! Let us go for the next element adjacent to the vertice
       
       end do ! idx
       
@@ -3890,13 +3890,13 @@ contains
               ! Get the first DOF on this edge
               idof = IdofGlob(j)
 
-              ! Let's check if we have already processed this dof
+              ! Let us check if we have already processed this dof
               idofHigh = ishft(idof-1,-5) + 1
               idofMask = int(ishft(1,iand(idof-1,31)),I32)
               if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) exit
               
-              ! Okay, the DOF hasn't been set yet.
-              ! So let's take care of the first Gauss point.
+              ! Okay, the DOF has not been set yet.
+              ! So let us take care of the first Gauss point.
               Dwhere(1) = -G2P
               Dcoord2D(1:2) = Q12 * (&
                 (1.0_DP+G2P)*p_DvertexCoords(1:2,p_IvertsAtEdge(1,imt))+&
@@ -3929,7 +3929,7 @@ contains
                   0.5_DP*G2P*(-daux1+daux2), ndofs)
               p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
               
-              ! That's it for this edge
+              ! That is it for this edge
               exit
               
             end do
@@ -3946,7 +3946,7 @@ contains
           ! happened...
           if (idof .eq. 0) cycle
           
-          ! Let's check if we have already processed this dof
+          ! Let us check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
           if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
@@ -3969,7 +3969,7 @@ contains
           ! And mark the DOF as 'processed' in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
           
-          ! Let's go for the next element adjacent to the edge
+          ! Let us go for the next element adjacent to the edge
                 
         end do ! idx
       
@@ -4026,7 +4026,7 @@ contains
           ! happened...
           if (idof .eq. 0) cycle
           
-          ! Let's check if we have already processed this dof
+          ! Let us check if we have already processed this dof
           idofHigh = ishft(idof-1,-5) + 1
           idofMask = int(ishft(1,iand(idof-1,31)),I32)
           if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
@@ -4049,7 +4049,7 @@ contains
           ! And mark the DOF as 'processed' in the bitmap
           p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
           
-          ! Let's go for the next element adjacent to the edge
+          ! Let us go for the next element adjacent to the edge
                 
         end do ! idx
       
@@ -4120,13 +4120,13 @@ contains
             ! Get the first DOF on this face
             idof = IdofGlob(j)
 
-            ! Let's check if we have already processed this dof
+            ! Let us check if we have already processed this dof
             idofHigh = ishft(idof-1,-5) + 1
             idofMask = int(ishft(1,iand(idof-1,31)),I32)
             if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) exit
 
-            ! Okay, the DOF hasn't been set yet.
-            ! So let's take care of the first Gauss point.
+            ! Okay, the DOF has not been set yet.
+            ! So let us take care of the first Gauss point.
             Dwhere(1:2) = -G2P
             Dcoord3D(1:3) = Q14 * (&
               (1.0_DP+G2P)*(1.0_DP+G2P)*p_DvertexCoords(1:3,p_IvertsAtFace(1,iat)) +&
@@ -4198,7 +4198,7 @@ contains
                0.25_DP*G2P*(-daux1-daux2+daux3+daux4), ndofs)
             p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
             
-            ! That's it for this face
+            ! That is it for this face
             exit
           
           end do
@@ -4213,7 +4213,7 @@ contains
         ! happened...
         if (idof .eq. 0) cycle
         
-        ! Let's check if we have already processed this dof
+        ! Let us check if we have already processed this dof
         idofHigh = ishft(idof-1,-5) + 1
         idofMask = int(ishft(1,iand(idof-1,31)),I32)
         if (iand(p_IdofBitmap(idofHigh),int(idofMask)) .ne. 0) cycle
@@ -4238,7 +4238,7 @@ contains
         ! And mark the DOF as 'processed' in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
         
-        ! Let's go for the next element adjacent to the face
+        ! Let us go for the next element adjacent to the face
 
       end do ! idx
       
@@ -4520,14 +4520,14 @@ contains
       
       end select
 
-      ! Let's go for the next element in the mesh region
+      ! Let us go for the next element in the mesh region
       
     end do
    
     ! Deallocate the DOF map
     deallocate(p_IdofBitmap)
     
-    ! That's it - unbelievable!
+    ! That is it - unbelievable!
     
   contains
   

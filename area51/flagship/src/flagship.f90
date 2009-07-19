@@ -172,7 +172,7 @@ function signal_SIGINT(signum) result(sigcount)
 
 !<description>
   ! This subroutine performs signal handling for SIGINT. In essence,
-  ! it counts the number if SIGINT's received and terminates if user
+  ! it counts the number if SIGINT`s received and terminates if user
   ! sent SIGINT more than three times.
 !</description>
 

@@ -600,7 +600,7 @@ contains
       
       ! Allocate an integer-array which saves the segtment type and
       ! the start positions (0-based!) of each segment information
-      ! block in the segment-array. It's as long as the number
+      ! block in the segment-array. It is as long as the number
       ! of segments indicates * 2.
       
       call storage_new("boundary_read_prm", "h_Isegcount", &
@@ -848,7 +848,7 @@ contains
     rboundary%iboundarycount_g = 0
     rboundary%iboundarycount = 0
     
-    ! That's it...
+    ! That is it...
     
   end subroutine boundary_release
 
@@ -867,7 +867,7 @@ contains
   ! Segment-count array
   integer, dimension(:), intent(in) :: IsegCount
 
-  ! Array wirth maximum parameter values for all BC's
+  ! Array wirth maximum parameter values for all BC`s
   real(DP), dimension(:), intent(in) :: DmaxPar
   
   ! Number of the boundary component that is under consideration
@@ -1269,7 +1269,7 @@ contains
       call sys_halt()
     endif
 
-    ! In case, source and destination type is the same, it's easy.
+    ! In case, source and destination type is the same, it is easy.
     if (cparTypeSource .eq. cparTypeDest) then
       dresult = dt
       return
@@ -1437,7 +1437,7 @@ contains
       call sys_halt()
     endif
 
-    ! In case, source and destination type is the same, it's easy.
+    ! In case, source and destination type is the same, it is easy.
     if (cparTypeSource .eq. cparTypeDest) then
       DparDest(:) = DparSource(:)
       return
@@ -1466,7 +1466,7 @@ contains
 
     do iidx = 1,size(DparSource)
     
-      ! Don't convert parameter values < 0.
+      ! Do not convert parameter values < 0.
       if (DparSource(iidx) .ge. 0.0_DP) then
 
         dpar = mod(DparSource(iidx),dtmax)
@@ -1738,7 +1738,7 @@ contains
     
     ! If the parameter value is negative, the point is surely not in the
     ! region. Parameter values must be positive!
-    ! (Note: Don't change this behaviour to 'rounding' into 0..tmax,
+    ! (Note: Do not change this behaviour to 'rounding' into 0..tmax,
     ! since there may be routines (like in the triangulation) thay
     ! depend on this to figure out which vertices are on the physical
     ! boundary and which not!)
@@ -1776,25 +1776,25 @@ contains
     if ((dpar1 .ge. dminpar) .and. &
         (dpar1 .le. dmaxpar)) then
       
-      ! What's up with the endpoints?
+      ! What is up with the endpoints?
       if ( (dpar1 .eq. dminpar) .and. &
           (iand(rregion%iproperties,BDR_PROP_WITHSTART) .eq. 0)) return
       if ( (dpar1 .eq. dmaxpar) .and. &
           (iand(rregion%iproperties,BDR_PROP_WITHEND) .eq. 0)) return
       
-      ! It's inside.
+      ! It is inside.
       boundary_isInRegion = .true.
       
     else if ((dpar2 .ge. dminpar) .and. &
              (dpar2 .le. dmaxpar)) then
       
-      ! What's up with the endpoints?
+      ! What is up with the endpoints?
       if ( (dpar2 .eq. dminpar) .and. &
            (iand(rregion%iproperties,BDR_PROP_WITHSTART) .eq. 0)) return
       if ( (dpar2 .eq. dmaxpar) .and. &
            (iand(rregion%iproperties,BDR_PROP_WITHEND) .eq. 0)) return
       
-      ! It's inside.
+      ! It is inside.
       boundary_isInRegion = .true.
       
     end if
@@ -1829,7 +1829,7 @@ contains
     ! local variables
     real(DP) :: dlen1,dlen2
 
-    ! Is the boundary region parametrised for the length? Then it's easy...
+    ! Is the boundary region parametrised for the length? Then it is easy...
     if (rregion%cparType .eq. BDR_PAR_LENGTH) then
       dlength = rregion%dmaxParam - rregion%dminParam
       return

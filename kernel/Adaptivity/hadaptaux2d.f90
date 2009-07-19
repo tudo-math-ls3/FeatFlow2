@@ -605,7 +605,7 @@ contains
                 rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
               end do
 
-              ! That's it for element IEL
+              ! That is it for element IEL
               cycle mark_elem
 
             elseif (istate .eq. STATE_TRIA_OUTERINNER) then
@@ -633,7 +633,7 @@ contains
                   rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
                 end do
 
-                ! That's it for element IEL
+                ! That is it for element IEL
                 cycle mark_elem
               end if
             end if
@@ -701,7 +701,7 @@ contains
                 rhadapt%p_IvertexAge(ivt) = -abs(rhadapt%p_IvertexAge(ivt)) 
               end do              
 
-              ! That's it for element IEL
+              ! That is it for element IEL
               cycle mark_elem
             end if
           end if  ! isubdivide = nsubdividemax
@@ -771,10 +771,10 @@ contains
     ! elements can only be coarsened if this subset results from a previous
     ! refinement step. In other words, the grid cannot become coarser than the
     ! initial triangulation. Moreover, one recoarsening step can only "undo"
-    ! what one refinement step can "do". This is in contrast to other "node-
-    ! removal" techniques, which remove all superficial vertices and retriangulate
-    ! the generated "holes". However, such algorithms cannot guarantee a grid
-    ! hierarchy between refined and recoarsened grids.
+    ! what one refinement step can "do". This is in contrast to other 
+    ! "node-removal" techniques, which remove all superficial vertices and 
+    ! retriangulate the generated "holes". However, such algorithms cannot 
+    ! guarantee a grid hierarchy between refined and recoarsened grids.
     !
     ! In the context of hierarchical red-green mesh adaptivity, each recoarsening
     ! step is the inverse operation of a previous refinement step. In other words,
@@ -838,8 +838,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA2D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDREFINE) .ne.&
                             HADAPT_MARKEDREFINE) then
-      call output_line('Dynamic data structures are not &
-                       & generated or no marker for grid refinement exists!',&
+      call output_line('Dynamic data structures are not ' // &
+                       ' generated or no marker for grid refinement exists!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_markRedgreenCoarsening2D')
       call sys_halt()
     end if
@@ -1025,7 +1025,7 @@ contains
     ! In order to circumvent this recursion, we make use of an infinite
     ! do-while loop which is terminated if no vertices have been "modified".
     
-    ! Let's start
+    ! Let us start
     bisModified = .true.
     phase2: do while(bisModified)
 
@@ -1978,7 +1978,7 @@ contains
     !   number. Hence, it is advisable to first process all elements which 
     !   are activated and pre-select their neighbors for the next iteration.
     
-    ! Ok, so let's start.
+    ! Ok, so let us start.
     imodifier = 1
     
     ! Initially, set the modified for all elements of the given triangulation
@@ -2947,7 +2947,7 @@ contains
       rhadapt%NVT0 = rhadapt%NVT
 
       !-------------------------------------------------------------------------
-      ! We don't want to have elements with two and/or three divided edges, 
+      ! We do not want to have elements with two and/or three divided edges, 
       ! aka, blue refinement for triangles and quadrilaterals, respectively.
       ! Therefore, these elements are filtered and marked for red refinement.
       !-------------------------------------------------------------------------
@@ -3192,8 +3192,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA2D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDREFINE) .ne.&
                             HADAPT_MARKEDREFINE) then
-      call output_line('Dynamic data structures are not generated &
-                       &or no marker for refinement is available!',&
+      call output_line('Dynamic data structures are not generated ' // &
+                       'or no marker for refinement is available!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_refine2D')
       call sys_halt()
     end if
@@ -3321,8 +3321,8 @@ contains
                             HADAPT_HAS_DYNAMICDATA2D .or.&
         iand(rhadapt%iSpec, HADAPT_MARKEDCOARSEN) .ne.&
                             HADAPT_MARKEDCOARSEN) then
-      call output_line('Dynamic data structures are not generated &
-                       &or no marker for coarsening is available!',&
+      call output_line('Dynamic data structures are not generated ' // &
+                       'or no marker for coarsening is available!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'hadapt_coarsen2D')
       call sys_halt()
     end if
@@ -3631,12 +3631,12 @@ contains
     write(iunit,FMT='(A)') '    vinfo_text6.setAttribute("y",p.y+3*'//trim(sys_siL(linesep,10))//');'
     write(iunit,FMT='(A)') '    vinfo_text6.firstChild.nodeValue = elems;'
 
-    write(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+&
-        &vinfo_text4.getComputedTextLength();'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()&
-        &+vinfo_text5.getComputedTextLength());'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()&
-        &+vinfo_text6.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    var textlen = vinfo_text1.getComputedTextLength()+' // &
+        'vinfo_text4.getComputedTextLength();'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text2.getComputedTextLength()' // &
+        '+vinfo_text5.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,vinfo_text3.getComputedTextLength()' // &
+        '+vinfo_text6.getComputedTextLength());'
     write(iunit,FMT='(A)') '    vinfo_box.setAttribute("width",textlen+30);'
 
     write(iunit,FMT='(A)') '    vinfo.setAttribute("style","visibility: visible");'
@@ -3705,18 +3705,18 @@ contains
     write(iunit,FMT='(A)') '    einfo_text12.setAttribute("y",p.y+6*'//trim(sys_siL(linesep,10))//');'
     write(iunit,FMT='(A)') '    einfo_text12.firstChild.nodeValue = kvert;'
 
-    write(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+&
-        &einfo_text7.getComputedTextLength();'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+&
-        &einfo_text8.getComputedTextLength());'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+&
-        &einfo_text9.getComputedTextLength());'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+&
-        &einfo_text10.getComputedTextLength());'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+&
-        &einfo_text11.getComputedTextLength());'
-    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+&
-        &einfo_text12.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    var textlen = einfo_text1.getComputedTextLength()+' // &
+        'einfo_text7.getComputedTextLength();'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text2.getComputedTextLength()+' // &
+        'einfo_text8.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text3.getComputedTextLength()+' // &
+        'einfo_text9.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text4.getComputedTextLength()+' // &
+        'einfo_text10.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text5.getComputedTextLength()+' // &
+        'einfo_text11.getComputedTextLength());'
+    write(iunit,FMT='(A)') '    textlen = Math.max(textlen,einfo_text6.getComputedTextLength()+' // &
+        'einfo_text12.getComputedTextLength());'
     write(iunit,FMT='(A)') '    einfo_box.setAttribute("width",textlen+30);'
 
     write(iunit,FMT='(A)') '    einfo.setAttribute("style","visibility: visible");'
@@ -4741,8 +4741,8 @@ contains
       ! Element is not the last one. Then the element that should be removed must
       ! have a smaller element number. If this is not the case, something is wrong.
       if (iel .gt.ielReplace) then
-        call output_line('Number of replacement element must not be smaller than that of&
-                         & the removed elements!',&
+        call output_line('Number of replacement element must not be smaller than that of' // &
+                         ' the removed elements!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'remove_element2D')
         call sys_halt()
       end if

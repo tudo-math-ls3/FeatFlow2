@@ -7,9 +7,9 @@
 !# This module contains the FEAT implementation of the global memory
 !# management. The usual memory management in Fortran 90 uses pointers
 !# for referring to a memory block. As this handling is rather nasty in
-!# many circumstances (e.g. it's hard to set up something like an 'array of
-!# pointers'), we decided to implement our own memory management - based on
-!# ALLOCATE and DEALLOCATE.
+!# many circumstances (e.g. it is hard to set up something like an 
+!# 'array of pointers'), we decided to implement our own memory management - 
+!# based on ALLOCATE and DEALLOCATE.
 !#
 !# The new memory management makes use of 'handles'. A handle is an integer
 !# valued identifier for a pointer.
@@ -290,7 +290,7 @@ module storage
   ! This block represents a heap that maintains single, double precision
   ! and integer data. It contains a list of t_storageNode elements for all
   ! the handles.
-  ! There's one global object of this type for the global storage management,
+  ! There is one global object of this type for the global storage management,
   ! but if necessary, an algorithm can create such a block locally, too,
   ! to prevent conflicts with the global memory.
   type t_storageBlock
@@ -671,7 +671,7 @@ contains
     ! Delete all data from the heap
     if (associated(p_rheap%p_Rdescriptors)) then
       do i = 1,size(p_rheap%p_Rdescriptors)
-        ! Don't pass i as handle as storage_free will set the handle
+        ! Do not pass i as handle as storage_free will set the handle
         ! passed to it to 0!
         ihandle = i
         if (p_rheap%p_Rdescriptors(i)%idataType .ne. ST_NOHANDLE) &
@@ -6362,7 +6362,7 @@ contains
       end select
 
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
-      ! pointer again to be sure it's correct and not pointing to nowhere!
+      ! pointer again to be sure it is correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
       p_rdest   => p_rheap%p_Rdescriptors(h_dest)
 
@@ -6862,7 +6862,7 @@ contains
       end select
 
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
-      ! pointer again to be sure it's correct and not pointing to nowhere!
+      ! pointer again to be sure it is correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
       p_rdest   => p_rheap%p_Rdescriptors(h_dest)
 
@@ -7648,7 +7648,7 @@ contains
       end select
 
       ! The storage_new may reallocate the p_Rdescriptors array, so get the
-      ! pointer again to be sure it's correct and not pointing to nowhere!
+      ! pointer again to be sure it is correct and not pointing to nowhere!
       p_rsource => p_rheap%p_Rdescriptors(h_source)
       p_rdest => p_rheap%p_Rdescriptors(h_dest)
 
@@ -9070,7 +9070,7 @@ contains
 
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
-  ! =FALSE: Reallocate memory, don't copy old data.
+  ! =FALSE: Reallocate memory, do not copy old data.
   ! If not specified, TRUE is assumed.
   logical, intent(in), optional :: bcopy
 
@@ -9171,7 +9171,7 @@ contains
       ! Do we really have to change anything?
       if (isize .eq. isizeOld) return
 
-      ! Allocate new memory and initialise it - if it's larger than the old
+      ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
@@ -9279,7 +9279,7 @@ contains
       ! Do we really have to change anything?
       if (isize .eq. Isize2Dold(2)) return
 
-      ! Allocate new memory and initialise it - if it's larger than the old
+      ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
@@ -9335,7 +9335,7 @@ contains
       ! Copy old data?
       if (bcopyData) then
 
-        ! Here it's easier than in storage_copy as we can be sure, source and
+        ! Here it is easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)
@@ -9482,7 +9482,7 @@ contains
 
   ! OPTIONAL: Copy old data.
   ! =TRUE: Copy data of old array to the new one.
-  ! =FALSE: Reallocate memory, don't copy old data.
+  ! =FALSE: Reallocate memory, do not copy old data.
   ! If not specified, TRUE is assumed.
   logical, intent(in), optional :: bcopy
 
@@ -9627,7 +9627,7 @@ contains
       if ((ilbound .eq. ilboundOld) .and. &
           (iubound .eq. iuboundOld)) return
 
-      ! Allocate new memory and initialise it - if it's larger than the old
+      ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
 
       select case (rstorageNode%idataType)
@@ -9760,7 +9760,7 @@ contains
       if ((ilbound .eq. ilbound2Dold(2)) .and. &
           (iubound .eq. iubound2Dold(2))) return
 
-      ! Allocate new memory and initialise it - if it's larger than the old
+      ! Allocate new memory and initialise it - if it is larger than the old
       ! memory block.
       select case (rstorageNode%idataType)
       case (ST_SINGLE)
@@ -9839,7 +9839,7 @@ contains
       ! Copy old data?
       if (bcopyData) then
 
-        ! Here it's easier than in storage_copy as we can be sure, source and
+        ! Here it is easier than in storage_copy as we can be sure, source and
         ! destination array have the same type!
         select case (rstorageNode%idataType)
         case (ST_SINGLE)

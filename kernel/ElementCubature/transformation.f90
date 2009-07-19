@@ -125,7 +125,7 @@
 !#%         |         ****        | unused    |dimens |     trafo-ID    |
 !#
 !#   Bits 0..7   specify the type of transformation (triangular, quad, 
-!#               linear, quadratic, ...). The different ID's for this
+!#               linear, quadratic, ...). The different ID`s for this
 !#               field are expressed in the TRAFO_ID_xxxx constants.
 !#   Bits 8+ 9   encode the dimension of the reference element. =1: 1D, =2: 2D, =3: 3D.
 !#   Bits 10-15  unused
@@ -424,13 +424,13 @@ contains
       
       case (TRAFO_ID_LINSIMPLEX)
         ! 2D simplex -> linear triangular transformation. 
-        ! 3 DOF's in the transformation (given by the corners of the element)
+        ! 3 DOF`s in the transformation (given by the corners of the element)
         trafo_igetReferenceDimension = 3
       
       case (TRAFO_ID_MLINCUBE)
         ! Bilinear transformation for cubic-shaped elements 
         ! -> Bilinear quadrilateral transformation.
-        ! 4 DOF's in the transformation (given by the corners of the element)
+        ! 4 DOF`s in the transformation (given by the corners of the element)
         trafo_igetReferenceDimension = 2
       
       end select
@@ -990,7 +990,7 @@ contains
         
       ! Calculate coordinates?
       if (present(DpointReal)) then
-        ! Ok, that was easy. It's slightly more complicated to get
+        ! Ok, that was easy. It is slightly more complicated to get
         ! the matrix...
         ! But as long as the matrix is not needed, we skip the calculation -
         ! this might be done in a future implementation!
@@ -1316,7 +1316,7 @@ contains
           Ddetj(ipt) = Djac(1,ipt)*Djac(4,ipt) &
                      - Djac(2,ipt)*Djac(3,ipt)
           
-          ! Ok, that was easy. It's slightly more complicated to get
+          ! Ok, that was easy. It is slightly more complicated to get
           ! the matrix...
           ! But as long as the matrix is not needed, we skip the calculation -
           ! this might be done in a future implementation!
@@ -1744,7 +1744,7 @@ contains
             Ddetj(ipt,iel) = Djac(1,ipt,iel)*Djac(4,ipt,iel) &
                            - Djac(2,ipt,iel)*Djac(3,ipt,iel)
             
-            ! Ok, that was easy. It's slightly more complicated to get
+            ! Ok, that was easy. It is slightly more complicated to get
             ! the matrix...
             ! But as long as the matrix is not needed, we skip the calculation -
             ! this might be done in a future implementation!
@@ -3028,8 +3028,8 @@ contains
 !
 ! The ai, bi and ci depend only on the corners of the hexahedron, but not on
 ! the current point. So they are constant for all points we want to map from
-! the reference element to the real one. We call them "auxiliary Jacobian
-! factors". They are calculated with trafo_calcJacPrepare3D in advance for
+! the reference element to the real one. We call them `auxiliary Jacobian
+! factors`. They are calculated with trafo_calcJacPrepare3D in advance for
 ! all points that have to be mapped.
 ! The Jacobian matrix of the trilinear transformation is now calculated
 ! as usual by partial differentiation:
@@ -3832,7 +3832,7 @@ contains
       
       case (TRAFO_ID_MLINCUBE)
       
-        ! Simple linear transformation of x \in [a,b] -> x' \in [-1,1]
+        ! Simple linear transformation of x \in [a,b] -> x` \in [-1,1]
         DparPoint(1) = -1.0_DP + 0.5_DP * (Dpoint(1) - Dcoord(1,1)) / (Dcoord(2,1)-Dcoord(1,1))
       
       end select
@@ -3917,7 +3917,7 @@ contains
       
       case (TRAFO_ID_MLINCUBE)
       
-        ! Simple linear transformation of x \in [-1,1] -> x' \in [a,b]
+        ! Simple linear transformation of x \in [-1,1] -> x` \in [a,b]
         Dpoint(1) = 0.5_DP*(Dcoord(2,1)-Dcoord(1,1))*(DpointRef(1)+1.0_DP)
       
       end select
@@ -3973,7 +3973,7 @@ contains
   !
   ! Consider the following 1D example:
   !
-  ! Let's assume that we have a set of 3 cubature points (a,b,c) on the
+  ! Let us assume that we have a set of 3 cubature points (a,b,c) on the
   ! 1D reference interval [-1,1]:
   !
   !   |----a----b----c----|
@@ -4002,7 +4002,7 @@ contains
   !  X_i-1                        X_i                        X_i+1
   !
   ! (Note: It does not matter whether the edge (Y_i,Y_i+1) was refined into
-  !  (X_i,X_i+1,X_i+2) or (X_i-1,X_i,X_i+1), so we'll assume the first case)
+  !  (X_i,X_i+1,X_i+2) or (X_i-1,X_i,X_i+1), so we will assume the first case)
   !
   ! Now we need to map the cubature points which lie on the fine mesh edges
   ! (X_i,X_i+1) and (X_i+1,X_i+2) onto the coarse mesh edge (Y_i,Y_i+1):
@@ -4117,7 +4117,7 @@ contains
   real(DP), parameter :: E3x = 0.0_DP
   real(DP), parameter :: E3y = 0.5_DP
   
-    ! Now as we don't use reference coordinates and a reference triangle
+    ! Now as we do not use reference coordinates and a reference triangle
     ! but barycentric coordinates, the 2-Level mapping of cubature points
     ! on triangles gets a bit more tricky.
     ! The very first thing that one has to be aware of is that one of the

@@ -28,9 +28,9 @@
 !#     by Warp < warp@iki.fi > available from:
 !#     http://warp.povusers.org/FunctionParser/
 !#
-!# (b) This FParser module is an extension of the "Fortran 90 function parser
-!#     V1.1" which implements most of the features available in the "function
-!#     parser library for C++ V2.8" written by Warp. The optimizer included
+!# (b) This FParser module is an extension of the `Fortran 90 function parser
+!#     V1.1` which implements most of the features available in the `function
+!#     parser library for C++ V2.8` written by Warp. The optimizer included
 !#     in the C++ library and the recursive evaluation of functions by means
 !#     of eval(...) is not implemented in this version.
 !#

@@ -181,7 +181,7 @@ contains
     ! the discretisation.
     call lsysbl_createMatBlockByDiscr (p_rdiscretisation,rmatrix)    
       
-    ! Let's consider the global system in detail. It has roughly
+    ! Let us consider the global system in detail. It has roughly
     ! the following shape:
     !
     !    ( A11       B1  ) = ( A11  A12  A13 )
@@ -203,7 +203,7 @@ contains
     ! For this purpose, we have to initialise a t_nonlinearCCMatrix structure
     ! which defines the shape of the matrix. We simply set the parameters
     ! of those terms which wshould appear in the matrix to a value <> 0,
-    ! that's enough for the memory allocation.
+    ! that is enough for the memory allocation.
     
     call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rlevelInfo%rdiscretisation,rlevelInfo%rstaticInfo)
@@ -218,7 +218,7 @@ contains
     call cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
         rmatrix,rnonlinearCCMatrix)
                                   
-    ! That's it, all submatrices are set up.
+    ! That is it, all submatrices are set up.
       
   end subroutine
 
@@ -992,7 +992,7 @@ contains
           end if
 
           ! Allocate memory for the matrix or release the existing matrix,
-          ! if there's a structural update.
+          ! if there is a structural update.
           if (binit) then
             allocate(rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner)
           else
@@ -1001,7 +1001,7 @@ contains
           end if
           
           ! Allocate memory for the basic submatrices.
-          ! The routine also reserves memory for A(3,3) for the case it's needed,
+          ! The routine also reserves memory for A(3,3) for the case it is needed,
           ! but switches that matrix off.
           call cc_allocPrecSystemMatrix (rproblem,rnonlinearIteration%rprecSpecials,&
               i,nlmin,nlmax,rproblem%RlevelInfo(i),cmatrixType,&
@@ -1076,7 +1076,7 @@ contains
         ! B1^T and B2^T stay unchanged!
         !
         ! In case we have a pure-dirichlet problem, we activate the 3,3-submatrix
-        ! It's probably needed for the preconditioner to make the pressure definite.
+        ! It is probably needed for the preconditioner to make the pressure definite.
         if (bstructuralUpdate) then
           select case (rnonlinearIteration%rprecSpecials%isolverType)
           case (0)
@@ -1093,7 +1093,7 @@ contains
             end if
 
           case (1)
-            ! Multigrid solver. Treat the matrix at the coarse level if there's
+            ! Multigrid solver. Treat the matrix at the coarse level if there is
             ! UMFPACK chosen as coarse grid solver.
             if (i .eq. NLMIN) then
             
@@ -1411,7 +1411,7 @@ contains
     rprecSpecials%bneedPressureDiagonalBlock = &
       .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 
-    ! If there are no Neumann BC's, the pressure is indefinite.
+    ! If there are no Neumann BC`s, the pressure is indefinite.
     rprecSpecials%bpressureIndefinite = &
       .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
 

@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains the very basic matrix assembly routines for the
-!# core equation. It's independent of any nonlinear iteration and provides
+!# core equation. It is independent of any nonlinear iteration and provides
 !# just one functionality: Assemble a matrix or a vector based on a given 
 !# set of parameters.
 !#
@@ -37,7 +37,7 @@
 !#
 !# This equation can be written as a nonlinear system $A(y)(y,p) = (f1,f2)$
 !# with a nonlinear matrix $A(\cdot)$. The structure t_nonlinearCCmatrix
-!# contains a description of this matrix, With this description, it's possible
+!# contains a description of this matrix, With this description, it is possible
 !# to do matrix vector multiplication or to 'evaluate' the matrix at a
 !# given 'point' $y$ to get the 'linearised' matrix $A(y)$.
 !#
@@ -155,7 +155,7 @@ module ccmatvecassembly
 !<typeblock>
 
   ! This routine describes the nonlinear system matrix. The system matrix
-  ! does actually not exist in memory -- since it's nonlinear! Therefore,
+  ! does actually not exist in memory -- since it is nonlinear! Therefore,
   ! this structure contains all parameters and settings which are necessary
   ! do apply(!) the matrix to a vector or to evaluate it.
   ! ('Evaluate a nonlinear matrix' means: Using a given FE-function $y$,
@@ -312,13 +312,13 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
   integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
@@ -496,7 +496,7 @@ contains
   ! Note that if coperation=CCMASM_ALLOCxxxx is specified, p_rmatrixTemplateXXXX 
   ! must be initialised as well as p_rdiscretisation!
   ! The new matrix is created based p_rmatrixTemplateXXXX as well as 
-  ! p_rdiscretisation. Memory is allocated automatically if it's missing.
+  ! p_rdiscretisation. Memory is allocated automatically if it is missing.
   type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
@@ -657,7 +657,7 @@ contains
       ! Ask the problem structure to give us the discretisation structure
       p_rdiscretisation => rnonlinearCCMatrix%p_rdiscretisation
       
-      ! Get a pointer to the template FEM matrix. If that doesn't exist,
+      ! Get a pointer to the template FEM matrix. If that does not exist,
       ! take the Stokes matrix as template.
       p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rstaticInfo%rmatrixTemplateFEM
       if (.not. associated(p_rmatrixTemplateFEM)) &
@@ -677,7 +677,7 @@ contains
         call lsysbl_createEmptyMatrix (rmatrix,NDIM2D+1)
       end if
         
-      ! Let's consider the global system in detail. The standard matrix It has 
+      ! Let us consider the global system in detail. The standard matrix It has 
       ! roughly the following shape:
       !
       !    ( A11       B1  ) = ( A11  A12  A13 )
@@ -739,7 +739,7 @@ contains
             rmatrix%RmatrixBlock(1,2), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
-          ! Allocate memory for the entries; don't initialise the memory.
+          ! Allocate memory for the entries; do not initialise the memory.
           ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
           ! zero.
           ! CALL lsyssc_allocEmptyMatrix (&
@@ -756,7 +756,7 @@ contains
             rmatrix%RmatrixBlock(2,1), &
             LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
             
-          ! Allocate memory for the entries; don't initialise the memory.
+          ! Allocate memory for the entries; do not initialise the memory.
           ! Probably possible, but up to now, LSYSSC_DUP_EMPTY above initialises with
           ! zero.
           ! CALL lsyssc_allocEmptyMatrix (&
@@ -818,7 +818,7 @@ contains
       rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
 
-      ! That's it, all submatrices are basically set up.
+      ! That is it, all submatrices are basically set up.
       !
       ! Update the structural information of the block matrix, as we manually
       ! changed the submatrices:
@@ -932,7 +932,7 @@ contains
       end if
       
       ! If the submatrices A12 and A21 exist, fill them with zero.
-      ! If they don't exist, we don't have to do anything.
+      ! If they do not exist, we do not have to do anything.
       if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
           (rnonlinearCCMatrix%isubequation .ne. 0)) then
         rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
@@ -952,7 +952,7 @@ contains
       if (rnonlinearCCMatrix%dtheta .ne. 0.0_DP) then
         ! Plug in the Stokes matrix in case of the gradient tensor.
         ! In case of the deformation tensor ir nonconstant viscosity, 
-        ! that's done during the assembly of the nonlinearity.
+        ! that is done during the assembly of the nonlinearity.
         if ((rnonlinearCCMatrix%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
@@ -988,7 +988,7 @@ contains
           ! Streamline diffusion.
 
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1013,7 +1013,7 @@ contains
         case (CCMASM_STAB_STREAMLINEDIFF2)
 
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
 
           ! Probably, we have nonconstant viscosity.
@@ -1073,7 +1073,7 @@ contains
 
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1107,7 +1107,7 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
@@ -1127,7 +1127,7 @@ contains
                               rmatrix)          
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
@@ -1138,7 +1138,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
@@ -1156,7 +1156,7 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
@@ -1197,7 +1197,7 @@ contains
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
 
           ! Probably, we have nonconstant viscosity.
@@ -1253,7 +1253,7 @@ contains
               ffunctionViscoModel,rcollection)
 
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
@@ -1264,7 +1264,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
@@ -1285,14 +1285,14 @@ contains
 
       else
       
-        ! That's the Stokes-case. Jump stabilisation is possible...
+        ! That is the Stokes-case. Jump stabilisation is possible...
       
         select case (rnonlinearCCMatrix%iupwind)
         case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1303,7 +1303,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(1,1),&
@@ -1321,7 +1321,7 @@ contains
           ! Sum
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1422,7 +1422,7 @@ contains
       
       idubStructure = LSYSSC_DUP_SHARE
       
-      ! Let's consider the global system in detail:
+      ! Let us consider the global system in detail:
       !
       !    ( A11  A12  B1  ) = ( A11  A12  A13 )
       !    ( A21  A22  B2  )   ( A21  A22  A23 )
@@ -1615,7 +1615,7 @@ contains
 
     call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx)
     
-    ! Now, we treat all the remaining blocks. Let's see what is missing:
+    ! Now, we treat all the remaining blocks. Let us see what is missing:
     !
     !    ( .    .    B1  ) 
     !    ( .    .    B2  ) 
@@ -1643,7 +1643,7 @@ contains
     ! from above!
     call lsysbl_blockMatVec (rmatrix, rx, rd, dcx, 1.0_DP)
     
-    ! Release the temporary matrix, we don't need it anymore.
+    ! Release the temporary matrix, we do not need it anymore.
     call lsysbl_releaseMatrix (rmatrix)
 
   contains
@@ -1755,7 +1755,7 @@ contains
         select case (rnonlinearCCMatrix%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1785,7 +1785,7 @@ contains
         case (CCMASM_STAB_STREAMLINEDIFF2)     
                   
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
           
           ! Probably, we have nonconstant viscosity.
@@ -1844,7 +1844,7 @@ contains
                               
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rupwind%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -1870,7 +1870,7 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
@@ -1885,7 +1885,7 @@ contains
           if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
 
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there's content at all),
+            ! to 0.0. Whatever the content is (if there is content at all),
             ! these matrices are ignored then by the kernel.
             
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
@@ -1897,7 +1897,7 @@ contains
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
-            ! Activate the submatrices A12 and A21 if they aren't.
+            ! Activate the submatrices A12 and A21 if they are not.
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
            
@@ -1911,7 +1911,7 @@ contains
                               rmatrix,rsolution=rvector,rdefect=rdefect)          
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
@@ -1922,7 +1922,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
@@ -1942,7 +1942,7 @@ contains
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
           
           ! Probably, we have nonconstant viscosity.
@@ -1998,7 +1998,7 @@ contains
               (rstreamlineDiffusion2%dbetaT .eq. 0)) then
 
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there's content at all),
+            ! to 0.0. Whatever the content is (if there is content at all),
             ! these matrices are ignored then by the kernel.
             
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
@@ -2010,7 +2010,7 @@ contains
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
-            ! Activate the submatrices A12 and A21 if they aren't.
+            ! Activate the submatrices A12 and A21 if they are not.
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
            
@@ -2021,7 +2021,7 @@ contains
               rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
@@ -2032,7 +2032,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
@@ -2052,7 +2052,7 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter to 0 to deactivate the stabilisation.
@@ -2067,7 +2067,7 @@ contains
           if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
 
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
-            ! to 0.0. Whatever the content is (if there's content at all),
+            ! to 0.0. Whatever the content is (if there is content at all),
             ! these matrices are ignored then by the kernel.
             
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 0.0_DP
@@ -2079,7 +2079,7 @@ contains
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
             call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
           
-            ! Activate the submatrices A12 and A21 if they aren't.
+            ! Activate the submatrices A12 and A21 if they are not.
             rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
             rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
            
@@ -2110,7 +2110,7 @@ contains
       
       else
       
-        ! That's the Stokes-case. Jump stabilisation is possible...
+        ! That is the Stokes-case. Jump stabilisation is possible...
         !
         ! Type of stablilisation?
         select case (rnonlinearCCMatrix%iupwind)
@@ -2118,7 +2118,7 @@ contains
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
-          ! There's not much to do, only initialise the viscosity...
+          ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
@@ -2129,7 +2129,7 @@ contains
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
-          ! We can assemble the jump part any time as it's independent of any
+          ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&

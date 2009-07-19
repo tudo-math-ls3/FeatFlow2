@@ -1415,8 +1415,8 @@ contains
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
           
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'effectiv&
-              &e_energy', p_Dsolution, p_Ddata1)
+          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'effectiv' // &
+              'e_energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport,&
               'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
           

@@ -10,7 +10,7 @@
 !# The following files can be found here:
 !#
 !# 1.) cc_assembleBDconditions
-!#     -> Parses the definition of the BC's from sections given by DAT files
+!#     -> Parses the definition of the BC`s from sections given by DAT files
 !#        and sets up an discrete boundary condition description
 !#
 !# 2.) cc_assembleFBDconditions
@@ -143,7 +143,7 @@ contains
   
   ! A t_discreteBC structure that receives a discretised version
   ! of the boundary boundary conditions. The structure should
-  ! be empty; new BC's are simply added to the structure.
+  ! be empty; new BC`s are simply added to the structure.
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
@@ -194,8 +194,8 @@ contains
     ! Get the triangulation on the highest level
     p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation
     
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     !
@@ -332,8 +332,8 @@ contains
             select case (ibctyp)
             
             case (0)
-              ! Usually there's Neumann boundary in this region, but we can't be 
-              ! sure. Check if, on the highest level, there's at least one edge
+              ! Usually there is Neumann boundary in this region, but we can not be 
+              ! sure. Check if, on the highest level, there is at least one edge
               ! of the triangulation belonging to the boundary. If yes, we
               ! have found Neumann boundary. If no, the segment is just too
               ! small to be considered as Neumann boundary.
@@ -415,7 +415,7 @@ contains
                       collct_getvalue_int (rcoll, sbdex1, 0, SEC_SBDEXPRESSIONS)
                 end select
               
-                ! Assemble the BC's.
+                ! Assemble the BC`s.
                 call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,1,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)
@@ -451,7 +451,7 @@ contains
                       collct_getvalue_int (rcoll,sbdex2, 0, SEC_SBDEXPRESSIONS)
                 end select
               
-                ! Assemble the BC's.
+                ! Assemble the BC`s.
                 call bcasm_newDirichletBConRealBD (&
                     rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)
@@ -750,11 +750,11 @@ contains
       ! Now, which boundary condition do we have here?
       !
       ! Get the information from evalBoundary.
-      ! Note: The information about the BC's can be retrieved from the
+      ! Note: The information about the BC`s can be retrieved from the
       ! quick-access arrays in the collection as initialised above.
       select case (rcollection%IquickAccess(1))
       case (1)
-        ! Simple Dirichlet BC's. Evaluate the expression iexprtyp.
+        ! Simple Dirichlet BC`s. Evaluate the expression iexprtyp.
         Dvalues(1) = evalBoundary (icomponent,rdiscretisation, rboundaryRegion, &
             iexprtyp, rcollection%IquickAccess(4), rcollection%DquickAccess(4), &
             dwhere, rcollection%SquickAccess(1),dtime,&
@@ -813,7 +813,7 @@ contains
     ! 0-1-parametrisation.
     real(DP), intent(in) :: dpar
 
-    ! String tag that defines more complicated BC's.
+    ! String tag that defines more complicated BC`s.
     character(LEN=*), intent(in) :: stag
     
     ! For nonstationary simulation: Simulation time.
@@ -961,7 +961,7 @@ contains
   
   ! A t_discreteFBC structure that receives a discretised version
   ! of the fictitious boundary boundary conditions. The structure should
-  ! be empty; new BC's are simply added to the structure.
+  ! be empty; new BC`s are simply added to the structure.
   type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 

@@ -230,7 +230,7 @@ contains
     end if
     
     ! Get the paramters and fill our structure. Use the standard parameters
-    ! from the Fortran initialisation (by INTENT(out)) for those who don't exist.
+    ! from the Fortran initialisation (by INTENT(out)) for those who do not exist.
     call parlst_getvalue_int(p_rsection,'cadaptiveTimeStepping',&
                             radTimeStepping%ctype,&
                             radTimeStepping%ctype)
@@ -376,7 +376,7 @@ contains
   
 !<description>
   ! Calculates a new time step size based on a time error indicator derrorIndicator.
-  ! The implementation follows p. 160ff, Turek's CFD-book.
+  ! The implementation follows p. 160ff, Turek`s CFD-book.
 !</description>
 
 !<input>
@@ -451,7 +451,7 @@ contains
     if (iand(isolverStatus,3_I32) .ne. 0) then
     
       ! A critical solver component broke down, we cannot do time analysis.
-      ! we really don't have much information in this case.
+      ! we really do not have much information in this case.
       ! We can just "guess" a new time step - if we are at all allowed
       ! to change it!
 

@@ -20,13 +20,13 @@
 !#  1.) matfil_discreteBC
 !#      -> Apply the 'discrete boundary conditions for matrices' filter
 !#         onto a given (block) matrix.
-!#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF's
+!#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF`s
 !#         by unit vectors for all scalar submatrices where configured.
 !#
 !#  2.) matfil_discreteFBC
 !#      -> Apply the 'discrete fictitious boundary conditions for matríces'
 !#         filter onto a given (block) matrix.
-!#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF's
+!#         This e.g. replaces lines of a matrix corresponding to Dirichlet DOF`s
 !#         by unit vectors for all scalar submatrices where configured.
 !#
 !#  3.) matfil_discreteNLSlipBC
@@ -42,13 +42,13 @@
 !# Auxiliary routines:
 !#
 !#  1.) matfil_imposeDirichletBC
-!#      -> Imposes Dirichlet BC's into a scalar matrix
+!#      -> Imposes Dirichlet BC`s into a scalar matrix
 !#
 !#  2.) matfil_imposeNLSlipBC
 !#      -> Imposes nonlinear slip boundary conditions into a scalar matrix
 !#
 !#  3.) matfil_imposeDirichletFBC
-!#      -> Imposes Difichlet BC's for fictitious boundary components
+!#      -> Imposes Difichlet BC`s for fictitious boundary components
 !#         into a scalar matrix
 !#
 !# </purpose>
@@ -91,7 +91,7 @@ contains
   subroutine matfil_imposeDirichletBC (rmatrix,boffDiag,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet BC's into a scalar matrix.
+  ! Implements discrete Dirichlet BC`s into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
   ! (depending on whether the matrix is a 'diagonal' matrix or an
@@ -100,11 +100,11 @@ contains
 
 !<input>
   
-  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Off-diagonal matrix.
-  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
@@ -129,8 +129,8 @@ contains
   integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
 
-  ! If nDOF=0, there are no DOF's the current boundary condition segment,
-  ! so we don't have to do anything. Maybe the case if the user selected
+  ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+  ! so we do not have to do anything. Maybe the case if the user selected
   ! a boundary region that is just too small.
   if (rdbcStructure%nDOF .eq. 0) return
 
@@ -148,7 +148,7 @@ contains
     call sys_halt()
   end if
   
-  ! Only handle nDOF DOF's, not the complete array!
+  ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
   !
@@ -169,9 +169,9 @@ contains
       call mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
     end if
   else
-    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
-    ! We do this in blocks with 1000 DOF's each to prevent the stack
+    ! We do this in blocks with 1000 DOF`s each to prevent the stack
     ! from being destroyed!
     !
     ! Get the permutation from the matrix - or more precisely, the
@@ -184,10 +184,10 @@ contains
     
     ! Loop through the DOF-blocks
     do i=0,rdbcStructure%nDOF / NBLOCKSIZE
-      ! Filter the DOF's through the permutation
+      ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
       
-      ! And implement the BC's with mmod_replaceLinesByUnit/
+      ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
       ! block system.
@@ -197,7 +197,7 @@ contains
         call mmod_replaceLinesByUnit (rmatrix,Idofs(1:ilenleft))
       end if
 
-      ! How many DOF's are left?
+      ! How many DOF`s are left?
       ilenleft = min(rdbcStructure%nDOF-(i+1)*NBLOCKSIZE,NBLOCKSIZE)
     end do
   
@@ -212,8 +212,8 @@ contains
   subroutine matfil_imposeNLSlipBC (rmatrix,boffDiag,bforprec,rslipBCStructure)
   
 !<description>
-  ! Implements discrete Slip BC's into a scalar matrix.
-  ! Slip BC's are treated like Dirichlet BC's.
+  ! Implements discrete Slip BC`s into a scalar matrix.
+  ! Slip BC`s are treated like Dirichlet BC`s.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
   ! (depending on whether the matrix is a 'diagonal' matrix or an
@@ -231,11 +231,11 @@ contains
   !         Jacobi-preconditioner for all slip-nodes.
   logical, intent(in) :: bforprec
   
-  ! The t_discreteBCSlip that describes the discrete Slip BC's
+  ! The t_discreteBCSlip that describes the discrete Slip BC`s
   type(t_discreteBCSlip), intent(in), target  :: rslipBCStructure
   
   ! Off-diagonal matrix.
-  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
@@ -259,8 +259,8 @@ contains
   integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
   
-  ! If nDOF=0, there are no DOF's the current boundary condition segment,
-  ! so we don't have to do anything. Maybe the case if the user selected
+  ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+  ! so we do not have to do anything. Maybe the case if the user selected
   ! a boundary region that is just too small.
   if (rslipBCStructure%nDOF .eq. 0) return
 
@@ -278,7 +278,7 @@ contains
     call sys_halt()
   end if
   
-  ! Only handle nDOF DOF's, not the complete array!
+  ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
   !
@@ -303,9 +303,9 @@ contains
       end if
     end if
   else
-    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
-    ! We do this in blocks with 1000 DOF's each to prevent the stack
+    ! We do this in blocks with 1000 DOF`s each to prevent the stack
     ! from being destroyed!
     !
     ! Get the permutation from the matrix - or more precisely, the
@@ -318,10 +318,10 @@ contains
     
     ! Loop through the DOF-blocks
     do i=0,rslipBCStructure%nDOF / NBLOCKSIZE
-      ! Filter the DOF's through the permutation
+      ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
       
-      ! And implement the BC's with mmod_clearOffdiags/
+      ! And implement the BC`s with mmod_clearOffdiags/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
       ! block system.
@@ -335,7 +335,7 @@ contains
         end if
       end if
       
-      ! How many DOF's are left?
+      ! How many DOF`s are left?
       ilenleft = min(rslipBCStructure%nDOF-(i+1)*NBLOCKSIZE,NBLOCKSIZE)
     end do
   
@@ -350,7 +350,7 @@ contains
   subroutine matfil_imposeDirichletFBC (rmatrix,boffDiag,rdbcStructure)
   
 !<description>
-  ! Implements discrete Dirichlet BC's of fictitious boundary components
+  ! Implements discrete Dirichlet BC`s of fictitious boundary components
   ! into a scalar matrix.
   ! This is normally done by replacing some lines of the matrix rmatrix
   ! (those belonging to Dirichlet nodes) by unit vectors or by zero-vectors
@@ -360,11 +360,11 @@ contains
 
 !<input>
   
-  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC's
+  ! The t_discreteFBCDirichlet that describes the discrete Dirichlet BC`s
   type(t_discreteFBCDirichlet), intent(in), target  :: rdbcStructure
   
   ! Off-diagonal matrix.
-  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
@@ -389,8 +389,8 @@ contains
   integer, dimension(:), pointer :: p_Iperm
   integer i,ilenleft
 
-  ! If nDOF=0, there are no DOF's the current boundary condition segment,
-  ! so we don't have to do anything. Maybe the case if the user selected
+  ! If nDOF=0, there are no DOF`s the current boundary condition segment,
+  ! so we do not have to do anything. Maybe the case if the user selected
   ! a boundary region that is just too small.
   if (rdbcStructure%nDOF .eq. 0) return
 
@@ -408,7 +408,7 @@ contains
     call sys_halt()
   end if
   
-  ! Only handle nDOF DOF's, not the complete array!
+  ! Only handle nDOF DOF`s, not the complete array!
   ! Probably, the array is longer (e.g. has the length of the vector), but
   ! contains only some entries...
   !
@@ -429,9 +429,9 @@ contains
       call mmod_replaceLinesByUnit (rmatrix,p_idx(1:rdbcStructure%nDOF))
     end if
   else
-    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
-    ! We do this in blocks with 1000 DOF's each to prevent the stack
+    ! We do this in blocks with 1000 DOF`s each to prevent the stack
     ! from being destroyed!
     !
     ! Get the permutation from the matrix - or more precisely, the
@@ -444,10 +444,10 @@ contains
     
     ! Loop through the DOF-blocks
     do i=0,rdbcStructure%nDOF / NBLOCKSIZE
-      ! Filter the DOF's through the permutation
+      ! Filter the DOF`s through the permutation
       Idofs(1:ilenleft) = p_Iperm(p_idx(1+i*NBLOCKSIZE:i*NBLOCKSIZE+ilenleft))
       
-      ! And implement the BC's with mmod_replaceLinesByUnit/
+      ! And implement the BC`s with mmod_replaceLinesByUnit/
       ! mmod_replaceLinesByZero, depending on whether the matrix is a
       ! 'main' system matrix or an 'off-diagonal' system matrix in a larger
       ! block system.
@@ -609,29 +609,29 @@ contains
   subroutine matfil_imposeFeastMirrorBC (rmatrix,boffDiag,rfmbcStructure)
   
 !<description>
-  ! Implements discrete Feast mirror BC's into a scalar matrix.
+  ! Implements discrete Feast mirror BC`s into a scalar matrix.
   ! The FEAST mirror boundary condition is basically a Neumann boundary
   ! condition which is used for domain decomposition.
   ! One assumes that there is an additional 'virtual' layer of cells added to
   ! a boundary edge. This leads to a slight matrix modification for all
-  ! DOF's on that boundary edge. 
-  ! Example: For a 5-point stencil with $Q_1$, boundary DOF's get matrix
+  ! DOF`s on that boundary edge. 
+  ! Example: For a 5-point stencil with $Q_1$, boundary DOF`s get matrix
   ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner 
   ! points get matrix weights "4, -1, -1, -1, -1" (center and all surroundings).
-  ! To make bondary DOF's behave like inner DOF's, the entries in 
+  ! To make bondary DOF`s behave like inner DOF`s, the entries in 
   ! the matrices belonging to such an edge have to be doubled,
   ! leading to "4, -1, -1".
   ! So this filter loops through the matrix and doubles all matrix entries
-  ! that belong to DOF's on FEAST mirror boundary edges.
+  ! that belong to DOF`s on FEAST mirror boundary edges.
 !</description>
 
 !<input>
   
-  ! The t_discreteBCfeastMirror that describes the discrete FEAST mirror BC's
+  ! The t_discreteBCfeastMirror that describes the discrete FEAST mirror BC`s
   type(t_discreteBCfeastMirror), intent(in), target  :: rfmbcStructure
   
   ! Off-diagonal matrix.
-  ! If this is present and set to TRUE, it's assumed that the matrix is not
+  ! If this is present and set to TRUE, it is assumed that the matrix is not
   ! a main, guiding system matrix, but an 'off-diagonal' matrix in a
   ! system with block-matrices (e.g. a matrix at position (2,1), (3,1),...
   ! or somewhere else in a block system). This modifies the way,
@@ -700,35 +700,35 @@ contains
   !dmirrorWeight = 1.0_DP+REAL(4**rfmbcStructure%icoarseningLevel,DP)
   dmirrorWeight = 1.0_DP+1.0_DP*real(2**rfmbcStructure%icoarseningLevel,DP)
   
-  ! Get pointers to the list of DOF's that belong to that region and have
+  ! Get pointers to the list of DOF`s that belong to that region and have
   ! to be tackled.
-  ! p_ImirrorDOFs is a list of all DOF's in the region.
-  ! p_ImirrorDOFsClosed is a list of all DOF's in the closure of the region.
-  ! For every DOF in the region, it's neighbours have to be found in the
-  ! clusure. If that's the case, the corresponding matrix entry has to be doubled.
+  ! p_ImirrorDOFs is a list of all DOF`s in the region.
+  ! p_ImirrorDOFsClosed is a list of all DOF`s in the closure of the region.
+  ! For every DOF in the region, it is neighbours have to be found in the
+  ! clusure. If that is the case, the corresponding matrix entry has to be doubled.
   
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFs,p_ImirrorDOFs)
   call storage_getbase_int(rfmbcStructure%h_ImirrorDOFsClosed,p_ImirrorDOFsClosed)
 
   ! The matrix column corresponds to the DOF. For every DOF decide on
-  ! whether it's on the FEAST mirror boundary component or not.
+  ! whether it is on the FEAST mirror boundary component or not.
   ! If yes, double the matrix entry.
   
   ! Is the matrix sorted?
   if (rmatrix%isortStrategy .le. 0) then
     
-    ! Loop through the DOF's. Each DOF gives us a matrix row to change.
+    ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
     do i=1,size(p_ImirrorDOFs)
     
-      ! Loop through the matrix row. All DOF's in that matrix row that
+      ! Loop through the matrix row. All DOF`s in that matrix row that
       ! belong to the closed region have to be changed.
       do ia=p_Kld(p_ImirrorDOFs(i)),p_Kld(p_ImirrorDOFs(i)+1)-1
         ! Get the DOF.
         idof = p_Kcol(ia)
         
-        ! Search the DOF in our list. Ok, that's an n^2 algorithm.
+        ! Search the DOF in our list. Ok, that is an n^2 algorithm.
         ! It could easily replaced by an n log n algorithm using binary
-        ! search since the list of DOF's is sorted!
+        ! search since the list of DOF`s is sorted!
         ! Probably in a later implementation...
         do j=1,size(p_ImirrorDOFsClosed)
           if (p_ImirrorDOFsClosed(j) .eq. idof) then
@@ -743,7 +743,7 @@ contains
     
   else
   
-    ! Ok, matrix is sorted, so we have to filter all the DOF's through the
+    ! Ok, matrix is sorted, so we have to filter all the DOF`s through the
     ! permutation before using them for implementing boundary conditions.
     !
     ! Get the permutation/inverse permutation from the matrix to renumber the columns into
@@ -752,19 +752,19 @@ contains
     p_IpermInverse => p_Iperm(1:rmatrix%NEQ)
     p_Iperm => p_Iperm(rmatrix%NEQ+1:)
     
-    ! Loop through the DOF's. Each DOF gives us a matrix row to change.
+    ! Loop through the DOF`s. Each DOF gives us a matrix row to change.
     do i=1,size(p_ImirrorDOFs)
     
-      ! Loop through the matrix row. All DOF's in that matrix row that
+      ! Loop through the matrix row. All DOF`s in that matrix row that
       ! belong to our region have to be changed.
       do ia=p_Kld(p_Iperm(p_ImirrorDOFs(i))),&
             p_Kld(p_Iperm(p_ImirrorDOFs(i))+1)-1
         ! Get the DOF.
         idof = p_IpermInverse(p_Kcol(ia))
         
-        ! Search the DOF in our list. Ok, that's an n^2 algorithm.
+        ! Search the DOF in our list. Ok, that is an n^2 algorithm.
         ! It could easily replaced by an n log n algorithm since the list
-        ! of DOF's is sorted!
+        ! of DOF`s is sorted!
         do j=1,size(p_ImirrorDOFsClosed)
           if (p_ImirrorDOFsClosed(j) .eq. idof) then
             p_Da(ia) = dmirrorWeight * p_Da(ia)
@@ -793,8 +793,8 @@ contains
   subroutine matfil_discreteBC (rmatrix,rdiscreteBC)
 
 !<description>
-  ! This routine realises the 'impose discrete boundary conditions to 
-  ! block matrix' filter.
+  ! This routine realises the `impose discrete boundary conditions to 
+  ! block matrix` filter.
   ! The matrix is modified either to rdiscreteBC (if specified) or
   ! to the default boundary conditions associated to the matrix 
   ! (if rdiscreteBC is not specified).
@@ -827,7 +827,7 @@ contains
       inumEntries = rdiscreteBC%inumEntriesUsed
     else
       if (.not. associated(rmatrix%p_rdiscreteBC)) then
-        ! There are no BC's available, so we cannot do anything!
+        ! There are no BC`s available, so we cannot do anything!
         return
       end if
       p_RdiscreteBC => rmatrix%p_rdiscreteBC%p_RdiscBCList  
@@ -843,7 +843,7 @@ contains
     !DO i=1,SIZE(p_RdiscreteBC)
     do i=1, inumEntries
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_RdiscreteBC(i)%itype)
       case (DISCBC_TPUNDEFINED)
         ! Do-nothing
@@ -871,13 +871,13 @@ contains
         end do
         
       case (DISCBC_TPPRESSUREDROP)  
-        ! Nothing to do; pressure drop BC's are implemented only into the RHS.
+        ! Nothing to do; pressure drop BC`s are implemented only into the RHS.
 
       case (DISCBC_TPSLIP)  
         ! Slip boundary conditions are treated like Dirichlet for all
         ! velocity components.
         ! This is a separate filter must be called manually.
-        ! Therefore, there's nothing to do here.
+        ! Therefore, there is nothing to do here.
         
       case (DISCBC_TPFEASTMIRROR)  
         ! FEAST mirror boundary conditions.
@@ -978,7 +978,7 @@ contains
         ! Slip boundary conditions are treated like Dirichlet for all
         ! velocity components.
 
-        ! Loop through all affected components to implement the BC's.
+        ! Loop through all affected components to implement the BC`s.
         do icp = 1,p_RdiscreteBC(i)%rslipBCs%ncomponents
           iblock = p_RdiscreteBC(i)%rslipBCs%Icomponents(icp)
 
@@ -1008,8 +1008,8 @@ contains
   subroutine matfil_discreteFBC (rmatrix,rdiscreteFBC)
 
 !<description>
-  ! This routine realises the 'impose discrete fictitious boundary 
-  ! conditions to block matrix' filter.
+  ! This routine realises the `impose discrete fictitious boundary 
+  ! conditions to block matrix` filter.
   ! The matrix is modified either to rdiscreteFBC (if specified) or
   ! to the default boundary conditions associated to the matrix 
   ! (if rdiscreteFBC is not specified).
@@ -1048,7 +1048,7 @@ contains
     ! Now loop through all entries in this list:
     do i=1,size(p_RdiscreteFBC)
     
-      ! What for BC's do we have here?
+      ! What for BC`s do we have here?
       select case (p_RdiscreteFBC(i)%itype)
       case (DISCFBC_TPUNDEFINED)
         ! Do-nothing
@@ -1056,7 +1056,7 @@ contains
       case (DISCFBC_TPDIRICHLET)
         ! Dirichlet boundary conditions.
         ! 
-        ! Loop through all blocks where to impose the BC's:
+        ! Loop through all blocks where to impose the BC`s:
         do j=1,p_RdiscreteFBC(i)%rdirichletFBCs%ncomponents
         
           iblock = p_RdiscreteFBC(i)%rdirichletFBCs%Icomponents(j)

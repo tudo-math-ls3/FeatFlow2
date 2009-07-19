@@ -32,9 +32,9 @@
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# Unless you have some extraordinary wishes, this job is pretty easy ^_^
 !#
-!# At the bottom of this file you'll find two templates: one for the 'full'
+!# At the bottom of this file you will find two templates: one for the 'full'
 !# and one for the 'diagonal' Vanka variant. Search this file for $TEMPLATE$
-!# to get to the template section. There's also a small description what
+!# to get to the template section. There is also a small description what
 !# needs to be done with that template.
 !#
 !# After you have converted the template to an implementation (or wrote your
@@ -42,7 +42,7 @@
 !# the vanka_init_NavSt2D and vanka_solve_NavSt2D routines to use your new
 !# Vanka implementation (search the routines for $TODO$).
 !#
-!# Once you're finished with that, Vanka should be able to work with your
+!# Once you are finished with that, Vanka should be able to work with your
 !# new implementation.
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -599,7 +599,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveA12 = .FALSE.
     bHaveC = .FALSE.
     
@@ -668,7 +668,7 @@ contains
             Dfp(i) = p_DrhsP(IdofP(i))    ! f_p
           end do
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           do k = 1, ndofV
@@ -821,7 +821,7 @@ contains
             Dfp(i) = p_DrhsP(IdofP(i))    ! f_p
           end do
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           do k = 1, ndofV
@@ -1083,7 +1083,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .FALSE.
     
     ! Get the pointers from the vanka structure
@@ -1141,7 +1141,7 @@ contains
             Dfp(i) = p_DrhsP(IdofP(i))   ! f_p
           end do
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           do k = 1, ndofV
@@ -1215,7 +1215,7 @@ contains
             Dfp(k) = Dfp(k) - Dmult(3,1)*daux1 - Dmult(3,2)*daux2
           end do
 
-          ! Let's update the local RHS vector by subtracting C*p from it:
+          ! Let us update the local RHS vector by subtracting C*p from it:
           ! f_p := f_p - C*p
           do k = 1, ndofP
             i1 = p_KldC(IdofP(k))
@@ -1320,7 +1320,7 @@ contains
             Dfp(i) = p_DrhsP(IdofP(i))   ! f_p
           end do
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           do k = 1, ndofV
@@ -1529,7 +1529,7 @@ contains
   real(DP) :: daux,daux1,daux2
   logical :: bHaveC
   
-  ! variables for LAPACK's DGESV routine
+  ! variables for LAPACK`s DGESV routine
   integer, dimension(ndof) :: Ipivot
   integer :: info
 
@@ -1545,7 +1545,7 @@ contains
     call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
     call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
     
-    ! Let's assume we do not have the optional matrices
+    ! Let us assume we do not have the optional matrices
     bHaveC = .FALSE.
     
     ! Get the pointers from the vanka structure
@@ -1606,7 +1606,7 @@ contains
           ! Clear the local system matrix
           Da = 0.0_DP
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           p = ndofV
@@ -1773,7 +1773,7 @@ contains
           ! Clear the local system matrix
           Da = 0.0_DP
           
-          ! Let's update the local RHS vector by subtracting A*u from it:
+          ! Let us update the local RHS vector by subtracting A*u from it:
           ! f_u := f_u - A11*u
           ! f_v := f_v - A22*v
           p = ndofV
@@ -2007,7 +2007,7 @@ contains
 !    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
 !    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
 !    
-!    ! Let's assume we do not have the optional matrices
+!    ! Let us assume we do not have the optional matrices
 !    bHaveA12 = .FALSE.
 !    bHaveC = .FALSE.
 !    
@@ -2075,7 +2075,7 @@ contains
 !          Dfp(i) = p_DrhsP(IdofP(i))    ! f_p
 !        end do
 !        
-!        ! Let's update the local RHS vector by subtracting A*u from it:
+!        ! Let us update the local RHS vector by subtracting A*u from it:
 !        ! f_u := f_u - A11*u
 !        ! f_v := f_v - A22*v
 !        do k = 1, ndofV
@@ -2313,7 +2313,7 @@ contains
 !  real(DP) :: daux,daux1,daux2
 !  logical :: bHaveA12, bHaveC
 !  
-!  ! variables for LAPACK's DGESV routine
+!  ! variables for LAPACK`s DGESV routine
 !  integer, dimension(ndof) :: Ipivot
 !  integer :: info
 !
@@ -2332,7 +2332,7 @@ contains
 !    call lsyssc_getbase_double(rrhs%RvectorBlock(2), p_DrhsV)
 !    call lsyssc_getbase_double(rrhs%RvectorBlock(3), p_DrhsP)
 !    
-!    ! Let's assume we do not have the optional matrices
+!    ! Let us assume we do not have the optional matrices
 !    bHaveA12 = .false.
 !    bHaveC = .false.
 !    
@@ -2399,7 +2399,7 @@ contains
 !        ! Clear the local system matrix
 !        Da = 0.0_DP
 !        
-!        ! Let's update the local RHS vector by subtracting A*u from it:
+!        ! Let us update the local RHS vector by subtracting A*u from it:
 !        ! f_u := f_u - A11*u
 !        ! f_v := f_v - A22*v
 !        p = ndofV

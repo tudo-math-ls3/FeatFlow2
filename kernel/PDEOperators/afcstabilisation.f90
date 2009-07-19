@@ -566,7 +566,7 @@ contains
       call afcstab_resizeStabIndScalar(rafcstab,&
           rmatrixBlockTemplate%RmatrixBlock(1,1))
 
-      ! That's it
+      ! That is it
       return
     end if
     
@@ -781,8 +781,8 @@ contains
 
     ! Check if edge-based data structure is prepared
     if (iand(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .eq. 0) then
-      call output_line('Discrete operator does not provide required &
-          &edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
+      call output_line('Discrete operator does not provide required ' // &
+          'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateSubdiagEdge')
       call sys_halt()
     end if

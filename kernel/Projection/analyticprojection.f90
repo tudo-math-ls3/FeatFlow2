@@ -222,7 +222,7 @@ contains
     ! <=>     M rvector = F
     !
     ! So we have to invert M. As long as the condition number of M is not 
-    ! too bad, we don't need tricks like multigrid, but we can use a standard
+    ! too bad, we do not need tricks like multigrid, but we can use a standard
     ! defect correction!
     !
     ! Clear the initial solution
@@ -264,7 +264,7 @@ contains
       dresInit = 1.0_DP
     end if
     
-    ! Now, let's start the iteration.
+    ! Now, let us start the iteration.
     do iiteration = 1,rconfig%nmaxIterations
     
       select case (rconfig%cpreconditioner)
@@ -441,7 +441,7 @@ contains
     type(t_domainIntSubset) :: rintSubset
     type(t_evalElementSet) :: revalElementSet
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable, target :: IdofsTrial
   
     ! Type of transformation from the reference to the real element 
@@ -456,7 +456,7 @@ contains
     if (present(iorder)) iactualorder = iorder
     if (iactualorder .eq. 0) iactualorder = 2
     
-    ! We choose the midpoint rule for evaluation. Actually, we don't compute
+    ! We choose the midpoint rule for evaluation. Actually, we do not compute
     ! integrals but point values...
     Bder = .false.
     Bder(DER_FUNC) = .true.
@@ -467,7 +467,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(1000,p_rtriangulation%NEL)
     
@@ -495,7 +495,7 @@ contains
       ! Cancel if this element distribution is empty.
       if (p_relementDistribution%NEL .eq. 0) cycle
 
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       
       ! Get from the trial element space the type of coordinate system
@@ -503,14 +503,14 @@ contains
       ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
 
       ! Now a big element and dimension dependent part: Evaluation points of the
-      ! node functionals. The DOF's of most finite elements can be filled by the
+      ! node functionals. The DOF`s of most finite elements can be filled by the
       ! correct evaluation of the analytic function -- which is done by
       ! calculating values in different points and creating that functional.
       !
       ! For Q0, Q1, Q2,... we just have to evaluate the vertices, edges,...
       ! and we have the node values.
       !
-      ! For Q1~ it depends. If it's the midpoint based version, this is done by
+      ! For Q1~ it depends. If it is the midpoint based version, this is done by
       ! taking the values in the midpoints of the edges. For the integral
       ! mean value based variant, we have to evaluate line integrals.
       ! Exception: If the 'order' is to low, we also take midpoint values
@@ -606,7 +606,7 @@ contains
 
       end select
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
 
       ! Allocate memory for the function values
@@ -615,14 +615,14 @@ contains
       ! Initialisation of the element set.
       call elprep_init(revalElementSet)
 
-      ! We don't want to evaluate the element, but we need some information
+      ! We do not want to evaluate the element, but we need some information
       ! from the preparation routine for the callback routine.
       ! So we 'pretend' that we want to evaluate.
       !
       ! Create an element evaluation tag that computes us the element corners
       ! (we may need them for integration), the coordinates on the
       ! reference and on the real elements. Jacobian mapping, Jacobian determinants
-      ! etc. are not needed since we don't evaluate...
+      ! etc. are not needed since we do not evaluate...
       cevaluationTag = EL_EVLTAG_COORDS + EL_EVLTAG_REFPOINTS + EL_EVLTAG_REALPOINTS
                       
       ! p_IelementList must point to our set of elements in the discretisation
@@ -642,10 +642,10 @@ contains
         ! elements simultaneously.
         IELmax = min(NEL,IELset-1+1000)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscretisation, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
                                      
@@ -664,11 +664,11 @@ contains
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:ncubp))
 
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
-        ! It's time to call our coefficient function to calculate the
+        ! It is time to call our coefficient function to calculate the
         ! function values in the cubature points:  u(x,y)
         call ffunctionReference (DER_FUNC,p_rdiscretisation, &
                     int(IELmax-IELset+1),ncubp,&
@@ -705,14 +705,14 @@ contains
             ! Loop through elements in the set and for each element,
             do IEL=1,IELmax-IELset+1
             
-              ! Loop through the DOF's on the current element.
+              ! Loop through the DOF`s on the current element.
               do idof = 1,indofTrial 
               
                 ! Calculate the DOF. For that purpose, calculate the line
                 ! integral (using the cubature points calculated above).
                 ! Weight by 0.5 to get the integral corresponding to an interval
                 ! of length 1 instead of 2 (what the cubature formula
-                ! uses: [-1,1]). That's already the integral mean
+                ! uses: [-1,1]). That is already the integral mean
                 ! value we save as DOF...
                 p_Ddata(IdofsTrial(idof,IEL)) = p_Ddata(IdofsTrial(idof,IEL)) + &
                   0.5_DP * (Dcoefficients(2*(idof-1)+1,IEL) * Domega(1) + &
@@ -765,7 +765,7 @@ contains
     
     ! Take the mean value in all entries. We just summed up all contributions and now
     ! this divides by the number of contributions...
-    ! All DOF's should be touched, so we assume that there is Dweight != 0 everywhere.
+    ! All DOF`s should be touched, so we assume that there is Dweight != 0 everywhere.
     do i=1,size(p_Ddata)
       p_Ddata(i) = p_Ddata(i) / p_Dweight(i)
     end do

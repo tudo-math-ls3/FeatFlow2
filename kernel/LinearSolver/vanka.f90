@@ -135,7 +135,7 @@
 !#
 !# To work with more general configurations, a VANKA wrapper was introduced.
 !# This replaces the needs for carefully choosing the correct VANKA variant
-!# and can be seen as 'more general VANKA', as it's also designed to work
+!# and can be seen as 'more general VANKA', as it is also designed to work
 !# with conformal discretisations.
 !#
 !# For this purpose, all VANKA variants were modified to work with element
@@ -302,22 +302,22 @@ module vanka
     ! the submatrices and their properties.
     type(t_matrixPointer79Vanka), dimension(:,:),pointer :: p_Rmatrices
     
-    ! Maximum number of local DOF's.
+    ! Maximum number of local DOF`s.
     integer :: nmaxLocalDOFs
     
-    ! Total number of local DOF's
+    ! Total number of local DOF`s
     integer :: ndofsPerElement
 
-    ! Number of local DOF's in the element distributions of all blocks.
+    ! Number of local DOF`s in the element distributions of all blocks.
     ! Note that this VANKA supports only uniform discretisations, so
     ! each entry corresponds to one block in the solution vector.
     integer, dimension(:), pointer :: p_InDofsLocal => NULL()
     
     ! Offset indices of the blocks in the solution vector. IblockOffset(i)
-    ! points to the beginning of the i'th block of the solution vector.
+    ! points to the beginning of the i-th block of the solution vector.
     integer, dimension(:), pointer :: p_IblockOffset => NULL()
     
-    ! Temporary array that saves the DOF's that are in processing when
+    ! Temporary array that saves the DOF`s that are in processing when
     ! looping over an element set.
     ! DIMENSION(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks)
     integer, dimension(:,:,:), pointer :: p_IelementDOFs => NULL()
@@ -402,9 +402,9 @@ module vanka
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
-    ! (-> Not used in the current implementation! Although it's easy to include
+    ! (-> Not used in the current implementation! Although it is easy to include
     ! that into VANKA, some further speed analysis has to be done to make
-    ! sure there's not too much speed impact when using these!)
+    ! sure there is not too much speed impact when using these!)
     real(DP), dimension(3,3) :: Dmultipliers
     
     ! A temporary vector for solution based VANKA variants.
@@ -555,9 +555,9 @@ module vanka
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
-    ! (-> Not used in the current implementation! Although it's easy to include
+    ! (-> Not used in the current implementation! Although it is easy to include
     ! that into VANKA, some further speed analysis has to be done to make
-    ! sure there's not too much speed impact when using these!)
+    ! sure there is not too much speed impact when using these!)
     real(DP), dimension(6,6) :: Dmultipliers
     
   end type
@@ -653,9 +653,9 @@ module vanka
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrP => NULL()
     
     ! Multiplication factors for the submatrices; taken from the system matrix.
-    ! (-> Not used in the current implementation! Although it's easy to include
+    ! (-> Not used in the current implementation! Although it is easy to include
     ! that into VANKA, some further speed analysis has to be done to make
-    ! sure there's not too much speed impact when using these!)
+    ! sure there is not too much speed impact when using these!)
     real(DP), dimension(4,4) :: Dmultipliers
     
   end type
@@ -733,7 +733,7 @@ contains
   !
   ! The general VANKA is configured in vanka_initConformal to a special type
   ! problem (2D Navier Stokes e.g.) and applies the most suitable VANKA
-  ! algorithm to a vector when being executed. Roughtly said, it's a wrapper
+  ! algorithm to a vector when being executed. Roughtly said, it is a wrapper
   ! for all types of VANKA that are realised in this module.
   ! ***************************************************************************
 
@@ -1035,16 +1035,16 @@ contains
             rvankaGeneral%p_IblockOffset(i+1) = &
               rvankaGeneral%p_IblockOffset(i) + rmatrix%RmatrixBlock(j,i)%NCOLS
 
-            ! We need some information for calculating DOF's later.
-            ! Get the number of local DOF's in the current block.
+            ! We need some information for calculating DOF`s later.
+            ! Get the number of local DOF`s in the current block.
             ! Note that we restrict to uniform discretisations!
             rvankaGeneral%p_InDofsLocal(i) = elem_igetNDofLoc(p_rdiscretisation% &
                                                 RelementDistr(1)%celement)
             
-            ! Calculate the maximum number of local DOF's
+            ! Calculate the maximum number of local DOF`s
             nmaxLocalDOFs = max(nmaxLocalDOFs,rvankaGeneral%p_InDofsLocal(i))
             
-            ! Calculate the total number of local DOF's
+            ! Calculate the total number of local DOF`s
             ndofsPerElement = ndofsPerElement + rvankaGeneral%p_InDofsLocal(i)
             
             bfirst = .false.
@@ -1058,12 +1058,12 @@ contains
       end do
     end do
 
-    ! Save the max. and total number of local DOF's
+    ! Save the max. and total number of local DOF`s
     rvankaGeneral%nmaxLocalDOFs = nmaxLocalDOFs
     rvankaGeneral%ndofsPerElement = ndofsPerElement
     
-    ! We know the maximum number of DOF's now. For the later loop over the 
-    ! elements, allocate memory for storing the DOF's of an element set.
+    ! We know the maximum number of DOF`s now. For the later loop over the 
+    ! elements, allocate memory for storing the DOF`s of an element set.
     allocate(rvankaGeneral%p_IelementDOFs(nmaxLocalDOFs,VANKA_NELEMSIM,nblocks))
     
     ! Remember the matrix
@@ -1176,20 +1176,20 @@ contains
       ! elements simultaneously.
       IELmax = min(size(p_IelementList),IELset-1+VANKA_NELEMSIM)
     
-      ! Loop over the blocks in the block vector to get the DOF's everywhere.
+      ! Loop over the blocks in the block vector to get the DOF`s everywhere.
       
       do i=1,rvector%nblocks
 
-        ! Calculate the global DOF's of all blocks.
+        ! Calculate the global DOF`s of all blocks.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our VANKA_NELEMSIM elements simultaneously.
+        ! global DOF`s of our VANKA_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(rvector%RvectorBlock(i)%p_rspatialDiscr,&
                                      p_IelementList(IELset:IELmax), &
                                      rvankaGeneral%p_IelementDOFs(:,:,i))
 
-        ! If the vector is sorted, push the DOF's through the permutation to get
-        ! the actual DOF's.
+        ! If the vector is sorted, push the DOF`s through the permutation to get
+        ! the actual DOF`s.
         if (rvector%RvectorBlock(i)%isortStrategy .gt. 0) then
         
           call storage_getbase_int(rvector%RvectorBlock(i)%h_IsortPermutation,&
@@ -1198,7 +1198,7 @@ contains
           do iel=1,IELmax-IELset+1
             do j=1,rvankaGeneral%p_InDofsLocal(i)
               ! We are not resorting the vector but determining the 'sorted'
-              ! DOF's - this needs the 2nd half of the permutation.
+              ! DOF`s - this needs the 2nd half of the permutation.
               rvankaGeneral%p_IelementDOFs(j,iel,i) = &
                  p_Ipermutation(rvankaGeneral%p_IelementDOFs(j,iel,i) &
                 +rvector%RvectorBlock(i)%NEQ)
@@ -1208,9 +1208,9 @@ contains
       
       end do  
     
-      ! Now, IdofsTotal contains all DOF's on each element, over all discretisations.
+      ! Now, IdofsTotal contains all DOF`s on each element, over all discretisations.
       !
-      ! Call the actual VANKA to process the DOF's on each element.
+      ! Call the actual VANKA to process the DOF`s on each element.
       call vanka_general_double_mat79 (p_Dvector, p_Drhs, domega, &
           rvankaGeneral%p_Rmatrices,IELmax-IELset+1,&
           rvankaGeneral%p_IblockOffset,rvankaGeneral%nblocks,&
@@ -1261,13 +1261,13 @@ contains
   ! IblockOffset(nblocks+1) gives the number of equations in Dvector/Drhs.
   integer, dimension(:), intent(in) :: IblockOffset
   
-  ! Number of local DOF's in each block.
+  ! Number of local DOF`s in each block.
   integer, dimension(:), intent(in)   :: InDofsLocal
   
-  ! Total number of local DOF's per element
+  ! Total number of local DOF`s per element
   integer, intent(in)                                    :: ndofsPerElement
   
-  ! List of DOF's on every element for every block.
+  ! List of DOF`s on every element for every block.
   ! DIMENSION(nmaxDOFs,nelements,nblocks)
   integer, dimension(:,:,:), intent(in)     :: IelementDOFs
   
@@ -1288,7 +1288,7 @@ contains
     !     :   :  ...  :  |  :     :
     !    An1 An2 ... Ann | Un  = Fn
     !
-    ! Let's first describe the method used here.
+    ! Let us first describe the method used here.
     !
     ! The above block system can be written as a general block system of 
     ! the form
@@ -1312,7 +1312,7 @@ contains
     ! simplicity, imagine that our FE-spaces is Q1~/Q0. 
     !
     ! We loop over each cell in the domain, one after the other, and
-    ! change the DOF's in the solution vector there:
+    ! change the DOF`s in the solution vector there:
     !
     ! We fetch all the data (e.g. velocity, pressure) on that cell. On the
     ! first cell, we have only "old" velocity entries. These values
@@ -1359,12 +1359,12 @@ contains
     ! a system for only these unknowns!  
     !                         
     ! We extract all the lines of the system that correspond to
-    ! our 'unknown' DOF's on our element; this results in a rectangular      
+    ! our 'unknown' DOF`s on our element; this results in a rectangular      
     ! system of the form                                            
     !                                                               
     !    [ === A~ === ] x  = (f~)
     !
-    ! So #rows(A~)=#rows(f~)=#DOF's on the element! Furthermore we set
+    ! So #rows(A~)=#rows(f~)=#DOF`s on the element! Furthermore we set
     ! Now we make a defect-correction approach for this system:
     !
     !    x_new  =  x  +  P( \omega C^{-1} (f~ - A~ x) )
@@ -1374,23 +1374,23 @@ contains
     ! Here the 'projection' operator simply converts the small
     ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
     ! of the same size as x - what is easy using the number of
-    ! the DOF's on the element.
+    ! the DOF`s on the element.
     !
     ! The only question now will be: What is C^{-1}?
     !
     ! Well, here we have different choices. Everything depends on the
-    ! matrix A~, which is unfortunately rectangular: It's a
-    ! (#DOF's on the element, #DOF's in the space) matrix - so
-    ! in case of a Q1~/Q0 discretisation, it's a (5,NEQ) matrix!
+    ! matrix A~, which is unfortunately rectangular: It is a
+    ! (#DOF`s on the element, #DOF`s in the space) matrix - so
+    ! in case of a Q1~/Q0 discretisation, it is a (5,NEQ) matrix!
     !
     ! For full linear systems, one would choose C=A, which ist the
     ! theoretically best preconditioner. What we do here is simply
-    ! extracting all columns of A~ that correspond to the DOF's
+    ! extracting all columns of A~ that correspond to the DOF`s
     ! on the current element: 
     !
-    !   C:=delete columns of A~ that don't belong to DOF's on the element
+    !   C:=delete columns of A~ that do not belong to DOF`s on the element
     !
-    ! This then leads to a square preconditioner C^{-1} - and that's the
+    ! This then leads to a square preconditioner C^{-1} - and that is the
     ! full method, because C^{-1} can be applied directly using Lapack e.g.!
     !
     !
@@ -1412,7 +1412,7 @@ contains
     integer :: irow,idof
     integer :: icol
     
-    ! Memory for our local system; let's hope it's not too big :)
+    ! Memory for our local system; let us hope it is not too big :)
     real(DP), dimension(ndofsPerElement,ndofsPerElement) :: Daa
     real(DP), dimension(ndofsPerElement)                 :: Dff
     real(DP) :: dscale
@@ -1434,18 +1434,18 @@ contains
       end do ! j
     end do ! i
         
-    ! Build an index pointer for accessing local DOF's
+    ! Build an index pointer for accessing local DOF`s
     IlocalIndex(1) = 0
     do i=2,nblocks+1
       IlocalIndex(i) = IlocalIndex(i-1)+InDOFsLocal(i-1)
     end do
         
-    ! Ok, let's start with the loop over the elements in the given
+    ! Ok, let us start with the loop over the elements in the given
     ! element list.
     do iel = 1,nelements
     
       ! IelementDOFs (.,iel,.) gives now for every block in the system
-      ! the DOF's on this element.
+      ! the DOF`s on this element.
       !
       ! First copy the RHS entries of f to f~.
       
@@ -1500,13 +1500,13 @@ contains
             !
             !     n x n-mat.          5x5-mat or so
             !
-            ! From IlocalIndex, get the starting address of the j'th block
+            ! From IlocalIndex, get the starting address of the j-th block
             ! in the local solution vector. In the above example, for j=2 e.g.
-            ! this gives the starting address of the two global DOF's
+            ! this gives the starting address of the two global DOF`s
             ! that correspond to the columns 3 and 4 in the local matrix.
             iidx = IlocalIndex(j)
 
-            ! Loop through the DOF's that correspond to this block:
+            ! Loop through the DOF`s that correspond to this block:
             do irow = IlocalIndex(i)+1,IlocalIndex(i+1)
               
               ! Get the actual DOF, relative to this block.
@@ -1527,10 +1527,10 @@ contains
                           - dscale * Rmatrices(i,j)%p_Da(k) * Dvector(icol)
 
                 ! icol is the number of a DOF.
-                ! Check if this DOF belongs to the DOF's we have to
+                ! Check if this DOF belongs to the DOF`s we have to
                 ! extract to our local system.
-                ! Loop through the DOF's corresponding to column j of the block system.
-                ! In the above example, this checks only the two DOF's corresponding
+                ! Loop through the DOF`s corresponding to column j of the block system.
+                ! In the above example, this checks only the two DOF`s corresponding
                 ! to a?3 and a?4.
                 do iminiDOF = 1,InDOFsLocal(j)
                   if (icol .eq. IglobalDOF(iidx+iminiDOF)) then
@@ -1557,16 +1557,16 @@ contains
                    Ipiv, iinfo )
                   
       ! Note: It may happen that the matrix is singular!
-      !  That is the case if all DOF's are Dirichlet-DOF's - for example
+      !  That is the case if all DOF`s are Dirichlet-DOF`s - for example
       !  if the element is completely inside of a rigid fictitious boundary
       !  object.
       ! What to do in this case? Nothing! Ignore the system!
       ! Why? 
-      !  - The values for the 'velocity' DOF's are fixed, so it's no use
+      !  - The values for the 'velocity' DOF`s are fixed, so it is no use
       !    to try to calculate them.
-      !  - If there's a zero-block involved in a saddle-point problem,
+      !  - If there is a zero-block involved in a saddle-point problem,
       !    the pressure (that corresponds to the zero-block) is not
-      !    connected to the velocity - it's completely free!
+      !    connected to the velocity - it is completely free!
       !    By ignoring this system, we let the pressure as it is.
       !
       ! One can theoretically also solve a least-squares system with
@@ -1574,7 +1574,7 @@ contains
       ! But this is (because of the 0-block in A and therefore also in C
       ! and because of the unit-vectors in the other rows of C)
       ! exactly the case if the 'velocity' y matches f~ and the 'pressure'
-      ! components are zero - which means nothing else than that there's
+      ! components are zero - which means nothing else than that there is
       ! no contribution in the preconditioned defect to correct the
       ! pressure entries of x.
                    
@@ -1781,7 +1781,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanka%rvanka2DNavSt%p_KldA12 )
           
-      ! Get the structure. It's assumed that A12 and A21 have the same!
+      ! Get the structure. It is assumed that A12 and A21 have the same!
       if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
         call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanka%rvanka2DNavSt%p_KdiagonalA12)
@@ -2309,8 +2309,8 @@ contains
     real(DP), dimension(9) :: FF,UU
     integer, dimension(4) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -2405,7 +2405,7 @@ contains
       !                                      U3/V3
       ! |---------|                       |----X----|
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |   IEL   |   with DOF`s    U4/V4 X    P    X U2/V2
       ! |         |                       |         |
       ! |---------|                       |----X----|
       !                                      U1/V1
@@ -2428,7 +2428,7 @@ contains
         
         ! For support of scaled matrices, use the following line; currently switched off.
         ! Node that this way, VANKA would not support a different scaling factor for
-        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        ! A(1,1) than for A(2,2)! Let us hope that this is nowhere used!
         !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
@@ -2439,9 +2439,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -2467,7 +2467,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -2539,7 +2539,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -2601,7 +2601,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -2610,7 +2610,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -2722,8 +2722,8 @@ contains
     ! WARNING: DOCUMENTATION PARTIALLY WRONG AND INCOMPLETE!
     ! Preconditioner was build from FEAT1 in a quick-and-dirty way...
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -2821,7 +2821,7 @@ contains
       !                                      U3/V3
       ! |---------|                       |----X----|
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |   IEL   |   with DOF`s    U4/V4 X    P    X U2/V2
       ! |         |                       |         |
       ! |---------|                       |----X----|
       !                                      U1/V1
@@ -2844,7 +2844,7 @@ contains
         
         ! For support of scaled matrices, use the following line; currently switched off.
         ! Node that this way, VANKA would not support a different scaling factor for
-        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        ! A(1,1) than for A(2,2)! Let us hope that this is nowhere used!
         !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
@@ -2855,9 +2855,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -2883,7 +2883,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -2947,7 +2947,7 @@ contains
         ib2=p_KldB(idof+1)-1
 
         do ib = ib1,ib2
-          ! Subtract contributions from the RHS which don't belong to our element.
+          ! Subtract contributions from the RHS which do not belong to our element.
           if (p_KcolB(ib) .ne. IEL) then 
           
             J = p_KcolB(ib)
@@ -3005,7 +3005,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -3014,7 +3014,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -3125,8 +3125,8 @@ contains
     real(DP), dimension(9) :: FF,UU
     integer, dimension(4) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -3221,7 +3221,7 @@ contains
       !                                      U3/V3
       ! |---------|                       |----X----|
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |   IEL   |   with DOF`s    U4/V4 X    P    X U2/V2
       ! |         |                       |         |
       ! |---------|                       |----X----|
       !                                      U1/V1
@@ -3250,9 +3250,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -3278,7 +3278,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -3341,7 +3341,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -3397,7 +3397,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -3406,7 +3406,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -3452,7 +3452,7 @@ contains
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It's used as auxiliary 
+  ! velocity vectors and one pressure vector. It is used as auxiliary 
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
 !</description>
@@ -3548,7 +3548,7 @@ contains
 
     do inode=1,4
     
-      ! Quick check if everything is ok - we don't want to divide by 0.
+      ! Quick check if everything is ok - we do not want to divide by 0.
       if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
@@ -3594,7 +3594,7 @@ contains
 
     ! Solution "loop"
     !
-    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF's are Dirichlet
+    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF`s are Dirichlet
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
@@ -3633,7 +3633,7 @@ contains
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It's used as auxiliary 
+  ! velocity vectors and one pressure vector. It is used as auxiliary 
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
   !
@@ -3740,7 +3740,7 @@ contains
 
     do inode=1,4
     
-      ! Quick check if everything is ok - we don't want to divide by 0.
+      ! Quick check if everything is ok - we do not want to divide by 0.
       if (AA1(inode)*AA1(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
@@ -3795,7 +3795,7 @@ contains
 
     ! Solution "loop"
     !
-    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF's are Dirichlet
+    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF`s are Dirichlet
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
@@ -3916,8 +3916,8 @@ contains
     real(DP), dimension(9) :: FF,UU
     integer, dimension(4) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     ! Structure of A11 is assumed to be the same as A22
     p_KcolA => rvanka%p_KcolA
@@ -4023,7 +4023,7 @@ contains
       !                                      U3/V3
       ! |---------|                       |----X----|
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |   IEL   |   with DOF`s    U4/V4 X    P    X U2/V2
       ! |         |                       |         |
       ! |---------|                       |----X----|
       !                                      U1/V1
@@ -4053,9 +4053,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -4081,7 +4081,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -4153,7 +4153,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -4209,7 +4209,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -4218,7 +4218,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -4264,7 +4264,7 @@ contains
   
 !<description>
   ! This routine solves a 9x9 Jacobi-type Schur complement system for two 
-  ! velocity vectors and one pressure vector. It's used as auxiliary 
+  ! velocity vectors and one pressure vector. It is used as auxiliary 
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure for system where the velocity is fully coupled.
 !</description>
@@ -4360,7 +4360,7 @@ contains
 
     do inode=1,8
     
-      ! Quick check if everything is ok - we don't want to divide by 0.
+      ! Quick check if everything is ok - we do not want to divide by 0.
       if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
@@ -4408,7 +4408,7 @@ contains
 
     ! Solution "loop"
     !
-    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF's are Dirichlet
+    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF`s are Dirichlet
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
@@ -4514,9 +4514,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -4531,8 +4531,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -4630,20 +4630,20 @@ contains
       !                                               
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2      
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = edge.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
@@ -4660,9 +4660,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -4688,7 +4688,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -4721,7 +4721,7 @@ contains
         ! That way, A^ is reduced to a square matrix with two square    
         ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
         ! two 4 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF's on that cell, so we have       
+        ! the pressure DOF`s on that cell, so we have       
         ! 1 column in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -4761,7 +4761,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -4817,7 +4817,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -4826,7 +4826,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)  ..............                                   :::::: )
@@ -4957,9 +4957,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -4974,8 +4974,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     ! Structure of A11 is assumed to be the same as A22
     p_KcolA => rvanka%p_KcolA
@@ -5083,20 +5083,20 @@ contains
       !                                               
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2      
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = edge.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
@@ -5113,9 +5113,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -5141,7 +5141,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -5175,7 +5175,7 @@ contains
         ! That way, A^ is reduced to a square matrix with four square    
         ! submatrices A~ of size 4 x 4. The 8 x 2-matrix B~ reduces to  
         ! two 4 x 2 submatrices (originally, every velocity couples with
-        ! the pressure DOF's on that cell, so we have       
+        ! the pressure DOF`s on that cell, so we have       
         ! 1 column in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -5234,7 +5234,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -5290,7 +5290,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -5299,7 +5299,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)  ..............    AA( 1, 5) ..............       :::::: )
@@ -5424,9 +5424,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF`s per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -5441,8 +5441,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -5541,22 +5541,22 @@ contains
       !                                               
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6      
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
       FF(3+lofsp) = p_Drhs(iel+2*NEL+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
       IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
@@ -5580,9 +5580,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -5608,7 +5608,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -5654,7 +5654,7 @@ contains
         ! That way, A^ is reduced to a square matrix with two square    
         ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF's on that cell, so we have       
+        ! the 3 pressure DOF`s on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -5683,7 +5683,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of the original B has at most 12 entries:
@@ -5699,9 +5699,9 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
-        ! the boundary and there is no neighbour, or if it's the element midpoint).
+        ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
@@ -5752,7 +5752,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -5761,7 +5761,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)                                                   :::::: )
@@ -5883,9 +5883,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF`s per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -5900,8 +5900,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -6003,22 +6003,22 @@ contains
       !                                               
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6      
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
       FF(3+lofsp) = p_Drhs(iel+2*NEL+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
       IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
@@ -6042,9 +6042,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -6070,7 +6070,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -6116,7 +6116,7 @@ contains
         ! That way, A^ is reduced to a square matrix with two square    
         ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF's on that cell, so we have       
+        ! the 3 pressure DOF`s on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -6145,7 +6145,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of the original B has at most 12 entries:
@@ -6161,9 +6161,9 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
-        ! the boundary and there is no neighbour, or if it's the element midpoint).
+        ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
@@ -6214,7 +6214,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -6223,7 +6223,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)                                                   :::::: )
@@ -6338,9 +6338,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF`s per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -6355,8 +6355,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -6455,22 +6455,22 @@ contains
       !                                               
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6      
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
       FF(3+lofsp) = p_Drhs(iel+2*NEL+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
       IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
@@ -6489,9 +6489,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -6517,7 +6517,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -6563,7 +6563,7 @@ contains
         ! That way, A^ is reduced to a square matrix with two square    
         ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF's on that cell, so we have       
+        ! the 3 pressure DOF`s on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -6602,7 +6602,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most 12 entries:
@@ -6618,9 +6618,9 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
-        ! the boundary and there is no neighbour, or if it's the element midpoint).
+        ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
@@ -6671,7 +6671,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -6680,7 +6680,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)  ..............                                   :::::: )
@@ -6802,9 +6802,9 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF's per velocity
-    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF's per pressure
-    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF's per element
+    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF`s per velocity
+    integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
+    integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
@@ -6819,8 +6819,8 @@ contains
     integer, parameter :: lofsp = 2*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
@@ -6922,22 +6922,22 @@ contains
       !                                               
       ! +---------+                       4----7----3
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          8    9    6      
+      ! |   IEL   |   with DOF`s          8    9    6      
       ! |         |                       |    P1-3 |
       ! +---------+                       1----5----2
       !                                               
       !
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       FF(2+lofsp) = p_Drhs(iel+NEL+ioffsetp)
       FF(3+lofsp) = p_Drhs(iel+2*NEL+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = corner vertex, DOF 5..8 = edge, DOF 9 = element.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IverticesAtElement(1:4,iel)
       IdofGlobal(5:8) = p_IedgesAtElement(1:4,iel)+NVT
       IdofGlobal(9)   = NVT+NMT+iel
@@ -6956,9 +6956,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -6984,7 +6984,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -7030,7 +7030,7 @@ contains
         ! That way, A^ is reduced to a square matrix with two square    
         ! submatrices A~ of size 9 x 9. The 18 x 12-matrix B~ reduces to  
         ! two 9 x 3 submatrices (originally, every velocity couples with
-        ! the 3 pressure DOF's on that cell, so we have       
+        ! the 3 pressure DOF`s on that cell, so we have       
         ! 3 columns in the B-matrix).                                   
         !
         ! At first build: fi = fi-Aui
@@ -7069,7 +7069,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most 12 entries:
@@ -7085,9 +7085,9 @@ contains
         !                          |        |       |
         !                          +--------+-------+
         !
-        ! Either 12 (for corner DOF's), 6 (if the velocity DOF is an edge with 
+        ! Either 12 (for corner DOF`s), 6 (if the velocity DOF is an edge with 
         ! two neighbouring elements) or 3 (if the velocity DOF is at an edge on 
-        ! the boundary and there is no neighbour, or if it's the element midpoint).
+        ! the boundary and there is no neighbour, or if it is the element midpoint).
         !
         ! 3 of these 12 entries in each line come into our 'local' B-matrices.
         
@@ -7138,7 +7138,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -7147,7 +7147,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)  ..............                                   :::::: )
@@ -7224,7 +7224,7 @@ contains
   !
   ! I1 is a diagonal matrix in format 9, which may or may not
   ! exist in the system. For usual saddle point problems, these matrices
-  ! don't exist, what results in a '0' block in these positions.
+  ! do not exist, what results in a '0' block in these positions.
   ! ***************************************************************************
 
 !<subroutine>
@@ -7290,8 +7290,8 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
     integer, parameter :: nnld = 2*nnvel + nnpressure
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
@@ -7311,8 +7311,8 @@ contains
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     ! Structure of A11 is assumed to be the same as A22
     p_KcolA11 => rvanka%p_KcolA
@@ -7438,21 +7438,21 @@ contains
       !                                               
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2      
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
       !                                               
       !
       ! Fetch the pressure P on the current element into FF.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       ! Get the pressure
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = edge.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
@@ -7470,9 +7470,9 @@ contains
         FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
 
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -7498,7 +7498,7 @@ contains
         ! a system for only these unknowns!   
         !
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in rectangular
+        ! DOF`s on our single element IEL results in rectangular
         ! systems of the form                                            
         !                                                               
         !    [ === A^ === B~  ] (| ) = (f1 )                                
@@ -7528,7 +7528,7 @@ contains
         !                                      (p ) 
         !
         ! Extract those entries in the A-, B- and M-matrices to our local
-        ! matrix AA, which belong to DOF's in our current solution vector.
+        ! matrix AA, which belong to DOF`s in our current solution vector.
         !
         ! At first build: fi = fi-Aui
         
@@ -7626,7 +7626,7 @@ contains
           FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
-          ! Don't incorporate the B-matrices into AA yet; this will come later!
+          ! Do not incorporate the B-matrices into AA yet; this will come later!
         end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
@@ -7634,7 +7634,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -7704,7 +7704,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! For C, we use our local AA, i.e. applying C^{-1} means to
       ! solve the local system AA dd = FF for dd. The local defect dd is then
@@ -7934,7 +7934,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
           rvanka%rvanka2DNavStOptC%p_KldA12 )
           
-      ! Get the structure. It's assumed that A12 and A21 have the same!
+      ! Get the structure. It is assumed that A12 and A21 have the same!
       if (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
         call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
                                 rvanka%rvanka2DNavStOptC%p_KdiagonalA12)
@@ -7973,7 +7973,7 @@ contains
       call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(4,5), &
           rvanka%rvanka2DNavStOptC%p_KldA45 )
           
-      ! Get the structure. It's assumed that A12 and A21 have the same!
+      ! Get the structure. It is assumed that A12 and A21 have the same!
       if (rmatrix%RmatrixBlock(4,5)%cmatrixFormat .eq. LSYSSC_MATRIX9) then
         call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(4,5), &
                                 rvanka%rvanka2DNavStOptC%p_KdiagonalA45)
@@ -8025,7 +8025,7 @@ contains
     end if
     
     ! Get the mass matrix/matrices -- if they are present.
-    ! It's assumed that all mass matrices are the same except for their
+    ! It is assumed that all mass matrices are the same except for their
     ! multiplication factors!
     if (lsysbl_isSubmatrixPresent (rmatrix,1,4)) then
       if (rmatrix%RmatrixBlock(1,4)%cmatrixFormat .eq. LSYSSC_MATRIXD) then
@@ -8302,7 +8302,7 @@ contains
   !
   ! I1 and I2 are two diagonal matrices in format 9, which may or may not
   ! exist in the system. For usual saddle point problems, these matrices
-  ! don't exist, what results in a '0' block in these positions.
+  ! do not exist, what results in a '0' block in these positions.
   ! ***************************************************************************
 
 !<subroutine>
@@ -8386,8 +8386,8 @@ contains
     real(DP), dimension(9) :: FFd,UUd
     integer, dimension(4) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     p_KcolA => rvanka%p_KcolA11
     p_KldA => rvanka%p_KldA11
@@ -8515,7 +8515,7 @@ contains
       !                                      U3/V3
       ! |---------|                       |----X----|
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's    U4/V4 X    P    X U2/V2
+      ! |   IEL   |   with DOF`s    U4/V4 X    P    X U2/V2
       ! |         |                       |         |
       ! |---------|                       |----X----|
       !                                      U1/V1
@@ -8552,9 +8552,9 @@ contains
         FFd(inode+lofsv) = p_Drhs(idof+ioffsetl2)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -8580,7 +8580,7 @@ contains
         ! a system for only these unknowns!                             
         !                                                               
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in a rectangular      
+        ! DOF`s on our single element IEL results in a rectangular      
         ! system of the form                                            
         !                                                               
         !    [ === A^ === B~ ] (|) = (f1)                                
@@ -8655,7 +8655,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -8736,7 +8736,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -8745,7 +8745,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -8814,7 +8814,7 @@ contains
   !
   ! I1 and I2 are two diagonal matrices in format 9, which may or may not
   ! exist in the system. For usual saddle point problems, these matrices
-  ! don't exist, what results in a '0' block in these positions.
+  ! do not exist, what results in a '0' block in these positions.
   ! ***************************************************************************
 
 !<subroutine>
@@ -8888,11 +8888,11 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
-    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
-    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
+    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF`s per dual velocity
+    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF`s per dual pressure
+    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF`s per element
     integer, parameter :: nnld = 2*nnprimal
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
@@ -8919,8 +8919,8 @@ contains
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     ! Structure of A11 is assumed to be the same as A22
     p_KcolA11 => rvanka%p_KcolA11
@@ -8960,7 +8960,7 @@ contains
     p_DA45 => rvanka%p_DA45
     p_DA54 => rvanka%p_DA54
     
-    ! Mass matrix - if it's given, otherwise the pointers will be set to NULL
+    ! Mass matrix - if it is given, otherwise the pointers will be set to NULL
     ! because of the initialisation of the structure!
     p_KcolM => rvanka%p_KcolM
     p_KldM => rvanka%p_KldM
@@ -9083,13 +9083,13 @@ contains
       !                                               
       ! +---------+                       +----3----+
       ! |         |                       |         |
-      ! |   IEL   |   with DOF's          4    P    2      
+      ! |   IEL   |   with DOF`s          4    P    2      
       ! |         |                       |    Q0   |
       ! +---------+                       +----1----+
       !                                               
       !
       ! Fetch the pressure P on the current element into FF.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
     
       ! Get the primal pressure
@@ -9098,9 +9098,9 @@ contains
       ! Get the dual pressure
       FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..4 = edge-NVT.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
       ! Loop over all U-nodes of that element.
@@ -9122,9 +9122,9 @@ contains
         FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
         
         ! What do we have at this point?                           
-        ! FF     : "local" RHS vector belonging to the DOF's on the
+        ! FF     : "local" RHS vector belonging to the DOF`s on the
         !          current element                                 
-        ! AA     : Diagonal entries of A belonging to these DOF's  
+        ! AA     : Diagonal entries of A belonging to these DOF`s  
         !                                                          
         ! And at the moment:                                       
         ! idof      : number of current DOF on element IEL            
@@ -9152,7 +9152,7 @@ contains
         ! a system for only these unknowns!   
         !
         ! Extracting all the lines of the system that correspond to     
-        ! DOF's on our single element IEL results in rectangular
+        ! DOF`s on our single element IEL results in rectangular
         ! systems of the form                                            
         !                                                               
         !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
@@ -9190,7 +9190,7 @@ contains
         !                                                    (xi)
         !
         ! Extract those entries in the A-, B- and M-matrices to our local
-        ! matrix AA, which belong to DOF's in our current solution vector.
+        ! matrix AA, which belong to DOF`s in our current solution vector.
         !
         ! At first build: fi = fi-Aui
         
@@ -9369,7 +9369,7 @@ contains
           FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanka%Dmultipliers(4,6)
           FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
           
-          ! Don't incorporate the B-matrices into AA yet; this will come later!
+          ! Do not incorporate the B-matrices into AA yet; this will come later!
         end do
         
         ! The mass matrix defect.
@@ -9485,7 +9485,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -9573,7 +9573,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! For C, we use our local AA, i.e. applying C^{-1} means to
       ! solve the local system AA dd = FF for dd. The local defect dd is then
@@ -9648,7 +9648,7 @@ contains
   !
   ! I1 and I2 are two diagonal matrices in format 9, which may or may not
   ! exist in the system. For usual saddle point problems, these matrices
-  ! don't exist, what results in a '0' block in these positions.
+  ! do not exist, what results in a '0' block in these positions.
   !
   ! This variant decouples the primal system from the dual one. Depending on
   ! the parameter csystemType in the VANKA structure, only parts of the system
@@ -9757,11 +9757,11 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
-    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF's per dual velocity
-    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF's per dual pressure
-    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF's per element
+    integer, parameter :: nnvel = 4      ! Q1T = 4 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
+    integer, parameter :: nndualvel = 4      ! Q1T = 4 DOF`s per dual velocity
+    integer, parameter :: nndualpressure = 1 ! QQ0 = 1 DOF`s per dual pressure
+    integer, parameter :: nnprimal = 2*nnvel+nnpressure ! Q1~/Q1~/Q0 = 4+4+1 = 9 DOF`s per element
     integer, parameter :: nnld = 2*nnprimal
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
@@ -9788,8 +9788,8 @@ contains
     integer :: ia1,ia2,ib1,ib2,ia,ib,k
     real(DP) :: daux,daux2
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     
     ! Structure of A11 is assumed to be the same as A22
     p_KcolA11 => rvanka%p_KcolA11
@@ -9829,7 +9829,7 @@ contains
     p_DA45 => rvanka%p_DA45
     p_DA54 => rvanka%p_DA54
     
-    ! Mass matrix - if it's given, otherwise the pointers will be set to NULL
+    ! Mass matrix - if it is given, otherwise the pointers will be set to NULL
     ! because of the initialisation of the structure!
     p_KcolM => rvanka%p_KcolM
     p_KldM => rvanka%p_KldM
@@ -9949,13 +9949,13 @@ contains
         !                                               
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF's          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2      
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
         !                                               
         !
         ! Fetch the pressure P on the current element into FF.
-        ! The numbers of the DOF's coincide with the definition
+        ! The numbers of the DOF`s coincide with the definition
         ! in dofmapping.f90!
       
         ! Get the primal pressure
@@ -9964,9 +9964,9 @@ contains
         ! Get the dual pressure
         FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
         
-        ! Get the velocity DOF's on the current element.
+        ! Get the velocity DOF`s on the current element.
         ! We assume: DOF 1..4 = edge.
-        ! That's the same implementation as in dofmapping.f90!
+        ! That is the same implementation as in dofmapping.f90!
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
@@ -9988,9 +9988,9 @@ contains
           FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
           
           ! What do we have at this point?                           
-          ! FF     : "local" RHS vector belonging to the DOF's on the
+          ! FF     : "local" RHS vector belonging to the DOF`s on the
           !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF's  
+          ! AA     : Diagonal entries of A belonging to these DOF`s  
           !                                                          
           ! And at the moment:                                       
           ! idof      : number of current DOF on element IEL            
@@ -10018,7 +10018,7 @@ contains
           ! a system for only these unknowns!   
           !
           ! Extracting all the lines of the system that correspond to     
-          ! DOF's on our single element IEL results in rectangular
+          ! DOF`s on our single element IEL results in rectangular
           ! systems of the form                                            
           !                                                               
           !    [ === A^ === B~  === M^ ====   ] (| ) = (f1 )                                
@@ -10056,7 +10056,7 @@ contains
           !                                                    (xi)
           !
           ! Extract those entries in the A-, B- and M-matrices to our local
-          ! matrix AA, which belong to DOF's in our current solution vector.
+          ! matrix AA, which belong to DOF`s in our current solution vector.
           !
           ! At first build: fi = fi-Aui
           
@@ -10235,7 +10235,7 @@ contains
             FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanka%Dmultipliers(4,6)
             FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
             
-            ! Don't incorporate the B-matrices into AA yet; this will come later!
+            ! Do not incorporate the B-matrices into AA yet; this will come later!
           end do
           
           ! The mass matrix defect.
@@ -10289,7 +10289,7 @@ contains
           ! We have to find in the B-matrices the column that corresponds
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
-          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! Remember: The column numbers in B correspond to the pressure-DOF`s
           ! and so to element numbers. 
           !
           ! Btw: Each row of B has at most two entries:
@@ -10377,7 +10377,7 @@ contains
         ! Here the 'projection' operator simply converts the small
         ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
         ! of the same size as x - what is easy using the number of
-        ! the DOF's on the element.
+        ! the DOF`s on the element.
         !
         ! For C, we use our local AA, i.e. applying C^{-1} means to
         ! solve the local system AA dd = FF for dd. The local defect dd is then
@@ -10446,21 +10446,21 @@ contains
         !                                               
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF's          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2      
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
         !                                               
         !
         ! Fetch the pressure P on the current element into FF.
-        ! The numbers of the DOF's coincide with the definition
+        ! The numbers of the DOF`s coincide with the definition
         ! in dofmapping.f90!
       
         ! Get the primal pressure
         FF(1+lofsp) = p_Drhs(iel+ioffsetp)
         
-        ! Get the velocity DOF's on the current element.
+        ! Get the velocity DOF`s on the current element.
         ! We assume: DOF 1..4 = edge.
-        ! That's the same implementation as in dofmapping.f90!
+        ! That is the same implementation as in dofmapping.f90!
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
@@ -10478,9 +10478,9 @@ contains
           FF(inode+lofsv) = p_Drhs(idof+ioffsetv)
 
           ! What do we have at this point?                           
-          ! FF     : "local" RHS vector belonging to the DOF's on the
+          ! FF     : "local" RHS vector belonging to the DOF`s on the
           !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF's  
+          ! AA     : Diagonal entries of A belonging to these DOF`s  
           !                                                          
           ! And at the moment:                                       
           ! idof      : number of current DOF on element IEL            
@@ -10489,7 +10489,7 @@ contains
           !                     
 
           ! Extract those entries in the A-, B- and M-matrices to our local
-          ! matrix AA, which belong to DOF's in our current solution vector.
+          ! matrix AA, which belong to DOF`s in our current solution vector.
           !
           ! At first build: fi = fi-Aui
           
@@ -10600,7 +10600,7 @@ contains
             FF(inode+lofsu) = FF(inode+lofsu)-p_DB1(ib)*daux * rvanka%Dmultipliers(1,3)
             FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux * rvanka%Dmultipliers(2,3)
 
-            ! Don't incorporate the B-matrices into AA yet; this will come later!
+            ! Do not incorporate the B-matrices into AA yet; this will come later!
           end do
           
           ! The mass matrix defect.
@@ -10643,7 +10643,7 @@ contains
           ! We have to find in the B-matrices the column that corresponds
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
-          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! Remember: The column numbers in B correspond to the pressure-DOF`s
           ! and so to element numbers. 
           !
           ! Btw: Each row of B has at most two entries:
@@ -10719,7 +10719,7 @@ contains
         ! Here the 'projection' operator simply converts the small
         ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
         ! of the same size as x - what is easy using the number of
-        ! the DOF's on the element.
+        ! the DOF`s on the element.
         !
         ! For C, we use our local AA, i.e. applying C^{-1} means to
         ! solve the local system AA dd = FF for dd. The local defect dd is then
@@ -10784,21 +10784,21 @@ contains
         !                                               
         ! +---------+                       +----3----+
         ! |         |                       |         |
-        ! |   IEL   |   with DOF's          4    P    2      
+        ! |   IEL   |   with DOF`s          4    P    2      
         ! |         |                       |    Q0   |
         ! +---------+                       +----1----+
         !                                               
         !
         ! Fetch the pressure P on the current element into FF.
-        ! The numbers of the DOF's coincide with the definition
+        ! The numbers of the DOF`s coincide with the definition
         ! in dofmapping.f90!
       
         ! Get the dual pressure
         FF(1+lofsxi) = p_Drhs(iel+ioffsetxi)
         
-        ! Get the velocity DOF's on the current element.
+        ! Get the velocity DOF`s on the current element.
         ! We assume: DOF 1..4 = edge.
-        ! That's the same implementation as in dofmapping.f90!
+        ! That is the same implementation as in dofmapping.f90!
         IdofGlobal(1:4) = p_IedgesAtElement(1:4,iel)
 
         ! Loop over all U-nodes of that element.
@@ -10816,9 +10816,9 @@ contains
           FF(inode+lofsl2) = p_Drhs(idof+ioffsetl2)
           
           ! What do we have at this point?                           
-          ! FF     : "local" RHS vector belonging to the DOF's on the
+          ! FF     : "local" RHS vector belonging to the DOF`s on the
           !          current element                                 
-          ! AA     : Diagonal entries of A belonging to these DOF's  
+          ! AA     : Diagonal entries of A belonging to these DOF`s  
           !                                                          
           ! And at the moment:                                       
           ! idof      : number of current DOF on element IEL            
@@ -10934,7 +10934,7 @@ contains
             FF(inode+lofsl1) = FF(inode+lofsl1)-p_DB1(ib)*daux2 * rvanka%Dmultipliers(4,6)
             FF(inode+lofsl2) = FF(inode+lofsl2)-p_DB2(ib)*daux2 * rvanka%Dmultipliers(5,6)
             
-            ! Don't incorporate the B-matrices into AA yet; this will come later!
+            ! Do not incorporate the B-matrices into AA yet; this will come later!
           end do
           
           ! The mass matrix defect.
@@ -10977,7 +10977,7 @@ contains
           ! We have to find in the B-matrices the column that corresponds
           ! to our element and pressure DOF IEL - which makes it necessary
           ! to compare the column numbers in KcolB with IEL.
-          ! Remember: The column numbers in B correspond to the pressure-DOF's
+          ! Remember: The column numbers in B correspond to the pressure-DOF`s
           ! and so to element numbers. 
           !
           ! Btw: Each row of B has at most two entries:
@@ -11053,7 +11053,7 @@ contains
         ! Here the 'projection' operator simply converts the small
         ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
         ! of the same size as x - what is easy using the number of
-        ! the DOF's on the element.
+        ! the DOF`s on the element.
         !
         ! For C, we use our local AA, i.e. applying C^{-1} means to
         ! solve the local system AA dd = FF for dd. The local defect dd is then
@@ -11301,7 +11301,7 @@ contains
 !      CALL lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,2), &
 !          rvanka%rvanka2DNavSt%p_KldA12 )
 !          
-!      ! Get the structure. It's assumed that A12 and A21 have the same!
+!      ! Get the structure. It is assumed that A12 and A21 have the same!
 !      IF (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .EQ. LSYSSC_MATRIX9) THEN
 !        CALL lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,2), &
 !                                rvanka%rvanka2DNavSt%p_KdiagonalA12)
@@ -11741,8 +11741,8 @@ contains
     real(DP), dimension(19) :: FF,UU
     integer, dimension(6) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
     p_KdiagonalA => rvanka%p_KdiagonalA
@@ -11798,7 +11798,7 @@ contains
         
         ! For support of scaled matrices, use the following line; currently switched off.
         ! Node that this way, VANKA would not support a different scaling factor for
-        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        ! A(1,1) than for A(2,2)! Let us hope that this is nowhere used!
         !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
@@ -11847,7 +11847,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -11906,7 +11906,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -11915,7 +11915,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -12030,8 +12030,8 @@ contains
     real(DP), dimension(19) :: FF,UU
     integer, dimension(6) :: idofGlobal
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
     p_KdiagonalA => rvanka%p_KdiagonalA
@@ -12090,7 +12090,7 @@ contains
         
         ! For support of scaled matrices, use the following line; currently switched off.
         ! Node that this way, VANKA would not support a different scaling factor for
-        ! A(1,1) than for A(2,2)! Let's hope that this is nowhere used!
+        ! A(1,1) than for A(2,2)! Let us hope that this is nowhere used!
         !AA(inode) = Dmult(1,1)*p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
@@ -12139,7 +12139,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -12198,7 +12198,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -12207,7 +12207,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1)                                                   BB1(1) )
@@ -12255,7 +12255,7 @@ contains
   
 !<description>
   ! This routine solves a 19x19 Jacobi-type Schur complement system for three 
-  ! velocity vectors and one pressure vector. It's used as auxiliary 
+  ! velocity vectors and one pressure vector. It is used as auxiliary 
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
 !</description>
@@ -12348,7 +12348,7 @@ contains
 
     do inode=1,6
     
-      ! Quick check if everything is ok - we don't want to divide by 0.
+      ! Quick check if everything is ok - we do not want to divide by 0.
       if (AA(inode)*AA(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
@@ -12397,7 +12397,7 @@ contains
 
     ! Solution "loop"
     !
-    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF's are Dirichlet
+    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF`s are Dirichlet
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
@@ -12438,7 +12438,7 @@ contains
   
 !<description>
   ! This routine solves a 19x19 Jacobi-type Schur complement system for three 
-  ! velocity vectors and one pressure vector. It's used as auxiliary 
+  ! velocity vectors and one pressure vector. It is used as auxiliary 
   ! routine in the simple VANKA solver to calculate an update vector
   ! for velocity/pressure.
   !
@@ -12545,7 +12545,7 @@ contains
 
     do inode=1,6
     
-      ! Quick check if everything is ok - we don't want to divide by 0.
+      ! Quick check if everything is ok - we do not want to divide by 0.
       if (AA1(inode)*AA1(inode) .lt. 1E-20_DP) then
         ! Set the update vector to 0, cancel.
         UU = 0.0_DP
@@ -12609,7 +12609,7 @@ contains
 
     ! Solution "loop"
     !
-    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF's are Dirichlet
+    ! Check that DP exists. It may be e.g. ~0 if all velocity DOF`s are Dirichlet
     ! nodes, which implies B=0 and thus leads to DP=0!
     ! (Happens inside of fictitious boundary objects e.g.)
 
@@ -12719,8 +12719,8 @@ contains
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
     
     ! Local arrays for informations about one element
-    integer, parameter :: nnvel = 6      ! Q1T = 6 DOF's per velocity
-    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF's per pressure
+    integer, parameter :: nnvel = 6      ! Q1T = 6 DOF`s per velocity
+    integer, parameter :: nnpressure = 1 ! QQ0 = 1 DOF`s per pressure
     integer, parameter :: nnld = 3*nnvel+nnpressure
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
@@ -12737,8 +12737,8 @@ contains
     integer, parameter :: lofsp = 3*nnvel
     real(DP) :: daux
     
-    ! Get pointers to the system matrix, so we don't have to write
-    ! so much - and it's probably faster.
+    ! Get pointers to the system matrix, so we do not have to write
+    ! so much - and it is probably faster.
     p_KcolA => rvanka%p_KcolA
     p_KldA => rvanka%p_KldA
     p_KdiagonalA => rvanka%p_KdiagonalA
@@ -12779,13 +12779,13 @@ contains
       
       ! We now have the element
       ! Fetch the pressure P on the current element into FFP.
-      ! The numbers of the DOF's coincide with the definition
+      ! The numbers of the DOF`s coincide with the definition
       ! in dofmapping.f90!
       FF(1+lofsp) = p_Drhs(iel+ioffsetp)
       
-      ! Get the velocity DOF's on the current element.
+      ! Get the velocity DOF`s on the current element.
       ! We assume: DOF 1..6 = face.
-      ! That's the same implementation as in dofmapping.f90!
+      ! That is the same implementation as in dofmapping.f90!
       IdofGlobal(1:6) = p_IfacesAtElement(1:6,iel)
 
       ! Loop over all U-nodes of that element.
@@ -12839,7 +12839,7 @@ contains
         ! We have to find in the B-matrices the column that corresponds
         ! to our element and pressure DOF IEL - which makes it necessary
         ! to compare the column numbers in KcolB with IEL.
-        ! Remember: The column numbers in B correspond to the pressure-DOF's
+        ! Remember: The column numbers in B correspond to the pressure-DOF`s
         ! and so to element numbers. 
         !
         ! Btw: Each row of B has at most two entries:
@@ -12890,7 +12890,7 @@ contains
       ! Here the 'projection' operator simply converts the small
       ! preconditioned defect (\omega C^{-1} d~) to a 'full' defect
       ! of the same size as x - what is easy using the number of
-      ! the DOF's on the element.
+      ! the DOF`s on the element.
       !
       ! The only question now will be: What is C^{-1}?
       !
@@ -12899,7 +12899,7 @@ contains
       ! theoretically best preconditioner. A more simple preconditioner
       ! is a kind of Jacobi-preconditioner, which extracts the main diagonal
       ! entries of A and those lines of the B/D-matrices that correspond
-      ! to the DOF's on the current element. We already set up the preconditioner 
+      ! to the DOF`s on the current element. We already set up the preconditioner 
       ! in the above variables. It has the form:
       ! 
       ! C = ( AA(1,1)  ..............                                   :::::: )

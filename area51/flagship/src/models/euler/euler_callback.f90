@@ -291,7 +291,7 @@ contains
         call sys_halt()
       end select
 
-      ! That's it
+      ! That is it
       return
     end if
 

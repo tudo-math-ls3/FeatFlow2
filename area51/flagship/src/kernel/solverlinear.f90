@@ -200,7 +200,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
 
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -242,7 +242,7 @@ contains
         p_solverSinglegrid => p_solverMultigrid%p_solverCoarsegrid
         
         ! The outer nonlinear solver may have modified the linear multigrid 
-        ! solver, e.g., Newton's method may have defined an absolute tolerance
+        ! solver, e.g., Newton`s method may have defined an absolute tolerance
         ! for the linear solver to satisfy some sufficient decrease condition.
         ! Hence, copy the original input parameters of the linear single grid
         ! solver to the temporal structure rsolverTemp and impose the new values.
@@ -327,7 +327,7 @@ contains
           call lsysbl_clearVector(ru)
           rsolver%istatus = SV_INF_DEF
           
-          ! That's it, return.
+          ! That is it, return.
           return
           
         elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
@@ -341,7 +341,7 @@ contains
           call lsysbl_clearVector(ru)
           rsolver%istatus = SV_ZERO_DEF
           
-          ! That's it, return.
+          ! That is it, return.
           return
         end if
                 
@@ -388,7 +388,7 @@ contains
             rsolver%istatus          = SV_INCR_DEF
             rsolver%dconvergenceRate = 1.0_DP
 
-            ! That's it, return.
+            ! That is it, return.
             return
           end if
           
@@ -715,7 +715,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
 
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -808,7 +808,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
 
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -843,7 +843,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
@@ -857,7 +857,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
     end if
    
@@ -905,7 +905,7 @@ contains
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
       
@@ -990,7 +990,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
 
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -1025,7 +1025,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
@@ -1039,7 +1039,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
     end if
     
@@ -1087,7 +1087,7 @@ contains
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
       
@@ -1181,7 +1181,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
 
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -1248,7 +1248,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
@@ -1262,7 +1262,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
     end if
 
@@ -1364,7 +1364,7 @@ contains
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
 
@@ -1455,7 +1455,7 @@ contains
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
     end if
@@ -1506,7 +1506,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
       
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
@@ -1520,7 +1520,7 @@ contains
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
       
-      ! That's it, return.
+      ! That is it, return.
       return
     end if
     
@@ -1642,7 +1642,7 @@ contains
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
         
-        ! That's it, return.
+        ! That is it, return.
         return
       end if
       

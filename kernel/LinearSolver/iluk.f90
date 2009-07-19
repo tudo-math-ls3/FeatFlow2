@@ -278,7 +278,7 @@ contains
       ! A return value that describes the result with
       ! that the routine finished (success, failure, whatever...).
       !   ierr  = -i --> near zero pivot in step i,
-      !   ierr  = 0  --> all's OK.
+      !   ierr  = 0  --> all is OK.
       !   ierr  = 1  --> not enough storage.
       !   ierr  = 2  --> illegal parameter.
       integer, intent(out) :: ierr
@@ -327,7 +327,7 @@ contains
 !
 !  ierr is an error flag:
 !        ierr  = -i --> near zero pivot in step i
-!        ierr  = 0  --> all's OK
+!        ierr  = 0  --> everything is OK
 !        ierr  = 1  --> not enough storage; check mneed.
 !        ierr  = 2  --> illegal parameter
 !
@@ -534,7 +534,7 @@ contains
 !      U(1,1:n) = A(1,1:n);
 !   
 !      for k = 2:n
-!         L(k,1:k-1) = (U(1:k-1,1:k-1)'\(A(k,1:k-1)'))';
+!         L(k,1:k-1) = (U(1:k-1,1:k-1)'\(A(k,1:k-1)'))';        #(cpp fix: ')
 !         U(k,k:n) = A(k,k:n) - L(k,1:k-1)*U(1:k-1,k:n);
 !      end ;
 !   
@@ -740,7 +740,7 @@ contains
 !     relax         : relaxation parameter for MILU methods.
 !     mult          : temporary scalar for holding multiplier L(k,j).
 !     ierr          : return error code.
-!                        ierr = 0  -> all's OK.
+!                        ierr = 0  -> everything is OK.
 !                        ierr < 0  -> row -ierr had a small pivot
 !     k             : loop index for current row number
 !     j             : loop index for current row number
@@ -811,7 +811,7 @@ contains
 !     ------------------------------------------------------------
 !     colptrs is used to hold the indices of entries in LU of 
 !     row k.  It is initialized to zero here, and then reset after 
-!     each row's work.
+!     each row`s work.
 !     ------------------------------------------------------------
       do k =  1, n
          colptrs( k ) = 0
@@ -854,7 +854,7 @@ contains
 !        -------------------------------------------------------------------
 !         The first segment of the next loop on indj effectively solves
 !         the transposed upper triangular system
-!                 U(1:k-1, 1:k-1)'L(k,1:k-1)' = A(k,1:k-1)'
+!                 U(1:k-1, 1:k-1)'L(k,1:k-1)' = A(k,1:k-1)'             (cpp fix: ')
 !         via sparse saxpy operations, throwing away disallowed fill.
 !         When the loop index indj reaches the k-th column (i.e., the
 !         diagonal entry), then the innermost sparse saxpy operation 
@@ -1081,7 +1081,7 @@ contains
       
       ! ierr is an error flag:
       !        ierr  = -i --> near zero pivot in step i.
-      !        ierr  = 0  --> all's OK.
+      !        ierr  = 0  --> everything is OK.
       !        ierr  = 1  --> not enough storage; check mneed.
       !        ierr  = 2  --> illegal parameter.
       integer, intent(out) ::  ierr
@@ -1168,8 +1168,8 @@ contains
   !  growth of the number of nonzeros as s increases.		
   !  								
   !  levels(n+2:nzlu    ) stores the levels from previous rows,	
-  !  that is, the s2's above.  levels(1:n) stores the fill-levels	
-  !  of the current row (row i), which are the s1's above.	
+  !  that is, the s2`s above.  levels(1:n) stores the fill-levels	
+  !  of the current row (row i), which are the s1`s above.	
   !  levels(n+1) is not used, so levels is conformant with MSR format.
   !  								
   !  Vectors used:						
@@ -1235,7 +1235,7 @@ contains
   !								  
   !  levels(1:n):							
   !  	This vector stores the fill level number for the current
-  !  	row's entries.  If they were created as fill elements	
+  !  	row`s entries.  If they were created as fill elements	
   !  	themselves, this number is added to the corresponding	
   !  	entry in levels(n+2:nzlu) to see if a particular column	
   !       entry will						
@@ -1307,7 +1307,7 @@ contains
       iend    =  rwptr(i+1)
 
       ! -------------------------------------------------------------
-      ! Number of offdiagonal nonzeros in the original matrix's row i
+      ! Number of offdiagonal nonzeros in the original matrix` row i
       ! -------------------------------------------------------------
       nzi   =  iend - ibegin
 
@@ -1367,7 +1367,7 @@ contains
 
         ! ------------------------------------------------------------
         ! Increment count of nonzeros in the LU factors by the number
-        ! of nonzeros in the original matrix's row i.  Further
+        ! of nonzeros in the original matrix` row i.  Further
         ! incrementing will be necessary if any fill-in actually occurs
         ! ------------------------------------------------------------
         nzlu  =  nzlu + nzi - 1
@@ -1380,7 +1380,7 @@ contains
 
         ! ------------------------------------------------------------
         ! The integer*4 lowct is used to keep count of the number of
-        ! nonzeros in the current row's strictly lower triangular part,
+        ! nonzeros in the current row`s strictly lower triangular part,
         ! for setting uptr pointers to indicate where in ijlu the upperc
         ! triangular part starts. 
         ! ------------------------------------------------------------
@@ -1409,7 +1409,7 @@ contains
 
         !       -----------------------------------------------------
         !       Ujbeg is beginning index of strictly upper triangular
-        !       part of U's j-th row, and Ujend is the ending index
+        !       part of U`s j-th row, and Ujend is the ending index
         !       of it, in ijlu().
         !       -----------------------------------------------------
                 Ujbeg = uptr(j)
@@ -1538,7 +1538,7 @@ contains
 
         !    ------------------------------------------------------
         !    Pick up next nonzero column index from the linked
-        !    list, and continue processing the i-th row's nonzeros.
+        !    list, and continue processing the i-th row`s nonzeros.
         !    This ends the first while loop (j < i).
         !    ------------------------------------------------------
              j = rowll(j)
@@ -1547,7 +1547,7 @@ contains
 
         ! ---------------------------------------------------------
         ! Check to see if we have exceeded the allowed memory
-        ! storage before storing the results of computing row i's
+        ! storage before storing the results of computing row i`s
         ! sparsity pattern into the ijlu and uptr data structures.
         ! ---------------------------------------------------------
         if (nzlu .gt. nzmax) then

@@ -126,7 +126,7 @@ contains
     h_Iidx = ST_NOHANDLE
     
     ! Get the correct adjacency type. If the given adjacency type parameter
-    ! is equivalent to MSHADJ_ADJ_NEIGHBOUR, we'll explicitly set it to
+    ! is equivalent to MSHADJ_ADJ_NEIGHBOUR, we will explicitly set it to
     ! MSHADJ_ADJ_NEIGHBOUR, as this adjacency is faster to compute than
     ! the more complex ones...
     cadj = MSHADJ_ADJ_NEIGHBOUR
@@ -298,7 +298,7 @@ contains
       end do
       p_Iptr(NEL+1) = k
       
-      ! That's it
+      ! That is it
       return
       
     end if
@@ -353,7 +353,7 @@ contains
           
             ! Is this the element we want to add the adjacency to?
             if(p_Iidx(k) .eq. adj) then
-              ! Yes, so we don't need to add it anymore
+              ! Yes, so we do not need to add it anymore
               bFound = .true.
               exit
             end if
@@ -376,7 +376,7 @@ contains
     
     end do ! iel
     
-    ! That's it
+    ! That is it
 
   end subroutine
 

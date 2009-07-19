@@ -317,7 +317,7 @@ module linearsystemblock
 
     ! A pointer to discretised boundary conditions for real boundary components.
     ! These boundary conditions allow to couple multiple equations in the 
-    ! system and don't belong only to one single scalar component of the
+    ! system and do not belong only to one single scalar component of the
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBC
     ! can be set to NULL().
@@ -326,7 +326,7 @@ module linearsystemblock
     ! A pointer to discretised boundary conditions for fictitious boundary
     ! components.
     ! These boundary conditions allow to couple multiple equations in the 
-    ! system and don't belong only to one single scalar component of the
+    ! system and do not belong only to one single scalar component of the
     ! solution.
     ! If no system-wide boundary conditions are specified, p_rdiscreteBCfict
     ! can be set to NULL().
@@ -392,7 +392,7 @@ module linearsystemblock
     type(t_blockDiscretisation), pointer :: p_rblockDiscrTrial => null()
 
     ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there's at least one element distribution
+    ! are the same. If FALSE, there is at least one element distribution
     ! with different trial and test functions.
     logical                          :: bidenticalTrialAndTest = .true.
 
@@ -690,7 +690,7 @@ contains
     end if
   end if
   
-!  ! Vector and matrix must share the same BC's.
+!  ! Vector and matrix must share the same BC`s.
 !  b1 = ASSOCIATED(rvector%p_rdiscreteBC)
 !  b2 = ASSOCIATED(rmatrix%p_rdiscreteBC)
 !  b3 = ASSOCIATED(rvector%p_rdiscreteBC,rmatrix%p_rdiscreteBC)
@@ -1017,7 +1017,7 @@ contains
   ! not to somebody else.
   rx%bisCopy = .false.
   
-  ! Warning: don't reformulate the following check into one IF command
+  ! Warning: do not reformulate the following check into one IF command
   ! as this might give problems with some compilers!
   if (present(bclear)) then
     if (bclear) then
@@ -1113,7 +1113,7 @@ contains
   ! not to somebody else.
   rx%bisCopy = .false.
   
-  ! Warning: don't reformulate the following check into one IF command
+  ! Warning: do not reformulate the following check into one IF command
   ! as this might give problems with some compilers!
   if (present(bclear)) then
     if (bclear) then
@@ -1203,10 +1203,10 @@ contains
     n = n + rx%RvectorBlock(i)%NEQ
   end do
   
-  ! Our handle belongs to us, so it's not a copy of another vector.
+  ! Our handle belongs to us, so it is not a copy of another vector.
   rx%bisCopy = .false.
 
-  ! Warning: don't reformulate the following check into one IF command
+  ! Warning: do not reformulate the following check into one IF command
   ! as this might give problems with some compilers!
   if (present(bclear)) then
     if (bclear) then
@@ -1228,7 +1228,7 @@ contains
   ! structure rblockDiscretisation. 
   !
   ! Memory is allocated on the heap for rx. The size of the subvectors in rx
-  ! is calculated according to the number of DOF's indicated by the
+  ! is calculated according to the number of DOF`s indicated by the
   ! spatial discretisation structures in rblockDiscretisation.
 !</description>
   
@@ -1262,7 +1262,7 @@ contains
   
   allocate(Isize(max(1,rblockDiscretisation%ncomponents)))
   
-  ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
   ! of all the subblocks.
   Isize(1) = 0             ! Initialisation in case ncomponents=0
   do i=1,rblockDiscretisation%ncomponents
@@ -1329,7 +1329,7 @@ contains
   allocate(p_Isize(max(1,rblockDiscretisationTrial%ncomponents))) 
   allocate(p_Isize2(max(1,rblockDiscretisationTrial%ncomponents))) 
   
-  ! Loop to the blocks in the block discretisation. Calculate size (#DOF's)
+  ! Loop to the blocks in the block discretisation. Calculate size (#DOF`s)
   ! of all the subblocks.
   p_Isize(1) = 0             ! Initialisation in case ncomponents=0
   do i=1,rblockDiscretisationTrial%ncomponents
@@ -1430,7 +1430,7 @@ contains
     end if
     
 
-    ! Allocate memory for the blocks, that's it.
+    ! Allocate memory for the blocks, that is it.
     allocate(rmatrix%RmatrixBlock(nblocksPerCol,nbpr))
     rmatrix%nblocksPerCol = nblocksPerCol
     rmatrix%nblocksPerRow = nbpr
@@ -1563,7 +1563,7 @@ contains
 
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
-            ! like matrix vector multiplication won't work...
+            ! like matrix vector multiplication will not work...
             rx%RvectorBlock(i)%isortStrategy = &
               rtemplateMat%RmatrixBlock(j,i)%isortStrategy
             rx%RvectorBlock(i)%h_IsortPermutation = &
@@ -1574,13 +1574,13 @@ contains
 
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
-            ! like matrix vector multiplication won't work...
+            ! like matrix vector multiplication will not work...
             rx%RvectorBlock(i)%isortStrategy = &
               rtemplateMat%RmatrixBlock(i,j)%isortStrategy
             rx%RvectorBlock(i)%h_IsortPermutation = &
               rtemplateMat%RmatrixBlock(i,j)%h_IsortPermutation
               
-            ! DOES THIS WORK?!?!? I don't know =) MK
+            ! DOES THIS WORK?!?!? I do not know =) MK
           end if
             
           ! Denote in the subvector that the handle belongs to us - not to
@@ -1600,7 +1600,7 @@ contains
       end do
       
       if (j .gt. nbpc) then
-        ! Let's hope this situation (an empty equation) never occurs - 
+        ! Let us hope this situation (an empty equation) never occurs - 
         ! might produce some errors elsewhere :)
         rx%RvectorBlock(i)%NEQ  = 0
         rx%RvectorBlock(i)%NVAR = 1
@@ -1622,7 +1622,7 @@ contains
     rx%p_rdiscreteBC     => rtemplateMat%p_rdiscreteBC
     rx%p_rdiscreteBCfict => rtemplateMat%p_rdiscreteBCfict
     
-    ! Warning: don't reformulate the following check into one IF command
+    ! Warning: do not reformulate the following check into one IF command
     ! as this might give problems with some compilers!
     if (present(bclear)) then
       if (bclear) then
@@ -1661,7 +1661,7 @@ contains
     ! local variables
     integer :: i
 
-    ! Simply modify all pointers of all subvectors, that's it.
+    ! Simply modify all pointers of all subvectors, that is it.
     do i=1,rx%nblocks
       ! Spatial discretisation
       rx%RvectorBlock(i)%p_rspatialDiscr => &
@@ -1744,7 +1744,7 @@ contains
       call sys_halt()
     end if
 
-    ! Simply modify all pointers of all subvectors, that's it.
+    ! Simply modify all pointers of all subvectors, that is it.
     if (.not. btrans) then
       do i = 1, nbpr
         do j = 1, nbpc
@@ -1840,7 +1840,7 @@ contains
     ! If the number of columns/rows in the matrix are smaller than indicated
     ! by dof_igetNDofGlobBlock, we have to update that information as it may
     ! stem from zero block rows/columns.
-    ! If it's larger, there's something wrong.
+    ! If it is larger, there is something wrong.
     
     nactcols = dof_igetNDofGlobBlock(rdiscrTrial)
     
@@ -2333,8 +2333,8 @@ contains
   end if
   
   if (rx%cdataType .ne. ry%cdataType) then
-    print *,'lsysbl_copyVector: Destination vector has different type &
-            &than source vector!'
+    print *,'lsysbl_copyVector: Destination vector has different type ' // &
+            'than source vector!'
     call sys_halt()
   end if
   
@@ -2362,7 +2362,7 @@ contains
     allocate(ry%RvectorBlock(ry%nblocks))
   end if
   
-  ! Copy the block structure. Don't destroy crucial data.
+  ! Copy the block structure. Do not destroy crucial data.
   do i=1,size(ry%RvectorBlock)
     h_Ddata = ry%RvectorBlock(i)%h_Ddata
     cdataType = ry%RvectorBlock(i)%cdataType
@@ -2874,7 +2874,7 @@ contains
   nblk = min(rx%nblocks,size(Cnorms))
   if (present(IposMax)) nblk = min(nblk,size(IposMax))
 
-  ! Loop over the subvectors. Don't calculate more subvectors as we 
+  ! Loop over the subvectors. Do not calculate more subvectors as we 
   ! are allowed to.
   do i=1,nblk
     ! Calculate the norm of that subvector.
@@ -3061,7 +3061,7 @@ contains
   ! OPTIONAL: Whether to share data.
   ! = FALSE: Create a new vector, copy all data.
   ! = TRUE: Create a vector that shares information with rvector.
-  !         If that's not possible, create a new vector. (Standard)
+  !         If that is not possible, create a new vector. (Standard)
   logical, optional :: bshare
 !</input>
 
@@ -3173,7 +3173,7 @@ contains
 !  REAL(SP), DIMENSION(:), POINTER :: p_Fdata
 !
 ! Here, we check the real size of the array on the heap, not
-! simply NEQ. Allows to enlarge a vector if there's enough space.
+! simply NEQ. Allows to enlarge a vector if there is enough space.
 !    SELECT CASE (rvector%cdataType)
 !    CASE (ST_DOUBLE)
 !      CALL storage_getbase_double (rvector%h_Ddata,p_Ddata)
@@ -3244,7 +3244,7 @@ contains
   !          what you are doing !!!
   ! 
   ! The routine enforces SIZE(Isize) subvectors in rvector and
-  ! sets the size of the i'thg subvector to Isize(i).
+  ! sets the size of the i-th subvector to Isize(i).
   !
   ! The only check in this routine is that rvector%NEQ is
   ! at least as large as SUM(Isize); otherwise an error
@@ -3252,7 +3252,7 @@ contains
 !</description>
   
 !<input>
-  ! An array with size definitions. Isize(j) specifies the length of the j'th
+  ! An array with size definitions. Isize(j) specifies the length of the j-th
   ! subvector.
   integer, dimension(:), intent(in) :: Isize
 !</input>
@@ -3402,7 +3402,7 @@ contains
   rmatrix%nblocksPerCol = ubound(rmatrix%RmatrixBlock,1)
   rmatrix%nblocksPerRow = ubound(rmatrix%RmatrixBlock,2)
   
-  ! Calculate the new NEQ and NCOLS. Go through all 'columns' and 'rows
+  ! Calculate the new NEQ and NCOLS. Go through all 'columns' and 'rows'
   ! of the block matrix and sum up their dimensions.
   NCOLS = 0
   do j = 1, rmatrix%nblocksPerRow
@@ -3483,7 +3483,7 @@ contains
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
   ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
-  ! Depending on their setting, it's possible to copy only the handles
+  ! Depending on their setting, it is possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
   !
@@ -3508,7 +3508,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -3543,7 +3543,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -3639,7 +3639,7 @@ contains
   ! Duplicating a vector does not necessarily mean that new memory is
   ! allocated and the vector entries are copied to that. The two flags
   ! cdupStructure and cdupContent decide on how to set up rdestVector.
-  ! Depending on their setting, it's possible to copy only then handles
+  ! Depending on their setting, it is possible to copy only then handles
   ! of such dynamic information, so that both vectors share the same
   ! information.
   !
@@ -3755,7 +3755,7 @@ contains
         allocate(ry%RvectorBlock(ry%nblocks))
       end if
       
-      ! Copy the block structure. Don't destroy crucial data.
+      ! Copy the block structure. Do not destroy crucial data.
       do i=1,size(ry%RvectorBlock)
         h_Ddata = ry%RvectorBlock(i)%h_Ddata
         cdataType = ry%RvectorBlock(i)%cdataType
@@ -3870,7 +3870,7 @@ contains
       ! depending on whether rx is the owner of the data or not.
       if (rx%bisCopy) then
         
-        ! rx shares it's data and thus ry will also.
+        ! rx shares it is data and thus ry will also.
         ry%h_Ddata = rx%h_Ddata
         ry%cdataType = rx%cdataType
         ry%bisCopy = .true.
@@ -3913,8 +3913,8 @@ contains
       
     case (LSYSSC_DUP_EMPTY)
     
-      ! Allocate new memory if ry is empty. Don't initialise.
-      ! If ry contains data, we don't have to do anything.
+      ! Allocate new memory if ry is empty. Do not initialise.
+      ! If ry contains data, we do not have to do anything.
       if (ry%h_Ddata .eq. ST_NOHANDLE) then
         call newMemory (rx,ry)
       end if
@@ -3992,7 +3992,7 @@ contains
   
 !<description>
   ! This routine sorts a block vector or unsorts it.
-  ! If bsort=TRUE, the vector is sorted, otherwise it's unsorted.
+  ! If bsort=TRUE, the vector is sorted, otherwise it is unsorted.
   !
   ! The sorting uses the associated permutation of every subvector,
   ! so before calling this routine, a permutation should be assigned
@@ -4413,7 +4413,7 @@ contains
     
     allocate(Isize(max(rvectorSrc%nblocks,1)))
 
-    ! Let's start. At first, create a new vector based on the old, which contains
+    ! Let us start. At first, create a new vector based on the old, which contains
     ! only those subvectors specified in ifirst..ilast.
     ncount = ilast-ifirst+1
     Isize(1:ncount) = rvectorSrc%RvectorBlock(ifirst:ilast)%NEQ
@@ -4518,7 +4518,7 @@ contains
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
   ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
-  ! Depending on their setting, it's possible to copy only the handles
+  ! Depending on their setting, it is possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
   !
@@ -4581,7 +4581,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -4616,7 +4616,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -5121,7 +5121,7 @@ contains
     elseif (present(NEQMAX)) then
 
       ! The available memory suffices for all componenets of the block vector.
-      ! Let's check if the user supplied a new upper limit which makes it
+      ! Let us check if the user supplied a new upper limit which makes it
       ! mandatory to "shrink" the allocated memory. Note that memory for at
       ! least NEQ=SUM(Isize) vector entries as allocated in any case.
       if (iisize > iNEQ) then
@@ -5488,7 +5488,7 @@ contains
             
             ! Give the vector the same sorting strategy as the matrix, so that
             ! the matrix and vector get compatible. Otherwise, things
-            ! like matrix vector multiplication won't work...
+            ! like matrix vector multiplication will not work...
             rx%RvectorBlock(i)%isortStrategy = &
                 rtemplateMat%RmatrixBlock(j,i)%isortStrategy
             rx%RvectorBlock(i)%h_IsortPermutation = &
@@ -5508,7 +5508,7 @@ contains
         end do
 
         if (j .gt. rtemplateMat%nblocksPerCol) then
-          ! Let's hope this situation (an empty equation) never occurs - 
+          ! Let us hope this situation (an empty equation) never occurs - 
           ! might produce some errors elsewhere :)
           rx%RvectorBlock(i)%NEQ = 0
           rx%RvectorBlock(i)%iidxFirstEntry = 0
@@ -5816,7 +5816,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -5851,7 +5851,7 @@ contains
   ! of rsourceMatrix.
   !
   ! One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -6771,7 +6771,7 @@ contains
     integer :: i,j
     
     ! Loop over all blocks in rmatrix and 'unshare' the data.
-    ! That's all.
+    ! That is all.
     do j=1,rmatrix%nblocksPerRow
       do i=1,rmatrix%nblocksPerCol
         call lsyssc_unshareMatrix (rmatrix%RmatrixBlock(i,j),bstructure,bdata)
@@ -6973,7 +6973,7 @@ contains
 !<input>
   ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
-  ! LSYSSC_SETM_UNDEFINED : Don't initialise the matrix,
+  ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix,
   ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero

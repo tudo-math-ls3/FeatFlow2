@@ -417,7 +417,7 @@ contains
 
   type(t_boundaryRegion) :: rboundaryRegion
 
-  ! Pointer to structure for saving discrete BC's:
+  ! Pointer to structure for saving discrete BC`s:
   type(t_discreteBC), pointer :: p_rdiscreteBC
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -447,11 +447,11 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_2D,rproblem%rcollection)
@@ -468,7 +468,7 @@ contains
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
           getBoundaryValues_2D,rproblem%rcollection)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rproblem%rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (p_rdiscretisation,1,&
           rboundaryRegion,rproblem%RlevelInfo(i)%rdiscreteBC,&
@@ -607,7 +607,7 @@ contains
       ! The vectors are assumed to know how they are resorted (the strategy
       ! is already attached to them). So call the resorting routines
       ! to resort them as necessary!
-      ! We use the first subvector of rtempBlock as temporary data; it's
+      ! We use the first subvector of rtempBlock as temporary data; it is
       ! large enough, as we only have one block.
       call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.true.)
       call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.true.)
@@ -691,7 +691,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release rproblem%RlevelInfo(i)%rmatrix!
     do i=ilvmin,ilvmax
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -722,7 +722,7 @@ contains
     
     ! Unsort the vectors again in case they were resorted before calling 
     ! the solver.
-    ! We use the first subvector of rtempBlock as temporary data; it's
+    ! We use the first subvector of rtempBlock as temporary data; it is
     ! large enough, as we only have one block.
     call lsysbl_sortVectorInSitu (p_rrhs,rtempBlock%RvectorBlock(1),.false.)
     call lsysbl_sortVectorInSitu (p_rvector,rtempBlock%RvectorBlock(1),.false.)
@@ -783,7 +783,7 @@ contains
     call lsyssc_getbase_double (p_rvector%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -972,11 +972,11 @@ contains
     
     integer :: i
     
-    ! Allocate the problem structure on the heap -- it's rather large...
+    ! Allocate the problem structure on the heap -- it is rather large...
     ! too large for the stack!
     allocate(p_rproblem)
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     ! We want to solve our Poisson problem on level...
 
     NLMIN = 1

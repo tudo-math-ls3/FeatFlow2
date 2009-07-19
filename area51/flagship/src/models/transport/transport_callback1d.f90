@@ -19,7 +19,7 @@
 !#     -> Calculates the transport coefficients for linear convection in 1D
 !#
 !# 4.) transp_calcMatrixPrimalBurgers1d
-!#     -> Calculates the transport coefficients for Burgers' equation in 1D
+!#     -> Calculates the transport coefficients for Burgers` equation in 1D
 !#
 !# 5.) transp_calcMatrixPrimalBuckLev1d
 !#     -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
@@ -196,7 +196,7 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for Burgers' equation in 1D.
+    ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 1D.
 !</description>
    
 !<input>

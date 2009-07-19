@@ -254,19 +254,19 @@
 !#
 !# 4.) lsyssc_auxcopy_da
 !#     -> Copies the data vector DA of a matrix to another without checks.
-!#        If the destination array does not exist, it's created.
+!#        If the destination array does not exist, it is created.
 !#
 !# 5.) lsyssc_auxcopy_Kcol
 !#     -> Copies the data vector Kcol of a matrix to another without checks
-!#        If the destination array does not exist, it's created.
+!#        If the destination array does not exist, it is created.
 !#
 !# 6.) lsyssc_auxcopy_Kld
 !#     -> Copies the data vector Kld of a matrix to another without checks
-!#        If the destination array does not exist, it's created.
+!#        If the destination array does not exist, it is created.
 !#
 !# 7.) lsyssc_auxcopy_Kdiagonal
 !#     -> Copies the data vector Kdiagonal of a matrix to another without checks
-!#        If the destination array does not exist, it's created.
+!#        If the destination array does not exist, it is created.
 !# </purpose>
 !##############################################################################
 
@@ -395,7 +395,7 @@ module linearsystemscalar
 
 !<constantblock description="Constants for duplicating a matrix">
   
-  ! Don't set up the content/structure of the destination matrix, ignore
+  ! Do not set up the content/structure of the destination matrix, ignore
   ! any previous structure/content
   integer, parameter, public :: LSYSSC_DUP_IGNORE = 0
   
@@ -438,7 +438,7 @@ module linearsystemscalar
   ! in the source matrix but no data is copied; the arrays are left uninitialised.
   integer, parameter, public :: LSYSSC_DUP_EMPTY = 7 
                                                
-  ! Copy the basic matrix information but don't copy handles.
+  ! Copy the basic matrix information but do not copy handles.
   ! Set all handles of dynamic information to ST_NOHANDLE, so the matrix
   ! 'looks like' the old but has no dynamic data associated.
   integer, parameter, public :: LSYSSC_DUP_TEMPLATE   = 8
@@ -447,7 +447,7 @@ module linearsystemscalar
 
 !<constantblock description="Constants for transposing a matrix">
   
-  ! Don't transpose the matrix, simply mark the matrix as transposed
+  ! Do not transpose the matrix, simply mark the matrix as transposed
   ! by changing the flag in imatrixSpec
   integer, parameter, public :: LSYSSC_TR_VIRTUAL    = 0
 
@@ -460,7 +460,7 @@ module linearsystemscalar
   ! Transpose the full matrix
   integer, parameter, public :: LSYSSC_TR_ALL       = 3
 
-  ! Don't transpose the matrix. Copy the matrix in memory and mark the 
+  ! Do not transpose the matrix. Copy the matrix in memory and mark the 
   ! matrix as transposed by changing the flag in imatrixSpec
   integer, parameter, public :: LSYSSC_TR_VIRTUALCOPY = 4
 
@@ -711,7 +711,7 @@ module linearsystemscalar
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTest => null()
 
     ! Flag: Trial and Test functions in all element distributions
-    ! are the same. If FALSE, there's at least one element distribution
+    ! are the same. If FALSE, there is at least one element distribution
     ! with different trial and test functions.
     logical :: bidenticalTrialAndTest = .true.
     
@@ -1388,7 +1388,7 @@ contains
   ! Checks whether a given matrix explicitly exists in memory as 1D array,
   ! which can be accessed via lsyssc_getbase_double. This is the usual case
   ! for most of the matrices (format-7, format-9,...) but might be different
-  ! for special-type matrices that do not exist in memory, i.e. where it's
+  ! for special-type matrices that do not exist in memory, i.e. where it is
   ! only known how to apply them to a vector.
 !</description>
 
@@ -1880,7 +1880,7 @@ contains
   ! structure rDiscretisation. 
   !
   ! Memory is allocated on the heap for rx accordint to the number of 
-  ! DOF's indicated by the spatial discretisation structures in 
+  ! DOF`s indicated by the spatial discretisation structures in 
   ! rdiscretisation.
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
@@ -1945,7 +1945,7 @@ contains
   ! structure rDiscretisation. 
   !
   ! Memory is allocated on the heap for rx accordint to the number of 
-  ! DOF's indicated by the spatial discretisation structures in 
+  ! DOF`s indicated by the spatial discretisation structures in 
   ! rdiscretisation.
   !
   ! Note, if the optional parameter NEQMAX is given, then memory is
@@ -2157,8 +2157,8 @@ contains
     
     ! Check, if vector has been initialized before.
     if (rvector%NEQ == 0 .or. rvector%h_Ddata == ST_NOHANDLE) then
-      print *, "lsyssc_resizeVectorDirect: A vector can only be resized &
-          & if it has been created correctly!"
+      print *, "lsyssc_resizeVectorDirect: A vector can only be resized " // &
+               "if it has been created correctly!"
       call sys_halt()
     end if
     
@@ -2202,7 +2202,7 @@ contains
     elseif (present(NEQMAX)) then
       
       ! The available memory suffices for the vector, i.e. isize <= NVAR*NEQ.
-      ! Let's check if the user supplied a new upper limit which makes it 
+      ! Let us check if the user supplied a new upper limit which makes it 
       ! mandatory to "shrink" the allocated memory. Note that memory for
       ! at least NEQ vector intries is allocated.
       if (isize > rvector%NVAR*iNEQ) then
@@ -2484,15 +2484,15 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if&
-          & this is forced explicitely!"
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if " // &
+               "this is forced explicitely!"
       call sys_halt()
     end if
 
     ! Check, if matrix has been initialized before.
     if (rmatrix%NEQ == 0 .or. rmatrix%NCOLS == 0 .or. rmatrix%NA == 0) then
-      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resized &
-          & if it has been created correctly!"
+      print *, "lsyssc_resizeMatrixDirect: A matrix can only be resized " // &
+               "if it has been created correctly!"
       call sys_halt()
     end if
 
@@ -2573,7 +2573,7 @@ contains
             
           elseif (present(NAMAX)) then
             
-            ! The available memory suffices for the matrix. Let's check if the user
+            ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory. Note that memory for at least NA matrix entries
             ! is allocated.
@@ -2648,7 +2648,7 @@ contains
             
             isizeNew = merge(iNCOLS+1,iNEQ+1,btransposed)
 
-            ! The available memory suffices for the matrix. Let's check if the user
+            ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory.
             if (isize > isizeNew) then
@@ -2682,7 +2682,7 @@ contains
             
           elseif (present(NAMAX)) then
             
-            ! The available memory suffices for the matrix. Let's check if the user
+            ! The available memory suffices for the matrix. Let us check if the user
             ! suplied a new upper limit which makes it mandatory to "shrink" the
             ! allocated memory.
             if (isize > iNA) then
@@ -2725,7 +2725,7 @@ contains
               
               isizeNew = merge(iNCOLS,iNEQ,btransposed)
 
-              ! The available memory suffices for the matrix. Let's check if the user
+              ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory.
               if (isize > isizeNew) then
@@ -2802,7 +2802,7 @@ contains
               
             elseif (present(NAMAX)) then
               
-              ! The available memory suffices for the matrix. Let's check if the user
+              ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
@@ -2842,7 +2842,7 @@ contains
               
             elseif (present(NAMAX)) then
               
-              ! The available memory suffices for the matrix. Let's check if the user
+              ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
@@ -2882,7 +2882,7 @@ contains
               
             elseif (present(NAMAX)) then
               
-              ! The available memory suffices for the matrix. Let's check if the user
+              ! The available memory suffices for the matrix. Let us check if the user
               ! suplied a new upper limit which makes it mandatory to "shrink" the
               ! allocated memory. Note that memory for at least NA matrix entries
               ! is allocated.
@@ -2993,8 +2993,8 @@ contains
     if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .or.&
          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) .and.&
          .not.bdoresize) then
-      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if&
-          & this is forced explicitely!"
+      print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if" // &
+               "this is forced explicitely!"
       call sys_halt()
     end if
 
@@ -3481,7 +3481,7 @@ contains
     ! Should we multiply by the matrix transpose?
     if(present(btranspose)) btrans = btranspose
     
-    ! If the scale factor is = 0 or cx = 0, we don't want to perform a MV
+    ! If the scale factor is = 0 or cx = 0, we do not want to perform a MV
     ! multiplication. We just need to take care of the cy then...
     if ((cx*rmatrix%dscaleFactor) .eq. 0.0_DP) then
       
@@ -3510,7 +3510,7 @@ contains
       call sys_halt()
     end if
     
-    ! Up to now, all matrix types use h_Da. So if that's not associated,
+    ! Up to now, all matrix types use h_Da. So if that is not associated,
     ! there is for sure an error!
     if (rmatrix%h_Da .eq. ST_NOHANDLE) then
       print *,'lsyssc_scalarMatVec: Matrix has no data!'
@@ -3861,7 +3861,7 @@ contains
           ! cy = 0. We have simply to make matrix*vector without adding ry.
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to ry.
-          ! Don't multiply with cy, this comes later.
+          ! Do not multiply with cy, this comes later.
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
@@ -3978,7 +3978,7 @@ contains
           ! cy = 0. We have simply to make matrix*vector without adding ry.
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to ry.
-          ! Don't multiply with cy, this comes later.
+          ! Do not multiply with cy, this comes later.
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
@@ -4121,7 +4121,7 @@ contains
           ! cy = 0. We have simply to make matrix*vector without adding ry.
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to ry.
-          ! Don't multiply with cy, this comes later.
+          ! Do not multiply with cy, this comes later.
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
@@ -4221,7 +4221,7 @@ contains
     integer :: irow
     integer :: ivar,NVAR
 
-      ! Get the matrix - it's an 1D array
+      ! Get the matrix - it is an 1D array
       call lsyssc_getbase_double (rmatrix,p_DA)
       
       ! Get NVAR - from the vector not from the matrix!
@@ -4407,7 +4407,7 @@ contains
   ! Duplicating a vector does not necessarily mean that new memory is
   ! allocated and the vector entries are copied to that. The two flags
   ! cdupStructure and cdupContent decide on how to set up ry.
-  ! Depending on their setting, it's possible to copy only the handle
+  ! Depending on their setting, it is possible to copy only the handle
   ! of such dynamic information, so that both vectors share the same
   ! information.
   !
@@ -4571,7 +4571,7 @@ contains
       ! Copy by ownership. This is either LSYSSC_COPY or LSYSSC_SHARE,
       ! depending on whether rx is the owner of the data or not.
       if (rx%bisCopy) then
-        ! rx shares it's data and thus ry will also.
+        ! rx shares it is data and thus ry will also.
         ry%h_Ddata = rx%h_Ddata
         ry%iidxFirstEntry = rx%iidxFirstEntry
         ry%bisCopy = .true.
@@ -4586,8 +4586,8 @@ contains
       
     case (LSYSSC_DUP_EMPTY)
     
-      ! Allocate new memory if ry is empty. Don't initialise.
-      ! If ry contains data, we don't have to do anything.
+      ! Allocate new memory if ry is empty. Do not initialise.
+      ! If ry contains data, we do not have to do anything.
       if (ry%h_Ddata .eq. ST_NOHANDLE) then
         call allocDestinationVector (rx,ry)
       end if
@@ -4675,7 +4675,7 @@ contains
   ! Duplicating a matrix does not necessarily mean that new memory is
   ! allocated and the matrix entries are copied to that. The two flags
   ! cdupStructure and cdupContent decide on how to set up rdestMatrix.
-  ! Depending on their setting, it's possible to copy only the handles
+  ! Depending on their setting, it is possible to copy only the handles
   ! of such dynamic information, so that both matrices share the same
   ! information.
   !
@@ -4697,7 +4697,7 @@ contains
   
   ! Duplication flag that decides on how to set up the structure
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the structure of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the structure of rdestMatrix. Any
   !   matrix structure is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix structure from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -4740,7 +4740,7 @@ contains
   
   ! Duplication flag that decides on how to set up the content
   ! of rdestMatrix. One of the LSYSSC_DUP_xxxx flags:
-  ! LSYSSC_DUP_IGNORE     : Don't set up the content of rdestMatrix. Any
+  ! LSYSSC_DUP_IGNORE     : Do not set up the content of rdestMatrix. Any
   !   matrix content is ignored and therefore preserved.
   ! LSYSSC_DUP_REMOVE     : Removes any existing matrix content from 
   !   rdestMatrix if there is any. Releases memory if necessary.
@@ -4822,11 +4822,11 @@ contains
       call copyStructure(rsourceMatrix, rdestMatrix, .false.)  
       
     case (LSYSSC_DUP_COPYOVERWRITE)
-      ! Copy the structure of rsourceMatrix to rdestMatrix, don't respect ownership
+      ! Copy the structure of rsourceMatrix to rdestMatrix, do not respect ownership
       call copyStructure(rsourceMatrix, rdestMatrix, .true.)  
       
     case (LSYSSC_DUP_ASIS)
-      ! What's with the source matrix. Does the structure belong to it?
+      ! What is with the source matrix. Does the structure belong to it?
       if (iand(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
         ! Copy the structure
         call copyStructure(rsourceMatrix, rdestMatrix, .false.)
@@ -4903,7 +4903,7 @@ contains
       call copyContent(rsourceMatrix, rdestMatrix, .false.)  
       
     case (LSYSSC_DUP_COPYOVERWRITE)
-      ! Copy the structure of rsourceMatrix to rdestMatrix, don't respect ownership
+      ! Copy the structure of rsourceMatrix to rdestMatrix, do not respect ownership
       call copyContent(rsourceMatrix, rdestMatrix, .true.)  
       
     case (LSYSSC_DUP_TEMPLATE)
@@ -4914,7 +4914,7 @@ contains
       call copyStaticContent(rsourceMatrix,rdestMatrix)
 
     case (LSYSSC_DUP_ASIS)
-      ! What's with the source matrix. Does the structure belong to it?
+      ! What is with the source matrix. Does the structure belong to it?
       if (iand(rsourceMatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .ne. 0) then
         ! Copy the structure
         call copyContent(rsourceMatrix, rdestMatrix, .false.)
@@ -5314,7 +5314,7 @@ contains
       else
         
         ! Ok, rdestMatrix owns its own matrix structure or does not have any.
-        ! Check the structure if it's large enough so we can overwrite
+        ! Check the structure if it is large enough so we can overwrite
         ! it. If the size of the arrays is not equal to those
         ! in the source matrix, release the structure and allocate a new one.
         
@@ -5538,7 +5538,7 @@ contains
       else
         
         ! Ok, rdestMatrix owns some matrix content.
-        ! Check the structure if it's large enough so we can overwrite
+        ! Check the structure if it is large enough so we can overwrite
         ! it. If the size of the arrays is not equal to those
         ! in the source matrix, release the content and allocate a new one.
         
@@ -5645,7 +5645,7 @@ contains
   end if
   
   ! Clean up the data structure.
-  ! Don't release the vector data if the handle belongs to another
+  ! Do not release the vector data if the handle belongs to another
   ! vector!
   if ((.not. rvector%bisCopy) .and. (rvector%h_Ddata .ne. ST_NOHANDLE)) then
     call storage_free(rvector%h_Ddata)
@@ -5731,7 +5731,7 @@ contains
   ! Release the matrix content.
   call lsyssc_releaseMatrixContent(rmatrix)
   
-  ! Release the structure if it doesn't belong to another vector
+  ! Release the structure if it does not belong to another vector
   if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. 0) then
     ! Release matrix structure
     select case (rmatrix%cmatrixFormat)
@@ -6041,7 +6041,7 @@ contains
         call storage_copy(rmatrix%h_Kld,ihandle)
         rmatrix%h_Kld = ihandle
 
-        ! Kdiagonal is thrown away later, we don't need to copy it.
+        ! Kdiagonal is thrown away later, we do not need to copy it.
         
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
         
@@ -6062,8 +6062,8 @@ contains
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
-      ! Check that the matrix can be converted. There's a format error
-      ! if there's no diagonal element.
+      ! Check that the matrix can be converted. There is a format error
+      ! if there is no diagonal element.
       do i=1,rmatrix%NEQ
         if (p_Kcol(p_Kdiagonal(i)) .ne. i) then
           print *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
@@ -6151,7 +6151,7 @@ contains
 
         ! Reallocate the entries-array to have only the diagonal entries.
         ! In case we are not the owner, we have allocated new memory and thus
-        ! don't need to resize it again.
+        ! do not need to resize it again.
         if (bentryOwner) then
           call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
@@ -6285,7 +6285,7 @@ contains
 
         ! Reallocate the entries-array to have only the diagonal entries.
         ! In case we are not the owner, we have allocated new memory and thus
-        ! don't need to resize it again.
+        ! do not need to resize it again.
         if (bentryOwner) then
           call storage_realloc ('lsyssc_convertMatrix', rmatrix%NEQ, &
                                 rmatrix%h_Da, ST_NEWBLOCK_NOINIT, bentries)
@@ -6347,7 +6347,7 @@ contains
       call storage_getbase_int (h_Kdiagonal,p_Kdiagonal)
     
       ! Transfer the entries -- rowwise.
-      ! If we don't have to transfer the entries, simply set up the structure.
+      ! If we do not have to transfer the entries, simply set up the structure.
       if (bentries) then
 
         ! Allocate memory for the entries
@@ -6398,7 +6398,7 @@ contains
         end do
         p_Kld(nrows+1) = NA+1
 
-        ! Don't touch the content. The result is left in an undefined state!
+        ! Do not touch the content. The result is left in an undefined state!
         
       end if
             
@@ -6431,7 +6431,7 @@ contains
         call storage_copy (rmatrix%h_Kld,ihandle)
         rmatrix%h_Kld = ihandle
         
-        ! Kdiagonal is thrown away later, we don't need to copy it.
+        ! Kdiagonal is thrown away later, we do not need to copy it.
         
         rmatrix%imatrixSpec = iand(rmatrix%imatrixSpec,not(LSYSSC_MSPEC_STRUCTUREISCOPY))
         
@@ -6452,8 +6452,8 @@ contains
       call lsyssc_getbase_Kld (rmatrix,p_Kld)
       call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
 
-      ! Check that the matrix can be converted. There's a format error
-      ! if there's no diagonal element.
+      ! Check that the matrix can be converted. There is a format error
+      ! if there is no diagonal element.
       do i=1,rmatrix%NEQ
         if (p_Kcol(p_Kdiagonal(i)) .ne. i) then
           print *,'lsyssc_convertMatrix: incompatible Format-9 matrix!'
@@ -6988,7 +6988,7 @@ contains
       call sys_halt()
     end if
 
-    ! If both are unsorted or both sorted in the same way, there's nothing to do.
+    ! If both are unsorted or both sorted in the same way, there is nothing to do.
     if ((rvectorSrc%isortStrategy .eq. rvectorDst%isortStrategy) .or. &
         ((rvectorSrc%isortStrategy .lt. 0) .and. (rvectorDst%isortStrategy .lt. 0))) &
       return
@@ -7050,7 +7050,7 @@ contains
     end if
 
 
-    ! If both are unsorted or both sorted in the same way, there's nothing to do.
+    ! If both are unsorted or both sorted in the same way, there is nothing to do.
     if ((rmatrixSrc%isortStrategy .eq. rvectorDst%isortStrategy) .or. &
         ((rmatrixSrc%isortStrategy .lt. 0) .and. (rvectorDst%isortStrategy .lt. 0))) &
       return
@@ -7096,7 +7096,7 @@ contains
 !<input>
   ! Identifier for the sorting strategy to apply to the vector.
   ! This is usually one of the SSTRAT_xxxx constants from the module
-  ! 'sortstrategy', although it's actually used here as follows:
+  ! 'sortstrategy', although it is actually used here as follows:
   ! <=0: Calculate the unsorted vector
   !  >0: Resort the vector according to a permutation;
   !      this is either the permutation specified in the vector
@@ -7302,7 +7302,7 @@ contains
   type(t_vectorScalar), pointer :: p_rtemp
   type(t_vectorScalar), target :: rtempLocal
   
-  ! Cancel if there's nothing to do.
+  ! Cancel if there is nothing to do.
   if (rvector%isortStrategy .eq. 0) return
   if ((.not. bsort) .and. (rvector%isortStrategy .le. 0)) return
   if (bsort .and. (rvector%isortStrategy .gt. 0)) return
@@ -7322,7 +7322,7 @@ contains
     call lsyssc_sortVectorInSitu (rvector,p_rtemp,-abs(rvector%isortStrategy))
   end if
   
-  ! Remove the temp vector if it's ours.
+  ! Remove the temp vector if it is ours.
   if (.not. present(rtemp)) then
     call lsyssc_releaseVector (rtempLocal)
   end if
@@ -7366,7 +7366,7 @@ contains
 
   ! OPTIONAL: Identifier for the sorting strategy to apply to the matrix.
   ! This is usually one of the SSTRAT_xxxx constants from the module
-  ! 'sortstrategy', although it's actually used here as follows:
+  ! 'sortstrategy', although it is actually used here as follows:
   ! <=0: Calculate the unsorted matrix
   !  >0: Resort the vector according to a permutation;
   !      this is either the permutation specified in the vector
@@ -7459,34 +7459,34 @@ contains
         (rmatrix%h_IsortPermutation .ne. ST_NOHANDLE) .and. &
         (rmatrix%isortStrategy .gt. 0)) then
 
-      ! That's a little bit tricky now if structure and/or content of rmatrix
+      ! That is a little bit tricky now if structure and/or content of rmatrix
       ! is shared with another matrix!
-      ! If that's the case, we make a copy of our matrix and work with that.
+      ! If that is the case, we make a copy of our matrix and work with that.
       if (.not. bsortEntries) then
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
           ! The user wants to sort the structure, but the structure belongs to 
-          ! another matrix! Sorting would destroy that matrix, so we don't allow
-          ! that. Therefore, there's nothing to do here.
+          ! another matrix! Sorting would destroy that matrix, so we do not allow
+          ! that. Therefore, there is nothing to do here.
           return
         end if
       else
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) then
           ! Structure and content belongs to another matrix! Sorting would 
-          ! destroy that matrix, so we don't allow that. Therefore, there'
-          ! s nothing to do here.
+          ! destroy that matrix, so we do not allow that. Therefore, there is
+          ! nothing to do here.
           return
         end if
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY) .eq. &
             LSYSSC_MSPEC_CONTENTISCOPY) then
           ! The user wants to sort structure and content, but the content belongs to 
-          ! another matrix! Sorting would destroy that matrix, so we don't allow
+          ! another matrix! Sorting would destroy that matrix, so we do not allow
           ! that. Therefore, we only sort the structure.
           bsortEntriesTmp = .false.  
         end if
         if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. &
             LSYSSC_MSPEC_STRUCTUREISCOPY) then
           ! The user wants to sort structure and content, but the structure belongs to 
-          ! another matrix! Sorting would destroy that matrix, so we don't allow
+          ! another matrix! Sorting would destroy that matrix, so we do not allow
           ! that. This situation is a little but tricky, as we want to sort
           ! the entries without sorting the structure AND we must sort back
           ! at first. We have no chance, we allocate another matrix as a copy
@@ -7518,7 +7518,7 @@ contains
     ! Now sort the vector according to h_Iperm
     call storage_getbase_int(h_Iperm,p_Iperm)
 
-    ! This time, we don't exchange the roles of the permutation and
+    ! This time, we do not exchange the roles of the permutation and
     ! its inverse :-)
     call do_matsort (p_rmatrix,p_Iperm(1:NEQ),p_Iperm(NEQ+1:NEQ*2),bsortEntries)
 
@@ -7577,7 +7577,7 @@ contains
         if (.not. bsortEntries) then
         
           ! Sort only the structure of the matrix, keep the entries
-          ! unchanged. Don't do anything if the structure does not belong
+          ! unchanged. Do not do anything if the structure does not belong
           ! to the matrix!
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .eq. 0) then
           
@@ -7603,7 +7603,7 @@ contains
         
         else
         
-          ! Don't do anything if structure & entries don't belong to our matrix.
+          ! Do not do anything if structure & entries do not belong to our matrix.
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) &
             return
         
@@ -7707,7 +7707,7 @@ contains
         
         else
         
-          ! Don't do anything if structure & entries don't belong to our matrix.
+          ! Do not do anything if structure & entries do not belong to our matrix.
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_ISCOPY) .eq. LSYSSC_MSPEC_ISCOPY) &
             return
         
@@ -8564,7 +8564,7 @@ contains
 !<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine 
-    ! doesn't handle the entries.
+    ! does not handle the entries.
     !
     ! Storage technique 7 version. 
 !</description>
@@ -9439,7 +9439,7 @@ contains
 !<description>
     ! Resorts the structure of the given matrix, corresponding to Itr1/Itr2.
     ! Only the structure of a given matrix is resorted, the routine 
-    ! doesn't handle the entries.
+    ! does not handle the entries.
     !
     ! Storage technique 9 version. 
 !</description>
@@ -9847,7 +9847,7 @@ contains
   real(DP) :: dmyscale
   real(SP) :: fmyscale
 
-  ! Let's hope, the matrix and the vectors are compatible.
+  ! Let us hope, the matrix and the vectors are compatible.
   ! As we multiply with D^{-1}, this forces the matrix to be quadratic 
   ! and both vectors to be of the same length!
   call lsyssc_isVectorCompatible (rvectorSrc,rvectorDst)
@@ -9880,7 +9880,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -9892,7 +9892,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -9915,7 +9915,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -9927,7 +9927,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -9968,7 +9968,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
 !%OMP parallel do&
@@ -9995,15 +9995,15 @@ contains
 !%OMP end parallel do
 
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
-              &matrix format!'
+          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
+                   'matrix format!'
           call sys_halt()
         end select
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
 !%OMP parallel do&
@@ -10030,8 +10030,8 @@ contains
 !%OMP end parallel do
 
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
-              &matrix format!'
+          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
+                   'matrix format!'
           call sys_halt()
         end select
         
@@ -10049,7 +10049,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
 !%OMP parallel do&
@@ -10076,15 +10076,15 @@ contains
 !%OMP end parallel do
         
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
-              &matrix format!'
+          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
+                   'matrix format!'
           call sys_halt()
         end select
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
         select case(rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIX1)
 !%OMP parallel do&
@@ -10111,8 +10111,8 @@ contains
 !%OMP end parallel do
         
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave &
-              &matrix format!'
+          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
+                   'matrix format!'
           call sys_halt()
         end select
 
@@ -10139,7 +10139,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -10151,7 +10151,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -10174,7 +10174,7 @@ contains
       case (ST_DOUBLE)
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -10186,7 +10186,7 @@ contains
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
-        ! Let's go...
+        ! Let us go...
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
@@ -10484,7 +10484,7 @@ contains
 !    CALL sys_halt()
 !  END IF
 !  
-!  ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
+!  ! NEQ/NCOLS is irrelevant. It is only important that we have enough memory
 !  ! and the same structure!
 !  
 !  IF (rsourceMatrix%cdataType .NE. rdestMatrix%cdataType) THEN
@@ -10816,7 +10816,7 @@ contains
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
     end do
     
-    ! That's it for IrowDest. 
+    ! That is it for IrowDest. 
     ! Now, the matrix must be copied to DaDest in transposed form.
     ! This requires another loop trough the matrix structure. 
     ! Itmp receives the index of how many entries have been written 
@@ -10961,7 +10961,7 @@ contains
       IrowDest(i) = IrowDest(i)+IrowDest(i-1)
     end do
     
-    ! That's it for IrowDest. 
+    ! That is it for IrowDest. 
     ! Now IcolDest must be created. This requires another loop trough
     ! the matrix structure. Itmp receives the index of how many entries
     ! have been written to each row.
@@ -11137,12 +11137,12 @@ contains
   ! =LSYSSC_TR_STRUCTURE           : Transpose only the matrix structure; 
   !     the content of the transposed matrix is invalid afterwards,
   !     but is not released/destroyed.
-  ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
+  ! =LSYSSC_TR_VIRTUAL             : Actually do not touch the matrix 
   !     structure, but invert the 'transposed' flag in imatrixSpec. 
   !     rmatrix is marked as transposed without modifying the structures, 
   !     and all matrix-vector operations will be performed with the transposed 
   !     matrix. 
-  !     But caution: there may be some algorithms that don't work with such 
+  !     But caution: there may be some algorithms that do not work with such 
   !       'virtually' transposed matrices!
   ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
   !     creates a duplicate of the source matrix in memory, thus resulting
@@ -11162,7 +11162,7 @@ contains
     ! Transpose the matrix to a temporary copy.    
     call lsyssc_transposeMatrix (rmatrix,rmatrix2,itransFlag)
 
-    ! Next thing is to release the old matrix; but that's not as easy
+    ! Next thing is to release the old matrix; but that is not as easy
     ! as calling lsyssc_releaseMatrix! The point is that the source
     ! matrix may or may not share its structure/content with another
     ! one -- and the new matrix may do this as well!
@@ -11194,16 +11194,16 @@ contains
       call lsyssc_releaseMatrix(rmatrix)
       
     case (LSYSSC_TR_STRUCTURE)
-      ! Ok, this case is a bit strange, somehow, and I'm not sure if it
+      ! Ok, this case is a bit strange, somehow, and I am not sure if it
       ! really works this way, but it should :-)
       !
       ! The above lsyssc_transposeMatrix transposed the structure,
-      ! so the new matrix has a complete new structure -- we don't
+      ! so the new matrix has a complete new structure -- we do not
       ! have to take care about.
       !
       ! The content of rmatrix may belong to rmatrix or not.
       ! The rule is that lsyssc_transposeMatrixInSitu must keeps the
-      ! content -- it gets invalid, but it's not destroyed. So we
+      ! content -- it gets invalid, but it is not destroyed. So we
       ! must make sure that releasing rmatrix must not destroy
       ! the content. On the other hand, rmatrix2 must get the
       ! copy state of the content from rmatrix.
@@ -11216,14 +11216,14 @@ contains
                                  iand(rmatrix%imatrixSpec,&
                                       LSYSSC_MSPEC_CONTENTISCOPY))
     
-      ! Prevent lsyssc_releaseMatrix from releasing the content if it's still there
+      ! Prevent lsyssc_releaseMatrix from releasing the content if it is still there
       rmatrix%imatrixSpec = ior(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)
       
       ! Now we can release the old matrix.
       call lsyssc_releaseMatrix(rmatrix)
 
     case (LSYSSC_TR_CONTENT)
-      ! Sorry, that's not possible. The transpose routine needs the structure of
+      ! Sorry, that is not possible. The transpose routine needs the structure of
       ! the original matrix, otherwise it cannot compute how to transpose
       ! the entries!
       call output_line('TRansposing matrix entries without structure is not possible!',&
@@ -11340,17 +11340,17 @@ contains
 !<input>
   ! OPTIONAL: transposed-flag; one of the LSYSSC_TR_xxxx constants:
   ! =LSYSSC_TR_ALL or not specified: transpose the matrix completely.
-  !     If there is a matrix in rtransposedMatrix, it's overwritten 
+  !     If there is a matrix in rtransposedMatrix, it is overwritten 
   !       or an error is thrown, depending on whether the
   !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
-  !     If there's no matrix in rtransposedMatrix, a new matrix is
+  !     If there is no matrix in rtransposedMatrix, a new matrix is
   !       created.
   ! =LSYSSC_TR_STRUCTURE           : Transpose only the matrix structure; 
   !     the content of the transposed matrix is invalid afterwards.
   !     If there is a matrix in rtransposedMatrix, the structure is 
   !       overwritten or an error is thrown, depending on whether the
   !       structural data (NA,...) of rtransposedMatrix matches rmatrix.
-  !     If there's no matrix in rtransposedMatrix, a new matrix structure
+  !     If there is no matrix in rtransposedMatrix, a new matrix structure
   !       without entries is created.
   ! =LSYSSC_TR_CONTENT             : Transpose only the matrix content/entries; 
   !     the structure of the transposed matrix is invalid afterwards.
@@ -11361,9 +11361,9 @@ contains
   !       of the transposed matrix. In this case, rtransposedMatrix will
   !       receive the transposed matrix entries, thus resulting in
   !       a proper transposed matrix.
-  !     If there's no matrix in rtransposedMatrix, a new matrix content
+  !     If there is no matrix in rtransposedMatrix, a new matrix content
   !       without structure is created.
-  ! =LSYSSC_TR_VIRTUAL             : Actually don't touch the matrix 
+  ! =LSYSSC_TR_VIRTUAL             : Actually do not touch the matrix 
   !     structure, but invert the 'transposed' flag in imatrixSpec. 
   !
   !     rtransposedMatrix is created by copying the data handles from
@@ -11371,7 +11371,7 @@ contains
   !     Afterwards, rtransposedMatrix is marked as transposed 
   !     without modifying the structures, and all matrix-vector operations
   !     will be performed with the transposed matrix. 
-  !     But caution: there may be some algorithms that don't work with such 
+  !     But caution: there may be some algorithms that do not work with such 
   !       'virtually' transposed matrices!
   ! =LSYSSC_TR_VIRTUALCOPY         : The same as LSYSSC_TR_VIRTUAL, but
   !     creates a duplicate of the source matrix in memory, thus resulting
@@ -11386,7 +11386,7 @@ contains
   ! The transposed matrix. 
   ! If the structure is empty, a new matrix is created.
   ! If the structure exists and structural data matches rmatrix, 
-  !   it's overwritten.
+  !   it is overwritten.
   ! If the structure exists and structural data does not match rmatrix, 
   !   an error is thrown.
   type(t_matrixScalar),intent(inout) :: rtransposedMatrix
@@ -11416,7 +11416,7 @@ contains
     if (itrans .eq. LSYSSC_TR_VIRTUAL) then
     
       ! Duplicate the matrix structure, copy all handles.
-      ! Don't allocate any memory.
+      ! Do not allocate any memory.
       call lsyssc_duplicateMatrix (rmatrix,rtransposedMatrix,&
                                     LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
     
@@ -11433,7 +11433,7 @@ contains
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
    
-      ! That's it.
+      ! That is it.
       return
     end if
 
@@ -11455,7 +11455,7 @@ contains
       rtransposedMatrix%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTest
       rtransposedMatrix%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTrial
    
-      ! That's it.
+      ! That is it.
       return
     end if
 
@@ -11476,7 +11476,7 @@ contains
         call sys_halt()
       end if
 
-      ! NEQ/NCOLS is irrelevant. It's only important that we have enough memory
+      ! NEQ/NCOLS is irrelevant. It is only important that we have enough memory
       ! and the same structure!
 
       if (itrans .eq. LSYSSC_TR_ALL) then
@@ -11546,7 +11546,7 @@ contains
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           end if
           
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11608,7 +11608,7 @@ contains
                 ST_INT, rtransposedMatrix%h_Kld,ST_NEWBLOCK_NOINIT)
           end if
 
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11688,7 +11688,7 @@ contains
                 ST_NEWBLOCK_NOINIT)
           end if
 
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11756,7 +11756,7 @@ contains
                 ST_NEWBLOCK_NOINIT)
           end if
 
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11841,7 +11841,7 @@ contains
                 ST_NEWBLOCK_NOINIT)
           end if
 
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11916,7 +11916,7 @@ contains
                 ST_NEWBLOCK_NOINIT)
           end if
 
-          ! Get Kcol/Kld. Don't use the lsyssc_getbase routines as we just created
+          ! Get Kcol/Kld. Do not use the lsyssc_getbase routines as we just created
           ! the arrays for a matrix which is not yet valid!
           call storage_getbase_int(rmatrix%h_Kcol,p_KcolSource)
           call storage_getbase_int(rmatrix%h_Kld,p_KldSource)
@@ -11969,7 +11969,7 @@ contains
     
     end select
   
-    ! That's it.
+    ! That is it.
   
   end subroutine
 
@@ -11983,7 +11983,7 @@ contains
   ! Auxiliary routine: 
   ! Copies the content of rsourceMatrix%DA to rdestMatrix%DA
   ! without additional checks.
-  ! If the destination array does not exist, it's created.
+  ! If the destination array does not exist, it is created.
 !</description>
 
 !<input>
@@ -12046,7 +12046,7 @@ contains
   ! Auxiliary routine: 
   ! Copies the content of rsourceMatrix%Kcol to rdestMatrix%Kcol
   ! without additional checks.
-  ! If the destination array does not exist, it's created.
+  ! If the destination array does not exist, it is created.
 !</description>
   
 !<input>
@@ -12090,7 +12090,7 @@ contains
   ! Auxiliary routine: 
   ! Copies the content of rsourceMatrix%Kld to rdestMatrix%Kld
   ! without additional checks.
-  ! If the destination array does not exist, it's created.
+  ! If the destination array does not exist, it is created.
 !</description>
   
 !<input>
@@ -12144,7 +12144,7 @@ contains
   ! Auxiliary routine: 
   ! Copies the content of rsourceMatrix%Kdiagonal to rdestMatrix%Kdiagonal
   ! without additional checks.
-  ! If the destination array does not exist, it's created.
+  ! If the destination array does not exist, it is created.
 !</description>
   
 !<input>
@@ -12207,7 +12207,7 @@ contains
 !<input>
   ! Whether and how to fill the matrix with initial values.
   ! One of the LSYSSC_SETM_xxxx constants:
-  ! LSYSSC_SETM_UNDEFINED : Don't initialise the matrix,
+  ! LSYSSC_SETM_UNDEFINED : Do not initialise the matrix,
   ! LSYSSC_SETM_ZERO      : Clear the matrix / fill it with 0.0,
   ! LSYSSC_SETM_ONE       : Fill the matrix with 1.0. (Used e.g.
   !                         for UMFPACK who needs a non-zero
@@ -12307,8 +12307,8 @@ contains
           call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_ZERO)
         case DEFAULT
-          print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
-              &eave matrix format'
+          print *, 'lsyssc_allocEmptyMatrix: Unsupported interl' // &
+                   'eave matrix format'
           call sys_halt()
         end select
 
@@ -12321,8 +12321,8 @@ contains
           call storage_new ('lsyssc_allocEmptyMatrix', 'DA', &
               NA*NVAR, cdType, rmatrixScalar%h_DA, ST_NEWBLOCK_NOINIT)
         case DEFAULT
-          print *, 'lsyssc_allocEmptyMatrix: Unsupported interl&
-              &eave matrix format'
+          print *, 'lsyssc_allocEmptyMatrix: Unsupported interl' // &
+                   'eave matrix format'
           call sys_halt()
         end select
           
@@ -12536,7 +12536,7 @@ contains
     ! Diagonal lumping. We have to add all off-diagonal entries to the main
     ! diagonal.
     !
-    ! What's the matrix format?
+    ! What is the matrix format?
     select case (rmatrixScalar%cmatrixFormat)
     
     case (LSYSSC_MATRIX7)
@@ -12974,8 +12974,8 @@ contains
 
     ! Check if both matrices are compatible
     if (rmatrixA%NCOLS /= rmatrixB%NEQ) then
-      print *, 'lsyssc_multMatMat: number of columns of matrix A is not&
-          & compatible with number of rows of matrix B'
+      print *, 'lsyssc_multMatMat: number of columns of matrix A is not ' // &
+               'compatible with number of rows of matrix B'
       call sys_halt()
     end if
 
@@ -13019,8 +13019,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13103,8 +13103,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13198,8 +13198,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13278,8 +13278,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13362,8 +13362,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13498,8 +13498,8 @@ contains
         
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13648,8 +13648,8 @@ contains
         ! Check if matrix is given in the correct format
         if (rmatrixC%cmatrixFormat /= max(rmatrixA%cmatrixFormat,&
             &rmatrixB%cmatrixFormat)) then
-          print *, 'lsyssc_multMatMat: destination matrix has incompati&
-              &ble format'
+          print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
+                   'ble format'
           call sys_halt()
         end if
 
@@ -13798,7 +13798,7 @@ contains
       
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'
+      !         Hence, compute C = A*B = (B'*A')'          (cpp fix: .')
       
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in)    :: Da1
@@ -13822,7 +13822,7 @@ contains
       
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'
+      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
       
       integer, intent(in) :: n,m,k
       real(DP), dimension(m,n), intent(in)    :: Da1
@@ -13843,7 +13843,7 @@ contains
       
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'
+      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
       
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in)    :: Fa1
@@ -13864,7 +13864,7 @@ contains
       
       ! Remark: MATRIX1 is stored row-wise. The intrinsic function
       !         MATMUL requires the matrix to be stored columnwise
-      !         Hence, compute C = A*B = (B'*A')'
+      !         Hence, compute C = A*B = (B'*A')'        (cpp fix: .')
       
       integer, intent(in) :: n,m,k
       real(SP), dimension(m,n), intent(in)    :: Fa1
@@ -14434,7 +14434,7 @@ contains
     ! Format 7/9-7/9 multiplication
     ! Compute the number of nonzero matrix entries of C:=A * B
     ! 
-    ! Method: A' * A = sum [over i=1, nrow] a(i)^T a(i)
+    ! Method: A' * A = sum [over i=1, nrow] a(i)^T a(i)         (cpp fix: .')
     !         where a(i) = i-th row of A. We must be careful not
     !         to add the elements already accounted for.
     !
@@ -14919,8 +14919,8 @@ contains
     ! Check if both matrices are compatible
     if (rmatrixA%NEQ /= rmatrixB%NEQ .or. &
         & rmatrixA%NCOLS /= rmatrixB%NCOLS) then
-      print *, 'lsyssc_matrixLinearComb: number of rows/columns of matrix A &
-          &is not compatible with number of rows/columns of matrix B'
+      print *, 'lsyssc_matrixLinearComb: number of rows/columns of ' // &
+               'matrix A is not compatible with number of rows/columns of matrix B'
       call sys_halt()
     end if
 
@@ -16021,7 +16021,7 @@ contains
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
                 ! directly call a BLAS routine to do the matrix combination.
-                ! That's MUCH faster!
+                ! That is MUCH faster!
                 ! Note that matrix B might coincide with matrix C, so we
                 ! first check this to prevent unnecessary copy operations!
 
@@ -16100,7 +16100,7 @@ contains
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
                 ! directly call a BLAS routine to do the matrix combination.
-                ! That's MUCH faster!
+                ! That is MUCH faster!
                 ! Note that matrix B might coincide with matrix C, so we
                 ! first check this to prevent unnecessary copy operations!
                 
@@ -16428,7 +16428,7 @@ contains
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
                 ! directly call a BLAS routine to do the matrix combination.
-                ! That's MUCH faster!
+                ! That is MUCH faster!
                 ! Note that matrix B might coincide with matrix C, so we
                 ! first check this to prevent unnecessary copy operations!
                 
@@ -16507,7 +16507,7 @@ contains
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
                 ! directly call a BLAS routine to do the matrix combination.
-                ! That's MUCH faster!
+                ! That is MUCH faster!
                 ! Note that matrix B might coincide with matrix C, so we
                 ! first check this to prevent unnecessary copy operations!
                 
@@ -18464,11 +18464,11 @@ contains
       rmatrix2) result (bresult)
   
 !<description>
-  ! Checks whether the structure of rmatrix belongs to that matrix or if it's
+  ! Checks whether the structure of rmatrix belongs to that matrix or if it is
   ! shared among rmatrix and another matrix.
   !
   ! Note: If both matrices rmatrix and rmatrix2 are specified and both matrices
-  !   don't contain structure data, the return value is of course FALSE.
+  !   do not contain structure data, the return value is of course FALSE.
 !</description>
 
 !<input>
@@ -18530,7 +18530,7 @@ contains
       rmatrix2) result (bresult)
   
 !<description>
-  ! Checks whether the content of rmatrix belongs to that matrix or if it's
+  ! Checks whether the content of rmatrix belongs to that matrix or if it is
   ! shared among rmatrix and another matrix.
   !
   ! Note: If both matrices rmatrix and rmatrix2 are specified and both matrices
@@ -18679,7 +18679,7 @@ contains
   ! Returns whether a matrix has a structure or not.
   !
   ! Note that some matrix types (e.g. matrix-type 1 = full matrix)
-  ! don't have a structure at all, so the routine always returns
+  ! do not have a structure at all, so the routine always returns
   ! FALSE in such a case.
 !</description>
   
@@ -19971,7 +19971,7 @@ contains
     ! Duplicate the matrix to eventually allocate memory
     call lsyssc_duplicateMatrix (rmatrix,rmatrix2,idup1,idup2)
     
-    ! Next thing is to release the old matrix; but that's not as easy
+    ! Next thing is to release the old matrix; but that is not as easy
     ! as calling lsyssc_releaseMatrix! The point is that the source
     ! matrix may or may not share its structure/content with another
     ! one -- and the new matrix may do this as well!

@@ -94,7 +94,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -152,7 +152,7 @@ contains
     ! Some temporary variables
     integer :: i
 
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
     NLMIN = 1
@@ -308,7 +308,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -401,7 +401,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release Rlevels(i)%rmatrix!
     do i=NLMIN,NLMAX
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -423,7 +423,7 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
-    ! That's it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     !
     ! Get the path for writing postprocessing files from the environment variable
@@ -437,7 +437,7 @@ contains
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -486,7 +486,7 @@ contains
     
     deallocate(Rlevels)
     
-    ! Finally release the domain, that's it.
+    ! Finally release the domain, that is it.
     call boundary_release (rboundary)
 
   end subroutine

@@ -493,13 +493,13 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
   integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
@@ -909,7 +909,7 @@ contains
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
         rdiscreteBC,rproblem%rcollection,.true.)
                             
-    ! Connect the vector to the BC's
+    ! Connect the vector to the BC`s
     rprjVector%p_rdiscreteBC => rdiscreteBC
     
     ! The same way, discretise boundary conditions of fictitious boundary components.
@@ -918,10 +918,10 @@ contains
         rdiscreteFBC,rproblem%rcollection)
     rprjVector%p_rdiscreteBCfict => rdiscreteFBC
     
-    ! Filter the solution vector to implement discrete BC's.
+    ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
 
-    ! Filter the solution vector to implement discrete BC's for fictitious 
+    ! Filter the solution vector to implement discrete BC`s for fictitious 
     ! boundary components.
     call vecfil_discreteFBCsol (rprjVector)
     
@@ -1044,7 +1044,7 @@ contains
       
     end if
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -1054,11 +1054,11 @@ contains
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
-    ! Throw away the discrete BC's - not used anymore.
+    ! Throw away the discrete BC`s - not used anymore.
     call bcasm_releaseDiscreteBC (rdiscreteBC)
     call bcasm_releaseDiscreteFBC (rdiscreteFBC)
     
-    ! Clean up the collection (as we are done with the assembly, that's it.
+    ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
     if (present(dtime)) then
@@ -1156,8 +1156,8 @@ contains
     ilevelFilm = min(rproblem%NLMAX,max(rproblem%NLMIN,ilevelFilm))
     
     if (ilevelFilm .lt. rproblem%NLMIN) then
-      call output_line ('Warning: Level for solution vector is < NLMIN! &
-          &Writing out at level NLMIN!', &
+      call output_line ('Warning: Level for solution vector is < NLMIN! ' // &
+          'Writing out at level NLMIN!', &
           OU_CLASS_WARNING,OU_MODE_STD,'cc_releasePreconditioner')
       call sys_halt()
       ilevelFilm = rproblem%NLMIN
@@ -1178,7 +1178,7 @@ contains
       call mlprj_initProjectionVec (rprojection,rvector2)
       
       ! Interpolate to the next higher level.
-      ! (Don't 'restrict'! Restriction would be for the dual space = RHS vectors!)
+      ! (Do not 'restrict'! Restriction would be for the dual space = RHS vectors!)
 
       NEQ = mlprj_getTempMemoryVec (rprojection,rvector2,rvector1)
       if (NEQ .ne. 0) call lsyssc_createVector (rvectorTemp,NEQ,.false.)

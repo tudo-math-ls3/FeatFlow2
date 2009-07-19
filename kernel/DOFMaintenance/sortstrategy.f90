@@ -9,7 +9,7 @@
 !# A sorting strategy is simply a permutation of the numbers 1..NEQ
 !# how to permute a scalar vector and its inverse permutation. 
 !# Both permutations are usually assigned as one large array
-!# to a (scalar) vector to indicate how it's resorted.
+!# to a (scalar) vector to indicate how it is resorted.
 !#
 !# Which information are necessary for the calculation of a permutation
 !# is completely algorithm dependent. Therefore, this module has full
@@ -104,7 +104,7 @@ module sortstrategy
   ! Row-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
   ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
-  ! the DOF's can be identified with X/Y/Z coordinates.
+  ! the DOF`s can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
   ! like the unit square.
   integer, parameter, public :: SSTRAT_XYZCOORD     = 3
@@ -112,11 +112,11 @@ module sortstrategy
   ! Column-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
   ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
-  ! the DOF's can be identified with X/Y/Z coordinates.
+  ! the DOF`s can be identified with X/Y/Z coordinates.
   integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
   
   ! General FEAST renumbering.
-  ! The DOF's are numbered rowwise, independent of the geometrical
+  ! The DOF`s are numbered rowwise, independent of the geometrical
   ! structure of the domain.
   ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
   integer, parameter, public :: SSTRAT_FEAST        = 5
@@ -226,7 +226,7 @@ contains
       Ipermutation(k) = j
     end do
 
-    ! Calculate the inverse permutation, that's it.
+    ! Calculate the inverse permutation, that is it.
     call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
 
   end subroutine
@@ -510,9 +510,9 @@ contains
       ! For this purpose the node with the smallest degree is searched and
       ! deleted from Ideg, then the node with the 2nd smallest degree
       ! and so on.
-      ! We don't have many nodes, so we use a simple O(n^2) algorithm here
+      ! We do not have many nodes, so we use a simple O(n^2) algorithm here
       ! which simply loops over all nodes.
-      ! It's only necessary to search in the non-diagonal entries,
+      ! It is only necessary to search in the non-diagonal entries,
       ! because we want to sort the adjacent nodes of the current one
       ! for increasing degree.
       do idegIdx1=1, Ild(ieq+1)-Ild(ieq)-1
@@ -689,11 +689,11 @@ contains
       ! For this purpose the node with the smallest degree is searched and
       ! deleted from Ideg, then the node with the 2nd smallest degree
       ! and so on.
-      ! We don't have many nodes, so we use a simple O(n^2) algorithm here
+      ! We do not have many nodes, so we use a simple O(n^2) algorithm here
       ! which simply loops over all nodes.
       do idegIdx1=1, Ild(ieq+1)-Ild(ieq)
       
-        ! It's only necessary to search in the non-diagonal entries,
+        ! It is only necessary to search in the non-diagonal entries,
         ! because we want to sort the adjacent nodes of the current one
         ! for increasing degree.
         if (Icol(Ild(ieq)+idegIdx1-1) .ne. ieq) then
@@ -723,7 +723,7 @@ contains
           ! minimum degree:
           do idegIdx2=1, Ild(ieq+1)-Ild(ieq)
 
-            ! If Ideg(idegIdx2)=0, idegIdx2 has already been processed (or it's
+            ! If Ideg(idegIdx2)=0, idegIdx2 has already been processed (or it is
             ! the diagonal element which does not have to be processed). Set
             ! idegIdx=neq ; here a lower bound to prevent the current node
             ! iidxMin from being replaced by idegIdx2.
@@ -896,7 +896,7 @@ contains
         ! loop implies:
         !    Itr1(icount) = icount = ineqIdx + 1   !!!
         ! because: If we processed icount-1 elements and start a new block,
-        ! the nodes contained in the previous blocks don't contain neighbours
+        ! the nodes contained in the previous blocks do not contain neighbours
         ! in the current block or in later blocks. Therefore all indices
         ! are <= icount-1, and at the same time ineqIdx=icount-1 holds
         ! (is not set but implicitly the case).
@@ -952,17 +952,17 @@ contains
   
   !<description>
     ! Computes a column renumbering strategy based on the coordinates of
-    ! DOF's. The routine supports 2D and 3D triangulations; in a 2D
+    ! DOF`s. The routine supports 2D and 3D triangulations; in a 2D
     ! triangulation, the Z-coordinate is ignored.
     !
     ! idirection specifies the sorting direction.
     ! The standard sorting direction is idirection=0. In this case, 
-    ! the DOF's are sorted rowwise, i.e. first for the X-coordinate,
+    ! the DOF`s are sorted rowwise, i.e. first for the X-coordinate,
     ! then for the Y-coordinate. This sorting strategy coincides with the 
     ! FEAST sorting strategy in simple situations like a unit square.
     !
     ! This sorting strategy can only applied for special type discretisations
-    ! where the DOF's of the finite elements coincides with some sort of
+    ! where the DOF`s of the finite elements coincides with some sort of
     ! point coordinates in the domain (like $Q_1$, edge midpoint based
     ! $\tilde Q_1$). If this is not the case, the routine will stop the 
     ! program.
@@ -973,7 +973,7 @@ contains
   !</description>
     
   !<input>
-    ! Spatial discretisation structure that specifies the DOF's and the
+    ! Spatial discretisation structure that specifies the DOF`s and the
     ! triangulation
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
@@ -1026,7 +1026,7 @@ contains
                        rdiscretisation%RelementDistr(1)%celement))
       case (EL_Q1,EL_P1)
       
-        ! $Q_1$-element. Take the vertex coordinates as DOF's and sort for that.
+        ! $Q_1$-element. Take the vertex coordinates as DOF`s and sort for that.
         call storage_getbase_double2d (&
             rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords)
             
@@ -1088,7 +1088,7 @@ contains
 
       case (EL_Q1T)
       
-        ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF's
+        ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF`s
         ! and sort for that. We have to calculate the midpoints for that...
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = rdiscretisation%p_rtriangulation%NMT
@@ -1119,7 +1119,7 @@ contains
       call sys_halt()
     end select
   
-    ! Calculate the inverse permutation, that's it.
+    ! Calculate the inverse permutation, that is it.
     call sstrat_calcInversePermutation (&
         Ipermutation(1:size(Ipermutation)/2), Ipermutation(size(Ipermutation)/2+1:) )
     
@@ -1187,7 +1187,7 @@ contains
         Ipermutation(i) = p_Dsort(1,i)
       end do
       
-      ! Release the temp array, that's it.
+      ! Release the temp array, that is it.
       call storage_free (h_Dsort)
       
     end subroutine
@@ -1201,10 +1201,10 @@ contains
   
   !<description>
     ! Computes a column renumbering strategy based on the tensor product
-    ! structure of the domain. The DOF's are numbered rowwise.
+    ! structure of the domain. The DOF`s are numbered rowwise.
     ! ifirstVertex must specify the first vertex (in the lower left corner)
     ! of the domain. From here, a geometrical search is started to find
-    ! all DOF's.
+    ! all DOF`s.
     !
     ! The renumbering strategy is only applicable to special-type 
     ! discretisations (like $Q_1$) and tensor product meshes (FEAST macros).
@@ -1216,7 +1216,7 @@ contains
   !</description>
     
   !<input>
-    ! Spatial discretisation structure that specifies the DOF's and the
+    ! Spatial discretisation structure that specifies the DOF`s and the
     ! triangulation
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
@@ -1295,7 +1295,7 @@ contains
       call sys_halt()
     end select
   
-    ! Calculate the inverse permutation, that's it.
+    ! Calculate the inverse permutation, that is it.
     call sstrat_calcInversePermutation (Ipermutation(1:rdiscretisation%p_rtriangulation%NVT), &
                                         Ipermutation(rdiscretisation%p_rtriangulation%NVT+1:) )
     
@@ -1479,7 +1479,7 @@ contains
       !   |   |   |   |   |           
       !   +---+---+---+---+
       !
-      ! What's still missing is the final edge-row on top! This is another loop.
+      ! What is still missing is the final edge-row on top! This is another loop.
       ! Switch the element number back to the last remembered one, then we have: 
       !
       !  IVT--+---+---+---+
@@ -1570,7 +1570,7 @@ contains
   ! This subroutine calculates a hierarchical renumbering strategy.
   ! Based on a set of discretisation structures defining different levels
   ! of a level hierarchy coming from a refinement process, the permutation
-  ! calculated by this routine tries to group DOF's by element macros.
+  ! calculated by this routine tries to group DOF`s by element macros.
 !</description>
     
 !<input>
@@ -1596,7 +1596,7 @@ contains
   
     integer :: N
     
-    ! Length of the permutation. Must correspond to the #DOF's
+    ! Length of the permutation. Must correspond to the #DOF`s
     ! on the finest level.
     N = size(Ipermutation)/2
     
@@ -1617,7 +1617,7 @@ contains
       call sys_halt()
     end select
 
-    ! Calculate the inverse permutation, that's it.
+    ! Calculate the inverse permutation, that is it.
     call sstrat_calcInversePermutation (Ipermutation(1:N), Ipermutation(N+1:) )
 
   contains
@@ -1656,7 +1656,7 @@ contains
       logical :: bisUniform
       
       ! Save pointers to the element patch arrays for all levels.
-      ! We'll frequently need them.
+      ! We will frequently need them.
       do ilev=1,size(Rhierarchy)
         ! Refinement information
         if (ilev .gt. 1) then
@@ -1687,12 +1687,12 @@ contains
 
       p_rtriaCoarse => Rdiscretisation(1)%p_rtriangulation
 
-      ! Get the number of DOF's on the finest level. This is the
+      ! Get the number of DOF`s on the finest level. This is the
       ! size of the permutation.          
       NEQ = dof_igetNDofGlob(Rdiscretisation(size(Rdiscretisation)))
 
       ! Set up a marker array where we remember whether we processed
-      ! a DOF or not. Initialise with zero; all DOF's we already
+      ! a DOF or not. Initialise with zero; all DOF`s we already
       ! processed are marked here with a 1.
       call storage_new ('calcHierarch2Level2D', &
           'mark', NEQ, ST_INT, hmarker, ST_NEWBLOCK_ZERO)
@@ -1716,9 +1716,9 @@ contains
       
         patchcycle: do
       
-          ! From this element, figure out the DOF's of all subelements.
+          ! From this element, figure out the DOF`s of all subelements.
           ! This has to be done patchwise on the finest level.
-          ! Thus, as long as we aren't on the fines level, we have to
+          ! Thus, as long as we are not on the fines level, we have to
           ! increase the current one.
           do while (ilev .lt. size(Rdiscretisation))
           
@@ -1727,7 +1727,7 @@ contains
             
             ! Ielement(ilev-1) is not the patch number for level ilev.
             ! Set the start index to the first element in that patch
-            ! of the finer mesh. Remember the maximum index 'where the patch ends).
+            ! of the finer mesh. Remember the maximum index 'where the patch ends').
             IpatchIndex(ilev) = &
               Rhierarchy(ilev)%p_IrefinementPatchIdx(Ielement(ilev-1))
             ImaxIndex(ilev) = &
@@ -1740,7 +1740,7 @@ contains
           end do
           
           ! We are now on the maximum level on element Ielement(max).
-          ! Get the DOF's of that element.
+          ! Get the DOF`s of that element.
           ! For that purpose, we need the element type.
           if (Rhierarchy(ilev)%bisUniform) then
             celement = Rhierarchy(ilev)%celement
@@ -1753,7 +1753,7 @@ contains
           ndof = elem_igetNDofLoc(celement)
           call dof_locGlobMapping(Rdiscretisation(ilev), Ielement(ilev),  Idofs)
           
-          ! Check the DOF's. All DOF's we don't have yet, we collect into the
+          ! Check the DOF`s. All DOF`s we do not have yet, we collect into the
           ! permutation.
           do idof = 1,ndof
             if (p_Imarker(Idofs(idof)) .eq. 0) then
@@ -1783,7 +1783,7 @@ contains
             end do
           end if
           
-          ! As long as we don't reach level 1, there are elements left
+          ! As long as we do not reach level 1, there are elements left
           ! in the patch to proceed. So cycle the patchloop
           ! to proceed to the next element.
           if (ilev .eq. 1) then
@@ -1801,7 +1801,7 @@ contains
       ! Release temp memory.
       call storage_free (hmarker)
 
-      ! Calculate the inverse permutation, that's it.
+      ! Calculate the inverse permutation, that is it.
       call sstrat_calcInversePermutation (Ipermutation(1:NEQ), Ipermutation(NEQ+1:) )
 
     end subroutine

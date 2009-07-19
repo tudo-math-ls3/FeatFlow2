@@ -573,8 +573,8 @@ contains
     ! Cubature formula weights. The cotent is actually not used here.
     real(DP), dimension(CUB_MAXCUBP) :: Domega
     
-    ! Number of 'cubature points'. As we acutally don't do cubature
-    ! here, this coincides with the number of DOF's on each element
+    ! Number of 'cubature points'. As we acutally do not do cubature
+    ! here, this coincides with the number of DOF`s on each element
     ! in the destination space.
     integer :: nlocalDOFsDest
     
@@ -613,7 +613,7 @@ contains
     ! for the evaluation on the cells.
     type(t_evalElementSet) :: revalElementSet
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable :: IdofsTrial
     integer, dimension(:,:), allocatable :: IdofsDest
     
@@ -624,8 +624,8 @@ contains
     integer :: NEL
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
-    ! Ok, there's the same information in the triangulation, but that's not
-    ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
+    ! Ok, there is the same information in the triangulation, but that is not
+    ! based on DOF`s! Actually, we will calculate how often we touch each DOF 
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
     integer, dimension(:), pointer :: p_IcontributionsAtDOF
@@ -649,8 +649,8 @@ contains
               EL_P2_1D, EL_P2_2D, EL_P2_3D)
           
         case DEFAULT
-          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as&
-              & discretisation for the destination vector!',&
+          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
+              ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradInterpP12Q12cnf')
           call sys_halt()
         end select
@@ -668,12 +668,12 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPGRD_NELEMSIM,p_rtriangulation%NEL)
     
     ! Array that allows the calculation about the number of elements
-    ! meeting in a vertex, based onm DOF's.
+    ! meeting in a vertex, based onm DOF`s.
     call storage_new ('ppgrd_calcGradInterpP1Q1cnf','DOFContrAtVertex',&
                       dof_igetNDofGlob(p_rdiscrDest),&
                       ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
@@ -726,7 +726,7 @@ contains
       ! If the element distribution is empty, skip it
       if (p_relementDistribution%NEL .eq. 0) cycle
     
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       ! in the source and destination vector.
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
@@ -735,7 +735,7 @@ contains
       NVE = elem_igetNVE(p_relementDistribution%celement)
       
       ! Initialise the cubature formula,
-      ! That's a special trick here! The FE space of the destination vector
+      ! That is a special trick here! The FE space of the destination vector
       ! is either P1 or Q1. We create the gradients in the corners of these points
       ! by taking the mean of the gradients of the source vector!
       !
@@ -745,7 +745,7 @@ contains
       ! coordinates of the corners on the reference element automatically --
       ! which coincide with the points where we want to create the gradients!
       !
-      ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
+      ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
       ! on each element indofDest!
       select case (elem_getPrimaryElement(p_relementDistrDest%celement))
       case (EL_P0_1D)
@@ -998,7 +998,7 @@ contains
         end do
       end do
       
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsDest(indofDest,nelementsPerBlock))
 
@@ -1031,14 +1031,14 @@ contains
         
         IELmax = min(NEL,IELset-1+PPGRD_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
-        ! Also calculate the global DOF's in our destination vector(s)
+        ! Also calculate the global DOF`s in our destination vector(s)
         call dof_locGlobMapping_mult(p_rdiscrDest, p_IelementList(IELset:IELmax), &
                                      IdofsDest)
 
@@ -1049,7 +1049,7 @@ contains
             cevaluationTag, p_rtriangulation, p_IelementList(IELset:IELmax), &
             ctrafoType, p_DcubPtsRef(:,1:nlocalDOFsDest))
             
-        ! In the next loop, we don't have to evaluate the coordinates
+        ! In the next loop, we do not have to evaluate the coordinates
         ! on the reference elements anymore.
         cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
@@ -1066,7 +1066,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
@@ -1093,7 +1093,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
@@ -1126,7 +1126,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
@@ -1161,14 +1161,14 @@ contains
     case (NDIM1D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is 
-        ! crap as there's a point not connected to any element!
+        ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
       end do
       
     case (NDIM2D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is
-        ! crap as there's a point not connected to any element!
+        ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
       end do
@@ -1176,7 +1176,7 @@ contains
     case (NDIM3D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is
-        ! crap as there's a point not connected to any element!
+        ! crap as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
         p_DzDeriv(i) = p_DzDeriv(i) / p_IcontributionsAtDOF(i)
@@ -1263,13 +1263,13 @@ contains
     ! Maximum number of local degrees of freedom for destination space
     integer :: indofDestMax
 
-    ! Number of 'cubature points'. As we acutally don't do cubature
-    ! here, this coincides with the number of DOF's on each element
+    ! Number of 'cubature points'. As we acutally do not do cubature
+    ! here, this coincides with the number of DOF`s on each element
     ! in the destination space.
     integer :: nlocalDOFsDest
 
-    ! Maximum number of 'cubature points'. As we acutally don't do 
-    ! cubature here, this coincides with the number of DOF's on each 
+    ! Maximum number of 'cubature points'. As we acutally do not do 
+    ! cubature here, this coincides with the number of DOF`s on each 
     ! element in the destination space.
     integer :: nlocalDOFsDestMax
 
@@ -1309,7 +1309,7 @@ contains
     ! An allocatable array accepting the number of sampling points per patch
     integer, dimension(:), allocatable :: Inpoints
     
-    ! An allocatable array accepting the DOF's of a set of elements.
+    ! An allocatable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable :: IdofsTrial
     integer, dimension(:,:), allocatable :: IdofsDest
 
@@ -1379,8 +1379,8 @@ contains
     integer :: nelementsPerBlock
 
     ! Pointer to an array that counts the number of elements adjacent to a vertex.
-    ! Ok, there's the same information in the triangulation, but that's not
-    ! based on DOF's! Actually, we'll calculate how often we touch each DOF 
+    ! Ok, there is the same information in the triangulation, but that is not
+    ! based on DOF`s! Actually, we will calculate how often we touch each DOF 
     ! in the destination space.
     integer :: h_IcontributionsAtDOF
     integer, dimension(:), pointer :: p_IcontributionsAtDOF
@@ -1407,8 +1407,8 @@ contains
               EL_P2_1D, EL_P2_2D, EL_P2_3D)
           
         case DEFAULT
-          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as&
-              & discretisation for the destination vector!',&
+          call output_line ('Only Q0, Q1, Q2, P0, P1, and P2 supported as' // &
+              ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradSuperPatchRecov')
           call sys_halt()
         end select
@@ -1483,7 +1483,7 @@ contains
     end select
       
     ! Array that allows the calculation about the number of elements
-    ! meeting in a vertex, based onm DOF's.
+    ! meeting in a vertex, based onm DOF`s.
     call storage_new ('ppgrd_calcGradSuperPatchRecov','DOFContrAtVertex',&
         dof_igetNDofGlob(p_rdiscrDest), ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
     call storage_getbase_int(h_IcontributionsAtDOF, p_IcontributionsAtDOF)
@@ -1500,7 +1500,7 @@ contains
     if (.not. bisUniform) then
       ! Things are more complicated if one of the discretisations is not uniform.
       ! In this case, we always have to consider the maximum number of quadrature
-      ! points, the largest number of local DOF's, etc. 
+      ! points, the largest number of local DOF`s, etc. 
 
       indofTrialMax     = 0
       indofDestMax      = 0
@@ -1520,7 +1520,7 @@ contains
         ! Cancel if this element distribution is empty.
         if (p_relementDistribution%NEL .eq. 0) cycle
         
-        ! Get the number of local DOF's for trial functions
+        ! Get the number of local DOF`s for trial functions
         indofTrial    = elem_igetNDofLoc(p_relementDistribution%celement)
         indofTrialMax = max(indofTrialMax,indofTrial)
         
@@ -1542,7 +1542,7 @@ contains
         ! Cancel if this element distribution is empty.
         if (p_relementDistribution%NEL .eq. 0) cycle
 
-        ! Get the number of local DOF's for trial functions
+        ! Get the number of local DOF`s for trial functions
         indofDest    = elem_igetNDofLoc(p_relementDistribution%celement)
         indofDestMax = max(indofDestMax,indofDest)
 
@@ -1703,7 +1703,7 @@ contains
           ! Initialise number of elements in block
           nelementsPerBlock = 0
           
-          ! Ok, let's do a dummy loop to determine the number of elements in the block
+          ! Ok, let us do a dummy loop to determine the number of elements in the block
           do IPATCH = 1, npatchesInCurrentBlock
             
             ! Get the global element number from the list of elements in distribution
@@ -1727,7 +1727,7 @@ contains
             nelementsPerBlock = nelementsPerBlock - count(p_IneighboursAtElement(1:NVE,IEL) > 0)
           end do
           
-          ! That's it, we can allocate memory for elements numbers
+          ! That is it, we can allocate memory for elements numbers
           allocate(IelementsInPatch(nelementsPerBlock))
           
           ! Now, we have to fill it with the element numbers
@@ -1838,7 +1838,7 @@ contains
           p_relementDistribution => p_rdiscrSource%RelementDistr(icurrentElementDistr)
           p_relementDistrDest    => p_rdiscrDest%RelementDistr(icurrentElementDistr)
           
-          ! Get the number of local DOF's for trial functions
+          ! Get the number of local DOF`s for trial functions
           indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
           indofDest  = elem_igetNDofLoc(p_relementDistrDest%celement)
           
@@ -1850,10 +1850,10 @@ contains
           ! Step 1:  Prepare the source FE space
           !---------------------------------------------------------------------
           
-          ! Allocate memory for the DOF's of all the elements
+          ! Allocate memory for the DOF`s of all the elements
           allocate(IdofsTrial(indofTrial,nelementsPerBlock))
           
-          ! Calculate the global DOF's into IdofsTrial.
+          ! Calculate the global DOF`s into IdofsTrial.
           call dof_locGlobMapping_mult(p_rdiscrSource, &
               IelementsInPatch(1:nelementsPerBlock), IdofsTrial)
           
@@ -1882,7 +1882,7 @@ contains
           do j=1,size(p_DcubPtsRef,3)
             do i=1,ncubp
               do k=1,size(p_DcubPtsRef,1)
-                ! Could be solved using the TRANSPOSE operator - but often is's 
+                ! Could be solved using the TRANSPOSE operator - but often it is
                 ! faster this way...
                 p_DcubPtsRef(k,i,j) = Dxi(i,k)
               end do
@@ -2021,14 +2021,14 @@ contains
           ! Step 5: Prepare the destination FE space
           !-----------------------------------------------------------------------
           
-          ! Allocate memory for the DOF's of all the elements
+          ! Allocate memory for the DOF`s of all the elements
           allocate(IdofsDest(indofDest,nelementsPerBlock))
           
-          ! Also calculate the global DOF's in our destination vector(s)
+          ! Also calculate the global DOF`s in our destination vector(s)
           call dof_locGlobMapping_mult(p_rdiscrDest, &
               IelementsInPatch(1:nelementsPerBlock), IdofsDest)
           
-          ! Initialise the cubature formula. That's a special trick here!
+          ! Initialise the cubature formula. That is a special trick here!
           ! In particular, we only need the physical coordinates of the
           ! nodal evaluation points in the source vectors.
           ! For this purpose, we initialise the 'trapezoidal rule' as cubature
@@ -2037,7 +2037,7 @@ contains
           ! coordinates of the corners on the reference element automatically --
           ! which coincide with the points where we want to create the gradients!
           !
-          ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
+          ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
           ! on each element indofDest!
           call calc_cubatureDest(&
               elem_getPrimaryElement(p_relementDistrDest%celement), &
@@ -2064,7 +2064,7 @@ contains
           do j=1,size(p_DcubPtsRef,3)
             do i=1,nlocalDOFsDest
               do k=1,size(p_DcubPtsRef,1)
-                ! Could be solved using the TRANSPOSE operator - but often is's 
+                ! Could be solved using the TRANSPOSE operator - but often it is
                 ! faster this way...
                 p_DcubPtsRef(k,i,j) = Dxi(i,k)
               end do
@@ -2258,7 +2258,7 @@ contains
               ! Get number of local element distribution
               ilocalElementDistr = p_IelementDistr(IEL)
               
-              ! If it's different to the current element distribution,
+              ! If it is different to the current element distribution,
               ! try to find another element in the patch which has that
               ! distruibution and can be shifted to the front.
               if (ilocalElementDistr .ne. ilastElementDistr) then
@@ -2304,21 +2304,21 @@ contains
           ! Allocate memory for number of cubature points per element
           allocate(IelementNcubpInPatch(nelementsPerBlock))
           
-          ! Allocate memory for the DOF's of all the elements
+          ! Allocate memory for the DOF`s of all the elements
           allocate(IdofsTrial(indofTrialMax,nelementsPerBlock))
 
-          ! Allocate memory for the DOF's of all the elements
+          ! Allocate memory for the DOF`s of all the elements
           allocate(IdofsDest(indofDestMax,nelementsPerBlock))
 
           ! Allocate memory for coefficient values; for mixed triangulations
           ! $ncubpMax$ is an upper bound for the number of cubature points.
           allocate(Dcoefficients(ncubpMax,nelementsPerBlock,p_rtriangulation%ndim))
 
-          ! Calculate the global DOF's into IdofsTrial.
+          ! Calculate the global DOF`s into IdofsTrial.
           call dof_locGlobMapping_mult(p_rdiscrSource, &
               IelementsInPatch(1:nelementsPerBlock), IdofsTrial)
           
-          ! Also calculate the global DOF's in our destination vector(s)
+          ! Also calculate the global DOF`s in our destination vector(s)
           call dof_locGlobMapping_mult(p_rdiscrDest, &
               IelementsInPatch(1:nelementsPerBlock), IdofsDest)
 
@@ -2376,7 +2376,7 @@ contains
               ! - if no element is found; then (by Fortrag standard) idx2 points
               !   also to the first element of the patch -- our 'reference' element
               !   of the subgroup.
-              ! It's better to do the loop 'from end to the beginning' instead of
+              ! It is better to do the loop 'from end to the beginning' instead of
               ! 'from start to the end' as there may be many patches containing only
               ! elements of the same kind; in that case, the loop is immediately left
               ! as the last element has the same kind as the first one.
@@ -2396,7 +2396,7 @@ contains
                 ! Active the local element distribution of that group.
                 p_relementDistribution => p_rdiscrSource%RelementDistr(ilocalElementDistr)
 
-                ! Get the number of local DOF's for trial functions
+                ! Get the number of local DOF`s for trial functions
                 indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
                 ! Get the number of corner vertices of the element
@@ -2441,7 +2441,7 @@ contains
                 ! the local element type. The remaining entries are left equal to zero.
                 do i=1, ncubp
                   do k=1,size(p_DcubPtsRef,1)
-                    ! Could be solved using the TRANSPOSE operator - but often is's 
+                    ! Could be solved using the TRANSPOSE operator - but often it is
                     ! faster this way...
                     p_DcubPtsRef(k,i,idx) = Dxi(i,k)
                   end do
@@ -2565,7 +2565,7 @@ contains
           ! Get cubature weights and point coordinates on the reference element
           call cub_getCubPoints(p_relementDistribution%ccubTypeEval, ncubp, Dxi, Domega)
           
-          ! Get the number of local DOF's for trial functions
+          ! Get the number of local DOF`s for trial functions
           indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
 
           ! Get the number of corner vertices of the element
@@ -2724,14 +2724,14 @@ contains
                 ! Active local element distribution
                 p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
 
-                ! Get the number of local DOF's for trial functions
+                ! Get the number of local DOF`s for trial functions
                 indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                 ! Initialise arrays with zeros
                 Dxi    = 0
                 Domega = 0
 
-                ! Initialise the cubature formula. That's a special trick here!
+                ! Initialise the cubature formula. That is a special trick here!
                 ! In particular, we only need the physical coordinates of the
                 ! nodal evaluation points in the source vectors.
                 ! For this purpose, we initialise the 'trapezoidal rule' as cubature
@@ -2740,7 +2740,7 @@ contains
                 ! coordinates of the corners on the reference element automatically --
                 ! which coincide with the points where we want to create the gradients!
                 !
-                ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF's
+                ! Note: The returned nlocalDOFsDest will coincide with the number of local DOF`s
                 ! on each element indofDest!
                 call calc_cubatureDest(&
                     elem_getPrimaryElement(p_relementDistrDest%celement), &
@@ -2768,7 +2768,7 @@ contains
               do idx = idxsubgroup,idx2
                 do i=1,nlocalDOFsDest
                   do k=1,size(p_DcubPtsRef,1)
-                    ! Could be solved using the TRANSPOSE operator - but often is's 
+                    ! Could be solved using the TRANSPOSE operator - but often it is 
                     ! faster this way...
                     p_DcubPtsRef(k,i,idx) = Dxi(i,k)
                   end do
@@ -2858,7 +2858,7 @@ contains
                 ! Active local element distribution
                 p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                 
-                ! Get the number of local DOF's for trial functions which coincides with
+                ! Get the number of local DOF`s for trial functions which coincides with
                 nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                 ! Check if one of the trial/test elements is nonparametric
@@ -2919,13 +2919,13 @@ contains
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
                 ! Check if local element distribution corresponds to the last element 
-                ! distribution. Then we don't have to initialise everything again.
+                ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
                   ! Active local element distribution
                   p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
-                  ! Get the number of local DOF's for trial functions which coincides with
+                  ! Get the number of local DOF`s for trial functions which coincides with
                   nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
 
                   ! Check if one of the trial/test elements is nonparametric
@@ -2977,13 +2977,13 @@ contains
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
                 ! Check if local element distribution corresponds to the last element 
-                ! distribution. Then we don't have to initialise everything again.
+                ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
                   ! Active local element distribution
                   p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
-                  ! Get the number of local DOF's for trial functions which coincides with
+                  ! Get the number of local DOF`s for trial functions which coincides with
                   nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
                   
                   ! Save number of last element distribution
@@ -3025,13 +3025,13 @@ contains
                 ilocalElementDistr = p_IelementDistr(IEL)
                 
                 ! Check if local element distribution corresponds to the last element 
-                ! distribution. Then we don't have to initialise everything again.
+                ! distribution. Then we do not have to initialise everything again.
                 if (ilocalElementDistr .ne. ilastElementDistr) then
                   
                   ! Active local element distribution
                   p_relementDistrDest => p_rdiscrDest%RelementDistr(ilocalElementDistr)
                   
-                  ! Get the number of local DOF's for trial functions which coincides with
+                  ! Get the number of local DOF`s for trial functions which coincides with
                   nlocalDOFsDest = elem_igetNDofLoc(p_relementDistrDest%celement)
                   
                   ! Save number of last element distribution
@@ -3097,14 +3097,14 @@ contains
     case (NDIM1D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is crap
-        ! as there's a point not connected to any element!
+        ! as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
       end do
 
     case (NDIM2D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is crap
-        ! as there's a point not connected to any element!
+        ! as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
       end do
@@ -3112,7 +3112,7 @@ contains
     case (NDIM3D)
       do i=1,size(p_DxDeriv)
         ! Div/0 should not occur, otherwise the triangulation is crap
-        ! as there's a point not connected to any element!
+        ! as there is a point not connected to any element!
         p_DxDeriv(i) = p_DxDeriv(i) / p_IcontributionsAtDOF(i)
         p_DyDeriv(i) = p_DyDeriv(i) / p_IcontributionsAtDOF(i)
         p_DzDeriv(i) = p_DzDeriv(i) / p_IcontributionsAtDOF(i)
@@ -3842,7 +3842,7 @@ contains
     !
     ! Akin suggests to perform a singular value decomposition (SVD)
     ! of the matrix (P^T * P) and perform back substitution.
-    ! That's exactly, what is done in this subroutine.
+    ! That is exactly, what is done in this subroutine.
     
     subroutine calc_patchAverages_mult(IelementsInPatchIdx, npatches, &
         Inpoints, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
@@ -3912,7 +3912,7 @@ contains
     !
     ! Akin suggests to perform a singular value decomposition (SVD)
     ! of the matrix (P^T * P) and perform back substitution.
-    ! That's exactly, what is done in this subroutine.
+    ! That is exactly, what is done in this subroutine.
     
     subroutine calc_patchAverages_sim(IelementsInPatchIdx, npatches, &
         ncubp, indofTrial, Dcoefficients, Dpolynomials, Dderivatives)
@@ -4115,8 +4115,8 @@ contains
     ! Cubature formula weights. The cotent is actually not used here.
     real(DP), dimension(CUB_MAXCUBP) :: Domega
     
-    ! Number of 'cubature points'. As we acutally don't do cubature
-    ! here, this coincides with the number of DOF's on each element
+    ! Number of 'cubature points'. As we acutally do not do cubature
+    ! here, this coincides with the number of DOF`s on each element
     ! in the destination space.
     integer :: nlocalDOFsDest
     
@@ -4170,7 +4170,7 @@ contains
     ! and passing it to callback routines.
     type(t_domainIntSubset) :: rintSubset
     
-    ! An allocateable array accepting the DOF's of a set of elements.
+    ! An allocateable array accepting the DOF`s of a set of elements.
     integer, dimension(:,:), allocatable :: IdofsTrial
     integer, dimension(:,:), allocatable :: IdofsDest
     
@@ -4230,8 +4230,8 @@ contains
       case (EL_Q1_2D, EL_Q1_3D, EL_P1_1D, EL_P1_2D, EL_P1_3D)
         
       case DEFAULT
-        call output_line ('Only Q1, and P1 supported as&
-            & discretisation for the source vector!',&
+        call output_line ('Only Q1, and P1 supported as' // &
+            ' discretisation for the source vector!',&
             OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
         call sys_halt()
       end select
@@ -4246,8 +4246,8 @@ contains
         case (EL_Q1T_2D, EL_Q1T_3D, EL_P1T_2D)
           
         case DEFAULT
-          call output_line ('Only Q1T, and P1T supported as&
-              & discretisation for the destination vector!',&
+          call output_line ('Only Q1T, and P1T supported as' // &
+              ' discretisation for the destination vector!',&
               OU_CLASS_ERROR,OU_MODE_STD,'ppgrd_calcGradLimAvgP1Q1cnf')
           call sys_halt()
         end select
@@ -4265,7 +4265,7 @@ contains
     
     ! For saving some memory in smaller discretisations, we calculate
     ! the number of elements per block. For smaller triangulations,
-    ! this is NEL. If there are too many elements, it's at most
+    ! this is NEL. If there are too many elements, it is at most
     ! BILF_NELEMSIM. This is only used for allocating some arrays.
     nelementsPerBlock = min(PPGRD_NELEMSIM,p_rtriangulation%NEL)
     
@@ -4302,7 +4302,7 @@ contains
     end select
 
     ! Array that allows the calculation about the number of elements
-    ! meeting in a vertex, based onm DOF's.
+    ! meeting in a vertex, based onm DOF`s.
     call storage_new ('ppgrd_calcGradLimAvgP1Q1cnf','p_IcontributionsAtDOF',&
                       dof_igetNDofGlob(p_rdiscrDest),&
                       ST_INT, h_IcontributionsAtDOF, ST_NEWBLOCK_ZERO)
@@ -4342,7 +4342,7 @@ contains
       ! If the element distribution is empty, skip it
       if (p_relementDistribution%NEL .eq. 0) cycle
     
-      ! Get the number of local DOF's for trial functions
+      ! Get the number of local DOF`s for trial functions
       ! in the source and destination vector.
       indofTrial = elem_igetNDofLoc(p_relementDistribution%celement)
       indofDest = elem_igetNDofLoc(p_relementDistrDest%celement)
@@ -4351,7 +4351,7 @@ contains
       NVE = elem_igetNVE(p_relementDistribution%celement)
 
       ! Initialise the cubature formula.
-      ! That's a special trick here! The FE space of the destination vector
+      ! That is a special trick here! The FE space of the destination vector
       ! is either P1 or Q1. We create the gradients in the midpoints of the edges
       ! by taking the limited average of the gradients of the source vector!
 
@@ -4399,14 +4399,14 @@ contains
       do j=1,size(p_DcubPtsRef,3)
         do i=1,nlocalDOFsDest
           do k=1,size(p_DcubPtsRef,1)
-            ! Could be solved using the TRANSPOSE operator - but often is's 
+            ! Could be solved using the TRANSPOSE operator - but often it is
             ! faster this way...
             p_DcubPtsRef(k,i,j) = Dxi(i,k)
           end do
         end do
       end do
 
-      ! Allocate memory for the DOF's of all the elements.
+      ! Allocate memory for the DOF`s of all the elements.
       allocate(IdofsTrial(indofTrial,nelementsPerBlock))
       allocate(IdofsDest(indofDest,nelementsPerBlock))
 
@@ -4442,14 +4442,14 @@ contains
         
         IELmax = min(NEL,IELset-1+PPGRD_NELEMSIM)
       
-        ! Calculate the global DOF's into IdofsTrial.
+        ! Calculate the global DOF`s into IdofsTrial.
         !
         ! More exactly, we call dof_locGlobMapping_mult to calculate all the
-        ! global DOF's of our LINF_NELEMSIM elements simultaneously.
+        ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
         call dof_locGlobMapping_mult(p_rdiscrSource, p_IelementList(IELset:IELmax), &
                                      IdofsTrial)
 
-        ! Also calculate the global DOF's in our destination vector(s)
+        ! Also calculate the global DOF`s in our destination vector(s)
         call dof_locGlobMapping_mult(p_rdiscrDest, p_IelementList(IELset:IELmax), &
                                      IdofsDest)
 
@@ -4497,7 +4497,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
@@ -4536,7 +4536,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 
@@ -4587,7 +4587,7 @@ contains
           ! Sum up the derivative values in the destination vector.
           ! Note that we explicitly use the fact, that the each pair of nlocalDOFsDest 
           ! 'cubature points', or better to say 'corners'/'midpoints', coincides with the 
-          ! local DOF's in the destination space -- in that order!
+          ! local DOF`s in the destination space -- in that order!
           do i=1,IELmax-IELset+1
             do j=1,nlocalDOFsDest
 

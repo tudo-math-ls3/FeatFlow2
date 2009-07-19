@@ -310,7 +310,7 @@ contains
     ! local variables
     integer :: ilen,inewsize,i
     
-    ! Don't use .OR. with PRESENT() !
+    ! Do not use .OR. with PRESENT() !
     if (.not. present(btrim)) then
       ilen = len(trim(sstring))
     else
@@ -626,7 +626,7 @@ contains
         ios = 0
         
 30      continue    
-        ! Don't do anything in case of an error
+        ! Do not do anything in case of an error
         if (ios .eq. 0) then
         
           ilinelen = ilinelen + 1

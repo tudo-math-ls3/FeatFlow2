@@ -229,7 +229,7 @@ contains
   integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_Da
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTempl
   integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
@@ -237,10 +237,10 @@ contains
   ! DOF numbers in Idofs
   integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
-  ! Renumbering strategy for local DOF's
+  ! Renumbering strategy for local DOF`s
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
   
-  ! Number of local DOF's on the patch
+  ! Number of local DOF`s on the patch
   integer :: ndof
   
   ! Number of local degees of freedom for trial and test functions
@@ -344,7 +344,7 @@ contains
     ! Activate the one and only element distribution
     p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
@@ -394,7 +394,7 @@ contains
     allocate(Kentry(indofPerElement*2*indofPerElement*2))
     allocate(Dentry(indofPerElement*2*indofPerElement*2))
     
-    ! Allocate memory for obtaining DOF's:
+    ! Allocate memory for obtaining DOF`s:
     allocate(IdofsTempl(indofPerElement,2))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -406,9 +406,9 @@ contains
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
     ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
+    ! a local numbering on the patch. That is also the reason, we allocate
     ! not indofPerElement elements, but even indofPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
+    ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
     
     allocate(Dbas(indofPerElement*2, &
@@ -420,7 +420,7 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
@@ -445,13 +445,13 @@ contains
       
       end if
       
-      ! On an example, we now show the relationship between all the DOF's
+      ! On an example, we now show the relationship between all the DOF`s
       ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
+      ! let us say IEL1 and IEL2, with their local and global DOF`s
       ! (example for Q1~):
       !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
+      !   local DOF`s on the           corresponding global
+      !   element and on the patch     DOF`s
       !
       !    +----4----+----7----+       +----20---+----50---+
       !    |    4    |    4    |       |         |         |
@@ -463,38 +463,38 @@ contains
       !        IEL1      IEL2              IEL1      IEL2
       !
       !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
+      ! On every element, we have 4 local DOF`s (1..4). On the other hand,
+      ! we have "local DOF`s on the patch" (1..7), ehich we call "patch DOF`s"
       ! from now on. To every local DOF, there belongs a global DOF
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! with the first couple of local DOF`s of the element patch! Only
+      ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
       
-      ! Get the global DOF's of the 1 or two elements
+      ! Get the global DOF`s of the 1 or two elements
       call dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
                                   IdofsTempl)
                                    
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
+      ! Some of the DOF`s on element 2 may coincide with DOF`s on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
+      ! DOF`s uniquely and to figure out, which local DOF`s of element 2
       ! must renumbered to the appropriate local patch-DOF (like in the
       ! example, where local DOF 1 of element IEL2 must be renumbered
       ! to local patch DOF 3!
       !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
+      ! As the first couple of local DOF`s of IEL1 coincide with the local
+      ! DOF`s of the patch, we can simply copy them:
       
       ndof = indofPerElement
       Idofs(1:ndof) = IdofsTempl(1:ndof,1)
       
-      ! Furthermore, we read IdofsTempl and store the DOF's there in Idofs,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
+      ! Furthermore, we read IdofsTempl and store the DOF`s there in Idofs,
+      ! skipping all DOF`s we already have and setting up the renumbering strategy
+      ! of local DOF`s on element IEL2 to patch DOF`s.
       
       skiploop: do IDOFE = 1,indofPerElement
         
@@ -512,19 +512,19 @@ contains
           end if
         end do
         
-        ! We don't have that DOF! Append it to Idofs.
+        ! We do not have that DOF! Append it to Idofs.
         ndof = ndof+1
         Idofs(ndof) = idof
         IlocalDofRenum (IDOFE) = ndof
         
         ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF's 1..indofPerElement -- in that order!
+        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+        ! belong to the local DOF`s 1..indofPerElement -- in that order!
         IlocalDofs(ndof) = IDOFE
         
       end do skiploop
         
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
+      ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofsTest*ndofsTrial matrix.
       !
       ! Now extract the corresponding entries from the matrix.
@@ -539,7 +539,7 @@ contains
         irow = Idofs (1+IDOFE)
         
         ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
+        ! DOF`s in the trial space.
         trialspaceloop: do JDOFE = 1,ndof
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
@@ -567,7 +567,7 @@ contains
       
       end do ! JDOFE
       
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
+      ! Now we can set up the local matrix in Dentry. Later, we will plug it into
       ! the global matrix using the positions in Kentry.
       !
       ! The next step is to evaluate the basis functions in the cubature
@@ -604,11 +604,11 @@ contains
       call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
 
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
+      ! Apply the permutation of the local DOF`s on the test functions
+      ! on element 2. The numbers of the local DOF`s on element 1
+      ! coincides with the numbers of the local DOF`s on the patch.
       ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
+      ! so that they are in the correct order according to the DOF`s on the patch.
       !
       ! We copy the values of the basis functions to the space in
       ! p_DcubPtsTest which is reserved for the 3rd element!
@@ -642,13 +642,13 @@ contains
       ! What do we have now? When looking at the example, we have:
       !
       ! ndof = 7
-      ! Idofs(1..7)             = global DOF's in local numbering 1..7
+      ! Idofs(1..7)             = global DOF`s in local numbering 1..7
       ! Dbas(1..7,*,1..ncubp,1) = values of basis functions on element 1
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
+      !                               DOF`s only appearing at element 2
       ! Dbas(1..7,*,1..ncubp,3) = values of basis functions on element 2
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
+      !                               DOF`s only appearing at element 1
       !
       ! Now we can start to integrate using this.
       
@@ -772,11 +772,11 @@ contains
     ! This routine calculates the 'jacobian determinants' of a bilinear mapping
     ! from the 2D reference quadrilateral onto a face in 3D.
     ! The 'determinant' of a 3x2 jacobian matrix is defined as the euclid norm
-    ! of the 3D cross-product of the jacobian matrix's columns.
+    ! of the 3D cross-product of the jacobian matrix` columns.
   !</description>
   
   !<input>
-    ! The coordinates of the face's corner vertices.
+    ! The coordinates of the face`s corner vertices.
     real(DP), dimension(3,4), intent(in) :: Dvtx
     
     ! The points for which the 'jacobian determinants' are to be calculated,
@@ -798,7 +798,7 @@ contains
     real(DP), dimension(3) :: Dcp
     
       ! Calculate the coefficients of the bilinear mapping, but without
-      ! the constant terms, as we won't need them here...
+      ! the constant terms, as we will not need them here...
       Dtrafo(:,1) = 0.25_DP*(-Dvtx(:,1)+Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
       Dtrafo(:,2) = 0.25_DP*(-Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)+Dvtx(:,4))
       Dtrafo(:,3) = 0.25_DP*( Dvtx(:,1)-Dvtx(:,2)+Dvtx(:,3)-Dvtx(:,4))
@@ -816,7 +816,7 @@ contains
         Dcp(3) = Djac(1,1)*Djac(2,2) - Djac(2,1)*Djac(1,2)
         
         ! Now the 'jacobian determinant' is the euclid norm of the
-        ! cross-product vector we've calculated.
+        ! cross-product vector we have calculated.
         Ddetj(ipt) = sqrt(Dcp(1)**2 + Dcp(2)**2 + Dcp(3)**2)
       
       end do ! ipt
@@ -1091,10 +1091,10 @@ contains
     ! Get the evaluation tag of the element
     cevalTag = elem_getEvaluationTag(celement)
     
-    ! Do not calculate reference coordiantes - we'll do this manually.
+    ! Do not calculate reference coordiantes - we will do this manually.
     cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
 
-    ! Set up the Bder array - we'll need the first derivatives
+    ! Set up the Bder array - we will need the first derivatives
     Bder = .false.
     Bder(DER_DERIV3D_X) = .true.
     Bder(DER_DERIV3D_Y) = .true.
@@ -1128,8 +1128,8 @@ contains
       ! Copy (iel1,iel2) into an array
       Iel(:) = (/ iel1, iel2 /)
       
-      ! Find out which of the element's local faces corresponds
-      ! to the global face we're currently processing.
+      ! Find out which of the element`s local faces corresponds
+      ! to the global face we are currently processing.
       do iat1 = 1, 6
         if(p_IfacesAtElement(iat1, iel1) .eq. iat) exit
       end do
@@ -1139,11 +1139,11 @@ contains
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 1: Evaluate elements
-      ! In this step, we'll map the cubature points onto both hexahedra,
+      ! In this step, we will map the cubature points onto both hexahedra,
       ! evaluate the element on both cells and perform the DOF-mapping.
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
-      ! Now let's calculate the reference coordinates for the two hexahedra
+      ! Now let us calculate the reference coordinates for the two hexahedra
       call jstab3d_aux_mapQuadToHexa(iat1, p_ItwistIndex(iel1), DcubPts2D, &
                                      DcubPts3D(:,:,1))
       call jstab3d_aux_mapQuadToHexa(iat2, p_ItwistIndex(iel2), DcubPts2D, &
@@ -1161,14 +1161,14 @@ contains
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 2: Calculate Jumps
-      ! In this step, we'll calculate the gradient jumps and, at the same
+      ! In this step, we will calculate the gradient jumps and, at the same
       ! time, we will calculate the DOFs of the current element patch.
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! Reset Djump
       Djump = 0.0_DP
       
-      ! First, copy the evaluation of the first element's gradients to the
+      ! First, copy the evaluation of the first element`s gradients to the
       ! Djump array. At the same time, copy the DOF indices of the first
       ! element into IdofsPatch
       do idof = 1, ndofs
@@ -1188,10 +1188,10 @@ contains
       ! So loop over all local DOFs on the second element
       do idof = 1, ndofs
 
-        ! Now let's see whether the current DOF (of the second element)
+        ! Now let us see whether the current DOF (of the second element)
         ! is already in the patch. Please note that it is sufficient to check
         ! only the first ndofs entries in IdofsPatch, as all entries beyond
-        ! ndofs belong to the second element that we're currently processing.
+        ! ndofs belong to the second element that we are currently processing.
         do idofp = 1, ndofs
           if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
         end do
@@ -1220,8 +1220,8 @@ contains
       ! STEP 3: Prepare for integration
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-      ! Now let's calculate the integration weights for the face.
-      ! We'll need the four corner vertices of the face for this.
+      ! Now let us calculate the integration weights for the face.
+      ! We will need the four corner vertices of the face for this.
       do i = 1, 4
         do j = 1, 3
           DfaceVerts(j,i) = p_DvertexCoords(j, p_IverticesAtFace(i,iat))
@@ -1252,7 +1252,7 @@ contains
       ! Reset the local matrix for this patch
       Dmatrix = 0.0_DP
       
-      ! Okay, let's loop over all DOFs in the current patch, once for the
+      ! Okay, let us loop over all DOFs in the current patch, once for the
       ! test and once for the trial space.
       do idof1 = 1, ndofsPatch
         do idof2 = 1, ndofsPatch
@@ -1304,7 +1304,7 @@ contains
     ! Release the element set
     call elprep_releaseElementSet(reval)
     
-    ! Deallocate everything we've allocated
+    ! Deallocate everything we have allocated
     deallocate(Dmatrix)
     deallocate(Djump)
     deallocate(IdofsPatch)
@@ -1315,7 +1315,7 @@ contains
     deallocate(Domega)
     deallocate(DcubPts2D)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1457,10 +1457,10 @@ contains
     ! Get the evaluation tag of the element
     cevalTag = elem_getEvaluationTag(celement)
     
-    ! Do not calculate reference coordiantes - we'll do this manually.
+    ! Do not calculate reference coordiantes - we will do this manually.
     cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
 
-    ! Set up the Bder array - we'll need the first derivatives
+    ! Set up the Bder array - we will need the first derivatives
     Bder = .false.
     Bder(DER_DERIV1D_X) = .true.
     
@@ -1491,8 +1491,8 @@ contains
       ! Copy (iel1,iel2) into an array
       Iel(:) = (/ iel1, iel2 /)
       
-      ! Find out which of the element's local faces corresponds
-      ! to the global face we're currently processing.
+      ! Find out which of the element`s local faces corresponds
+      ! to the global face we are currently processing.
       do ivt1 = 1, 2
         if(p_IverticesAtElement(ivt1, iel1) .eq. ivt) exit
       end do
@@ -1521,14 +1521,14 @@ contains
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 2: Calculate Jumps
-      ! In this step, we'll calculate the gradient jumps and, at the same
+      ! In this step, we will calculate the gradient jumps and, at the same
       ! time, we will calculate the DOFs of the current element patch.
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! Reset Djump
       Djump = 0.0_DP
       
-      ! First, copy the evaluation of the first element's gradients to the
+      ! First, copy the evaluation of the first element`s gradients to the
       ! Djump array. At the same time, copy the DOF indices of the first
       ! element into IdofsPatch
       do idof = 1, ndofs
@@ -1544,10 +1544,10 @@ contains
       ! So loop over all local DOFs on the second element
       do idof = 1, ndofs
 
-        ! Now let's see whether the current DOF (of the second element)
+        ! Now let us see whether the current DOF (of the second element)
         ! is already in the patch. Please note that it is sufficient to check
         ! only the first ndofs entries in IdofsPatch, as all entries beyond
-        ! ndofs belong to the second element that we're currently processing.
+        ! ndofs belong to the second element that we are currently processing.
         do idofp = 1, ndofs
           if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
         end do
@@ -1584,7 +1584,7 @@ contains
       ! Reset the local matrix for this patch
       Dmatrix = 0.0_DP
       
-      ! Okay, let's loop over all DOFs in the current patch, once for the
+      ! Okay, let us loop over all DOFs in the current patch, once for the
       ! test and once for the trial space.
       do idof1 = 1, ndofsPatch
         do idof2 = 1, ndofsPatch
@@ -1627,14 +1627,14 @@ contains
     ! Release the element set
     call elprep_releaseElementSet(reval)
     
-    ! Deallocate everything we've allocated
+    ! Deallocate everything we have allocated
     deallocate(Dmatrix)
     deallocate(Djump)
     deallocate(IdofsPatch)
     deallocate(Dbas)
     deallocate(Idofs)
     
-    ! That's it
+    ! That is it
   
   end subroutine jstab_ueoJumpStabil1d_m_unidble
   
@@ -1719,7 +1719,7 @@ contains
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kcol
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTempl
   integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
@@ -1727,10 +1727,10 @@ contains
   ! DOF numbers in Idofs
   integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
-  ! Renumbering strategy for local DOF's
+  ! Renumbering strategy for local DOF`s
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
   
-  ! Number of local DOF's on the patch
+  ! Number of local DOF`s on the patch
   integer :: ndof
   
   ! Number of local degees of freedom for test functions
@@ -1844,7 +1844,7 @@ contains
     ! Activate the one and only element distribution
     p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
@@ -1893,7 +1893,7 @@ contains
     allocate(Kentry(indofPerElement*2*indofPerElement*2))
     allocate(Dentry(indofPerElement*2*indofPerElement*2))
     
-    ! Allocate memory for obtaining DOF's:
+    ! Allocate memory for obtaining DOF`s:
     allocate(IdofsTempl(indofPerElement,2))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -1905,9 +1905,9 @@ contains
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
     ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
+    ! a local numbering on the patch. That is also the reason, we allocate
     ! not indofPerElement elements, but even indofPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
+    ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
     
     allocate(Dbas(indofPerElement*2, &
@@ -1924,7 +1924,7 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Fill the basis function arrays with 0. Essential, as only parts
@@ -1944,13 +1944,13 @@ contains
       
       end if
       
-      ! On an example, we now show the relationship between all the DOF's
+      ! On an example, we now show the relationship between all the DOF`s
       ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
+      ! let us say IEL1 and IEL2, with their local and global DOF`s
       ! (example for Q1~):
       !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
+      !   local DOF`s on the           corresponding global
+      !   element and on the patch     DOF`s
       !
       !    +----4----+----7----+       +----20---+----50---+
       !    |    4    |    4    |       |         |         |
@@ -1962,38 +1962,38 @@ contains
       !        IEL1      IEL2              IEL1      IEL2
       !
       !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
+      ! On every element, we have 4 local DOF`s (1..4). On the other hand,
+      ! we have "local DOF`s on the patch" (1..7), ehich we call "patch DOF`s"
       ! from now on. To every local DOF, there belongs a global DOF
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! with the first couple of local DOF`s of the element patch! Only
+      ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
       
-      ! Get the global DOF's of the 1 or two elements
+      ! Get the global DOF`s of the 1 or two elements
       call dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
                                   IdofsTempl)
                                    
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
+      ! Some of the DOF`s on element 2 may coincide with DOF`s on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
+      ! DOF`s uniquely and to figure out, which local DOF`s of element 2
       ! must renumbered to the appropriate local patch-DOF (like in the
       ! example, where local DOF 1 of element IEL2 must be renumbered
       ! to local patch DOF 3!
       !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
+      ! As the first couple of local DOF`s of IEL1 coincide with the local
+      ! DOF`s of the patch, we can simply copy them:
       
       ndof = indofPerElement
       Idofs(1:ndof) = IdofsTempl(1:ndof,1)
       
-      ! Furthermore, we read IdofsTempl and store the DOF's there in Idofs,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
+      ! Furthermore, we read IdofsTempl and store the DOF`s there in Idofs,
+      ! skipping all DOF`s we already have and setting up the renumbering strategy
+      ! of local DOF`s on element IEL2 to patch DOF`s.
       
       skiploop: do IDOFE = 1,indofPerElement
         
@@ -2011,19 +2011,19 @@ contains
           end if
         end do
         
-        ! We don't have that DOF! Append it to Idofs.
+        ! We do not have that DOF! Append it to Idofs.
         ndof = ndof+1
         Idofs(ndof) = idof
         IlocalDofRenum (IDOFE) = ndof
         
         ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF's 1..indofPerElement -- in that order!
+        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+        ! belong to the local DOF`s 1..indofPerElement -- in that order!
         IlocalDofs(ndof) = IDOFE
         
       end do skiploop
         
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
+      ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofs*ndofs matrix.
       !
       ! Now extract the corresponding entries from the matrix.
@@ -2038,7 +2038,7 @@ contains
         irow = Idofs (1+IDOFE)
         
         ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
+        ! DOF`s in the trial space.
         trialspaceloop: do JDOFE = 1,ndof
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
@@ -2066,7 +2066,7 @@ contains
       
       end do ! JDOFE
       
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
+      ! Now we can set up the local matrix in Dentry. Later, we will plug it into
       ! the global matrix using the positions in Kentry.
       !
       ! The next step is to evaluate the basis functions in the cubature
@@ -2103,11 +2103,11 @@ contains
       call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
       
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
+      ! Apply the permutation of the local DOF`s on the test functions
+      ! on element 2. The numbers of the local DOF`s on element 1
+      ! coincides with the numbers of the local DOF`s on the patch.
       ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
+      ! so that they are in the correct order according to the DOF`s on the patch.
       !
       ! We copy the values of the basis functions to the space in
       ! p_DcubPtsTest which is reserved for the 3rd element!
@@ -2141,13 +2141,13 @@ contains
       ! What do we have now? When looking at the example, we have:
       !
       ! ndof = 7
-      ! Idofs(1..7)             = global DOF's in local numbering 1..7
+      ! Idofs(1..7)             = global DOF`s in local numbering 1..7
       ! Dbas(1..7,*,1..ncubp,1) = values of basis functions on element 1
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
+      !                               DOF`s only appearing at element 2
       ! Dbas(1..7,*,1..ncubp,3) = values of basis functions on element 2
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
+      !                               DOF`s only appearing at element 1
       !
       ! Now we can start to integrate using this.
       
@@ -2405,7 +2405,7 @@ contains
   integer, dimension(:), pointer :: p_Kcol
   real(DP), dimension(:), pointer :: p_Da
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTempl
   integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
@@ -2413,10 +2413,10 @@ contains
   ! DOF numbers in Idofs
   integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
-  ! Renumbering strategy for local DOF's
+  ! Renumbering strategy for local DOF`s
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
   
-  ! Number of local DOF's on the patch
+  ! Number of local DOF`s on the patch
   integer :: ndof
   
   ! Number of local degees of freedom for trial and test functions
@@ -2520,7 +2520,7 @@ contains
     ! Activate the one and only element distribution
     p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
@@ -2570,7 +2570,7 @@ contains
     allocate(Kentry(indofPerElement*2*indofPerElement*2))
     allocate(Dentry(indofPerElement*2*indofPerElement*2))
     
-    ! Allocate memory for obtaining DOF's:
+    ! Allocate memory for obtaining DOF`s:
     allocate(IdofsTempl(indofPerElement,2))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -2582,9 +2582,9 @@ contains
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
     ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
+    ! a local numbering on the patch. That is also the reason, we allocate
     ! not indofPerElement elements, but even indofPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
+    ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
     
     allocate(Dbas(indofPerElement*2, &
@@ -2596,7 +2596,7 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Set up which derivatives to compute in the basis functions: X/Y-derivative
@@ -2620,13 +2620,13 @@ contains
       
       end if
       
-      ! On an example, we now show the relationship between all the DOF's
+      ! On an example, we now show the relationship between all the DOF`s
       ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
+      ! let us say IEL1 and IEL2, with their local and global DOF`s
       ! (example for Q1~):
       !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
+      !   local DOF`s on the           corresponding global
+      !   element and on the patch     DOF`s
       !
       !    +----4----+----7----+       +----20---+----50---+
       !    |    4    |    4    |       |         |         |
@@ -2638,38 +2638,38 @@ contains
       !        IEL1      IEL2              IEL1      IEL2
       !
       !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
+      ! On every element, we have 4 local DOF`s (1..4). On the other hand,
+      ! we have "local DOF`s on the patch" (1..7), ehich we call "patch DOF`s"
       ! from now on. To every local DOF, there belongs a global DOF
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! with the first couple of local DOF`s of the element patch! Only
+      ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
       
-      ! Get the global DOF's of the 1 or two elements
+      ! Get the global DOF`s of the 1 or two elements
       call dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
                                   IdofsTempl)
                                    
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
+      ! Some of the DOF`s on element 2 may coincide with DOF`s on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
+      ! DOF`s uniquely and to figure out, which local DOF`s of element 2
       ! must renumbered to the appropriate local patch-DOF (like in the
       ! example, where local DOF 1 of element IEL2 must be renumbered
       ! to local patch DOF 3!
       !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
+      ! As the first couple of local DOF`s of IEL1 coincide with the local
+      ! DOF`s of the patch, we can simply copy them:
       
       ndof = indofPerElement
       Idofs(1:ndof) = IdofsTempl(1:ndof,1)
       
-      ! Furthermore, we read IdofsTempl and store the DOF's there in Idofs,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
+      ! Furthermore, we read IdofsTempl and store the DOF`s there in Idofs,
+      ! skipping all DOF`s we already have and setting up the renumbering strategy
+      ! of local DOF`s on element IEL2 to patch DOF`s.
       
       skiploop: do IDOFE = 1,indofPerElement
         
@@ -2687,19 +2687,19 @@ contains
           end if
         end do
         
-        ! We don't have that DOF! Append it to Idofs.
+        ! We do not have that DOF! Append it to Idofs.
         ndof = ndof+1
         Idofs(ndof) = idof
         IlocalDofRenum (IDOFE) = ndof
         
         ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF's 1..indofPerElement -- in that order!
+        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+        ! belong to the local DOF`s 1..indofPerElement -- in that order!
         IlocalDofs(ndof) = IDOFE
         
       end do skiploop
         
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
+      ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofsTest*ndofsTrial matrix.
       !
       ! Now extract the corresponding entries from the matrix.
@@ -2714,7 +2714,7 @@ contains
         irow = Idofs (1+IDOFE)
         
         ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
+        ! DOF`s in the trial space.
         trialspaceloop: do JDOFE = 1,ndof
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
@@ -2742,7 +2742,7 @@ contains
       
       end do ! JDOFE
       
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
+      ! Now we can set up the local matrix in Dentry. Later, we will plug it into
       ! the global matrix using the positions in Kentry.
       !
       ! The next step is to evaluate the basis functions in the cubature
@@ -2779,11 +2779,11 @@ contains
       call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
 
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
+      ! Apply the permutation of the local DOF`s on the test functions
+      ! on element 2. The numbers of the local DOF`s on element 1
+      ! coincides with the numbers of the local DOF`s on the patch.
       ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
+      ! so that they are in the correct order according to the DOF`s on the patch.
       !
       ! We copy the values of the basis functions to the space in
       ! p_DcubPtsTest which is reserved for the 3rd element!
@@ -2817,13 +2817,13 @@ contains
       ! What do we have now? When looking at the example, we have:
       !
       ! ndof = 7
-      ! Idofs(1..7)             = global DOF's in local numbering 1..7
+      ! Idofs(1..7)             = global DOF`s in local numbering 1..7
       ! Dbas(1..7,*,1..ncubp,1) = values of basis functions on element 1
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
+      !                               DOF`s only appearing at element 2
       ! Dbas(1..7,*,1..ncubp,3) = values of basis functions on element 2
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
+      !                               DOF`s only appearing at element 1
       !
       ! Now we can start to integrate using this.
       
@@ -3089,10 +3089,10 @@ contains
     ! Get the evaluation tag of the element
     cevalTag = elem_getEvaluationTag(celement)
     
-    ! Do not calculate reference coordiantes - we'll do this manually.
+    ! Do not calculate reference coordiantes - we will do this manually.
     cevalTag = iand(cevalTag, not(EL_EVLTAG_REFPOINTS))
 
-    ! Set up the Bder array - we'll need the function values
+    ! Set up the Bder array - we will need the function values
     Bder = .false.
     Bder(DER_FUNC3D) = .true.
     
@@ -3124,8 +3124,8 @@ contains
       ! Copy (iel1,iel2) into an array
       Iel(:) = (/ iel1, iel2 /)
       
-      ! Find out which of the element's local faces corresponds
-      ! to the global face we're currently processing.
+      ! Find out which of the element`s local faces corresponds
+      ! to the global face we are currently processing.
       do iat1 = 1, 6
         if(p_IfacesAtElement(iat1, iel1) .eq. iat) exit
       end do
@@ -3135,11 +3135,11 @@ contains
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 1: Evaluate elements
-      ! In this step, we'll map the cubature points onto both hexahedra,
+      ! In this step, we will map the cubature points onto both hexahedra,
       ! evaluate the element on both cells and perform the DOF-mapping.
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
-      ! Now let's calculate the reference coordinates for the two hexahedra
+      ! Now let us calculate the reference coordinates for the two hexahedra
       call jstab3d_aux_mapQuadToHexa(iat1, p_ItwistIndex(iel1), DcubPts2D, &
                                      DcubPts3D(:,:,1))
       call jstab3d_aux_mapQuadToHexa(iat2, p_ItwistIndex(iel2), DcubPts2D, &
@@ -3157,14 +3157,14 @@ contains
     
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! STEP 2: Calculate Jumps
-      ! In this step, we'll calculate the jumps and, at the same
+      ! In this step, we will calculate the jumps and, at the same
       ! time, we will calculate the DOFs of the current element patch.
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       
       ! Reset Djump
       Djump = 0.0_DP
       
-      ! First, copy the evaluation of the first element's values to the
+      ! First, copy the evaluation of the first element`s values to the
       ! Djump array. At the same time, copy the DOF indices of the first
       ! element into IdofsPatch
       do idof = 1, ndofs
@@ -3182,10 +3182,10 @@ contains
       ! So loop over all local DOFs on the second element
       do idof = 1, ndofs
 
-        ! Now let's see whether the current DOF (of the second element)
+        ! Now let us see whether the current DOF (of the second element)
         ! is already in the patch. Please note that it is sufficient to check
         ! only the first ndofs entries in IdofsPatch, as all entries beyond
-        ! ndofs belong to the second element that we're currently processing.
+        ! ndofs belong to the second element that we are currently processing.
         do idofp = 1, ndofs
           if(IdofsPatch(idofp) .eq. Idofs(idof,2)) exit
         end do
@@ -3210,8 +3210,8 @@ contains
       ! STEP 3: Prepare for integration
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-      ! Now let's calculate the integration weights for the face.
-      ! We'll need the four corner vertices of the face for this.
+      ! Now let us calculate the integration weights for the face.
+      ! We will need the four corner vertices of the face for this.
       do i = 1, 4
         do j = 1, 3
           DfaceVerts(j,i) = p_DvertexCoords(j, p_IverticesAtFace(i,iat))
@@ -3240,7 +3240,7 @@ contains
       ! Reset the local matrix for this patch
       Dmatrix = 0.0_DP
       
-      ! Okay, let's loop over all DOFs in the current patch, once for the
+      ! Okay, let us loop over all DOFs in the current patch, once for the
       ! test and once for the trial space.
       do idof1 = 1, ndofsPatch
         do idof2 = 1, ndofsPatch
@@ -3290,7 +3290,7 @@ contains
     ! Release the element set
     call elprep_releaseElementSet(reval)
     
-    ! Deallocate everything we've allocated
+    ! Deallocate everything we have allocated
     deallocate(Dmatrix)
     deallocate(Djump)
     deallocate(IdofsPatch)
@@ -3301,7 +3301,7 @@ contains
     deallocate(Domega)
     deallocate(DcubPts2D)
     
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -3382,7 +3382,7 @@ contains
   integer, dimension(:), pointer :: p_Kld
   integer, dimension(:), pointer :: p_Kcol
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsTempl
   integer, dimension(EL_MAXNBAS*2), target :: Idofs
   
@@ -3390,10 +3390,10 @@ contains
   ! DOF numbers in Idofs
   integer, dimension(EL_MAXNBAS*2),target :: IlocalDofs
   
-  ! Renumbering strategy for local DOF's
+  ! Renumbering strategy for local DOF`s
   integer, dimension(EL_MAXNBAS), target :: IlocalDofRenum
   
-  ! Number of local DOF's on the patch
+  ! Number of local DOF`s on the patch
   integer :: ndof
   
   ! Number of local degees of freedom for test functions
@@ -3507,7 +3507,7 @@ contains
     ! Activate the one and only element distribution
     p_relementDistribution => p_rdiscretisation%RelementDistr(1)
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indofPerElement = elem_igetNDofLoc(p_relementDistribution%celement)
     
     ! Triangle elements? Quad elements?
@@ -3556,7 +3556,7 @@ contains
     allocate(Kentry(indofPerElement*2*indofPerElement*2))
     allocate(Dentry(indofPerElement*2*indofPerElement*2))
     
-    ! Allocate memory for obtaining DOF's:
+    ! Allocate memory for obtaining DOF`s:
     allocate(IdofsTempl(indofPerElement,2))
     
     ! Allocate arrays for the values of the test- and trial functions.
@@ -3568,9 +3568,9 @@ contains
     !
     ! We allocate space for 3 instead of 2 elements. The reason is that
     ! we later permute the values of the basis functions to get
-    ! a local numbering on the patch. That's also the reason, we allocate
+    ! a local numbering on the patch. That is also the reason, we allocate
     ! not indofPerElement elements, but even indofPerElement,
-    ! which is more than enough space to hold the values of the DOF's of
+    ! which is more than enough space to hold the values of the DOF`s of
     ! a whole element patch.
     
     allocate(Dbas(indofPerElement*2, &
@@ -3587,7 +3587,7 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(p_relementDistribution%celement)
 
-    ! Don't calculate coordinates on the reference element -- we do this manually.                    
+    ! Do not calculate coordinates on the reference element -- we do this manually.                    
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
 
     ! Fill the basis function arrays with 0. Essential, as only parts
@@ -3607,13 +3607,13 @@ contains
       
       end if
       
-      ! On an example, we now show the relationship between all the DOF's
+      ! On an example, we now show the relationship between all the DOF`s
       ! we have to consider in the current situation. We have two elements,
-      ! let's say IEL1 and IEL2, with their local and global DOF's
+      ! let us say IEL1 and IEL2, with their local and global DOF`s
       ! (example for Q1~):
       !
-      !   local DOF's on the           corresponding global
-      !   element and on the patch     DOF's
+      !   local DOF`s on the           corresponding global
+      !   element and on the patch     DOF`s
       !
       !    +----4----+----7----+       +----20---+----50---+
       !    |    4    |    4    |       |         |         |
@@ -3625,38 +3625,38 @@ contains
       !        IEL1      IEL2              IEL1      IEL2
       !
       !
-      ! On every element, we have 4 local DOF's (1..4). On the other hand,
-      ! we have "local DOF's on the patch" (1..7), ehich we call "patch DOF's"
+      ! On every element, we have 4 local DOF`s (1..4). On the other hand,
+      ! we have "local DOF`s on the patch" (1..7), ehich we call "patch DOF`s"
       ! from now on. To every local DOF, there belongs a global DOF
       ! (10,20,30,... or whatever), which gives the coefficient of the basis
       ! function.
       !
-      ! Numbering that way, the local DOF's of IEL1 obviously coincide 
-      ! with the first couple of local DOF's of the element patch! Only
-      ! the local DOF's of element IEL2 make trouble, as they have another
+      ! Numbering that way, the local DOF`s of IEL1 obviously coincide 
+      ! with the first couple of local DOF`s of the element patch! Only
+      ! the local DOF`s of element IEL2 make trouble, as they have another
       ! numbering.
       
-      ! Get the global DOF's of the 1 or two elements
+      ! Get the global DOF`s of the 1 or two elements
       call dof_locGlobMapping_mult(p_rdiscretisation, &
                                   p_IelementsAtEdge (1:IELcount,IMT), &
                                   IdofsTempl)
                                    
-      ! Some of the DOF's on element 2 may coincide with DOF's on element 1.
+      ! Some of the DOF`s on element 2 may coincide with DOF`s on element 1.
       ! More precisely, some must coincide! Therefore, we now have to collect the
-      ! DOF's uniquely and to figure out, which local DOF's of element 2
+      ! DOF`s uniquely and to figure out, which local DOF`s of element 2
       ! must renumbered to the appropriate local patch-DOF (like in the
       ! example, where local DOF 1 of element IEL2 must be renumbered
       ! to local patch DOF 3!
       !
-      ! As the first couple of local DOF's of IEL1 coincide with the local
-      ! DOF's of the patch, we can simply copy them:
+      ! As the first couple of local DOF`s of IEL1 coincide with the local
+      ! DOF`s of the patch, we can simply copy them:
       
       ndof = indofPerElement
       Idofs(1:ndof) = IdofsTempl(1:ndof,1)
       
-      ! Furthermore, we read IdofsTempl and store the DOF's there in Idofs,
-      ! skipping all DOF's we already have and setting up the renumbering strategy
-      ! of local DOF's on element IEL2 to patch DOF's.
+      ! Furthermore, we read IdofsTempl and store the DOF`s there in Idofs,
+      ! skipping all DOF`s we already have and setting up the renumbering strategy
+      ! of local DOF`s on element IEL2 to patch DOF`s.
       
       skiploop: do IDOFE = 1,indofPerElement
         
@@ -3674,19 +3674,19 @@ contains
           end if
         end do
         
-        ! We don't have that DOF! Append it to Idofs.
+        ! We do not have that DOF! Append it to Idofs.
         ndof = ndof+1
         Idofs(ndof) = idof
         IlocalDofRenum (IDOFE) = ndof
         
         ! Save also the number of the local DOF.
-        ! Note that the global DOF's in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF's 1..indofPerElement -- in that order!
+        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+        ! belong to the local DOF`s 1..indofPerElement -- in that order!
         IlocalDofs(ndof) = IDOFE
         
       end do skiploop
         
-      ! Now we know: Our 'local' matrix (consisting of only these DOF's we just
+      ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofs*ndofs matrix.
       !
       ! Now extract the corresponding entries from the matrix.
@@ -3701,7 +3701,7 @@ contains
         irow = Idofs (1+IDOFE)
         
         ! Loop through that line to find the columns, indexed by the local
-        ! DOF's in the trial space.
+        ! DOF`s in the trial space.
         trialspaceloop: do JDOFE = 1,ndof
           
           do jcol = p_Kld(irow),p_Kld(irow+1)-1
@@ -3729,7 +3729,7 @@ contains
       
       end do ! JDOFE
       
-      ! Now we can set up the local matrix in Dentry. Later, we'll plug it into
+      ! Now we can set up the local matrix in Dentry. Later, we will plug it into
       ! the global matrix using the positions in Kentry.
       !
       ! The next step is to evaluate the basis functions in the cubature
@@ -3766,11 +3766,11 @@ contains
       call elem_generic_sim2 (p_relementDistribution%celement, &
           revalElementSet, Bder, Dbas)
       
-      ! Apply the permutation of the local DOF's on the test functions
-      ! on element 2. The numbers of the local DOF's on element 1
-      ! coincides with the numbers of the local DOF's on the patch.
+      ! Apply the permutation of the local DOF`s on the test functions
+      ! on element 2. The numbers of the local DOF`s on element 1
+      ! coincides with the numbers of the local DOF`s on the patch.
       ! Those on element 2, we have to renumber according to the permutation
-      ! so that they are in the correct order according to the DOF's on the patch.
+      ! so that they are in the correct order according to the DOF`s on the patch.
       !
       ! We copy the values of the basis functions to the space in
       ! p_DcubPtsTest which is reserved for the 3rd element!
@@ -3804,13 +3804,13 @@ contains
       ! What do we have now? When looking at the example, we have:
       !
       ! ndof = 7
-      ! Idofs(1..7)             = global DOF's in local numbering 1..7
+      ! Idofs(1..7)             = global DOF`s in local numbering 1..7
       ! Dbas(1..7,*,1..ncubp,1) = values of basis functions on element 1
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 2
+      !                               DOF`s only appearing at element 2
       ! Dbas(1..7,*,1..ncubp,3) = values of basis functions on element 2
       !                               in the cubature points, filled by 0.0 in the
-      !                               DOF's only appearing at element 1
+      !                               DOF`s only appearing at element 1
       !
       ! Now we can start to integrate using this.
       

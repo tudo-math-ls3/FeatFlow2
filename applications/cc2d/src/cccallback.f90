@@ -118,7 +118,7 @@
 !#   used e.g. to track falling particles in an infinite long channel or similar.
 !#   The moving frames formulation is realised as follows:
 !#
-!#   Let's assume, the domain moves with velocity v=(vx,vy) and accelleration
+!#   Let us assume, the domain moves with velocity v=(vx,vy) and accelleration
 !#   a=(ax,ay). This information must be returned by the function
 !#   getMovingFrameVelocity below. To activate the moving frame formulation,
 !#   the parameter imovingFrame in discretisation.dat must be set to 1.
@@ -333,17 +333,17 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -418,17 +418,17 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -500,13 +500,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -588,13 +588,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -676,13 +676,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -778,13 +778,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -880,13 +880,13 @@ contains
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
@@ -955,7 +955,7 @@ contains
   ! These are compared with the calculated solution to calculate the
   ! error in the X-velocity.
   !
-  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! If the analytical solution is unknown, this routine does not make sense.
   ! In this case, error analysis should be deactivated in the .DAT files!
 !</description>
   
@@ -982,13 +982,13 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
   integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
@@ -1053,7 +1053,7 @@ contains
   ! These are compared with the calculated solution to calculate the
   ! error in the Y-velocity.
   !
-  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! If the analytical solution is unknown, this routine does not make sense.
   ! In this case, error analysis should be deactivated in the .DAT files!
 !</description>
   
@@ -1080,13 +1080,13 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
   integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
@@ -1151,7 +1151,7 @@ contains
   ! These are compared with the calculated solution to calculate the
   ! error in the pressure
   !
-  ! If the analytical solution is unknown, this routine doesn't make sense.
+  ! If the analytical solution is unknown, this routine does not make sense.
   ! In this case, error analysis should be deactivated in the .DAT files!
 !</description>
   
@@ -1178,13 +1178,13 @@ contains
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
   real(DP), dimension(:,:,:), intent(in)  :: Dpoints
 
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
   integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
   type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! A pointer to a collection structure to provide additional 
@@ -1522,10 +1522,10 @@ contains
       integer :: i,j
       integer :: iv1,iv2
     
-      ! Let's see, what do we have...
+      ! Let us see, what do we have...
       select case (cinfoNeeded)
       case (DISCFBC_NEEDFUNC)
-        ! That's easy
+        ! That is easy
         dx = DvertexCoords(1,iwhere)
         dy = DvertexCoords(2,iwhere)
       

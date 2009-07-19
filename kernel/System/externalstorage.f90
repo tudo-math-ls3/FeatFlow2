@@ -71,12 +71,12 @@
 !# - exstor_free
 !#   -> Releases a memory block
 !# 
-!# It's possible to maintain more than one type of storage container.
+!# It is possible to maintain more than one type of storage container.
 !# By default, exstor_init creates at least one storage container, the so
 !# called 'RamDrive container' (with Id=1), which is actually a mapping to the
 !# standard memory management of the storage.f90. All data stored in this
 !# RamDrive container will be stored in the main memory of the computer.
-!# Using exstor_attachRamdrive, it's possible to add more RamDrive containers,
+!# Using exstor_attachRamdrive, it is possible to add more RamDrive containers,
 !# although this should rarely be necessary.
 !#
 !# The next type of storage container is the so called 'directory' storage
@@ -86,7 +86,7 @@
 !#
 !# By default, exstor_new creates new memory blocks on the last data container
 !# attached to the memory management which is large enough to hold the data.
-!# However, it's possible to instruct exstor_new to use a special container.
+!# However, it is possible to instruct exstor_new to use a special container.
 !# The container with id=1 is always the RamDrive container, while the type
 !# of the containers with id=2,3,4,... depends the order of creation using
 !# the exstor_attachXXXX commands.
@@ -140,7 +140,7 @@ module externalstorage
 
 !<constantblock description="Strategy constants for choosing a container.">
 
-  ! Always choose the last existing container. If it's full, choose the
+  ! Always choose the last existing container. If it is full, choose the
   ! last but one, etc.
   integer, parameter, public :: EXSTOR_STRAT_LASTCONTAINER = 0
 
@@ -255,7 +255,7 @@ module externalstorage
   ! This block represents a heap that maintains single, double precision
   ! and integer data. It contains a list of t_storageNode elements for all
   ! the handles.
-  ! There's one global object of this type for the global storage management,
+  ! There is one global object of this type for the global storage management,
   ! but if necessary, an algorithm can create such a block locally, too,
   ! to prevent conflicts with the global memory.
 
@@ -719,7 +719,7 @@ contains
 
     ! Delete all data from the heap
     do i = 1,size(p_rheap%p_Rdescriptors)
-      ! Don't pass i as handle as storage_free will set the handle
+      ! Do not pass i as handle as storage_free will set the handle
       ! passed to it to 0!
       ihandle = i
       if (p_rheap%p_Rdescriptors(i)%cdataType .ne. ST_NOHANDLE) &
@@ -1698,7 +1698,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -1860,7 +1860,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt2D (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -2310,7 +2310,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -2472,7 +2472,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt2D (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -2922,7 +2922,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -3084,7 +3084,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt2D (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -3534,7 +3534,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -3696,7 +3696,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt2D (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -4146,7 +4146,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -4308,7 +4308,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorInt2D (Iarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -4758,7 +4758,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorSngl (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -4920,7 +4920,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorSngl2D (Farray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -5370,7 +5370,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorDble (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -5532,7 +5532,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorDble2D (Darray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -5983,7 +5983,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorQuad (Qarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -6145,7 +6145,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       call lalg_clearVectorQuad2D (Qarray)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -6592,7 +6592,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with .false., that's all
+      ! Fill the destination array with .false., that is all
       Larray = .false.
 
     case (ST_NEWBLOCK_ORDERED)
@@ -6757,7 +6757,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with .false., that's all
+      ! Fill the destination array with .false., that is all
       Larray = .false.
 
     case (ST_NEWBLOCK_ORDERED)
@@ -7220,7 +7220,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       Carray = achar(0)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -7385,7 +7385,7 @@ contains
     ! fill it with data...    
     select case (p_rnode%cinitNewBlock)
     case (ST_NEWBLOCK_ZERO)
-      ! Fill the destination array with zero, that's all
+      ! Fill the destination array with zero, that is all
       Carray = achar(0)
 
     case (ST_NEWBLOCK_ORDERED)
@@ -8231,7 +8231,7 @@ contains
     end if
 
     ! Set the initialised-flag to ST_NEWBLOCK_ZERO. The data is
-    ! trated as zero when it's accessed the next time.
+    ! trated as zero when it is accessed the next time.
     p_rheap%p_Rdescriptors(ihandle)%cinitNewBlock = ST_NEWBLOCK_ZERO
 
   end subroutine exstor_clear

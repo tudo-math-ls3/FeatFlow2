@@ -75,7 +75,7 @@ contains
     
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -159,7 +159,7 @@ contains
   !<input>
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -254,7 +254,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -262,7 +262,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
-    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
     ! =FALSE: Write vector as it is.
     logical, intent(in) :: bunsort
 
@@ -367,7 +367,7 @@ contains
   !<input>
     ! Input channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Read from channel ifile. Don't close the channel afterwards.
+    ! <> 0: Read from channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -505,7 +505,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -513,7 +513,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
-    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
     ! =FALSE: Write vector as it is.
     logical, intent(in) :: bunsort
 
@@ -637,7 +637,7 @@ contains
   !<input>
     ! Input channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Read from channel ifile. Don't close the channel afterwards.
+    ! <> 0: Read from channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -740,14 +740,14 @@ contains
       call lsysbl_createVecBlockDirect (rvector,IblockSize,.false.,ST_DOUBLE)
     end if
     
-    ! Size of vector must match! Size of subvectors not -- it's not a bug,
-    ! it's a feature ;-)
+    ! Size of vector must match! Size of subvectors not -- it is not a bug,
+    ! it is a feature ;-)
     if (rvector%NEQ .ne. NEQ) then
       print *,'vecio_readBlockVectorHR: Vector has wrong size!'
       call sys_halt()
     end if
 
-    ! We don't need the block size anymore.    
+    ! We do not need the block size anymore.    
     deallocate (IblockSize)
     
     ! Vector precision?
@@ -808,7 +808,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -816,7 +816,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
-    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
     ! =FALSE: Write vector as it is.
     logical, intent(in) :: bunsort
 
@@ -912,7 +912,7 @@ contains
     
     ! Output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer, intent(in) :: ifile
     
@@ -920,7 +920,7 @@ contains
     character(len=*), intent(in) :: sfile
     
     ! Write unsorted vector.
-    ! =TRUE:  If the vector is sorted, it's unsorted on the fly.
+    ! =TRUE:  If the vector is sorted, it is unsorted on the fly.
     ! =FALSE: Write vector as it is.
     logical, intent(in) :: bunsort
 

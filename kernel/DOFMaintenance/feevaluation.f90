@@ -166,7 +166,7 @@ contains
     integer(I32) :: ctrafoType
     real(DP), dimension(TRAFO_MAXDIMREFCOORD) :: DparPoint
     
-    ! Values of basis functions and DOF's
+    ! Values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
     
@@ -188,7 +188,7 @@ contains
       celement = rvectorScalar%p_rspatialDiscr%&
           RelementDistr(1)%celement
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
@@ -289,7 +289,7 @@ contains
       if (associated(p_IelementDistr)) then
         celement = p_RelementDistribution(p_IelementDistr(iel))%celement
 
-        ! Get the number of local DOF's for trial and test functions
+        ! Get the number of local DOF`s for trial and test functions
         indof = elem_igetNDofLoc(celement)
         
         ! Number of vertices on the element
@@ -302,7 +302,7 @@ contains
         cevaluationTag = elem_getEvaluationTag(celement)
       end if
         
-      ! Calculate the global DOF's on that element into IdofsTest.
+      ! Calculate the global DOF`s on that element into IdofsTest.
       call dof_locGlobMapping (rvectorScalar%p_rspatialDiscr, &
           iel,Idofs)
      
@@ -417,7 +417,7 @@ contains
     integer(I32) :: ctrafoType
     real(DP), dimension(TRAFO_MAXDIMREFCOORD) :: DparPoint
     
-    ! Values of basis functions and DOF's
+    ! Values of basis functions and DOF`s
     real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
     integer, dimension(EL_MAXNBAS) :: Idofs
     
@@ -457,7 +457,7 @@ contains
       celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
     end if
 
-    ! Get the number of local DOF's for trial and test functions
+    ! Get the number of local DOF`s for trial and test functions
     indof = elem_igetNDofLoc(celement)
     
     ! Number of vertices on the element
@@ -485,7 +485,7 @@ contains
     Bder = .false.
     Bder(iderType) = .true.
     
-    ! Calculate the global DOF's on that element into IdofsTest.
+    ! Calculate the global DOF`s on that element into IdofsTest.
     call dof_locGlobMapping (rvectorScalar%p_rspatialDiscr, &
         ielement,Idofs)
         
@@ -504,7 +504,7 @@ contains
       end if
 
       ! Now calculate everything else what is necessary for the element.
-      ! Don't calculate the shape of the cell again since we did this in advance above.
+      ! Do not calculate the shape of the cell again since we did this in advance above.
       if (present(Dpoints)) then
         call elprep_prepareForEvaluation (revalElement, &
             iand(cevaluationTag,not(EL_EVLTAG_COORDS)), &
@@ -594,9 +594,9 @@ contains
   ! array [1..npointsPerElement]
   real(DP), dimension(:), intent(in)             :: Ddetj
   
-  ! An array accepting the DOF's on the element in the trial space
+  ! An array accepting the DOF`s on the element in the trial space
   ! of the FE function.
-  ! DIMENSION(\#local DOF's in trial space)
+  ! DIMENSION(\#local DOF`s in trial space)
   integer, dimension(:), intent(in)              :: IdofsTrial
   
   ! Number of points on the element where to evalate the function
@@ -607,7 +607,7 @@ contains
   ! The coordinates are expected 
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
-  ! It's assumed that:
+  ! It is assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -770,7 +770,7 @@ contains
 !    REAL(DP), DIMENSION(:,:), ALLOCATABLE :: Ddetj
 !    INTEGER(I32) :: ctrafoType
 !    
-!    ! Values of basis functions and DOF's
+!    ! Values of basis functions and DOF`s
 !    REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE :: Dbas
 !    INTEGER, DIMENSION(:,:), ALLOCATABLE :: Idofs
 !    
@@ -801,7 +801,7 @@ contains
 !      ! Element type
 !      celement = p_RelementDistribution(1)%celement
 !
-!      ! Get the number of local DOF's for trial and test functions
+!      ! Get the number of local DOF`s for trial and test functions
 !      indof = elem_igetNDofLoc(celement)
 !      
 !      ! Number of vertices on the element
@@ -841,7 +841,7 @@ contains
 !      ! characteristics by checking the first element.
 !      celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 !
-!      ! Get the number of local DOF's for trial and test functions
+!      ! Get the number of local DOF`s for trial and test functions
 !      indof = elem_igetNDofLoc(celement)
 !      
 !      ! Number of vertices on the element
@@ -855,7 +855,7 @@ contains
 !      
 !    END IF
 !      
-!    ! Calculate the global DOF's on that element into IdofsTest.
+!    ! Calculate the global DOF`s on that element into IdofsTest.
 !    ALLOCATE(Idofs(indof,SIZE(Ielements)))
 !    CALL dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
 !        Ielements, .FALSE.,Idofs)
@@ -1037,7 +1037,7 @@ contains
     ! Transformation
     integer(I32) :: ctrafoType
     
-    ! Values of basis functions and DOF's
+    ! Values of basis functions and DOF`s
     real(DP), dimension(:,:,:,:), allocatable :: Dbas
     integer, dimension(:,:), allocatable :: Idofs
 
@@ -1062,7 +1062,7 @@ contains
       ! Element type
       celement = p_RelementDistribution(1)%celement
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
@@ -1102,7 +1102,7 @@ contains
       ! characteristics by checking the first element.
       celement = p_RelementDistribution(p_IelementDistr(Ielements(1)))%celement
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indof = elem_igetNDofLoc(celement)
       
       ! Number of vertices on the element
@@ -1116,7 +1116,7 @@ contains
       
     end if
       
-    ! Calculate the global DOF's on that element into IdofsTest.
+    ! Calculate the global DOF`s on that element into IdofsTest.
     allocate(Idofs(indof,size(Ielements)))
     call dof_locGlobMapping_mult(rvectorScalar%p_rspatialDiscr, &
         Ielements, Idofs)
@@ -1149,11 +1149,11 @@ contains
     ! a combined evaluation tag. 
     cevaluationTag = elem_getEvaluationTag(celement)
     
-    ! Don't create coordinates on the reference/real element; we do this manually!
+    ! Do not create coordinates on the reference/real element; we do this manually!
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REFPOINTS))
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_REALPOINTS))
 
-    ! Don't calculate element shape information, we have that already.
+    ! Do not calculate element shape information, we have that already.
     cevaluationTag = iand(cevaluationTag,not(EL_EVLTAG_COORDS))
                     
     ! Calculate all information that is necessary to evaluate the finite element
@@ -1270,9 +1270,9 @@ contains
   ! array [1..npointsPerElement,1..Number of elements]
   real(DP), dimension(:,:), intent(in)          :: Ddetj
   
-  ! An array accepting the DOF's on all elements in the trial space
+  ! An array accepting the DOF`s on all elements in the trial space
   ! of the FE function.
-  ! DIMENSION(\#local DOF's in trial space,nelements)
+  ! DIMENSION(\#local DOF`s in trial space,nelements)
   integer, dimension(:,:), intent(in)           :: IdofsTrial
   
   ! Number of points on every element where to evalate the function
@@ -1286,7 +1286,7 @@ contains
   ! The coordinates are expected 
   ! - on the reference element, if celement identifies a parametric element
   ! - on the real element, if celement identifies a nonparametric element
-  ! It's assumed that:
+  ! It is assumed that:
   !  Dpoints(1,.)=x-coordinates,
   !  Dpoints(2,.)=y-coordinates.
   ! furthermore:
@@ -1425,9 +1425,9 @@ contains
   ! elements that we are concerning here.
   integer(I32), intent(in)                      :: celement
 
-  ! An array accepting the DOF's on all elements in the trial space
+  ! An array accepting the DOF`s on all elements in the trial space
   ! of the FE function.
-  ! DIMENSION(\#local DOF's in trial space,nelements)
+  ! DIMENSION(\#local DOF`s in trial space,nelements)
   integer, dimension(:,:), intent(in) :: IdofsTrial
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
@@ -1602,9 +1602,9 @@ contains
   ! Evaluate the basis functions
   call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
   
-  ! Get the pointer to the trail DOF's.
+  ! Get the pointer to the trail DOF`s.
   ! If the IdofsTrial in the domain subset fits to our current element,
-  ! take that. Otherwise, we have to compute the actual DOF's.
+  ! take that. Otherwise, we have to compute the actual DOF`s.
   if (rdomainIntSubset%celement .eq. celement) then
     p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
   else
@@ -1742,9 +1742,9 @@ contains
   ! Evaluate the basis functions
   call elem_generic_sim2 (celement, rdomainIntSubset%p_revalElementSet, Bder, DbasTrial)
   
-  ! Get the pointer to the trail DOF's.
+  ! Get the pointer to the trail DOF`s.
   ! If the IdofsTrial in the domain subset fits to our current element,
-  ! take that. Otherwise, we have to compute the actual DOF's.
+  ! take that. Otherwise, we have to compute the actual DOF`s.
   if (rdomainIntSubset%celement .eq. celement) then
     p_IdofsTrial => rdomainIntSubset%p_IdofsTrial
   else

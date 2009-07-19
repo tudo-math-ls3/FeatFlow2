@@ -175,7 +175,7 @@ contains
     deallocate(IidxOld)
     deallocate(IptrOld)
     
-    ! That's it
+    ! That is it
 
   end subroutine
 
@@ -315,7 +315,7 @@ contains
     if(allocated(IinvIdx)) &
       deallocate(IinvIdx)
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -454,7 +454,7 @@ contains
         InodeColour(i) = 0
       end do
 
-      ! Now let's loop through the nodes
+      ! Now let us loop through the nodes
       do i = 1, NNODE
       
         ! Get the node index
@@ -468,11 +468,11 @@ contains
         ! Go through the adjacencies of this node
         do j = p_Iptr(inode), p_Iptr(inode+1)-1
           
-          ! The the node's colour
+          ! The node`s colour
           k = InodeColour(p_Iidx(j))
           
           if (k .gt. 0) then
-            ! Mark this node's colour as 'used'
+            ! Mark this node`s colour as 'used'
             IcolourMap(k) = 1
           end if
           
@@ -496,7 +496,7 @@ contains
         
         ! Did we find a free colour?
         if(iminColour .gt. 0) then
-          ! Yes, so set the node's colour to this one
+          ! Yes, so set the node`s colour to this one
           InodeColour(inode) = iminColour
           InumNodes(iminColour) = InumNodes(iminColour) + 1
         else
@@ -510,7 +510,7 @@ contains
     
     else
     
-      ! Now let's loop through the nodes
+      ! Now let us loop through the nodes
       do i = 1, NNODE
         
         ! Format the colour map
@@ -525,7 +525,7 @@ contains
           k = p_Iidx(j)
           
           if (k .lt. i) then
-            ! Mark this node's colour as 'used'
+            ! Mark this node`s colour as 'used'
             IcolourMap(InodeColour(k)) = 1
           end if
           
@@ -549,7 +549,7 @@ contains
         
         ! Did we find a free colour?
         if(iminColour .gt. 0) then
-          ! Yes, so set the node's colour to this one
+          ! Yes, so set the node`s colour to this one
           InodeColour(i) = iminColour
           InumNodes(iminColour) = InumNodes(iminColour) + 1
         else
@@ -607,7 +607,7 @@ contains
     deallocate(InumNodes)
     deallocate(IcolourMap)
     
-    ! That's it
+    ! That is it
 
   end subroutine
   
@@ -693,7 +693,7 @@ contains
     lvl2 = 0
     do while(lvl2 .lt. NNODE)
     
-      ! Usually, the DO-WHILE loop we're in performs just one iteration.
+      ! Usually, the DO-WHILE loop we are in performs just one iteration.
       ! However, if the adjacency graph is reducible, then we cannot reach all
       ! nodes by running through the adjacency levels of only one root - so we
       ! are forced to choose a new root for every disjunct subgraph...
@@ -735,7 +735,7 @@ contains
       if(root .le. 0) then
       
         ! If we come out here, then something must have gone terribly wrong.
-        ! We haven't processed all nodes yet, but we cannot find a new root...
+        ! We have not processed all nodes yet, but we cannot find a new root...
         call output_line ('internal error - no root found', &
                           OU_CLASS_ERROR,OU_MODE_STD,'adj_calcCuthillMcKee')
 
@@ -753,7 +753,7 @@ contains
       p_Ipermute(lvl1) = root
       Iaux(root) = -Iaux(root)
     
-      ! Now let's go through the adjacency levels of the root, until there
+      ! Now let us go through the adjacency levels of the root, until there
       ! are no more adjacent nodes left.
       do while(lvl2 .lt. NNODE)
       
@@ -773,11 +773,11 @@ contains
             ! Has this node already been processed?
             if(Iaux(k) .gt. 0) then
             
-              ! No, so let's add it to the next level
+              ! No, so let us add it to the next level
               lvl3 = lvl3+1
               p_Ipermute(lvl3) = k
               
-              ! And negate it's entry in the auxiliary array to mark it
+              ! And negate it is entry in the auxiliary array to mark it
               ! as 'already processed'
               Iaux(k) = -Iaux(k)
               
@@ -787,7 +787,7 @@ contains
         
         end do ! i
         
-        ! Didn't we find any adjacent nodes anymore?
+        ! Did not we find any adjacent nodes anymore?
         ! Then jump out of this loop
         if(lvl3 .le. lvl2) exit
 
@@ -799,7 +799,7 @@ contains
           call adj_cmk_aux_sort_max(lvl2+1,lvl3,p_Ipermute,Iaux)
         end select
         
-        ! Otherwise let's proceed with the next adjacency level
+        ! Otherwise let us proceed with the next adjacency level
         lvl1 = lvl2+1
         lvl2 = lvl3
       
@@ -823,7 +823,7 @@ contains
     ! Deallocate the auxiliary array
     deallocate(Iaux)
     
-    ! That's it
+    ! That is it
 
   contains
   
@@ -833,7 +833,7 @@ contains
     
     integer :: i,j,k
     
-      ! Return if there's nothing to do here...
+      ! Return if there is nothing to do here...
       if(m .le. n) return
     
       ! Bubble-sort - replace with something faster later...
@@ -861,7 +861,7 @@ contains
     
     integer :: i,j,k
     
-      ! Return if there's nothing to do here...
+      ! Return if there is nothing to do here...
       if(m .le. n) return
     
       ! Bubble-sort - replace with something faster later...

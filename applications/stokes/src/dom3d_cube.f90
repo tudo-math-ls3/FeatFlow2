@@ -106,7 +106,7 @@ contains
     ! First of all, set up the Ifaces array:
     do i = 1, 6
       
-      ! If the corresponding bit is set, we'll add the face, otherwise
+      ! If the corresponding bit is set, we will add the face, otherwise
       ! we will set the corresponding Ifaces entry to -1.
       if(iand(cfaces, int(2**(i-1),I32)) .ne. 0) then
         ! Add the face
@@ -128,7 +128,7 @@ contains
     call mshreg_recalcVerticesFromFaces(rmeshRegion)
     call mshreg_recalcEdgesFromFaces(rmeshRegion)
     
-    ! That's it
+    ! That is it
 
   end subroutine
 

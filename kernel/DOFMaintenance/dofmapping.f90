@@ -8,13 +8,13 @@
 !# to map local degrees of freedom on one element primitive onto the global
 !# degrees of freedom of a solution vector.
 !#
-!# The following functions provide support for global DOF's:
+!# The following functions provide support for global DOF`s:
 !#
 !# 1.) dof_igetNDofGlob
-!#     -> Get number of global DOF's described by a given discretisation
+!#     -> Get number of global DOF`s described by a given discretisation
 !#
 !# 2.) dof_igetNDofGlobBlock
-!#     -> Get number of global DOF's described by a given block discretisation
+!#     -> Get number of global DOF`s described by a given block discretisation
 !#
 !# 3.) dof_locGlobMapping
 !#     -> Map the 'local' degrees of freedom 1..n on one element to the global 
@@ -52,9 +52,9 @@ module dofmapping
 
 !<constants>
 
-  !<constantblock description="Kind values for global DOF's">
+  !<constantblock description="Kind values for global DOF`s">
 
-  ! kind value for indexing global DOF's
+  ! kind value for indexing global DOF`s
   ! !!! DEPRECATED: DO NOT USE THIS CONSTANT ANYMORE !!!
   integer, parameter, public :: PREC_DOFIDX     = I32
 
@@ -120,7 +120,7 @@ contains
 
     else if (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then
 
-      ! Conformal discretisation. That's a little bit tricky!
+      ! Conformal discretisation. That is a little bit tricky!
       ! At first, we support only the case where two element types are mixed.
       if (rdiscretisation%inumFESpaces .eq. 2) then
         Celements(1) = rdiscretisation%RelementDistr(1)%celement
@@ -167,24 +167,24 @@ contains
     ! IN: The element type of the discretisation
     integer(I32), intent(in) :: celement
     
-    ! OUT: number of global DOF's.
+    ! OUT: number of global DOF`s.
     
-    ! The number of global DOF's depends on the element type...
+    ! The number of global DOF`s depends on the element type...
     select case (elem_getPrimaryElement(celement))
     case (EL_P0_1D)
-      ! DOF's in the cell midpoints
+      ! DOF`s in the cell midpoints
       NDFG_uniform1D = rtriangulation%NEL
     case (EL_P1_1D)
-      ! DOF's in the vertices
+      ! DOF`s in the vertices
       NDFG_uniform1D = rtriangulation%NVT
     case (EL_P2_1D)
-      ! DOF's in the vertices and cell midpoints
+      ! DOF`s in the vertices and cell midpoints
       NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL
     case (EL_S31_1D)
-      ! DOF's in the vertices
+      ! DOF`s in the vertices
       NDFG_uniform1D = 2*rtriangulation%NVT
     case (EL_PN_1D)
-      ! DOF's in the vertices + cells
+      ! DOF`s in the vertices + cells
       NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL * &
                        iand(ishft(celement,-16),255_I32)
     end select
@@ -205,33 +205,33 @@ contains
     ! IN: The element type of the discretisation
     integer(I32), intent(in) :: celement
     
-    ! OUT: number of global DOF's.
+    ! OUT: number of global DOF`s.
     
-    ! The number of global DOF's depends on the element type...
+    ! The number of global DOF`s depends on the element type...
     select case (elem_getPrimaryElement(celement))
     case (EL_P0, EL_Q0)
-      ! DOF's in the cell midpoints
+      ! DOF`s in the cell midpoints
       NDFG_uniform2D = rtriangulation%NEL
     case (EL_P1, EL_Q1)
-      ! DOF's in the vertices
+      ! DOF`s in the vertices
       NDFG_uniform2D = rtriangulation%NVT
     case (EL_DG_P1_2D)
-      ! DOF's in the vertices
+      ! DOF`s in the vertices
       NDFG_uniform2D = rtriangulation%NEL*3
     case (EL_P2)
-      ! DOF's in the vertices and edge midpoints
+      ! DOF`s in the vertices and edge midpoints
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT
     case (EL_Q2)
-      ! DOF's in the vertices, edge midpoints and element midpoints
+      ! DOF`s in the vertices, edge midpoints and element midpoints
       NDFG_uniform2D = rtriangulation%NVT + rtriangulation%NMT + rtriangulation%NEL
     case (EL_P3)
-      ! 1 DOF's per vertices, 2 DOF per edge 
+      ! 1 DOF`s per vertices, 2 DOF per edge 
       NDFG_uniform2D = rtriangulation%NVT + 2*rtriangulation%NMT
     case (EL_Q3)
-      ! 1 DOF's per vertices, 2 DOF per edge, 4 DOF in the inner
+      ! 1 DOF`s per vertices, 2 DOF per edge, 4 DOF in the inner
       NDFG_uniform2D = rtriangulation%NVT + 2*rtriangulation%NMT + 4*rtriangulation%NEL
     case (EL_QP1)
-      ! 3 DOF's in the midpoint of the element.
+      ! 3 DOF`s in the midpoint of the element.
       NDFG_uniform2D = 3*rtriangulation%NEL
     case (EL_P1T, EL_Q1T)
       ! 1 DOF per edge
@@ -240,7 +240,7 @@ contains
       ! 1 DOF per edge, one per element
       NDFG_uniform2D = rtriangulation%NMT + rtriangulation%NEL
     case (EL_Q2T)
-      ! DOF's in the vertices, edge midpoints and element midpoints
+      ! DOF`s in the vertices, edge midpoints and element midpoints
       NDFG_uniform2D = 2*rtriangulation%NMT + rtriangulation%NEL
     case (EL_Q2TB)
       ! E037
@@ -263,7 +263,7 @@ contains
     ! type identifier, Celements(2) the other one.
     integer(I32), dimension(:), intent(in) :: Celements
     
-    ! OUT: number of global DOF's.
+    ! OUT: number of global DOF`s.
     
     ! local variables
     integer(I32), dimension(size(Celements)) :: IelTypesPrimary
@@ -271,19 +271,19 @@ contains
     ! Get the primary element number
     IelTypesPrimary = elem_getPrimaryElement(Celements)
     
-    ! The number of global DOF's depends on the element type...
+    ! The number of global DOF`s depends on the element type...
     select case (IelTypesPrimary(1))
     case (EL_P0, EL_Q0)
       select case (IelTypesPrimary(2))
       case (EL_P0, EL_Q0)
-        ! DOF's in the cell midpoints
+        ! DOF`s in the cell midpoints
         NDFG_conformal2D_2el = rtriangulation%NEL
       end select
       
     case (EL_P1, EL_Q1)
       select case (IelTypesPrimary(2))
       case (EL_P1, EL_Q1)
-        ! DOF's in the vertices
+        ! DOF`s in the vertices
         NDFG_conformal2D_2el = rtriangulation%NVT
       end select
     
@@ -299,7 +299,7 @@ contains
     case (EL_P1T,EL_Q1T)
       select case (IelTypesPrimary(2))
       case (EL_P1T,EL_Q1T)
-        ! DOF's in the edge midpoints
+        ! DOF`s in the edge midpoints
         NDFG_conformal2D_2el = rtriangulation%NMT
       
       end select
@@ -322,28 +322,28 @@ contains
     ! IN: The element type of the discretisation
     integer(I32), intent(in) :: celement
     
-    ! OUT: number of global DOF's.
+    ! OUT: number of global DOF`s.
     
-    ! The number of global DOF's depends on the element type...
+    ! The number of global DOF`s depends on the element type...
     select case (elem_getPrimaryElement(celement))
     case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
-      ! DOF's in the cell midpoints
+      ! DOF`s in the cell midpoints
       NDFG_uniform3D = rtriangulation%NEL
     case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
-      ! DOF's in the vertices
+      ! DOF`s in the vertices
       NDFG_uniform3D = rtriangulation%NVT
     case (EL_Q2_3D)
-      ! DOF's in everything
+      ! DOF`s in everything
       NDFG_uniform3D = rtriangulation%NVT + rtriangulation%NMT + &
                        rtriangulation%NAT + rtriangulation%NEL
     case (EL_QP1_3D)
-      ! 4 DOF's in the midpoint of the element.
+      ! 4 DOF`s in the midpoint of the element.
       NDFG_uniform3D = 4*rtriangulation%NEL
     case (EL_Q1T_3D)
-      ! DOF's in the face midpoints
+      ! DOF`s in the face midpoints
       NDFG_uniform3D = rtriangulation%NAT
     case (EL_Q2T_3D)
-      ! DOF's in the face midpoints
+      ! DOF`s in the face midpoints
       NDFG_uniform3D = 3*rtriangulation%NAT + rtriangulation%NEL
     end select
     
@@ -373,7 +373,7 @@ contains
 
 !</function>
 
-    ! Sum up the DOF's of every scalar sub-discretisation structure
+    ! Sum up the DOF`s of every scalar sub-discretisation structure
     integer :: i
     integer :: icount
     
@@ -398,7 +398,7 @@ contains
   ! of the degrees of freedom of the element ielIdx. It is a wrapper routine
   ! for the corresponding routines for a specific element type.
   !
-  ! On each element, there are a number of local DOF's 1..n (where n can
+  ! On each element, there are a number of local DOF`s 1..n (where n can
   ! be obtained using elem_igetNDofLoc). This subroutine returns the
   ! corresponding global degrees of freedom, corresponding to these local
   ! ones.
@@ -446,14 +446,14 @@ contains
   ! of the degrees of freedom of the elements IelIdx. It is a wrapper routine
   ! for the corresponding routines for a specific element type.
   !
-  ! On each element, there are a number of local DOF's 1..n (where n can
+  ! On each element, there are a number of local DOF`s 1..n (where n can
   ! be obtained using elem_igetNDofLoc). This subroutine returns the
   ! corresponding global degrees of freedom, corresponding to these local
   ! ones.
-  ! The routine allows to calculate the DOF's to a list of elements
+  ! The routine allows to calculate the DOF`s to a list of elements
   ! which are all of the same type. IelIdx is this list of elements and
   ! IdofGlob is a 2D array which receives for every element the
-  ! corresponding global DOF's.
+  ! corresponding global DOF`s.
 !</description>
 
 !<input>
@@ -469,7 +469,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -486,8 +486,8 @@ contains
     integer :: i,iel,isize,ipos,ielnr
 
     if (rdiscretisation%bprecompiledDofMapping) then
-      ! Just copy the global DOF's from the array with the
-      ! DOF's of the element. All elements have the same number of DOF's.
+      ! Just copy the global DOF`s from the array with the
+      ! DOF`s of the element. All elements have the same number of DOF`s.
       call storage_getbase_int (rdiscretisation%h_IelementDofs,p_IelementDofs)
       call storage_getbase_int (rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
       
@@ -500,7 +500,7 @@ contains
         end do
       end do
       
-      ! That's it.
+      ! That is it.
       return
     end if
 
@@ -509,37 +509,37 @@ contains
     
     select case(rdiscretisation%ndimension)
     case (NDIM1D)
-      ! Call the right 'multiple-get' routines for global DOF's.
+      ! Call the right 'multiple-get' routines for global DOF`s.
       ! For this purpose we evaluate the pointers in the discretisation
       ! structure (if necessary) to prevent another call using pointers...
-      ! The number of global DOF's depends on the element type...
+      ! The number of global DOF`s depends on the element type...
       
       celement = rdiscretisation%RelementDistr(1)%celement
       
       select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
-        ! DOF's for P0
+        ! DOF`s for P0
         call dof_locGlobUniMult_P0_1D(IelIdx, IdofGlob)
         return
       case (EL_P1_1D)
-        ! DOF's in the vertices
+        ! DOF`s in the vertices
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
         call dof_locGlobUniMult_P1_1D(p_2darray, IelIdx, IdofGlob)
         return
       case (EL_P2_1D)
-        ! DOF's in the vertices and line midpoints
+        ! DOF`s in the vertices and line midpoints
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
         call dof_locGlobUniMult_P2_1D(p_rtriangulation%NVT, p_2darray, IelIdx,&
                                       IdofGlob)
         return
       case (EL_S31_1D)
-        ! DOF's in the vertices
+        ! DOF`s in the vertices
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
         call dof_locGlobUniMult_S31_1D(p_rtriangulation%NVT, p_2darray, IelIdx,&
                                        IdofGlob)
         return
       case (EL_PN_1D)
-        ! DOF's in the vertices
+        ! DOF`s in the vertices
         call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
         call dof_locGlobUniMult_PN_1D(iand(int(ishft(celement,-16)),255), &
             p_rtriangulation%NVT, p_rtriangulation%NEL, p_2darray, IelIdx, IdofGlob)
@@ -550,36 +550,36 @@ contains
       ! At first we deal only with uniform discretisations
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
       
-        ! Call the right 'multiple-get' routines for global DOF's.
+        ! Call the right 'multiple-get' routines for global DOF`s.
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
-        ! The number of global DOF's depends on the element type...
+        ! The number of global DOF`s depends on the element type...
         
         celement = rdiscretisation%RelementDistr(1)%celement
         
         select case (elem_getPrimaryElement(celement))
         case (EL_P0, EL_Q0)
-          ! DOF's for Q0
+          ! DOF`s for Q0
           call dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
           return
         case (EL_P1, EL_Q1)
-          ! DOF's in the vertices
+          ! DOF`s in the vertices
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_DG_P1_2D)
-          ! DOF's in the vertices
+          ! DOF`s in the vertices
           call dof_locGlobUniMult_DGP12D(IelIdx, IdofGlob)
           return
         case (EL_P2)
-          ! DOF's in the vertices and egde midpoints
+          ! DOF`s in the vertices and egde midpoints
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
           call dof_locGlobUniMult_P2(p_rtriangulation%NVT,p_2darray, p_2darray2,&
                                      IelIdx, IdofGlob)
           return
         case (EL_Q2)
-          ! DOF's in the vertices, egde midpoints and element midpoints
+          ! DOF`s in the vertices, egde midpoints and element midpoints
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
           call dof_locGlobUniMult_Q2(p_rtriangulation%NVT,p_rtriangulation%NMT,&
@@ -589,31 +589,31 @@ contains
         case (EL_Q3) 
 
         case (EL_QP1)
-          ! DOF's for Q1
+          ! DOF`s for Q1
           call dof_locGlobUniMult_QP1(p_rtriangulation%NEL,IelIdx, IdofGlob)
           return
         case (EL_P1T)
-          ! DOF's in the edges
+          ! DOF`s in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_P1T(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q1T)
-          ! DOF's in the edges
+          ! DOF`s in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q1TB)
-          ! DOF's in the edges
+          ! DOF`s in the edges
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1TB(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2T)
-          ! DOF's in the edges and the element center
+          ! DOF`s in the edges and the element center
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q2T(p_rtriangulation%NMT,p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2TB)
-          ! DOF's in the edges and the element center
+          ! DOF`s in the edges and the element center
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray)
           call dof_locGlobUniMult_Q2TB(p_rtriangulation%NMT,p_rtriangulation%NEL,&
                                        p_2darray, IelIdx, IdofGlob)
@@ -624,7 +624,7 @@ contains
       
       else if (rdiscretisation%ccomplexity .eq. SPDISC_CONFORMAL) then
       
-        ! Conformal discretisation. That's a little bit tricky!
+        ! Conformal discretisation. That is a little bit tricky!
         ! At first, we support only the case where two element types are mixed.
         if (rdiscretisation%inumFESpaces .eq. 2) then
 
@@ -639,7 +639,7 @@ contains
           case (EL_P0, EL_Q0)
             select case (Celements(2))
             case (EL_P0, EL_Q0)
-              ! DOF's in the cell midpoints.
+              ! DOF`s in the cell midpoints.
               ! That works like P0 elements.
               call dof_locGlobUniMult_P0Q0(IelIdx, IdofGlob)
               return
@@ -648,7 +648,7 @@ contains
           case (EL_P1, EL_Q1)
             select case (Celements(2))
             case (EL_P1, EL_Q1)
-              ! DOF's in the vertices.
+              ! DOF`s in the vertices.
               ! That works like P1 elements.
               call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
               call dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
@@ -658,7 +658,7 @@ contains
           case (EL_P2, EL_Q2)
             select case (Celements(2))
             case (EL_P2, EL_Q2)
-              ! DOF's in the vertices, edges and element mitpoints of the quads.
+              ! DOF`s in the vertices, edges and element mitpoints of the quads.
               ! For this purpose, we need the element counter array that counts
               ! every quad element.
               call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
@@ -666,7 +666,7 @@ contains
               call storage_getbase_int (rdiscretisation%h_IelementCounter,p_IelementCounter)
               
               ! Use p_IverticesAtElement evaluated at the first element in the element
-              ! set to determine NVE. It's either 3 or 4 and valid for all elements
+              ! set to determine NVE. It is either 3 or 4 and valid for all elements
               ! in the current element set.
               if (ubound(p_2darray,1) .ge. 4) then
                 if (p_2darray(4,IelIdx(1)) .eq. 0) then
@@ -687,7 +687,7 @@ contains
           case (EL_P1T, EL_Q1T)
             select case (Celements(2))
             case (EL_P1T, EL_Q1T)
-              ! DOF's in the edges
+              ! DOF`s in the edges
               ! That works like P1 elements.
               call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
               call dof_locGlobUniMult_P1Q1(p_2darray, IelIdx, IdofGlob)
@@ -704,24 +704,24 @@ contains
       ! At first we deal only with uniform discretisations
       if (rdiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
       
-        ! Call the right 'multiple-get' routines for global DOF's.
+        ! Call the right 'multiple-get' routines for global DOF`s.
         ! For this purpose we evaluate the pointers in the discretisation
         ! structure (if necessary) to prevent another call using pointers...
-        ! The number of global DOF's depends on the element type...
+        ! The number of global DOF`s depends on the element type...
         celement = rdiscretisation%RelementDistr(1)%celement
         
         select case (elem_getPrimaryElement(celement))
         case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
-          ! DOF's for Q0
+          ! DOF`s for Q0
           call dof_locGlobUniMult_P0Q0_3D(IelIdx, IdofGlob)
           return
         case (EL_P1_3D, EL_Q1_3D, EL_Y1_3D, EL_R1_3D)
-          ! DOF's in the vertices
+          ! DOF`s in the vertices
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call dof_locGlobUniMult_P1Q1_3D(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2_3D)
-          ! DOF's in everything
+          ! DOF`s in everything
           call storage_getbase_int2D (p_rtriangulation%h_IverticesAtElement,p_2darray)
           call storage_getbase_int2D (p_rtriangulation%h_IedgesAtElement,p_2darray2)
           call storage_getbase_int2D (p_rtriangulation%h_IfacesAtElement,p_2darray3)
@@ -729,16 +729,16 @@ contains
               p_rtriangulation%NAT, p_2darray, p_2darray2, p_2darray3, IelIdx, IdofGlob)
           return
         case (EL_QP1_3D)
-          ! DOF's for QP1
+          ! DOF`s for QP1
           call dof_locGlobUniMult_QP1_3D(p_rtriangulation%NEL,IelIdx, IdofGlob)
           return
         case (EL_Q1T_3D)
-          ! DOF's in the face midpoints
+          ! DOF`s in the face midpoints
           call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
           call dof_locGlobUniMult_Q1T_3D(p_2darray, IelIdx, IdofGlob)
           return
         case (EL_Q2T_3D)
-          ! DOF's in the face midpoints
+          ! DOF`s in the face midpoints
           call storage_getbase_int2D(p_rtriangulation%h_IfacesAtElement,p_2darray)
           call dof_locGlobUniMult_Q2T_3D(p_rtriangulation%NAT,p_2darray, IelIdx, IdofGlob)
           return
@@ -782,7 +782,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -828,7 +828,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -840,7 +840,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
     end do
@@ -879,7 +879,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -891,7 +891,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners and the cell midpoints.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       IdofGlob(3,i) = NVT + IelIdx(i)
@@ -931,7 +931,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -943,7 +943,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:2,i) = IverticesAtElement(1:2,IelIdx(i))
       IdofGlob(3:4,i) = NVT + IdofGlob(1:2,i)
@@ -989,7 +989,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1033,7 +1033,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1079,7 +1079,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1089,14 +1089,14 @@ contains
   ! local variables 
   integer :: i,j
   
-    ! Get the number of local DOF's - usually either 3 or 4, depending on
+    ! Get the number of local DOF`s - usually either 3 or 4, depending on
     ! the element. The first dimension of IdofGlob indicates the number of 
-    ! DOF's.
+    ! DOF`s.
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
     
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
@@ -1127,7 +1127,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1139,7 +1139,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's. Every element gives 3 DOF's which are
+      ! Calculate the global DOF`s. Every element gives 3 DOF`s which are
       ! 'internally' associated to the vertices but are not coupled.
       IdofGlob(1,i) = 1+3*(IelIdx(i)-1)
       IdofGlob(2,i) = 2+3*(IelIdx(i)-1)
@@ -1181,7 +1181,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1193,8 +1193,8 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The P2 element has global DOF's in the corners and edge midpoints
+      ! Calculate the global DOF`s.
+      ! The P2 element has global DOF`s in the corners and edge midpoints
       ! of the triangles. 
       !
       ! Take the numbers of the corners of the triangles at first.
@@ -1245,7 +1245,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1257,8 +1257,8 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The Q2 element has global DOF's in the corners, edge midpoints
+      ! Calculate the global DOF`s.
+      ! The Q2 element has global DOF`s in the corners, edge midpoints
       ! and element midpoints of the quads.
       !
       ! Take the numbers of the corners of the triangles at first.
@@ -1323,7 +1323,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1338,8 +1338,8 @@ contains
        
       ! Loop through the elements to handle
       do i=1,size(IelIdx)
-        ! Calculate the global DOF's.
-        ! The P2 element has global DOF's in the corners and edge midpoints.
+        ! Calculate the global DOF`s.
+        ! The P2 element has global DOF`s in the corners and edge midpoints.
         !
         ! Take the numbers of the corners of the triangles at first.
         IdofGlob(1:3,i) = IverticesAtElement(1:3,IelIdx(i))
@@ -1355,8 +1355,8 @@ contains
 
       ! Loop through the elements to handle
       do i=1,size(IelIdx)
-        ! Calculate the global DOF's.
-        ! The Q2 element has global DOF's in the corners, edge midpoints
+        ! Calculate the global DOF`s.
+        ! The Q2 element has global DOF`s in the corners, edge midpoints
         ! and element midpoints of the quads.
         !
         ! Take the numbers of the corners of the triangles at first.
@@ -1370,7 +1370,7 @@ contains
         ! a number behind. Note that we must not specify the actual element
         ! number here, but the element number in the set of quad elements!
         ! This is due to the fact that the element midpoints of triangular 
-        ! elements don't contribute to DOF's in a mixed P2/Q2 discretisatrion!
+        ! elements do not contribute to DOF`s in a mixed P2/Q2 discretisatrion!
         IdofGlob(9,i) = IelementCounter(IelIdx(i))+NVT+NMT
         
       end do
@@ -1406,7 +1406,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1456,7 +1456,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1468,10 +1468,10 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners.
       ! We always copy all elements of IedgesAtElement (:,.).
-      ! There's no harm and the compiler can optimise better.
+      ! There is no harm and the compiler can optimise better.
       
       IdofGlob(1:TRIA_NVETRI2D,i) = IedgesAtElement(1:TRIA_NVETRI2D,IelIdx(i))
     end do
@@ -1506,7 +1506,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1518,9 +1518,9 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the edge numbers.
+      ! Calculate the global DOF`s - which are simply the edge numbers.
       ! We always copy all elements of IedgesAtElement (:,.).
-      ! There's no harm and the compiler can optimise better.
+      ! There is no harm and the compiler can optimise better.
       
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
     end do
@@ -1558,7 +1558,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1570,10 +1570,10 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the numbers of the 
+      ! Calculate the global DOF`s - which are simply the numbers of the 
       ! edges. The DOF in the element gets the element number.
       ! We always copy all elements of IedgesAtElement (:,.).
-      ! There's no harm and the compiler can optimise better.
+      ! There is no harm and the compiler can optimise better.
       
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
       IdofGlob(TRIA_NVEQUAD2D+1,i) = iNMT + IelIdx(i)
@@ -1612,7 +1612,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1624,12 +1624,12 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The first 4 DOF's are the number of the edges.
-      ! The next 4 DOF's are the number of the edges + nmt.
+      ! Calculate the global DOF`s.
+      ! The first 4 DOF`s are the number of the edges.
+      ! The next 4 DOF`s are the number of the edges + nmt.
       ! The last DOF is the element number + 2*nmt.
       ! We always copy all elements of IedgesAtElement (:,.).
-      ! There's no harm and the compiler can optimise better.
+      ! There is no harm and the compiler can optimise better.
       
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
       IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
@@ -1674,7 +1674,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1686,13 +1686,13 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's.
-      ! The first 4 DOF's are the number of the edges.
-      ! The next 4 DOF's are the number of the edges + nmt.
+      ! Calculate the global DOF`s.
+      ! The first 4 DOF`s are the number of the edges.
+      ! The next 4 DOF`s are the number of the edges + nmt.
       ! The 9th DOF is at 2*nmt + element number
       ! The 10th DOF is at 2*nmt + inel + element number
       ! We always copy all elements of IedgesAtElement (:,.).
-      ! There's no harm and the compiler can optimise better.
+      ! There is no harm and the compiler can optimise better.
       
       IdofGlob(1:TRIA_NVEQUAD2D,i) = IedgesAtElement(1:TRIA_NVEQUAD2D,IelIdx(i))
       IdofGlob(TRIA_NVEQUAD2D+1:2*TRIA_NVEQUAD2D,i) = &
@@ -1727,7 +1727,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1774,7 +1774,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1784,14 +1784,14 @@ contains
   ! local variables 
   integer :: i,j
   
-    ! Get the number of local DOF's - usually either 3 or 4, depending on
+    ! Get the number of local DOF`s - usually either 3 or 4, depending on
     ! the element. The first dimension of IdofGlob indicates the number of 
-    ! DOF's.
+    ! DOF`s.
     j = min(ubound(IverticesAtElement,1),ubound(IdofGlob,1))
     
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the vertex numbers of the 
+      ! Calculate the global DOF`s - which are simply the vertex numbers of the 
       ! corners.
       IdofGlob(1:j,i) = IverticesAtElement(1:j,IelIdx(i))
     end do
@@ -1842,7 +1842,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1889,7 +1889,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1941,7 +1941,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -1953,7 +1953,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the face numbers.
+      ! Calculate the global DOF`s - which are simply the face numbers.
       IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
     end do
 
@@ -1990,7 +1990,7 @@ contains
 !<output>
 
   ! Array of global DOF numbers; for every element in IelIdx there is
-  ! a subarray in this list receiving the corresponding global DOF's.
+  ! a subarray in this list receiving the corresponding global DOF`s.
   integer, dimension(:,:), intent(out) :: IdofGlob
 
 !</output>
@@ -2002,7 +2002,7 @@ contains
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
-      ! Calculate the global DOF's - which are simply the face numbers.
+      ! Calculate the global DOF`s - which are simply the face numbers.
       IdofGlob(1:6,i) = IfacesAtElement(1:6,IelIdx(i))
       IdofGlob( 7,i) = iNAT + 2*(IfacesAtElement(1,IelIdx(i))-1)+1
       IdofGlob( 8,i) = iNAT + 2*(IfacesAtElement(1,IelIdx(i))-1)+2
@@ -2148,8 +2148,8 @@ contains
 !<description>
   ! Precomputes the DOF-mapping. Simple discretisations may work with
   ! a direct mapping. More complex discretisations (hanging nodes e.g.) must
-  ! precompute the DOF-mapping to determine how to map local DOF's to
-  ! global DOF's.
+  ! precompute the DOF-mapping to determine how to map local DOF`s to
+  ! global DOF`s.
 !</description>
 
 !<inputoutput>
@@ -2172,10 +2172,10 @@ contains
     rdiscretisation%ndof = dof_igetNDofGlob(rdiscretisation)
     if (rdiscretisation%ndof .ne. 0) then
       
-      ! Allocate lists for precomputing the DOF's.
+      ! Allocate lists for precomputing the DOF`s.
       p_rtriangulation => rdiscretisation%p_rtriangulation
       
-      ! Allocate a temp array accepting the local DOF's.
+      ! Allocate a temp array accepting the local DOF`s.
       !
       ! At first allocate an index array; this has to be build in advance.
       call storage_new ('dof_precomputeDofMapping', 'h_IelementDofIdx', &
@@ -2184,7 +2184,7 @@ contains
       call storage_getbase_int(rdiscretisation%h_IelementDofIdx,p_IelementDofIdx)
       
       ! Build that array by looping through the element distributions and
-      ! counting the number of local DOF's.
+      ! counting the number of local DOF`s.
       do ieldistr = 1,rdiscretisation%inumFESpaces 
         call storage_getbase_int(rdiscretisation%RelementDistr(ieldistr)%h_IelementList,&
             p_IelementList)
@@ -2200,7 +2200,7 @@ contains
         p_IelementDofIdx(i) = p_IelementDofIdx(i) + p_IelementDofIdx(i-1)
       end do
       
-      ! Now get the actual DOF's.
+      ! Now get the actual DOF`s.
       call storage_new ('dof_precomputeDofMapping', 'h_IelementDofs', &
           p_IelementDofIdx(p_rtriangulation%NEL+1)-1, ST_INT, rdiscretisation%h_IelementDofs,&
           ST_NEWBLOCK_ZERO)
@@ -2212,7 +2212,7 @@ contains
             p_IelementList)
         ndoflocal = elem_igetNDofLoc(rdiscretisation%RelementDistr(ieldistr)%celement)
         
-        ! Allocate temp memory for the DOF's. Write them to this array at first
+        ! Allocate temp memory for the DOF`s. Write them to this array at first
         ! and copy them later to the actual array.
         allocate(IelementDofs(ndoflocal,rdiscretisation%RelementDistr(ieldistr)%NEL))
         
@@ -2225,7 +2225,7 @@ contains
           end do
         end do
 
-        ! Release temp memory, that's it.
+        ! Release temp memory, that is it.
         deallocate (IelementDofs)
       
       end do

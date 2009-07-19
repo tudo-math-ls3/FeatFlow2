@@ -11,7 +11,7 @@
 !# for a scalar quantity $u$ in the domain $\Omega$ in 1D, 2D and 3D.
 !#
 !#
-!# The flux function ${\bf f}(u)$ can be nonlinear, e.g. for Burgers'
+!# The flux function ${\bf f}(u)$ can be nonlinear, e.g. for Burgers`
 !# equation or linear as it is the case for linear transport.
 !#
 !# In the linear case, the flux function is typically given by
@@ -158,7 +158,7 @@
 !# Frequently asked questions
 !# --------------------------
 !#
-!# 1.) How to add a new sub-model, e.g. 1D-Burgers' equation in space time?
+!# 1.) How to add a new sub-model, e.g. 1D-Burgers` equation in space time?
 !#
 !#     
 !# 2.) How to add new finite elements in spatial dimension xD?
@@ -2809,8 +2809,8 @@ contains
 
       ! Create auxiliary memory
       h_BisactiveElement = ST_NOHANDLE
-      call storage_new('transp_estimateRecoveryError',' BisactiveEleme&
-          &nt', rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
+      call storage_new('transp_estimateRecoveryError',' BisactiveEleme' // &
+          'nt', rproblemLevel%rtriangulation%NEL, ST_LOGICAL,&
           h_BisactiveElement, ST_NEWBLOCK_NOINIT)
       call storage_getbase_logical(h_BisactiveElement, p_BisactiveElement)
       

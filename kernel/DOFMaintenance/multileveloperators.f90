@@ -183,7 +183,7 @@ contains
       imem = max(0,imemguess)
     end if
     
-    ! Let's make sure that the discretisations are uniform or conformal.
+    ! Let us make sure that the discretisations are uniform or conformal.
     if (((rdiscretisationCoarse%ccomplexity .ne. SPDISC_CONFORMAL) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_CONFORMAL)) .and. &
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
@@ -270,9 +270,9 @@ contains
   ! local variables
   type(t_matrixScalar) :: rmatrixBackup
   
-    ! The matrix must be unsorted, otherwise we can't set up the matrix.
+    ! The matrix must be unsorted, otherwise we can not set up the matrix.
     ! Note that we cannot switch off the sorting as easy as in the case
-    ! of a vector, since there's a structure behind the matrix! So the caller
+    ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
     if (rmatrixScalar%isortStrategy .gt. 0) then
       call output_line ('Matrix-structure must be unsorted!', &
@@ -280,7 +280,7 @@ contains
       call sys_halt()
     end if
 
-    ! Let's make sure that the discretisations are uniform or conformal.
+    ! Let us make sure that the discretisations are uniform or conformal.
     if (((rdiscretisationCoarse%ccomplexity .ne. SPDISC_CONFORMAL) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_CONFORMAL)) .and. &
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
@@ -385,9 +385,9 @@ contains
   
     if(present(cavrgType)) caverage = cavrgType
 
-    ! The matrix must be unsorted, otherwise we can't set up the matrix.
+    ! The matrix must be unsorted, otherwise we can not set up the matrix.
     ! Note that we cannot switch off the sorting as easy as in the case
-    ! of a vector, since there's a structure behind the matrix! So the caller
+    ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
     if (rmatrixScalar%isortStrategy .gt. 0) then
       call output_line ('Matrix-structure must be unsorted!', &
@@ -395,7 +395,7 @@ contains
       call sys_halt()
     end if
 
-    ! Let's make sure that the discretisations are uniform or conformal.
+    ! Let us make sure that the discretisations are uniform or conformal.
     if (((rdiscretisationCoarse%ccomplexity .ne. SPDISC_CONFORMAL) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_CONFORMAL)) .and. &
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
@@ -499,9 +499,9 @@ contains
   
     if(present(cavrgType)) caverage = cavrgType
 
-    ! The matrix must be unsorted, otherwise we can't set up the matrix.
+    ! The matrix must be unsorted, otherwise we can not set up the matrix.
     ! Note that we cannot switch off the sorting as easy as in the case
-    ! of a vector, since there's a structure behind the matrix! So the caller
+    ! of a vector, since there is a structure behind the matrix! So the caller
     ! has to make sure, the matrix is unsorted when this routine is called.
     if (rmatrixScalar%isortStrategy .gt. 0) then
       call output_line ('Matrix-structure must be unsorted!', &
@@ -509,7 +509,7 @@ contains
       call sys_halt()
     end if
 
-    ! Let's make sure that the discretisations are uniform or conformal.
+    ! Let us make sure that the discretisations are uniform or conformal.
     if (((rdiscretisationCoarse%ccomplexity .ne. SPDISC_CONFORMAL) .or. &
          (rdiscretisationFine%ccomplexity .ne. SPDISC_CONFORMAL)) .and. &
         ((rdiscretisationCoarse%ccomplexity .ne. SPDISC_UNIFORM) .or. &
@@ -578,7 +578,7 @@ contains
 !<description>
   ! This routine creates according to a given discretisation the matrix 
   ! structure of a structure-9 matrix. The discretisation is assumed to be
-  ! conformal, i.e. the DOF's of different FE spaces in the trial space
+  ! conformal, i.e. the DOF`s of different FE spaces in the trial space
   ! fit together. The function space for trial and test functions 
   ! may be different.
 !</description>
@@ -649,7 +649,7 @@ contains
   ! Size of memory currently allocated
   integer :: iallocated
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), pointer :: p_IdofsCoarse, p_IdofsFine
   
   ! Number of local degees of freedom for trial and test functions
@@ -683,8 +683,8 @@ contains
     !rmatrixScalar%p_rspatialDiscretisation => rdiscretisation
     rmatrixScalar%cmatrixFormat = LSYSSC_MATRIX9
     
-    ! Get the #DOF's of the test space - as #DOF's of the test space is
-    ! the number of equations in our matrix. The #DOF's in the trial space
+    ! Get the #DOF`s of the test space - as #DOF`s of the test space is
+    ! the number of equations in our matrix. The #DOF`s in the trial space
     ! gives the number of columns of our matrix.
     rmatrixScalar%NCOLS         = dof_igetNDofGlob(rdiscrCoarse)
     rmatrixScalar%NEQ           = dof_igetNDofGlob(rdiscrFine)
@@ -746,7 +746,7 @@ contains
     call storage_getbase_int (p_Ihcol(1),p_Icol)
 
     ! The new index array must be filled with 0 - otherwise
-    ! the search routine below won't work!
+    ! the search routine below will not work!
     call storage_new ('mlop_create2LvlMatStruct9_conf', 'p_Ihindx', &
                         p_Isize(1), ST_INT, p_Ihindx(1), ST_NEWBLOCK_ZERO)
     call storage_getbase_int (p_Ihindx(1),p_Iindx)
@@ -780,7 +780,7 @@ contains
     !
     ! Example: We want to add entry (1,3) to the matrix. Then
     ! we enlarge the lists as follows:
-    ! - "2" (the column number" is added to the end of Icol, i.e.
+    ! - "2" (the column number is added to the end of Icol, i.e.
     !   Icol(NEQ+1) = 3
     ! - We add a "follower" for the diagonal element by setting
     !   Iindx(1) = NEQ+1. Furthermore we set KIND(NEQ+1)=0
@@ -814,7 +814,7 @@ contains
       ! Activate the current coarse mesh element distribution
       p_relementDistribution => rdiscrCoarse%RelementDistr(i)
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(rdiscrCoarse%RelementDistr(i)%celement)
       indofFine = elem_igetNDofLoc(rdiscrFine%RelementDistr(i)%celement)
       
@@ -841,20 +841,20 @@ contains
     
     end do
     
-    ! Allocate an array saving a couple of DOF's for trial and test functions
+    ! Allocate an array saving a couple of DOF`s for trial and test functions
     allocate(p_IdofsCoarse(inmaxdofCoarse,nmaxelementsCoarse))
     allocate(p_IdofsFine(inmaxdofFine,nmaxelementsFine))
     
     ! And allocate the refinemed element list for the test functions
     allocate(p_IelementRef(nelementsFine))
     
-    ! Now let's loop over all element distributions
+    ! Now let us loop over all element distributions
     do IELDIST = 1, rdiscrCoarse%inumFESpaces
 
       ! Activate the current coarse mesh element distribution
       p_relementDistribution => rdiscrCoarse%RelementDistr(IELDIST)
     
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relementDistribution%celement)
       indofFine = elem_igetNDofLoc(rdiscrFine%RelementDistr(IELDIST)%celement)
       
@@ -871,7 +871,7 @@ contains
       NELC = p_relementDistribution%NEL
 
       ! Set the pointers/indices to the initial position. During the
-      ! search for new DOF's, these might be changed if there's not enough
+      ! search for new DOF`s, these might be changed if there is not enough
       ! memory in the first block.    
       icurrentblock = 1
       istartidx = 0
@@ -955,7 +955,7 @@ contains
           do IELF = 1, NELREF
           
             ! For building the local matrices, we have first to
-            ! loop through the test functions (the "O"'s), as these
+            ! loop through the test functions (the "O"`s), as these
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
 
@@ -963,8 +963,8 @@ contains
               ! This global DOF gives us the row we have to build.
               IROW = p_IdofsFine(IDOFE,NELF+IELF)
               
-              ! Now we loop through the other DOF's on the current element
-              ! (the "X"'s).
+              ! Now we loop through the other DOF`s on the current element
+              ! (the "X"`s).
               ! All these have common support with our current basis function
               ! and will therefore give an additive value to the global
               ! matrix.
@@ -1104,7 +1104,7 @@ contains
                         call storage_getbase_int (p_Ihcol(iblocks),p_Icol)
 
                         ! The new index array must be filled with 0 - otherwise
-                        ! the search routine below won't work!
+                        ! the search routine below will not work!
                         call storage_new ('mlop_create2LvlMatStruct9_conf', 'p_Ihindx', &
                                             p_Isize (iblocks), ST_INT, p_Ihindx(iblocks), &
                                             ST_NEWBLOCK_ZERO)
@@ -1120,7 +1120,7 @@ contains
                         ! for insertion of an element at position NA!
                         !
                         ! If the new position is not in the current block,
-                        ! it's in the last block... and so set the pointer
+                        ! it is in the last block... and so set the pointer
                         ! and indices appropriately!
                         
                         if ( NA .gt. (istartidx+p_Isize (icurrentblock))) then
@@ -1187,7 +1187,7 @@ contains
     ! Release the fine mesh element list
     deallocate(p_IelementRef)
 
-    ! Clean up the DOF's arrays    
+    ! Clean up the DOF`s arrays    
     deallocate(p_IdofsFine)
     deallocate(p_IdofsCoarse)
     
@@ -1304,7 +1304,7 @@ contains
 
     end do ! IEQ
     
-    ! HOORAY, THAT'S IT!
+    ! HOORAY, THAT IS IT!
     ! Deallocate all temporary memory...
     
     do i=iblocks,1,-1
@@ -1371,7 +1371,7 @@ contains
   integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -1477,7 +1477,7 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
     
-    ! Let's loop over all element distributions and determine the
+    ! Let us loop over all element distributions and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -1500,7 +1500,7 @@ contains
       ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
       ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
     
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
@@ -1541,7 +1541,7 @@ contains
 
     end do
     
-    ! Allocate an array saving a couple of DOF's for trial and test functions
+    ! Allocate an array saving a couple of DOF`s for trial and test functions
     allocate(IdofsCoarse(inmaxdofCoarse,nmaxelementsCoarse))
     allocate(IdofsFine(inmaxdofFine,nmaxelementsFine))
 
@@ -1571,7 +1571,7 @@ contains
     allocate(Kentry(inmaxdofCoarse,inmaxdofFine,nmaxelementsFine))
     allocate(Dentry(inmaxdofFine,inmaxdofCoarse,nmaxelementsFine))
     
-    ! Let's run through the element distributions
+    ! Let us run through the element distributions
     do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
     
       ! Activate the current element distributions
@@ -1582,7 +1582,7 @@ contains
       ! with that the trial functions
       call storage_getbase_int (p_relemDistCoarse%h_IelementList, p_IelementList)
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
         
@@ -1701,19 +1701,19 @@ contains
             !IDXF = p_IelementRef(NELF+IELF)
         
             ! For building the local matrices, we have first to
-            ! loop through the test functions (the "O"'s), as these
+            ! loop through the test functions (the "O"`s), as these
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
               ! Row IDOFE of the local matrix corresponds 
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
-              ! This is one of the the "O"'s in the above picture.
+              ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
               ! to JCOL0:
               JCOL0 = p_KLD(IdofsFine(IDOFE,NELF+IELF))
               
-              ! Now we loop through the other DOF's on the current element
-              ! (the "O"'s).
+              ! Now we loop through the other DOF`s on the current element
+              ! (the "O"`s).
               ! All these have common support with our current basis function
               ! and will therefore give an additive value to the global
               ! matrix.
@@ -1762,7 +1762,7 @@ contains
         ! that we have to change.
         ! To calculate the matrix contributions, we have to evaluate
         ! the elements to give us the values of the basis functions
-        ! in all the DOF's in all the elements in our set.
+        ! in all the DOF`s in all the elements in our set.
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
@@ -1822,12 +1822,12 @@ contains
               !
               ! Take the absolut value of the determinant of the mapping.
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,NELF+IELF))
 
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
-              ! loops through the "O"'s in the above picture,
+              ! loops through the "O"`s in the above picture,
               ! the test functions:
               do IDOFE=1,indofFine
               
@@ -1835,7 +1835,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
                 do JDOFE=1,indofCoarse
                 
@@ -1889,7 +1889,7 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -1947,7 +1947,7 @@ contains
   integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -2066,7 +2066,7 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
     
-    ! Let's loop over all element distributions and determine the
+    ! Let us loop over all element distributions and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -2089,7 +2089,7 @@ contains
       ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
       ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
     
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
@@ -2130,7 +2130,7 @@ contains
 
     end do
 
-    ! Allocate an array saving a couple of DOF's for trial and test functions
+    ! Allocate an array saving a couple of DOF`s for trial and test functions
     allocate(IdofsCoarse(inmaxdofCoarse,nmaxelementsCoarse))
     allocate(IdofsFine(inmaxdofFine,nmaxelementsFine))
 
@@ -2174,7 +2174,7 @@ contains
     ! Format the local weights array to 1
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
-    ! Let's run through the element distributions
+    ! Let us run through the element distributions
     do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
 
       ! Activate the current element distributions
@@ -2188,7 +2188,7 @@ contains
       ! Get the number of coarse mesh elements there.
       NELC = p_relemDistCoarse%NEL
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
         
@@ -2304,19 +2304,19 @@ contains
             !IDXF = p_IelementRef(NELF+IELF)
         
             ! For building the local matrices, we have first to
-            ! loop through the test functions (the "O"'s), as these
+            ! loop through the test functions (the "O"`s), as these
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
               ! Row IDOFE of the local matrix corresponds 
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
-              ! This is one of the the "O"'s in the above picture.
+              ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
               ! to JCOL0:
               JCOL0 = p_KLD(IdofsFine(IDOFE,NELF+IELF))
               
-              ! Now we loop through the other DOF's on the current element
-              ! (the "O"'s).
+              ! Now we loop through the other DOF`s on the current element
+              ! (the "O"`s).
               ! All these have common support with our current basis function
               ! and will therefore give an additive value to the global
               ! matrix.
@@ -2365,7 +2365,7 @@ contains
         ! that we have to change.
         ! To calculate the matrix contributions, we have to evaluate
         ! the elements to give us the values of the basis functions
-        ! in all the DOF's in all the elements in our set.
+        ! in all the DOF`s in all the elements in our set.
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
@@ -2426,12 +2426,12 @@ contains
               !
               ! Take the absolut value of the determinant of the mapping.
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,NELF+IELF))
 
-              ! Now loop through all possible combinations of DOF's
+              ! Now loop through all possible combinations of DOF`s
               ! in the current cubature point. The outer loop
-              ! loops through the "O"'s in the above picture,
+              ! loops through the "O"`s in the above picture,
               ! the test functions:
               do IDOFE=1,indofFine
               
@@ -2439,7 +2439,7 @@ contains
                 ! phi_i (our "O") in the cubature point:
                 DB = DbasFine(IDOFE,DER_FUNC,ICUBP,NELF+IELF)*OM
                 
-                ! Perform an inner loop through the other DOF's
+                ! Perform an inner loop through the other DOF`s
                 ! (the "X"). 
                 do JDOFE=1,indofCoarse
                 
@@ -2518,7 +2518,7 @@ contains
     
     end do ! IELDIST
     
-    ! Okay, there's one last thing left: Scale the matrix rows by the
+    ! Okay, there is one last thing left: Scale the matrix rows by the
     ! global averaging weights!
     do i = 1, NEQ
     
@@ -2554,7 +2554,7 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
-    ! That's it
+    ! That is it
   
   end subroutine
 
@@ -2612,7 +2612,7 @@ contains
   integer, dimension(:), pointer :: p_KLD, p_KCOL
   real(DP), dimension(:), pointer :: p_DA
   
-  ! An allocateable array accepting the DOF's of a set of elements.
+  ! An allocateable array accepting the DOF`s of a set of elements.
   integer, dimension(:,:), allocatable, target :: IdofsCoarse, IdofsFine
   
   ! Allocateable arrays for the values of the basis functions - 
@@ -2731,7 +2731,7 @@ contains
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatchIdx, p_IrefPatchIdx)
     call storage_getbase_int(p_rtriaFine%h_IrefinementPatch, p_IrefPatch)
     
-    ! Let's loop over all element distributions and determine the
+    ! Let us loop over all element distributions and determine the
     ! maximum values.
     inmaxdofCoarse = 0
     inmaxdofFine = 0
@@ -2754,7 +2754,7 @@ contains
       ctrafoCoarse = elem_igetTrafoType(p_relemDistCoarse%celement)
       ctrafoFine = elem_igetTrafoType(p_relemDistFine%celement)
     
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
       
@@ -2795,7 +2795,7 @@ contains
 
     end do
 
-    ! Allocate an array saving a couple of DOF's for trial and test functions
+    ! Allocate an array saving a couple of DOF`s for trial and test functions
     allocate(IdofsCoarse(inmaxdofCoarse,nmaxelementsCoarse))
     allocate(IdofsFine(inmaxdofFine,nmaxelementsFine))
 
@@ -2836,7 +2836,7 @@ contains
     ! Format the local weights array to 1
     call lalg_setVectorDble2D(DlocWeights,1.0_DP)
 
-    ! Let's run through the element distributions
+    ! Let us run through the element distributions
     do IELDIST = 1, rdiscretisationCoarse%inumFESpaces
 
       ! Activate the current element distributions
@@ -2850,7 +2850,7 @@ contains
       ! Get the number of coarse mesh elements there.
       NELC = p_relemDistCoarse%NEL
 
-      ! Get the number of local DOF's for trial and test functions
+      ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relemDistCoarse%celement)
       indofFine = elem_igetNDofLoc(p_relemDistFine%celement)
         
@@ -2963,19 +2963,19 @@ contains
           do IELF = 1, NELREF
           
             ! For building the local matrices, we have first to
-            ! loop through the test functions (the "O"'s), as these
+            ! loop through the test functions (the "O"`s), as these
             ! define the rows in the matrix.
             do IDOFE=1,indofFine
             
               ! Row IDOFE of the local matrix corresponds 
               ! to row=global DOF KDFG(IDOFE) in the global matrix.
-              ! This is one of the the "O"'s in the above picture.
+              ! This is one of the the "O"`s in the above picture.
               ! Get the starting position of the corresponding row
               ! to JCOL0:
               JCOL0 = p_KLD(IdofsFine(IDOFE,NELF+IELF))
               
-              ! Now we loop through the other DOF's on the current element
-              ! (the "O"'s).
+              ! Now we loop through the other DOF`s on the current element
+              ! (the "O"`s).
               ! All these have common support with our current basis function
               ! and will therefore give an additive value to the global
               ! matrix.
@@ -3024,7 +3024,7 @@ contains
         ! that we have to change.
         ! To calculate the matrix contributions, we have to evaluate
         ! the elements to give us the values of the basis functions
-        ! in all the DOF's in all the elements in our set.
+        ! in all the DOF`s in all the elements in our set.
 
         ! Get the element evaluation tag of all FE spaces. We need it to evaluate
         ! the elements later. All of them can be combined with OR, what will give
@@ -3085,7 +3085,7 @@ contains
               !
               ! Take the absolut value of the determinant of the mapping.
               ! In 2D, the determinant is always positive, whereas in 3D,
-              ! the determinant might be negative -- that's normal!
+              ! the determinant might be negative -- that is normal!
               OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,NELF+IELF))
 
               ! Build the 2-level mass matrix.
@@ -3217,7 +3217,7 @@ contains
     
     end do ! IELDIST
     
-    ! Okay, there's one last thing left: Scale the matrix columns by the
+    ! Okay, there is one last thing left: Scale the matrix columns by the
     ! global averaging weights!
     ! So first invert the global weights
     do i = 1, NCOLS
@@ -3233,7 +3233,7 @@ contains
     
     end do ! i
     
-    ! Low loop over the matrix's rows
+    ! Low loop over the matrix` rows
     do i = 1, NEQ
     
       ! Loop over the non-zeroes
@@ -3259,7 +3259,7 @@ contains
     deallocate(Dentry)
     deallocate(p_IelementRef)
 
-    ! That's it
+    ! That is it
   
   end subroutine
 

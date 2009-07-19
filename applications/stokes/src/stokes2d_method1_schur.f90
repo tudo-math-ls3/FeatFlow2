@@ -125,7 +125,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -184,7 +184,7 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 2
@@ -336,7 +336,7 @@ contains
     call lsysbl_createVecBlockIndMat (Rlevels(NLMAX)%rmatrix,rvector,.true.)
 
     ! Remark:
-    ! As in this case the right-hand-side is zero everywhere, we won't call
+    ! As in this case the right-hand-side is zero everywhere, we will not call
     ! the linearformevaluation here to compress the code a bit.
 
     ! Now implement the boundary conditions

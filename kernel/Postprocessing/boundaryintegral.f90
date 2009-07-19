@@ -105,7 +105,7 @@ contains
     real(DP) :: dlocalValue
     integer :: ibdc
     
-    ! Let p_rcollection point to rcollection - or NULL if it's not
+    ! Let p_rcollection point to rcollection - or NULL if it is not
     ! given.
     if (present(rcollection)) then
       p_rcollection => rcollection
@@ -404,12 +404,12 @@ contains
     ! That means, run over all the edges and sum up...
     ! (ok, if rvectorScalar is not specified, we have
     !  -u_h(x,y) in Dvalues1(:,:,1), but as we take the square,
-    !  it doesn't matter if we have u_h or -u_h there!)
+    !  it does not matter if we have u_h or -u_h there!)
     
     dvalue = 0.0_DP
     do iel = 1,NEL
     
-      ! Get the length of the edge. Let's use the parameter values
+      ! Get the length of the edge. Let us use the parameter values
       ! on the boundary for that purpose; this is a more general
       ! implementation than using simple lines as it will later 
       ! support isoparametric elements.

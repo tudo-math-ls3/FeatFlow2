@@ -79,7 +79,7 @@ contains
 !<input>
     ! output channel to use for output
     !  = 0: Get temporary channel for file 'sfile'
-    ! <> 0: Write to channel ifile. Don't close the channel afterwards.
+    ! <> 0: Write to channel ifile. Do not close the channel afterwards.
     !       'sfile' is ignored.
     integer(I32), intent(in)     :: ifile
     
@@ -155,7 +155,7 @@ contains
     ! Reads an item from file into the buffer.
     ! Items are separated by spaces, comma, (tabs ...??)
     ! Anything from character '#' till the end of line is ignored
-    ! assuming Fortran's eor=eol ... seems to work
+    ! assuming Fortran`s eor=eol ... seems to work
 
     subroutine getNextEntryASCII(cbuffer)
       

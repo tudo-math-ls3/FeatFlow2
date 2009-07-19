@@ -31,9 +31,9 @@
 !# - a binary search tree
 !# - a graph structure
 !#
-!# The list supports 'level tags' and 'section tags" to group values:
+!# The list supports 'level tags' and 'section tags' to group values:
 !# 
-!# 1.) There's one unnamed section ('') in the collection for general purpose
+!# 1.) There is one unnamed section ('') in the collection for general purpose
 !#     variables. All other sections are named and independent from each other. 
 !#     Sections can be added if necessary. 
 !# 2.) Each section contains of a 'level 0' list for general, level-independent
@@ -111,8 +111,8 @@
 !# in there! They can be used e.g. in assembly routines to provide 
 !# callback routines with information that must quickly be accessed 
 !# without the need of asking the collection for a named variable.
-!# Their content can be described at best as 'only valid for one
-!# operation' (e.g. for one matrix asembly).
+!# Their content can be described at best as `only valid for one
+!# operation` (e.g. for one matrix asembly).
 !#
 !# The following routines can be used to maintain a parameter
 !# list:
@@ -178,19 +178,19 @@
 !#
 !# NO PROBLEM-SPECIFIC STRUCTURES
 !#
-!#  The collection is a black-box container. It's designed to hold low- and 
+!#  The collection is a black-box container. It is designed to hold low- and 
 !#  mid-level information (numbers, strings, as well as linear algebra stuff
-!#  like vectors, matrices) that is used for solving linear problems. It's
+!#  like vectors, matrices) that is used for solving linear problems. It is
 !#  clearly NOT designed that a user adds problem-specific data structures
 !#  there. Trying this will result in circular dependencies! Adding information
 !#  from a problem-dependent structure to the collection with the 'add' 
-!#  routines is completely right, but don't extent the collection
+!#  routines is completely right, but do not extent the collection
 !#  by new data types / structures unless you are absolutely sure that this 
-!#  is relevant for all users and that you won't get circular dependencies!
+!#  is relevant for all users and that you will not get circular dependencies!
 !#
 !# USE THE COLLECTION AS AN INDEX
 !#
-!#  Although it's possible to use the collection as a data container for most
+!#  Although it is possible to use the collection as a data container for most
 !#  (if not all) of your information, you should not use the collection
 !#  as the main data container. Put your problem-dependent data into
 !#  a problem-dependent structure and add pointers to them to the collection
@@ -205,7 +205,7 @@
 !#  Although the quick-access arrays are only of temporary nature,
 !#  you can use them to store information of simple type that you often 
 !#  need in a callback routine. Make use of this feature to get speed,
-!#  but don't use this feature for storing long-life information!
+!#  but do not use this feature for storing long-life information!
 !#  Example:
 !#
 !#    PROGRAM Test
@@ -243,7 +243,7 @@
 !#
 !# STORE ONLY SMALL-SIZE ARRAYS
 !#
-!#  It's possible to store integer / real arrays in the collection. These
+!#  It is possible to store integer / real arrays in the collection. These
 !#  should only be small and the application must keep track of the size
 !#  of these arrays. To store larger arrays, use the STORAGE module to
 !#  allocate memory and store the handle of the memory block in the collection!
@@ -579,7 +579,7 @@ module collection
     ! The name of the section. '' identifies an/the unnamed section.
     character(LEN=COLLCT_MLSECTION) :: ssectionName = ''
 
-    ! Actual number of levels in this section. There's at least
+    ! Actual number of levels in this section. There is at least
     ! one section - the unnamed section. If this value is =0, the parameter
     ! list is currently not initialised.
     integer :: ilevelCount = 0
@@ -1877,7 +1877,7 @@ contains
     call collct_donesection (p_rsection)
     
     ! Now 'relocate' all sections. This makes all pointers to sections
-    ! in the main application invalid, but it's rather unlikely that the
+    ! in the main application invalid, but it is rather unlikely that the
     ! application maintains a section pointer in a stage where sections are
     ! modified - hopefully :-)
     
@@ -2009,7 +2009,7 @@ contains
       ! Decrement the value counter
       p_rLevel%ivalueCount = p_rLevel%ivalueCount - 1
       
-      ! Indicate that there's at least one free position now
+      ! Indicate that there is at least one free position now
       p_rLevel%bisFull = .false.
       
     end if
@@ -2110,7 +2110,7 @@ contains
 !</description>  
   
 !<result>
-  ! >0, if the parameter exists in the section rsection (it's the index of the
+  ! >0, if the parameter exists in the section rsection (it is the index of the
   !     parameter within the section),
   ! =0, if the parameter does not exist whithin the section.
 !</result>
@@ -2176,7 +2176,7 @@ contains
 !</description>  
   
 !<result>
-  ! >0, if the parameter exists in the section (it's the index of the
+  ! >0, if the parameter exists in the section (it is the index of the
   !     parameter within the section),
   ! =0, if the parameter does not exist whithin the section.
 !</result>
@@ -2268,7 +2268,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2319,7 +2319,7 @@ contains
   ! If the value does not exists and badd=true, a new value is created.
   ! However, no memory is allocated for array-type values.
   !
-  ! If bexists is present, it's set to TRUE/FALSE to indicate whether
+  ! If bexists is present, it is set to TRUE/FALSE to indicate whether
   ! the value exists at all. If bexists does not exist, an error is thrown.
   ! ssectionName allows to specify the name of a section where to search
   ! for the value structure.
@@ -2359,7 +2359,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
   
   ! A pointer to the structure with name sparameter.
@@ -2463,7 +2463,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2521,7 +2521,7 @@ contains
   character(LEN=*) :: value
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
   
 !</output>
@@ -2586,7 +2586,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2650,7 +2650,7 @@ contains
   
 !<output>
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 !</output>
 
@@ -2714,7 +2714,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2779,7 +2779,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2847,7 +2847,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2911,7 +2911,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -2975,7 +2975,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3039,7 +3039,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3103,7 +3103,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3166,7 +3166,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3229,7 +3229,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3292,7 +3292,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3355,7 +3355,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3419,7 +3419,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3483,7 +3483,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3546,7 +3546,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3610,7 +3610,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3674,7 +3674,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3737,7 +3737,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3800,7 +3800,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3863,7 +3863,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -3926,7 +3926,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(OUT), optional :: bexists
 
 !</output>
@@ -3990,7 +3990,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4053,7 +4053,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4116,7 +4116,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4179,7 +4179,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4242,7 +4242,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4305,7 +4305,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4368,7 +4368,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4431,7 +4431,7 @@ contains
 !<output>
 
   ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There's no error thrown if a variable does not exist.
+  ! There is no error thrown if a variable does not exist.
   logical, intent(out), optional :: bexists
 
 !</output>
@@ -4486,7 +4486,7 @@ contains
   character, intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4547,7 +4547,7 @@ contains
   character(LEN=*), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4612,7 +4612,7 @@ contains
   integer, intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4676,7 +4676,7 @@ contains
   integer, dimension(:), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4745,7 +4745,7 @@ contains
   real(DP), intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4809,7 +4809,7 @@ contains
   real(DP), dimension(:),intent(in) :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4878,7 +4878,7 @@ contains
   type(t_spatialDiscretisation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -4939,7 +4939,7 @@ contains
   type(t_blockDiscretisation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5000,7 +5000,7 @@ contains
   type(t_triangulation), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5061,7 +5061,7 @@ contains
   type(t_boundary), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5122,7 +5122,7 @@ contains
   type(t_boundaryConditions), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5183,7 +5183,7 @@ contains
   type(t_vectorScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5244,7 +5244,7 @@ contains
   type(t_matrixScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5305,7 +5305,7 @@ contains
   type(t_vectorBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5366,7 +5366,7 @@ contains
   type(t_matrixBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5427,7 +5427,7 @@ contains
   type(t_parlist), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5488,7 +5488,7 @@ contains
   type(t_linsolNode), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5549,7 +5549,7 @@ contains
   type(t_discreteBC), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5610,7 +5610,7 @@ contains
   type(t_interlevelProjectionScalar), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5671,7 +5671,7 @@ contains
   type(t_interlevelProjectionBlock), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5732,7 +5732,7 @@ contains
   type(t_collection), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5793,7 +5793,7 @@ contains
   type(t_fparser), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5854,7 +5854,7 @@ contains
   type(t_geometryObject), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5915,7 +5915,7 @@ contains
   type(t_filterChain), dimension(:), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -5976,7 +5976,7 @@ contains
   type(t_hadapt), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6037,7 +6037,7 @@ contains
   type(t_afcstab), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6098,7 +6098,7 @@ contains
   type(t_timer), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6159,7 +6159,7 @@ contains
   type(t_list), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6220,7 +6220,7 @@ contains
   type(t_arraylist), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6281,7 +6281,7 @@ contains
   type(t_btree), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6342,7 +6342,7 @@ contains
   type(t_graph), intent(in), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(in) :: badd
 
@@ -6403,7 +6403,7 @@ contains
   type(t_particleCollection), intent(IN), target :: value
   
   ! Whether to add the variable if it does not exist.
-  ! =false: don't add the variable, throw an error
+  ! =false: do not add the variable, throw an error
   ! =true : add the variable
   logical, intent(IN) :: badd
 

@@ -96,7 +96,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -150,7 +150,7 @@ contains
     ! refined nlevel-1 times to get the fine mesh
     integer :: nlevels = 4
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! Allocate memory for all levels
     allocate(Rlevels(nlevels))
@@ -272,8 +272,8 @@ contains
     
     ! Now we have the raw problem. What is missing is the definition of the boundary
     ! conditions.
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
+    ! For implementing boundary conditions, we use a `filter technique with
+    ! discretised boundary conditions`. This means, we first have to calculate
     ! a discrete version of the analytic BC, which we can implement into the
     ! solution/RHS vectors using the corresponding filter.
     !
@@ -286,7 +286,7 @@ contains
       ! Initialise the discrete BC structure
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
 
-      ! Create a mesh region describing the mesh's boundary based on the
+      ! Create a mesh region describing the mesh`s boundary based on the
       ! nodal-property-array of the current triangulation.
       call mshreg_createFromNodalProp(rmeshRegion, Rlevels(i)%rtriangulation, &
                                       MSHREG_IDX_ALL)
@@ -295,7 +295,7 @@ contains
       call bcasm_newDirichletBConMR(Rlevels(i)%rdiscretisation, 1,&
         Rlevels(i)%rdiscreteBC,rmeshRegion,getBoundaryValuesMR_1D)
       
-      ! Free the mesh region structure as we won't need it anymore
+      ! Free the mesh region structure as we will not need it anymore
       call mshreg_done(rmeshRegion)
 
       ! Hang the pointer into the matrix. That way, these
@@ -382,7 +382,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(1:nlevels))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release rproblem%RlevelInfo(i)%rmatrix!
     do i=1,nlevels
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -404,7 +404,7 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
-    ! That's it, rvectorBlock now contains our solution. We can now
+    ! That is it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     !
     ! Get the path for writing postprocessing files from the environment variable
@@ -418,7 +418,7 @@ contains
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -467,7 +467,7 @@ contains
     ! Release level information
     deallocate(Rlevels)
     
-    ! That's it!
+    ! That is it!
     
   end subroutine
 

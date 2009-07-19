@@ -102,7 +102,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -167,7 +167,7 @@ contains
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     !
     ! We want to solve our Stokes problem on level...
     NLMIN = 2
@@ -293,7 +293,7 @@ contains
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
       ! lsyssc_duplicateMatrix to create B2. Share the matrix 
       ! structure between B1 and B2 (B1 is the parent and B2 the child). 
-      ! Don't create a content array yet, it will be created by 
+      ! Do not create a content array yet, it will be created by 
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
@@ -428,8 +428,8 @@ contains
 
     do i = NLMIN, NLMAX
 
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -458,16 +458,16 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to Rlevels(i)%rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to Rlevels(i)%rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Edge 2 is Neumann boundary, so it's commented out.
+      ! Edge 2 is Neumann boundary, so it is commented out.
       ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -479,7 +479,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -498,7 +498,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Edge 2 is Neumann boundary, so it's commented out.
+      ! Edge 2 is Neumann boundary, so it is commented out.
       ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -510,7 +510,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
       
-      ! Edge 4 of boundary component 1. That's it.
+      ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -599,7 +599,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release Rlevels(i)%rmatrix!
     do i=NLMIN,NLMAX
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -671,7 +671,7 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
                              
-    ! Edge 2 is Neumann boundary, so it's commented out.
+    ! Edge 2 is Neumann boundary, so it is commented out.
     ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
     !                                    rboundaryRegion,rprjDiscreteBC,&
@@ -683,7 +683,7 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rprjDiscretisation,1,&
                                        rboundaryRegion,rprjDiscreteBC,&
@@ -700,7 +700,7 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
                              
-    ! Edge 2 is Neumann boundary, so it's commented out.
+    ! Edge 2 is Neumann boundary, so it is commented out.
     ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
     !                                    rboundaryRegion,rprjDiscreteBC,&
@@ -712,7 +712,7 @@ contains
                                        rboundaryRegion,rprjDiscreteBC,&
                                        getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rprjDiscretisation,2,&
                                        rboundaryRegion,rprjDiscreteBC,&
@@ -753,7 +753,7 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
 
@@ -802,7 +802,7 @@ contains
     
     deallocate(Rlevels)
     
-    ! Finally release the domain, that's it.
+    ! Finally release the domain, that is it.
     call boundary_release (rboundary)
 
   end subroutine

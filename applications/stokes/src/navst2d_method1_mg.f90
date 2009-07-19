@@ -118,7 +118,7 @@ contains
 
     ! Definitions of variables.
     !
-    ! We need a couple of variables for this problem. Let's see...
+    ! We need a couple of variables for this problem. Let us see...
     !
     ! An array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
@@ -219,7 +219,7 @@ contains
     ! 2 => upwind
     iConvAsm = 1
     
-    ! In the case of streamline-diffusion or upwind, what's the parameter?
+    ! In the case of streamline-diffusion or upwind, what is the parameter?
     dupsam = 1.0_DP
     
     ! Maximum number of non-linear loop iterations
@@ -345,7 +345,7 @@ contains
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
       ! lsyssc_duplicateMatrix to create B2. Share the matrix 
       ! structure between B1 and B2 (B1 is the parent and B2 the child). 
-      ! Don't create a content array yet, it will be created by 
+      ! Do not create a content array yet, it will be created by 
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (Rlevels(i)%rmatrixB1, Rlevels(i)%rmatrixB2,&
                                    LSYSSC_DUP_COPY, LSYSSC_DUP_REMOVE)
@@ -524,8 +524,8 @@ contains
 
     do i = NLMIN, NLMAX
 
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -554,16 +554,16 @@ contains
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
       !   We specify icomponent='1' to indicate that we set up the
-      !   Dirichlet BC's for the first (here: one and only) component in the 
+      !   Dirichlet BC`s for the first (here: one and only) component in the 
       !   solution vector.
-      ! - Discretise the boundary condition so that the BC's can be applied
+      ! - Discretise the boundary condition so that the BC`s can be applied
       !   to matrices and vectors
-      ! - Add the calculated discrete BC's to Rlevels(i)%rdiscreteBC for later use.
+      ! - Add the calculated discrete BC`s to Rlevels(i)%rdiscreteBC for later use.
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Edge 2 is Neumann boundary, so it's commented out.
+      ! Edge 2 is Neumann boundary, so it is commented out.
       ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -581,7 +581,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
 
-      ! Circle boundary component. That's it.
+      ! Circle boundary component. That is it.
       call boundary_createRegion(rboundary,2,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -600,7 +600,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
                                
-      ! Edge 2 is Neumann boundary, so it's commented out.
+      ! Edge 2 is Neumann boundary, so it is commented out.
       ! CALL boundary_createRegion(rboundary,1,2,rboundaryRegion)
       ! CALL bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
       !                                    rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -618,7 +618,7 @@ contains
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D)
 
-      ! Circle boundary component. That's it.
+      ! Circle boundary component. That is it.
       call boundary_createRegion(rboundary,2,1,rboundaryRegion)
       call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
@@ -724,7 +724,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
 
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release Rlevels(i)%rmatrix!
     do i=NLMIN,NLMAX
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -814,7 +814,7 @@ contains
                              Rlevels(i)%rvecSol, rtempBlock%RvectorBlock(1))
           
           ! And filter the restricted vector.
-          ! Note: We don't need to filter the solution on the finest level
+          ! Note: We do not need to filter the solution on the finest level
           call vecfil_discreteBCsol (Rlevels(i-1)%rvecSol)
       
         end do
@@ -886,8 +886,8 @@ contains
       
     end do ! nl
 
-    ! Project the velocity onto the mesh's vertices and the pressure onto the
-    ! mesh's cells.
+    ! Project the velocity onto the mesh`s vertices and the pressure onto the
+    ! mesh`s cells.
     nullify(p_Du1)
     nullify(p_Du2)
     nullify(p_Dp)
@@ -909,7 +909,7 @@ contains
     ! Write pressure
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Dp)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -972,7 +972,7 @@ contains
     
     deallocate(Rlevels)
     
-    ! Finally release the domain, that's it.
+    ! Finally release the domain, that is it.
     call boundary_release (rboundary)
 
   end subroutine

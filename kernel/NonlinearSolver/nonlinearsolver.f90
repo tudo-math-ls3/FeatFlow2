@@ -215,7 +215,7 @@ module nonlinearsolver
     ! Stop iteration if everywhere
     !   !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion; standard = 1E-5
-    ! Remark: don't set depsAbs=depsRel=0!
+    ! Remark: do not set depsAbs=depsRel=0!
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DepsRel = 1E-5_DP
 
     ! INPUT PARAMETER:
@@ -225,7 +225,7 @@ module nonlinearsolver
     ! Stop iteration if everywhere
     !   !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
-    ! Remark: don't set depsAbs=depsRel=0!
+    ! Remark: do not set depsAbs=depsRel=0!
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DepsAbs = 1E-5_DP
 
     ! INPUT PARAMETER:
@@ -909,7 +909,7 @@ contains
       
     if ((.not. bconvergence) .and. (.not. bdivergence)) then
     
-      ! Let's do the nonlinear loop...
+      ! Let us do the nonlinear loop...
       !
       ! Initialise the domega-value for the damping of the correction
       ! as prescribed by the parameters of the solver.
@@ -963,7 +963,7 @@ contains
         ! If domega=0.0, the solution vector would stay unchanged. In this
         ! case, the nonlinear solver would not proceed at all, and the next
         ! iteration would behave exactly as before!
-        ! So in this case, there's nothing to do, we can stop the iteration.
+        ! So in this case, there is nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
           call output_line ('NLSOL: Iteration '//&
               trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
@@ -1117,7 +1117,7 @@ contains
     call lsysbl_createVecFromScalar (rb,rbBlock)
     call lsysbl_createVecFromScalar (rd,rdBlock)
     
-    ! Invoke the solver - that's all. 
+    ! Invoke the solver - that is all. 
     call nlsol_performSolve (rsolverNode,rxBlock,rbBlock,rdBlock,&
                             fcb_getDefect,fcb_precondDefect,fcb_resNormCheck,&
                             rcollection)

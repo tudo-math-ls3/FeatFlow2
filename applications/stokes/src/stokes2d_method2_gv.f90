@@ -350,7 +350,7 @@ contains
       ! Duplicate the B1 matrix structure to the B2 matrix, so use
       ! lsyssc_duplicateMatrix to create B2. Share the matrix 
       ! structure between B1 and B2 (B1 is the parent and B2 the child). 
-      ! Don't create a content array yet, it will be created by 
+      ! Do not create a content array yet, it will be created by 
       ! the assembly routines later.
       call lsyssc_duplicateMatrix (rproblem%RlevelInfo(i)%rmatrixB1,&
                   rproblem%RlevelInfo(i)%rmatrixB2,LSYSSC_DUP_COPY,LSYSSC_DUP_REMOVE)
@@ -559,16 +559,16 @@ contains
     ! boundary there. The following call does the following:
     ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
     !   We specify icomponent='1' to indicate that we set up the
-    !   Dirichlet BC's for the first (here: one and only) component in the 
+    !   Dirichlet BC`s for the first (here: one and only) component in the 
     !   solution vector.
-    ! - Discretise the boundary condition so that the BC's can be applied
+    ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
-    ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues_2D)
                               
-    ! Edge 2 is Neumann boundary, so it's commented out.
+    ! Edge 2 is Neumann boundary, so it is commented out.
     ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rdiscretisation,1,&
     !                                    rboundaryRegion,rdiscreteBC,&
@@ -580,7 +580,7 @@ contains
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                       rboundaryRegion,rdiscreteBC,&
@@ -599,7 +599,7 @@ contains
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues_2D)
                               
-    ! Edge 2 is Neumann boundary, so it's commented out.
+    ! Edge 2 is Neumann boundary, so it is commented out.
     ! CALL boundary_createRegion(p_rboundary,1,2,rboundaryRegion)
     ! CALL bcasm_newDirichletBConRealBD (rdiscretisation,2,&
     !                                    rboundaryRegion,rdiscreteBC,&
@@ -611,7 +611,7 @@ contains
                                       rboundaryRegion,rdiscreteBC,&
                                       getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That's it.
+    ! Edge 4 of boundary component 1. That is it.
     call boundary_createRegion(p_rboundary,1,4,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                       rboundaryRegion,rdiscreteBC,&
@@ -646,7 +646,7 @@ contains
   type(t_vectorBlock), pointer :: p_rrhs,p_rvector
   type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
-  ! Pointer to structure for saving discrete BC's:
+  ! Pointer to structure for saving discrete BC`s:
   type(t_discreteBC), pointer :: p_rdiscreteBC
     
     do i=rproblem%ilvmin,rproblem%ilvmax
@@ -658,8 +658,8 @@ contains
       ! analytic boundary conditions.
       p_rdiscretisation => p_rmatrix%p_rblockDiscrTrial
       
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
+      ! For implementing boundary conditions, we use a `filter technique with
+      ! discretised boundary conditions`. This means, we first have to calculate
       ! a discrete version of the analytic BC, which we can implement into the
       ! solution/RHS vectors using the corresponding filter.
       !
@@ -868,7 +868,7 @@ contains
     
     call linsol_setMatrices(p_RsolverNode,Rmatrices(ilvmin:ilvmax))
     
-    ! We can release Rmatrices immediately -- as long as we don't
+    ! We can release Rmatrices immediately -- as long as we do not
     ! release rproblem%RlevelInfo(i)%rmatrix!
     do i=ilvmin,ilvmax
       call lsysbl_releaseMatrix (Rmatrices(i))
@@ -983,7 +983,7 @@ contains
     call bcasm_initDiscreteBC(rdiscreteBC)
     call st2_discretiseBC (rprjDiscretisation,rdiscreteBC)
                             
-    ! Connect the vector to the BC's
+    ! Connect the vector to the BC`s
     rprjVector%p_rdiscreteBC => rdiscreteBC
     
     ! Send the vector to the boundary-condition implementation filter.
@@ -1024,7 +1024,7 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(3),p_Ddata)
     call ucd_addVariableElementBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
     
-    ! Write the file to disc, that's it.
+    ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
     
@@ -1034,7 +1034,7 @@ contains
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
-    ! Throw away the discrete BC's - not used anymore.
+    ! Throw away the discrete BC`s - not used anymore.
     call bcasm_releaseDiscreteBC (rdiscreteBC)
     
   end subroutine
@@ -1213,7 +1213,7 @@ contains
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     ! We want to solve our Laplace problem on level...
 
     NLMIN = 2

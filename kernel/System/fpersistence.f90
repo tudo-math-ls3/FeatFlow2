@@ -17,7 +17,7 @@
 !#
 !#
 !# An abstract ObjectItem corresponds to a derived type that is
-!# constructured in one of the kernel modules and/or the user's
+!# constructured in one of the kernel modules and/or the user`s
 !# application. Therefore, an ObjectItem can only provide very
 !# rudimentary information about the derived type itself.
 !# It is identified by the universally unique identifier (UUID)
@@ -45,7 +45,7 @@
 !# a binary tree using the UUIDs as unique keys. Typically, objects are
 !# retrieved by their UUID so that an efficient search algorithm is 
 !# essential. The complete object table is exported to disk by using
-!# Fortran's direct-access facility to read and write files record-based.
+!# Fortran`s direct-access facility to read and write files record-based.
 !# A second file is created - the so-called data table. It stores all 
 !# meta-information about the data such as data type, dimension and size.
 !# In addition, it provides the UUID which is associated with the actual
@@ -551,7 +551,7 @@ contains
          status=trim(cstatus), access='direct', recl=irecordLength,&
          form='unformatted', action=trim(caction), err=2)   
         
-    ! That's it
+    ! That is it
     return
 
 
@@ -763,7 +763,7 @@ contains
                             rfpdbObjectItem%ifirstDataRecnum+i-1)
       end do
 
-      ! That's it
+      ! That is it
       return
       
 
@@ -929,7 +929,7 @@ contains
       end select
 
 
-      ! That's it
+      ! That is it
       return
       
       
@@ -1068,7 +1068,7 @@ contains
         call exportObjectItem(rfpdbObjectItem%p_rfpdbObjectRight)
       end if
 
-      ! That's it
+      ! That is it
       return
 
 
@@ -1727,7 +1727,7 @@ contains
         call sys_halt()
       end select
 
-      ! That's it
+      ! That is it
       return
 
 
@@ -1981,7 +1981,7 @@ contains
               end do
             end if
 
-            ! That's it
+            ! That is it
             return
           end if
           
@@ -2012,7 +2012,7 @@ contains
               end do
             end if
             
-            ! That's it
+            ! That is it
             return
           end if
           
@@ -2197,7 +2197,7 @@ contains
       if (trim(rfpdbObjectItem%sname) .eq. sname) then
         p_rfpdbObjectItem => rfpdbObjectItem
         
-        ! That's it
+        ! That is it
         bfound = .true.
         return
       end if
@@ -2327,7 +2327,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2394,7 +2394,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2461,7 +2461,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Qquad
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2529,7 +2529,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2596,7 +2596,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint8
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2664,7 +2664,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint16
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2732,7 +2732,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint32
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2800,7 +2800,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint64
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2867,7 +2867,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -2934,7 +2934,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Schar
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3004,7 +3004,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Fsingle
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3074,7 +3074,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Ddouble
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3144,7 +3144,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Qquad
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3214,7 +3214,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iinteger
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3284,7 +3284,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint8
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3355,7 +3355,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint16
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3426,7 +3426,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint32
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3497,7 +3497,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Iint64
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3568,7 +3568,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Blogical
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
@@ -3638,7 +3638,7 @@ contains
     read(iunit, err=1) Ilbounds, Iubounds, p_Schar
     close(iunit)
 
-    ! That's it
+    ! That is it
     return
 
 1   call output_line ('Unable to import data from file!', &
