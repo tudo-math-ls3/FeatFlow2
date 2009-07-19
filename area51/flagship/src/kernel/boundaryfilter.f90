@@ -544,12 +544,6 @@ contains
     call fparser_create(rboundaryCondition%rfparser,&
         nncomp*rboundaryCondition%nmaxExpressions)
 
-    ! Read in all constants, predefined expressions and functions from the parameter file
-    call fparser_parseFileForKeyword(rboundaryCondition%rfparser,&
-        sfilename, 'defconst', FPAR_CONSTANT)
-    call fparser_parseFileForKeyword(rboundaryCondition%rfparser,&
-        sfilename, 'defexpr', FPAR_EXPRESSION)
-
     ! Allocate temporal array of characters for mathematical expressions
     allocate(cMathExpression(rboundaryCondition%nmaxExpressions))
 
