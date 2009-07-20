@@ -10,39 +10,42 @@
 !# The following routines are available:
 !#
 !# 1.) afcstab_initFromParameterlist
-!#     -> create a stabilisation structure and initialize
+!#     -> Creates a stabilisation structure and initialize
 !#        it from the values of a given parameter list
 !#
 !# 2.) afcstab_releaseStabilisation
-!#     -> release a stabilisation structure
+!#     -> Releases a stabilisation structure
 !#
 !# 3.) afcstab_resizeStabilisation = afcstab_resizeStabDirect /
 !#                                   afcstab_resizeStabIndScalar
 !#                                   afcstab_resizeStabIndBlock
-!#     -> resize a stabilisation structure
+!#     -> Resizes a stabilisation structure
 !#
-!# 4.) afcstab_getbase_IsupdiagEdgeIdx
-!#     -> return pointer to the index pointer for the
+!# 4.) afcstab_getbase_IverticesAtEdge
+!#     -> Returns pointer to the vertices at edge structure
+!#
+!# 5.) afcstab_getbase_IsupdiagEdgeIdx
+!#     -> Returns pointer to the index pointer for the
 !#        superdiagonal edge numbers
 !#
-!# 5.) afcstab_getbase_IverticesAtEdge
-!#     -> return pointer to the vertices at edge structure
-!#
 !# 6.) afcstab_getbase_IsubdiagEdgeIdx
-!#     -> return pointer to the index pointer for the
+!#     -> Returns pointer to the index pointer for the
 !#        subdiagonal edge numbers
 !#
 !# 7.) afcstab_getbase_IsubdiagEdge
-!#     -> return pointer to the subdiagonal edge numbers
+!#     -> Returns pointer to the subdiagonal edge numbers
 !#
 !# 8.) afcstab_getbase_DcoeffsAtEdge
-!#     -> return pointer to edge data
+!#     -> Returns pointer to edge data
 !#
-!# 9.) afcstab_generateSubdiagEdges
-!#      -> generate the subdiagonal edge data structure
+!# 9.) afcstab_generateVerticesAtEdge
+!#     -> Generates the standard edge data structure
 !#
-!# 10.) afcstab_generateExtSparsity
-!#      -> generate the extended sparsity pattern
+!# 10.) afcstab_generateSubdiagEdges
+!#      -> Generates the subdiagonal edge data structure
+!#
+!# 11.) afcstab_generateExtSparsity
+!#      -> Generates the extended sparsity pattern
 !#
 !# </purpose>
 !##############################################################################
@@ -63,11 +66,12 @@ module afcstabilisation
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
-  public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IverticesAtEdge
-  public :: afcstab_getbase_DcoeffsAtEdge
+  public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdge
+  public :: afcstab_getbase_DcoeffsAtEdge
+  public :: afcstab_generateVerticesAtEdge
   public :: afcstab_generateSubdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_limit
@@ -177,19 +181,19 @@ module afcstabilisation
     ! This corresponds to the maximum number of nonzero row entries.
     integer :: NNVEDGE = 0
 
-    ! Handle to index pointer for superdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
-    ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
-    ! denote the edge numbers of the ith vertex which are located in
-    ! the upper right triangular matrix.
-    integer :: h_IsuperdiagonalEdgesIdx = ST_NOHANDLE
-
     ! Handle to vertices at edge structure
     ! integer, DIMENSION(:,:), POINTER :: IverticesAtEdge
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
     integer :: h_IverticesAtEdge = ST_NOHANDLE
+
+    ! Handle to index pointer for superdiagonal edge numbers
+    ! integer, DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
+    ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
+    ! denote the edge numbers of the ith vertex which are located in
+    ! the upper right triangular matrix.
+    integer :: h_IsuperdiagonalEdgesIdx = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
     ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
@@ -315,6 +319,7 @@ contains
       rafcstab%ctypeAFCstabilisation = istabilisation
       
     end if
+
   end subroutine afcstab_initFromParameterlist
 
   !*****************************************************************************
@@ -384,6 +389,7 @@ contains
       end do
       deallocate(rafcstab%RedgeVectors)
     end if
+
   end subroutine afcstab_releaseStabilisation
 
    !*****************************************************************************
@@ -493,6 +499,7 @@ contains
         end do
       end if
     end if
+
   end subroutine afcstab_resizeStabDirect
 
   !*****************************************************************************
@@ -613,6 +620,7 @@ contains
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsuperdiagonalEdgesIdx,&
         p_IsuperdiagonalEdgesIdx,rafcstab%NEQ+1)
+
   end subroutine afcstab_getbase_IsupdiagEdgeIdx
 
   !*****************************************************************************
@@ -647,6 +655,7 @@ contains
     ! Get the array
     call storage_getbase_int2D(rafcstab%h_IverticesAtEdge,&
         p_IverticesAtEdge,rafcstab%NEDGE)
+
   end subroutine afcstab_getbase_IverticesAtEdge
 
   !*****************************************************************************
@@ -683,6 +692,7 @@ contains
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsubdiagonalEdgesIdx,&
         p_IsubdiagonalEdgesIdx,rafcstab%NEQ+1)
+
   end subroutine afcstab_getbase_IsubdiagEdgeIdx
 
   !*****************************************************************************
@@ -717,6 +727,7 @@ contains
     ! Get the array
     call storage_getbase_int(rafcstab%h_IsubdiagonalEdges,&
         p_IsubdiagonalEdges,rafcstab%NEDGE)
+
   end subroutine afcstab_getbase_IsubdiagEdge
 
   !*****************************************************************************
@@ -751,7 +762,186 @@ contains
     ! Get the array
     call storage_getbase_double2D(rafcstab%h_DcoefficientsAtEdge,&
         p_DcoefficientsAtEdge,rafcstab%NEDGE)
+
   end subroutine afcstab_getbase_DcoeffsAtEdge
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_generateVerticesAtEdge(rmatrixTemplate, rafcstab)
+
+!<description>
+    ! This subroutine generates the list of edges which are
+    ! characterized by their two endpoints (i,j) and the absolute
+    ! position of matrix entries ij and ji. 
+!</description>
+
+!<input>
+    ! template matrix
+    type(t_matrixScalar), intent(in) :: rmatrixTemplate
+!</input>
+
+!<inputoutput>
+    ! discrete operator
+    type(t_afcstab), intent(inout) :: rafcstab
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
+    integer :: h_Ksep
+
+
+    ! Check if stabilisation has been initialised
+    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+      call sys_halt()
+    end if
+    
+    ! Set pointer to edge structure
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+    ! What kind of matrix are we?
+    select case(rmatrixTemplate%cmatrixFormat)
+    case(LSYSSC_MATRIX7,&
+         LSYSSC_MATRIX7INTL)
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrixTemplate, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrixTemplate, p_Kcol)
+
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrixTemplate%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixTemplate%NEQ+1)
+
+      ! Generate edge structure
+      call genEdgesMat7(p_Kld, p_Kcol, p_Ksep, p_IverticesAtEdge)
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+      
+      
+    case(LSYSSC_MATRIX9,&
+         LSYSSC_MATRIX9INTL)
+
+      ! Set pointers
+      call lsyssc_getbase_Kld(rmatrixTemplate, p_Kld)
+      call lsyssc_getbase_Kcol(rmatrixTemplate, p_Kcol)
+      call lsyssc_getbase_Kdiagonal(rmatrixTemplate, p_Kdiagonal)
+      
+      ! Create diagonal separator
+      h_Ksep = ST_NOHANDLE
+      call storage_copy(rmatrixTemplate%h_Kld, h_Ksep)
+      call storage_getbase_int(h_Ksep, p_Ksep, rmatrixTemplate%NEQ+1)
+
+      ! Generate edge structure
+      call genEdgesMat9(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_IverticesAtEdge)
+
+      ! Release diagonal separator
+      call storage_free(h_Ksep)
+
+
+    case DEFAULT
+      call output_line('Unsupported matrix format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
+      call sys_halt()
+    end select
+         
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Generate edge data structure for matrices in format 7
+
+    subroutine genEdgesMat7(Kld, Kcol, Ksep, IverticesAtEdge)
+
+      integer, dimension(:), intent(in) :: Kld, Kcol
+      integer, dimension(:), intent(inout) :: Ksep
+      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+
+      ! local variables
+      integer :: i,j,ij,ji,iedge
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Ksep(i)+1, Kld(i+1)-1
+       
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; ji = Ksep(j)
+          
+          ! Increatse edge counter
+          iedge = iedge+1
+
+          ! Set node numbers i and j
+          IverticesAtEdge(1, iedge) = i
+          IverticesAtEdge(2, iedge) = j
+          
+          ! Set matrix positions ij and ji
+          IverticesAtEdge(3, iedge) = ij
+          IverticesAtEdge(4, iedge) = ji
+          
+        end do
+      end do
+
+    end subroutine genEdgesMat7
+
+    !**************************************************************
+    ! Generate edge data structure for matrices in format 9
+
+    subroutine genEdgesMat9(Kld, Kcol, Kdiagonal, Ksep, IverticesAtEdge)
+
+      integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
+      integer, dimension(:), intent(inout) :: Ksep
+      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+
+      ! local variables
+      integer :: i,j,ij,ji,iedge
+      
+      ! Initialize edge counter
+      iedge = 0
+      
+      ! Loop over all rows
+      do i = 1, size(Kld)-1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+       
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1
+          
+          ! Increatse edge counter
+          iedge = iedge+1
+
+          ! Set node numbers i and j
+          IverticesAtEdge(1, iedge) = i
+          IverticesAtEdge(2, iedge) = j
+          
+          ! Set matrix positions ij and ji
+          IverticesAtEdge(3, iedge) = ij
+          IverticesAtEdge(4, iedge) = ji
+          
+        end do
+      end do
+
+    end subroutine genEdgesMat9
+    
+  end subroutine afcstab_generateVerticesAtEdge
 
   !*****************************************************************************
 
@@ -886,6 +1076,7 @@ contains
 
     ! Set specifier for extended edge structure
     rafcstab%iSpec = ior(rafcstab%iSpec,AFCSTAB_SUBDIAGONALEDGES)
+
   end subroutine afcstab_generateSubdiagEdges
   
   !*****************************************************************************
