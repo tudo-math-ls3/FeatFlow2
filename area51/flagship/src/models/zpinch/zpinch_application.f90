@@ -2210,16 +2210,23 @@ contains
       ! Compute linearized FCT correction
       !-------------------------------------------------------------------------
       
-!!$      ! Start time measurement for solution procedure
-!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-!!$      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+      
 !!$      ! Perform conservative FCT postprocessing
 !!$      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
 !!$          p_rproblemLevel, rtimestepEuler, rsolutionEuler,&
 !!$          rsolutionTransport, rcollection)
-!!$      
-!!$      ! Stop time measurement for solution procedure
-!!$      call stat_stopTimer(p_rtimerSolution)
+
+      call transp_calcLinearizedFCT(rbdrCondTransport,&
+          p_rproblemLevel, rtimestepTransport, rsolutionTransport,&
+          rcollection)
+
+      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
+          rtimestepEuler, rsolutionEuler, rcollection)
+      
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
 
       
       !-------------------------------------------------------------------------

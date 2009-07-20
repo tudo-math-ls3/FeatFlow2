@@ -3016,16 +3016,16 @@ contains
     call lsyssc_getbase_double(rflux0, p_flux0)
 
     ! Build the flux
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ, nedge, p_u,&
-                     rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
+    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix&
+        %NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
+        p_data, p_flux, p_flux0)
 
     ! Build the correction
-    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                         nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
     
     ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond,&
-                                   rsolution, rtimestep%dTime)
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
 
     ! Release flux vectors
     call storage_free(h_Ksep)
@@ -3181,12 +3181,7 @@ contains
           
           ! ... and store prelimited flux
           flux(iedge) = f_ij
-
-          diff = u(j)-u(i)
-!!$          f_ij = flux(iedge)
-!!$          if (f_ij * diff > 0) then
-!!$            f_ij = 0.0_DP;  flux(iedge) = f_ij
-!!$          end if
+          diff        = u(j)-u(i)
 
           ! Sums of raw antidiffusive fluxes
           pp(i) = pp(i) + max(0.0_DP,  f_ij)

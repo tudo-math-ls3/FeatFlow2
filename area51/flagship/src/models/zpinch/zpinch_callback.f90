@@ -135,35 +135,39 @@ contains
     p_alpha = 1.0_DP
       
     ! Build the fluxes
-    call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                         NVAR2D, nedge, p_solEuler, rtimestep%dStep,&
-                         p_MC, p_ML, p_Cx, p_Cy, p_DataEuler, p_fluxEuler, p_fluxEuler0)
+    call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, NVAR2D, nedge, p_solEuler, rtimestep%dStep,&
+        p_MC, p_ML, p_Cx, p_Cy, p_DataEuler, p_fluxEuler, p_fluxEuler0)
 
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                     nedge, p_solTransport, rtimestep%dStep,&
-                     p_MC, p_ML, p_Cx, p_Cy, p_DataTransport, p_fluxTransport, p_fluxTransport0)
+    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix&
+        %NEQ, nedge, p_solTransport, rtimestep%dStep, p_MC, p_ML,&
+        p_Cx, p_Cy, p_DataTransport, p_fluxTransport, p_fluxTransport0)
 
     ! Build the correction factors
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 1, p_alpha, p_solEuler)
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0, 4, p_alpha, p_solEuler)
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                             1, nedge, p_ML, p_fluxTransport, p_fluxTransport0, 1, p_alpha, p_solTransport)
+    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0&
+        , 1, p_alpha, p_solEuler)
+    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0&
+        , 4, p_alpha, p_solEuler)
+    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, 1, nedge, p_ML, p_fluxTransport,&
+        p_fluxTransport0, 1, p_alpha, p_solTransport)
 
     ! Apply correction to low-order solutions
-    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                         NVAR2D, nedge, p_ML, p_fluxEuler, p_alpha, p_DataEuler, p_solEuler)
-    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix%NEQ,&
-                         1, nedge, p_ML, p_fluxTransport, p_alpha, p_DataTransport, p_solTransport)
+    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_alpha,&
+        p_DataEuler, p_solEuler)
+    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, 1, nedge, p_ML, p_fluxTransport, p_alpha,&
+        p_DataTransport, p_solTransport)
 
     ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCondEuler,&
-                                   rsolutionEuler, rtimestep%dTime,&
-                                   euler_calcBoundaryvalues2d)
+    call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+        rtimestep%dTime, euler_calcBoundaryvalues2d)
 
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
-                                   rsolutionTransport, rtimestep%dTime)
+        rsolutionTransport, rtimestep%dTime)
     
     ! Release flux vectors
     call storage_free(h_Ksep)
@@ -179,8 +183,8 @@ contains
     
     !***************************************************************************
 
-    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE, u,&
-                               dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
+        NEDGE, u, dscale, MC, ML, Cx, Cy, troc, flux, flux0)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: u
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
@@ -269,7 +273,7 @@ contains
     !***************************************************************************
 
     subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
-                           dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+        dscale, MC, ML, Cx, Cy, troc, flux, flux0)
 
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
       real(DP), intent(in) :: dscale
@@ -369,8 +373,8 @@ contains
     
     !***************************************************************************
     
-    subroutine  buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR, NEDGE,&
-                                    ML, flux, flux0, ivar, alpha, u)
+    subroutine  buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
+        NVAR, NEDGE, ML, flux, flux0, ivar, alpha, u)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
       real(DP), dimension(:), intent(in) :: ML
@@ -609,7 +613,7 @@ contains
     !***************************************************************************
 
     subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-                               NEDGE, ML, flux, alpha, data, u)
+        NEDGE, ML, flux, alpha, data, u)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
       real(DP), dimension(:), intent(in) :: ML,alpha
