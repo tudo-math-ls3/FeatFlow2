@@ -945,7 +945,9 @@ contains
     k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
 
     ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
+!!$    d_ij = max(-k_ij, 0.0_DP, -k_ji)
+
+    d_ij = max( abs(k_ij), abs(k_ji) )
     
   end subroutine transp_calcMatrixDualConst2d
 
