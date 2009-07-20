@@ -736,17 +736,20 @@ contains
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_MC, p_ML
+    real(DP), dimension(:), pointer :: p_DconsistentMassMatrix, p_DlumpedMassMatrix
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     character(LEN=SYS_STRLEN) :: slorentzforceName
     real(DP) :: dscale
     integer :: isystemFormat, consistentMassMatrix, lumpedMassMatrix
-    integer :: neq, nvar, icomp
+    integer :: neq, nvar, icomp, icoords
     
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'slorentzforcename', slorentzforceName)
     call parlst_getvalue_int(rparlist,&
-          ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionName, 'icoords', icoords)
+    call parlst_getvalue_int(rparlist,&
+          ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(rparlist,&
           ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(rparlist,&
@@ -754,9 +757,9 @@ contains
 
     ! Get lumped and consistent mass matrix
     call lsyssc_getbase_double(rproblemLevel&
-        %Rmatrix(lumpedMassMatrix), p_ML)
+        %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
     call lsyssc_getbase_double(rproblemLevel&
-        %Rmatrix(consistentMassMatrix), p_MC)
+        %Rmatrix(consistentMassMatrix), p_DconsistentMassMatrix)
     call lsyssc_getbase_Kld(rproblemLevel&
         %Rmatrix(consistentMassMatrix), p_Kld)
     call lsyssc_getbase_Kcol(rproblemLevel&
@@ -791,14 +794,43 @@ contains
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
-      call calcSourceTermInterleaveFormat(dscale, neq, nvar,&
-          p_DvertexCoords, p_Kld, p_Kcol, p_MC, p_ML,&
-          p_DdataTransport, p_DdataEuler)
+
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcSourceXYInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+
+      case(2)
+        call calcSourceRZInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcSourceTerm')
+        call sys_halt()
+      end select
 
     case (SYSTEM_BLOCKFORMAT)
-      call calcSourceTermBlockFormat(dscale, neq, nvar,&
-          p_DvertexCoords, p_Kld, p_Kcol, p_MC, p_ML,&
-          p_DdataTransport, p_DdataEuler)
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcSourceXYBlockFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+        
+      case(2)
+        call calcSourceRZBlockFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
+            p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcSourceTerm')
+        call sys_halt()
+      end select
 
     case DEFAULT
       call output_line('Invalid system format!',&
@@ -811,8 +843,10 @@ contains
     ! Here, the real working routines follow
     
     !**************************************************************
+    ! Calculate the source term in x-y coordinates.
+    ! The system is stored in interleave format.
     
-    subroutine calcSourceTermInterleaveFormat(dscale, neq, nvar,&
+    subroutine calcSourceXYInterleaveFormat(dscale, neq, nvar,&
         DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -828,6 +862,8 @@ contains
       real(DP) :: drad, dang, daux, x1, x2, p, rq
       integer :: i,j,ij
 
+
+      ! Create temporal memory initialized by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 
@@ -840,7 +876,7 @@ contains
           ! Get columns number
           j = Kcol(ij)
         
-          ! Get coodrinates at node j
+          ! Get coordinates at node j
           x1 = DvertexCoords(1, j)
           x2 = DvertexCoords(2, j)
           
@@ -864,8 +900,8 @@ contains
           end if
                     
           ! Impose source values
-          DsourceTerm(1, i) = DsourceTerm(1, i) - daux * x1
-          DsourceTerm(2, i) = DsourceTerm(2, i) - daux * x2
+          DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
+          DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
 
         end do
       end do
@@ -880,8 +916,8 @@ contains
         p = DdataEuler(4, i) - rq
 
         ! Update momentum equations
-        DdataEuler(2, i) = DdataEuler(2, i) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(3, i) = DdataEuler(3, i) + DsourceTerm(2, i)/ML(i)
+        DdataEuler(2, i) = DdataEuler(2, i) - DsourceTerm(1, i)/ML(i)
+        DdataEuler(3, i) = DdataEuler(3, i) - DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
         rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
@@ -894,11 +930,98 @@ contains
       
       deallocate(DsourceTerm)
 
-    end subroutine calcSourceTermInterleaveFormat
+    end subroutine calcSourceXYInterleaveFormat
 
     !**************************************************************
+    ! Calculate the source term in r-z coordinates.
+    ! The system is stored in interleave format.
+    
+    subroutine calcSourceRZInterleaveFormat(dscale, neq, nvar,&
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
 
-    subroutine calcSourceTermBlockFormat(dscale, neq, nvar,&
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld, Kcol
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataEuler
+      
+      ! local variables
+      real(DP), dimension(:,:), allocatable :: DsourceTerm
+      real(DP) :: drad, dang, daux, x1, x2, p, rq
+      integer :: i,j,ij
+
+
+      ! Create temporal memory initialized by zero
+      allocate(DsourceTerm(2,neq))
+      call lalg_clearVector(DsourceTerm)
+
+      ! Loop over all rows
+      do i = 1, neq
+
+        ! Loop over all columns
+        do ij = Kld(i), Kld(i+1)-1
+
+          ! Get columns number
+          j = Kcol(ij)
+        
+          ! Get coordinates at node j
+          drad = DvertexCoords(1, j)
+          
+          ! Compute unit vector into origin
+          if (drad .gt. 1e-4) then
+            x1 = DvertexCoords(1, j)
+            x2 = DvertexCoords(2, j)
+          else
+            x1 = 0.0; x2 = 0.0
+          end if
+          
+          ! Compute source term
+          if (DdataTransport(j) > SYS_EPSREAL) then
+            daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
+          else
+            daux = 0.0_DP
+          end if
+                    
+          ! Impose source values
+          DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
+          DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
+
+        end do
+      end do
+
+      do i = 1, neq
+
+        ! Compute kinetic energy from momentum values without source term
+        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+
+        ! Compute pressure value
+        p = DdataEuler(4, i) - rq
+
+        ! Update momentum equations
+        DdataEuler(2, i) = DdataEuler(2, i) - DsourceTerm(1, i)/ML(i)
+        DdataEuler(3, i) = DdataEuler(3, i) - DsourceTerm(2, i)/ML(i)
+
+        ! Compute kinetic energy from momentum values with source term
+        rq = 0.5 * ( DdataEuler(2, i)*DdataEuler(2, i) +&
+                     DdataEuler(3, i)*DdataEuler(3, i) ) / DdataEuler(1, i)
+
+        ! Update total energy equation
+        DdataEuler(4, i) = p + rq
+
+      end do
+      
+      deallocate(DsourceTerm)
+
+    end subroutine calcSourceRZInterleaveFormat
+    
+    !**************************************************************
+    ! Calculate the source term in x-y coordinates.
+    ! The system is stored in block format.
+
+    subroutine calcSourceXYBlockFormat(dscale, neq, nvar,&
         DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
@@ -914,6 +1037,7 @@ contains
       real(DP) :: drad, dang, daux, x1, x2, p, rq
       integer :: i,j,ij
 
+      ! Create temporal memory initialized by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 
@@ -926,7 +1050,7 @@ contains
           ! Get columns number
           j = Kcol(ij)
         
-          ! Get coodrinates at node j
+          ! Get coordinates at node j
           x1 = DvertexCoords(1, j)
           x2 = DvertexCoords(2, j)
           
@@ -950,8 +1074,8 @@ contains
           end if
                     
           ! Impose source values
-          DsourceTerm(1, i) = DsourceTerm(1, i) - daux * x1
-          DsourceTerm(2, i) = DsourceTerm(2, i) - daux * x2
+          DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
+          DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
 
         end do
       end do
@@ -967,8 +1091,8 @@ contains
         p = DdataEuler(i, 4) - rq
 
         ! Update momentum equations
-        DdataEuler(i, 2) = DdataEuler(i, 2) + DsourceTerm(1, i)/ML(i)
-        DdataEuler(i, 3) = DdataEuler(i, 3) + DsourceTerm(2, i)/ML(i)
+        DdataEuler(i, 2) = DdataEuler(i, 2) - DsourceTerm(1, i)/ML(i)
+        DdataEuler(i, 3) = DdataEuler(i, 3) - DsourceTerm(2, i)/ML(i)
 
         ! Compute kinetic energy from momentum values with source term
         rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
@@ -982,7 +1106,93 @@ contains
       
       deallocate(DsourceTerm)
 
-    end subroutine calcSourceTermBlockFormat
+    end subroutine calcSourceXYBlockFormat
+
+    !**************************************************************
+    ! Calculate the source term in r-z coordinates.
+    ! The system is stored in block format.
+
+    subroutine calcSourceRZBlockFormat(dscale, neq, nvar,&
+        DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: MC,ML,DdataTransport
+      real(DP), intent(in) :: dscale
+      integer, dimension(:), intent(in) :: Kld, Kcol
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(neq,nvar), intent(inout) :: DdataEuler
+      
+      ! local variables
+      real(DP), dimension(:,:), allocatable :: DsourceTerm
+      real(DP) :: drad, dang, daux, x1, x2, p, rq
+      integer :: i,j,ij
+
+      ! Create temporal memory initialized by zero
+      allocate(DsourceTerm(2,neq))
+      call lalg_clearVector(DsourceTerm)
+
+      ! Loop over all rows
+      do i = 1, neq
+
+        ! Loop over all columns
+        do ij = Kld(i), Kld(i+1)-1
+
+          ! Get columns number
+          j = Kcol(ij)
+        
+          ! Get coordinates at node j
+          drad = DvertexCoords(1, j)
+          
+          ! Compute unit vector into origin
+          if (drad .gt. 1e-4) then
+            x1 = DvertexCoords(1, j)
+            x2 = DvertexCoords(2, j)
+          else
+            x1 = 0.0; x2 = 0.0
+          end if
+          
+          ! Compute source term
+          if (DdataTransport(j) > SYS_EPSREAL) then
+            daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
+          else
+            daux = 0.0_DP
+          end if
+                    
+          ! Impose source values
+          DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
+          DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
+
+        end do
+      end do
+
+      do i = 1, neq
+
+        ! Compute kinetic energy from momentum values without source term
+        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
+                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
+                     DdataEuler(i, 1)
+
+        ! Compute pressure value
+        p = DdataEuler(i, 4) - rq
+
+        ! Update momentum equations
+        DdataEuler(i, 2) = DdataEuler(i, 2) - DsourceTerm(1, i)/ML(i)
+        DdataEuler(i, 3) = DdataEuler(i, 3) - DsourceTerm(2, i)/ML(i)
+
+        ! Compute kinetic energy from momentum values with source term
+        rq = 0.5 * ( DdataEuler(i, 2)*DdataEuler(i, 2) +&
+                     DdataEuler(i, 3)*DdataEuler(i, 3) ) /&
+                     DdataEuler(i, 1)
+
+        ! Update total energy equation
+        DdataEuler(i, 4) = p + rq
+
+      end do
+      
+      deallocate(DsourceTerm)
+
+    end subroutine calcSourceRZBlockFormat
 
   end subroutine zpinch_applySourceTerm
 
@@ -2000,16 +2210,16 @@ contains
       ! Compute linearized FCT correction
       !-------------------------------------------------------------------------
       
-      ! Start time measurement for solution procedure
-      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-      
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+!!$      
 !!$      ! Perform conservative FCT postprocessing
 !!$      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
 !!$          p_rproblemLevel, rtimestepEuler, rsolutionEuler,&
 !!$          rsolutionTransport, rcollection)
-      
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
+!!$      
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
 
       
       !-------------------------------------------------------------------------
