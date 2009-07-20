@@ -278,7 +278,7 @@ module quadtree
   end interface
    
   interface qtree_deleteFromQuadtree
-    module procedure qtree_deleteFromQuadtree
+    module procedure qtree_deleteFromQuadtreeDefault
     module procedure qtree_deleteFromQtreeByNumber
   end interface
   
@@ -781,7 +781,7 @@ contains
   
 !<function>
   
-  function qtree_deleteFromQuadtree(rquadtree, Ddata, ivt) result(iresult)
+  function qtree_deleteFromQuadtreeDefault(rquadtree, Ddata, ivt) result(iresult)
 
 !<description>
     ! This function deletes an item from the quadtree.
@@ -901,7 +901,7 @@ contains
       case (QTREE_DEL)   ! Quad is deleted -> serious error
 
         call output_line('Internal error in deletion!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQuadtree')
+                         OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQuadtreeDefault')
         call sys_halt()
         
 
@@ -933,7 +933,7 @@ contains
                 rquadtree%p_Knode(jpos, jnode) = ivt
               else
                 call output_line('Internal error in deletion!',&
-                                 OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQuadtree')
+                                 OU_CLASS_ERROR,OU_MODE_STD,'qtree_deleteFromQuadtreeDefault')
                 call sys_halt()
               end if
               
@@ -960,7 +960,7 @@ contains
       
     end function delete
 
-  end function qtree_deleteFromQuadtree
+  end function qtree_deleteFromQuadtreeDefault
 
   ! ***************************************************************************
 

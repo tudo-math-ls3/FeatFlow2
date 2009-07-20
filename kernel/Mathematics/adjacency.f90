@@ -115,7 +115,7 @@ contains
 
 !<inputoutput>
   ! A storage handle to the pointer-array of the adjacency graph.
-  integer, intent(inout) :: h_Iptr
+  integer, intent(in) :: h_Iptr
   
   ! A storage handle to the index-array of the adjacency graph.
   integer, intent(inout) :: h_Iidx

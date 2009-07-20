@@ -744,12 +744,12 @@ module linearsystemscalar
   end interface
 
   interface lsyssc_createVector
-    module procedure lsyssc_createVector
+    module procedure lsyssc_createVectorDefault
     module procedure lsyssc_createVectorIntl
   end interface
 
   interface lsyssc_createVecByDiscr
-    module procedure lsyssc_createVecByDiscr
+    module procedure lsyssc_createVecByDiscrDefault
     module procedure lsyssc_createVecByDiscrIntl
   end interface
 
@@ -1721,7 +1721,7 @@ contains
 
 !<subroutine>
   
-  subroutine lsyssc_createVector (rvector,NEQ,bclear,cdataType,NEQMAX)
+  subroutine lsyssc_createVectorDefault (rvector,NEQ,bclear,cdataType,NEQMAX)
   
 !<description>
   ! This creates a simple scalar vector of length NEQ. Memory is 
@@ -1780,10 +1780,10 @@ contains
     ! Handle - if NEQ > 0
     if (rvector%NEQ .gt. 0) then
       if (bclear) then
-        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVectorDefault', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata, ST_NEWBLOCK_ZERO)
       else
-        call storage_new ('lsyssc_createVector', 'ScalarVector', isize, &
+        call storage_new ('lsyssc_createVectorDefault', 'ScalarVector', isize, &
                             cdata, rvector%h_Ddata, ST_NEWBLOCK_NOINIT)
       end if
     end if
@@ -1873,7 +1873,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_createVecByDiscr (rdiscretisation,rx,bclear,cdataType,NEQMAX)
+  subroutine lsyssc_createVecByDiscrDefault (rdiscretisation,rx,bclear,cdataType,NEQMAX)
   
 !<description>
   ! Initialises the vector structure rx based on a discretisation

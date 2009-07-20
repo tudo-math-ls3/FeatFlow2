@@ -252,12 +252,12 @@ module arraylist
   ! ***************************************************************************
   ! ***************************************************************************
   interface arrlst_createArrayList
-    module procedure arrlst_createArrayList
+    module procedure arrlst_createArrayListDefault
     module procedure arrlst_createArrayListTbl
   end interface
 
   interface arrlst_releaseArrayList
-    module procedure arrlst_releaseArrayList
+    module procedure arrlst_releaseArrayListDefault
     module procedure arrlst_releaseArrayListTbl
   end interface 
   
@@ -323,7 +323,7 @@ contains
   
 !<subroutine>
 
-  subroutine arrlst_createArrayList(rarraylist,nntable,nna,carraylistFormat,cordering,dfactor)
+  subroutine arrlst_createArrayListDefault(rarraylist,nntable,nna,carraylistFormat,cordering,dfactor)
 
 !<description>
     ! This subroutine creates a new arraylist
@@ -380,39 +380,39 @@ contains
 
     ! Allocate memory and associate pointers
     Isize=(/4,nntable/)
-    call storage_new('arrlst_createArrayList','Ktable',Isize,&
+    call storage_new('arrlst_createArrayListDefault','Ktable',Isize,&
         ST_INT,rarraylist%h_Ktable,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int2D(rarraylist%h_Ktable,rarraylist%p_Ktable)
     
-    call storage_new('arrlst_createArrayList','Knext',ARRLST_FREE,nna,ST_INT,&
+    call storage_new('arrlst_createArrayListDefault','Knext',ARRLST_FREE,nna,ST_INT,&
         rarraylist%h_Knext,ST_NEWBLOCK_NOINIT)
     call storage_getbase_int(rarraylist%h_Knext,rarraylist%p_Knext)
 
     select case(rarraylist%carraylistFormat)
     case (ST_DOUBLE)
-      call storage_new('arrlst_createArrayList','Data',nna,ST_DOUBLE,&
+      call storage_new('arrlst_createArrayListDefault','Data',nna,ST_DOUBLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double(rarraylist%h_Data,rarraylist%p_DData)
       
     case (ST_SINGLE)
-      call storage_new('arrlst_createArrayList','Data',nna,ST_SINGLE,&
+      call storage_new('arrlst_createArrayListDefault','Data',nna,ST_SINGLE,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       call storage_getbase_single(rarraylist%h_Data,rarraylist%p_FData)
       
     case (ST_INT)
-      call storage_new('arrlst_createArrayList','Data',nna,ST_INT,&
+      call storage_new('arrlst_createArrayListDefault','Data',nna,ST_INT,&
           rarraylist%h_Data,ST_NEWBLOCK_NOINIT)
       call storage_getbase_int(rarraylist%h_Data,rarraylist%p_IData)
       
     case DEFAULT
       call output_line('Unsupported data format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayList')
+          OU_CLASS_ERROR,OU_MODE_STD,'arrlst_createArrayListDefault')
       call sys_halt()
     end select
     
     ! Initialize list structures
     rarraylist%p_Knext(ARRLST_FREE)    = 1
-  end subroutine arrlst_createArrayList
+  end subroutine arrlst_createArrayListDefault
   
   ! ***************************************************************************
 
@@ -460,7 +460,7 @@ contains
 
 !<subroutine>
   
-  subroutine arrlst_releaseArrayList(rarraylist)
+  subroutine arrlst_releaseArrayListDefault(rarraylist)
 
 !<description>
     ! This subroutine releases an existing arraylist
@@ -489,7 +489,7 @@ contains
     rarraylist%NNA0        = 0
     rarraylist%dfactor     = 1.5_DP
     rarraylist%NRESIZE     = 0
-  end subroutine arrlst_releaseArrayList
+  end subroutine arrlst_releaseArrayListDefault
 
   ! ***************************************************************************
 

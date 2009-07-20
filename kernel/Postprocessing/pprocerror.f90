@@ -172,7 +172,7 @@ module pprocerror
 !</types>
 
   interface pperr_scalar
-    module procedure pperr_scalar
+    module procedure pperr_scalarDefault
     module procedure pperr_scalarObsolete
   end interface
 
@@ -764,7 +764,7 @@ contains
 
 !<subroutine>
 
-  subroutine pperr_scalar (cerrortype, derror, rvectorScalar,&
+  subroutine pperr_scalarDefault (cerrortype, derror, rvectorScalar,&
                            ffunctionReference, rcollection,&
                            rdiscretisation, relementError, ffunctionWeight)
 
@@ -860,7 +860,7 @@ contains
     
     if (.not. associated(p_rdiscretisation)) then
       call output_line('No discretisation structure!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarDefault')
       call sys_halt()
     end if
     
@@ -868,7 +868,7 @@ contains
     if (present(rvectorScalar)) then
       if (rvectorScalar%isortStrategy .gt. 0) then
         call output_line('Vector must be unsorted!',&
-            OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalar')
+            OU_CLASS_ERROR, OU_MODE_STD, 'pperr_scalarDefault')
         call sys_halt()
       end if
       cdataType = rvectorScalar%cdataType
@@ -929,17 +929,17 @@ contains
 
       case DEFAULT
         call output_line('Single precision vectors currently not supported!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
+                         OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarDefault')
         call sys_halt()
       end select
     
     else
       call output_line('General discretisation not implemented!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalar')
+                       OU_CLASS_ERROR,OU_MODE_STD,'pperr_scalarDefault')
       call sys_halt()
     end if
 
-  end subroutine pperr_scalar
+  end subroutine pperr_scalarDefault
 
   !****************************************************************************
 
