@@ -7313,7 +7313,7 @@ contains
       do i=1,size(Dx)
         Dx(i) = Dx(i) + dvalue
       end do
-      !$omp parallel do
+      !$omp end parallel do
       
     else
     
@@ -7321,7 +7321,7 @@ contains
       do i=1,n
         Dx(i) = Dx(i) + dvalue
       end do
-      !$omp parallel do
+      !$omp end parallel do
       
     end if
     
@@ -7364,7 +7364,7 @@ contains
       do i=1,size(Qx)
         Qx(i) = Qx(i) + qvalue
       end do
-      !$omp parallel do
+      !$omp end parallel do
       
     else
     
@@ -7372,7 +7372,7 @@ contains
       do i=1,n
         Qx(i) = Qx(i) + qvalue
       end do
-      !$omp parallel do
+      !$omp end parallel do
       
     end if
     
