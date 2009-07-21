@@ -1976,7 +1976,7 @@ contains
 
     ! local variables
     type(t_fparser), pointer :: p_rfparser
-    type(t_vectorBlock) :: rvector
+    type(t_vectorBlock) :: rvector1, rvector2
     type(t_matrixScalar) :: rmatrix
     real(DP), dimension(:), pointer :: p_DsolutionDual, p_Dresidual
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
@@ -1995,7 +1995,8 @@ contains
     !---------------------------------------------------------------------------
 
     ! Create vector for Galerkin residual
-    call lsysbl_createVectorBlock(rsolutionPrimal, rvector, .true., ST_DOUBLE)
+    call lsysbl_createVectorBlock(rsolutionPrimal, rvector1, .true., ST_DOUBLE)
+    call lsysbl_createVectorBlock(rsolutionPrimal, rvector2, .true., ST_DOUBLE)
 
     ! Ok, this is a little bit tricky. We need to compute the residual
     ! vector for the standard Galerkin scheme vector for the zeroth
@@ -2012,14 +2013,19 @@ contains
     ! Set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
 
-    ! Calculate the standard Galerkin preconditioner (required for residual calculation)
+    ! Calculate the standard Galerkin preconditioner
+    ! (required for rhs and residual calculation)
     call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
         rsolutionPrimal, rcollection)
 
+    ! Calculate the standard Galerkin right-hand side vector
+    call transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
+        rsolutionPrimal, rvector1, rcollection, rrhs)
+
     ! Calculate the standard Galerkin residual
     call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-        rsolutionPrimal, rsolutionPrimal, rvector, rvector, 0,&
-        rcollection, rrhs)
+        rsolutionPrimal, rsolutionPrimal, rvector1, rvector2, 0,&
+        rcollection)
 
     ! HERE WE GO NEXT
 !!$    ! Weakly impose Dirichlet boundary conditions
@@ -2057,7 +2063,7 @@ contains
     end if   ! lumpedMassMatrix > 0
 
     ! Set pointers
-    call lsysbl_getbase_double(rvector, p_Dresidual)
+    call lsysbl_getbase_double(rvector2, p_Dresidual)
     call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
     
     ! Now we compute the global error and its nodal contributions
@@ -2072,11 +2078,12 @@ contains
     ! compute the local L1-norms of nodal error vector which yields
     ! the local values of the a posteriori error estimator.
     call lsyssc_createVector(rtargetError, rproblemLevel%rtriangulation%NEL, .false.)
-    call pperr_scalar(rvector%RvectorBlock(1), PPERR_L1ERROR, daux,&
+    call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L1ERROR, daux,&
         relementError=rtargetError)   
 
-    ! Release the vector of nodal error values
-    call lsysbl_releaseVector(rvector)
+    ! Release temporal vectors
+    call lsysbl_releaseVector(rvector1)
+    call lsysbl_releaseVector(rvector2)
     
     ! Release temporal mass matrix if required
     if (lumpedMassMatrix .le. 0) call lsyssc_releaseMatrix(rmatrix)

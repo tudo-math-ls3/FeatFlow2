@@ -22,11 +22,11 @@
 !# 2.) transp_calcJacobian
 !#     -> Calculates the Jacobian matrix
 !#
-!# 3.) transp_applyJacobian
-!#     -> Applies the Jacobian matrix to a given vector
-!#
-!# 4.) transp_calcResidual
+!# 3.) transp_calcResidual
 !#     -> Calculates the nonlinear residual vector
+!#
+!# 4.) transp_calcExplicitRHS
+!#     -> Calculates the explicit right-hand side vector
 !#
 !# 5.) transp_calcRHS
 !#     -> Calculates the constant right-hand side vector
@@ -42,7 +42,7 @@
 !#
 !# 8.) transp_calcLinfBoundaryConditions
 !#     -> Calculates the linear form arising from the weak
-!#        imposition of boundary conditions
+!#        imposition of boundary conditions 
 !#
 !# 9.) transp_calcVelocityField
 !#     -> Calculates the velocity field
@@ -127,12 +127,12 @@ module transport_callback
   implicit none
 
   private
-  public :: transp_applyJacobian
   public :: transp_calcLinfBoundaryConditions
   public :: transp_calcJacobian
   public :: transp_calcLinearizedFCT
   public :: transp_calcPreconditioner
   public :: transp_calcRHS
+  public :: transp_calcExplicitRHS
   public :: transp_calcResidual
   public :: transp_calcVelocityField
   public :: transp_coeffVectorAnalytic
@@ -223,6 +223,11 @@ contains
     ! --------------------------------------------------------------------------
     if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
+      ! Compute the preconditioner
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+
+      ! Compute the right-hand side
       call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolutionInitial, rrhs, istep, rcollection, rb)
 
@@ -235,8 +240,19 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
+      if (istep .eq. 0) then
+        ! Assemble the constant right-hand side
+        call transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
+            rsolution, rrhs, rcollection, rb)
+      end if
+      
+      ! Compute the preconditioner
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      
+      ! Compute the residual
       call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection , rb)
+          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection)
 
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -245,8 +261,9 @@ contains
 
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
+    if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
      
+      ! Compute the preconditioner
       call transp_calcPreconditioner(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
@@ -254,8 +271,9 @@ contains
     
     ! Do we have to calculate the Jacobian operator?
     ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
+    if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
       
+      ! Compute the Jacobian matrix
       call transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolutionInitial, rcollection)
     end if
@@ -263,8 +281,9 @@ contains
     
     ! Do we have to impose boundary conditions?
     ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+    if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
+      ! Impose boundary conditions
       call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolutionInitial, rres, rcollection)
     end if
@@ -272,13 +291,14 @@ contains
 
     ! Do we have to apply the Jacobian operator?
     ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
+    if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
 
       p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
 
+      ! Apply Jacobian matrix
       call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
           rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
           1.0_DP)
@@ -1727,56 +1747,6 @@ contains
 
 !<subroutine>
 
-  subroutine transp_applyJacobian(rproblemLevel, rx, ry, cx, cy, rcollection)
-
-!<description>
-    ! This subroutine applies the (scaled) Jacobian matrix to 
-    ! the vector rx and adds the result to the vector ry.
-!</description>
-
-!<input>
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! vector to which the Jacobian should be applied to
-    type(t_vectorBlock), intent(in) :: rx
-
-    ! factor by which rx should be scaled
-    real(DP), intent(in) :: cx
-
-    ! factor by which ry should be scaled
-    real(DP), intent(in) :: cy
-!</input>
-
-!<inputoutput>
-    ! vector to which the result should be added
-    type(t_vectorBlock), intent(inout) :: ry
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_parlist), pointer :: p_rparlist
-    integer :: jacobianMatrix
-    
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
-    
-    ! We know where the Jacobian matrix is stored and can apply it
-    ! by means of matrix vector multiplication
-    call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
-        rx%RvectorBlock(1), ry%RvectorBlock(1), cx, cy)
-
-  end subroutine transp_applyJacobian
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
       rsolution, rsolutionInitial, rrhs, istep, rcollection,rb)
 
@@ -1926,15 +1896,11 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rrhs, rres, ite, rcollection, rb)
+  subroutine transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
+      rsolution, rrhs, rcollection, rb)
 
 !<description>
-    ! This subroutine computes the nonlinear residual vector
-    ! 
-    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
-    !
-    !  and the constant right-hand side (only in the zeroth iteration)
+    ! This subroutine computes the constant right-hand side
     !
     !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + \Delta t b$$
 !</description>
@@ -1945,12 +1911,6 @@ contains
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
-
-    ! initial solution vector
-    type(t_vectorBlock), intent(in) :: rsolutionInitial
-
-    ! number of nonlinear iteration
-    integer, intent(in) :: ite
 
     ! OPTIONAL: load vector specified by the application
     type(t_vectorBlock), intent(in), optional :: rb
@@ -1964,14 +1924,195 @@ contains
     type(t_solver), intent(inout) :: rsolver
 
     ! right-hand side vector
-    !   ite=0: the right-hand side vector is calculated
-    !   ite>0: the right-hand side vector remains unchanged
     type(t_vectorBlock), intent(inout) :: rrhs
 
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_timer), pointer :: p_rtimer
+    character(LEN=SYS_STRLEN) :: smode
+    integer :: transportMatrix, consistentMassMatrix, lumpedMassMatrix
+    integer :: convectionAFC, diffusionAFC
+    integer :: imasstype, imassantidiffusiontype, ivelocitytype
+
+    !###########################################################################
+    ! REMARK: If you want to add a new type of velocity/diffusion,
+    ! then search for the tag @FAQ2: in this subroutine and create a
+    ! new CASE which performs the corresponding task for the new type
+    ! of velocity/ diffusion.
+    !###########################################################################
+    
+    ! Check if the preconditioner has to be initialized
+    if (iand(rproblemLevel%iproblemSpec,&
+             PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
+                                        not(PROBLEV_MSPEC_INITIALIZE))
+    end if
+
+    !---------------------------------------------------------------------------
+    ! We calculate the constant right-hand side vector based on the
+    ! transport operator. If boundary conditions are imposed in weak
+    ! sense, then additional surface integrals are applied to the
+    ! right-hand side of the primal problem. In the dual problem,
+    ! weakly imposed boundary conditions are built into the target
+    ! functional which is supplied via the vector 'rb'.
+    ! ---------------------------------------------------------------------------
+
+    ! Start time measurement for rhs evaluation
+    p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
+    call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
+    
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection &
+        %SquickAccess(1), 'transportmatrix', transportMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'imasstype', imasstype)
+    call parlst_getvalue_int(p_rparlist, rcollection&
+        %SquickAccess(1), 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_string(p_rparlist,&
+        rcollection%SquickAccess(1), 'mode', smode)
+
+    select case(imasstype)
+    case (MASS_LUMPED, MASS_CONSISTENT)
+      
+      !-------------------------------------------------------------------------
+      ! Compute the constant right-hand side
+      !
+      !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.`s$
+      !-------------------------------------------------------------------------
+      
+      if (rtimestep%theta .lt. 1.0_DP) then
+        ! Build transport term $dt*L(u^n)u^n$
+        call lsyssc_scalarMatVec(rproblemLevel&
+            %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
+            rrhs%RvectorBlock(1), rtimestep%dStep, 0.0_DP)
+        
+        ! Build transient term $M_L*u^n$ or $M_C*u^n$
+        if (imasstype .eq. MASS_LUMPED) then
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)           
+        else
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(consistentMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
+        end if
+        
+        ! Evaluate bilinear form for boundary integral (if any)
+        ! explicit part
+        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
+            ivelocitytype, rtimestep%dTime-rtimestep%dStep,&
+            -(1.0_DP-rtimestep%theta)*rtimestep%dStep,&
+            rrhs%RvectorBlock(1), rcollection)
+        
+        ! implicit part
+        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
+            ivelocitytype, rtimestep%dTime,&
+            -rtimestep%theta*rtimestep%dStep,&
+            rrhs%RvectorBlock(1), rcollection)
+        
+      else ! theta = 1
+        
+        ! Build transient term $M_L*u^n$ or $M_C*u^n$
+        if (imasstype .eq. MASS_LUMPED) then
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
+        else
+          call lsyssc_scalarMatVec(rproblemLevel&
+              %Rmatrix(consistentMassMatrix), rsolution%RvectorBlock(1),&
+              rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
+        end if
+        
+        ! Evaluate bilinear form for boundary integral (if any)
+        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
+            ivelocitytype, rtimestep%dTime,&
+            -rtimestep%theta*rtimestep%dStep,&
+            rrhs%RvectorBlock(1), rcollection)
+        
+      end if ! theta
+      
+    case DEFAULT
+      
+      !-------------------------------------------------------------------------
+      ! Initialize the constant right-hand side by zeros
+      !
+      !   $ rhs = "0" + b.c.`s
+      !-------------------------------------------------------------------------
+      
+      call lsysbl_clearVector(rrhs)
+      
+      ! Evaluate bilinear form for boundary integral (if any)
+      call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
+          ivelocitytype, rtimestep%dTime, -1.0_DP,&
+          rrhs%RvectorBlock(1), rcollection)
+      
+    end select
+    
+    
+    ! Apply the given load vector to the residual (if any)
+    if (present(rb)) call lsysbl_vectorLinearComb(rb, rrhs, 1.0_DP, 1.0_DP)
+    
+    ! Stop time measurement for rhs evaluation
+    call stat_stopTimer(p_rtimer)
+
+  end subroutine transp_calcExplicitRHS
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
+      rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
+
+!<description>
+    ! This subroutine computes the nonlinear residual vector
+    ! 
+    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
+    !
+    !  whereby  the constant right-hand side
+    !
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + \Delta t b$$
+    !
+    ! is must be given by vector rrhs
+!</description>
+
+!<input>
+    ! time-stepping structure
+    type(t_timestep), intent(in) :: rtimestep
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! initial solution vector
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
+
+    ! right-hand side vector
+    type(t_vectorBlock), intent(in) :: rrhs
+
+    ! iteration number
+    integer, intent(in) :: ite
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(inout) :: rsolver
+
     ! residual vector
-    !   ite=0: the initial residual vector is calculated
-    !   ite>0: the residual vector is initialized by the right-hand
-    !          side vector and updated by the implicit contribution
     type(t_vectorBlock), intent(inout) :: rres
 
     ! collection
@@ -2002,133 +2143,14 @@ contains
       rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                         not(PROBLEV_MSPEC_INITIALIZE))
     end if
-    
-    ! Are we in the zero-th iteration?
-    if (ite .eq. 0) then
 
-      !-------------------------------------------------------------------------
-      ! In the zero-th nonlinear iteration we calculate the constant
-      ! right-hand side vector based on the transport operator from
-      ! the previous time step. Of boundary conditions are imposed in
-      ! weak sense, then additional surface integrals are applied to
-      ! the right-hand side of the primal problem. In the dual
-      ! problem, weakly imposed boundary conditions are built into
-      ! the target functional which is supplied via the vector 'rb'.
-      !-------------------------------------------------------------------------
-
-      ! Start time measurement for rhs evaluation
-      p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
-      call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
-
-      ! Get parameters from parameter list which are required unconditionally
-      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-      call parlst_getvalue_int(p_rparlist, rcollection&
-          %SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
-      call parlst_getvalue_int(p_rparlist, rcollection&
-          %SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
-      call parlst_getvalue_int(p_rparlist, rcollection &
-          %SquickAccess(1), 'transportmatrix', transportMatrix)
-      call parlst_getvalue_int(p_rparlist, rcollection&
-          %SquickAccess(1), 'imasstype', imasstype)
-      call parlst_getvalue_int(p_rparlist, rcollection&
-          %SquickAccess(1), 'ivelocitytype', ivelocitytype)
-      call parlst_getvalue_string(p_rparlist,&
-          rcollection%SquickAccess(1), 'mode', smode)
-      
-
-      select case(imasstype)
-      case (MASS_LUMPED, MASS_CONSISTENT)
-
-        !-----------------------------------------------------------------------
-        ! Compute the constant right-hand side
-        !
-        !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.`s$
-        !-----------------------------------------------------------------------
-
-        if (rtimestep%theta .lt. 1.0_DP) then
-          ! Build transport term $dt*L(u^n)u^n$
-          call lsyssc_scalarMatVec(rproblemLevel&
-              %Rmatrix(transportMatrix), rsolution%rvectorBlock(1),&
-              rrhs%RvectorBlock(1), rtimestep%dStep, 0.0_DP)
-          
-          ! Build transient term $M_L*u^n$ or $M_C*u^n$
-          if (imasstype .eq. MASS_LUMPED) then
-            call lsyssc_scalarMatVec(rproblemLevel&
-                %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
-                rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)           
-          else
-            call lsyssc_scalarMatVec(rproblemLevel&
-                %Rmatrix(consistentMassMatrix), rsolution%RvectorBlock(1),&
-                rrhs%RvectorBlock(1), 1.0_DP, 1.0_DP-rtimestep%theta)
-          end if
-
-          ! Evaluate bilinear form for boundary integral (if any)
-          ! explicit part
-          call calcLinfBdrCond(rproblemLevel, smode, ivelocitytype,&
-              rtimestep%dTime-rtimestep%dStep,&
-              -(1.0_DP-rtimestep%theta)*rtimestep%dStep,&
-              rrhs%RvectorBlock(1), rcollection)
-          
-          ! implicit part
-          call calcLinfBdrCond(rproblemLevel, smode, ivelocitytype,&
-              rtimestep%dTime, -rtimestep%theta*rtimestep%dStep,&
-              rrhs%RvectorBlock(1), rcollection)
-
-        else ! theta = 1
-
-          ! Build transient term $M_L*u^n$ or $M_C*u^n$
-          if (imasstype .eq. MASS_LUMPED) then
-            call lsyssc_scalarMatVec(rproblemLevel&
-                %Rmatrix(lumpedMassMatrix), rsolution%RvectorBlock(1),&
-                rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
-          else
-            call lsyssc_scalarMatVec(rproblemLevel&
-                %Rmatrix(consistentMassMatrix), rsolution%RvectorBlock(1),&
-                rrhs%RvectorBlock(1), 1.0_DP, 0.0_DP)
-          end if
-
-          ! Evaluate bilinear form for boundary integral (if any)
-          call calcLinfBdrCond(rproblemLevel, smode, ivelocitytype,&
-              rtimestep%dTime, -rtimestep%theta*rtimestep%dStep,&
-              rrhs%RvectorBlock(1), rcollection)
-
-        end if ! theta
-        
-      case DEFAULT
-
-        !-----------------------------------------------------------------------
-        ! Initialize the constant right-hand side by zeros
-        !
-        !   $ rhs = "0" + b.c.`s
-        !-----------------------------------------------------------------------
-
-        call lsysbl_clearVector(rrhs)
-
-        ! Evaluate bilinear form for boundary integral (if any)
-        call calcLinfBdrCond(rproblemLevel, smode, ivelocitytype,&
-            rtimestep%dTime, -1.0_DP, rrhs%RvectorBlock(1),&
-            rcollection)
-        
-      end select
-      
-
-      ! Apply the given load vector to the residual (if any)
-      if (present(rb)) call lsysbl_vectorLinearComb(rb, rrhs, 1.0_DP, 1.0_DP)
-      
-      ! Stop time measurement for rhs evaluation
-      call stat_stopTimer(p_rtimer)
-
-    end if ! ite
-    
-    
     !---------------------------------------------------------------------------
-    ! Update the nonlinear preconditioner since we need to evaluate
-    ! the transport operator for the current time step
+    ! We calculate the nonlinear residual vector based on the
+    ! transport operator. If boundary conditions are imposed in weak
+    ! sense, then they give rise to additional surface integrals in
+    ! the bilinear form, i.e., the transport operator so that no
+    ! additional linear forms for boundary conditions are required
     !---------------------------------------------------------------------------
-
-    call transp_calcPreconditioner(rproblemLevel, rtimestep,&
-        rsolver, rsolution, rcollection)
-    
     
     ! Start time measurement for residual evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
@@ -2267,151 +2289,6 @@ contains
     
     ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
-
-
-    ! REMARK: I think we have to build the linear form for the
-    ! boundary conditions here. This should apply to time dependent
-    ! problems
-
-  contains
-
-    !***************************************************************************
-    ! The linear form for the surface integral needs to be build
-    ! several time (for the right-hand side and the residual vector)
-    ! using different scaling parameter. It is therefore realized as
-    ! internal subroutine which is called using the correct scaling
-    ! parameter and the destination vector.
-    !***************************************************************************
-
-    subroutine calcLinfBdrCond(rproblemLevel, smode, ivelocitytype,&
-        dtime, dscale, rvectorScalar, rcollection)
-      
-      type(t_problemLevel), intent(in) :: rproblemLevel
-      character(LEN=*), intent(in) :: smode
-      integer, intent(in) :: ivelocitytype
-      real(dp), intent(in) :: dtime, dscale
-      
-      type(t_vectorScalar), intent(inout) :: rvectorScalar
-      type(t_collection), intent(inout) :: rcollection
-
-      ! Are we in primal or dual mode?
-      select case(trim(smode))
-
-      case ('primal')
-        
-        ! @FAQ2: What type of velocity are we?
-        select case(abs(ivelocitytype))
-        case (VELOCITY_ZERO)
-          ! zero velocity, do nothing
-          
-        case (VELOCITY_CONSTANT,&
-              VELOCITY_TIMEDEP)
-          ! linear velocity
-          call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-              dscale, transp_coeffVecBdrPrimalConst2d,&
-              rvectorScalar, rcollection)
-          
-        case (VELOCITY_BURGERS_SPACETIME)
-          ! nonlinear Burgers` equation in space-time
-          call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-              dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
-              rvectorScalar, rcollection)
-          
-        case (VELOCITY_BUCKLEV_SPACETIME)
-          ! nonlinear Buckley-Leverett equation in space-time
-          call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-              dscale, transp_coeffVecBdrPrimalBuckLevSpT2d,&
-              rvectorScalar, rcollection)
-          
-        case (VELOCITY_BURGERS1D)
-          ! nonlinear Burgers` equation in 1D
-          
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case (VELOCITY_BURGERS2D)
-          ! nonlinear Burgers` equation in 2D
-          call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-              dscale, transp_coeffVecBdrPrimalBurgers2d, rvectorScalar,&
-              rcollection)
-          
-        case (VELOCITY_BUCKLEV1D)
-          ! nonlinear Buckley-Leverett equation in 1D
-          
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case DEFAULT
-          call output_line('Invalid velocity profile!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
-          call sys_halt()
-        end select
-        
-
-      case ('dual')
-
-        ! @FAQ2: What type of velocity are we?
-        select case(abs(ivelocitytype))
-        case (VELOCITY_ZERO)
-          ! zero velocity, do nothing
-          
-        case (VELOCITY_CONSTANT,&
-              VELOCITY_TIMEDEP)
-          ! linear velocity
-          call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-              -dscale, transp_coeffVecBdrDualConst2d,&
-              rvectorScalar, rcollection)
-          
-        case (VELOCITY_BURGERS_SPACETIME)
-          ! nonlinear Burgers` equation in space-time
-
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case (VELOCITY_BUCKLEV_SPACETIME)
-          ! nonlinear Buckley-Leverett equation in space-time
-
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case (VELOCITY_BURGERS1D)
-          ! nonlinear Burgers` equation in 1D
-          
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case (VELOCITY_BURGERS2D)
-          ! nonlinear Burgers` equation in 2D
-
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case (VELOCITY_BUCKLEV1D)
-          ! nonlinear Buckley-Leverett equation in 1D
-          
-          ! @TODO: Implement weak boundary conditions
-          print *, "Weak boundary conditions are not available!"
-          stop
-          
-        case DEFAULT
-          call output_line('Invalid velocity profile!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
-          call sys_halt()
-        end select
-
-      case DEFAULT
-        call output_line('Invalid mode!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
-        call sys_halt()
-      end select
-      
-    end subroutine calcLinfBdrCond
     
   end subroutine transp_calcResidual
 
@@ -2499,8 +2376,10 @@ contains
       dscale, fcoeff_buildMatrixScBdr2D_sim, rmatrix, rcollection, cconstrType)
 
 !<description>
-    ! This subroutine computes the bilinear form arising
-    ! from the weak imposition of boundary conditions
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions. For this application only
+    ! weakly imposed Dirichlet boundary conditions give rise to
+    ! additional contributions to the bilinear form.
 !</description>
 
 !<input>
@@ -2516,8 +2395,8 @@ contains
     ! callback routine for nonconstant coefficient matrices.
     include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
 
-    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to specify
-    ! the matrix construction method. If not specified,
+    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
     ! BILF_MATC_ELEMENTBASED is used.
     integer, intent(in), optional :: cconstrType
 !</intput>
@@ -2639,8 +2518,10 @@ contains
       dscale, fcoeff_buildVectorScBdr2D_sim, rvector, rcollection)
 
 !<description>
-    ! This subroutine computes the linear form arising
-    ! from the weak imposition of boundary conditions
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions. For this application only
+    ! weakly imposed Dirichlet and non-homogeneous Neumann boundary
+    ! conditions give rise to contributions to the linear form.
 !</description>
 
 !<input>
@@ -2760,6 +2641,165 @@ contains
         
   end subroutine transp_calcLinfBoundaryConditions
 
+  !*****************************************************************************
+
+!<subroutine>
+  
+  subroutine transp_calcLinfBdrCondQuick(rproblemLevel, smode, ivelocitytype,&
+      dtime, dscale, rvectorScalar, rcollection)
+    
+!<description>
+    ! This subroutine is a shortcut for building the linear form
+    ! arising from the weak imposition of boundary conditions. It
+    ! calls the more general routine transp_calcLinfBoundaryConditions
+    ! using the corresponding callback routines.
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! problem mode (primal, dual)
+    character(LEN=*), intent(in) :: smode
+
+    ! type of velocity
+    integer, intent(in) :: ivelocitytype
+    
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+!</intput>
+
+!<inputoutput>
+    ! scalar vector where to store the linear form
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! Are we in primal or dual mode?
+    select case(trim(smode))
+      
+    case ('primal')
+      
+      ! @FAQ2: What type of velocity are we?
+      select case(abs(ivelocitytype))
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing
+        
+      case (VELOCITY_CONSTANT,&
+            VELOCITY_TIMEDEP)
+        ! linear velocity
+        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
+            dscale, transp_coeffVecBdrPrimalConst2d, rvectorScalar,&
+            rcollection)
+        
+      case (VELOCITY_BURGERS_SPACETIME)
+        ! nonlinear Burgers` equation in space-time
+        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
+            dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
+            rvectorScalar, rcollection)
+        
+      case (VELOCITY_BUCKLEV_SPACETIME)
+        ! nonlinear Buckley-Leverett equation in space-time
+        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
+            dscale, transp_coeffVecBdrPrimalBuckLevSpT2d,&
+            rvectorScalar, rcollection)
+        
+      case (VELOCITY_BURGERS1D)
+        ! nonlinear Burgers` equation in 1D
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case (VELOCITY_BURGERS2D)
+        ! nonlinear Burgers` equation in 2D
+        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
+            dscale, transp_coeffVecBdrPrimalBurgers2d, rvectorScalar,&
+            rcollection)
+        
+      case (VELOCITY_BUCKLEV1D)
+        ! nonlinear Buckley-Leverett equation in 1D
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case DEFAULT
+        call output_line('Invalid velocity profile!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
+        call sys_halt()
+      end select
+      
+      
+    case ('dual')
+      
+      ! @FAQ2: What type of velocity are we?
+      select case(abs(ivelocitytype))
+      case (VELOCITY_ZERO)
+        ! zero velocity, do nothing
+        
+      case (VELOCITY_CONSTANT,&
+            VELOCITY_TIMEDEP)
+        ! linear velocity
+        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
+            -dscale, transp_coeffVecBdrDualConst2d, rvectorScalar,&
+            rcollection)
+        
+      case (VELOCITY_BURGERS_SPACETIME)
+        ! nonlinear Burgers` equation in space-time
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case (VELOCITY_BUCKLEV_SPACETIME)
+        ! nonlinear Buckley-Leverett equation in space-time
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case (VELOCITY_BURGERS1D)
+        ! nonlinear Burgers` equation in 1D
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case (VELOCITY_BURGERS2D)
+        ! nonlinear Burgers` equation in 2D
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case (VELOCITY_BUCKLEV1D)
+        ! nonlinear Buckley-Leverett equation in 1D
+        
+        ! @TODO: Implement weak boundary conditions
+        print *, "Weak boundary conditions are not available!"
+        stop
+        
+      case DEFAULT
+        call output_line('Invalid velocity profile!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
+        call sys_halt()
+      end select
+      
+    case DEFAULT
+      call output_line('Invalid mode!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
+      call sys_halt()
+    end select
+    
+  end subroutine transp_calcLinfBdrCondQuick
+    
   !*****************************************************************************
 
 !<subroutine>
