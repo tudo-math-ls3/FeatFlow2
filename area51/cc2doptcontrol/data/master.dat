@@ -510,12 +510,13 @@ simportdatafiles(6) =
 #ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
 #ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
 #ssolutionExpressionXi      = '0'
-#iequation          = 1
+#iequation          = 0
 #RE                 = 1.0
 #NLMAX              = 3
 #iRHS               = -1
 #srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)+TIME^4*X'
 #srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y+TIME^4*Y'
+#iElementType       = 5
 #
 #[BDEXPRESSIONS]
 #bdExpressions(4) =
@@ -560,5 +561,6 @@ simportdatafiles(6) =
 #nsmSteps = 1
 #
 #[CC-LINEARSOLVER]
-#icoarseGridSolverType = 3
+#ismootherType = 8
+#icoarseGridSolverType = 6
 ##nmaxiterations = 0

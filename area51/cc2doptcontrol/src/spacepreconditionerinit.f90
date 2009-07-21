@@ -391,7 +391,7 @@ contains
         rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
 
       case (3)
-        ! BiCGSTab with diagonal VANKA preconditioning.
+        ! BiCGStab with diagonal VANKA preconditioning.
         !
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
@@ -416,7 +416,7 @@ contains
         rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
 
       case (4)
-        ! BiCGSTab with full VANKA preconditioning.
+        ! BiCGStab with full VANKA preconditioning.
         !
         ! Create VANKA and initialise it with the parameters from the DAT file.
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
@@ -440,6 +440,51 @@ contains
         ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
         rpreconditioner%rprecSpecials%bneedVirtTransposedDonCoarse = .true.
 
+      case (5)
+        ! BiCGStab with full VANKA preconditioning.
+        !
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
+        
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
+           'spreconditionerSection', sstring, '')
+        read (sstring,*) spreconditionerSection
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANKA as preconditioner.
+        call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rpreconditioner%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
+      case (6)
+        ! BiCGStab with diagonal VANKA preconditioning, new implementation
+        ! for general elements
+        !
+        ! Create VANKA and initialise it with the parameters from the DAT file.
+        call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+        
+        call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
+           'spreconditionerSection', sstring, '')
+        read (sstring,*) spreconditionerSection
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
+            spreconditionerSection,p_rpreconditioner%calgorithm)
+        
+        ! Create the defect correction solver, attach VANKA as preconditioner.
+        call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
+            rpreconditioner%p_RfilterChain)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
+        call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
+            scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
+
       case default
       
         call output_line ('Unknown coarse grid solver.', &
@@ -458,7 +503,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:7)
+        case (0:8)
 
           nullify(p_rsmoother)
         
@@ -508,6 +553,11 @@ contains
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
 
+          case (8)
+            call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+            call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+                rpreconditioner%p_RfilterChain)
+
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -555,7 +605,7 @@ contains
       ! ismootherType defines the type of smoother to use.
       select case (ismootherType)
       
-      case (0:7)
+      case (0:8)
 
         nullify(p_rsmoother)
       
@@ -567,20 +617,49 @@ contains
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_GENERALDIRECT)
         case (2)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
         case (3)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIRECT)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
         case (4)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
         case (5)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
         case (6)
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
               rpreconditioner%p_RfilterChain)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
         case (7)
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
               rpreconditioner%p_RfilterChain)
+
+          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
+          rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
+
+        case (8)
+          call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+          call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
+              rpreconditioner%p_RfilterChain)
+
         end select
         
         ! Initialise the parameters -- if there are any.
