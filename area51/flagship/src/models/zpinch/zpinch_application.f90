@@ -36,26 +36,20 @@
 !#        structure of the global problem and generates a linked
 !#        list of problem levels used in the multigrid hierarchy.
 !#
-!# 3.) zpinch_initVelocityField
-!#     -> Initializes the velocity field for the transport model
-!#
-!# 4.) zpinch_initDensityAveraging
-!#     -> Initializes the density averaged mass matrices
-!#
-!# 5.) zpinch_applySourceTerm
+!# 3.) zpinch_applySourceTerm
 !#     -> Initializes the source term and applies it to the solution
 !#
-!# 6.) zpinch_calcAdaptationIndicator
+!# 4.) zpinch_calcAdaptationIndicator
 !#     -> Calculates the element-wise indicator for refinement/-coarsening
 !#        based on the detectation of shocks and contact discontinuities
 !#
-!# 7.) zpinch_outputSolution
+!# 5.) zpinch_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 8.) zpinch_adaptTriangulation
+!# 6.) zpinch_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 9.) zpinch_solveTransientPrimal
+!# 7.) zpinch_solveTransientPrimal
 !#     -> Solves the primal formulation of the time-dependent 
 !#        simplified MHD equations
 !#
@@ -74,7 +68,6 @@ module zpinch_application
   use afcstabilisation
   use boundaryfilter
   use collection
-  use derivatives
   use euler_application
   use euler_basic
   use euler_callback
@@ -91,7 +84,6 @@ module zpinch_application
   use linearsystemscalar
   use paramlist
   use problem
-  use scalarpde
   use solveraux
   use spatialdiscretisation
   use statistics
@@ -104,8 +96,6 @@ module zpinch_application
   use transport_callback1d
   use transport_callback2d
   use transport_callback3d
-  use trilinearformevaluation
-  use trilinearformevaluation
   use ucd
   use zpinch_callback
   use zpinch_callback2d
@@ -542,153 +532,6 @@ contains
     end do
 
   end subroutine zpinch_initProblem
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_initVelocityField(rparlist, ssectionName,&
-      rproblemLevel, rsolution, rcollection)
-
-!<description>
-    ! This subroutine initializes the velocity field from the solution
-    ! of the compressible Euler model. The result is stored separately
-    ! for each problem level.
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(in) :: rparlist
-
-    ! section name in parameter list
-    character(LEN=*), intent(in) :: ssectionName
-
-    ! solution vector of compressible Euler model
-    type(t_vectorBlock), intent(in) :: rsolution
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout), target :: rproblemLevel
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    integer :: velocityfield
-    integer :: neq, ndim
-    
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'velocityfield', velocityfield)
-    
-    ! Get number of degrees of freedom and spatial dimension
-    neq  = rproblemLevel%rtriangulation%NVT
-    ndim = rproblemLevel%rtriangulation%ndim
-    
-    ! Create/resize velocity vector if required
-    if (rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
-      call lsysbl_createVectorBlock(rproblemLevel&
-          %rvectorBlock(velocityfield), neq, ndim, .true.)
-    elseif (rproblemLevel%RvectorBlock(velocityfield)%NEQ .ne. neq*ndim) then
-      call lsysbl_resizeVectorBlock(rproblemLevel&
-          %rvectorBlock(velocityfield), neq, .true.)
-    end if
-
-    ! Set x-velocity, i.e., momentum in x-direction
-    call euler_getVariable(rsolution, 'momentum_x', rproblemLevel&
-        %RvectorBlock(velocityfield)%RvectorBlock(1))
-
-    ! Set y-velocity, i.e., momentum in y-direction
-    call euler_getVariable(rsolution, 'momentum_y', rproblemLevel&
-        %RvectorBlock(velocityfield)%RvectorBlock(2))
-
-    ! Set global solution vector as external vector for the transport model
-    call transp_setVariable2d(rsolution%RvectorBlock(1), 3)
-    
-    ! Set update notification in problem level structure
-    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                     PROBLEV_MSPEC_UPDATE)
-
-  end subroutine zpinch_initVelocityField
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_initDensityAveraging(rparlist,&
-      ssectionNameTransport, rproblemlevel, rsolutionEuler, rcollection)
-
-!<description>
-    ! This subroutine initializes the density averaged mass matrices
-    ! for the transport model based on the solution from the Euler
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(in) :: rparlist
-
-    ! section names in parameter list
-    character(LEN=*), intent(in) :: ssectionNameTransport
-
-    ! solution vector for Euler model
-    type(t_vectorBlock), intent(in) :: rsolutionEuler
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-    
-    ! local variables
-    type(t_trilinearform) :: rform
-    type(t_vectorScalar) :: rvector
-    integer :: lumpedMassMatrix, consistentMassMatrix
-    
-    
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
-    
-    ! Get density distribution from the solution of the Euler model
-    !  and create block vector which is attached to the collection
-    call euler_getVariable(rsolutionEuler, 'density', rvector)
-    
-    ! We have variable coefficients
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff    = .true.
-
-    ! Initialize the bilinear form
-    rform%itermCount = 1
-    rform%Dcoefficients(1)  = 1.0_DP
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    rform%Idescriptors(3,1) = DER_FUNC
-
-    ! Create density averaged consistent mass matrix
-    call trilf_buildMatrixScalar(rform, .true.,&
-        rproblemLevel%Rmatrix(consistentMassMatrix), rvector)
-    
-    ! Create density averaged lumped mass matrix
-    call lsyssc_duplicateMatrix(rproblemLevel&
-        %Rmatrix(consistentMassMatrix), rproblemLevel &
-        %Rmatrix(lumpedMassMatrix), LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-    
-    call lsyssc_lumpMatrixScalar(rproblemLevel&
-        %Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
-    
-    ! Release temporal vector
-    call lsyssc_releaseVector(rvector)
-    
-  end subroutine zpinch_initDensityAveraging
 
   !*****************************************************************************
 
@@ -2103,8 +1946,17 @@ contains
       
     end if
 
+    !---------------------------------------------------------------------------
+    ! Calculate density-averaged mass matrices for the scalar model
+    ! problem based on the initial solution U^0 of the Euler model
+    !---------------------------------------------------------------------------
+
+    call zpinch_initDensityAveraging(rparlist, ssectionNameTransport,&
+        p_rproblemLevel, rsolutionEuler, rcollection)
+
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
+
 
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
@@ -2171,12 +2023,11 @@ contains
       ! Prepare quick access arrays of the collection
       rcollection%SquickAccess(1) = ssectionNameTransport
 
+      ! Prepare quick access vector
+      rcollection%p_rvectorQuickAccess1 => rsolutionEuler
+
       ! Set velocity field (\rho v)^{n+1} for scalar model problem
       call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
-          p_rproblemLevel, rsolutionEuler, rcollection)
-
-      ! Calculate density-averaged mass matrices for scalar model problem
-      call zpinch_initDensityAveraging(rparlist, ssectionNameTransport,&
           p_rproblemLevel, rsolutionEuler, rcollection)
 
       ! What time-stepping scheme should be used?
@@ -2187,14 +2038,14 @@ contains
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestepTransport,&
             rsolverTransport, rsolutionTransport,&
-            transp_nlsolverCaLlback, rcollection)
+            zpinch_nlsolverCallbackTransport, rcollection)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel,&
             rtimestepTransport, rsolverTransport, rsolutionTransport,&
-            transp_nlsolverCallback, rcollection)
+            zpinch_nlsolverCallbackTransport, rcollection)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&

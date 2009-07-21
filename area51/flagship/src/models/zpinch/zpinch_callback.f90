@@ -9,7 +9,17 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_calcLinearizedFCT
+!# 1.) zpich_nlsolverCallbackTransport
+!#     -> Callback routine for the nonlinear solver used in the
+!#        computation of the scalar transport model
+!#
+!# 2.) zpinch_initVelocityField
+!#     -> Initializes the velocity field for the transport model
+!#
+!# 3.) zpinch_initDensityAveraging
+!#     -> Initializes the density averaged mass matrices
+!#
+!# 4.) zpinch_calcLinearizedFCT
 !#     -> Calculates the linearized FCT correction
 !#
 !# </purpose>
@@ -19,6 +29,7 @@ module zpinch_callback
 
   use boundaryfilter
   use collection
+  use derivatives
   use euler_basic
   use euler_callback2d
   use fsystem
@@ -26,18 +37,349 @@ module zpinch_callback
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
+  use paramlist
   use problem
+  use scalarpde
   use solveraux
   use storage
   use timestepaux
+  use transport_callback
   use transport_callback2d
+  use trilinearformevaluation
 
   implicit none
 
   private
+  public :: zpinch_nlsolverCallbackTransport
+  public :: zpinch_initVelocityField
+  public :: zpinch_initDensityAveraging
   public :: zpinch_calcLinearizedFCT
   
 contains
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_nlsolverCallbackTransport(rproblemLevel,&
+      rtimestep, rsolver, rsolution, rsolutionInitial, rrhs, rres,&
+      istep, ioperationSpec, rcollection, istatus, rb)
+
+!<description>
+    ! This subroutine is called by the nonlinear solver and it is responsible
+    ! to assemble preconditioner, right-hand side vector, residual vector, etc.
+!</description>
+
+!<input>
+    ! initial solution vector
+    type(t_vectorBlock), intent(in) :: rsolutionInitial
+    
+    ! number of solver step
+    integer, intent(in) :: istep
+    
+    ! specifier for operations
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), intent(in), optional :: rb
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+    
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+    
+    ! solver structure
+    type(t_solver), intent(inout) :: rsolver
+    
+    ! solution vector
+    type(t_vectorBlock), intent(inout) :: rsolution
+        
+    ! right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rrhs
+
+    ! residual vector
+    type(t_vectorBlock), intent(inout) :: rres
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+
+!<output>
+    ! status flag
+    integer, intent(out) :: istatus
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_vectorBlock), pointer :: p_rsolutionEuler
+    integer(i32) :: iSpec
+    integer :: jacobianMatrix
+
+    !###########################################################################
+    ! REMARK: The order in which the operations are performed is
+    ! essential. This is due to the fact that the calculation of the
+    ! residual/rhs requires the discrete transport operator to be
+    ! initialized which is assembled in the calculation of the
+    ! preconditioner. To prevent the re-assembly of the
+    ! preconditioner twice, we remove the specifier
+    ! NLSOL_OPSPEC_CALCPRECOND if the residual/rhs vector is built.
+    !###########################################################################
+
+    ! Make a local copy
+    iSpec = ioperationSpec
+    
+    ! Do we have to calculate the constant right-hand side?
+    ! --------------------------------------------------------------------------
+    if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+
+      ! Compute the preconditioner
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      
+      ! Compute the right-hand side
+      call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
+          rsolution, rsolutionInitial, rrhs, istep, rcollection, rb)
+      
+      ! Remove specifier for the preconditioner (if any)
+      iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+    end if
+    
+    
+    ! Do we have to calculate the residual?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+
+      if (istep .eq. 0) then
+        ! Assemble the constant right-hand side
+        call transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
+            rsolution, rrhs, rcollection, rb)
+
+        ! Set pointer to parameter list
+        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+        
+        ! Set pointer to solution vector
+        p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
+        
+        ! Calculate density averaged mass matrices
+        call zpinch_initDensityAveraging(p_rparlist,&
+            rcollection%SquickAccess(1),&
+            rproblemLevel, p_rsolutionEuler, rcollection)
+      end if
+
+      ! Compute the preconditioner
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+      
+      ! Compute the residual
+      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
+          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection)
+
+      ! Remove specifier for the preconditioner (if any)
+      iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+    end if
+    
+
+    ! Do we have to calculate the preconditioner?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
+     
+      ! Compute the preconditioner
+      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rcollection)
+    end if
+
+    
+    ! Do we have to calculate the Jacobian operator?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
+      
+      ! Compute the Jacobian matrix
+      call transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+          rsolution, rsolutionInitial, rcollection)
+    end if
+    
+    
+    ! Do we have to impose boundary conditions?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+      
+      ! Impose boundary conditions
+      call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rres, rcollection)
+    end if
+    
+
+    ! Do we have to apply the Jacobian operator?
+    ! --------------------------------------------------------------------------
+    if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
+
+      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
+
+      ! Apply Jacobian matrix
+      call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
+          rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
+          1.0_DP)
+    end if
+    
+    
+    ! Set status flag
+    istatus = 0
+
+  end subroutine zpinch_nlsolverCallbackTransport
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_initVelocityField(rparlist, ssectionName,&
+      rproblemLevel, rsolution, rcollection)
+
+!<description>
+    ! This subroutine initializes the velocity field from the solution
+    ! of the compressible Euler model. The result is stored separately
+    ! for each problem level.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! solution vector of compressible Euler model
+    type(t_vectorBlock), intent(in) :: rsolution
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout), target :: rproblemLevel
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    integer :: velocityfield
+    integer :: neq, ndim
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'velocityfield', velocityfield)
+    
+    ! Get number of degrees of freedom and spatial dimension
+    neq  = rproblemLevel%rtriangulation%NVT
+    ndim = rproblemLevel%rtriangulation%ndim
+    
+    ! Create/resize velocity vector if required
+    if (rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
+      call lsysbl_createVectorBlock(rproblemLevel&
+          %rvectorBlock(velocityfield), neq, ndim, .true.)
+    elseif (rproblemLevel%RvectorBlock(velocityfield)%NEQ .ne. neq*ndim) then
+      call lsysbl_resizeVectorBlock(rproblemLevel&
+          %rvectorBlock(velocityfield), neq, .true.)
+    end if
+
+    ! Set x-velocity, i.e., momentum in x-direction
+    call euler_getVariable(rsolution, 'momentum_x', rproblemLevel&
+        %RvectorBlock(velocityfield)%RvectorBlock(1))
+
+    ! Set y-velocity, i.e., momentum in y-direction
+    call euler_getVariable(rsolution, 'momentum_y', rproblemLevel&
+        %RvectorBlock(velocityfield)%RvectorBlock(2))
+
+    ! Set global solution vector as external vector for the transport model
+    call transp_setVariable2d(rsolution%RvectorBlock(1), 3)
+    
+    ! Set update notification in problem level structure
+    rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                     PROBLEV_MSPEC_UPDATE)
+
+  end subroutine zpinch_initVelocityField
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_initDensityAveraging(rparlist,&
+      ssectionNameTransport, rproblemlevel, rsolutionEuler,&
+      rcollection)
+
+!<description>
+    ! This subroutine initializes the density averaged mass matrices
+    ! for the transport model based on the solution from the Euler
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionNameTransport
+
+    ! solution vector for Euler model
+    type(t_vectorBlock), intent(in) :: rsolutionEuler
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    type(t_trilinearform) :: rform
+    type(t_vectorScalar) :: rvector
+    integer :: lumpedMassMatrix, consistentMassMatrix
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
+    
+    ! Get density distribution from the solution of the Euler model
+    !  and create block vector which is attached to the collection
+    call euler_getVariable(rsolutionEuler, 'density', rvector)
+    
+    ! We have variable coefficients
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff    = .true.
+
+    ! Initialize the bilinear form
+    rform%itermCount = 1
+    rform%Dcoefficients(1)  = 1.0_DP
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%Idescriptors(3,1) = DER_FUNC
+
+    ! Create density averaged consistent mass matrix
+    call trilf_buildMatrixScalar(rform, .true.,&
+        rproblemLevel%Rmatrix(consistentMassMatrix), rvector)
+    
+    ! Create density averaged lumped mass matrix
+    call lsyssc_duplicateMatrix(rproblemLevel&
+        %Rmatrix(consistentMassMatrix), rproblemLevel &
+        %Rmatrix(lumpedMassMatrix), LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+    
+    call lsyssc_lumpMatrixScalar(rproblemLevel&
+        %Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+    
+    ! Release temporal vector
+    call lsyssc_releaseVector(rvector)
+    
+  end subroutine zpinch_initDensityAveraging
 
   !*****************************************************************************
 
