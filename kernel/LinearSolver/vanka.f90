@@ -174,6 +174,7 @@ module vanka
   
   use vanka_navst2d
   use vanka_bouss2d
+  use vanka_optcontrol
 
   implicit none
   
@@ -197,9 +198,15 @@ module vanka
   public :: VANKATP_BOUSS2D_DIAG
   public :: VANKATP_BOUSS2D_FULL
 
+  ! Public entities imported from vanka_optcontrol.f90
+  public :: VANKATP_NAVSTOPTC2D_DIAG
+
 !<constants>
 
 !<constantblock description="Identifiers for the different problem classes that can be handled by VANKA">
+
+  ! Dummy, Vanka not initialised.
+  integer, parameter, public :: VANKAPC_NONE           = -1
 
   ! General VANKA
   integer, parameter, public :: VANKAPC_GENERAL        = 0
@@ -220,6 +227,9 @@ module vanka
   
   ! 2D Boussinesq problem
   integer, parameter, public :: VANKAPC_BOUSSINESQ2D = 11
+
+  ! 2D Navier-Stokes optimal control problem
+  integer, parameter, public :: VANKAPC_NAVIERSTOKESOPTC2D = 12
 
 !</constantblock>
 
@@ -711,6 +721,10 @@ module vanka
     ! only vaid if if cproblemClassVanka==VANKAPC_BOUSSINESQ2D.
     type(t_vankaPointerBouss2D) :: rvankaBouss2D
 
+    ! Configuration block with parameters for the 2D optimal control VANKA
+    ! for Navier-Stokes; only vaid if if cproblemClassVanka==VANKAPC_NAVIERSTOKESOPTC2D.
+    type(t_vanka_NavStOptC2D) :: rvankaNavStOptC2D
+
   end type
   
 !</typeblock>
@@ -799,6 +813,10 @@ contains
       ! Vanka for 2D Boussinesq problems
       call vanka_initBoussinesq2D (rmatrix,rvanka%rvankaBouss2D,csubtype)
 
+    case (VANKAPC_NAVIERSTOKESOPTC2D)
+      ! Vanka for 2D Navier-Stokes optimal control problems
+      call vanka_init_NavStOptC2D(rvanka%rvankaNavStOptC2D, rmatrix, csubtype)
+
     end select
     
     ! Initialise general data in the VANKA structure.
@@ -833,7 +851,12 @@ contains
     case (VANKAPC_GENERAL)
       ! Release data of the general VANKA
       call vanka_doneGeneralVanka (rvanka%rvankaGeneral)
+    case (VANKAPC_NAVIERSTOKESOPTC2D)
+      ! Vanka for 2D Navier-Stokes problems
+      call vanka_done_NavStOptC2D (rvanka%rvankaNavStOptC2D)
     end select
+    
+    rvanka%cproblemClass = VANKAPC_NONE
     
   end subroutine
 
@@ -913,6 +936,10 @@ contains
       ! 2D Boussinesq problem.
       call vanka_Boussinesq2D (rvanka%rvankaBouss2D, rvector, rrhs, domega,&
           rvanka%csubtype)
+
+    case (VANKAPC_NAVIERSTOKESOPTC2D)
+      ! 2D Navier-Stokes problem.
+      call vanka_solve_NavStOptC2D(rvanka%rvankaNavStOptC2D, rvector, rrhs, 1, domega)
 
     case default
       call output_line ('Unknown VANKA problem class!',&

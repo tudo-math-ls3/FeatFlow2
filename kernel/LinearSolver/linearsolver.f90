@@ -910,6 +910,16 @@ module linearsolver
   ! correction approach to give an additional speedup. 
   integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR = 23
 
+  ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation,
+  ! new implementation.
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAG2   = 24
+
+  ! Diagonal VANKA, 2D Navier-Stokes optimal control problem, general discretisation.
+  ! Specialised 'direct' version, i.e. when 
+  ! used as a smoother in multigrid, this bypasses the usual defect
+  ! correction approach to give an additional speedup. 
+  integer, parameter, public :: LINSOL_VANKA_2DFNAVSTOCDIAGDIR2 = 25
+
   ! Simple VANKA, 3D Navier-Stokes problem, general discretisation
   integer, parameter, public :: LINSOL_VANKA_3DNAVST           = 30
 
@@ -1471,7 +1481,20 @@ module linearsolver
     ! The text file gets the name 'matrixN.txt' with N=imatrixDebugOutput.
     ! This is for debugging purposes and should be used with care,
     ! as the text files grow rather quickly with the dimension!
+    !
+    ! =0: no output.
+    ! =1: Write the matrix into a text file in human readable form
+    !     using matio_writeMatrixHR.
+    ! =2: Write the matrix into a text file in Maple format
+    !     using matio_writeMatrixMaple.
     integer :: imatrixDebugOutput = 0
+    
+    ! Name of the matrix in the matrix file when using imatrixDebugOutput<>0.
+    character(LEN=SYS_NAMELEN) :: smatrixName = "matrixA";
+  
+    ! Accuracy string for text output of matrix entries
+    ! if imatrixDebugOutput <> 0.
+    character(LEN=SYS_NAMELEN) :: saccuracy = '(E15.5)'
   
     ! Control structure for UMFPACK4; contains parameter for the solver
     real(DP), dimension(20) :: Dcontrol
@@ -5590,6 +5613,12 @@ contains
                                 rsolverNode%p_rsubnodeVANKA%rvanka,&
                                 VANKAPC_BOUSSINESQ2D,VANKATP_BOUSS2D_FULL)
 
+    case (LINSOL_VANKA_2DFNAVSTOCDIAG2,LINSOL_VANKA_2DFNAVSTOCDIAGDIR2 )
+      ! Full VANKA for Navier-Stokes optimal control
+      call vanka_initConformal (rsolverNode%rsystemMatrix,&
+                                rsolverNode%p_rsubnodeVANKA%rvanka,&
+                                VANKAPC_NAVIERSTOKESOPTC2D,VANKATP_NAVSTOPTC2D_DIAG)
+
     end select
       
   end subroutine
@@ -6605,9 +6634,22 @@ contains
       end if
       call lsyssc_getbase_double (rtempMatrix,p_DA)
       where (abs(p_Da) .lt. 1.0E-12_DP) p_Da = 0.0_DP
-      call matio_writeMatrixHR (p_rmatrix, 'matrix',.true., 0, 'matrix'//&
-          trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
-          '.txt', '(E15.5)')
+      select case (rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput)
+      case (2)
+        call matio_writeMatrixMaple (p_rmatrix, &
+            trim(rsolverNode%p_rsubnodeUMFPACK4%smatrixName),&
+            0, 'matrix'//&
+            trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
+            '.txt', &
+            trim(rsolverNode%p_rsubnodeUMFPACK4%saccuracy))
+      case default
+        call matio_writeMatrixHR (p_rmatrix, &
+            trim(rsolverNode%p_rsubnodeUMFPACK4%smatrixName),&
+            .true., 0, 'matrix'//&
+            trim(sys_siL(rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput,10))//&
+            '.txt', &
+            trim(rsolverNode%p_rsubnodeUMFPACK4%saccuracy))
+      end select
     end if
     
     ! DEBUG!!!
@@ -12496,6 +12538,7 @@ contains
             LINSOL_VANKA_2DFNAVSTDIRECT,&
             LINSOL_VANKA_2DFNAVSTOCDIRECT,&
             LINSOL_VANKA_2DFNAVSTOCDIAGDIR,&
+            LINSOL_VANKA_2DFNAVSTOCDIAGDIR2,&
             LINSOL_VANKA_3DNAVSTDIRECT,&
             LINSOL_VANKA_3DFNAVSTDIRECT,&
             ! --------------- NEW IMPLEMENTATION ---------------
