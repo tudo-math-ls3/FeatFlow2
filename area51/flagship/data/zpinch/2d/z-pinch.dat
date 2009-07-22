@@ -345,7 +345,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_cons
+ucdsolution = out/zpinch
 
 # file for UCD output of error
 ucderror = out/
