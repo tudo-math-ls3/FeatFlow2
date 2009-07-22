@@ -2015,17 +2015,17 @@ contains
 
     ! Calculate the standard Galerkin preconditioner
     ! (required for rhs and residual calculation)
-    call transp_calcPreconditioner(rproblemLevel, rtimestep, rsolver,&
-        rsolutionPrimal, rcollection)
+    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+        rsolver, rsolutionPrimal, rcollection)
 
     ! Calculate the standard Galerkin right-hand side vector
-    call transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
+    call transp_calcRhsThetaScheme(rproblemLevel, rtimestep, rsolver,&
         rsolutionPrimal, rvector1, rcollection, rrhs)
 
     ! Calculate the standard Galerkin residual
-    call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-        rsolutionPrimal, rsolutionPrimal, rvector1, rvector2, 0,&
-        rcollection)
+    call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+        rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
+        rvector2, 0, rcollection)
 
     ! HERE WE GO NEXT
 !!$    ! Weakly impose Dirichlet boundary conditions
