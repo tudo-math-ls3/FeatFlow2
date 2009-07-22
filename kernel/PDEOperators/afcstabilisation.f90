@@ -53,8 +53,8 @@ module afcstabilisation
 
   use fsystem
   use genoutput
-  use linearsystemscalar
   use linearsystemblock
+  use linearsystemscalar
   use paramlist
   use storage
   use triangulation
@@ -62,7 +62,7 @@ module afcstabilisation
   implicit none
   
   private
-  public :: t_afcstab
+  public :: t_afcstab, t_edgeSubset
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
@@ -75,6 +75,10 @@ module afcstabilisation
   public :: afcstab_generateSubdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_limit
+!  public :: afcstab_assembleVectorScalar
+!  public :: afcstab_assembleVectorBlock
+!  public :: afcstab_assembleMatrixScalar
+!  public :: afcstab_assembleMatrixBlock
  
   ! *****************************************************************************
   ! *****************************************************************************
@@ -155,7 +159,11 @@ module afcstabilisation
 !<types>
 !<typeblock>
 
-  ! data structure that holds all required information for stabilisation
+  ! This structures holds all required information for stabilisation
+  ! of algebraic flux correction type. It is applicable to scalar
+  ! problems and systems of equations alike. Depending on the
+  ! stabilisation strategy some internal structures will be generated.
+  
   type t_afcstab
     
     ! Format Tag. Identifies the type of stabilisation
@@ -168,17 +176,17 @@ module afcstabilisation
     integer :: NEQ = 0
 
     ! Number of local variables; in general scalar solution vectors of
-    ! size NEQ posses NEQ entries. However, scalar vectors can be interleaved,
-    ! that is, each of the NEQ entries stores NVAR local variables. In this case,
-    ! NEQ remains unmodified but NVAR>1 such that the physical length of the
-    ! vector is NEQ*NVAR.
+    ! size NEQ posses NEQ entries. However, scalar vectors can be
+    ! interleaved, that is, each of the NEQ entries stores NVAR local
+    ! variables. In this case, NEQ remains unmodified but NVAR>1 such
+    ! that the physical length of the vector is NEQ*NVAR.
     integer :: NVAR = 1
 
     ! Number of edges of the sparsity pattern
     integer :: NEDGE = 0
 
-    ! Maximum number of edges adjacent to one vertex. 
-    ! This corresponds to the maximum number of nonzero row entries.
+    ! Maximum number of edges adjacent to one vertex. This
+    ! corresponds to the maximum number of nonzero row entries.
     integer :: NNVEDGE = 0
 
     ! Handle to vertices at edge structure
@@ -244,6 +252,30 @@ module afcstabilisation
     type(t_vectorScalar), dimension(:), pointer :: RedgeVectors => null()
   end type t_afcstab
 !</typeblock>
+
+  ! *****************************************************************************
+
+!<typeblock>
+
+  ! This structure is used by most edge-based routines. It is passed
+  ! to callback routines to inform them, which edges/vertices are
+  ! currently processed, and where to store matrix coefficients.
+  type t_edgeSubset
+
+    ! Maximum number of edges in each edge set.
+    integer :: nedges = 0
+
+    ! Start index of the current edge block. If this is =1, e.g.,
+    ! this is the very first edge block processed by the routine.
+    integer :: iedgeStartIdx = 0
+
+    ! The edge set that is currently processed
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge => null()
+
+  end type t_edgeSubset
+
+!</typeblock>
+
 !</types>
 
   ! *****************************************************************************
@@ -1188,4 +1220,5 @@ contains
       r = default
     end if
   end function afcstab_limit_bounded
+
 end module afcstabilisation
