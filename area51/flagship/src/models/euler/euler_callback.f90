@@ -12,25 +12,32 @@
 !# 1.) euler_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
-!# 2.) euler_calcPreconditioner
+!# ****************************************************************************
+!#
+!# The following auxiliary routines are available:
+!#
+!# 1.) euler_calcPrecondThetaScheme
 !#     -> Calculates the nonlinear preconditioner
+!#        used in the two-level theta-scheme
 !#
-!# 3.) euler_calcJacobian
+!# 2.) euler_calcJacobianThetaScheme
 !#     -> Calculates the Jacobian matrix
+!#        used in the two-level theta-scheme
 !#
-!# 4.) euler_applyJacobian
-!#     -> Applies the Jacobian matrix to a given vector
-!#
-!# 5.) euler_calcResidual
+!# 3.) euler_calcRhsResidualThetaScheme
 !#     -> Calculates the nonlinear residual vector
+!#        used in the two-level theta-scheme
 !#
-!# 6.) euler_calcRHS
+!# 4.) euler_calcRhsRungeKuttaScheme
 !#     -> Calculates the right-hand side vector
+!#        used in the explicit Runge-Kutta scheme
 !#
-!# 7.) euler_setBoundary
+!# 5.) euler_setBoundaryConditions
 !#     -> Imposes boundary conditions for nonlinear solver
+!#        by filtering the system matrix and the solution/residual
+!#        vector explicitly (i.e. strong boundary conditions)
 !#
-!# 8.) euler_calcLinearizedFCT
+!# 6.) euler_calcLinearizedFCT
 !#     -> Calculates the linearized FCT correction
 !#
 !# </purpose>
@@ -64,12 +71,11 @@ module euler_callback
 
   private
   public :: euler_nlsolverCallback
-  public :: euler_calcPreconditioner
-  public :: euler_calcJacobian
-  public :: euler_applyJacobian
-  public :: euler_calcResidual
-  public :: euler_calcRHS
-  public :: euler_setBoundary
+  public :: euler_calcPrecondThetaScheme
+  public :: euler_calcJacobianThetaScheme
+  public :: euler_calcRhsResidualThetaScheme
+  public :: euler_calcRhsRungeKuttaScheme
+  public :: euler_setBoundaryConditions
   public :: euler_calcLinearizedFCT
 
 contains
@@ -135,7 +141,7 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
       
-      call euler_calcPreconditioner(rproblemLevel, rtimestep,&
+      call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
     
@@ -143,9 +149,10 @@ contains
     ! Do we have to calculate the constant right-hand side?
     ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-
-      call euler_calcRhs(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, istep, rcollection)
+      
+      call euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rrhs, istep,&
+          rcollection)
     end if
 
 
@@ -153,8 +160,9 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, rres, istep, rcollection)
+      call euler_calcRhsResidualThetaScheme(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rrhs, rres, istep,&
+          rcollection, rsourceExplicit=rb)
     end if
     
     
@@ -162,8 +170,8 @@ contains
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rres, rcollection)
+      call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rres, rcollection)
     end if
     
     
@@ -176,9 +184,9 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcPreconditioner(rproblemLevel, rtimestep,&
+  subroutine euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rcollection)
-
+    
 !<description>
     ! This subroutine calculates the nonlinear preconditioner and
     ! configures the linear solver structure accordingly. Depending on
@@ -254,7 +262,7 @@ contains
                                    rproblemLevel%Rmatrix(systemMatrix))
         case DEFAULT
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -281,13 +289,13 @@ contains
 
         case DEFAULT
           call output_line('Empty system matrix is invalid!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
           
       case DEFAULT
         call output_line('Invalid system format!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
         call sys_halt()
       end select
 
@@ -348,7 +356,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
         
@@ -381,7 +389,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecond')
           call sys_halt()
         end select
 
@@ -414,7 +422,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -447,14 +455,14 @@ contains
           
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
 
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
         call sys_halt()
       end select
       
@@ -496,7 +504,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -529,7 +537,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -562,7 +570,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
 
@@ -595,21 +603,21 @@ contains
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
           
         
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
         call sys_halt()
       end select
 
 
     case DEFAULT
       call output_line('Invalid type of flow coupling!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
       call sys_halt()
     end select
 
@@ -767,7 +775,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPreconditioner')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
       call sys_halt()
     end select
 
@@ -788,14 +796,14 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
     
-  end subroutine euler_calcPreconditioner
+  end subroutine euler_calcPrecondThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcJacobian(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rcollection)
+  subroutine euler_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolutionInitial, rcollection)
 
 !<description>
     ! This callback subroutine computes the Jacobian matrix for the
@@ -829,68 +837,34 @@ contains
     print *, "!!! Euler/Navier Stokes equations has yet not been implemented  !!!"
     stop
 
-  end subroutine euler_calcJacobian
+  end subroutine euler_calcJacobianThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_applyJacobian(rproblemLevel, rx, ry, cx, cy, rcollection)
+  subroutine euler_calcRhsResidualThetaScheme(rproblemLevel,&
+      rtimestep, rsolver, rsolution, rsolutionInitial, rrhs, rres,&
+      ite, rcollection, rsourceExplicit, rsourceImplicit)
 
 !<description>
-    ! This subroutine applies the (scaled) Jacobian matrix to 
-    ! the vector rx and adds the result to the vector ry.
-!</description>
-
-!<input>
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
-    ! vector to which the Jacobian should be applied to
-    type(t_vectorBlock), intent(in) :: rx
-
-    ! factor by which rx should be scaled
-    real(DP), intent(in) :: cx
-
-    ! factor by which ry should be scaled
-    real(DP), intent(in) :: cy
-!</input>
-
-!<inputoutput>
-    ! vector to which the result should be added
-    type(t_vectorBlock), intent(inout) :: ry
-
-    ! collection
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_parlist), pointer :: p_rparlist
-    integer :: jacobianMatrix
-
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
-
-    ! We know where the Jacobian matrix is stored and can apply it
-    ! by means of matrix vector multiplication
-    call lsysbl_blockMatVec(rproblemLevel&
-        %RmatrixBlock(jacobianMatrix), rx, ry, cx, cy)
-
-  end subroutine euler_applyJacobian
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine euler_calcResidual(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
-
-!<description>
-    ! This subroutine computes the nonlinear residual vector and the
-    ! constant right-hand side (only in the first iteration).
+    ! This subroutine computes the nonlinear residual vector
+    !
+    ! $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]U^{(m)} - S^{(m)} $$
+    !
+    ! for the standard two-level theta-scheme, whereby the (scaled)
+    ! source term $s^{(m)}$ is optional. The constant right-hand side
+    !
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]U^n + S^n$$
+    !
+    ! is computed in the zero-th iteration, whereby the (scaled)
+    ! source term $s^n$ is also optional.
+    !
+    ! REMARK: This subroutine assumes that the solution is
+    ! initialized by the values from the last time-step, i.e.,
+    ! $U^{(0)}=U^n$ which yields an efficient computation
+    ! of the constant right-hand side vector (in the zero-th)
+    ! iteration re-using the computed residual vector.
 !</description>
 
 !<input>
@@ -902,6 +876,12 @@ contains
 
     ! number of nonlinear iteration
     integer, intent(in) :: ite
+
+    ! OPTIONAL: explicit source vector (is applied to rhs)
+    type(t_vectorBlock), intent(in), optional :: rsourceExplicit
+
+    ! OPTIONAL: implicit source vector (is applied to res)
+    type(t_vectorBlock), intent(in), optional :: rsourceImplicit
 !</input>
 
 !<inputoutput>
@@ -942,11 +922,11 @@ contains
     if (ite .eq. 0) then
 
       !-------------------------------------------------------------------------
-      ! In the first nonlinear iteration update we compute
+      ! In the zero-th nonlinear iteration we compute
       !
-      ! - the residual $ r=dt*L(U^n)*U^n+f $ and
+      ! - the residual $ r=dt*L(U^n)*U^n + S^{(0)} + f $ and
       !
-      ! - the right hand side $ b=[M+(1-theta)*dt*L(U^n)]*U^n $
+      ! - the right hand side $ b=[M+(1-theta)*dt*L(U^n)]*U^n + S^n$
       !
       !-------------------------------------------------------------------------
       
@@ -1142,7 +1122,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid type of dissipation!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidual')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsResidualThetaScheme')
           call sys_halt()
         end select
 
@@ -1180,10 +1160,11 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of stabilisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidual')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsResidualThetaScheme')
         call sys_halt()
       end select
-
+      
+      
       !-------------------------------------------------------------------------
       ! Compute the constant right-hand side for (pseudo-)transient flows
       !-------------------------------------------------------------------------
@@ -1232,6 +1213,18 @@ contains
               1._DP , 1.0_DP-rtimestep%theta)
         end do
       end select
+
+      ! Apply the explicit source vector to the right-hand side and
+      ! the residual  (if any)
+      if (present(rsourceExplicit)) then
+        call lsysbl_vectorLinearComb(rsourceExplicit, rrhs, 1.0_DP, 1.0_DP)
+        call lsysbl_vectorLinearComb(rsourceExplicit, rres, 1.0_DP, 1.0_DP)      
+      end if
+
+      ! Apply the implicit source vector to the residual  (if any)
+      if (present(rsourceImplicit)) then
+        call lsysbl_vectorLinearComb(rsourceImplicit, rres, 1.0_DP, -1.0_DP)      
+      end if
 
     else   ! ite > 0
 
@@ -1508,7 +1501,7 @@ contains
 
         case DEFAULT
           call output_line('Invalid type of dissipation!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidual')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsResidualThetaScheme')
           call sys_halt()
         end select
           
@@ -1549,22 +1542,27 @@ contains
         
       case DEFAULT
         call output_line('Invalid type of stabilisation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidual')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsResidualThetaScheme')
         call sys_halt()
       end select
       
+    end if
+
+    ! Apply the implicit source vector to the residual  (if any)
+    if (present(rsourceImplicit)) then
+      call lsysbl_vectorLinearComb(rsourceImplicit, rres, 1.0_DP, -1.0_DP)      
     end if
     
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
     
-  end subroutine euler_calcResidual
+  end subroutine euler_calcRhsResidualThetaScheme
 
   !*****************************************************************************
   
 !<subroutine>
 
-  subroutine euler_calcRHS(rproblemLevel, rtimestep, rsolver,&
+  subroutine euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep, rsolver,&
       rsolution, rsolutionInitial, rrhs, istep, rcollection)
 
 !<description>
@@ -1803,7 +1801,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRHS')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
         call sys_halt()
       end select
 
@@ -1841,20 +1839,20 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of stabilization!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRHS')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
       call sys_halt()
     end select
 
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
     
-  end subroutine euler_calcRHS
+  end subroutine euler_calcRhsRungeKuttaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_setBoundary(rproblemLevel, rtimestep, rsolver,&
+  subroutine euler_setBoundaryConditions(rproblemLevel, rtimestep, rsolver,&
       rsolution, rsolutionInitial, rres, rcollection)
 
 !<description>
@@ -1902,17 +1900,17 @@ contains
           NLSOL_PRECOND_DEFCOR,&
           NLSOL_PRECOND_NEWTON_FAILED)
       
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'systemmatrix', imatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1), 'systemmatrix', imatrix)
       
     case (NLSOL_PRECOND_NEWTON)
       
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                               'jacobianmatrix', imatrix)
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1), 'jacobianmatrix', imatrix)
 
     case DEFAULT
       call output_line('Invalid nonlinear preconditioner!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
       call sys_halt()
     end select
       
@@ -1927,7 +1925,7 @@ contains
           rproblemLevel%RmatrixBlock(imatrix), rsolution, rres,&
           rsolutionInitial, rtimestep%dTime,&
           euler_calcBoundaryvalues1d, istatus)
-
+      
     case (NDIM2D)
       call bdrf_filterSolution(rsolver%rboundaryCondition,&
           rproblemLevel%RmatrixBlock(imatrix), rsolution, rres,&
@@ -1942,11 +1940,11 @@ contains
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundary')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
       call sys_halt()
     end select
     
-  end subroutine euler_setBoundary
+  end subroutine euler_setBoundaryConditions
 
   !*****************************************************************************
 
