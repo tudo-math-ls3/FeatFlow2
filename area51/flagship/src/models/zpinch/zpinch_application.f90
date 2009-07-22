@@ -635,7 +635,7 @@ contains
     call fparser_evalFunction(p_rfparser, icomp, (/rtimestep%dTime/), dscale)
     
     ! Multiply scaling parameter by the time step
-    dscale = dscale * rtimestep%dStep
+    dscale = -dscale * rtimestep%dStep
 
     ! What type of system format are we?
     select case(isystemFormat)
