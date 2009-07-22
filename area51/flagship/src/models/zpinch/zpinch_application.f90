@@ -36,20 +36,23 @@
 !#        structure of the global problem and generates a linked
 !#        list of problem levels used in the multigrid hierarchy.
 !#
-!# 3.) zpinch_applySourceTerm
+!# 3.) zpinch_calcLorentzforceTerm
+!#     -> Calculates the Lorentz force term for a given set of solutions
+!#
+!# 4.) zpinch_applySourceTerm
 !#     -> Initializes the source term and applies it to the solution
 !#
-!# 4.) zpinch_calcAdaptationIndicator
+!# 5.) zpinch_calcAdaptationIndicator
 !#     -> Calculates the element-wise indicator for refinement/-coarsening
 !#        based on the detectation of shocks and contact discontinuities
 !#
-!# 5.) zpinch_outputSolution
+!# 6.) zpinch_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 6.) zpinch_adaptTriangulation
+!# 7.) zpinch_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 7.) zpinch_solveTransientPrimal
+!# 8.) zpinch_solveTransientPrimal
 !#     -> Solves the primal formulation of the time-dependent 
 !#        simplified MHD equations
 !#
@@ -532,6 +535,223 @@ contains
     end do
 
   end subroutine zpinch_initProblem
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
+      ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
+      rtimestep, rsolutionTransport, rsolutionEuler, rforce,&
+      rcollection)
+    
+!<description>
+    ! This subroutine evaluates the Lorentz force term based on the
+    ! given solution vectors and applies stores it in vector rsource.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameTransport
+
+    ! solution vector for transport model
+    type(t_vectorBlock), intent(in) :: rsolutionTransport
+
+    ! solution vector for Euler model
+    type(t_vectorBlock), intent(in) :: rsolutionEuler
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+    
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+        
+    ! source vector to be assembled
+    type(t_vectorBlock), intent(inout) :: rforce
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_Ddata
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix
+    character(LEN=SYS_STRLEN) :: slorentzforceName
+    real(DP) :: dscale
+    integer :: isystemFormat, lumpedMassMatrix
+    integer :: neq, nvar, icomp, icoords
+    logical :: bcompatible
+
+    ! Check if solution vector and Lorentz force vector are compatible
+    call lsysbl_isVectorCompatible(rsolutionEuler, rforce, bcompatible)
+    if (.not.bcompatible)&
+        call lsysbl_resizeVectorBlock(rforce, rsolutionEuler, .false.)
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'slorentzforcename', slorentzforceName)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'icoords', icoords)
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist,&
+        ssectionNameEuler, 'isystemformat', isystemFormat)
+    
+    ! Get lumped and consistent mass matrix
+    call lsyssc_getbase_double(rproblemLevel&
+        %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+    
+    ! Set pointer to global solution vectors
+    call lsysbl_getbase_double(rforce, p_Ddata)
+    call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
+    call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
+    
+    ! Set pointer to the vertex coordinates
+    call storage_getbase_double2D(rproblemLevel%rtriangulation&
+        %h_DvertexCoords, p_DvertexCoords)
+    
+    ! Set dimensions
+    neq  = rsolutionTransport%NEQ
+    nvar = euler_getNVAR(rproblemLevel)
+
+    ! Get function parser from collection structure
+    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+    ! Get the number of the component used for 
+    ! evaluating the Lorentz force term
+    icomp = fparser_getFunctionNumber(p_rfparser, slorentzforceName)
+
+    ! Evaluate the function parser
+    call fparser_evalFunction(p_rfparser, icomp, (/rtimestep%dTime/), dscale)
+    
+    ! Multiply scaling parameter by the time step
+    dscale = dscale * rtimestep%dStep
+
+    ! What type of system format are we?
+    select case(isystemFormat)
+
+    case (SYSTEM_INTERLEAVEFORMAT)
+
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcForceXYInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+
+      case(2)
+        call calcForceXYInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+        call sys_halt()
+      end select
+
+    case (SYSTEM_BLOCKFORMAT)
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcForceXYInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case(2)
+        call calcForceXYInterleaveFormat(dscale, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+        call sys_halt()
+      end select
+
+    case DEFAULT
+      call output_line('Invalid system format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
+      call sys_halt()
+    end select
+
+
+  contains
+    
+    ! Here, the real working routines follow
+    
+    !**************************************************************
+    ! Calculate the Lorentz force term in x-y coordinates.
+    ! The system is stored in interleave format.
+    
+    subroutine calcForceXYInterleaveFormat(dscale, neq, nvar,&
+        DvertexCoords, DmassMatrix, DdataTransport, DdataEuler,&
+        DdataForce)
+      
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(nvar,neq), intent(inout) :: DdataForce
+      
+      ! local variables
+      real(DP) :: drad, dang, daux1, daux2, x1, x2
+      integer :: i
+      
+      ! Loop over all rows
+      do i = 1, neq
+        
+        ! Get coordinates at node i
+        x1 = DvertexCoords(1, i)
+        x2 = DvertexCoords(2, i)
+        
+        ! Compute polar coordinates
+        drad = sqrt(x1*x1 + x2*x2)
+        dang = atan2(x2, x1)
+        
+        ! Compute unit vector into origin
+        if (drad .gt. 1e-4) then
+          x1 = cos(dang)
+          x2 = sin(dang)
+        else
+          x1 = 0.0; x2 = 0.0
+        end if
+        
+        ! Compute source term
+        if (DdataTransport(i) > SYS_EPSREAL) then
+          daux1 = dscale * DmassMatrix(i) * DdataTransport(i) *&
+                           DdataEuler(1, i) / max(drad, 1.0e-4_DP)
+          daux2 = dscale * DmassMatrix(i) * DdataTransport(i) *&
+                           (DdataEuler(2, i) * x1 + DdataEuler(3,i) *&
+                           x2) / max(drad, 1.0e-4_DP)
+        else
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP          
+        end if
+        
+        ! Impose source values
+        DdataForce(1, i) = 0.0_DP
+        DdataForce(2, i) = daux1 * x1
+        DdataForce(3, i) = daux1 * x2
+        DdataForce(4, i) = daux2
+      end do
+
+    end subroutine calcForceXYInterleaveFormat
+
+  end subroutine zpinch_calcLorentzforceTerm
+
 
   !*****************************************************************************
 
@@ -1692,6 +1912,9 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
     
+    ! vector for source term
+    type(t_vectorBlock) :: rforce
+
     ! section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
@@ -1977,6 +2200,12 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
       
+      ! Calculate explicit force term
+      call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
+          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
+          rtimestepEuler, rsolutionTransport, rsolutionEuler,&
+          rforce, rcollection)
+      
       ! Attach the boundary condition
       call problem_setBoundaryCondition(rproblem, rbdrCondEuler)
 
@@ -1990,15 +2219,15 @@ contains
         
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(p_rproblemLevel, rtimestepEuler,&
-            rsolverEuler, rsolutionEuler, euler_nlsolverCallback,&
-            rcollection)
+            rsolverEuler, rsolutionEuler,&
+            zpinch_nlsolverCallbackEuler, rcollection, rforce)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
         call tstep_performThetaStep(p_rproblemLevel, rtimestepEuler,&
-            rsolverEuler, rsolutionEuler, euler_nlsolverCallback,&
-            rcollection)
+            rsolverEuler, rsolutionEuler,&
+            zpinch_nlsolverCallbackEuler, rcollection, rforce)
         
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -2068,11 +2297,11 @@ contains
 !!$      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
 !!$          p_rproblemLevel, rtimestepEuler, rsolutionEuler,&
 !!$          rsolutionTransport, rcollection)
-
+      
       call transp_calcLinearizedFCT(rbdrCondTransport,&
           p_rproblemLevel, rtimestepTransport, rsolutionTransport,&
           rcollection)
-
+      
       call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
           rtimestepEuler, rsolutionEuler, rcollection)
       
@@ -2080,23 +2309,23 @@ contains
       call stat_stopTimer(p_rtimerSolution)
 
       
-      !-------------------------------------------------------------------------
-      ! Compute source term for full time step
-      !
-      ! U^{n+1} - \tilde U^{n+1} = dt * (S^{n+1} - S^n)
-      !-------------------------------------------------------------------------
-
-      ! Start time measurement for solution procedure
-      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-
-      ! Calculate the source term and apply it to the Euler model
-      call zpinch_applySourceTerm(rparlist, ssectionName,&
-          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
-          rtimestepTransport , rsolutionTransport, rsolutionEuler,&
-          rcollection)
-
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
+!!$      !-------------------------------------------------------------------------
+!!$      ! Compute source term for full time step
+!!$      !
+!!$      ! U^{n+1} - \tilde U^{n+1} = dt * (S^{n+1} - S^n)
+!!$      !-------------------------------------------------------------------------
+!!$
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      ! Calculate the source term and apply it to the Euler model
+!!$      call zpinch_applySourceTerm(rparlist, ssectionName,&
+!!$          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
+!!$          rtimestepTransport , rsolutionTransport, rsolutionEuler,&
+!!$          rcollection)
+!!$
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
      
       
       ! Reached final time, then exit the infinite time loop?
