@@ -7555,7 +7555,6 @@ contains
   type(t_storageBlock), pointer :: p_rheap
   type(t_storageNode), pointer :: p_rsource, p_rdest
   integer :: i,j
-  integer, dimension(2) :: Isize
 
 !!$    ! Check if the start address is positive
 !!$    if (any(istart_source .le. 0) .or. any(istart_dest .le. 0)) then
