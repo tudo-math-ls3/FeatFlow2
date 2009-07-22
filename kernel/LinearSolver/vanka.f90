@@ -515,9 +515,16 @@ module vanka
     integer, dimension(:), pointer :: p_KdiagonalM => NULL()
 
     ! Pointer to the matrix entries of the mass matrix at position
-    ! (1,4) and (2,5) in the pimal system, or NULL if not present.
+    ! (1,4) and (2,5) in the primal system, or NULL if not present.
     ! Has the same structure as the mass matrix.
     real(DP), dimension(:), pointer :: p_DM14 => NULL()
+    real(DP), dimension(:), pointer :: p_DM25 => NULL()
+
+    ! Pointer to the matrix entries of the mass matrix at position
+    ! (1,5) and (2,4) in the primal system, or NULL if not present.
+    ! Has the same structure as the mass matrix.
+    real(DP), dimension(:), pointer :: p_DM15 => NULL()
+    real(DP), dimension(:), pointer :: p_DM24 => NULL()
 
     ! Pointer to the coupling system at position (4,1), or NULL if not present
     ! Has the same structure as the mass matrix.
@@ -3709,7 +3716,8 @@ contains
 
     integer :: inode
     real(DP) :: PP,dpres
-    real(DP), dimension(9) :: AI1,AI2,dff
+    real(DP), dimension(4) :: AI1,AI2
+    real(DP), dimension(9) :: dff
     
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
@@ -8063,6 +8071,9 @@ contains
       
       call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,4),&
           rvanka%rvanka2DNavStOptC%p_DM14 )
+
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,5),&
+          rvanka%rvanka2DNavStOptC%p_DM25 )
           
       call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,4),&
           rvanka%rvanka2DNavStOptC%p_KcolM)
@@ -8076,6 +8087,21 @@ contains
         rvanka%rvanka2DNavStOptC%p_KdiagonalM => rvanka%rvanka2DNavStOptC%p_KldM
       end if
       
+    end if
+
+    if (lsysbl_isSubmatrixPresent (rmatrix,1,5)) then
+      if (rmatrix%RmatrixBlock(1,5)%cmatrixFormat .eq. LSYSSC_MATRIXD) then
+        call output_line ('Lumped mass matrices not supported!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'vanka_init2DNavierStokesOptC')
+        call sys_halt()
+      end if
+      
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(1,5),&
+          rvanka%rvanka2DNavStOptC%p_DM15 )
+
+      call lsyssc_getbase_double(rmatrix%RmatrixBlock(2,4),&
+          rvanka%rvanka2DNavStOptC%p_DM24 )
+          
     end if
 
     ! Get the coupling matrix from the primal to the dual system. 
@@ -8312,11 +8338,11 @@ contains
   ! Supports Q1~/Q0 discretisation only.
   ! Matrix must be of the form
   !
-  !    ( A11       B1               )
-  !    (      A22  B2               )
+  !    ( A11  A21  B1  M14          )
+  !    ( A12  A22  B2       M25     )
   !    ( D1^T D2^T I1               )
-  !    (               A44       B1 )
-  !    (                    A55  B2 )
+  !    ( M41  M42      A44  A45  B1 )
+  !    ( M51  M52      A54  A55  B2 )
   !    (               D1^T D2^T I2 )
   !
   ! with D1/D2 having the same structure as B1/B2 and the 'transposed'
@@ -8379,19 +8405,30 @@ contains
     real(DP) :: dmultb1,dmultb2,dmultb3,dmultb4
     real(DP) :: dmultd1,dmultd2,dmultd3,dmultd4
     real(DP) :: dmult33,dmult66
+
+    real(DP) :: dmult12,dmult21,dmult45,dmult54
+    real(DP) :: dmult41,dmult52,dmult51,dmult42 
+    real(DP) :: dmult14,dmult25,dmult15,dmult24
+    
     real(DP) :: di1,di2
     
-    integer, dimension(:), pointer :: p_KcolA
-    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA11,p_Da22,p_Da44,p_Da55
+    integer, dimension(:), pointer :: p_KcolA,p_KcolA12
+    integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KdiagonalA
+    real(DP), dimension(:), pointer :: p_DA11,p_Da22,p_Da44,p_Da55
+    real(DP), dimension(:), pointer :: p_DA12,p_Da21,p_Da45,p_Da54
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1,p_DB2
-    real(DP), dimension(:), pointer             :: p_DB3,p_DB4
-    real(DP), dimension(:), pointer             :: p_DD1,p_DD2
-    real(DP), dimension(:), pointer             :: p_DD3,p_DD4
-    real(DP), dimension(:), pointer             :: p_DA33,p_DA66
+    real(DP), dimension(:), pointer :: p_DB1,p_DB2
+    real(DP), dimension(:), pointer :: p_DB3,p_DB4
+    real(DP), dimension(:), pointer :: p_DD1,p_DD2
+    real(DP), dimension(:), pointer :: p_DD3,p_DD4
+    real(DP), dimension(:), pointer :: p_DA33,p_DA66
+    real(DP), dimension(:), pointer :: p_DA14,p_Da25
+    real(DP), dimension(:), pointer :: p_DA41,p_Da42,p_Da52,p_Da51
+    real(DP), dimension(:), pointer :: p_DA15,p_Da24
     integer, dimension(:), pointer :: p_KdiagonalA33,p_KdiagonalA66
+    
+    logical :: bhaveA12,bhaveA45,bhaveA14,bhaveA41,bhaveA42,bhaveA24
     
     ! Triangulation information
     integer :: NEL
@@ -8419,6 +8456,8 @@ contains
     p_KcolA => rvanka%p_KcolA11
     p_KldA => rvanka%p_KldA11
     p_KdiagonalA => rvanka%p_KdiagonalA11
+    p_KcolA12 => rvanka%p_KcolA12
+    p_KldA12 => rvanka%p_KldA12
     p_DA11 => rvanka%p_DA11
     p_DA22 => rvanka%p_DA22
     p_Da44 => rvanka%p_Da44
@@ -8438,6 +8477,19 @@ contains
     p_KdiagonalA33 => rvanka%p_KdiagonalA33
     p_KdiagonalA66 => rvanka%p_KdiagonalA66
     
+    p_Da12 => rvanka%p_Da12
+    p_Da21 => rvanka%p_Da21
+    p_Da45 => rvanka%p_Da45
+    p_Da54 => rvanka%p_Da54
+    p_DA14 => rvanka%p_Dm14
+    p_DA15 => rvanka%p_Dm15
+    p_DA24 => rvanka%p_Dm24
+    p_Da25 => rvanka%p_Dm25
+    p_DA41 => rvanka%p_Dr41
+    p_Da42 => rvanka%p_Dr42
+    p_Da52 => rvanka%p_Dr52
+    p_Da51 => rvanka%p_Dr51
+    
     dmult11 = rvanka%Dmultipliers(1,1)
     dmult22 = rvanka%Dmultipliers(2,2)
     dmult44 = rvanka%Dmultipliers(4,4)
@@ -8455,6 +8507,26 @@ contains
     
     dmult33 = rvanka%Dmultipliers(3,3)
     dmult66 = rvanka%Dmultipliers(6,6)
+    
+    dmult12 = rvanka%Dmultipliers(1,2)
+    dmult21 = rvanka%Dmultipliers(2,1)
+    dmult45 = rvanka%Dmultipliers(4,5)
+    dmult54 = rvanka%Dmultipliers(5,4)
+    dmult41 = rvanka%Dmultipliers(4,1)
+    dmult52 = rvanka%Dmultipliers(5,2)
+    dmult51 = rvanka%Dmultipliers(5,1)
+    dmult42 = rvanka%Dmultipliers(4,2)
+    dmult14 = rvanka%Dmultipliers(1,4)
+    dmult25 = rvanka%Dmultipliers(2,5)
+    dmult15 = rvanka%Dmultipliers(1,5)
+    dmult24 = rvanka%Dmultipliers(2,4)
+
+    bhaveA12 = associated(p_Da12) .and. (dmult12 .ne. 0.0_DP)
+    bhaveA45 = associated(p_Da45) .and. (dmult45 .ne. 0.0_DP)
+    bhaveA14 = associated(p_DA14) .and. (dmult14 .ne. 0.0_DP)
+    bhaveA24 = associated(p_DA24) .and. (dmult24 .ne. 0.0_DP)
+    bhaveA41 = associated(p_DA41) .and. (dmult41 .ne. 0.0_DP)
+    bhaveA42 = associated(p_Da42) .and. (dmult42 .ne. 0.0_DP)
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NEL = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
@@ -8661,8 +8733,76 @@ contains
           FFd(inode+lofsv) = FFd(inode+lofsv)-daux4*p_Dvector(J+ioffsetl2)
         end do
         
-        ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
+        ! There are probably some more defects to calculate.
+        if (bhaveA14) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult14*p_DA14(ia)
+            daux2 = dmult25*p_DA25(ia)
+
+            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetl1)
+            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetl2)
+          end do
+        end if
         
+        if (bhaveA41) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult41*p_DA41(ia)
+            daux2 = dmult52*p_DA52(ia)
+
+            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetu)
+            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetv)
+          end do
+        end if
+        
+        ia1 = p_KldA12(idof)
+        ia2 = p_KldA12(idof+1)-1
+        if (bhaveA12) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult12*p_DA12(ia)
+            daux2 = dmult21*p_DA21(ia)
+
+            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetv)
+            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetu)
+          end do
+        end if
+        
+        if (bhaveA45) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult45*p_DA45(ia)
+            daux2 = dmult54*p_DA54(ia)
+
+            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetl2)
+            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetl1)
+          end do
+        end if
+        
+        if (bhaveA42) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult42*p_DA42(ia)
+            daux2 = dmult51*p_DA51(ia)
+
+            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetv)
+            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetu)
+          end do
+        end if
+
+        if (bhaveA24) then
+          do ia = ia1,ia2
+            J = p_KcolA(ia)
+            daux1 = dmult15*p_DA15(ia)
+            daux2 = dmult24*p_DA24(ia)
+
+            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetl2)
+            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetl1)
+          end do
+        end if
+        
+        ! Finally subtract B*p: f_i = (f_i-Aui) - Bi pi
         ib1=p_KldB(idof)
         ib2=p_KldB(idof+1)-1
         do ib = ib1,ib2
@@ -8791,7 +8931,7 @@ contains
       ! call the element update routine that calculates the update vector y.
       
       call vanka_getcorr_2DSPQ1TQ0simple2 (UUp,FFp,AA11,AA22,BB1,BB2,DD1,DD2,di1)
-      call vanka_getcorr_2DSPQ1TQ0simple2 (UUd,FFd,AA33,AA33,BB3,BB4,DD3,DD4,di2)
+      call vanka_getcorr_2DSPQ1TQ0simple2 (UUd,FFd,AA33,AA44,BB3,BB4,DD3,DD4,di2)
     
       ! Ok, we got the update vector UU. Incorporate this now into our
       ! solution vector with the update formula
