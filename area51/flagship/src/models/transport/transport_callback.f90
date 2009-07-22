@@ -7,29 +7,34 @@
 !# This module contains all callback functions which are required to
 !# solve scalar conservation laws in arbitrary spatial dimensions.
 !#
-!#
 !# The following callback functions are available:
 !#
 !# 1.) transp_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
+!# ****************************************************************************
 !#
 !# The following auxiliary routines are available:
 !#
-!# 1.) transp_calcPreconditioner
+!# 1.) transp_calcPrecondThetaScheme
 !#     -> Calculates the nonlinear preconditioner
+!#        used in the two-level theta-scheme
 !#
-!# 2.) transp_calcJacobian
+!# 2.) transp_calcJacobianThetaScheme
 !#     -> Calculates the Jacobian matrix
+!#        used in the two-level theta-scheme
 !#
-!# 3.) transp_calcResidual
+!# 3.) transp_calcResidualThetaScheme
 !#     -> Calculates the nonlinear residual vector
+!#        used in the two-level theta-scheme
 !#
-!# 4.) transp_calcExplicitRHS
+!# 4.) transp_calcRhsThetaScheme
 !#     -> Calculates the explicit right-hand side vector
+!#        used in the two-level theta-scheme
 !#
-!# 5.) transp_calcRHS
-!#     -> Calculates the constant right-hand side vector
+!# 5.) transp_calcRhsRungeKuttaScheme
+!#     -> Calculates the right-hand side vector
+!#        used in the explicit Runge-Kutta scheme
 !#
 !# 6.) transp_setBoundaryConditions
 !#     -> Imposes boundary conditions for nonlinear solver
@@ -77,7 +82,7 @@
 !#        boundary values. If you want to implement a special routine
 !#        for assembling the preconditioner, than you have to call it
 !#        from transp_nlsolverCallback instead if the standard routine
-!#        transp_calcResidual. Note that changing the interface of this
+!#        transp_calcResidualThetaScheme. Note that changing the interface of this
 !#        callback routine would require to update ALL models. Hence,
 !#        the interface should only be changed if really necessary.
 !#
@@ -128,12 +133,12 @@ module transport_callback
 
   private
   public :: transp_calcLinfBoundaryConditions
-  public :: transp_calcJacobian
+  public :: transp_calcJacobianThetaScheme
   public :: transp_calcLinearizedFCT
-  public :: transp_calcPreconditioner
-  public :: transp_calcRHS
-  public :: transp_calcExplicitRHS
-  public :: transp_calcResidual
+  public :: transp_calcPrecondThetaScheme
+  public :: transp_calcRhsRungeKuttaScheme
+  public :: transp_calcRhsThetaScheme
+  public :: transp_calcResidualThetaScheme
   public :: transp_calcVelocityField
   public :: transp_coeffVectorAnalytic
   public :: transp_nlsolverCallback
@@ -224,12 +229,12 @@ contains
     if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
       ! Compute the preconditioner
-      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
 
       ! Compute the right-hand side
-      call transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-          rsolution, rsolutionInitial, rrhs, istep, rcollection, rb)
+      call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolutionInitial, rrhs, istep, rcollection, rb)
 
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -242,16 +247,16 @@ contains
 
       if (istep .eq. 0) then
         ! Assemble the constant right-hand side
-        call transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
-            rsolution, rrhs, rcollection, rb)
+        call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolutionInitial, rrhs, rcollection, rb)
       end if
       
       ! Compute the preconditioner
-      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
       
       ! Compute the residual
-      call transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcResidualThetaScheme(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolutionInitial, rrhs, rres, istep, rcollection)
 
       ! Remove specifier for the preconditioner (if any)
@@ -264,7 +269,7 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
      
       ! Compute the preconditioner
-      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
 
@@ -274,7 +279,7 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
       
       ! Compute the Jacobian matrix
-      call transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+      call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep, rsolver,&
           rsolution, rsolutionInitial, rcollection)
     end if
     
@@ -314,7 +319,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcPreconditioner(rproblemLevel, rtimestep,&
+  subroutine transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rcollection)
 
 !<description>
@@ -463,7 +468,7 @@ contains
 
     case (DIFFUSION_VARIABLE)
       call output_line('Variable diffusion matrices are yet not implemented!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
       call sys_halt()
 
       ! Set update notification in problem level structure
@@ -472,7 +477,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
       call sys_halt()
     end select
     
@@ -769,7 +774,7 @@ contains
 
       case DEFAULT
         call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
         call sys_halt()
       end select
 
@@ -865,13 +870,13 @@ contains
 
       case DEFAULT
         call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
         call sys_halt()
       end select
 
     case DEFAULT
       call output_line('Invalid mode!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPreconditioner')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
       call sys_halt()
     end select
         
@@ -950,13 +955,13 @@ contains
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
     
-  end subroutine transp_calcPreconditioner
+  end subroutine transp_calcPrecondThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcJacobian(rproblemLevel, rtimestep, rsolver,&
+  subroutine transp_calcJacobianThetaScheme(rproblemLevel, rtimestep, rsolver,&
       rsolution, rsolutionInitial, rcollection)
 
 !<description>
@@ -1098,7 +1103,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
     end select
     
@@ -1259,7 +1264,7 @@ contains
         
       case DEFAULT
         call output_line('Unsupported velocity type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
         call sys_halt()
       end select
 
@@ -1309,14 +1314,14 @@ contains
 
       case DEFAULT
         call output_line('Unsupported velocity type!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
         call sys_halt()
       end select
 
 
     case DEFAULT
       call output_line('Invalid mode!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
     end select
     
@@ -1410,7 +1415,7 @@ contains
       
     case DEFAULT
       call output_line('Invalid type of diffusion!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
     end select
 
@@ -1707,7 +1712,7 @@ contains
       
     case DEFAULT
       call output_line('Unsupported velocity type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobian')
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
     end select
 
@@ -1741,18 +1746,18 @@ contains
     ! Stop time measurement for matrix evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcJacobian
+  end subroutine transp_calcJacobianThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcRHS(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rrhs, istep, rcollection,rb)
+  subroutine transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolutionInitial, rrhs, istep, rcollection,rb)
 
 !<description>
     ! This subroutine computes the right-hand side vector
-    ! used in the explicit Lax-Wendroff time-stepping scheme
+    ! used in the explicit Runge-Kutta scheme.
 !</description>
 
 !<input>
@@ -1890,19 +1895,21 @@ contains
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcRHS
+  end subroutine transp_calcRhsRungeKuttaScheme
     
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcExplicitRHS(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rrhs, rcollection, rb)
+  subroutine transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rrhs, rcollection, rsource)
 
 !<description>
     ! This subroutine computes the constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + \Delta t b$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n$$
+    !
+    ! where the (scaled) source term is optional.
 !</description>
 
 !<input>
@@ -1912,8 +1919,8 @@ contains
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
-    ! OPTIONAL: load vector specified by the application
-    type(t_vectorBlock), intent(in), optional :: rb
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -1926,7 +1933,7 @@ contains
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -1939,6 +1946,7 @@ contains
     integer :: convectionAFC, diffusionAFC
     integer :: imasstype, imassantidiffusiontype, ivelocitytype
 
+
     !###########################################################################
     ! REMARK: If you want to add a new type of velocity/diffusion,
     ! then search for the tag @FAQ2: in this subroutine and create a
@@ -1949,7 +1957,7 @@ contains
     ! Check if the preconditioner has to be initialized
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
-      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
       rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                         not(PROBLEV_MSPEC_INITIALIZE))
@@ -1989,7 +1997,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the constant right-hand side
       !
-      !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.`s$
+      !   $ rhs = M*u^n+(1-theta)*dt*L(u^n)u^n + b.c.'s$
       !-------------------------------------------------------------------------
       
       if (rtimestep%theta .lt. 1.0_DP) then
@@ -2048,7 +2056,7 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $ rhs = "0" + b.c.`s
+      !   $ rhs = "0" + b.c.'s
       !-------------------------------------------------------------------------
       
       call lsysbl_clearVector(rrhs)
@@ -2061,31 +2069,34 @@ contains
     end select
     
     
-    ! Apply the given load vector to the residual (if any)
-    if (present(rb)) call lsysbl_vectorLinearComb(rb, rrhs, 1.0_DP, 1.0_DP)
+    ! Apply the explicit source vector to the right-hand side (if any)
+    if (present(rsource))&
+        call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
     
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
 
-  end subroutine transp_calcExplicitRHS
+  end subroutine transp_calcRhsThetaScheme
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_calcResidual(rproblemLevel, rtimestep, rsolver,&
-      rsolution, rsolutionInitial, rrhs, rres, ite, rcollection)
+  subroutine transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolutionInitial, rrhs, rres, ite,&
+      rcollection, rsource)
 
 !<description>
     ! This subroutine computes the nonlinear residual vector
     ! 
-    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} $$
+    !   $$ res^{(m)} = rhs - [M-\theta\Delta t K^{(m)}]u^{(m)} - s^{(m)} $$
     !
-    !  whereby  the constant right-hand side
+    ! for the standard two-level theta-scheme, whereby the (scaled)
+    ! source term is optional. The constant right-hand side
     !
-    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + \Delta t b$$
+    !  $$ rhs = [M + (1-\theta)\Delta t K^n]u^n + s^n$$
     !
-    ! is must be given by vector rrhs
+    ! is must be provided via the precomputed vector rrhs.
 !</description>
 
 !<input>
@@ -2103,6 +2114,9 @@ contains
 
     ! iteration number
     integer, intent(in) :: ite
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -2115,7 +2129,7 @@ contains
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
 
-    ! collection
+    ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
@@ -2128,6 +2142,7 @@ contains
     integer :: convectionAFC, diffusionAFC
     integer :: imasstype, imassantidiffusiontype, ivelocitytype
 
+
     !###########################################################################
     ! REMARK: If you want to add a new type of velocity/diffusion,
     ! then search for the tag @FAQ2: in this subroutine and create a
@@ -2138,7 +2153,7 @@ contains
     ! Check if the preconditioner has to be initialized
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
-      call transp_calcPreconditioner(rproblemLevel, rtimestep,&
+      call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
       rproblemLevel%iproblemSpec = iand(rproblemLevel%iproblemSpec,&
                                         not(PROBLEV_MSPEC_INITIALIZE))
@@ -2287,10 +2302,15 @@ contains
       
     end if   ! diffusionAFC > 0
     
+    
+    ! Apply the implicit source vector to the residual (if any)
+    if (present(rsource))&
+        call lsysbl_vectorLinearComb(rsource, rres, 1.0_DP, -1.0_DP)
+    
     ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
     
-  end subroutine transp_calcResidual
+  end subroutine transp_calcResidualThetaScheme
 
   !*****************************************************************************
 
