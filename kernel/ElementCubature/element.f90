@@ -506,7 +506,7 @@ module element
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~ with bubble, integral
   ! mean value based
-  integer(I32), parameter, public :: EL_EB30    = EL_Q1TB + 2**16
+  integer(I32), parameter, public :: EL_EB30    = EL_Q1TB
   integer(I32), parameter, public :: EL_EB30_2D = EL_EB30
 
   ! ID of rotated bilinear conforming quadrilateral FE, Q1~, edge-midpoint based
