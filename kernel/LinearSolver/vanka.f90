@@ -8442,6 +8442,7 @@ contains
     integer, parameter :: lofsv = 4
     integer, parameter :: lofsp = 8
     real(DP) :: daux1,daux2,daux3,daux4
+    real(DP) :: FFp1,FFp2,FFd1,FFd2,FFpp,FFdp
     
     ! Local arrays for informations about one element -- for primal and dual space.
     real(DP), dimension(4) :: AA11,AA22,BB1,BB2,DD1,DD2
@@ -8621,8 +8622,8 @@ contains
       !
       ! Fetch the pressure P on the current element into FFP
     
-      FFp(1+lofsp) = p_Drhs(iel+ioffsetp)
-      FFd(1+lofsp) = p_Drhs(iel+ioffsetxi)
+      FFpp = p_Drhs(iel+ioffsetp)
+      FFdp = p_Drhs(iel+ioffsetxi)
 
       ! Loop over all 4 U-nodes of that element.
       do inode=1,4
@@ -8644,11 +8645,11 @@ contains
         ! side vector that belongs to our current DOF corresponding
         ! to inode
         
-        FFp(inode)       = p_Drhs(idof+ioffsetu)
-        FFp(inode+lofsv) = p_Drhs(idof+ioffsetv)
+        FFp1 = p_Drhs(idof+ioffsetu)
+        FFp2 = p_Drhs(idof+ioffsetv)
 
-        FFd(inode)       = p_Drhs(idof+ioffsetl1)
-        FFd(inode+lofsv) = p_Drhs(idof+ioffsetl2)
+        FFd1 = p_Drhs(idof+ioffsetl1)
+        FFd2 = p_Drhs(idof+ioffsetl2)
         
         ! What do we have at this point?                           
         ! FF     : "local" RHS vector belonging to the DOF`s on the
@@ -8719,87 +8720,95 @@ contains
         
         ia1 = p_KldA(idof)
         ia2 = p_KldA(idof+1)-1
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
+        daux3 = 0.0_DP
+        daux4 = 0.0_DP
         do ia = ia1,ia2
           J = p_KcolA(ia)
-          daux1 = dmult11*p_DA11(ia)
-          daux2 = dmult22*p_DA22(ia)
-          daux3 = dmult44*p_Da44(ia)
-          daux4 = dmult55*p_Da55(ia)
-
-          FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetu)
-          FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetv)
-
-          FFd(inode)       = FFd(inode)      -daux3*p_Dvector(J+ioffsetl1)
-          FFd(inode+lofsv) = FFd(inode+lofsv)-daux4*p_Dvector(J+ioffsetl2)
+          daux1 = daux1 + p_Da11(ia)*p_Dvector(J+ioffsetu)
+          daux2 = daux2 + p_Da22(ia)*p_Dvector(J+ioffsetv)
+          daux3 = daux3 + p_Da44(ia)*p_Dvector(J+ioffsetl1)
+          daux4 = daux4 + p_Da55(ia)*p_Dvector(J+ioffsetl2)
         end do
+        FFp1 = FFp1 - dmult11*daux1
+        FFp2 = FFp2 - dmult22*daux2
+        FFd1 = FFd1 - dmult44*daux3
+        FFd2 = FFd2 - dmult55*daux4
         
         ! There are probably some more defects to calculate.
         if (bhaveA14) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult14*p_DA14(ia)
-            daux2 = dmult25*p_DA25(ia)
-
-            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetl1)
-            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetl2)
+            daux1 = daux1 + p_DA14(ia)*p_Dvector(J+ioffsetl1)
+            daux2 = daux2 + p_DA25(ia)*p_Dvector(J+ioffsetl2)
           end do
+          FFp1 = FFp1 - dmult14*daux1
+          FFp2 = FFp2 - dmult25*daux2
         end if
         
         if (bhaveA41) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult41*p_DA41(ia)
-            daux2 = dmult52*p_DA52(ia)
-
-            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetu)
-            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetv)
+            daux1 = daux1 + p_DA41(ia)*p_Dvector(J+ioffsetu)
+            daux2 = daux2 + p_DA52(ia)*p_Dvector(J+ioffsetv)
           end do
+          FFd1 = FFd1 - dmult41*daux1
+          FFd2 = FFd2 - dmult52*daux2
         end if
         
         ia1 = p_KldA12(idof)
         ia2 = p_KldA12(idof+1)-1
         if (bhaveA12) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult12*p_DA12(ia)
-            daux2 = dmult21*p_DA21(ia)
-
-            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetv)
-            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetu)
+            daux1 = daux1 + p_DA12(ia)*p_Dvector(J+ioffsetv)
+            daux2 = daux2 + p_DA21(ia)*p_Dvector(J+ioffsetu)
           end do
+          FFp1 = FFp1 - dmult12*daux1
+          FFp2 = FFp2 - dmult21*daux2
         end if
         
         if (bhaveA45) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult45*p_DA45(ia)
-            daux2 = dmult54*p_DA54(ia)
-
-            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetl2)
-            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetl1)
+            daux1 = daux1 + p_DA45(ia)*p_Dvector(J+ioffsetl2)
+            daux2 = daux2 + p_DA54(ia)*p_Dvector(J+ioffsetl1)
           end do
+          FFd1 = FFd1 - dmult45*daux1
+          FFd2 = FFd2 - dmult54*daux2
         end if
         
         if (bhaveA42) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult42*p_DA42(ia)
-            daux2 = dmult51*p_DA51(ia)
-
-            FFd(inode)       = FFd(inode)      -daux1*p_Dvector(J+ioffsetv)
-            FFd(inode+lofsv) = FFd(inode+lofsv)-daux2*p_Dvector(J+ioffsetu)
+            daux1 = daux1 + p_DA42(ia)*p_Dvector(J+ioffsetv)
+            daux2 = daux2 + p_DA51(ia)*p_Dvector(J+ioffsetu)
           end do
+          FFd1 = FFd1 - dmult42*daux1
+          FFd2 = FFd2 - dmult51*daux2
         end if
 
         if (bhaveA24) then
+          daux1 = 0.0_DP
+          daux2 = 0.0_DP
           do ia = ia1,ia2
             J = p_KcolA(ia)
-            daux1 = dmult15*p_DA15(ia)
-            daux2 = dmult24*p_DA24(ia)
-
-            FFp(inode)       = FFp(inode)      -daux1*p_Dvector(J+ioffsetl2)
-            FFp(inode+lofsv) = FFp(inode+lofsv)-daux2*p_Dvector(J+ioffsetl1)
+            daux1 = daux1 + p_DA15(ia)*p_Dvector(J+ioffsetl2)
+            daux2 = daux2 + p_DA24(ia)*p_Dvector(J+ioffsetl1)
           end do
+          FFp1 = FFp1 - dmult15*daux1
+          FFp2 = FFp2 - dmult24*daux2
         end if
         
         ! Finally subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -8810,11 +8819,11 @@ contains
           daux1 = p_Dvector(j+ioffsetp)
           daux2 = p_Dvector(j+ioffsetxi)
 
-          FFp(inode)       = FFp(inode)      -dmultb1*p_DB1(ib)*daux1
-          FFp(inode+lofsv) = FFp(inode+lofsv)-dmultb2*p_DB2(ib)*daux1
+          FFp1 = FFp1-dmultb1*p_DB1(ib)*daux1
+          FFp2 = FFp2-dmultb2*p_DB2(ib)*daux1
 
-          FFd(inode)       = FFd(inode)      -dmultb3*p_DB3(ib)*daux2
-          FFd(inode+lofsv) = FFd(inode+lofsv)-dmultb4*p_DB4(ib)*daux2
+          FFd1 = FFd1-dmultb3*p_DB3(ib)*daux2
+          FFd2 = FFd2-dmultb4*p_DB4(ib)*daux2
         end do
         
         ! Ok, up to now, all loops are clean and vectoriseable. Now the only
@@ -8863,19 +8872,26 @@ contains
             !   f_i = (f_i-Aui) - D_i pi
             ! or more precisely (as D is roughly B^T):
             !   f_i = (f_i-Aui) - (B^T)_i pi
-            FFp(1+lofsp) = FFp(1+lofsp) &
-                          - DD1(inode)*p_Dvector(idof+ioffsetu) &
-                          - DD2(inode)*p_Dvector(idof+ioffsetv)
+            FFpp = FFpp &
+                 - DD1(inode)*p_Dvector(idof+ioffsetu) &
+                 - DD2(inode)*p_Dvector(idof+ioffsetv)
           
-            FFd(1+lofsp) = FFd(1+lofsp) &
-                         - DD3(inode)*p_Dvector(idof+ioffsetl1) &
-                         - DD4(inode)*p_Dvector(idof+ioffsetl2)
+            FFdp = FFdp &
+                 - DD3(inode)*p_Dvector(idof+ioffsetl1) &
+                 - DD4(inode)*p_Dvector(idof+ioffsetl2)
           
             ! Quit the loop - the other possible entry belongs to another 
             ! element, not to the current one
             exit
           end if
         end do ! ib
+        
+        FFp(inode) = FFp1
+        FFp(inode+lofsv) = FFp2
+        FFd(inode) = FFd1
+        FFd(inode+lofsv) = FFd2
+        FFp(1+lofsp) = FFpp
+        FFd(1+lofsp) = FFdp
         
       end do ! inode
       
