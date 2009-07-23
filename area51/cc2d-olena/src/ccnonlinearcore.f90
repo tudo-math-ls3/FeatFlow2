@@ -349,6 +349,9 @@ module ccnonlinearcore
 
     ! Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
+    
+    ! Stokes matrix for that specific level (=diffussion*Laplace)
+    type(t_matrixScalar), pointer :: p_rmatrixStokesC => null()
 
     ! B1-matrix for that specific level. 
     type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
@@ -358,6 +361,9 @@ module ccnonlinearcore
 
     ! Mass matrix
     type(t_matrixScalar), pointer :: p_rmatrixMass => null()
+    
+    ! Mass matrix for the concentration eq.
+    type(t_matrixScalar), pointer :: p_rmatrixMassC => null()
     
     ! Concentration matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1 => NULL()
@@ -425,13 +431,26 @@ module ccnonlinearcore
     ! core equation. =0.0 for stationary simulations.
     real(DP) :: dalpha = 0.0_DP
     
+    ! ALPHA-parameter that controls the weight of the mass matrix in the
+    ! concentration equation. =0.0 for stationary simulations.
+    real(DP) :: dalphaC = 0.0_DP
+    
     ! THETA-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
     real(DP) :: dtheta = 0.0_DP
     
+    ! THETA-parameter that controls the weight of the Stokes matrix
+    ! in the concentration equation. =1.0 for stationary simulations.
+    real(DP) :: dthetaC = 0.0_DP
+    
     ! GAMMA-parameter that controls the weight in front of the
     ! nonlinearity. =1.0 for Navier-Stokes, =0.0 for Stokes equation.
     real(DP) :: dgamma = 0.0_DP
+    
+    ! GAMMA-parameter that controls the weight in front of the
+    ! nonlinearity. =1.0 for Navier-Stokes, =0.0 for Stokes equation.
+    real(DP) :: dgammaC = 0.0_DP
+    
 
     ! ETA-parameter that switch the B-term on/off.
     real(DP) :: deta = 0.0_DP
@@ -581,10 +600,13 @@ contains
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
+      rnonlinearCCMatrix%dalphaC = rnonlinearIteration%dalphaC
+      rnonlinearCCMatrix%dthetaC = rnonlinearIteration%dthetaC
+      rnonlinearCCMatrix%dgammaC = rnonlinearIteration%dgammaC
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
       rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
-      rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
+      rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
       rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -594,6 +616,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
+      rnonlinearCCMatrix%p_rmatrixStokesC => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokesC
       rnonlinearCCMatrix%p_rmatrixB1 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
       rnonlinearCCMatrix%p_rmatrixB2 => &
@@ -604,6 +628,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
+      rnonlinearCCMatrix%p_rmatrixMassC => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMassC
       rnonlinearCCMatrix%p_rmatrixStabil => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
           
@@ -787,6 +813,9 @@ contains
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
+      rnonlinearCCMatrix%dalphaC = rnonlinearIteration%dalphaC
+      rnonlinearCCMatrix%dthetaC = rnonlinearIteration%dthetaC
+      rnonlinearCCMatrix%dgammaC = rnonlinearIteration%dgammaC
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
       rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
@@ -804,6 +833,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
       rnonlinearCCMatrix%p_rmatrixStokes => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
+      rnonlinearCCMatrix%p_rmatrixStokesC => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokesC
       rnonlinearCCMatrix%p_rmatrixB1 => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
       rnonlinearCCMatrix%p_rmatrixB2 => &
@@ -814,6 +845,8 @@ contains
           rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
       rnonlinearCCMatrix%p_rmatrixMass => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
+      rnonlinearCCMatrix%p_rmatrixMassC => &
+          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMassC
       rnonlinearCCMatrix%p_rmatrixStabil => &
           rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
 
@@ -1362,11 +1395,14 @@ contains
           rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
           rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
           rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
+          rnonlinearCCMatrix%dalphaC = rnonlinearIteration%dalphaC
+          rnonlinearCCMatrix%dthetaC = rnonlinearIteration%dthetaC
+          rnonlinearCCMatrix%dgammaC = rnonlinearIteration%dgammaC
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
           rnonlinearCCMatrix%deta = 1.0_DP
           rnonlinearCCMatrix%dtau = 1.0_DP
           rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
-          rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
+          rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
           rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
           rnonlinearCCMatrix%dnu = rproblem%dnu
           rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -1380,6 +1416,8 @@ contains
               rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisationStabil
           rnonlinearCCMatrix%p_rmatrixStokes => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
+          rnonlinearCCMatrix%p_rmatrixStokesC => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokesC
           rnonlinearCCMatrix%p_rmatrixB1 => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
           rnonlinearCCMatrix%p_rmatrixB2 => &
@@ -1390,6 +1428,8 @@ contains
               rnonlinearIteration%RcoreEquation(ilev)%rmatrixD2
           rnonlinearCCMatrix%p_rmatrixMass => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
+          rnonlinearCCMatrix%p_rmatrixMassC => &
+              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMassC
           rnonlinearCCMatrix%p_rmatrixStabil => &
               rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStabil
 
