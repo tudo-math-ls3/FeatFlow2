@@ -413,6 +413,20 @@ contains
     rvanka%bHaveC = rvanka%bHaveC .and. &
         (rvanka%Dmultipliers(3,3) .ne. 0.0_DP)
     
+    if (.not. rvanka%bhaveA12) then
+      ! Search the column/Row structure if necessary.
+      if (rvanka%bhaveA45) then
+        call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(4,5),rvanka%p_KldA12)
+        call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(4,5),rvanka%p_KcolA12)
+      else if (rvanka%bhaveA15) then
+        call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,5),rvanka%p_KldA12)
+        call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(1,5),rvanka%p_KcolA12)
+      else if (rvanka%bhaveA51) then
+        call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(5,1),rvanka%p_KldA12)
+        call lsyssc_getbase_Kcol (rmatrix%RmatrixBlock(5,1),rvanka%p_KcolA12)
+      end if
+    end if
+
     ! Preallocate memory for the FEM data.
     allocate(rvanka%p_rfemdata(p_rblockDiscr%RspatialDiscr(1)%inumFESpaces))
     
@@ -723,7 +737,7 @@ contains
     p_Da52     => rvanka%p_Da52    
     p_Da51     => rvanka%p_Da51    
     p_Da42     => rvanka%p_Da42
-
+    
     ! Get the multiplication factors
     Dmult(:,:) = rvanka%Dmultipliers(:,:)
 
