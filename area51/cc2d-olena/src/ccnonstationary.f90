@@ -411,10 +411,13 @@ contains
     rnonlinearCCMatrix%dalpha = -1.0_DP
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
+    rnonlinearCCMatrix%dalphaC = -1.0_DP
+    rnonlinearCCMatrix%dthetaC = -rtimestepping%dweightMatrixRHS
+    rnonlinearCCMatrix%dgammaC = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
     rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
-    rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
+    rnonlinearCCMatrix%dbconcentr = rproblem%daconcentr
     rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
     rnonlinearCCMatrix%dnu = rproblem%dnu
     rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
@@ -424,6 +427,8 @@ contains
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisationStabil
     rnonlinearCCMatrix%p_rmatrixStokes => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
+    rnonlinearCCMatrix%p_rmatrixStokesC => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokesC
     rnonlinearCCMatrix%p_rmatrixB1 => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => &
@@ -433,7 +438,9 @@ contains
     rnonlinearCCMatrix%p_rmatrixD2 => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass 
+    rnonlinearCCMatrix%p_rmatrixMassC => &
+        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMassC   
     rnonlinearCCMatrix%p_rmatrixStabil => &
         rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStabil
         
@@ -484,10 +491,13 @@ contains
     rnonlinearIterationTmp%dalpha = 1.0_DP
     rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
     rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * real(1-rproblem%iequation,DP)
+    rnonlinearIterationTmp%dalphaC = 1.0_DP
+    rnonlinearIterationTmp%dthetaC = rtimestepping%dweightMatrixLHS
+    rnonlinearIterationTmp%dgammaC = rtimestepping%dweightMatrixLHS * real(1-rproblem%iequation,DP)
     rnonlinearIterationTmp%deta   = 1.0_DP
     rnonlinearIterationTmp%dtau   = 1.0_DP
     rnonlinearIterationTmp%daconcentr = rproblem%daconcentr 
-    rnonlinearIterationTmp%dbconcentr = rproblem%dbconcentr
+    rnonlinearIterationTmp%dbconcentr = rproblem%daconcentr
 
     ! Scale the pressure by the length of the time step. The core equation routines
     ! handle the equation
