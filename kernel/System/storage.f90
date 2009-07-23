@@ -447,7 +447,7 @@ module storage
   public :: storage_getbase_char
 
   interface storage_getbase_int2D
-    module procedure storage_getbase_int2DDefault
+    module procedure storage_getbase_int2DDef
     module procedure storage_getbase_int2DUBnd
     module procedure storage_getbase_int2DLUBnd
   end interface
@@ -455,7 +455,7 @@ module storage
   public :: storage_getbase_int2D
   
   interface storage_getbase_int8_2D
-    module procedure storage_getbase_int8_2DDefault
+    module procedure storage_getbase_int8_2DDef
     module procedure storage_getbase_int8_2DUBnd
     module procedure storage_getbase_int8_2DLUBnd
   end interface
@@ -463,7 +463,7 @@ module storage
   public :: storage_getbase_int8_2D
   
   interface storage_getbase_int16_2D
-    module procedure storage_getbase_int16_2DDefault
+    module procedure storage_getbase_int16_2DDef
     module procedure storage_getbase_int16_2DUBnd
     module procedure storage_getbase_int16_2DLUBnd
   end interface
@@ -471,7 +471,7 @@ module storage
   public :: storage_getbase_int16_2D
   
   interface storage_getbase_int32_2D
-    module procedure storage_getbase_int32_2DDefault
+    module procedure storage_getbase_int32_2DDef
     module procedure storage_getbase_int32_2DUBnd
     module procedure storage_getbase_int32_2DLUBnd
   end interface
@@ -479,7 +479,7 @@ module storage
   public :: storage_getbase_int32_2D
   
   interface storage_getbase_int64_2D
-    module procedure storage_getbase_int64_2DDefault
+    module procedure storage_getbase_int64_2DDef
     module procedure storage_getbase_int64_2DUBnd
     module procedure storage_getbase_int64_2DLUBnd
   end interface
@@ -487,7 +487,7 @@ module storage
   public :: storage_getbase_int64_2D
 
   interface storage_getbase_single2D
-    module procedure storage_getbase_single2DDefault
+    module procedure storage_getbase_single2DDef
     module procedure storage_getbase_single2DUBnd
     module procedure storage_getbase_single2DLUBnd
   end interface
@@ -495,7 +495,7 @@ module storage
   public :: storage_getbase_single2D
 
   interface storage_getbase_double2D
-    module procedure storage_getbase_double2DDefault
+    module procedure storage_getbase_double2DDef
     module procedure storage_getbase_double2DUBnd
     module procedure storage_getbase_double2DLUBnd
   end interface
@@ -503,7 +503,7 @@ module storage
   public :: storage_getbase_double2D
 
   interface storage_getbase_quad2D
-    module procedure storage_getbase_quad2DDefault
+    module procedure storage_getbase_quad2DDef
     module procedure storage_getbase_quad2DUBnd
     module procedure storage_getbase_quad2DLUBnd
   end interface
@@ -511,7 +511,7 @@ module storage
   public :: storage_getbase_quad2D
 
   interface storage_getbase_logical2D
-    module procedure storage_getbase_logical2DDefault
+    module procedure storage_getbase_logical2DDef
     module procedure storage_getbase_logical2DUBnd
     module procedure storage_getbase_logical2DLUBnd
   end interface
@@ -519,7 +519,7 @@ module storage
   public :: storage_getbase_logical2D
 
   interface storage_getbase_char2D
-    module procedure storage_getbase_char2DDefault
+    module procedure storage_getbase_char2DDef
     module procedure storage_getbase_char2DUBnd
     module procedure storage_getbase_char2DLUBnd
   end interface
@@ -4136,7 +4136,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_int2DDefault (ihandle, p_Iarray, rheap)
+  subroutine storage_getbase_int2DDef (ihandle, p_Iarray, rheap)
 
 !<description>
 
@@ -4177,20 +4177,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iinteger2D
 
-  end subroutine storage_getbase_int2DDefault
+  end subroutine storage_getbase_int2DDef
 
 !************************************************************************
 
@@ -4343,7 +4343,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_single2DDefault (ihandle, p_Sarray, rheap)
+  subroutine storage_getbase_single2DDef (ihandle, p_Sarray, rheap)
 
 !<description>
 
@@ -4384,20 +4384,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_SINGLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_single2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Sarray => p_rheap%p_Rdescriptors(ihandle)%p_Fsingle2D
 
-  end subroutine storage_getbase_single2DDefault
+  end subroutine storage_getbase_single2DDef
 
 !************************************************************************
 
@@ -4550,7 +4550,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_double2DDefault (ihandle, p_Darray, rheap)
+  subroutine storage_getbase_double2DDef (ihandle, p_Darray, rheap)
 
 !<description>
 
@@ -4587,20 +4587,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_DOUBLE) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_double2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Darray => p_rheap%p_Rdescriptors(ihandle)%p_Ddouble2D
 
-  end subroutine storage_getbase_double2DDefault
+  end subroutine storage_getbase_double2DDef
 
 !************************************************************************
 
@@ -4745,7 +4745,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_quad2DDefault (ihandle, p_Qarray, rheap)
+  subroutine storage_getbase_quad2DDef (ihandle, p_Qarray, rheap)
 
 !<description>
 
@@ -4782,20 +4782,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_QUAD) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_quad2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Qarray => p_rheap%p_Rdescriptors(ihandle)%p_Qquad2D
 
-  end subroutine storage_getbase_quad2DDefault
+  end subroutine storage_getbase_quad2DDef
 
 !************************************************************************
 
@@ -4940,7 +4940,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_logical2DDefault (ihandle, p_Larray, rheap)
+  subroutine storage_getbase_logical2DDef (ihandle, p_Larray, rheap)
 
 !<description>
 
@@ -4981,20 +4981,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_LOGICAL) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_logical2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Larray => p_rheap%p_Rdescriptors(ihandle)%p_Blogical2D
 
-  end subroutine storage_getbase_logical2DDefault
+  end subroutine storage_getbase_logical2DDef
 
 !************************************************************************
 
@@ -5147,7 +5147,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_char2DDefault (ihandle, p_Carray, rheap)
+  subroutine storage_getbase_char2DDef (ihandle, p_Carray, rheap)
 
 !<description>
 
@@ -5188,20 +5188,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_CHAR) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_char2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Carray => p_rheap%p_Rdescriptors(ihandle)%p_Schar2D
 
-  end subroutine storage_getbase_char2DDefault
+  end subroutine storage_getbase_char2DDef
 
 !************************************************************************
 
@@ -5354,7 +5354,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_int8_2DDefault (ihandle, p_Iarray, rheap)
+  subroutine storage_getbase_int8_2DDef (ihandle, p_Iarray, rheap)
 
 !<description>
 
@@ -5395,20 +5395,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT8) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int8_2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint8_2D
 
-  end subroutine storage_getbase_int8_2DDefault
+  end subroutine storage_getbase_int8_2DDef
 
 !************************************************************************
 
@@ -5561,7 +5561,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_int16_2DDefault (ihandle, p_Iarray, rheap)
+  subroutine storage_getbase_int16_2DDef (ihandle, p_Iarray, rheap)
 
 !<description>
 
@@ -5602,20 +5602,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT16) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int16_2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint16_2D
 
-  end subroutine storage_getbase_int16_2DDefault
+  end subroutine storage_getbase_int16_2DDef
 
 !************************************************************************
 
@@ -5768,7 +5768,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_int32_2DDefault (ihandle, p_Iarray, rheap)
+  subroutine storage_getbase_int32_2DDef (ihandle, p_Iarray, rheap)
 
 !<description>
 
@@ -5809,20 +5809,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT32) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int32_2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint32_2D
 
-  end subroutine storage_getbase_int32_2DDefault
+  end subroutine storage_getbase_int32_2DDef
 
 !************************************************************************
 
@@ -5975,7 +5975,7 @@ contains
 
 !<subroutine>
 
-  subroutine storage_getbase_int64_2DDefault (ihandle, p_Iarray, rheap)
+  subroutine storage_getbase_int64_2DDef (ihandle, p_Iarray, rheap)
 
 !<description>
 
@@ -6016,20 +6016,20 @@ contains
 
     if (ihandle .eq. ST_NOHANDLE) then
       call output_line ('Wrong handle!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DDef')
       call sys_halt()
     end if
 
     if (p_rheap%p_Rdescriptors(ihandle)%idataType .ne. ST_INT64) then
       call output_line ('Wrong data format!', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DDefault')
+                        OU_CLASS_ERROR,OU_MODE_STD,'storage_getbase_int64_2DDef')
       call sys_halt()
     end if
 
     ! Get the pointer
     p_Iarray => p_rheap%p_Rdescriptors(ihandle)%p_Iint64_2D
 
-  end subroutine storage_getbase_int64_2DDefault
+  end subroutine storage_getbase_int64_2DDef
 
 !************************************************************************
 
