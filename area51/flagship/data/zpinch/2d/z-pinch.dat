@@ -614,7 +614,7 @@ iresNorm = 0
 nminIterations = 1 #1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10 #100
+nmaxIterations = 25 #100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -656,10 +656,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-8
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -705,7 +705,7 @@ nmaxIterations = 100
 isolver = 4
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 25
+nkrylov = 0
 
 # linear relaxation parameter
 domega = 1.0
@@ -714,7 +714,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-8
 
 # relative tolerance for stagnation
 depsStag = 0.0

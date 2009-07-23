@@ -18,8 +18,8 @@
 !<subroutine>
 
     subroutine fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, rsolutionInitial, rrhs, rres,&
-                                    istep, ioperationSpec, rcollection, istatus, rb)
+        rsolution, rsolution0, rrhs, rres, istep,&
+        ioperationSpec, rcollection, istatus, rsource)
 
       use collection
       use linearsystemblock
@@ -28,8 +28,8 @@
       use timestepaux
 
 !<input>
-      ! initial solution vector
-      type(t_vectorBlock), intent(IN) :: rsolutionInitial
+      ! old solution vector from previous time step
+      type(t_vectorBlock), intent(IN) :: rsolution0
 
       ! number of solver step
       integer, intent(IN) :: istep
@@ -37,8 +37,8 @@
       ! specifier for operations
       integer(I32), intent(IN) :: ioperationSpec
 
-      ! OPTIONAL: constant right-hand side vector
-      type(t_vectorBlock), intent(IN), optional :: rb
+      ! OPTIONAL: given source vector
+      type(t_vectorBlock), intent(IN), optional :: rsource
 !</input>
 
 !<inputoutput>

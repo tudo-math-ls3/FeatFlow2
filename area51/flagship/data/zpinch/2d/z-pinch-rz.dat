@@ -214,7 +214,7 @@ imassantidiffusiontype = 0
 # 3 = Burgers equation in space-time (x,t)
 # 4 = Buckley Leverett in space-time (x,t)
 # 6 = Burgers' equation in 2D
-ivelocitytype = -2
+ivelocitytype = 2
 
 # section name of velocity field
 svelocityname = 
@@ -291,7 +291,7 @@ sexacttargetfuncname =
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # type of matrix format
 # 7 = matrix format 7
@@ -345,7 +345,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_rz
+ucdsolution = out/zpinch_CN
 
 # file for UCD output of error
 ucderror = out/
@@ -378,7 +378,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -387,7 +387,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.9
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1e-4
@@ -441,10 +441,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -483,10 +483,10 @@ ssolvername = NonlinearSolverEuler
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -702,7 +702,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 4
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

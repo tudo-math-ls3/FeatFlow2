@@ -158,45 +158,47 @@ contains
     rtimestep%sName = trim(adjustl(ssectionName))
     
     ! Get mandatory configuration values from parameter list
-    call parlst_getvalue_int(   rparlist, ssectionName, "ctimestepType",&
-                                rtimestep%ctimestepType)
-    call parlst_getvalue_double(rparlist, ssectionName, "dfinalTime",&
-                                rtimestep%dfinalTime)
-    call parlst_getvalue_double(rparlist, ssectionName, "dinitialStep",&
-                                rtimestep%dinitialStep) 
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        "ctimestepType", rtimestep%ctimestepType)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dfinalTime", rtimestep%dfinalTime)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dinitialStep", rtimestep%dinitialStep) 
 
     ! Get optional configuration values from parameter list
-    call parlst_getvalue_int(   rparlist, ssectionName, "ioutputlevel",&
-                                rtimestep%ioutputlevel)
-    call parlst_getvalue_int(   rparlist, ssectionName, "isolNorm",&
-                                rtimestep%isolNorm)
-    call parlst_getvalue_double(rparlist, ssectionName, "dinitialTime",&
-                                rtimestep%dinitialTime)
-    call parlst_getvalue_double(rparlist, ssectionName, "dminStep",&
-                                rtimestep%dminStep, rtimestep%dinitialStep)
-    call parlst_getvalue_double(rparlist, ssectionName, "dmaxStep",&
-                                rtimestep%dmaxStep, rtimestep%dinitialStep)
-     call parlst_getvalue_double(rparlist, ssectionName, "dstepReductionFactor",&
-                                rtimestep%dstepReductionFactor)
-    call parlst_getvalue_double(rparlist, ssectionName, "depsSteady",&
-                                rtimestep%depsSteady)
-    call parlst_getvalue_int(   rparlist, ssectionName, "iadapttimestep",&
-                                rtimestep%iadapttimestep)
-    call parlst_getvalue_double(rparlist, ssectionName, "dadaptTime",&
-                                rtimestep%dadaptTime)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        "ioutputlevel", rtimestep%ioutputlevel)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        "isolNorm", rtimestep%isolNorm)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dinitialTime", rtimestep%dinitialTime)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dminStep", rtimestep%dminStep, rtimestep%dinitialStep)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dmaxStep", rtimestep%dmaxStep, rtimestep%dinitialStep)
+     call parlst_getvalue_double(rparlist, ssectionName,&
+         "dstepReductionFactor", rtimestep%dstepReductionFactor)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "depsSteady", rtimestep%depsSteady)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        "iadapttimestep", rtimestep%iadapttimestep)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        "dadaptTime", rtimestep%dadaptTime)
    
     ! Get solver dependent configuration values from parameter list
     select case(rtimestep%ctimestepType)
     case (TSTEP_THETA_SCHEME)
       ! Two-level theta scheme
-      call parlst_getvalue_double(rparlist, ssectionName, "theta", rtimestep%theta)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "theta", rtimestep%theta)
       
       ! Allocate array of temporal vectors
       allocate(rtimestep%RtempVectors(1))
 
     case (TSTEP_RK_SCHEME)
       ! Multilevel Runge-Kutta scheme
-      call parlst_getvalue_int(rparlist, ssectionName, "multisteps", rtimestep%multisteps)
+      call parlst_getvalue_int(rparlist, ssectionName,&
+          "multisteps", rtimestep%multisteps)
 
       select case(rtimestep%multisteps)
       case (1)
@@ -239,10 +241,10 @@ contains
     case (TSTEP_SERADAPT)
       ! Adaptive time-stepping using switched evolution relaxation
       allocate(rtimestep%p_rserController)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
-                                  rtimestep%p_rserController%dIncreaseFactor)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rserController%dDecreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dIncreaseFactor", rtimestep%p_rserController%dIncreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dDecreaseFactor", rtimestep%p_rserController%dDecreaseFactor)
 
 
     case (TSTEP_AUTOADAPT)
@@ -252,10 +254,10 @@ contains
       ! Allocate array of temporal vectors
       allocate(rtimestep%p_rautoController%RtempVectors(2))
 
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rautoController%dDecreaseFactor)
-      call parlst_getvalue_double(rparlist, ssectionName, "depsRel",&
-                                  rtimestep%p_rautoController%depsRel)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dDecreaseFactor", rtimestep%p_rautoController%dDecreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "depsRel", rtimestep%p_rautoController%depsRel)
 
 
     case (TSTEP_PIDADAPT)
@@ -263,20 +265,20 @@ contains
       allocate(rtimestep%p_rpidController)
 
       ! Get configuration values from parameter list
-      call parlst_getvalue_double(rparlist, ssectionName, "dProportionalExponent",&
-                                  rtimestep%p_rpidController%dProportionalExponent)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIntegralExponent",&
-                                  rtimestep%p_rpidController%dIntegralExponent)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDerivativeExponent",&
-                                  rtimestep%p_rpidController%dDerivativeExponent)
-      call parlst_getvalue_double(rparlist, ssectionName, "dIncreaseFactor",&
-                                  rtimestep%p_rpidController%dIncreaseFactor)
-      call parlst_getvalue_double(rparlist, ssectionName, "dDecreaseFactor",&
-                                  rtimestep%p_rpidController%dDecreaseFactor)
-      call parlst_getvalue_double(rparlist, ssectionName, "depsRel",&
-                                  rtimestep%p_rpidController%depsRel)
-      call parlst_getvalue_double(rparlist, ssectionName, "dmaxRel",&
-                                  rtimestep%p_rpidController%dmaxRel)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dProportionalExponent", rtimestep%p_rpidController%dProportionalExponent)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dIntegralExponent", rtimestep%p_rpidController%dIntegralExponent)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dDerivativeExponent", rtimestep%p_rpidController%dDerivativeExponent)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dIncreaseFactor", rtimestep%p_rpidController%dIncreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dDecreaseFactor", rtimestep%p_rpidController%dDecreaseFactor)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "depsRel", rtimestep%p_rpidController%depsRel)
+      call parlst_getvalue_double(rparlist, ssectionName,&
+          "dmaxRel", rtimestep%p_rpidController%dmaxRel)
 
     case DEFAULT
        call output_line('Invalid type of adaptive time-stepping algorithm!',&
@@ -647,9 +649,8 @@ contains
 
 !<subroutine>
   
-  subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep, rsolver,&
-                                          rsolution, fcb_nlsolverCallback,&
-                                          rcollection, rb)
+  subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -704,9 +705,8 @@ contains
       ! Call block version with right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rb, rbBlock)
-      call tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                       rsolutionBlock, fcb_nlsolverCallback,&
-                                       rcollection, rbBlock)
+      call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection, rbBlock)
       call lsysbl_releaseVector(rsolutionBlock)
       call lsysbl_releaseVector(rbBlock)
 
@@ -714,9 +714,8 @@ contains
       
       ! Call block version without right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                       rsolutionBlock, fcb_nlsolverCallback,&
-                                       rcollection)
+      call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -727,9 +726,8 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, fcb_nlsolverCallback,&
-                                         rcollection, rb)
+  subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -775,8 +773,9 @@ contains
 
     ! local variables
     type(t_solver), pointer :: p_rsolver
-    type(t_vectorBlock), pointer :: p_rsolutionRef, p_rsolutionAux
-    type(t_vectorBlock), pointer :: p_rsolutionInitial
+    type(t_vectorBlock), pointer :: p_rsolutionRef
+    type(t_vectorBlock), pointer :: p_rsolutionAux
+    type(t_vectorBlock), pointer :: p_rsolutionOld
     logical :: bcompatible, breject
     
     ! Set pointer to nonlinear solver
@@ -789,18 +788,18 @@ contains
     end if
 
     ! Set pointers to temporal vectors
-    p_rsolutionInitial => rtimestep%RtempVectors(1)
+    p_rsolutionOld => rtimestep%RtempVectors(1)
 
     ! ... and check if vectors are compatible
-    call lsysbl_isVectorCompatible(rsolution, p_rsolutionInitial, bcompatible)
+    call lsysbl_isVectorCompatible(rsolution, p_rsolutionOld, bcompatible)
     if (.not.bcompatible) then
-      call lsysbl_resizeVectorBlock(p_rsolutionInitial, rsolution, .false.)
+      call lsysbl_resizeVectorBlock(p_rsolutionOld, rsolution, .false.)
     end if
 
     ! Save the given solution vector to the temporal vector. If the
     ! computed time step is not accepted, then the backup of the
     ! given solution vector is used to recalculate the time step
-    call lsysbl_copyVector(rsolution, p_rsolutionInitial)
+    call lsysbl_copyVector(rsolution, p_rsolutionOld)
 
     
     ! Set pointers to temporal vectors for the computation of an
@@ -842,8 +841,7 @@ contains
 
       ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                rsolution, p_rsolutionInitial,&
-                                fcb_nlsolverCallback, rcollection, rb)
+          rsolution, p_rsolutionOld, fcb_nlsolverCallback, rcollection, rb)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
@@ -866,8 +864,7 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                  p_rsolutionRef, p_rsolutionInitial,&
-                                  fcb_nlsolverCallback, rcollection)
+            p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback, rcollection)
 
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
@@ -888,7 +885,7 @@ contains
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
         breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-                                      p_rsolutionRef, p_rsolutionInitial)
+            p_rsolutionRef, p_rsolutionOld)
 
         ! Prepare time step size for next "large" time step
         rtimestep%dStep = rtimestep%dStep*2.0_DP
@@ -898,7 +895,7 @@ contains
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
         breject = tstep_checkTimestep(rtimestep, p_rsolver,&
-                                      rsolution, p_rsolutionInitial)
+            rsolution, p_rsolutionOld)
 
       end if
       
@@ -917,7 +914,7 @@ contains
       if (breject) then
         ! Yes, so restore the old solution and
         ! repeat the adaptive time-stepping loop
-        call lsysbl_copyVector(p_rsolutionInitial, rsolution)
+        call lsysbl_copyVector(p_rsolutionOld, rsolution)
       else
         ! No, accept current solution and 
         ! exit adaptive time-stepping loop
@@ -931,9 +928,8 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep, rsolver,&
-                                       rsolution, fcb_nlsolverCallback,&
-                                       rcollection, rb)
+  subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -978,8 +974,7 @@ contains
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
       call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionBlock, fcb_nlsolverCallback,&
-                                    rcollection, rbBlock)
+          rsolutionBlock, fcb_nlsolverCallback, rcollection, rbBlock)
 
       call lsysbl_releaseVector(rbBlock)
       call lsysbl_releaseVector(rsolutionBlock)
@@ -989,7 +984,7 @@ contains
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
       call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                    rsolutionBlock, fcb_nlsolverCallback, rcollection)
+          rsolutionBlock, fcb_nlsolverCallback, rcollection)
 
       call lsysbl_releaseVector(rsolutionBlock)
 
@@ -1001,9 +996,8 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-                                      rsolution,  fcb_nlsolverCallback,&
-                                      rcollection, rb)
+  subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep,&
+      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rb)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -1059,7 +1053,7 @@ contains
     
     ! Set pointers to temporal vector
     p_rsolutionInitial => rtimestep%RtempVectors(1)
-    p_rconstB        => rtimestep%RtempVectors(2)
+    p_rconstB          => rtimestep%RtempVectors(2)
     p_raux             => rtimestep%RtempVectors(3)
     
     ! Check if vectors are compatible

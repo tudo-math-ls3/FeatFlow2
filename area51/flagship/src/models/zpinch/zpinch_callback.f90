@@ -9,11 +9,11 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpich_nlsolverCallbackEuler
+!# 1.) zpinch_nlsolverCallbackEuler
 !#     -> Callback routine for the nonlinear solver used in the
 !#        computation of the compressible Euler model
 !#
-!# 1.) zpich_nlsolverCallbackTransport
+!# 1.) zpinch_nlsolverCallbackTransport
 !#     -> Callback routine for the nonlinear solver used in the
 !#        computation of the scalar transport model
 !#
@@ -23,7 +23,10 @@
 !# 3.) zpinch_initDensityAveraging
 !#     -> Initializes the density averaged mass matrices
 !#
-!# 4.) zpinch_calcLinearizedFCT
+!# 4.) zpinch_initLorentzforceTerm
+!#     -> Initializes the Lorentz force term for given solutions
+!#
+!# 5.) zpinch_calcLinearizedFCT
 !#     -> Calculates the linearized FCT correction
 !#
 !# </purpose>
@@ -37,7 +40,10 @@ module zpinch_callback
   use euler_basic
   use euler_callback
   use euler_callback2d
+  use flagship_basic
+  use fparser
   use fsystem
+  use genoutput
   use basicgeometry
   use linearalgebra
   use linearsystemblock
@@ -59,6 +65,7 @@ module zpinch_callback
   public :: zpinch_nlsolverCallbackTransport
   public :: zpinch_initVelocityField
   public :: zpinch_initDensityAveraging
+  public :: zpinch_initLorentzforceTerm
   public :: zpinch_calcLinearizedFCT
   
 contains
@@ -68,8 +75,8 @@ contains
 !<subroutine>
 
   subroutine zpinch_nlsolverCallbackEuler(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rsolutionInitial, rrhs, rres,&
-      istep, ioperationSpec, rcollection, istatus, rb)
+      rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
+      istep, ioperationSpec, rcollection, istatus, rsource)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is
@@ -79,7 +86,7 @@ contains
 
 !<input>
     ! initial solution vector
-    type(t_vectorBlock), intent(in) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolution0
     
     ! number of solver step
     integer, intent(in) :: istep
@@ -87,8 +94,8 @@ contains
     ! specifier for operations
     integer(I32), intent(in) :: ioperationSpec
 
-    ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(in), optional :: rb
+    ! OPTIONAL: given source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -119,11 +126,12 @@ contains
     integer, intent(out) :: istatus
 !</output>
 !</subroutine>
-
-        ! Do we have to calculate the preconditioner?
+    
+    ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
-      
+
+      ! Compute the preconditioner
       call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
@@ -133,28 +141,37 @@ contains
     ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
       
+      ! Compute the right-hand side
       call euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rrhs, istep,&
+          rsolver, rsolution, rsolution0, rrhs, istep,&
           rcollection)
     end if
 
 
-    ! Do we have to calculate the residual
+    ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
       
-      call euler_calcRhsResidualThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rrhs, rres, istep,&
-          rcollection, rb)
+      if (istep .eq. 0) then
+        ! Compute the constant right-hand side
+        call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution0, rrhs, rcollection, rsource)
+      end if
+
+      ! Compute the residual
+      call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+          rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+          rcollection)
     end if
     
     
     ! Do we have to impose boundary conditions?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-      
+
+      ! Impose boundary conditions
       call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rres, rcollection)
+          rsolver, rsolution, rsolution0, rres, rcollection)
     end if
     
     
@@ -262,18 +279,25 @@ contains
     if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
       if (istep .eq. 0) then
-        ! Assemble the constant right-hand side
+        ! Assemble the constant right-hand side, whereby the velocity
+        ! vector and the density averaged mass matrices are based on
+        ! the solution of the Euler model from the previous time step
         call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution, rrhs, rcollection, rb)
 
-        ! Set pointer to parameter list
+        ! Set pointer to parameter list and to the solution vector
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-        
-        ! Set pointer to solution vector
         p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
         
-        ! Calculate density averaged mass matrices
+        ! Calculate the density averaged mass matrices using the
+        ! solution of the Euler model from the current time step
         call zpinch_initDensityAveraging(p_rparlist,&
+            rcollection%SquickAccess(1),&
+            rproblemLevel, p_rsolutionEuler, rcollection)
+
+        ! Calculate the velocity vector using the solution of the
+        ! Euler model from the current time step
+        call zpinch_initVelocityField(p_rparlist,&
             rcollection%SquickAccess(1),&
             rproblemLevel, p_rsolutionEuler, rcollection)
       end if
@@ -459,7 +483,7 @@ contains
         ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
     
     ! Get density distribution from the solution of the Euler model
-    !  and create block vector which is attached to the collection
+    ! and create block vector which is attached to the collection
     call euler_getVariable(rsolutionEuler, 'density', rvector)
     
     ! We have variable coefficients
@@ -489,6 +513,274 @@ contains
     call lsyssc_releaseVector(rvector)
     
   end subroutine zpinch_initDensityAveraging
+
+    !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+      ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
+      rsolutionTransport, rsolutionEuler, dtime, dscale, rforce,&
+      rcollection)
+    
+!<description>
+    ! This subroutine evaluates the Lorentz force term based on the
+    ! given solution vectors and applies stores it in vector rsource.
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameTransport
+
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solution vector for transport model
+    type(t_vectorBlock), intent(in) :: rsolutionTransport
+
+    ! solution vector for Euler model
+    type(t_vectorBlock), intent(in) :: rsolutionEuler
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! source vector to be assembled
+    type(t_vectorBlock), intent(inout) :: rforce
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_Ddata
+    real(DP), dimension(:), pointer :: p_DlumpedMassMatrix
+    character(LEN=SYS_STRLEN) :: slorentzforceName
+    real(DP) :: dcurrentDrive
+    integer :: isystemFormat, lumpedMassMatrix
+    integer :: neq, nvar, icomp, icoords
+    logical :: bcompatible
+
+    ! Check if solution vector and Lorentz force vector are compatible
+    call lsysbl_isVectorCompatible(rsolutionEuler, rforce, bcompatible)
+    if (.not.bcompatible)&
+        call lsysbl_resizeVectorBlock(rforce, rsolutionEuler, .false.)
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist, ssectionName,&
+        'slorentzforcename', slorentzforceName)
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        'icoords', icoords)
+    call parlst_getvalue_int(rparlist, ssectionNameEuler,&
+        'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist, ssectionNameEuler,&
+        'isystemformat', isystemFormat)
+    
+    ! Get lumped and consistent mass matrix
+    call lsyssc_getbase_double(rproblemLevel&
+        %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+    
+    ! Set pointer to global solution vectors
+    call lsysbl_getbase_double(rforce, p_Ddata)
+    call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
+    call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
+    
+    ! Set pointer to the vertex coordinates
+    call storage_getbase_double2D(rproblemLevel%rtriangulation&
+        %h_DvertexCoords, p_DvertexCoords)
+    
+    ! Set dimensions
+    neq  = rsolutionTransport%NEQ
+    nvar = euler_getNVAR(rproblemLevel)
+
+    ! Get function parser from collection structure
+    p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+    ! Get the number of the component used for 
+    ! evaluating the Lorentz force term
+    icomp = fparser_getFunctionNumber(p_rfparser, slorentzforceName)
+
+    ! Evaluate the function parser
+    call fparser_evalFunction(p_rfparser, icomp,&
+        (/dtime/), dcurrentDrive)
+    
+    ! Multiply scaling parameter by the time step
+    dcurrentDrive = dscale * dcurrentDrive
+
+    ! What type of system format are we?
+    select case(isystemFormat)
+
+    case (SYSTEM_INTERLEAVEFORMAT)
+
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+
+      case(2)
+        call calcForceRZInterleaveFormat(dcurrentDrive, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+        call sys_halt()
+      end select
+
+    case (SYSTEM_BLOCKFORMAT)
+      ! What type of coordinate system are we?
+      select case(icoords)
+      case(1)
+        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case(2)
+        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
+            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
+            p_DdataEuler, p_Ddata)
+        
+      case default
+        call output_line('Invalid type of coordinate system!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+        call sys_halt()
+      end select
+
+    case DEFAULT
+      call output_line('Invalid system format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+      call sys_halt()
+    end select
+
+
+  contains
+    
+    ! Here, the real working routines follow
+    
+    !**************************************************************
+    ! Calculate the Lorentz force term in x-y coordinates.
+    ! The system is stored in interleave format.
+    
+    subroutine calcForceXYInterleaveFormat(dconst, neq, nvar,&
+        DvertexCoords, DmassMatrix, DdataTransport, DdataEuler,&
+        DdataForce)
+      
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dconst
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(nvar,neq), intent(out) :: DdataForce
+      
+      ! local variables
+      real(DP) :: drad, dang, daux1, daux2, x1, x2
+      integer :: i
+      
+      ! Loop over all rows
+      do i = 1, neq
+        
+        ! Get coordinates at node i
+        x1 = DvertexCoords(1, i)
+        x2 = DvertexCoords(2, i)
+        
+        ! Compute polar coordinates
+        drad = sqrt(x1*x1 + x2*x2)
+        dang = atan2(x2, x1)
+        
+        ! Compute unit vector into origin
+        if (drad .gt. 1e-4) then
+          x1 = -cos(dang)
+          x2 = -sin(dang)
+        else
+          x1 = 0.0; x2 = 0.0
+        end if
+        
+        ! Compute source term
+        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
+        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+                         max(drad, 1.0e-4_DP)
+               
+        ! Impose source values
+        DdataForce(1, i) = 0.0_DP
+        DdataForce(2, i) = daux1 * x1
+        DdataForce(3, i) = daux1 * x2
+        DdataForce(4, i) = daux2
+      end do
+      
+    end subroutine calcForceXYInterleaveFormat
+
+    !**************************************************************
+    ! Calculate the Lorentz force term in r-z coordinates.
+    ! The system is stored in interleave format.
+    
+    subroutine calcForceRZInterleaveFormat(dconst, neq, nvar,&
+        DvertexCoords, DmassMatrix, DdataTransport, DdataEuler,&
+        DdataForce)
+      
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dconst
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(nvar,neq), intent(out) :: DdataForce
+      
+      ! local variables
+      real(DP) :: drad, dang, daux1, daux2, x1, x2
+      integer :: i
+      
+      ! Loop over all rows
+      do i = 1, neq
+        
+        ! Get coordinates at node i
+        x1 = DvertexCoords(1, i)
+        x2 = DvertexCoords(2, i)
+        
+        ! Get coordinates at node i
+        drad = x1
+        
+        ! Compute unit vector into origin
+        if (drad .gt. 1e-4) then
+          x1 = -1.0; x2 = 0.0
+        else
+          x1 = 0.0; x2 = 0.0
+        end if
+        
+        ! Compute source term
+        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
+        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+                         max(drad, 1.0e-4_DP)
+        
+        ! Impose source values
+        DdataForce(1, i) = 0.0_DP
+        DdataForce(2, i) = daux1 * x1
+        DdataForce(3, i) = daux1 * x2
+        DdataForce(4, i) = daux2
+      end do
+
+    end subroutine calcForceRZInterleaveFormat
+
+  end subroutine zpinch_initLorentzforceTerm
 
   !*****************************************************************************
 

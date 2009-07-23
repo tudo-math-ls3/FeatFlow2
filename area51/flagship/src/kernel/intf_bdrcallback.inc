@@ -10,8 +10,7 @@
 !<subroutine>
 
   subroutine fcb_calcBoundaryvalues(DbdrNormal, DpointNormal,&
-                                    DbdrValue, ibdrCondType,&
-                                    Du, Du0, istatus)
+      DbdrValue, ibdrCondType, Du, Du0, istatus)
 
   use fsystem
 
