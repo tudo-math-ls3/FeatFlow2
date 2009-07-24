@@ -358,7 +358,7 @@ contains
     integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: imasstype, ivelocitytype, idiffusiontype
-    integer :: convectionAFC, diffusionAFC, velocityfield
+    integer :: convectionAFC, diffusionAFC, velocityfield, boundaryCondition
 
     !###########################################################################
     ! REMARK: If you want to add a new type of velocity/diffusion,
@@ -941,9 +941,21 @@ contains
     end select
     
     ! Impose boundary conditions in strong sence (if any)
-    if (rproblemLevel%p_rboundaryCondition%bStrongBdrCond)&
-        call bdrf_filterMatrix(rproblemLevel%p_rboundaryCondition,&
-        rproblemLevel%Rmatrix(systemMatrix), 1.0_DP)
+    select case(trim(smode))
+    case('primal')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+          'primalboundarycondition', boundaryCondition)
+    case('dual')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+          'dualboundarycondition', boundaryCondition)
+    end select
+    
+    if (rproblemLevel%RboundaryCondition(&
+        boundaryCondition)%bStrongBdrCond) then
+      call bdrf_filterMatrix(&
+          rproblemLevel%RboundaryCondition(boundaryCondition),&
+          rproblemLevel%Rmatrix(systemMatrix), 1.0_DP)
+    end if
         
     ! Ok, we updated the (nonlinear) system operator successfully. Now we still 
     ! have to link it to the solver hierarchy. This is done recursively.
@@ -1003,7 +1015,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: convectionAFC, diffusionAFC, ijacobianFormat
     integer :: imasstype, imassantidiffusiontype, ivelocitytype, idiffusiontype
-    integer :: velocityfield
+    integer :: velocityfield, boundaryCondition
     logical :: bStabilize, bisExactStructure, bisExtendedSparsity
 
     !###########################################################################
@@ -1626,7 +1638,7 @@ contains
             AFCSTAB_FEMFCT_CLASSICAL)
 
         call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-                                 'imassantidiffusiontype', imassantidiffusiontype)
+            'imassantidiffusiontype', imassantidiffusiontype)
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
@@ -1720,9 +1732,21 @@ contains
 
     
     ! Impose boundary conditions in strong sence (if any)
-    if (rproblemLevel%p_rboundaryCondition%bStrongBdrCond)&
-        call bdrf_filterMatrix(rproblemLevel%p_rboundaryCondition,&
-        rproblemLevel%Rmatrix(jacobianMatrix), 1.0_DP)
+    select case(trim(smode))
+    case('primal')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+          'primalboundarycondition', boundaryCondition)
+    case('dual')
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+          'dualboundarycondition', boundaryCondition)
+    end select
+
+    if (rproblemLevel%RboundaryCondition(&
+        boundaryCondition)%bStrongBdrCond) then
+      call bdrf_filterMatrix(&
+          rproblemLevel%RboundaryCondition(boundaryCondition),&
+          rproblemLevel%Rmatrix(jacobianMatrix), 1.0_DP)
+    end if
 
     ! Ok, we updated the Jacobian matrix successfully. Now we still have to
     ! link it to the solver hierarchy. This is done recursively.
@@ -2442,13 +2466,30 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer :: ivelocitytype, velocityfield
+    character(LEN=SYS_STRLEN) :: smode
+    integer :: ivelocitytype, velocityfield, boundaryCondition
     integer :: ibct, isegment
 
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_string(p_rparlist,&
+        rcollection%SquickAccess(1), 'mode', smode)
+    
+    ! Are we in primal or dual mode?
+    select case(trim(smode))
+    case('primal')
+      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
+          'primalboundarycondition', boundaryCondition)
+      
+    case('dual')
+      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
+          'dualboundarycondition', boundaryCondition)
+    end select
     
     ! Evaluate bilinear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition => rproblemLevel%p_rboundaryCondition
+    p_rboundaryCondition =>&
+        rproblemLevel%RboundaryCondition(boundaryCondition)
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
     ! Initialize temporal collection structure
@@ -2461,7 +2502,6 @@ contains
     rcollectionTmp%SquickAccess(1) = 'rfparser'
 
     ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
@@ -2579,13 +2619,30 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    integer :: ivelocitytype, velocityfield
+    character(LEN=SYS_STRLEN) :: smode
+    integer :: ivelocitytype, velocityfield, boundaryCondition
     integer :: ibct, isegment
     
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_string(p_rparlist,&
+        rcollection%SquickAccess(1), 'mode', smode)
     
+    ! Are we in primal or dual mode?
+    select case(trim(smode))
+    case('primal')
+      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
+          'primalboundarycondition', boundaryCondition)
+      
+    case('dual')
+      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
+          'dualboundarycondition', boundaryCondition)
+    end select
+
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition => rproblemLevel%p_rboundaryCondition
+    p_rboundaryCondition =>&
+        rproblemLevel%RboundaryCondition(boundaryCondition)
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
     ! Initialize temporal collection structure
@@ -2598,7 +2655,6 @@ contains
     rcollectionTmp%SquickAccess(1) = 'rfparser'
     
     ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
@@ -2922,8 +2978,8 @@ contains
       do idim = 1, ndim
 
         ! Attach discretisation structure
-        p_rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(idim)%p_rspatialDiscr&
-            => p_rspatialDiscr
+        p_rproblemLevel%RvectorBlock(velocityfield)&
+            %RvectorBlock(idim)%p_rspatialDiscr => p_rspatialDiscr
 
         ! Get scalar subvector
         call lsyssc_getbase_double(&

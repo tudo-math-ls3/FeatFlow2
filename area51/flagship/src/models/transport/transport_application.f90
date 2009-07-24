@@ -273,10 +273,10 @@ contains
     type(t_fparser) :: rfparser
     
     ! Boundary condition structure for the primal problem
-    type(t_boundaryCondition) :: rbdrCondPrimal
+    type(t_boundaryCondition), pointer :: p_rbdrCondPrimal
 
     ! Boundary condition structure for the dual problem
-    type(t_boundaryCondition) :: rbdrCondDual
+    type(t_boundaryCondition), pointer :: p_rbdrCondDual
 
     ! Problem structure which holds all internal data (vectors/matrices)
     ! for the convection-diffusion-reaction application
@@ -328,6 +328,7 @@ contains
 
     ! local variables
     integer :: systemMatrix, ndimension
+    integer :: primalBoundaryCondition, dualBoundaryCondition
     
 
     ! Start total time measurement
@@ -416,16 +417,22 @@ contains
     if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'transport', 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist, 'transport', 'ndimension', ndimension)
-            
+      call parlst_getvalue_string(rparlist, 'transport',&
+          'algorithm', algorithm)
+      call parlst_getvalue_int(rparlist, 'transport',&
+          'ndimension', ndimension)
+      call parlst_getvalue_string(rparlist, 'transport',&
+          'sprimalbdrcondname', sbdrcondName)
+      call parlst_getvalue_int(rparlist, 'transport',&
+          'primalboundarycondition', primalBoundaryCondition)
+      
       ! The boundary conditions for the primal problem are required
-      ! for all solution strategies. So initialize them from the
-      ! parameter file.
-      call parlst_getvalue_string(rparlist,&
-          'transport', 'sprimalbdrcondname', sbdrcondName)
-      call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
-          '['//trim(sbdrcondName)//']', ndimension)
+      ! for all solution strategies. Hence, set the pointer and
+      ! initialize boundary conditions from the parameter file.
+      p_rbdrCondPrimal =>&
+          rproblem%RboundaryCondition(primalBoundaryCondition) 
+      call bdrf_readBoundaryCondition(p_rbdrCondPrimal,&
+          sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
       select case(trim(algorithm))
@@ -436,7 +443,7 @@ contains
         ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solveTransientPrimal(rparlist, 'transport',&
-            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -458,7 +465,7 @@ contains
         ! the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solvePseudoTransientPrimal(rparlist, 'transport',&
-            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -482,7 +489,7 @@ contains
         ! the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solveSteadyStatePrimal(rparlist, 'transport',&
-            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -496,13 +503,18 @@ contains
         ! Solve the primal and dual formulation for 
         ! the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call parlst_getvalue_string(rparlist,&
-            'transport', 'sdualbdrcondname', sbdrcondName)
-        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
+        call parlst_getvalue_string(rparlist, 'transport',&
+            'sdualbdrcondname', sbdrcondName)
+        call parlst_getvalue_int(rparlist, 'transport',&
+          'dualboundarycondition', dualBoundaryCondition)
+        
+        p_rbdrCondDual =>&
+            rproblem%RboundaryCondition(dualBoundaryCondition) 
+        call bdrf_readBoundaryCondition(p_rbdrCondDual, sindatfileName,&
             '['//trim(sbdrcondName)//']', ndimension)
 
         call transp_solveSteadyStatePrimalDual(rparlist, 'transport',&
-            rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
+            p_rbdrCondPrimal, p_rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -542,10 +554,6 @@ contains
     ! Release problem structure
     call problem_releaseProblem(rproblem)
     
-    ! Release boundary conditions
-    call bdrf_release(rbdrCondPrimal)
-    call bdrf_release(rbdrCondDual)
-
     ! Release vectors
     call lsysbl_releaseVector(rsolutionPrimal)
     call lsysbl_releaseVector(rsolutionDual)
@@ -702,6 +710,7 @@ contains
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) ! velocity field
+    rproblemDescriptor%nboundarycondition = 2
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
@@ -3227,7 +3236,6 @@ contains
     
     ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
-    call problem_setBoundaryCondition(rproblem, rbdrCond)
 
     ! Set primal problem mode
     call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -3615,7 +3623,6 @@ contains
 
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
-      call problem_setBoundaryCondition(rproblem, rbdrCond)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -3918,7 +3925,6 @@ contains
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
-      call problem_setBoundaryCondition(rproblem, rbdrCond)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -4229,7 +4235,6 @@ contains
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
-      call problem_setBoundaryCondition(rproblem, rbdrCondPrimal)
 
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
@@ -4295,7 +4300,6 @@ contains
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
-      call problem_setBoundaryCondition(rproblem, rbdrCondDual)
       
       ! Set dual problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
@@ -4339,7 +4343,6 @@ contains
       
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
-      call problem_setBoundaryCondition(rproblem, rbdrCondPrimal)
       
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
