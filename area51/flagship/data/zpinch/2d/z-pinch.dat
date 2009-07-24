@@ -39,6 +39,9 @@ icoords = 1
 # solution algorithm
 algorithm = transient_primal
 
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
 # section name of Lorentz force term
 slorentzforcename = @forceterm
 
@@ -532,7 +535,7 @@ ioutputlevel = 3
 iresNorm = 0
 
 # minimum number of nonlinear steps
-nminIterations = 3
+nminIterations = 1
 
 # maximum number of nonlinear steps
 nmaxIterations = 25 #100
@@ -577,10 +580,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-8
+depsRel = 1e-3
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -611,7 +614,7 @@ ioutputlevel = 3
 iresNorm = 0
 
 # minimum number of nonlinear steps
-nminIterations = 1 #1
+nminIterations = 1
 
 # maximum number of nonlinear steps
 nmaxIterations = 25 #100
@@ -656,10 +659,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-8
+depsRel = 1e-3
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -714,7 +717,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-8
+depsRel = 1e-3
 
 # relative tolerance for stagnation
 depsStag = 0.0

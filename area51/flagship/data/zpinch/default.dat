@@ -17,6 +17,12 @@ Discretisation = 1
 # Position of the stabilization for the inviscid term
 InviscidAFC = 1
 
+# Position of the primal boundary condition
+PrimalBoundaryCondition = 1
+
+# Position of the dual boundary condition
+DualBoundaryCondition = 2
+
 # Position of the system matrix for the compressible Euler model
 SystemMatrix = 1
 
@@ -57,6 +63,12 @@ ConvectionAFC = 2
 
 # Position of the stabilization for the diffusive term
 DiffusionAFC = 0
+
+# Position of the primal boundary condition
+PrimalBoundaryCondition = 3
+
+# Position of the dual boundary condition
+DualBoundaryCondition = 4
 
 # Position of the template matrix in the scalar matrix structure
 TemplateMatrix = 3
