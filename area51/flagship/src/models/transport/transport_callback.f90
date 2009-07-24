@@ -358,7 +358,7 @@ contains
     integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: imasstype, ivelocitytype, idiffusiontype
-    integer :: convectionAFC, diffusionAFC, velocityfield, boundaryCondition
+    integer :: convectionAFC, diffusionAFC, velocityfield
 
     !###########################################################################
     ! REMARK: If you want to add a new type of velocity/diffusion,
@@ -610,7 +610,7 @@ contains
         end if
         
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP, transp_coeffMatBdrPrimalConst2d,&
             rproblemLevel%Rmatrix(transportMatrix), rcollection,&
             BILF_MATC_LUMPED)
@@ -644,7 +644,7 @@ contains
         end if
         
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBurgersSpT2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -676,7 +676,7 @@ contains
         end if
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBuckLevSpT2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -736,7 +736,7 @@ contains
         end if
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBurgers2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -854,7 +854,7 @@ contains
         end if
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, -1.0_DP, transp_coeffMatBdrDualConst2d,&
             rproblemLevel%Rmatrix(transportMatrix), rcollection,&
             BILF_MATC_LUMPED)
@@ -941,19 +941,8 @@ contains
     end select
     
     ! Impose boundary conditions in strong sence (if any)
-    select case(trim(smode))
-    case('primal')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-          'primalboundarycondition', boundaryCondition)
-    case('dual')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-          'dualboundarycondition', boundaryCondition)
-    end select
-    
-    if (rproblemLevel%RboundaryCondition(&
-        boundaryCondition)%bStrongBdrCond) then
-      call bdrf_filterMatrix(&
-          rproblemLevel%RboundaryCondition(boundaryCondition),&
+    if (rsolver%rboundaryCondition%bStrongBdrCond) then
+      call bdrf_filterMatrix(rsolver%rboundaryCondition,&
           rproblemLevel%Rmatrix(systemMatrix), 1.0_DP)
     end if
         
@@ -1015,7 +1004,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: convectionAFC, diffusionAFC, ijacobianFormat
     integer :: imasstype, imassantidiffusiontype, ivelocitytype, idiffusiontype
-    integer :: velocityfield, boundaryCondition
+    integer :: velocityfield
     logical :: bStabilize, bisExactStructure, bisExtendedSparsity
 
     !###########################################################################
@@ -1208,7 +1197,7 @@ contains
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP, transp_coeffMatBdrPrimalConst2d,&
             rproblemLevel%Rmatrix(transportMatrix), rcollection,&
             BILF_MATC_LUMPED)
@@ -1222,7 +1211,7 @@ contains
             .false., rproblemLevel%Rmatrix(transportMatrix))
         
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBurgersSpT2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -1236,7 +1225,7 @@ contains
             .false., rproblemLevel%Rmatrix(transportMatrix))
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBuckLevSpT2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -1260,7 +1249,7 @@ contains
             .false., rproblemLevel%Rmatrix(transportMatrix))
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
             transp_coeffMatBdrPrimalBurgers2d, rproblemLevel&
             %Rmatrix(transportMatrix), rcollection, BILF_MATC_LUMPED)
@@ -1315,7 +1304,7 @@ contains
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
-        call transp_calcBilfBoundaryConditions(rproblemLevel,&
+        call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP, transp_coeffMatBdrDualConst2d,&
             rproblemLevel%Rmatrix(transportMatrix), rcollection,&
             BILF_MATC_LUMPED)
@@ -1732,19 +1721,8 @@ contains
 
     
     ! Impose boundary conditions in strong sence (if any)
-    select case(trim(smode))
-    case('primal')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-          'primalboundarycondition', boundaryCondition)
-    case('dual')
-      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-          'dualboundarycondition', boundaryCondition)
-    end select
-
-    if (rproblemLevel%RboundaryCondition(&
-        boundaryCondition)%bStrongBdrCond) then
-      call bdrf_filterMatrix(&
-          rproblemLevel%RboundaryCondition(boundaryCondition),&
+    if (rsolver%rboundaryCondition%bStrongBdrCond) then
+      call bdrf_filterMatrix(rsolver%rboundaryCondition,&
           rproblemLevel%Rmatrix(jacobianMatrix), 1.0_DP)
     end if
 
@@ -2054,15 +2032,15 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         
         ! --- explicit part ---
-        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
-            ivelocitytype, rtimestep%dTime-rtimestep%dStep,&
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
+            smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep,&
             -dscale, rrhs%RvectorBlock(1), rcollection)
         
         dscale = rtimestep%theta*rtimestep%dStep
 
         ! --- implicit part ---
-        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
-            ivelocitytype, rtimestep%dTime,&
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
+            smode, ivelocitytype, rtimestep%dTime,&
             -dscale, rrhs%RvectorBlock(1), rcollection)
         
       else ! theta = 1
@@ -2080,8 +2058,8 @@ contains
         dscale = rtimestep%theta*rtimestep%dStep
 
         ! --- implicit part ---
-        call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
-            ivelocitytype, rtimestep%dTime,&
+        call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
+            smode, ivelocitytype, rtimestep%dTime,&
             -dscale, rrhs%RvectorBlock(1), rcollection)
         
       end if ! theta
@@ -2098,8 +2076,8 @@ contains
       call lsysbl_clearVector(rrhs)
       
       ! Evaluate bilinear form for boundary integral (if any)
-      call transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
-          ivelocitytype, rtimestep%dTime, -1.0_DP,&
+      call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
+          smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
           rrhs%RvectorBlock(1), rcollection)
       
     end select
@@ -2420,9 +2398,9 @@ contains
 
 !<subroutine>
   
-  subroutine transp_calcBilfBoundaryConditions(rproblemLevel, dtime,&
-      dscale, fcoeff_buildMatrixScBdr2D_sim, rmatrix, rcollection,&
-      cconstrType)
+  subroutine transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+      dtime, dscale, fcoeff_buildMatrixScBdr2D_sim, rmatrix,&
+      rcollection, cconstrType)
     
 !<description>
     ! This subroutine computes the bilinear form arising from the weak
@@ -2434,6 +2412,9 @@ contains
 !<input>
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
 
     ! simulation time
     real(DP), intent(in) :: dtime
@@ -2466,30 +2447,12 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_bilinearform) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    character(LEN=SYS_STRLEN) :: smode
-    integer :: ivelocitytype, velocityfield, boundaryCondition
+    integer :: ivelocitytype, velocityfield
     integer :: ibct, isegment
 
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1), 'mode', smode)
-    
-    ! Are we in primal or dual mode?
-    select case(trim(smode))
-    case('primal')
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
-          'primalboundarycondition', boundaryCondition)
-      
-    case('dual')
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
-          'dualboundarycondition', boundaryCondition)
-    end select
-    
     ! Evaluate bilinear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition =>&
-        rproblemLevel%RboundaryCondition(boundaryCondition)
+    p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
     ! Initialize temporal collection structure
@@ -2502,6 +2465,7 @@ contains
     rcollectionTmp%SquickAccess(1) = 'rfparser'
 
     ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
@@ -2579,8 +2543,8 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-      dscale, fcoeff_buildVectorScBdr2D_sim, rvector, rcollection)
+  subroutine transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+      dtime, dscale, fcoeff_buildVectorScBdr2D_sim, rvector, rcollection)
 
 !<description>
     ! This subroutine computes the linear form arising from the weak
@@ -2593,6 +2557,9 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+    
     ! simulation time
     real(DP), intent(in) :: dtime
 
@@ -2619,30 +2586,12 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
     type(t_linearForm) :: rform
     integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
-    character(LEN=SYS_STRLEN) :: smode
-    integer :: ivelocitytype, velocityfield, boundaryCondition
+    integer :: ivelocitytype, velocityfield
     integer :: ibct, isegment
     
-    ! Get parameters from parameter list
-    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_string(p_rparlist,&
-        rcollection%SquickAccess(1), 'mode', smode)
-    
-    ! Are we in primal or dual mode?
-    select case(trim(smode))
-    case('primal')
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
-          'primalboundarycondition', boundaryCondition)
-      
-    case('dual')
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
-          'dualboundarycondition', boundaryCondition)
-    end select
-
     ! Evaluate linear form for boundary integral and return if
     ! there are no weak boundary conditions available
-    p_rboundaryCondition =>&
-        rproblemLevel%RboundaryCondition(boundaryCondition)
+    p_rboundaryCondition => rsolver%rboundaryCondition
     if (.not.p_rboundaryCondition%bWeakBdrCond) return
 
     ! Initialize temporal collection structure
@@ -2655,6 +2604,7 @@ contains
     rcollectionTmp%SquickAccess(1) = 'rfparser'
     
     ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
 
@@ -2726,8 +2676,8 @@ contains
 
 !<subroutine>
   
-  subroutine transp_calcLinfBdrCondQuick(rproblemLevel, smode,&
-      ivelocitytype, dtime, dscale, rvectorScalar, rcollection)
+  subroutine transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
+      smode, ivelocitytype, dtime, dscale, rvectorScalar, rcollection)
     
 !<description>
     ! This subroutine is a shortcut for building the linear form
@@ -2739,6 +2689,9 @@ contains
 !<input>
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
 
     ! problem mode (primal, dual)
     character(LEN=*), intent(in) :: smode
@@ -2775,20 +2728,20 @@ contains
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
-        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-            dscale, transp_coeffVecBdrPrimalConst2d, rvectorScalar,&
-            rcollection)
+        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            dtime, dscale, transp_coeffVecBdrPrimalConst2d,&
+            rvectorScalar, rcollection)
         
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
-        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-            dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
+        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            dtime, dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
             rvectorScalar, rcollection)
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
-        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-            dscale, transp_coeffVecBdrPrimalBuckLevSpT2d,&
+        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            dtime, dscale, transp_coeffVecBdrPrimalBuckLevSpT2d,&
             rvectorScalar, rcollection)
         
       case (VELOCITY_BURGERS1D)
@@ -2800,9 +2753,9 @@ contains
         
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
-        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-            dscale, transp_coeffVecBdrPrimalBurgers2d, rvectorScalar,&
-            rcollection)
+        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            dtime, dscale, transp_coeffVecBdrPrimalBurgers2d,&
+            rvectorScalar, rcollection)
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
@@ -2828,9 +2781,9 @@ contains
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
-        call transp_calcLinfBoundaryConditions(rproblemLevel, dtime,&
-            -dscale, transp_coeffVecBdrDualConst2d, rvectorScalar,&
-            rcollection)
+        call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            dtime, -dscale, transp_coeffVecBdrDualConst2d,&
+            rvectorScalar, rcollection)
         
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time

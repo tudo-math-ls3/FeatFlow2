@@ -29,27 +29,30 @@
 !#        the simulation. The user should only have to modify this
 !#        routine if another solution algorithm is implemented.
 !#
-!# 2.) zpinch_initProblem
+!# 2.) zpinch_initSolvers
+!#     -> Initializes the solve structures from the parameter list.
+!#
+!# 3.) zpinch_initProblem
 !#     -> Initializes the global problem structure based on the
 !#        parameter settings given by the parameter list. This routine
 !#        is quite universal, that is, it prepares the internal
 !#        structure of the global problem and generates a linked
 !#        list of problem levels used in the multigrid hierarchy.
 !#
-!# 3.) zpinch_applySourceTerm
+!# 4.) zpinch_applySourceTerm
 !#     -> Initializes the source term and applies it to the solution
 !#
-!# 4.) zpinch_calcAdaptationIndicator
+!# 5.) zpinch_calcAdaptationIndicator
 !#     -> Calculates the element-wise indicator for refinement/-coarsening
 !#        based on the detectation of shocks and contact discontinuities
 !#
-!# 5.) zpinch_outputSolution
+!# 6.) zpinch_outputSolution
 !#     -> Outputs the solution vector to file in UCD format
 !#
-!# 6.) zpinch_adaptTriangulation
+!# 7.) zpinch_adaptTriangulation
 !#      -> Performs h-adaptation for the given triangulation
 !#
-!# 7.) zpinch_solveTransientPrimal
+!# 8.) zpinch_solveTransientPrimal
 !#     -> Solves the primal formulation of the time-dependent 
 !#        simplified MHD equations
 !#
@@ -135,7 +138,7 @@ contains
     type(t_fparser) :: rfparser
 
     ! Boundary condition structure for the primal problem
-    type(t_boundaryCondition), pointer :: p_rbdrCondEuler, p_rbdrCondTransport
+    type(t_boundaryCondition) :: rbdrCondEuler, rbdrCondTransport
 
     ! Problem structure which holds all internal data (vectors/matrices)
     type(t_problem) :: rproblem
@@ -143,11 +146,11 @@ contains
     ! Time-stepping structures
     type(t_timestep) :: rtimestep
     
-    ! Global solver structure
+    ! Global solver structure and points
     type(t_solver), dimension(2), target :: rsolver
     type(t_solver), pointer :: p_rsolverEuler, p_rsolverTransport
 
-    ! Solution vectors for the primal problem
+    ! Solution vectors and pointers
     type(t_vectorBlock), dimension(2), target :: rsolution
     type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
 
@@ -186,7 +189,7 @@ contains
     character(LEN=SYS_STRLEN) :: ssectionNameTransport
 
     ! local variables
-    integer :: isystemFormat, systemMatrix, boundaryCondition
+    integer :: isystemFormat, systemMatrix
     integer :: nlmin, nlmax, ndimension
 
     ! Start total time measurement
@@ -281,11 +284,9 @@ contains
         'rfparser', rfparser, .true.)
     
     ! Initialize the solver structures   
-    call euler_initSolvers(rparlist, ssectionNameEuler,&
-        rtimestep, p_rsolverEuler)
-    call transp_initSolvers(rparlist, ssectionNameTransport,&
-        rtimestep, p_rsolverTransport)
-
+    call zpinch_initSolvers(rparlist, 'zpinch', ssectionNameEuler,&
+        ssectionNameTransport, rtimestep, rsolver)
+    
     ! Initialize the abstract problem structure
     nlmin = min(solver_getMinimumMultigridlevel(p_rsolverEuler),&
                 solver_getMinimumMultigridlevel(p_rsolverTransport))
@@ -337,31 +338,23 @@ contains
       ! Initialize the boundary condition for the Euler model
       call parlst_getvalue_string(rparlist, ssectionNameEuler,&
           'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_int(rparlist, ssectionNameEuler,&
-          'primalboundarycondition', boundaryCondition)
       call parlst_getvalue_string(rparlist, ssectionNameEuler,&
           'indatfile', sindatfileName)
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      p_rbdrCondEuler =>&
-          rproblem%RboundaryCondition(boundaryCondition)
-      call bdrf_readBoundaryCondition(p_rbdrCondEuler, sindatfileName,&
+      call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
           '['//trim(sbdrcondName)//']', ndimension)
       
       ! Initialize the boundary condition for the transport model
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
           'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_int(rparlist, ssectionNameTransport,&
-          'primalboundarycondition', boundaryCondition)
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
           'indatfile', sindatfileName)
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      p_rbdrCondTransport =>&
-          rproblem%RboundaryCondition(boundaryCondition)
-      call bdrf_readBoundaryCondition(p_rbdrCondTransport,&
+      call bdrf_readBoundaryCondition(rbdrCondTransport,&
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
 
       ! What solution algorithm should be applied?
@@ -372,8 +365,8 @@ contains
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call zpinch_solveTransientPrimal(rparlist, 'zpinch',&
-            ssectionNameEuler, ssectionNameTransport, p_rbdrCondEuler,&
-            p_rbdrCondTransport, rproblem, rtimestep, rsolver,&
+            ssectionNameEuler, ssectionNameTransport, rbdrCondEuler,&
+            rbdrCondTransport, rproblem, rtimestep, rsolver,&
             rsolution, rcollection)
         
         call zpinch_outputSolution(rparlist, 'zpinch',&
@@ -411,8 +404,8 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrf_release(p_rbdrCondEuler)
-    call bdrf_release(p_rbdrCondTransport)
+    call bdrf_release(rbdrCondEuler)
+    call bdrf_release(rbdrCondTransport)
     
     ! Release vectors
     call lsysbl_releaseVector(p_rsolutionEuler)
@@ -435,6 +428,88 @@ contains
     
   end subroutine zpinch_app
   
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_initSolvers(rparlist, ssectionName,&
+      ssectionNameEuler, ssectionNameTransport, rtimestep, rsolver)
+
+!<description>
+    ! This subroutine initializes the time-stepping structure and
+    ! the top-level solver structure from the parameter list
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+    character(LEN=*), intent(in) :: ssectionNameEuler
+    character(LEN=*), intent(in) :: ssectionNameTransport
+!</input>
+
+!<output>
+    ! time-stepping structure
+    type(t_timestep), intent(out) :: rtimestep
+
+    ! solver struchture
+    type(t_solver), dimension(2), intent(out) :: rsolver
+!</output>
+!</subroutine>
+
+    ! section name for the top-level solver
+    character(LEN=SYS_STRLEN) :: ssolverName
+    
+    ! section name for time-stepping scheme
+    character(LEN=SYS_STRLEN) :: stimestepName
+        
+    ! local variables
+    integer :: nlmin, nlmax
+ 
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionName, 'timestep', stimestepName)
+    
+    ! Initialize time-stepping
+    call tstep_createTimestep(rparlist, stimestepName, rtimestep, 2)
+    
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionNameEuler, 'solver', ssolverName)
+    
+    ! Initialize solver structure
+    call solver_createSolver(rparlist, ssolverName, rsolver(1))
+    if (rsolver(1)%csolverType .eq. SV_FMG) then
+      nlmin = rsolver(1)%p_solverMultigrid%nlmin
+      nlmax = rsolver(1)%p_solverMultigrid%nlmax
+      call solver_adjustHierarchy(rsolver(1), nlmin, nlmax)
+    else
+      call solver_adjustHierarchy(rsolver(1))
+    end if
+    call solver_updateStructure(rsolver(1))
+
+    
+    ! Get global configuration from parameter list
+    call parlst_getvalue_string(rparlist,&
+        ssectionNameTransport, 'solver', ssolverName)
+    
+    ! Initialize solver structure
+    call solver_createSolver(rparlist, ssolverName, rsolver(2))
+    if (rsolver(2)%csolverType .eq. SV_FMG) then
+      nlmin = rsolver(2)%p_solverMultigrid%nlmin
+      nlmax = rsolver(2)%p_solverMultigrid%nlmax
+      call solver_adjustHierarchy(rsolver(2), nlmin, nlmax)
+    else
+      call solver_adjustHierarchy(rsolver(2))
+    end if
+    call solver_updateStructure(rsolver(2))
+    
+  end subroutine zpinch_initSolvers
+
   !*****************************************************************************
 
 !<subroutine>
@@ -595,7 +670,7 @@ contains
     ! local variable
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_MC, p_ML
+    real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler
     real(DP), dimension(:), pointer :: p_DconsistentMassMatrix, p_DlumpedMassMatrix
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     character(LEN=SYS_STRLEN) :: slorentzforceName
@@ -1672,10 +1747,10 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
     ! Pointer to the solver structures
-    type(t_solver), pointer :: rsolverEuler, rsolverTransport
+    type(t_solver), pointer :: p_rsolverEuler, p_rsolverTransport
 
     ! Pointer to the solution vectors
-    type(t_vectorBlock), pointer :: rsolutionEuler, rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
 
     ! Vector for the element-wise feature indicator
     type(t_vectorScalar) :: relementError
@@ -1686,7 +1761,6 @@ contains
     ! Structure for the sparsity pattern
     type(t_graph) :: rgraph
 
-    
     ! Timer structures
     type(t_timer), pointer :: p_rtimerPrePostprocess
     type(t_timer), pointer :: p_rtimerSolution
@@ -1695,15 +1769,15 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
     
-    ! vector for source term
-    type(t_vectorBlock) :: rforce
+    ! Vector for source term
+    type(t_vectorBlock), dimension(2) :: rforce
 
-    ! section names
+    ! Section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
 
     ! local variables
-    real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
+    real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt, dscale
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
     integer :: isize, ipreadapt, npreadapt, ndimension
@@ -1721,11 +1795,11 @@ contains
     p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Set pointers
-    rsolverEuler => rsolver(1)
-    rsolverTransport => rsolver(2)
+    p_rsolverEuler => rsolver(1)
+    p_rsolverTransport => rsolver(2)
 
-    rsolutionEuler => rsolution(1)
-    rsolutionTransport => rsolution(2)
+    p_rsolutionEuler => rsolution(1)
+    p_rsolutionTransport => rsolution(2)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -1749,33 +1823,34 @@ contains
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
-        rsolutionEuler, .false., ST_DOUBLE)
+        p_rsolutionEuler, .false., ST_DOUBLE)
     if (p_rdiscretisation%ncomponents .ne.&
         euler_getNVAR(p_rproblemLevel)) then
-      rsolutionEuler%RvectorBlock(1)%NVAR = euler_getNVAR(p_rproblemLevel)
-      isize = rsolutionEuler%NEQ*euler_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(rsolutionEuler, isize, .false., .false.)
+      p_rsolutionEuler%RvectorBlock(1)%NVAR =&
+          euler_getNVAR(p_rproblemLevel)
+      isize = p_rsolutionEuler%NEQ*euler_getNVAR(p_rproblemLevel)
+      call lsysbl_resizeVectorBlock(p_rsolutionEuler, isize, .false., .false.)
     end if
 
     ! Initialize the solution vector and impose boundary conditions
     call euler_initSolution(rparlist, ssectionNameEuler,&
-        p_rproblemLevel, rtimestep%dinitialTime, rsolutionEuler,&
+        p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
 
     select case(ndimension)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
     end select
 
     ! Attach the boundary condition
-    call solver_setBoundaryCondition(rsolverEuler, rbdrCondEuler, .true.)
+    call solver_setBoundaryCondition(p_rsolverEuler, rbdrCondEuler, .true.)
 
     ! Set collection to primal problem mode
     call parlst_addvalue(rparlist, ssectionNameEuler, 'mode', 'primal')
@@ -1792,17 +1867,17 @@ contains
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
-        rsolutionTransport, .false., ST_DOUBLE)
+        p_rsolutionTransport, .false., ST_DOUBLE)
 
     ! Initialize the solution vector and impose boundary conditions
     call transp_initSolution(rparlist, ssectionNameTransport,&
         p_rproblemLevel, rtimestep%dinitialTime,&
-        rsolutionTransport, rcollection)
+        p_rsolutionTransport, rcollection)
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
-        rsolutionTransport, rtimestep%dinitialTime)
+        p_rsolutionTransport, rtimestep%dinitialTime)
     
     ! Attach the boundary condition
-    call solver_setBoundaryCondition(rsolverTransport,&
+    call solver_setBoundaryCondition(p_rsolverTransport,&
         rbdrCondTransport, .true.)
 
     ! Set collection to primal problem mode
@@ -1856,21 +1931,16 @@ contains
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
             
-!!$            ! Compute the error estimator using recovery techniques
-!!$            call euler_estimateRecoveryError(rparlist,&
-!!$                ssectionnameEuler, p_rproblemLevel, rsolutionEuler,&
-!!$                rtimestep%dinitialTime, rindicator, derror)
-
             ! Compute the error estimator based on the tracer
-            call zpinch_calcAdaptationIndicator(rsolutionEuler,&
-                rsolutionTransport, relementError)
+            call zpinch_calcAdaptationIndicator(p_rsolutionEuler,&
+                p_rsolutionTransport, relementError)
 
             ! Set the names of the template matrix
             rcollection%SquickAccess(1) = 'sparsitypattern'
 
             ! Attach the solution vectors to the collection structure
-            rcollection%p_rvectorQuickAccess1 => rsolutionEuler
-            rcollection%p_rvectorQuickAccess2 => rsolutionTransport
+            rcollection%p_rvectorQuickAccess1 => rsolution(1)
+            rcollection%p_rvectorQuickAccess2 => rsolution(2)
 
             ! Perform h-adaptation and update the triangulation structure
             call zpinch_adaptTriangulation(rparlist,&
@@ -1898,40 +1968,40 @@ contains
             call parlst_getvalue_int(rparlist,&
                 ssectionNameEuler, 'systemMatrix', systemMatrix)
             call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-                %RmatrixBlock(systemMatrix), rsolutionEuler, .false., .true.)
+                %RmatrixBlock(systemMatrix), p_rsolutionEuler, .false., .true.)
             
             ! Resize the solution vector for the transport model accordingly
-            call lsysbl_resizeVectorBlock(rsolutionTransport, &
+            call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
 
             ! Re-generate the initial solution vector for the Euler model
             call euler_initSolution(rparlist, ssectionnameEuler,&
                 p_rproblemLevel, rtimestep%dinitialTime,&
-                rsolutionEuler, rcollection)
+                p_rsolutionEuler, rcollection)
 
             select case(ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
-                  rsolutionEuler, rtimestep%dinitialTime,&
+                  p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues1d)
               
             case (NDIM2D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
-                  rsolutionEuler, rtimestep%dinitialTime,&
+                  p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues2d)
 
             case (NDIM3D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
-                  rsolutionEuler, rtimestep%dinitialTime,&
+                  p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues3d)
             end select
 
             ! Re-generate the initial solution vector for the transport model
             call transp_initSolution(rparlist, ssectionnameTransport,&
                 p_rproblemLevel, rtimestep%dinitialTime,&
-                rsolutionTransport, rcollection)
+                p_rsolutionTransport, rcollection)
             call bdrf_filterVectorExplicit(rbdrCondTransport,&
-                rsolutionTransport, rtimestep%dinitialTime)
+                p_rsolutionTransport, rtimestep%dinitialTime)
           end do
 
           ! Prepare internal data arrays of the solver structure
@@ -1940,15 +2010,15 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionNameEuler, 'isystemFormat', isystemFormat)
           call flagship_updateSolverMatrix(p_rproblemLevel,&
-              rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
-          call solver_updateStructure(rsolverEuler)
+              p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
+          call solver_updateStructure(p_rsolverEuler)
           
           ! Prepare internal data arrays of the solver structure
           call parlst_getvalue_int(rparlist,&
               ssectionNameTransport, 'systemMatrix', systemMatrix)
           call flagship_updateSolverMatrix(p_rproblemLevel,&
-              rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT , UPDMAT_ALL)
-          call solver_updateStructure(rsolverTransport)
+              p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT , UPDMAT_ALL)
+          call solver_updateStructure(p_rsolverTransport)
 
         end if   ! npreadapt > 0
         
@@ -1966,7 +2036,7 @@ contains
     !---------------------------------------------------------------------------
 
     call zpinch_initDensityAveraging(rparlist, ssectionNameTransport,&
-        p_rproblemLevel, rsolutionEuler, rcollection)
+        p_rproblemLevel, p_rsolutionEuler, rcollection)
 
     !---------------------------------------------------------------------------
     ! Calculate velocity field (\rho v) for the scalar model problem
@@ -1974,7 +2044,7 @@ contains
     !---------------------------------------------------------------------------
 
     call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
-        p_rproblemLevel, rsolutionEuler, rcollection)
+        p_rproblemLevel, p_rsolutionEuler, rcollection)
     
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
@@ -1982,10 +2052,10 @@ contains
 
     ! CHECKS
     dmassEuler0 = zpinch_checkConservation(rparlist,&
-        ssectionNameEuler, p_rproblemLevel, rsolutionEuler, 1)
+        ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
     
     dmassTransport0 = zpinch_checkConservation(rparlist,&
-        ssectionNameTransport, p_rproblemLevel, rsolutionTransport, 2)
+        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
     ! CHECKS
 
     !---------------------------------------------------------------------------
@@ -2000,79 +2070,62 @@ contains
           p_rproblemLevel, rsolution, rtimestep%dTime)
 
       !-------------------------------------------------------------------------
-      ! Compute Euler model for full time step: U^n -> U^{n+1}
+      ! Compute Euler model + scalar tracer in coupled fashio
+      ! for full time step: $U^n \to U^{n+1}$ and $u^n\tin^{n+1}$
       !-------------------------------------------------------------------------
 
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+      
+      ! Compute scaling parameter
+      dscale = (1.0_DP-rtimestep%theta)*rtimestep%dStep
 
-      ! Calculate explicit part of the Lorentz force term
-      call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
-          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
-          rsolutionTransport, rsolutionEuler, rtimestep%dTime, &
-          rtimestep%dStep, rforce, rcollection)
+      if (dscale .gt. 0.0_DP) then
+
+        ! Calculate explicit part of the Lorentz force term
+        call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+            ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
+            p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
+            dscale, rforce(1), rcollection)
+        
+      end if
       
       ! Prepare quick access arrays/vectors
-      rcollection%SquickAccess(1) = ssectionNameEuler
-      rcollection%SquickAccess(2) = ssectionNameTransport
-      rcollection%p_rvectorQuickAccess1 => rsolutionTransport
-
-      ! What time-stepping scheme should be used?
-      select case(rtimestep%ctimestepType)
-        
-      case (TSTEP_RK_SCHEME)
-        
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-            rsolverEuler, rsolutionEuler,&
-            zpinch_nlsolverCallbackEuler, rcollection, rforce)
-        
-      case (TSTEP_THETA_SCHEME)
-        
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-            rsolverEuler, rsolutionEuler,&
-            zpinch_nlsolverCallbackEuler, rcollection, rforce)
-        
-      case DEFAULT
-        call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
-        call sys_halt()
-      end select
-
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
-
-
-      !-------------------------------------------------------------------------
-      ! Compute transport model for full time step: u^n -> u^{n+1}
-      !-------------------------------------------------------------------------
-      
-      ! Start time measurement for solution procedure
-      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-
-      ! Prepare quick access arrays/vectors
-      rcollection%SquickAccess(1) = ssectionNameTransport
-      rcollection%SquickAccess(2) = ssectionNameEuler
-      rcollection%p_rvectorQuickAccess1 => rsolutionEuler
+!!$      rcollection%SquickAccess(1) = ssectionNameEuler
+!!$      rcollection%SquickAccess(2) = ssectionNameTransport
+      rcollection%p_rvectorQuickAccess1 => rsolution(1)
+      rcollection%p_rvectorQuickAccess2 => rsolution(2)
       
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
         
       case (TSTEP_RK_SCHEME)
         
-        ! Adopt explicit Runge-Kutta scheme
-        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-            rsolverTransport, rsolutionTransport,&
-            zpinch_nlsolverCallbackTransport, rcollection)
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+!!$            rsolver, rsolution, zpinch_nlsolverCallbackEuler,&
+!!$            rcollection, rforce)
+        print *, "Not implemented"
+        stop
         
       case (TSTEP_THETA_SCHEME)
         
-        ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(p_rproblemLevel,&
-            rtimestep, rsolverTransport, rsolutionTransport,&
-            zpinch_nlsolverCallbackTransport, rcollection)
+        if (dscale .gt. 0.0_DP) then
           
+          ! Adopt two-level theta-scheme
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback,&
+              rcollection, rforce)
+
+        else
+
+          ! Adopt two-level theta-scheme
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback,&
+              rcollection)
+          
+        end if
+        
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
@@ -2081,14 +2134,99 @@ contains
       
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
+      
+      
+
+!!$      !-------------------------------------------------------------------------
+!!$      ! Compute Euler model for full time step: U^n -> U^{n+1}
+!!$      !-------------------------------------------------------------------------
+!!$
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      ! Calculate explicit part of the Lorentz force term
+!!$      call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+!!$          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
+!!$          p_rsolutionTransport, p_rsolutionEuler, rtimestep%dTime, &
+!!$          rtimestep%dStep, rforce(1), rcollection)
+!!$      
+!!$      ! Prepare quick access arrays/vectors
+!!$      rcollection%SquickAccess(1) = ssectionNameEuler
+!!$      rcollection%SquickAccess(2) = ssectionNameTransport
+!!$      rcollection%p_rvectorQuickAccess1 => rsolution(2)
+!!$
+!!$      ! What time-stepping scheme should be used?
+!!$      select case(rtimestep%ctimestepType)
+!!$        
+!!$      case (TSTEP_RK_SCHEME)
+!!$        
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+!!$            p_rsolverEuler, p_rsolutionEuler,&
+!!$            zpinch_nlsolverCallbackEuler, rcollection, rforce(1))
+!!$        
+!!$      case (TSTEP_THETA_SCHEME)
+!!$        
+!!$        ! Adopt two-level theta-scheme
+!!$        call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+!!$            p_rsolverEuler, p_rsolutionEuler,&
+!!$            zpinch_nlsolverCallbackEuler, rcollection, rforce(1))
+!!$        
+!!$      case DEFAULT
+!!$        call output_line('Unsupported time-stepping algorithm!',&
+!!$            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
+!!$        call sys_halt()
+!!$      end select
+!!$
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
+
+      
+!!$      !-------------------------------------------------------------------------
+!!$      ! Compute transport model for full time step: u^n -> u^{n+1}
+!!$      !-------------------------------------------------------------------------
+!!$      
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+!!$
+!!$      ! Prepare quick access arrays/vectors
+!!$      rcollection%SquickAccess(1) = ssectionNameTransport
+!!$      rcollection%SquickAccess(2) = ssectionNameEuler
+!!$      rcollection%p_rvectorQuickAccess1 => rsolution(1)
+!!$      
+!!$      ! What time-stepping scheme should be used?
+!!$      select case(rtimestep%ctimestepType)
+!!$        
+!!$      case (TSTEP_RK_SCHEME)
+!!$        
+!!$        ! Adopt explicit Runge-Kutta scheme
+!!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+!!$            p_rsolverTransport, p_rsolutionTransport,&
+!!$            zpinch_nlsolverCallbackTransport, rcollection)
+!!$        
+!!$      case (TSTEP_THETA_SCHEME)
+!!$        
+!!$        ! Adopt two-level theta-scheme
+!!$        call tstep_performThetaStep(p_rproblemLevel,&
+!!$            rtimestep, p_rsolverTransport, p_rsolutionTransport,&
+!!$            zpinch_nlsolverCallbackTransport, rcollection)
+!!$          
+!!$      case DEFAULT
+!!$        call output_line('Unsupported time-stepping algorithm!',&
+!!$            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
+!!$        call sys_halt()
+!!$      end select
+!!$      
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
     
 
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
-          ssectionNameEuler, p_rproblemLevel, rsolutionEuler, 1)
+          ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
       
       dmassTransport = zpinch_checkConservation(rparlist,&
-          ssectionNameTransport, p_rproblemLevel, rsolutionTransport, 2)
+          ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
       ! CHECKS
       
       print *, "################################################################"
@@ -2106,15 +2244,15 @@ contains
       
 !!$      ! Perform conservative FCT postprocessing
 !!$      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
-!!$          p_rproblemLevel, rtimestepEuler, rsolutionEuler,&
-!!$          rsolutionTransport, rcollection)
+!!$          p_rproblemLevel, rtimestepEuler, p_rsolutionEuler,&
+!!$          p_rsolutionTransport, rcollection)
       
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = ssectionNameTransport
       
       ! Apply linearized FCT correction for transport model
       call transp_calcLinearizedFCT(rbdrCondTransport,&
-          p_rproblemLevel, rtimestep, rsolutionTransport,&
+          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
           rcollection)
 
       ! Prepare quick access arrays
@@ -2122,7 +2260,7 @@ contains
       
       ! Apply linearized FCT correction for Euler model
       call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
-          rtimestep, rsolutionEuler, rcollection)
+          rtimestep, p_rsolutionEuler, rcollection)
       
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -2140,7 +2278,7 @@ contains
 !!$      ! Calculate the source term and apply it to the Euler model
 !!$      call zpinch_applySourceTerm(rparlist, ssectionName,&
 !!$          ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
-!!$          rtimestep , rsolutionTransport, rsolutionEuler,&
+!!$          rtimestep , p_rsolutionTransport, p_rsolutionEuler,&
 !!$          rcollection)
 !!$
 !!$      ! Stop time measurement for solution procedure
@@ -2192,12 +2330,12 @@ contains
 
 !!$        ! Compute the error estimator using recovery techniques
 !!$        call euler_estimateRecoveryError(rparlist, ssectionnameEuler,&
-!!$            p_rproblemLevel, rsolutionEuler, rtimestep&
+!!$            p_rproblemLevel, p_rsolutionEuler, rtimestep&
 !!$            %dinitialTime, relementError, derror)
 
         ! Compute the error indicator based on the tracer
-        call zpinch_calcAdaptationIndicator(rsolutionEuler,&
-            rsolutionTransport, relementError)
+        call zpinch_calcAdaptationIndicator(p_rsolutionEuler,&
+            p_rsolutionTransport, relementError)
 
         ! Stop time measurement for error estimation
         call stat_stopTimer(p_rtimerErrorEstimation)
@@ -2214,8 +2352,8 @@ contains
         rcollection%SquickAccess(1) = 'sparsitypattern'
         
         ! Attach the solution vector to the collection structure
-        rcollection%p_rvectorQuickAccess1 => rsolutionEuler
-        rcollection%p_rvectorQuickAccess2 => rsolutionTransport
+        rcollection%p_rvectorQuickAccess1 => rsolution(1)
+        rcollection%p_rvectorQuickAccess2 => rsolution(2)
         
         ! Perform h-adaptation and update the triangulation structure
         call zpinch_adaptTriangulation(rparlist, ssectionnameEuler,&
@@ -2261,10 +2399,10 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionNameEuler, 'systemmatrix', systemMatrix)
         call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
-            %RmatrixBlock(systemMatrix), rsolutionEuler, .false., .true.)
+            %RmatrixBlock(systemMatrix), p_rsolutionEuler, .false., .true.)
 
         ! Resize the solution vector for the transport model accordingly
-        call lsysbl_resizeVectorBlock(rsolutionTransport, &
+        call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
             p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
         
         ! Prepare internal data arrays of the solver structure
@@ -2273,15 +2411,15 @@ contains
         call parlst_getvalue_int(rparlist,&
             ssectionNameEuler, 'isystemformat', isystemFormat)
         call flagship_updateSolverMatrix(p_rproblemLevel,&
-            rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
-        call solver_updateStructure(rsolverEuler)
+            p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
+        call solver_updateStructure(p_rsolverEuler)
         
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&
             ssectionNameTransport, 'systemmatrix', systemMatrix)
         call flagship_updateSolverMatrix(p_rproblemLevel,&
-            rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
-        call solver_updateStructure(rsolverTransport)
+            p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+        call solver_updateStructure(p_rsolverTransport)
 
         ! Stop time measurement for generation of constant
         ! coefficient matrices
@@ -2292,7 +2430,7 @@ contains
     end do timeloop
 
     ! Release Lorentz force vector
-    call lsysbl_releaseVector(rforce)
+    call lsysbl_releaseVector(rforce(1))
 
     ! Release adaptation structure
     if (trim(adjustl(sadaptivityName)) .ne. '') then

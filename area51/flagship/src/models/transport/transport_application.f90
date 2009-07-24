@@ -273,10 +273,10 @@ contains
     type(t_fparser) :: rfparser
     
     ! Boundary condition structure for the primal problem
-    type(t_boundaryCondition), pointer :: p_rbdrCondPrimal
+    type(t_boundaryCondition) :: rbdrCondPrimal
 
     ! Boundary condition structure for the dual problem
-    type(t_boundaryCondition), pointer :: p_rbdrCondDual
+    type(t_boundaryCondition) :: rbdrCondDual
 
     ! Problem structure which holds all internal data (vectors/matrices)
     ! for the convection-diffusion-reaction application
@@ -328,8 +328,7 @@ contains
 
     ! local variables
     integer :: systemMatrix, ndimension
-    integer :: primalBoundaryCondition, dualBoundaryCondition
-    
+
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
@@ -423,15 +422,11 @@ contains
           'ndimension', ndimension)
       call parlst_getvalue_string(rparlist, 'transport',&
           'sprimalbdrcondname', sbdrcondName)
-      call parlst_getvalue_int(rparlist, 'transport',&
-          'primalboundarycondition', primalBoundaryCondition)
       
       ! The boundary conditions for the primal problem are required
       ! for all solution strategies. Hence, set the pointer and
       ! initialize boundary conditions from the parameter file.
-      p_rbdrCondPrimal =>&
-          rproblem%RboundaryCondition(primalBoundaryCondition) 
-      call bdrf_readBoundaryCondition(p_rbdrCondPrimal,&
+      call bdrf_readBoundaryCondition(rbdrCondPrimal,&
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
@@ -443,7 +438,7 @@ contains
         ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solveTransientPrimal(rparlist, 'transport',&
-            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -465,7 +460,7 @@ contains
         ! the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solvePseudoTransientPrimal(rparlist, 'transport',&
-            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -489,7 +484,7 @@ contains
         ! the stationary problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call transp_solveSteadyStatePrimal(rparlist, 'transport',&
-            p_rbdrCondPrimal, rproblem, rtimestep, rsolver,&
+            rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -505,16 +500,11 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call parlst_getvalue_string(rparlist, 'transport',&
             'sdualbdrcondname', sbdrcondName)
-        call parlst_getvalue_int(rparlist, 'transport',&
-          'dualboundarycondition', dualBoundaryCondition)
-        
-        p_rbdrCondDual =>&
-            rproblem%RboundaryCondition(dualBoundaryCondition) 
-        call bdrf_readBoundaryCondition(p_rbdrCondDual, sindatfileName,&
+        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
             '['//trim(sbdrcondName)//']', ndimension)
 
         call transp_solveSteadyStatePrimalDual(rparlist, 'transport',&
-            p_rbdrCondPrimal, p_rbdrCondDual, rproblem, rtimestep,&
+            rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
         call transp_outputSolution(rparlist, 'transport', rproblem&
@@ -553,6 +543,10 @@ contains
     
     ! Release problem structure
     call problem_releaseProblem(rproblem)
+
+    ! Release boundary conditions
+    call bdrf_release(rbdrCondPrimal)
+    call bdrf_release(rbdrCondDual)
     
     ! Release vectors
     call lsysbl_releaseVector(rsolutionPrimal)

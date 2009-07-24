@@ -9,13 +9,8 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_nlsolverCallbackEuler
-!#     -> Callback routine for the nonlinear solver used in the
-!#        computation of the compressible Euler model
-!#
-!# 1.) zpinch_nlsolverCallbackTransport
-!#     -> Callback routine for the nonlinear solver used in the
-!#        computation of the scalar transport model
+!# 1.) zpinch_nlsolverCallback
+!#     -> Callback routine for the nonlinear solver
 !#
 !# 2.) zpinch_initVelocityField
 !#     -> Initializes the velocity field for the transport model
@@ -61,8 +56,7 @@ module zpinch_callback
   implicit none
 
   private
-  public :: zpinch_nlsolverCallbackEuler
-  public :: zpinch_nlsolverCallbackTransport
+  public :: zpinch_nlsolverCallback
   public :: zpinch_initVelocityField
   public :: zpinch_initDensityAveraging
   public :: zpinch_initLorentzforceTerm
@@ -74,9 +68,9 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_nlsolverCallbackEuler(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
-      istep, ioperationSpec, rcollection, istatus, rsource)
+  subroutine zpinch_nlsolverCallback(rproblemLevel, rtimestep,&
+      rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+      ioperationSpec, rcollection, istatus, rsource)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is
@@ -126,67 +120,212 @@ contains
     integer, intent(out) :: istatus
 !</output>
 !</subroutine>
-    
-    ! Do we have to calculate the preconditioner?
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
 
-      ! Compute the preconditioner
-      call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rcollection)
-    end if
-    
-    
-    ! Do we have to calculate the constant right-hand side?
-    ! --------------------------------------------------------------------------
-    if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+    type(t_vectorBlock) :: rforce
+    real(DP) :: dscale
+    integer(i32) :: iSpec
+    integer :: jacobianMatrix, isubstep
+
+    isubstep = rcollection%IquickAccess(1)
+
+    select case(rsolver%ssolverName)
       
-      ! Compute the right-hand side
-      call euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, istep,&
-          rcollection)
-    end if
+    case('NonlinearSolverEuler')
 
-
-    ! Do we have to calculate the residual?
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+      rcollection%SquickAccess(1)='Euler'
       
-      if (istep .eq. 0) then
-        ! Compute the constant right-hand side
-        call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution0, rrhs, rcollection, rsource)
+      ! Do we have to calculate the preconditioner?
+      ! --------------------------------------------------------------------------
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
+        
+        ! Compute the preconditioner
+        call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rcollection)
       end if
+      
+      ! Do we have to calculate the residual?
+      ! --------------------------------------------------------------------------
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        if (istep .eq. 0 .and. isubstep .eq. 1) then
+          ! Compute the constant right-hand side including the
+          ! given explicit part of the Lorentz force term
+          call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution0, rrhs, rcollection, rsource)
+        end if
+        
+        ! Set pointer to parameter list
+        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+        p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
+        p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
+        
+        ! Calculate scaling parameter
+        dscale = rtimestep%theta*rtimestep%dStep
 
-      ! Compute the residual
-      call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-          rcollection)
-    end if
-    
-    
-    ! Do we have to impose boundary conditions?
-    ! --------------------------------------------------------------------------
-    if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        ! Compute the implicit part of the Lorentz force
+        call zpinch_initLorentzforceTerm(p_rparlist, 'zpinch',&
+            'Euler', 'Transport', rproblemLevel, p_rsolutionEuler,&
+            p_rsolutionTransport, rtimestep%dTime, dscale, rforce,&
+            rcollection)
+        
+        ! Compute the residual including the pre-computed implicit
+        ! part of the Lorentz force term
+        call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+            rcollection, rforce)
 
-      ! Impose boundary conditions
-      call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolution0, rres, rcollection)
-    end if
-    
+        ! Release temporal memory
+        call lsysbl_releaseVector(rforce)
+      end if
+      
+      
+      ! Do we have to impose boundary conditions?
+      ! --------------------------------------------------------------------------
+      if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        ! Impose boundary conditions
+        call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rres, rcollection)
+      end if
+      
+
+    case('NonlinearSolverTransport')
+
+      rcollection%SquickAccess(1)='Transport'
+
+      !###########################################################################
+      ! REMARK: The order in which the operations are performed is
+      ! essential. This is due to the fact that the calculation of the
+      ! residual/rhs requires the discrete transport operator to be
+      ! initialized which is assembled in the calculation of the
+      ! preconditioner. To prevent the re-assembly of the
+      ! preconditioner twice, we remove the specifier
+      ! NLSOL_OPSPEC_CALCPRECOND if the residual/rhs vector is built.
+      !###########################################################################
+      
+      ! Make a local copy
+      iSpec = ioperationSpec
+      
+      ! Do we have to calculate the constant right-hand side?
+      ! --------------------------------------------------------------------------
+      if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
+        
+        ! Compute the preconditioner
+        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rcollection)
+        
+        ! Compute the right-hand side
+        call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rrhs, istep,&
+            rcollection)
+        
+        ! Remove specifier for the preconditioner (if any)
+        iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+      end if
+      
+      
+      ! Do we have to calculate the residual?
+      ! --------------------------------------------------------------------------
+      if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        if (istep .eq. 0 .and. isubstep .eq. 1) then
+          ! Assemble the constant right-hand side, whereby the velocity
+          ! vector and the density averaged mass matrices are based on
+          ! the solution of the Euler model from the previous time step
+          call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rrhs, rcollection)
+          
+          ! Set pointer to parameter list and to the solution vector
+          p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+          p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
+          
+          ! Calculate the density averaged mass matrices using the
+          ! solution of the Euler model from the current time step
+          call zpinch_initDensityAveraging(p_rparlist,&
+              'Transport', rproblemLevel, p_rsolutionEuler, rcollection)
+          
+          ! Calculate the velocity vector using the solution of the
+          ! Euler model from the current time step
+          call zpinch_initVelocityField(p_rparlist,&
+              'Transport', rproblemLevel, p_rsolutionEuler, rcollection)
+        end if
+        
+        ! Compute the preconditioner
+        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rcollection)
+        
+        ! Compute the residual
+        call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+            rcollection)
+        
+        ! Remove specifier for the preconditioner (if any)
+        iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+      end if
+      
+      
+      ! Do we have to calculate the preconditioner?
+      ! --------------------------------------------------------------------------
+      if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
+        
+        ! Compute the preconditioner
+        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rcollection)
+      end if
+      
+      
+      ! Do we have to calculate the Jacobian operator?
+      ! --------------------------------------------------------------------------
+      if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
+        
+        ! Compute the Jacobian matrix
+        call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rcollection)
+      end if
+      
+      
+      ! Do we have to impose boundary conditions?
+      ! --------------------------------------------------------------------------
+      if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
+        
+        ! Impose boundary conditions
+        call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
+            rsolver, rsolution, rsolution0, rres, rcollection)
+      end if
+      
+      
+      ! Do we have to apply the Jacobian operator?
+      ! --------------------------------------------------------------------------
+      if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
+        
+        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+        
+        call parlst_getvalue_int(p_rparlist,&
+            'Transport', 'jacobianMatrix', jacobianMatrix)
+        
+        ! Apply Jacobian matrix
+        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
+            rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
+            1.0_DP)
+      end if
+      
+    end select
     
     ! Set status flag
     istatus = 0
-
-  end subroutine zpinch_nlsolverCallbackEuler
+    
+  end subroutine zpinch_nlsolverCallback
 
   !*****************************************************************************
 
 !<subroutine>
 
   subroutine zpinch_nlsolverCallbackTransport(rproblemLevel,&
-      rtimestep, rsolver, rsolution, rsolutionInitial, rrhs, rres,&
-      istep, ioperationSpec, rcollection, istatus, rb)
+      rtimestep, rsolver, rsolution, rsolution0, rrhs, rres,&
+      istep, ioperationSpec, rcollection, istatus, rsource)
 
 !<description>
     ! This subroutine is called by the nonlinear solver and it is
@@ -196,7 +335,7 @@ contains
 
 !<input>
     ! initial solution vector
-    type(t_vectorBlock), intent(in) :: rsolutionInitial
+    type(t_vectorBlock), intent(in) :: rsolution0
     
     ! number of solver step
     integer, intent(in) :: istep
@@ -205,7 +344,7 @@ contains
     integer(I32), intent(in) :: ioperationSpec
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(in), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -266,8 +405,8 @@ contains
       
       ! Compute the right-hand side
       call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rrhs, istep,&
-          rcollection, rb)
+          rsolver, rsolution, rsolution0, rrhs, istep,&
+          rcollection, rsource)
       
       ! Remove specifier for the preconditioner (if any)
       iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -283,7 +422,7 @@ contains
         ! vector and the density averaged mass matrices are based on
         ! the solution of the Euler model from the previous time step
         call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rrhs, rcollection, rb)
+            rsolver, rsolution, rrhs, rcollection, rsource)
 
         ! Set pointer to parameter list and to the solution vector
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -308,7 +447,7 @@ contains
       
       ! Compute the residual
       call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rrhs, rres, istep,&
+          rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           rcollection)
 
       ! Remove specifier for the preconditioner (if any)
@@ -332,7 +471,7 @@ contains
       
       ! Compute the Jacobian matrix
       call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rcollection)
+          rsolver, rsolution, rsolution0, rcollection)
     end if
     
     
@@ -342,7 +481,7 @@ contains
       
       ! Impose boundary conditions
       call transp_setBoundaryConditions(rproblemLevel, rtimestep,&
-          rsolver, rsolution, rsolutionInitial, rres, rcollection)
+          rsolver, rsolution, rsolution0, rres, rcollection)
     end if
     
 
@@ -520,7 +659,7 @@ contains
 
   subroutine zpinch_initLorentzforceTerm(rparlist, ssectionName,&
       ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
-      rsolutionTransport, rsolutionEuler, dtime, dscale, rforce,&
+      rsolutionEuler, rsolutionTransport, dtime, dscale, rforce,&
       rcollection)
     
 !<description>
