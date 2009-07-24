@@ -317,14 +317,11 @@ module solveraux
   ! Nonlinear solver requires calculation of residual vector
   integer(I32), parameter, public :: NLSOL_OPSPEC_CALCRESIDUAL   = 2**2
 
-  ! Nonlinear solver requires calculation of boundary conditions
-  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCBDRCOND    = 2**3
-
   ! Nonlinear solver requires calculation of Jacobian operator
-  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**4
+  integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**3
 
   ! Nonlinear solver requires application of Jacobian operator
-  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**5  
+  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**4  
 !</constantblock>
 
 

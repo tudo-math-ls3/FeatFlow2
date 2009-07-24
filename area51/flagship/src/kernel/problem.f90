@@ -117,9 +117,6 @@ module problem
   ! Convert hexahedrals to tetrahedrals
   integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTETRAHEDRALS = 2**2
 
-  ! Assume global boundary conditions for all levels
-  integer(I32), parameter, public :: PROBDESC_MSPEC_GLOBALBDRCOND    = 2**4
-
 !</constantblock>
 
 
@@ -133,9 +130,6 @@ module problem
 
   ! Problem level requires initialization
   integer(I32), parameter, public :: PROBLEV_MSPEC_INITIALIZE       = 2**1
-
-  ! Boundary conditions are linked to global boundary conditions
-  integer(I32), parameter, public :: PROBLEV_MSPEC_BDRCONDLINKED    = 2**2
 
 !</constantblock>
 
@@ -156,8 +150,7 @@ module problem
     ! constants and specifies various details of the problem
     ! descriptor. If it is =PROBDESC_MSPEC_STANDARD, the problem
     ! descriptor is a usual descriptor that needs no special handling.
-    integer(I32) :: iproblemSpec = PROBDESC_MSPEC_STANDARD +&
-                                   PROBDESC_MSPEC_GLOBALBDRCOND
+    integer(I32) :: iproblemSpec = PROBDESC_MSPEC_STANDARD
 
     ! Spatial dimension
     integer :: ndimension
@@ -209,9 +202,6 @@ module problem
 
     ! Boundary parametrization
     type(t_boundary) :: rboundary
-
-    ! Array of boundary conditions
-    type(t_boundaryCondition), dimension(:), pointer :: RboundaryCondition => null()
 
     ! Pointer to the previous problem instance
     type(t_problem), pointer :: p_rproblemPrev => null()
@@ -268,9 +258,6 @@ module problem
     ! Array of block vectors
     type(t_vectorBlock), dimension(:), pointer :: RvectorBlock => null()
 
-    ! Array of boundary conditions
-    type(t_boundaryCondition), dimension(:), pointer :: RboundaryCondition => null()
-    
     ! Pointer to the global problem structure
     type(t_problem), pointer :: p_rproblem => null()
 
@@ -317,15 +304,6 @@ contains
     ! Initialize global problem structure
     call problem_createProblem(rproblem)
     
-    ! Allocate array for global boundary conditions
-    if (rproblemDescriptor%nboundaryCondition .gt. 0) then
-      if (iand(rproblemDescriptor%iproblemSpec,&
-               PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
-        allocate(rproblem%RboundaryCondition(&
-            rproblemDescriptor%nboundaryCondition))
-      end if
-    end if
-
     ! Initialize coarse level
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
@@ -403,22 +381,6 @@ contains
         allocate(rproblemLevel%Rafcstab(&
         rproblemDescriptor%nafcstab))
 
-    ! Allocate/relink array for boundary conditions
-    if (rproblemDescriptor%nboundaryCondition .gt. 0) then
-      if (iand(rproblemDescriptor%iproblemSpec,&
-               PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
-        rproblemLevel%RboundaryCondition =>&
-            rproblem%RboundaryCondition
-        
-        ! Set specifier for relinked boundary conditions
-        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                         PROBLEV_MSPEC_BDRCONDLINKED)
-      else
-        allocate(rproblemLevel%RboundaryCondition(&
-            rproblemDescriptor%nboundaryCondition))
-      end if
-    end if
-
     ! Append level to global problem
     call problem_appendLevel(rproblem, rproblemLevel)
     p_rproblemLevel => rproblemLevel
@@ -458,22 +420,6 @@ contains
       if (rproblemDescriptor%nafcstab .gt. 0)&
           allocate(rproblemLevel%Rafcstab(&
           rproblemDescriptor%nafcstab))
-
-      ! Allocate/relink array for boundary conditions
-      if (rproblemDescriptor%nboundaryCondition .gt. 0) then
-        if (iand(rproblemDescriptor%iproblemSpec,&
-                 PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
-          rproblemLevel%RboundaryCondition =>&
-              rproblem%RboundaryCondition
-          
-          ! Set specifier for relinked boundary conditions
-          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
-                                           PROBLEV_MSPEC_BDRCONDLINKED)
-        else
-          allocate(rproblemLevel%RboundaryCondition(&
-              rproblemDescriptor%nboundaryCondition))
-        end if
-      end if
       
       ! Append current level to global problem
       call problem_appendLevel(rproblem, rproblemLevel)
@@ -548,12 +494,6 @@ contains
     
     ! Release boundary
     call boundary_release(rproblem%rboundary)
-
-    ! Release boundary conditions
-    do i = lbound(rproblem%RboundaryCondition,1),&
-           ubound(rproblem%RboundaryCondition,1)
-      call bdrf_release(rproblem%RboundaryCondition(i))
-    end do
         
     ! Reset data
     nullify(rproblem%p_rproblemPrev, rproblem%p_rproblemNext)
@@ -971,20 +911,6 @@ contains
       deallocate(rproblemLevel%Rafcstab)
     end if
 
-    ! Release boundary condition structure
-    if (associated(rproblemLevel%RboundaryCondition)) then
-      if (iand(rproblemLevel%iproblemSpec,&
-               PROBLEV_MSPEC_BDRCONDLINKED) .ne. 0) then
-        nullify(rproblemLevel%RboundaryCondition)
-      else
-        do i = lbound(rproblemLevel%RboundaryCondition,1),&
-               ubound(rproblemLevel%RboundaryCondition,1)
-          call bdrf_release(rproblemLevel%RboundaryCondition(i))
-        end do
-        deallocate(rproblemLevel%RboundaryCondition)
-      end if
-    end if
-
   end subroutine problem_releaseLevel
   
   !*****************************************************************************
@@ -1232,14 +1158,6 @@ contains
                         trim(sys_siL(size(rproblemLevel%RvectorBlock),15)))
     else
       call output_line ('RvectorBlock:        not associated')
-    end if
-    call output_lbrk()
-
-    if (associated(rproblemLevel%RboundaryCondition)) then
-      call output_line ('RboundaryCondition:  '//&
-                        trim(sys_siL(size(rproblemLevel%RboundaryCondition),15)))
-    else
-      call output_line ('RboundaryCondition:  not associated')
     end if
     call output_lbrk()
 

@@ -32,7 +32,9 @@
 !#     -> Removes temporal storage from time-stepping structure
 !#
 !# 6.) tstep_performThetaStep = tstep_performThetaStepScalar /
-!#                              tstep_performThetaStepBlock
+!#                              tstep_performCplThetaStepScalar /
+!#                              tstep_performThetaStepBlock /
+!#                              tstep_performCplThetaStepBlock
 !#     -> Performs one step by the two-level theta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep. 
 !#
@@ -92,6 +94,8 @@ module timestep
   interface tstep_performThetaStep
     module procedure tstep_performThetaStepScalar
     module procedure tstep_performThetaStepBlock
+    module procedure tstep_performCplThetaStepScalar
+    module procedure tstep_performCplThetaStepBlock
   end interface
 
   interface tstep_performRKStep
@@ -131,7 +135,8 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_createTimestepDirect(rparlist, ssectionName, rtimestep)
+  subroutine tstep_createTimestepDirect(rparlist, ssectionName,&
+      rtimestep, nproblemsCoupled)
 
 !<description>
     ! This subroutine creates a new time-stepping structure from a
@@ -144,6 +149,10 @@ contains
 
     ! Section name of the parameter list containing solver data
     character(LEN=*), intent(in) :: ssectionName
+
+    ! OPTIONAL: number of coupled problems
+    ! If not given nproblemsCoupled = 1 is assumed.
+    integer, intent(in), optional :: nproblemsCoupled
 !</input>
 
 !<output>
@@ -151,6 +160,13 @@ contains
     type(t_timestep), intent(out) :: rtimestep
 !</output>
 !</subroutine>
+
+    ! local variables
+    integer :: npc
+
+    ! Set number of coupled problems
+    npc = 1
+    if (present(nproblemsCoupled)) npc = nproblemsCoupled
 
 
     ! The INTENT(out) already initializes rtimestep with the most
@@ -193,7 +209,7 @@ contains
           "theta", rtimestep%theta)
       
       ! Allocate array of temporal vectors
-      allocate(rtimestep%RtempVectors(1))
+      allocate(rtimestep%RtempVectors(npc))
 
     case (TSTEP_RK_SCHEME)
       ! Multilevel Runge-Kutta scheme
@@ -202,23 +218,24 @@ contains
 
       select case(rtimestep%multisteps)
       case (1)
-        allocate(rtimestep%DmultistepWeights(1))
+        allocate(rtimestep%DmultistepWeights(npc))
         rtimestep%DmultistepWeights = TSTEP_RK1
 
       case (2)
-        allocate(rtimestep%DmultistepWeights(2))
+        allocate(rtimestep%DmultistepWeights(2*npc))
         rtimestep%DmultistepWeights = TSTEP_RK2
 
       case (3)
-        allocate(rtimestep%DmultistepWeights(3))
+        allocate(rtimestep%DmultistepWeights(3*npc))
         rtimestep%DmultistepWeights = TSTEP_RK3
 
       case (4)
-        allocate(rtimestep%DmultistepWeights(4))
+        allocate(rtimestep%DmultistepWeights(4*npc))
         rtimestep%DmultistepWeights = TSTEP_RK4
 
       case DEFAULT
-        allocate(rtimestep%DmultistepWeights(abs(rtimestep%multisteps)))
+        allocate(rtimestep%DmultistepWeights(&
+            abs(rtimestep%multisteps)))
         rtimestep%DmultistepWeights = 1._DP
       end select
 
@@ -227,7 +244,7 @@ contains
 
     case DEFAULT
       call output_line('Invalid type of time stepping algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
       call sys_halt()
     end select
           
@@ -282,7 +299,7 @@ contains
 
     case DEFAULT
        call output_line('Invalid type of adaptive time-stepping algorithm!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
+           OU_CLASS_ERROR,OU_MODE_STD,'tstep_createTimestepDirect')
       call sys_halt()
     end select
 
@@ -343,12 +360,14 @@ contains
 
     ! Create temporal vectors
     if (associated(rtimestepTemplate%RtempVectors)) then
-      allocate(rtimestep%RtempVectors(size(rtimestepTemplate%RtempVectors)))
+      allocate(rtimestep%RtempVectors(&
+          size(rtimestepTemplate%RtempVectors)))
     end if
 
     ! Create multistep weights
     if (associated(rtimestepTemplate%DmultistepWeights)) then
-      allocate(rtimestep%DmultistepWeights(size(rtimestepTemplate%DmultistepWeights)))
+      allocate(rtimestep%DmultistepWeights(&
+          size(rtimestepTemplate%DmultistepWeights)))
       rtimestep%DmultistepWeights = rtimestepTemplate%DmultistepWeights
     end if
 
@@ -487,23 +506,23 @@ contains
           call output_line('Evolutionary PID controller:')
           call output_line('----------------------------')
           call output_line('dProportionalExponent:         '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dProportionalExponent,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dProportionalExponent,5)))
           call output_line('dIntegralExponent:             '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dIntegralExponent,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dIntegralExponent,5)))
           call output_line('dDerivativeExponent:           '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dDerivativeExponent,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dDerivativeExponent,5)))
           call output_line('dIncreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dIncreaseFactor,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dIncreaseFactor,5)))
           call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dDecreaseFactor,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dDecreaseFactor,5)))
           call output_line('depsRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%depsRel,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%depsRel,5)))
           call output_line('dmaxRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dmaxRel,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dmaxRel,5)))
           call output_line('dcontrolValue1:                '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue1,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue1,5)))
           call output_line('dcontrolValue2:                '//&
-                           trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue2,5)))
+              trim(sys_sdL(rtimestep%p_rpidController%dcontrolValue2,5)))
         end if
 
         ! Output information about the automatic time step controller
@@ -512,9 +531,9 @@ contains
           call output_line('Automatic time step controller:')
           call output_line('-------------------------------')
           call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rautoController%dDecreaseFactor,5)))
+              trim(sys_sdL(rtimestep%p_rautoController%dDecreaseFactor,5)))
           call output_line('depsRel:                       '//&
-                           trim(sys_sdL(rtimestep%p_rautoController%depsRel,5)))
+              trim(sys_sdL(rtimestep%p_rautoController%depsRel,5)))
 
           if (associated(rtimestep%p_rautoController%RtempVectors)) then
             call output_lbrk()
@@ -533,13 +552,13 @@ contains
           call output_line('Switched evolution relaxation (SER) controller:')
           call output_line('-----------------------------------------------')
           call output_line('dIncreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dIncreaseFactor,5)))
+              trim(sys_sdL(rtimestep%p_rserController%dIncreaseFactor,5)))
           call output_line('dDecreaseFactor:               '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dDecreaseFactor,5)))
+              trim(sys_sdL(rtimestep%p_rserController%dDecreaseFactor,5)))
           call output_line('dsteadyDefect:                 '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect,5)))
+              trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect,5)))
           call output_line('dsteadyDefect1:                '//&
-                           trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect1,5)))
+              trim(sys_sdL(rtimestep%p_rserController%dsteadyDefect1,5)))
         end if
 
         ! Output information about auxiliary vectors
@@ -653,21 +672,26 @@ contains
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
-    ! This subroutine performs one step by means of the two-level theta-scheme
+    ! This subroutine performs one step by means of the two-level
+    ! theta-scheme
     !
-    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + b $$
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) =&
+    !      Mu^n+(1-\theta)\Delta t N(u^n) + b $$
     !
-    ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
-    ! In the above equation $M$ denotes the mass matrix, and $N(\cdot)$ is an
-    ! abstract operator which depends in the solution $u$. The constant right-hand
-    ! side vector is optional an is assumed to be zero if not present.
+    ! to advance the solution from time level $t^n$ to time level
+    ! $t^{n+1}$.  In the above equation $M$ denotes the mass matrix,
+    ! and $N(\cdot)$ is an abstract operator which depends in the
+    ! solution $u$. The constant right-hand side vector is optional an
+    ! is assumed to be zero if not present.
     !
-    ! This routine can handle the forward Euler (theta=0), backward Euler (theta=1)
-    ! and the Crank-Nicolson (theta=0.5) time stepping algorithm. However, the
-    ! fully explicit scheme is known to be unstable. It is therefore highly 
-    ! recommended to use an explicit Runge-Kutta scheme instead.
+    ! This routine can handle the forward Euler (theta=0), backward
+    ! Euler (theta=1) and the Crank-Nicolson (theta=0.5) time stepping
+    ! algorithm. However, the fully explicit scheme is known to be
+    ! unstable. It is therefore highly recommended to use an explicit
+    ! Runge-Kutta scheme instead.
     !
-    ! Note that this subroutine serves as wrapper for scalar solution vectors only.
+    ! Note that this subroutine serves as wrapper for scalar solution
+    ! vectors only.
 !</description>
 
 !<input>
@@ -705,8 +729,11 @@ contains
       ! Call block version with right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
       call lsysbl_createVecFromScalar(rsource, rsourceBlock)
+
       call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
+          rsourceBlock)
+
       call lsysbl_releaseVector(rsolutionBlock)
       call lsysbl_releaseVector(rsourceBlock)
 
@@ -714,8 +741,10 @@ contains
       
       ! Call block version without right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
+
       call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
+
       call lsysbl_releaseVector(rsolutionBlock)
 
     end if
@@ -730,19 +759,23 @@ contains
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
-    ! This subroutine performs one step by means of the two-level theta-scheme
+    ! This subroutine performs one step by means of the two-level
+    ! theta-scheme
     !
-    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = Mu^n+(1-\theta)\Delta t N(u^n) + b $$
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = 
+    !      Mu^n+(1-\theta)\Delta t N(u^n) + b $$
     !
-    ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
-    ! In the above equation $M$ denotes the mass matrix, and $N(\cdot)$ is an
-    ! abstract operator which depends in the solution $u$. The constant right-hand
-    ! side vector is optional an is assumed to be zero if not present.
+    ! to advance the solution from time level $t^n$ to time level
+    ! $t^{n+1}$.  In the above equation $M$ denotes the mass matrix,
+    ! and $N(\cdot)$ is an abstract operator which depends in the
+    ! solution $u$. The constant right-hand side vector is optional an
+    ! is assumed to be zero if not present.
     !
-    ! This routine can handle the forward Euler (theta=0), backward Euler (theta=1)
-    ! and the Crank-Nicolson (theta=0.5) time stepping algorithm. However, the
-    ! fully explicit scheme is known to be unstable. It is therefore highly 
-    ! recommended to use an explicit Runge-Kutta scheme instead.
+    ! This routine can handle the forward Euler (theta=0), backward
+    ! Euler (theta=1) and the Crank-Nicolson (theta=0.5) time stepping
+    ! algorithm. However, the fully explicit scheme is known to be
+    ! unstable. It is therefore highly recommended to use an explicit
+    ! Runge-Kutta scheme instead.
 !</description>
 
 !<input>
@@ -779,11 +812,12 @@ contains
     logical :: bcompatible, breject
     
     ! Set pointer to nonlinear solver
-    p_rsolver => solver_getNextSolverByTypes(rsolver, (/SV_NONLINEARMG, SV_NONLINEAR/))
+    p_rsolver => solver_getNextSolverByTypes(rsolver,&
+        (/SV_NONLINEARMG, SV_NONLINEAR/))
     
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlock')
       call sys_halt()
     end if
 
@@ -791,9 +825,11 @@ contains
     p_rsolutionOld => rtimestep%RtempVectors(1)
 
     ! ... and check if vectors are compatible
-    call lsysbl_isVectorCompatible(rsolution, p_rsolutionOld, bcompatible)
+    call lsysbl_isVectorCompatible(rsolution,&
+        p_rsolutionOld, bcompatible)
     if (.not.bcompatible) then
-      call lsysbl_resizeVectorBlock(p_rsolutionOld, rsolution, .false.)
+      call lsysbl_resizeVectorBlock(p_rsolutionOld,&
+          rsolution, .false.)
     end if
 
     ! Save the given solution vector to the temporal vector. If the
@@ -824,7 +860,8 @@ contains
     timeadapt: do
       
       ! Increase simulation time provisionally
-      rtimestep%dStep = min(rtimestep%dStep, rtimestep%dfinalTime - rtimestep%dTime)
+      rtimestep%dStep = min(rtimestep%dStep,&
+          rtimestep%dfinalTime - rtimestep%dTime)
       rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
       rtimestep%nSteps= rtimestep%nSteps + 1
       
@@ -833,19 +870,21 @@ contains
       if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
         call output_lbrk()
         call output_separator(OU_SEP_AT)
-        call output_line('Two-level theta-scheme, Time = '//trim(sys_sdEL(rtimestep%dTime,5))//&
+        call output_line('Two-level theta-scheme, Time = '//&
+                         trim(sys_sdEL(rtimestep%dTime,5))//&
                          ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
         call output_separator(OU_SEP_AT)
         call output_lbrk()
       end if
-
+      
       ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-          rsolution, p_rsolutionOld, fcb_nlsolverCallback, rcollection, rsource)
+          rsolution, p_rsolutionOld, fcb_nlsolverCallback,&
+          rcollection, rsource)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
-
+      
 
       ! Compute reference solution by performing two time steps of size Dt/2
       if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
@@ -864,7 +903,8 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-            p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback, rcollection)
+            p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback,&
+            rcollection)
 
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
@@ -879,14 +919,14 @@ contains
 
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-                                  p_rsolutionRef, p_rsolutionAux,&
-                                  fcb_nlsolverCallback, rcollection)
-
+            p_rsolutionRef, p_rsolutionAux, fcb_nlsolverCallback,&
+            rcollection)
+        
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
         breject = tstep_checkTimestep(rtimestep, p_rsolver,&
             p_rsolutionRef, p_rsolutionOld)
-
+        
         ! Prepare time step size for next "large" time step
         rtimestep%dStep = rtimestep%dStep*2.0_DP
 
@@ -923,6 +963,407 @@ contains
     end do timeadapt
 
   end subroutine tstep_performThetaStepBlock
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_performCplThetaStepScalar(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+
+!<description>
+    ! This subroutine performs one step by means of the two-level
+    ! theta-scheme
+    !
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = 
+    !      Mu^n+(1-\theta)\Delta t N(u^n)$$
+    !
+    ! to advance the solution from time level $t^n$ to time level
+    ! $t^{n+1}$.  In the above equation $M$ denotes the mass matrix,
+    ! and $N(\cdot)$ is an abstract operator which depends in the
+    ! solution $u$. The constant right-hand side vector is optional an
+    ! is assumed to be zero if not present.
+    !
+    ! This routine can handle the forward Euler (theta=0), backward
+    ! Euler (theta=1) and the Crank-Nicolson (theta=0.5) time stepping
+    ! algorithm. However, the fully explicit scheme is known to be
+    ! unstable. It is therefore highly recommended to use an explicit
+    ! Runge-Kutta scheme instead.
+    !
+    ! In contrast to routine tstep_performThetaStepBlock this routine
+    ! is applicable to a sequence of coupled problems which are
+    ! solved repeatedly until convergence.  
+    !
+    ! Note that this subroutine serves as wrapper for scalar solution
+    ! vectors only.
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_solvercallback.inc'
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+
+    ! solver structure
+    type(t_solver), dimension(:), intent(inout), target :: rsolver
+
+    ! solution vector
+    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+
+    
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), dimension(:), allocatable :: rsolutionBlock
+    type(t_vectorBlock), dimension(:), allocatable :: rsourceBlock
+    integer :: i
+    
+    
+    if (present(rsource)) then
+
+      ! Allocate temporal memory
+      allocate(rsolutionBlock(size(rsolution)))
+      allocate(rsourceBlock(size(rsource)))
+      
+      do i = 1, size(rsolution)
+        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      end do
+
+      do i = 1, size(rsource)
+        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      end do
+      
+      call tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
+          rsourceBlock)
+      
+      do i = 1, size(rsolution)
+        call lsysbl_releaseVector(rsolutionBlock(i))
+      end do
+
+      do i = 1, size(rsource)
+        call lsysbl_releaseVector(rsourceBlock(i))
+      end do
+      
+      ! Release temporal memory
+      deallocate(rsolutionBlock)
+      deallocate(rsourceBlock)
+      
+    else
+      
+      ! Allocate temporal memory
+      allocate(rsolutionBlock(size(rsolution)))
+      
+      do i = 1, size(rsolution)
+        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      end do
+      
+      call tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
+      
+      do i = 1, size(rsolution)
+        call lsysbl_releaseVector(rsolutionBlock(i))
+      end do
+      
+      ! Release temporal memory
+      deallocate(rsolutionBlock)
+
+    end if
+    
+  end subroutine tstep_performCplThetaStepScalar
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+
+!<description>
+    ! This subroutine performs one step by means of the two-level
+    ! theta-scheme
+    !
+    !   $$ Mu^{n+1}-\theta\Delta t N(u^{n+1}) = 
+    !      Mu^n+(1-\theta)\Delta t N(u^n)$$
+    !
+    ! to advance the solution from time level $t^n$ to time level
+    ! $t^{n+1}$.  In the above equation $M$ denotes the mass matrix,
+    ! and $N(\cdot)$ is an abstract operator which depends in the
+    ! solution $u$. The constant right-hand side vector is optional an
+    ! is assumed to be zero if not present.
+    !
+    ! This routine can handle the forward Euler (theta=0), backward
+    ! Euler (theta=1) and the Crank-Nicolson (theta=0.5) time stepping
+    ! algorithm. However, the fully explicit scheme is known to be
+    ! unstable. It is therefore highly recommended to use an explicit
+    ! Runge-Kutta scheme instead.
+    !
+    ! In contrast to routine tstep_performThetaStepBlock this routine
+    ! is applicable to a sequence of coupled problems which are
+    ! solved repeatedly until convergence.  
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_solvercallback.inc'
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+
+    ! solver structure
+    type(t_solver), dimension(:), intent(inout), target :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local types
+    type t_solverCpl
+      type(t_solver), pointer :: p_rsolver => null()
+    end type t_solverCpl
+    
+    ! local variables
+    type(t_solverCpl), dimension(size(rsolver)) :: rsolverCpl
+    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionRef
+    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionAux
+    type(t_vectorBlock), dimension(:), pointer :: p_rsolutionOld
+    real(DP), dimension(size(rsolver)) :: DinitialDefect
+    real(DP) :: drelDefect
+    logical :: bcompatible, breject, brejectAll
+    integer :: icpl,ncpl,ite
+
+    ! Get number of solver components
+    ncpl = size(rsolver)
+
+    ! Check size of multi-component solution vector
+    if (size(rsolution) .ne. ncpl) then
+      call output_line('Dimensione of coupled problem mismatch!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performCplThetaStepBlock')
+      call sys_halt()
+    end if
+
+    ! Check size of multi-component source vector (if any)
+    if (present(rsource)) then
+      if (size(rsource) .ne. ncpl) then
+        call output_line('Dimensione of coupled problem mismatch!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performCplThetaStepBlock')
+        call sys_halt()
+      end if
+    end if
+
+    ! Set pointer to temporal vectors
+    p_rsolutionOld => rtimestep%RtempVectors(1:ncpl)
+
+    ! Set pointers to temporal vectors for the computation of an
+    ! auxiliary solution by means of local substepping
+    if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
+      p_rsolutionRef =>&
+          rtimestep%p_rautoController%RtempVectors(1:ncpl)
+      p_rsolutionAux =>&
+          rtimestep%p_rautoController%RtempVectors(ncpl+1:2*ncpl)
+    end if
+    
+
+    ! Initialize temporal vectors for all(!) solver components
+    do icpl = 1, ncpl
+      
+      ! Set pointer to nonlinear solver
+      rsolverCpl(icpl)%p_rsolver =>&
+          solver_getNextSolverByTypes(rsolver(icpl),&
+          (/SV_NONLINEARMG, SV_NONLINEAR/))
+      
+      if (.not. associated(rsolverCpl(icpl)%p_rsolver)) then
+        call output_line('Unsupported/invalid solver type!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performCplThetaStepBlock')
+        call sys_halt()
+      end if
+      
+      ! Check if vectors are compatible
+      call lsysbl_isVectorCompatible(rsolution(icpl),&
+          p_rsolutionOld(icpl), bcompatible)
+      if (.not.bcompatible) then
+        call lsysbl_resizeVectorBlock(p_rsolutionOld(icpl),&
+            rsolution(icpl), .false.)
+      end if
+
+      ! Save the given solution vector to the temporal vector. If the
+      ! computed time step is not accepted, then the backup of the
+      ! given solution vector is used to recalculate the time step
+      call lsysbl_copyVector(rsolution(icpl), p_rsolutionOld(icpl))
+
+      if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
+
+        ! Check if vectors are compatible
+        call lsysbl_isVectorCompatible(rsolution(icpl),&
+            p_rsolutionRef(icpl), bcompatible)
+        if (.not.bcompatible) then
+          call lsysbl_resizeVectorBlock(p_rsolutionRef(icpl),&
+              rsolution(icpl), .false.)
+          call lsysbl_resizeVectorBlock(p_rsolutionAux(icpl),&
+              rsolution(icpl), .false.)
+        end if
+        
+        ! Make a backup copy of the solution vector
+        call lsysbl_copyVector(rsolution(icpl), p_rsolutionRef(icpl))
+      end if
+    end do
+    
+
+    ! Adaptive time-stepping loop
+    timeadapt: do
+      
+      ! Increase simulation time provisionally
+      rtimestep%dStep = min(rtimestep%dStep,&
+          rtimestep%dfinalTime - rtimestep%dTime)
+      rtimestep%dTime = rtimestep%dTime  + rtimestep%dStep
+      rtimestep%nSteps= rtimestep%nSteps + 1
+
+      ! Output information to logfile/terminal
+      if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
+        call output_lbrk()
+        call output_separator(OU_SEP_AT)
+        call output_line('Two-level theta-scheme, Time = '//&
+                         trim(sys_sdEL(rtimestep%dTime,5))//&
+                         ' Stepsize = '//trim(sys_sdEL(rtimestep%dStep,5)))
+        call output_separator(OU_SEP_AT)
+        call output_lbrk()
+      end if
+      
+      outer: do ite = 1, 25
+
+        ! Set iteration
+        rcollection%IquickAccess(1) = ite
+        
+        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Outer iteration step '//&
+                           trim(sys_siL(ite,5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
+
+        inner: do icpl = 1, ncpl
+
+          if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
+            call output_lbrk()
+            call output_separator(OU_SEP_TILDE)
+            call output_line('Component '//&
+                             trim(sys_siL(icpl,5))//' of '//&
+                             trim(sys_siL(ncpl,5)))
+            call output_separator(OU_SEP_TILDE)
+            call output_lbrk()
+          end if
+          
+          ! Solve the nonlinear algebraic system for component ICPL
+          ! in the time interval (t^n, t^{n+1})
+          if (present(rsource)) then
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
+                rsolverCpl(icpl)%p_rsolver, rsolution(icpl),&
+                p_rsolutionOld(icpl), fcb_nlsolverCallback,&
+                rcollection, rsource(icpl))
+          else
+            call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
+                rsolverCpl(icpl)%p_rsolver, rsolution(icpl),&
+                p_rsolutionOld(icpl), fcb_nlsolverCallback,&
+                rcollection)
+          end if
+          
+        end do inner
+
+        if (ite .eq. 1) then
+          do icpl = 1, ncpl
+            DinitialDefect(icpl) =&
+                rsolverCpl(icpl)%p_rsolver%dinitialDefect
+          end do
+        end if
+
+        ! Check relative defect
+        drelDefect = rsolverCpl(1)%p_rsolver%dinitialDefect /&
+            DinitialDefect(1)
+        do icpl = 2, ncpl
+          drelDefect = max(drelDefect,&
+              rsolverCpl(icpl)%p_rsolver%dinitialDefect /&
+              DinitialDefect(icpl))
+        end do
+        
+        if (drelDefect .le. 1e-2) exit outer
+        
+      end do outer
+
+      ! Initialize indicator
+      brejectAll = .false.
+      
+      do icpl = 1, ncpl
+        
+        ! Adjust status information of top-most solver
+        call solver_copySolver(rsolverCpl(icpl)%p_rsolver,&
+            rsolver(icpl), .false., .true.)
+        
+        ! Check if solution from this time step can be accepted and
+        ! adjust the time step size automatically if this is required
+        breject = tstep_checkTimestep(rtimestep, rsolverCpl(icpl)&
+            %p_rsolver, rsolution(icpl), p_rsolutionOld(icpl))
+        
+        if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
+          call output_lbrk()
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Coupled sub-problem #'//trim(sys_siL(icpl,5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
+          call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
+          call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
+          call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
+          call output_separator(OU_SEP_TILDE)
+          call output_lbrk()
+        end if
+        
+        ! Update indicator
+        brejectAll = (brejectAll .and. breject)
+
+      end do
+
+      ! Do we have to reject to current solution?
+      if (brejectAll) then
+        ! Yes, so restore the old solution and
+        ! repeat the adaptive time-stepping loop
+        do icpl = 1, ncpl
+          call lsysbl_copyVector(p_rsolutionOld(icpl),&
+              rsolution(icpl))
+        end do
+      else
+        ! No, accept current solution and 
+        ! exit adaptive time-stepping loop
+        exit timeadapt
+      end if
+    end do timeadapt
+    
+  end subroutine tstep_performCplThetaStepBlock
 
   ! *****************************************************************************
 
