@@ -538,6 +538,7 @@ contains
     rproblemDescriptor%nmatrixBlock    = 2   ! system matrix and Jacobian
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = 0
+    rproblemDescriptor%nboundarycondition = 2
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
@@ -2319,7 +2320,6 @@ contains
     
     ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
-    call problem_setBoundaryCondition(rproblem, rbdrCond)
 
     ! Set primal problem mode
     call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
