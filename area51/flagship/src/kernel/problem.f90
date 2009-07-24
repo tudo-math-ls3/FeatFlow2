@@ -58,11 +58,6 @@
 !# 15.) problem_getLevel
 !#      -> Returns a pointer to the problem level specified by the level number
 !#
-!# 16.) problem_setBoundaryCondition = problem_setBdrCond /
-!#                                     problem_setProblemBdrCond
-!#                                     problem_setLevelBdrCond
-!#      -> Sets the boundary condition for the problem
-!#
 !# </purpose>
 !##############################################################################
 
@@ -103,15 +98,6 @@ module problem
   public :: problem_removeLevel
   public :: problem_infoLevel
   public :: problem_getLevel
-  public :: problem_setBoundaryCondition
-  
-  ! ****************************************************************************
-
-  interface problem_setBoundaryCondition
-    module procedure problem_setBdrCond
-    module procedure problem_setProblemBdrCond
-    module procedure problem_setLevelBdrCond
-  end interface
   
   !*****************************************************************************
   
@@ -131,6 +117,9 @@ module problem
   ! Convert hexahedrals to tetrahedrals
   integer(I32), parameter, public :: PROBDESC_MSPEC_CONVTETRAHEDRALS = 2**2
 
+  ! Assume global boundary conditions for all levels
+  integer(I32), parameter, public :: PROBDESC_MSPEC_GLOBALBDRCOND    = 2**4
+
 !</constantblock>
 
 
@@ -144,6 +133,9 @@ module problem
 
   ! Problem level requires initialization
   integer(I32), parameter, public :: PROBLEV_MSPEC_INITIALIZE       = 2**1
+
+  ! Boundary conditions are linked to global boundary conditions
+  integer(I32), parameter, public :: PROBLEV_MSPEC_BDRCONDLINKED    = 2**2
 
 !</constantblock>
 
@@ -164,7 +156,8 @@ module problem
     ! constants and specifies various details of the problem
     ! descriptor. If it is =PROBDESC_MSPEC_STANDARD, the problem
     ! descriptor is a usual descriptor that needs no special handling.
-    integer(I32) :: iproblemSpec = PROBDESC_MSPEC_STANDARD
+    integer(I32) :: iproblemSpec = PROBDESC_MSPEC_STANDARD +&
+                                   PROBDESC_MSPEC_GLOBALBDRCOND
 
     ! Spatial dimension
     integer :: ndimension
@@ -193,6 +186,9 @@ module problem
     ! Number of block vectors
     integer :: nvectorBlock
 
+    ! Number of boundary conditions
+    integer :: nboundaryCondition
+
     ! Name of the triangulation file
     character(LEN=SYS_STRLEN) :: trifile
 
@@ -213,6 +209,9 @@ module problem
 
     ! Boundary parametrization
     type(t_boundary) :: rboundary
+
+    ! Array of boundary conditions
+    type(t_boundaryCondition), dimension(:), pointer :: RboundaryCondition => null()
 
     ! Pointer to the previous problem instance
     type(t_problem), pointer :: p_rproblemPrev => null()
@@ -269,11 +268,11 @@ module problem
     ! Array of block vectors
     type(t_vectorBlock), dimension(:), pointer :: RvectorBlock => null()
 
+    ! Array of boundary conditions
+    type(t_boundaryCondition), dimension(:), pointer :: RboundaryCondition => null()
+    
     ! Pointer to the global problem structure
     type(t_problem), pointer :: p_rproblem => null()
-
-    ! Pointer to the boundary conditions
-    type(t_boundaryCondition), pointer :: p_rboundaryCondition => null()
 
     ! Pointer to next coarse problem level
     type(t_problemLevel), pointer :: p_rproblemLevelCoarse => null()
@@ -317,7 +316,16 @@ contains
 
     ! Initialize global problem structure
     call problem_createProblem(rproblem)
-            
+    
+    ! Allocate array for global boundary conditions
+    if (rproblemDescriptor%nboundaryCondition .gt. 0) then
+      if (iand(rproblemDescriptor%iproblemSpec,&
+               PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
+        allocate(rproblem%RboundaryCondition(&
+            rproblemDescriptor%nboundaryCondition))
+      end if
+    end if
+
     ! Initialize coarse level
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
@@ -329,68 +337,95 @@ contains
     case (NDIM1D)
       ! Read coarse mesh from TRI-file
       call tria_readTriFile1D(rproblemLevel%rtriangulation,&
-                              rproblemDescriptor%trifile, bnoExtendedRaw)
+          rproblemDescriptor%trifile, bnoExtendedRaw)
       
     case (NDIM2D)
       ! Create new boundary and read from PRM-file
-      call boundary_read_prm(rproblem%rboundary, rproblemDescriptor%prmfile)
+      call boundary_read_prm(rproblem%rboundary,&
+          rproblemDescriptor%prmfile)
       
       ! Read coarse mesh from TRI-file
-      call tria_readTriFile2D(rproblemLevel%rtriangulation, rproblemDescriptor%trifile,&
-                              rproblem%rboundary, bnoextendedRaw)
+      call tria_readTriFile2D(rproblemLevel%rtriangulation,&
+          rproblemDescriptor%trifile, rproblem%rboundary,&
+          bnoextendedRaw)
 
       ! Convert quadrilaterals to triangules if required
-      if (iand(rproblemDescriptor%iproblemSpec, PROBDESC_MSPEC_CONVTRIANGLES) .ne. 0)&
-          call tria_rawGridToTri(rproblemLevel%rtriangulation)
+      if (iand(rproblemDescriptor%iproblemSpec,&
+               PROBDESC_MSPEC_CONVTRIANGLES) .ne. 0) then
+        call tria_rawGridToTri(rproblemLevel%rtriangulation)
+      end if
 
     case (NDIM3D)
       ! Read coarse mesh from TRI-file
-      call tria_readTriFile3D(rproblemLevel%rtriangulation, rproblemDescriptor%trifile,&
-                              rproblem%rboundary, bnoextendedRaw)
+      call tria_readTriFile3D(rproblemLevel%rtriangulation,&
+          rproblemDescriptor%trifile, rproblem%rboundary,&
+          bnoextendedRaw)
 
       ! Convert hexahedrals to tetrahedrals if required
       if (iand(rproblemDescriptor%iproblemSpec,&
                PROBDESC_MSPEC_CONVTETRAHEDRALS) .ne. 0) then
         call output_line('Conversion to tetrahedrals is not available yet!',&
-                         OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
+            OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
         call sys_halt()
       end if
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
-                       OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
+          OU_CLASS_WARNING,OU_MODE_STD,'problem_initProblem')
       call sys_halt()
     end select
 
     ! Refine coarse mesh to minimum problem level
     call tria_quickRefine2LevelOrdering(rproblemDescriptor%nlmin-1,&
-                                        rproblemLevel%rtriangulation,&
-                                        rproblem%rboundary)
+        rproblemLevel%rtriangulation, rproblem%rboundary)
     
     ! Create standard mesh from raw mesh
     call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&
-                                      rproblem%rboundary)
+        rproblem%rboundary)
 
-    ! Allocate matrices, vectors and stabilisations
+    ! Allocate matrices, vectors, stabilisations, etc.
     if (rproblemDescriptor%ndiscretisation .gt. 0)&
-        allocate(rproblemLevel%Rdiscretisation(rproblemDescriptor%ndiscretisation))
+        allocate(rproblemLevel%Rdiscretisation(&
+        rproblemDescriptor%ndiscretisation))
     if (rproblemDescriptor%nmatrixScalar .gt. 0)&
-        allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
+        allocate(rproblemLevel%Rmatrix(&
+        rproblemDescriptor%nmatrixScalar))
     if (rproblemDescriptor%nmatrixBlock .gt. 0)&
-        allocate(rproblemLevel%RmatrixBlock(rproblemDescriptor%nmatrixBlock))
+        allocate(rproblemLevel%RmatrixBlock(&
+        rproblemDescriptor%nmatrixBlock))
     if (rproblemDescriptor%nvectorScalar .gt. 0)&
-        allocate(rproblemLevel%Rvector(rproblemDescriptor%nvectorScalar))
+        allocate(rproblemLevel%Rvector(&
+        rproblemDescriptor%nvectorScalar))
     if (rproblemDescriptor%nvectorBlock .gt. 0)&
-        allocate(rproblemLevel%RvectorBlock(rproblemDescriptor%nvectorBlock))
+        allocate(rproblemLevel%RvectorBlock(&
+        rproblemDescriptor%nvectorBlock))
     if (rproblemDescriptor%nafcstab .gt. 0)&
-        allocate(rproblemLevel%Rafcstab(rproblemDescriptor%nafcstab))
+        allocate(rproblemLevel%Rafcstab(&
+        rproblemDescriptor%nafcstab))
+
+    ! Allocate/relink array for boundary conditions
+    if (rproblemDescriptor%nboundaryCondition .gt. 0) then
+      if (iand(rproblemDescriptor%iproblemSpec,&
+               PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
+        rproblemLevel%RboundaryCondition =>&
+            rproblem%RboundaryCondition
+        
+        ! Set specifier for relinked boundary conditions
+        rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                         PROBLEV_MSPEC_BDRCONDLINKED)
+      else
+        allocate(rproblemLevel%RboundaryCondition(&
+            rproblemDescriptor%nboundaryCondition))
+      end if
+    end if
 
     ! Append level to global problem
     call problem_appendLevel(rproblem, rproblemLevel)
     p_rproblemLevel => rproblemLevel
 
     ! Generate fine levels
-    do ilev = rproblemDescriptor%nlmin+1, rproblemDescriptor%nlmax
+    do ilev = rproblemDescriptor%nlmin+1,&
+              rproblemDescriptor%nlmax
       
       ! Initialize current level
       nullify(rproblemLevel); allocate(rproblemLevel)
@@ -398,26 +433,47 @@ contains
       
       ! Generate regularly refined mesh
       call tria_refine2LevelOrdering(p_rproblemLevel%rtriangulation,&
-                                     rproblemLevel%rtriangulation,&
-                                     rproblem%rboundary)
+          rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Create standard mesh from raw mesh
       call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&
-                                        rproblem%rboundary)
+          rproblem%rboundary)
 
       ! Allocate matrices, vectors and stabilisations
       if (rproblemDescriptor%ndiscretisation .gt. 0)&
-        allocate(rproblemLevel%Rdiscretisation(rproblemDescriptor%ndiscretisation))
+        allocate(rproblemLevel%Rdiscretisation(&
+        rproblemDescriptor%ndiscretisation))
       if (rproblemDescriptor%nmatrixScalar .gt. 0)&
-          allocate(rproblemLevel%Rmatrix(rproblemDescriptor%nmatrixScalar))
+          allocate(rproblemLevel%Rmatrix(&
+          rproblemDescriptor%nmatrixScalar))
       if (rproblemDescriptor%nmatrixBlock .gt. 0)&
-          allocate(rproblemLevel%RmatrixBlock(rproblemDescriptor%nmatrixBlock))
+          allocate(rproblemLevel%RmatrixBlock(&
+          rproblemDescriptor%nmatrixBlock))
       if (rproblemDescriptor%nvectorScalar .gt. 0)&
-          allocate(rproblemLevel%Rvector(rproblemDescriptor%nvectorScalar))
+          allocate(rproblemLevel%Rvector(&
+          rproblemDescriptor%nvectorScalar))
       if (rproblemDescriptor%nvectorBlock .gt. 0)&
-          allocate(rproblemLevel%RvectorBlock(rproblemDescriptor%nvectorBlock))
+          allocate(rproblemLevel%RvectorBlock(&
+          rproblemDescriptor%nvectorBlock))
       if (rproblemDescriptor%nafcstab .gt. 0)&
-          allocate(rproblemLevel%Rafcstab(rproblemDescriptor%nafcstab))
+          allocate(rproblemLevel%Rafcstab(&
+          rproblemDescriptor%nafcstab))
+
+      ! Allocate/relink array for boundary conditions
+      if (rproblemDescriptor%nboundaryCondition .gt. 0) then
+        if (iand(rproblemDescriptor%iproblemSpec,&
+                 PROBDESC_MSPEC_GLOBALBDRCOND) .ne. 0) then
+          rproblemLevel%RboundaryCondition =>&
+              rproblem%RboundaryCondition
+          
+          ! Set specifier for relinked boundary conditions
+          rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
+                                           PROBLEV_MSPEC_BDRCONDLINKED)
+        else
+          allocate(rproblemLevel%RboundaryCondition(&
+              rproblemDescriptor%nboundaryCondition))
+        end if
+      end if
       
       ! Append current level to global problem
       call problem_appendLevel(rproblem, rproblemLevel)
@@ -428,8 +484,9 @@ contains
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while (associated(p_rproblemLevel) .and.&
               associated(p_rproblemLevel%p_rproblemLevelCoarse))
-      call tria_compress2LevelOrdHierarchy(p_rproblemLevel%rtriangulation,&
-                                           p_rproblemLevel%p_rproblemLevelCoarse%rtriangulation)
+      call tria_compress2LevelOrdHierarchy(&
+          p_rproblemLevel%rtriangulation,&
+          p_rproblemLevel%p_rproblemLevelCoarse%rtriangulation)
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
 
@@ -475,6 +532,7 @@ contains
     
     ! local variables
     type(t_problemLevel), pointer :: p_rproblemLevel
+    integer :: i
     
     ! Initialization
     p_rproblemLevel => rproblem%p_rproblemLevelMax
@@ -490,6 +548,12 @@ contains
     
     ! Release boundary
     call boundary_release(rproblem%rboundary)
+
+    ! Release boundary conditions
+    do i = lbound(rproblem%RboundaryCondition,1),&
+           ubound(rproblem%RboundaryCondition,1)
+      call bdrf_release(rproblem%RboundaryCondition(i))
+    end do
         
     ! Reset data
     nullify(rproblem%p_rproblemPrev, rproblem%p_rproblemNext)
@@ -523,7 +587,8 @@ contains
     p_rproblem => p_rproblemFirst
     do while(associated(p_rproblem))
 
-      call problem_removeProblem(p_rproblemFirst, p_rproblemLast, p_rproblem)
+      call problem_removeProblem(p_rproblemFirst,&
+          p_rproblemLast, p_rproblem)
       call problem_releaseProblem(p_rproblem)
       deallocate(p_rproblem)
       p_rproblem => p_rproblemFirst
@@ -536,7 +601,7 @@ contains
 !<subroutine>
 
   subroutine problem_appendProblem(p_rproblemFirst, p_rproblemLast,&
-                                   rproblem, rproblemRef)
+      rproblem, rproblemRef)
 
 !<description>
     ! This subroutine appends a problem structure to the linked list
@@ -608,7 +673,7 @@ contains
 !<subroutine>
 
   subroutine problem_prependProblem(p_rproblemFirst, p_rproblemLast,&
-                                   rproblem, rproblemRef)
+      rproblem, rproblemRef)
 
 !<description>
     ! This subroutine prepends a problem structure to the linked list
@@ -679,7 +744,8 @@ contains
 
 !<subroutine>
 
-  subroutine problem_removeProblem(p_rproblemFirst, p_rproblemLast, rproblem)
+  subroutine problem_removeProblem(p_rproblemFirst, p_rproblemLast,&
+      rproblem)
 
 !<description>
     ! This subroutine removes an existing problem structure
@@ -905,23 +971,35 @@ contains
       deallocate(rproblemLevel%Rafcstab)
     end if
 
-    ! Nullify pointer to boundary condition
-    nullify(rproblemLevel%p_rboundaryCondition)
+    ! Release boundary condition structure
+    if (associated(rproblemLevel%RboundaryCondition)) then
+      if (iand(rproblemLevel%iproblemSpec,&
+               PROBLEV_MSPEC_BDRCONDLINKED) .ne. 0) then
+        nullify(rproblemLevel%RboundaryCondition)
+      else
+        do i = lbound(rproblemLevel%RboundaryCondition,1),&
+               ubound(rproblemLevel%RboundaryCondition,1)
+          call bdrf_release(rproblemLevel%RboundaryCondition(i))
+        end do
+        deallocate(rproblemLevel%RboundaryCondition)
+      end if
+    end if
 
   end subroutine problem_releaseLevel
   
   !*****************************************************************************
 
 !<subroutine>
-
-  subroutine problem_appendLevel(rproblem, rproblemLevel, rproblemLevelRef)
+  
+  subroutine problem_appendLevel(rproblem, rproblemLevel,&
+      rproblemLevelRef)
 
 !<description>
-    ! This subroutine appends a problem level structure to the
-    ! linked list of problem level structures. If the optional
-    ! reference level rproblemLevelRef is given, the problem level structure
-    ! is appended to rproblemLevelRef. Otherwise, the maximum problem level
-    ! is used as reference structure.
+    ! This subroutine appends a problem level structure to the linked
+    ! list of problem level structures. If the optional reference
+    ! level rproblemLevelRef is given, the problem level structure is
+    ! appended to rproblemLevelRef. Otherwise, the maximum problem
+    ! level is used as reference structure.
 !</description>
   
 !<inputoutput>
@@ -982,14 +1060,15 @@ contains
 
 !<subroutine>
 
-  subroutine problem_prependLevel(rproblem, rproblemLevel, rproblemLevelRef)
+  subroutine problem_prependLevel(rproblem, rproblemLevel,&
+      rproblemLevelRef)
 
 !<description>
-    ! This subroutine prepends a problem level structure to the
-    ! linked list of problem level structures. If the optional
-    ! reference level rproblemLevelRef is given, the problem level structure
-    ! is prepended to rproblemLevelRef. Otherwise, the minimum problem level
-    ! is used as reference structure.
+    ! This subroutine prepends a problem level structure to the linked
+    ! list of problem level structures. If the optional reference
+    ! level rproblemLevelRef is given, the problem level structure is
+    ! prepended to rproblemLevelRef. Otherwise, the minimum problem
+    ! level is used as reference structure.
 !</description>
   
 !<inputoutput>
@@ -1054,8 +1133,8 @@ contains
   subroutine problem_removeLevel(rproblem, rproblemLevel)
 
 !<description>
-    ! This subroutine removes an existing problem level structure
-    ! from an existing problem structure
+    ! This subroutine removes an existing problem level structure from
+    ! an existing problem structure
 !</description>
 
 !<inputoutput>
@@ -1069,7 +1148,7 @@ contains
     
     if (.not.associated(rproblemLevel%p_rproblem, rproblem)) then
       call output_line('Problem level structure does not belong to problem structure!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'problem_removeLevel')
+          OU_CLASS_ERROR,OU_MODE_STD,'problem_removeLevel')
       call sys_halt()
     end if
 
@@ -1107,52 +1186,60 @@ contains
     call output_line ('-------------')
 
     if (associated(rproblemLevel%p_rproblemLevelCoarse)) then
-      call output_line ('coarser level: '//&
+      call output_line ('coarser level:       '//&
                         trim(sys_siL(rproblemLevel%p_rproblemLevelCoarse%ilev,15)))
     else
-      call output_line ('coarser level: not associated')
+      call output_line ('coarser level:       not associated')
     end if
 
     if (associated(rproblemLevel%p_rproblemLevelFine)) then
-      call output_line ('finer level:   '//&
+      call output_line ('finer level:         '//&
                         trim(sys_siL(rproblemLevel%p_rproblemLevelFine%ilev,15)))
     else
-      call output_line ('finer level:   not associated')
+      call output_line ('finer level:         not associated')
     end if
 
     if (associated(rproblemLevel%Rafcstab)) then
-      call output_line ('Rafcstab:      '//&
+      call output_line ('Rafcstab:            '//&
                         trim(sys_siL(size(rproblemLevel%Rafcstab),15)))
     else
-      call output_line ('Rafcstab:      not associated')
+      call output_line ('Rafcstab:            not associated')
     end if
 
     if (associated(rproblemLevel%Rmatrix)) then
-      call output_line ('Rmatrix:       '//&
+      call output_line ('Rmatrix:             '//&
                         trim(sys_siL(size(rproblemLevel%Rmatrix),15)))
     else
-      call output_line ('Rmatrix:       not associated')
+      call output_line ('Rmatrix:             not associated')
     end if
 
     if (associated(rproblemLevel%RmatrixBlock)) then
-      call output_line ('RmatrixBlock:  '//&
+      call output_line ('RmatrixBlock:        '//&
                         trim(sys_siL(size(rproblemLevel%RmatrixBlock),15)))
     else
-      call output_line ('RmatrixBlock:  not associated')
+      call output_line ('RmatrixBlock:        not associated')
     end if
 
     if (associated(rproblemLevel%Rvector)) then
-      call output_line ('Rvector:       '//&
+      call output_line ('Rvector:             '//&
                         trim(sys_siL(size(rproblemLevel%Rvector),15)))
     else
-      call output_line ('Rvector:       not associated')
+      call output_line ('Rvector:             not associated')
     end if
 
     if (associated(rproblemLevel%RvectorBlock)) then
-      call output_line ('RvectorBlock:  '//&
+      call output_line ('RvectorBlock:        '//&
                         trim(sys_siL(size(rproblemLevel%RvectorBlock),15)))
     else
-      call output_line ('RvectorBlock:  not associated')
+      call output_line ('RvectorBlock:        not associated')
+    end if
+    call output_lbrk()
+
+    if (associated(rproblemLevel%RboundaryCondition)) then
+      call output_line ('RboundaryCondition:  '//&
+                        trim(sys_siL(size(rproblemLevel%RboundaryCondition),15)))
+    else
+      call output_line ('RboundaryCondition:  not associated')
     end if
     call output_lbrk()
 
@@ -1162,7 +1249,8 @@ contains
   
 !<function>
 
-  function problem_getLevel(rproblem, ilev, btopdown) result(p_rproblemLevel)
+  function problem_getLevel(rproblem, ilev, btopdown)&
+      result(p_rproblemLevel)
 
 !<description>
     ! This subroutine returns a pointer to the problem level structure
@@ -1222,104 +1310,4 @@ contains
 
   end function problem_getLevel
 
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine problem_setBdrCond(p_rproblemFirst, p_rproblemLast, rboundaryCondition)
-
-!<description>
-    ! This subroutine attaches the boundary condition
-    ! rboundaryCondition to all problem levels of all problem
-    ! structures present in the sequence of problem structures between
-    ! p_rproblemFirst and p_rproblemLast
-!</description>
-
-!<input>
-    ! boundary condition
-    type(t_boundaryCondition), intent(in), target :: rboundaryCondition
-!</input>
-
-!<inputoutput>
-    ! first problem structure
-    type(t_problem), pointer :: p_rproblemFirst
-
-    ! last problem structure
-    type(t_problem), pointer :: p_rproblemLast
-!</inputoutput>
-!</subroutine>
-
-    ! local variable
-    type(t_problem), pointer :: p_rproblem
-
-
-    p_rproblem => p_rproblemFirst
-    do while(associated(p_rproblem))
-
-      call problem_setProblemBdrCond(p_rproblem, rboundaryCondition)
-      p_rproblem => p_rproblemFirst
-    end do
-
-  end subroutine problem_setBdrCond
-  
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine problem_setProblemBdrCond(rproblem, rboundaryCondition)
-
-!<description>
-    ! This subroutine attaches the boundary condition rboundaryCondition
-    ! to all problem levels of the problem structure
-!</description>
-
-!<input>
-    ! boundary condition
-    type(t_boundaryCondition), intent(in), target :: rboundaryCondition
-!</input>
-
-!<inputoutput>
-    ! problem structure
-    type(t_problem), intent(inout) :: rproblem
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_problemLevel), pointer :: p_rproblemLevel
-    
-    p_rproblemLevel => rproblem%p_rproblemLevelMax
-    do while(associated(p_rproblemLevel))
-
-      p_rproblemLevel%p_rboundaryCondition => rboundaryCondition
-      p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
-    end do
-    
-  end subroutine problem_setProblemBdrCond
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine problem_setLevelBdrCond(rproblemLevel, rboundaryCondition)
-
-!<description>
-    ! This subroutine attaches the boundary condition
-    ! rboundaryCondition to the problem level
-!</description>
-
-!<input>
-    ! boundary condition
-    type(t_boundaryCondition), intent(in), target :: rboundaryCondition
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-!</inputoutput>
-!</subroutine>
-
-    rproblemLevel%p_rboundaryCondition => rboundaryCondition
-
-  end subroutine problem_setLevelBdrCond
-  
 end module problem
