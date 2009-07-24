@@ -650,7 +650,7 @@ contains
 !<subroutine>
   
   subroutine tstep_performThetaStepScalar(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -675,7 +675,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(in), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -697,18 +697,18 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: rsolutionBlock, rbBlock
+    type(t_vectorBlock) :: rsolutionBlock, rsourceBlock
 
     
-    if (present(rb)) then
+    if (present(rsource)) then
 
       ! Call block version with right-hand side vector
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
-      call lsysbl_createVecFromScalar(rb, rbBlock)
+      call lsysbl_createVecFromScalar(rsource, rsourceBlock)
       call tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
-          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection, rbBlock)
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
       call lsysbl_releaseVector(rsolutionBlock)
-      call lsysbl_releaseVector(rbBlock)
+      call lsysbl_releaseVector(rsourceBlock)
 
     else
       
@@ -727,7 +727,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performThetaStepBlock(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
     ! This subroutine performs one step by means of the two-level theta-scheme
@@ -749,8 +749,8 @@ contains
     ! Callback routines
     include 'intf_solvercallback.inc'
 
-    ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(in), optional :: rb
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -841,7 +841,7 @@ contains
 
       ! Solve the nonlinear algebraic system in the time interval (t^n, t^{n+1})
       call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
-          rsolution, p_rsolutionOld, fcb_nlsolverCallback, rcollection, rb)
+          rsolution, p_rsolutionOld, fcb_nlsolverCallback, rcollection, rsource)
 
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
@@ -929,7 +929,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performRKStepScalar(rproblemLevel, rtimestep,&
-      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rb)
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -942,7 +942,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorScalar), intent(in), optional :: rb
+    type(t_vectorScalar), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -964,19 +964,19 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_vectorBlock) :: rbBlock
+    type(t_vectorBlock) :: rsourceBlock
     type(t_vectorBlock) :: rsolutionBlock
 
 
-    if (present(rb)) then
+    if (present(rsource)) then
     
-      call lsysbl_createVecFromScalar(rb, rbBlock)
+      call lsysbl_createVecFromScalar(rsource, rsourceBlock)
       call lsysbl_createVecFromScalar(rsolution, rsolutionBlock)
 
       call tstep_performRKStepBlock(rproblemLevel, rtimestep, rsolver,&
-          rsolutionBlock, fcb_nlsolverCallback, rcollection, rbBlock)
+          rsolutionBlock, fcb_nlsolverCallback, rcollection, rsourceBlock)
 
-      call lsysbl_releaseVector(rbBlock)
+      call lsysbl_releaseVector(rsourceBlock)
       call lsysbl_releaseVector(rsolutionBlock)
 
     else
@@ -997,7 +997,7 @@ contains
 !<subroutine>
 
   subroutine tstep_performRKStepBlock(rproblemLevel, rtimestep,&
-      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rb)
+      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
     ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
@@ -1011,7 +1011,7 @@ contains
     include 'intf_solvercallback.inc'
 
     ! OPTIONAL: constant right-hand side vector
-    type(t_vectorBlock), intent(in), optional :: rb
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -1113,8 +1113,8 @@ contains
         end if
          
         ! Initialize the constant right-hand side vector
-        if (present(rb)) then
-          call lsysbl_copyVector(rb, p_rconstB)
+        if (present(rsource)) then
+          call lsysbl_copyVector(rsource, p_rconstB)
         else
           call lsysbl_clearVector(p_rconstB)
         end if
@@ -1136,7 +1136,7 @@ contains
 !!$                          p_rsolutionInitial, p_rb, istep, rcollection)
 !!$         
 !!$         ! Apply given right-hand side vector
-!!$         if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
+!!$         if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
 !!$         
 !!$         ! Impose boundary conditions
 !!$         call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
@@ -1182,7 +1182,7 @@ contains
 !!$                           p_rsolutionInitial, p_rb, istep, rcollection)
 !!$          
 !!$          ! Apply given right-hand side vector
-!!$          if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
+!!$          if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
 !!$          
 !!$          ! Impose boundary conditions
 !!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
@@ -1226,7 +1226,7 @@ contains
 !!$                           p_rsolutionAux, p_rb, istep, rcollection)
 !!$          
 !!$          ! Apply given right-hand side vector
-!!$          if (present(rb)) call lsysbl_vectorLinearComb(rb, p_rb, 1._DP, 1._DP)
+!!$          if (present(rsource)) call lsysbl_vectorLinearComb(rsource, p_rb, 1._DP, 1._DP)
 !!$          
 !!$          ! Impose boundary conditions
 !!$          call fcb_setBoundary(rproblemLevel, rtimestep, rsolver,&
@@ -1285,9 +1285,9 @@ contains
   
 !<subroutine>
 
-  subroutine tstep_performPseudoSteppingBlock(rproblemLevel, rtimestep, rsolver,&
-                                              rsolution, fcb_nlsolverCallback,&
-                                              rcollection, rb)
+  subroutine tstep_performPseudoSteppingBlock(rproblemLevel,&
+      rtimestep, rsolver, rsolution, fcb_nlsolverCallback,&
+      rcollection, rsource)
 
 !<description>
     ! This subroutine performs pseudo time-stepping to compute the
@@ -1301,8 +1301,8 @@ contains
     ! Callback routines
     include 'intf_solvercallback.inc'
 
-    ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorBlock), intent(in), optional :: rb
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -1334,19 +1334,17 @@ contains
         
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(rproblemLevel, rtimestep, rsolver,&
-                                 rsolution, fcb_nlsolverCallback,&
-                                 rcollection, rb)
+            rsolution, fcb_nlsolverCallback, rcollection, rsource)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, fcb_nlsolverCallback,&
-                                    rcollection, rb)
+        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver&
+            , rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingBlock')
         call sys_halt()
       end select
 
@@ -1369,9 +1367,9 @@ contains
   
 !<subroutine>
 
-  subroutine tstep_performPseudoSteppingScalar(rproblemLevel, rtimestep, rsolver,&
-                                               rsolution, fcb_nlsolverCallback,&
-                                               rcollection, rb)
+  subroutine tstep_performPseudoSteppingScalar(rproblemLevel,&
+      rtimestep, rsolver, rsolution, fcb_nlsolverCallback,&
+      rcollection, rsource)
 
 !<description>
     ! This subroutine performs pseudo time-stepping to compute the
@@ -1385,8 +1383,8 @@ contains
     ! Callback routines
     include 'intf_solvercallback.inc'
     
-    ! OPTIONAL: constant right-hand sode vector
-    type(t_vectorScalar), intent(in), optional :: rb
+    ! OPTIONAL: source vector
+    type(t_vectorScalar), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
@@ -1417,19 +1415,17 @@ contains
         
         ! Adopt explicit Runge-Kutta scheme
         call tstep_performRKStep(rproblemLevel, rtimestep, rsolver,&
-                                 rsolution, fcb_nlsolverCallback,&
-                                 rcollection, rb)
+            rsolution, fcb_nlsolverCallback, rcollection, rsource)
         
       case (TSTEP_THETA_SCHEME)
         
         ! Adopt two-level theta-scheme
-        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver,&
-                                    rsolution, fcb_nlsolverCallback,&
-                                    rcollection, rb)
+        call tstep_performThetaStep(rproblemLevel, rtimestep, rsolver&
+            , rsolution, fcb_nlsolverCallback, rcollection, rsource)
           
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performPseudoSteppingScalar')
         call sys_halt()
       end select
 
@@ -1456,8 +1452,8 @@ contains
 
 !<function>
   
-  function tstep_checkTimestep(rtimestep, rsolver,&
-                               rsolution1, rsolution2) result(breject)
+  function tstep_checkTimestep(rtimestep, rsolver, rsolution1,&
+      rsolution2) result(breject)
 
 !<description>
     ! This functions checks the result of the current time step and
