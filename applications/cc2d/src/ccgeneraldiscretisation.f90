@@ -1542,7 +1542,7 @@ contains
       if (istart .gt. 0) then
         ilev = istart
       else
-        ilev = rproblem%NLMAX-abs(istart)+1
+        ilev = rproblem%NLMAX-abs(istart)
       end if
       
       if (ilev .lt. rproblem%NLMIN) then
