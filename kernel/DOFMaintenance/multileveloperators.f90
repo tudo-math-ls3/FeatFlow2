@@ -1600,6 +1600,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
+      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
       call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
 
       ! Calculate the number of coarse mesh elements we want to process
@@ -2205,6 +2206,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
+      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
       call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
@@ -2869,6 +2871,7 @@ contains
       
       ! Initialise the cubature formula, get cubature weights and point
       ! coordinates on the reference element of the fine mesh
+      ncubpFine = cub_igetNumPts(p_relemDistFine%ccubTypeBilForm)
       call cub_getCubature(p_relemDistFine%ccubTypeBilForm, p_DcubPtsRefFine, Domega)
       
       ! Calculate the number of coarse mesh elements we want to process
