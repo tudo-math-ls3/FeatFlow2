@@ -742,8 +742,8 @@ contains
 
               call lsyssc_MatrixLinearComb(rproblemLevel&
                   %Rmatrix(lumpedMassMatrix), 1.0_DP, rproblemLevel&
-                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar)&
-                  , rtimestep%theta*rtimestep%dStep, rproblemLevel&
+                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                  rtimestep%theta*rtimestep%dStep, rproblemLevel&
                   %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                   .false., .false., .true., .true.)
 
@@ -951,7 +951,7 @@ contains
       if (rtimestep%theta .lt. 1.0_DP) then
 
         ! Compute scaling parameter
-        dscale = (1-rtimestep%theta) * rtimestep%dStep
+        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
         ! What type if stabilization is applied?
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
@@ -1180,7 +1180,7 @@ contains
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
               rsolution%RvectorBlock(iblock),&
-              rrhs%RvectorBlock(iblock), 1._DP , 1.0_DP)
+              rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
         end do
         
       else ! theta = 1
@@ -1197,7 +1197,7 @@ contains
         do iblock = 1, rsolution%nblocks
           call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
               rsolution%RvectorBlock(iblock),&
-              rrhs%RvectorBlock(iblock), 1._DP , 0.0_DP)
+              rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
         
       end if ! theta
@@ -1571,7 +1571,7 @@ contains
     
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
-      call lsysbl_vectorLinearComb(rsource, rres, 1.0_DP, -1.0_DP)
+      call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     end if
     
     ! Stop time measurement for residual/rhs evaluation
