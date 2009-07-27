@@ -853,6 +853,8 @@ contains
 
       ! Activate the current coarse mesh element distribution
       p_relementDistribution => rdiscrCoarse%RelementDistr(IELDIST)
+      
+      if (p_relementDistribution%NEL .eq. 0) cycle
     
       ! Get the number of local DOF`s for trial and test functions
       indofCoarse = elem_igetNDofLoc(p_relementDistribution%celement)
@@ -1577,6 +1579,8 @@ contains
       ! Activate the current element distributions
       p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
       p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+
+      if (p_relemDistCoarse%NEL .eq. 0) cycle
     
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that the trial functions
@@ -2180,6 +2184,8 @@ contains
       ! Activate the current element distributions
       p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
       p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+    
+      if (p_relemDistCoarse%NEL .eq. 0) cycle
     
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that the trial functions
@@ -2842,6 +2848,8 @@ contains
       ! Activate the current element distributions
       p_relemDistCoarse => rdiscretisationCoarse%RelementDistr(IELDIST)
       p_relemDistFine => rdiscretisationFine%RelementDistr(IELDIST)
+    
+      if (p_relemDistCoarse%NEL .eq. 0) cycle
     
       ! p_IelementList must point to our set of elements in the discretisation
       ! with that the trial functions
