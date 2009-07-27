@@ -1787,17 +1787,24 @@ contains
     real(DP) :: dmassTransport0, dmassTransport
     
     ! Get timer structures
-    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-
-    ! Set pointers
+    p_rtimerPrePostprocess =>&
+        collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution =>&
+        collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerErrorEstimation =>&
+        collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    p_rtimerAdaptation =>&
+        collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    p_rtimerTriangulation =>&
+        collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    p_rtimerAssemblyCoeff =>&
+        collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    
+    ! Set pointers to solver structures
     p_rsolverEuler => rsolver(1)
     p_rsolverTransport => rsolver(2)
-
+    
+    ! Set pointers to solution vectors
     p_rsolutionEuler => rsolution(1)
     p_rsolutionTransport => rsolution(2)
 
@@ -1819,7 +1826,8 @@ contains
         ssectionNameEuler, 'discretisation', discretisationEuler)
     
     ! Set pointer to discretisation structure
-    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisationEuler)
+    p_rdiscretisation =>&
+        p_rproblemLevel%Rdiscretisation(discretisationEuler)
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
@@ -1829,7 +1837,8 @@ contains
       p_rsolutionEuler%RvectorBlock(1)%NVAR =&
           euler_getNVAR(p_rproblemLevel)
       isize = p_rsolutionEuler%NEQ*euler_getNVAR(p_rproblemLevel)
-      call lsysbl_resizeVectorBlock(p_rsolutionEuler, isize, .false., .false.)
+      call lsysbl_resizeVectorBlock(p_rsolutionEuler,&
+          isize, .false., .false.)
     end if
 
     ! Initialize the solution vector and impose boundary conditions
@@ -1863,7 +1872,8 @@ contains
         'discretisation', discretisationTransport)
 
     ! Set pointer to discretisation structure
-    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisationTransport)
+    p_rdiscretisation =>&
+        p_rproblemLevel%Rdiscretisation(discretisationTransport)
 
     ! Create the solution vector
     call lsysbl_createVectorBlock(p_rdiscretisation,&
@@ -1881,7 +1891,8 @@ contains
         rbdrCondTransport, .true.)
 
     ! Set collection to primal problem mode
-    call parlst_addvalue(rparlist, ssectionNameTransport, 'mode', 'primal')
+    call parlst_addvalue(rparlist,&
+        ssectionNameTransport, 'mode', 'primal')
        
     
     ! Initialize timer for intermediate UCD exporter
@@ -1910,7 +1921,8 @@ contains
       if ((dstepAdapt > 0.0_DP) .or. (npreadapt > 0)) then
 
         ! Initialize adaptation structure from parameter list
-        call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
+        call hadapt_initFromParameterlist(rhadapt,&
+            rparlist, sadaptivityName)
 
         ! Generate a dynamic graph for the sparsity pattern and attach
         ! it to the collection structure which is used to pass this
@@ -2017,7 +2029,8 @@ contains
           call parlst_getvalue_int(rparlist,&
               ssectionNameTransport, 'systemMatrix', systemMatrix)
           call flagship_updateSolverMatrix(p_rproblemLevel,&
-              p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT , UPDMAT_ALL)
+              p_rsolverTransport, systemMatrix,&
+              SYSTEM_INTERLEAVEFORMAT , UPDMAT_ALL)
           call solver_updateStructure(p_rsolverTransport)
 
         end if   ! npreadapt > 0
@@ -2071,17 +2084,17 @@ contains
 
       !-------------------------------------------------------------------------
       ! Compute Euler model + scalar tracer in coupled fashio
-      ! for full time step: $U^n \to U^{n+1}$ and $u^n\tin^{n+1}$
+      ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
       !-------------------------------------------------------------------------
 
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
       
-      ! Compute scaling parameter
-      dscale = (1.0_DP-rtimestep%theta)*rtimestep%dStep
+      ! Compute scaling for explicit part of the Lorentz force
+      dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
-      if (dscale .gt. 0.0_DP) then
-
+      if (dscale .ne. 0.0_DP) then
+        
         ! Calculate explicit part of the Lorentz force term
         call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
@@ -2091,10 +2104,14 @@ contains
       end if
       
       ! Prepare quick access arrays/vectors
-!!$      rcollection%SquickAccess(1) = ssectionNameEuler
-!!$      rcollection%SquickAccess(2) = ssectionNameTransport
+      rcollection%SquickAccess(1) = 'null'
+      rcollection%SquickAccess(2) = ssectionName
+      rcollection%SquickAccess(3) = ssectionNameEuler
+      rcollection%SquickAccess(4) = ssectionNameTransport
       rcollection%p_rvectorQuickAccess1 => rsolution(1)
-      rcollection%p_rvectorQuickAccess2 => rsolution(2)
+      rcollection%p_rvectorQuickAccess2 => rtimestep%RtempVectors(1)
+      rcollection%p_rvectorQuickAccess3 => rsolution(2)
+      rcollection%p_rvectorQuickAccess4 => rtimestep%RtempVectors(2)
       
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
@@ -2112,14 +2129,14 @@ contains
         
         if (dscale .gt. 0.0_DP) then
           
-          ! Adopt two-level theta-scheme
+          ! Adopt two-level theta-scheme with source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
               rcollection, rforce)
 
         else
 
-          ! Adopt two-level theta-scheme
+          ! Adopt two-level theta-scheme without sorce term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
               rcollection)
@@ -2239,31 +2256,26 @@ contains
       ! Compute linearized FCT correction
       !-------------------------------------------------------------------------
       
-      ! Start time measurement for solution procedure
-      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-      
-!!$      ! Perform conservative FCT postprocessing
-!!$      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
-!!$          p_rproblemLevel, rtimestepEuler, p_rsolutionEuler,&
-!!$          p_rsolutionTransport, rcollection)
-      
-      ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = ssectionNameTransport
-      
-      ! Apply linearized FCT correction for transport model
-      call transp_calcLinearizedFCT(rbdrCondTransport,&
-          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
-          rcollection)
-
-      ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = ssectionNameEuler
-      
-      ! Apply linearized FCT correction for Euler model
-      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
-          rtimestep, p_rsolutionEuler, rcollection)
-      
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
+!!$      ! Start time measurement for solution procedure
+!!$      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+!!$      
+!!$      ! Prepare quick access arrays
+!!$      rcollection%SquickAccess(1) = ssectionNameTransport
+!!$      
+!!$      ! Apply linearized FCT correction for transport model
+!!$      call transp_calcLinearizedFCT(rbdrCondTransport,&
+!!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
+!!$          rcollection)
+!!$
+!!$      ! Prepare quick access arrays
+!!$      rcollection%SquickAccess(1) = ssectionNameEuler
+!!$      
+!!$      ! Apply linearized FCT correction for Euler model
+!!$      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
+!!$          rtimestep, p_rsolutionEuler, rcollection)
+!!$      
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
 
       
 !!$      !-------------------------------------------------------------------------

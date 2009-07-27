@@ -123,19 +123,20 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+    type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionEuler0
+    type(t_vectorBlock), pointer :: p_rsolutionTransport
     type(t_vectorBlock) :: rforce
     real(DP) :: dscale
     integer(i32) :: iSpec
-    integer :: jacobianMatrix, isubstep
-
-    isubstep = rcollection%IquickAccess(1)
-
+    integer :: jacobianMatrix
+    
     select case(rsolver%ssolverName)
       
     case('NonlinearSolverEuler')
 
-      rcollection%SquickAccess(1)='Euler'
+      ! Set the first string quick access array to the section name
+      ! of the Euler model which is stored in the third array
+      rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
       
       ! Do we have to calculate the preconditioner?
       ! --------------------------------------------------------------------------
@@ -145,12 +146,13 @@ contains
         call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution, rcollection)
       end if
+
       
       ! Do we have to calculate the residual?
       ! --------------------------------------------------------------------------
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
         
-        if (istep .eq. 0 .and. isubstep .eq. 1) then
+        if (istep .eq. 0) then
           ! Compute the constant right-hand side including the
           ! given explicit part of the Lorentz force term
           call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
@@ -159,26 +161,41 @@ contains
         
         ! Set pointer to parameter list
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+        ! Set pointers to current solution vectors stored in the
+        ! first and third quick access vector
         p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
-        p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
+        p_rsolutionTransport => rcollection%p_rvectorQuickAccess3
         
-        ! Calculate scaling parameter
-        dscale = rtimestep%theta*rtimestep%dStep
+        ! Calculate scaling for implicit part of the Lorentz force
+        dscale = -rtimestep%theta * rtimestep%dStep
 
-        ! Compute the implicit part of the Lorentz force
-        call zpinch_initLorentzforceTerm(p_rparlist, 'zpinch',&
-            'Euler', 'Transport', rproblemLevel, p_rsolutionEuler,&
-            p_rsolutionTransport, rtimestep%dTime, dscale, rforce,&
-            rcollection)
-        
-        ! Compute the residual including the pre-computed implicit
-        ! part of the Lorentz force term
-        call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-            rcollection, rforce)
+        if (dscale .ne. 0.0_DP) then
+          
+          ! Compute the implicit part of the Lorentz force
+          call zpinch_initLorentzforceTerm(p_rparlist, rcollection&
+              %SquickAccess(2), rcollection%SquickAccess(3),&
+              rcollection%SquickAccess(4), rproblemLevel,&
+              p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime,&
+              dscale, rforce, rcollection)
+          
+          ! Compute the residual including the pre-computed implicit
+          ! part of the Lorentz force term
+          call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+              rcollection, rforce)
+          
+          ! Release temporal memory
+          call lsysbl_releaseVector(rforce)
 
-        ! Release temporal memory
-        call lsysbl_releaseVector(rforce)
+        else
+
+          ! Compute the residual without the Lorentz force term
+          call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rsolution0, rrhs, rres, istep,&
+              rcollection)
+          
+        end if
       end if
       
       
@@ -194,7 +211,9 @@ contains
 
     case('NonlinearSolverTransport')
 
-      rcollection%SquickAccess(1)='Transport'
+      ! Set the first string quick access array to the section name
+      ! of the Euler model which is stored in the fourth array
+      rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
 
       !###########################################################################
       ! REMARK: The order in which the operations are performed is
@@ -231,39 +250,60 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
         
-        if (istep .eq. 0 .and. isubstep .eq. 1) then
-          ! Assemble the constant right-hand side, whereby the velocity
-          ! vector and the density averaged mass matrices are based on
-          ! the solution of the Euler model from the previous time step
-          call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution, rrhs, rcollection)
-          
-          ! Set pointer to parameter list and to the solution vector
+        if (istep .eq. 0) then
+          ! Set pointers to parameter list and to the solution vector
+          ! of the Euler model from the previous time step
           p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+          p_rsolutionEuler0 => rcollection%p_rvectorQuickAccess2
+
+          ! Calculate the density averaged mass matrices using the
+          ! solution of the Euler model from the previous time step
+          call zpinch_initDensityAveraging(p_rparlist,&
+              rcollection%SquickAccess(1), rproblemLevel,&
+              p_rsolutionEuler0, rcollection)
+          
+          ! Calculate the velocity vector based using the momentum
+          ! from the previous time step
+          call zpinch_initVelocityField(p_rparlist,&
+              rcollection%SquickAccess(1), rproblemLevel,&
+              p_rsolutionEuler0, rcollection)
+
+          ! Compute the preconditioner
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution0, rcollection)
+
+          ! Assemble the constant right-hand side
+          call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution0, rrhs, rcollection)
+          
+          ! Set pointer to the solution vector of the Euler model
+          ! from the current time step
           p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
           
           ! Calculate the density averaged mass matrices using the
           ! solution of the Euler model from the current time step
           call zpinch_initDensityAveraging(p_rparlist,&
-              'Transport', rproblemLevel, p_rsolutionEuler, rcollection)
+              rcollection%SquickAccess(1), rproblemLevel,&
+              p_rsolutionEuler, rcollection)
           
           ! Calculate the velocity vector using the solution of the
           ! Euler model from the current time step
           call zpinch_initVelocityField(p_rparlist,&
-              'Transport', rproblemLevel, p_rsolutionEuler, rcollection)
+              rcollection%SquickAccess(1), rproblemLevel,&
+              p_rsolutionEuler, rcollection)
+
+          ! Compute the preconditioner
+          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+              rsolver, rsolution, rcollection)
+
+          ! Remove specifier for the preconditioner (if any)
+          iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
         end if
-        
-        ! Compute the preconditioner
-        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rcollection)
         
         ! Compute the residual
         call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
             rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-            rcollection)
-        
-        ! Remove specifier for the preconditioner (if any)
-        iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
+            rcollection)        
       end if
       
       
@@ -301,13 +341,16 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_APPLYJACOBIAN) .ne. 0) then
         
+        ! Set pointers to parameter list
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
         
-        call parlst_getvalue_int(p_rparlist,&
-            'Transport', 'jacobianMatrix', jacobianMatrix)
+        ! Get position of Jacobian matrix
+        call parlst_getvalue_int(p_rparlist, rcollection&
+            %SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
         
         ! Apply Jacobian matrix
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(jacobianMatrix),&
+        call lsyssc_scalarMatVec(rproblemLevel&
+            %Rmatrix(jacobianMatrix),&
             rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
             1.0_DP)
       end if
@@ -844,8 +887,8 @@ contains
         
         ! Compute unit vector into origin
         if (drad .gt. 1e-4) then
-          x1 = -cos(dang)
-          x2 = -sin(dang)
+          x1 = cos(dang)
+          x2 = sin(dang)
         else
           x1 = 0.0; x2 = 0.0
         end if
@@ -898,7 +941,7 @@ contains
         
         ! Compute unit vector into origin
         if (drad .gt. 1e-4) then
-          x1 = -1.0; x2 = 0.0
+          x1 = 1.0; x2 = 0.0
         else
           x1 = 0.0; x2 = 0.0
         end if
@@ -971,6 +1014,10 @@ contains
     coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
     coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
     
+    print *, "Must change from getting data from collection structure &
+        &to getting data from parameter list"
+    stop
+
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
 
     ! Set pointers
