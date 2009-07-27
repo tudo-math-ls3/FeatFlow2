@@ -217,7 +217,7 @@ imassantidiffusiontype = 0
 # 3 = Burgers equation in space-time (x,t)
 # 4 = Buckley Leverett in space-time (x,t)
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 1
 
 # section name of velocity field
 svelocityname = 
@@ -348,7 +348,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch
+ucdsolution = out/zpinchBE
 
 # file for UCD output of error
 ucderror = out/
@@ -381,7 +381,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -580,7 +580,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-10
+depsAbs = 1e-11
 
 # relative tolerance for residual
 depsRel = 1e-3
@@ -662,7 +662,7 @@ domega = 1.0
 depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 0.0
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -717,7 +717,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 1e-4
 
 # relative tolerance for stagnation
 depsStag = 0.0

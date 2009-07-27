@@ -12,7 +12,7 @@ defconst: r0    = 1.0
 defexpr:  sqr1 = SQRT(x^2+y^2)
 defexpr:  rad  = (1-t^4)
 
-deffunc: @forceterm = 12*(1-t^4)*t^2 ; t
+deffunc: @forceterm = -12*(1-t^4)*t^2 ; t
 
 ################################################################################
 #                                                                              #
