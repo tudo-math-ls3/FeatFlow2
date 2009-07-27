@@ -2012,8 +2012,8 @@ contains
       if (rtimestep%theta .lt. 1.0_DP) then
       
         ! Compute scaling parameter
-        dscale = (1-rtimestep%theta) * rtimestep%dStep
-  
+        dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+        
         ! Build transport term $(1-theta)*dt*K(u^n)u^n$, where
         ! $T(u^n)$ denotes the discrete transport operator of high or
         ! low order evaluated at the old solution values
@@ -2311,7 +2311,7 @@ contains
     
     ! Apply the source vector to the residual (if any)
     if (present(rsource))&
-        call lsysbl_vectorLinearComb(rsource, rres, 1.0_DP, -1.0_DP)
+        call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     
     ! Stop time measurement for residual evaluation
     call stat_stopTimer(p_rtimer)
@@ -3167,7 +3167,8 @@ contains
           call transp_calcMatrixPrimalConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+!!$          d_ij = max(-k_ij, 0.0_DP, -k_ji)
+          d_ij = max(abs(k_ij), abs(k_ji))
 
           ! Compute auxiliary value
           aux = d_ij*(u(j)-u(i))
