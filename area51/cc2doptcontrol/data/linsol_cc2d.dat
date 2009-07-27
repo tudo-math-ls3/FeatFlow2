@@ -36,9 +36,10 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 #   Note: This doesn't seem to work!?!
 # 6=BiCGStab with Full VANCA preconditioning
 # 7=BiCGStab with Diagonal VANCA preconditioning
-# 8=BiCGStab with Diagonal VANCA preconditioning, all elements
+# 8=BiCGStab with Diagonal VANCA preconditioning, all element types
+# 9=Diagonal VANCA preconditioning, all element types
 
-ismootherType = 4 #7
+ismootherType = 4
 
 # Name of the section in this file which configures the smoother.
 
@@ -51,7 +52,7 @@ ssmootherSection = 'CC-SMOOTHER'
 # =3: BiCGStab with diagonal VANCA preconditioning
 # =4: BiCGStab with full VANCA preconditioning
 # =5: BiCGStab with general VANCA preconditioning
-# =6: BiCGStab with diagonal VANCA preconditioning, all elements
+# =6: BiCGStab with diagonal VANCA preconditioning, all element types
 
 icoarseGridSolverType = 5
 
