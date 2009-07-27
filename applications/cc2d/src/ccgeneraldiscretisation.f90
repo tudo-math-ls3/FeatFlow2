@@ -1567,7 +1567,7 @@ contains
       
       ! Read in the vector
       call vecio_readBlockVectorHR (&
-          rvector1, sarray, .true., 0, sfile, istart .gt. 0)
+          rvector1, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
           
       ! If the vector is on level < NLMAX, we have to bring it to level NLMAX
       do while (ilev .lt. rproblem%NLMAX)

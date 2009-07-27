@@ -13,7 +13,7 @@
 # =0: Use zero solution.
 # =1: Read from file. isolutionStart specifies the level of the initial 
 #     solution, ssolutionStart specifies the filename to be read.
-#     THe file is expected as formatted text file.
+#     The file is expected as formatted text file.
 # =2: Read from file. isolutionStart specifies the level of the initial 
 #     solution, ssolutionStart specifies the filename to be read.
 #     The file is expected as unformatted binary file.
@@ -249,8 +249,8 @@ dAdMatThreshold    = 20.0
 # Projection type for velocity and pressure.
 # 0 = hard-coded projection (default)
 # 1 = matrix-based projection
-iprojTypeVelocity = 0
-iprojTypePressure = 0
+iprojTypeVelocity = 1
+iprojTypePressure = 1
 
 # Order of the prolongation/restriction to use for velocity components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
