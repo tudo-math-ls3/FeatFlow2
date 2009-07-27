@@ -503,7 +503,7 @@ contains
         ! Initialise the smoothers.
         select case (ismootherType)
         
-        case (0:8)
+        case (0:9)
 
           nullify(p_rsmoother)
         
@@ -558,6 +558,9 @@ contains
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
                 rpreconditioner%p_RfilterChain)
 
+          case (9)
+            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
+
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -605,7 +608,7 @@ contains
       ! ismootherType defines the type of smoother to use.
       select case (ismootherType)
       
-      case (0:8)
+      case (0:9)
 
         nullify(p_rsmoother)
       
@@ -659,6 +662,9 @@ contains
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
               rpreconditioner%p_RfilterChain)
+
+        case (9)
+          call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
 
         end select
         
