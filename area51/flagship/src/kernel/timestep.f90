@@ -1153,7 +1153,7 @@ contains
     type(t_vectorBlock), dimension(:), pointer :: p_rsolutionAux
     type(t_vectorBlock), dimension(:), pointer :: p_rsolutionOld
     real(DP), dimension(size(rsolver)) :: DinitialDefect
-    real(DP) :: drelDefect
+    real(DP) :: drelDefect, dabsDefect
     logical :: bcompatible, breject, brejectAll
     integer :: icpl,ncpl,ite
 
@@ -1255,9 +1255,6 @@ contains
       end if
       
       outer: do ite = 1, 25
-
-        ! Set iteration
-        rcollection%IquickAccess(1) = ite
         
         if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
           call output_lbrk()
@@ -1306,13 +1303,19 @@ contains
         ! Check relative defect
         drelDefect = rsolverCpl(1)%p_rsolver%dinitialDefect /&
             DinitialDefect(1)
+        dabsDefect = rsolverCpl(1)%p_rsolver%dinitialDefect
         do icpl = 2, ncpl
           drelDefect = max(drelDefect,&
               rsolverCpl(icpl)%p_rsolver%dinitialDefect /&
               DinitialDefect(icpl))
+          dabsDefect = max(dabsDefect,&
+              rsolverCpl(icpl)%p_rsolver%dinitialDefect)
         end do
-        
-        if (drelDefect .le. 1e-2) exit outer
+
+!!$        if ((drelDefect .le. 1e-4) .and. &
+!!$            (dabsDefect .le. 1e-12)) exit outer
+
+        if (dabsDefect .le. 1e-11) exit outer
         
       end do outer
 
