@@ -1,0 +1,596 @@
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+# Directory for visualisation files
+spostdirectory = $LOGDIR
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = $LOGDIR
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(6) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+
+#######################################
+# DC configuration
+#######################################
+
+#[PARAMTRIANG]
+## Filename of the parametrisation of the domain
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#
+## Filename of the coarse grid mesh
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 0
+#ssolutionStart     = '%{spredirectory}/drivencav_stat/stokes5re0025'
+#
+#iequation          = 0
+#RE                 = 400
+#NLMAX              = 5
+#
+#[BDCONDITIONS]
+#bdComponent1(3)=
+#  2.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+#  3.0  3  1  'Dirichlet1'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 20
+#TIMENLMIN = 1
+#TIMENLMAX = 1
+#
+#[OPTIMALCONTROL]
+#stargetFlow = '%{spredirectory}/lv7re0.025steps80/solution'
+#itypeTargetFlow = 4
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-DISCRETISATION]
+#TIMENLMAX = 1
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = 'gmv/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nmaxIterations     = 100
+#depsRel            = 1E-8
+#ctypePreconditioner = 3
+#dinexactNewtonExponent = 2.0
+##nmaxIterations     = 1
+#domega             = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+
+#####################################################
+## benchmark configuration, RE=20 Nav.St. like Stokes
+#####################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/bench1.prm'
+#sMesh = '%{spredirectory}/bench1.tri'
+#
+#[BDCONDITIONS]
+#bdComponent1(4)=
+#  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+#  2.0  0  0                             # ]1.0,2.0[ : Neumann boundary = do-nothing
+#  3.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#  4.0  3  1  'ParProfile'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+#
+#bdComponent2(1)=
+#  4.0  3  1  'Dirichlet0'  'Dirichlet0'  # Complete boundary component Dirichlet-0 boundary
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 0
+#ssolutionStart     = ''
+#iequation          = 0
+#RE                 = 1000
+#NLMIN              = 1
+#NLMAX              = 2
+#
+#[OPTIMALCONTROL]
+#smeshTargetFlow = '%{spredirectory}/bench1.tri'
+#stargetFlow = '%{spredirectory}/benchstokesre1000ref4seklv5/benchstokesre1000ref4seklv5'
+##stargetFlow = '../cc2d_paper17/ns/benchstokesre1000ref4seklv5'
+#itypeTargetFlow = 0 #4
+#ilevelTargetFlow = 5
+#itargetFlowTimesteps = 80
+#
+#dalphaC = 0.01
+#dgammaC = 0.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-DISCRETISATION]
+#niterations = 5
+#dtimeMax = 1.0
+#TIMENLMIN = 1
+#TIMENLMAX = 1
+#dtimeStepTheta = 1.0
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2bench1.gmv' 
+#
+#[TIME-SOLVER]
+#ctypePreconditioner = 1
+#depsDiff            = 1E-7
+#nmaxIterations      = 100
+#depsRel             = 1E-8
+#ctypePreconditioner = 3
+#dinexactNewtonExponent = 2.0
+##nmaxIterations         = 1
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 2
+#domega = 0.8
+#
+#[CC-LINEARSOLVER]
+#ismootherType = 7
+#icoarseGridSolverType = 0
+
+######################################################################
+## reference configuration without coupling
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 5
+#iRHS               = -1
+#srhsExpressionX    = '2*TIME*(-X)'
+#srhsExpressionY    = '2*TIME*(Y)'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#stargetFlow = '%{spredirectory}/lv7re0.025steps80/solution'
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)'
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 0.0
+#ddualPrimalCoupling = 0.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with partial coupling (lambda=lambda(y))
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '2*TIME*(-X)'
+#srhsExpressionY    = '2*TIME*(Y)'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#stargetFlow = '%{spredirectory}/lv7re0.025steps80/solution'
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)+TIME^2*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)+TIME^2*(Y)'
+#ilevelTargetFlow = 7
+#itargetFlowTimesteps = 80
+#dtimeMax = 1.0
+#
+#ccontrolConstraints = 0
+#dumin1 = -0.5
+#dumax1 = 0.5
+#dumin2 = -0.5
+#dumax2 = 0.5
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 0.0
+#ddualPrimalCoupling = 1.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with partial coupling (y=y(lambda))
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)'
+#srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#dalphaC = 0.01
+#
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*Y'
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+#
+########
+#[DEBUG]
+########
+#
+#dprimalDualCoupling = 1.0
+#ddualPrimalCoupling = 0.0
+## dterminalCondDecoupled = 1.0
+#dtimeCoupling = 1.0
+
+######################################################################
+## reference configuration with full coupling
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 1
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)'
+#srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y'
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 2
+#TIMENLMIN = %{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 1
+#dtimeStepTheta = 0.5
+#
+#[OPTIMALCONTROL]
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)+TIME^2*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)+TIME^2*(Y)'
+#
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 100
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 3
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-2
+#
+#[TIME-SMOOTHER]
+#nsmSteps = 1
+#
+#[CC-LINEARSOLVER]
+#icoarseGridSolverType = 3
+##nmaxiterations = 0
+
+######################################################################
+## reference configuration with full coupling for Navier-Stokes
+##
+## lambda := (t-1)^2 (-x1,x2)
+##      y := t^2 (-x1,x2)
+##      p := 0
+##     xi := 0
+##
+## =>
+##
+## y\grad(y) = t^4 (x1,x2)
+######################################################################
+#
+#[PARAMTRIANG]
+#sParametrisation = '%{spredirectory}/QUAD.prm'
+#sMesh = '%{spredirectory}/QUAD.tri'
+#
+#[CC-DISCRETISATION]
+#isolutionStart     = 3
+#ssolutionStart     = ''
+#ssolutionExpressionY1 = 'TIME^2*(-X)'
+#ssolutionExpressionY2 = 'TIME^2*(Y)'
+#ssolutionExpressionP  = '0'
+#ssolutionExpressionLambda1 = '(TIME-1)^2*(-X)'
+#ssolutionExpressionLambda2 = '(TIME-1)^2*(Y)'
+#ssolutionExpressionXi      = '0'
+#iequation          = 0
+#RE                 = 1.0
+#NLMAX              = 3
+#iRHS               = -1
+#srhsExpressionX    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*(-X)+TIME^4*X'
+#srhsExpressionY    = '(2*TIME+((TIME-1)^2)/%{OPTIMALCONTROL.dalphaC})*Y+TIME^4*Y'
+#iElementType       = 5
+#
+#[BDEXPRESSIONS]
+#bdExpressions(4) =
+#  'yx1'           -1    %{CC-DISCRETISATION.ssolutionExpressionY1}
+#  'yx2'           -1    %{CC-DISCRETISATION.ssolutionExpressionY2}
+#  'lambdax1'      -1    '(TIME-1)^2*(-X)'
+#  'lambdax2'      -1    '(TIME-1)^2*(Y)'
+#
+#[BDCONDITIONS]
+#bdComponent1(1)=
+#  4.0  3  4  'yx1'  'yx2'  'lambdax1'  'lambdax2' # [0.0,1.0] : Dirichlet-0 boundary
+#
+#[TIME-DISCRETISATION]
+#niterations = 40
+#TIMENLMIN = 1 #%{TIME-DISCRETISATION.TIMENLMAX}
+#TIMENLMAX = 2
+#dtimeStepTheta = 1
+#
+#[OPTIMALCONTROL]
+#itypeTargetFlow = 5
+#stargetFlowExpressionX = '2*(TIME-1)*(-X)+TIME^2*(-X)'
+#stargetFlowExpressionY = '2*(TIME-1)*(Y)+TIME^2*(Y)'
+#
+#
+#[TIME-POSTPROCESSING]
+#sgmvFileName = '%{spostdirectory}/utest2quad.gmv' 
+#
+#[TIME-SOLVER]
+#nminIterations         = 1
+#nmaxIterations         = 2
+#depsRel                = 1E-13 #1E-8
+#ctypePreconditioner    = 1
+#dinexactNewtonExponent = 2.0
+#domega                 = 1.0
+#
+#[TIME-MULTIGRID]
+#nmaxIterations     = 100
+#depsRel            = 1E-12
+#ispacelevelcoupledtotimelevel = 1
+#
+#[TIME-SMOOTHER]
+#cspaceTimeSmoother = 0
+#domega = 0.9
+#nsmSteps = 8
+#
+#[CC-LINEARSOLVER]
+#ismootherType = 8
+#icoarseGridSolverType = 6
+##nmaxiterations = 0
