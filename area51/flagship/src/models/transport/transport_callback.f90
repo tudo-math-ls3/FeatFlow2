@@ -339,7 +339,7 @@ contains
     type(t_vectorBlock), intent(in) :: rsolution
 
     ! user-defined callback functions
-    include 'intf_transpCalcPrecond.inc'
+    include 'intf_transpCalcMatrix.inc'
     optional :: fcb_calcMatrixPrimal
     optional :: fcb_calcMatrixDual
 !</input>
@@ -457,7 +457,7 @@ contains
               %Rmatrix(coeffMatrix_S), .true., .true., rproblemLevel&
               %Rmatrix(transportMatrix), rproblemLevel%Rafcstab(diffusionAFC))
 
-        case DEFAULT
+        case default
           ! Compute the standard Galerkin approximation
           call gfsc_buildDiffusionOperator(rproblemLevel&
               %Rmatrix(coeffMatrix_S), .false., .true., rproblemLevel&
@@ -483,7 +483,7 @@ contains
       rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
                                        PROBLEV_MSPEC_UPDATE)
       
-    case DEFAULT
+    case default
       call output_line('Invalid type of diffusion!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
       call sys_halt()
@@ -1093,7 +1093,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rcollection)
+      rsolver, rsolution, rsolution0, rcollection,&
+      fcb_calcMatrixPrimal, fcb_calcMatrixDual)
 
 !<description>
     ! This callback subroutine computes the Jacobian matrix.
@@ -1105,6 +1106,11 @@ contains
 
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
+
+    ! user-defined callback functions
+    include 'intf_transpCalcMatrix.inc'
+    optional :: fcb_calcMatrixPrimal
+    optional :: fcb_calcMatrixDual
 !</input>
 
 !<inputoutput>
@@ -1297,9 +1303,50 @@ contains
 
       ! @FAQ2: What type of velocity are we?
       select case (abs(ivelocitytype))
+      case default
+        ! The user-defined callback function is used if present;
+        ! otherwise an error is throws
+        if (present(fcb_calcMatrixPrimal)) then
+          
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionJacobian(rproblemLevel&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                transp_calcMatrixPrimal, hstep, bStabilize,&
+                .false., rproblemLevel%Rmatrix(transportMatrix))
+            
+          case (NDIM2D)
+            call gfsc_buildConvectionJacobian(rproblemLevel&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                transp_calcMatrixPrimal, hstep, bStabilize,&
+                .false., rproblemLevel%Rmatrix(transportMatrix))
+            
+          case (NDIM3D)
+            call gfsc_buildConvectionJacobian(rproblemLevel&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                transp_calcMatrixPrimal, hstep, bStabilize,&
+                .false., rproblemLevel%Rmatrix(transportMatrix))
+          end select
+
+          ! Evaluate bilinear form for boundary integral (if any)
+          call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+              rtimestep%dTime, 1.0_DP, transp_coeffMatBdrPrimal,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection,&
+              BILF_MATC_LUMPED)
+          
+        else ! callback function not present
+          
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
+          call sys_halt()
+
+        end if
+
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
+
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP) 
         ! linear velocity
