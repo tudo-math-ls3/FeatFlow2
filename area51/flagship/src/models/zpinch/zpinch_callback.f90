@@ -52,6 +52,7 @@ module zpinch_callback
   use transport_callback
   use transport_callback2d
   use trilinearformevaluation
+  use zpinch_callback2d
 
   implicit none
 
@@ -233,13 +234,19 @@ contains
       if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
         
         ! Compute the preconditioner
-        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rcollection)
-        
+        call transp_calcPrecondThetaScheme(rproblemLevel,&
+            rtimestep, rsolver, rsolution, rcollection,&
+            zpinch_calcMatrixPrimalConst2d,&
+            zpinch_calcMatrixDualConst2d,&
+            transp_coeffMatBdrPrimalConst2d,&
+            transp_coeffMatBdrDualConst2d)
+
         ! Compute the right-hand side
-        call transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rrhs, istep,&
-            rcollection)
+        call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
+            rtimestep, rsolver, rsolution, rsolution0,&
+            rrhs, istep, rcollection,&
+            fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrPrimalConst2d,&
+            fcb_coeffVecBdrDual_sim=transp_coeffVecBdrDualConst2d)
         
         ! Remove specifier for the preconditioner (if any)
         iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -269,12 +276,18 @@ contains
               p_rsolutionEuler0, rcollection)
 
           ! Compute the preconditioner
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution0, rcollection)
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution0, rcollection,&
+              zpinch_calcMatrixPrimalConst2d,&
+              zpinch_calcMatrixDualConst2d,&
+              transp_coeffMatBdrPrimalConst2d,&
+              transp_coeffMatBdrDualConst2d)
 
           ! Assemble the constant right-hand side
           call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution0, rrhs, rcollection)
+              rsolver, rsolution0, rrhs, rcollection,&
+              fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrPrimalConst2d,&
+              fcb_coeffVecBdrDual_sim=transp_coeffVecBdrDualConst2d)
           
           ! Set pointer to the solution vector of the Euler model
           ! from the current time step
@@ -293,17 +306,21 @@ contains
               p_rsolutionEuler, rcollection)
 
           ! Compute the preconditioner
-          call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution, rcollection)
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rcollection,&
+              zpinch_calcMatrixPrimalConst2d,&
+              zpinch_calcMatrixDualConst2d,&
+              transp_coeffMatBdrPrimalConst2d,&
+              transp_coeffMatBdrDualConst2d)
 
           ! Remove specifier for the preconditioner (if any)
           iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
         end if
         
         ! Compute the residual
-        call transp_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-            rcollection)        
+        call transp_calcResidualThetaScheme(rproblemLevel,&
+            rtimestep, rsolver, rsolution, rsolution0,&
+            rrhs, rres, istep, rcollection)
       end if
       
       
@@ -312,8 +329,12 @@ contains
       if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
         
         ! Compute the preconditioner
-        call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rcollection)
+        call transp_calcPrecondThetaScheme(rproblemLevel,&
+            rtimestep, rsolver, rsolution, rcollection,&
+            zpinch_calcMatrixPrimalConst2d,&
+            zpinch_calcMatrixDualConst2d,&
+            transp_coeffMatBdrPrimalConst2d,&
+            transp_coeffMatBdrDualConst2d)
       end if
       
       
@@ -322,8 +343,12 @@ contains
       if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
         
         ! Compute the Jacobian matrix
-        call transp_calcJacobianThetaScheme(rproblemLevel, rtimestep,&
-            rsolver, rsolution, rsolution0, rcollection)
+        call transp_calcJacobianThetaScheme(rproblemLevel,&
+            rtimestep, rsolver, rsolution, rsolution0, rcollection,&
+            zpinch_calcMatrixPrimalConst2d,&
+            zpinch_calcMatrixDualConst2d,&
+            transp_coeffMatBdrPrimalConst2d,&
+            transp_coeffMatBdrDualConst2d)
       end if
       
       
@@ -349,10 +374,10 @@ contains
             %SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
         
         ! Apply Jacobian matrix
-        call lsyssc_scalarMatVec(rproblemLevel&
-            %Rmatrix(jacobianMatrix),&
-            rsolution%RvectorBlock(1), rres%RvectorBlock(1), 1.0_DP,&
-            1.0_DP)
+        call lsyssc_scalarMatVec(&
+            rproblemLevel%Rmatrix(jacobianMatrix),&
+            rsolution%RvectorBlock(1), rres%RvectorBlock(1),&
+            1.0_DP, 1.0_DP)
       end if
       
     end select
@@ -612,7 +637,7 @@ contains
         %RvectorBlock(velocityfield)%RvectorBlock(2))
 
     ! Set global solution vector as external vector for the transport model
-    call transp_setVariable2d(rsolution%RvectorBlock(1), 3)
+    call zpinch_setVariable2d(rsolution%RvectorBlock(1), 3)
     
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
