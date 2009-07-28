@@ -348,7 +348,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinchBE
+ucdsolution = out/zpinchCN
 
 # file for UCD output of error
 ucderror = out/
@@ -381,7 +381,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -390,7 +390,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-4
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1e-4
