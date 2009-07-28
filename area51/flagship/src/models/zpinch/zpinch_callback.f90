@@ -810,32 +810,30 @@ contains
   end subroutine zpinch_initLorentzforceTerm
 
   !*****************************************************************************
+  
+  !<subroutine>
 
-!<subroutine>
-
-  subroutine zpinch_calcLinearizedFCT(rbdrCondEuler,&
-      rbdrCondTransport, rproblemLevel, rtimestep, rsolutionEuler,&
-      rsolutionTransport, rcollection)
+  subroutine zpinch_calcLinearizedFCT(rbdrCond, rproblemLevel,&
+      rtimestep, rsolution, rcollection)
 
 !<description>
-    ! This subroutine calculates the linearized FCT correction for the
-    ! Euler model and the scalar transport model simultaneously
+    ! This subroutine calculates the linearized FCT correction
 !</description>
 
 !<input>
-    ! boundary condition structures
-    type(t_boundaryCondition), intent(in) :: rbdrCondEuler, rbdrCondTransport
-
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(in) :: rbdrCond
 
     ! time-stepping algorithm
-    type(t_timestep), intent(in) :: rtimestep
+    type(t_timestep), intent(in) :: rtimestep    
 !</input>
 
 !<inputoutput>
-    ! solution vectors
-    type(t_vectorBlock), intent(inout) :: rsolutionEuler, rsolutionTransport
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! solution vector
+    type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -844,28 +842,32 @@ contains
 
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
-    type(t_vectorScalar) :: rfluxEuler0, rfluxEuler, rfluxTransport0, rfluxTransport, ralpha
-    type(t_vectorBlock) :: rdataEuler, rdataTransport
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_solEuler, p_solTransport
-    real(DP), dimension(:), pointer :: p_fluxEuler0, p_fluxEuler, p_fluxTransport0, p_fluxTransport, p_alpha
-    real(DP), dimension(:), pointer :: p_dataEuler, p_dataTransport
+    type(t_vectorBlock), pointer :: p_rsolutionEuler
+    type(t_parlist), pointer :: p_rparlist
+    type(t_vectorScalar) :: rflux0, rflux
+    type(t_vectorBlock) :: rdata
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
+    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
+    integer :: coeffMatrix_CX, coeffMatrix_CY
+    integer :: i, nedge
 
-    templateMatrix       = collct_getvalue_int(rcollection, 'templatematrix')
-    consistentMassMatrix = collct_getvalue_int(rcollection, 'consistentMassMatrix')
-    lumpedMassMatrix     = collct_getvalue_int(rcollection, 'lumpedMassMatrix')
-    coeffMatrix_CX       = collct_getvalue_int(rcollection, 'coeffMatrix_CX')
-    coeffMatrix_CY       = collct_getvalue_int(rcollection, 'coeffMatrix_CY')
-    
-    print *, "Must change from getting data from collection structure &
-        &to getting data from parameter list"
-    stop
+    ! Get parameters from parameter list which are required unconditionally
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'templatematrix', templateMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedMassMatrix)
 
+    ! Set pointers to template matrix
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-
-    ! Set pointers
     call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
     call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
     call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
@@ -884,170 +886,59 @@ contains
     nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
 
     ! Create auxiliary vectors
-    call lsyssc_createVector(rfluxEuler0, nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rfluxEuler,  nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rfluxTransport0, nedge, .true., ST_DOUBLE)
-    call lsyssc_createVector(rfluxTransport,  nedge, .true., ST_DOUBLE)
-    call lsyssc_createVector(ralpha, nedge, .false., ST_DOUBLE)
-    call lsysbl_createVectorBlock(rsolutionEuler, rdataEuler, .true.)
-    call lsysbl_createVectorBlock(rsolutionTransport, rdataTransport, .true.)
+    call lsyssc_createVector(rflux0, nedge, .true., ST_DOUBLE)
+    call lsyssc_createVector(rflux,  nedge, .true., ST_DOUBLE)
+    call lsysbl_createVectorBlock(rsolution, rdata, .false.)
     
     ! Set pointers
-    call lsysbl_getbase_double(rsolutionEuler, p_solEuler)
-    call lsysbl_getbase_double(rsolutionTransport, p_solTransport)
-    call lsysbl_getbase_double(rdataEuler, p_dataEuler)
-    call lsysbl_getbase_double(rdataTransport, p_dataTransport)
-    call lsyssc_getbase_double(rfluxEuler, p_fluxEuler)
-    call lsyssc_getbase_double(rfluxTransport, p_fluxTransport)
-    call lsyssc_getbase_double(rfluxEuler0, p_fluxEuler0)
-    call lsyssc_getbase_double(rfluxTransport0, p_fluxTransport0)
-    call lsyssc_getbase_double(ralpha, p_alpha)
+    call lsysbl_getbase_double(rsolution, p_u)
+    call lsysbl_getbase_double(rdata, p_data)
+    call lsyssc_getbase_double(rflux, p_flux)
+    call lsyssc_getbase_double(rflux0, p_flux0)
 
-    ! >>> SYNCHRONIZED IMPLEMENTATION <<<
-
-    ! Initialize alpha with ones
-    p_alpha = 1.0_DP
-      
-    ! Build the fluxes
-    call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_solEuler, rtimestep%dStep,&
-        p_MC, p_ML, p_Cx, p_Cy, p_DataEuler, p_fluxEuler, p_fluxEuler0)
-
+    ! Build the flux
     call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix&
-        %NEQ, nedge, p_solTransport, rtimestep%dStep, p_MC, p_ML,&
-        p_Cx, p_Cy, p_DataTransport, p_fluxTransport, p_fluxTransport0)
+        %NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
+        p_data, p_flux, p_flux0)
 
-    ! Build the correction factors
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0&
-        , 1, p_alpha, p_solEuler)
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_fluxEuler0&
-        , 4, p_alpha, p_solEuler)
-    call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, 1, nedge, p_ML, p_fluxTransport,&
-        p_fluxTransport0, 1, p_alpha, p_solTransport)
+    ! Multiply the low-order solution by the density-averaged mass
+    ! matrix evaluated at the low-order density profile
+    do i = 1, size(p_u)
+      p_u(i) = p_ML(i) * p_u(i)
+    end do
 
-    ! Apply correction to low-order solutions
-    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_fluxEuler, p_alpha,&
-        p_DataEuler, p_solEuler)
-    call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, 1, nedge, p_ML, p_fluxTransport, p_alpha,&
-        p_DataTransport, p_solTransport)
+    ! Set pointer to solution from Euler model
+    p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
 
-    ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
-        rtimestep%dTime, euler_calcBoundaryvalues2d)
-
-    call bdrf_filterVectorExplicit(rbdrCondTransport,&
-        rsolutionTransport, rtimestep%dTime)
+    ! Calculate the density averaged mass matrix for the new density
+    call zpinch_initDensityAveraging(p_rparlist,&
+        rcollection%SquickAccess(1), rproblemLevel,&
+        p_rsolutionEuler, rcollection)
     
+    ! Calculate the new velocity field based on the new momentum
+    call zpinch_initVelocityField(p_rparlist,&
+        rcollection%SquickAccess(1), rproblemLevel,&
+        p_rsolutionEuler, rcollection)
+    
+    ! Build the correction and apply it directly
+    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    
+    ! Set boundary conditions explicitly
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
+
     ! Release flux vectors
     call storage_free(h_Ksep)
-    call lsyssc_releaseVector(rfluxEuler0)
-    call lsyssc_releaseVector(rfluxTransport0)
-    call lsyssc_releaseVector(rfluxEuler)
-    call lsyssc_releaseVector(rfluxTransport)
-    call lsysbl_releaseVector(rdataEuler)
-    call lsysbl_releaseVector(rdataTransport)
-    call lsyssc_releaseVector(ralpha)
+    call lsyssc_releaseVector(rflux0)
+    call lsyssc_releaseVector(rflux)
+    call lsysbl_releaseVector(rdata)
 
   contains
-    
-    !***************************************************************************
-
-    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        NEDGE, u, dscale, MC, ML, Cx, Cy, troc, flux, flux0)
-
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
-      real(DP), intent(in) :: dscale
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ,NVAR,NEDGE
-      
-      integer, dimension(:), intent(inout) :: Ksep
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux0,flux
-      
-      real(DP), dimension(NVAR,NEQ), intent(out) :: troc     
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      integer :: ij,ji,i,j,iedge
-      
-      ! Initialize time rate of change
-      call lalg_clearVector(troc)
-      
-      ! Initialize edge counter
-      iedge = 0
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          
-          ! Calculate low-order flux
-          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
-          
-          ! Update the time rate of change vector
-          troc(:,i) = troc(:,i) + F_ij
-          troc(:,j) = troc(:,j) + F_ji
-
-          ! Calculate diffusion coefficient
-          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-          
-          ! Compute solution difference
-          Diff = u(:,j)-u(:,i)
-
-          ! Compute the raw antidiffusive flux
-          flux0(:,iedge) = -D_ij*Diff
-          
-        end do
-      end do
-
-      ! Scale the time rate of change by the lumped mass matrix
-      do i = 1, NEQ
-        troc(:,i) = troc(:,i)/ML(i)
-      end do
-
-      ! Loop over all rows (backward)
-      do i = NEQ, 1, -1
-
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        do ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-          
-          ! Apply mass antidiffusion
-          flux(:,iedge) = flux0(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
-          
-          ! Update edge counter
-          iedge = iedge-1
-          
-        end do
-      end do
-
-    end subroutine buildFluxCons2d
 
     !***************************************************************************
 
     subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
-        dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+        dscale, MC, ML, Cx, Cy, troc, flux0, flux)
 
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
       real(DP), intent(in) :: dscale
@@ -1058,15 +949,15 @@ contains
       real(DP), dimension(:), intent(inout) :: flux0,flux
       
       real(DP), dimension(:), intent(out) :: troc     
-      
+
       ! local variables
-      real(DP) :: k_ii,k_ij,k_ji,d_ij,diff,f_ij,f_ji
-      real(DP), dimension(NDIM2D) :: C_ii,C_ij,C_ji
+      real(DP), dimension(NDIM2D) :: C_ii,C_ij, C_ji
+      real(DP) :: k_ii,k_ij,k_ji,d_ij,aux,f_ij,f_ji
       integer :: ii,ij,ji,i,j,iedge
-      
+
       ! Initialize time rate of change
       call lalg_clearVector(troc)
-      
+
       ! Initialize edge counter
       iedge = 0
       
@@ -1080,7 +971,8 @@ contains
         C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients
-        call transp_calcMatrixPrimalConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
+        call zpinch_calcMatrixPrimalConst2d(u(i), u(i),&
+            C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
         troc(i) = troc(i) + dscale*k_ii*u(i)
@@ -1097,31 +989,33 @@ contains
           ! Compute coefficients
           C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-          
+
           ! Compute convection coefficients
-          call transp_calcMatrixPrimalConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-          ! Compute solution difference
-          diff = u(j)-u(i)
-
-          ! Compute fluxes
-          f_ij = dscale * (k_ij*u(j) + d_ij*diff)
-          f_ji = dscale * (k_ji*u(i) - d_ij*diff)
-
-          ! Update the time rate of change vector
-          troc(i) = troc(i) + f_ij
-          troc(j) = troc(j) + f_ji
-
-          ! Compute the raw antidiffusive flux
-          flux0(iedge) = -d_ij*diff
+          call zpinch_calcMatrixPrimalConst2d(u(i), u(j),&
+              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
+          ! Artificial diffusion coefficient
+          d_ij = max(abs(k_ij), abs(k_ji))
+
+          ! Compute auxiliary value
+          aux = d_ij*(u(j)-u(i))
+          
+          ! Update the time rate of change vector
+          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
+          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
+
+          ! Compute raw antidiffusive flux
+          flux0(iedge) = -aux
+
         end do
       end do
+
 
       ! Scale the time rate of change by the lumped mass matrix
       do i = 1, NEQ
         troc(i) = troc(i)/ML(i)
       end do
+
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -1144,33 +1038,36 @@ contains
       end do
 
     end subroutine buildFlux2d
-    
+
     !***************************************************************************
     
-    subroutine  buildCorrectionCons(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        NVAR, NEDGE, ML, flux, flux0, ivar, alpha, u)
+    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
+        NEDGE, ML, flux, flux0, data, u)
 
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
-      real(DP), dimension(:), intent(in) :: ML
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ,NVAR,NEDGE,ivar
       
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: u
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(in) :: ML,flux0
+      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, intent(in) :: NEQ,NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: data,u,flux
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
-      real(DP) :: f_ij,f0_ij,diff,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
-      integer :: ij,ji,i,j,iedge
+      real(DP) :: f_ij,diff
+      integer :: ij,ji,i,j,iedge,ivar
 
+      ! Allocate temporal memory
       allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
       
-      pp = 0.0_DP; pm = 0.0_DP
-      qp = 0.0_DP; qm = 0.0_DP
-      rp = 1.0_DP; rm = 1.0_DP
-
+      ! Initialize vectors
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+      call lalg_setVector(rp, 1.0_DP)
+      call lalg_setVector(rm, 1.0_DP)
+      
       ! Initialize edge counter
       iedge = 0
       
@@ -1185,129 +1082,43 @@ contains
           ! Get node number J, the corresponding matrix positions JI,
           ! and let the separator point to the next entry
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-          
-!!$          ! Flux correction in primitive variables
-!!$          select case(ivar)
-!!$          case default
 
-            ! Flux correction in conservative variables
-            f_ij  = flux(ivar,iedge)
-            f0_ij = flux0(ivar,iedge)
-            diff  = u(ivar,j)-u(ivar,i)
-            
-            ! MinMod prelimiting of antidiffusive fluxes
-            if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-              aux = min(f_ij, 2*f0_ij)
-              alpha(iedge) = min(alpha(iedge), aux/f_ij)
-              f_ij = aux
-            elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-              aux = max(f_ij, 2*f0_ij)
-              alpha(iedge) = min(alpha(iedge), aux/f_ij)
-              f_ij = aux
-            else
-              f_ij = 0.0; alpha(iedge) = 0.0
-            end if
-            
-            ! Sums of raw antidiffusive fluxes
-            pp(i) = pp(i) + max(0.0_DP,  f_ij)
-            pp(j) = pp(j) + max(0.0_DP, -f_ij)
-            pm(i) = pm(i) + min(0.0_DP,  f_ij)
-            pm(j) = pm(j) + min(0.0_DP, -f_ij)
-            
-            ! Sums of admissible edge contributions
-            qp(i) = max(qp(i),  diff)
-            qp(j) = max(qp(j), -diff)
-            qm(i) = min(qm(i),  diff)
-            qm(j) = min(qm(j), -diff)
+          ! Apply minmod prelimiter ...
+          f_ij = minmod(flux(iedge), 2*flux0(iedge))
           
-            
-!!$          case (4)
-!!$            ! Velocities
-!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
-!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
-!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
-!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
-!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
-!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
-!!$            p0_ij = (GAMMA-1) * (flux0(4, iedge) + &
-!!$                          0.5 * (u_i*u_i + v_i*v_i)*flux0(1, iedge) -&
-!!$                                 u_i*flux0(2, iedge) - v_i*flux0(3, iedge) )
-!!$            p0_ji = -(GAMMA-1) * (flux0(4, iedge) + &
-!!$                           0.5 * (u_j*u_j + v_j*v_j)*flux0(1, iedge) -&
-!!$                                  u_j*flux0(2, iedge) - v_j*flux0(3, iedge) )
-!!$
-!!$            ! Solution differences
-!!$            diff = (GAMMA-1) * (u(4,j) + &
-!!$                         0.5 * (u_j*u_j + v_j*v_j)*u(1,j) -&
-!!$                                u_j*u(2,j) - v_j*u(3,j) )&
-!!$                 - (GAMMA-1) * (u(4,i) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*u(1,i) -&
-!!$                                u_i*u(2,i) - v_i*u(3,i) )
-!!$
-!!$            ! Pressure variables
-!!$            p_ij =   (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
-!!$                                  -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
-!!$            p_ji =  -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
-!!$                                  -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
-!!$            p0_ij =  (GAMMA-1) * ( u(4,i)*flux0(1,iedge) - u(2,i)*flux0(2,iedge) &
-!!$                                  -u(3,i)*flux0(3,iedge) + u(1,i)*flux0(4,iedge) )
-!!$            p0_ji = -(GAMMA-1) * ( u(4,j)*flux0(1,iedge) - u(2,j)*flux0(2,iedge) &
-!!$                                  -u(3,j)*flux0(3,iedge) + u(1,j)*flux0(4,iedge) )
-!!$
-!!$            ! Solution differences
-!!$            diff =  (GAMMA-1) * ( u(4,j)*u(1,j) - u(2,j)*u(2,j) &
-!!$                                 -u(3,j)*u(3,j) + u(1,j)*u(4,j) )&
-!!$                   -(GAMMA-1) * ( u(4,i)*u(1,i) - u(2,i)*u(2,i) &
-!!$                                 -u(3,i)*u(3,i) + u(1,i)*u(4,i) )
-!!$            
-!!$            ! MinMod prelimiting of antidiffusive fluxes
-!!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
-!!$                (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL)) then
-!!$              aux = min(p_ij, 2*p0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
-!!$              p_ij = aux
-!!$            else
-!!$              p_ij = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$
-!!$            if ((p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) .or.&
-!!$                (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL)) then
-!!$              aux = min(p_ji, 2*p0_ji)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
-!!$              p_ji = aux
-!!$            else
-!!$              p_ji = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$            
-!!$            ! Sums of raw antidiffusive fluxes
-!!$            pp(i) = pp(i) + max(0.0_DP, p_ij)
-!!$            pp(j) = pp(j) + max(0.0_DP, p_ji)
-!!$            pm(i) = pm(i) + min(0.0_DP, p_ij)
-!!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
-!!$            
-!!$            ! Sums of admissible edge contributions
-!!$            qp(i) = max(qp(i),  diff)
-!!$            qp(j) = max(qp(j), -diff)
-!!$            qm(i) = min(qm(i),  diff)
-!!$            qm(j) = min(qm(j), -diff)
-!!$          end select
-            
+          ! ... and store prelimited flux
+          flux(iedge) = f_ij
+          diff        = u(j)-u(i)
+
+          ! Sums of raw antidiffusive fluxes
+          pp(i) = pp(i) + max(0.0_DP,  f_ij)
+          pp(j) = pp(j) + max(0.0_DP, -f_ij)
+          pm(i) = pm(i) + min(0.0_DP,  f_ij)
+          pm(j) = pm(j) + min(0.0_DP, -f_ij)
+
+          ! Sums of admissible edge contributions
+          qp(i) = max(qp(i),  diff)
+          qp(j) = max(qp(j), -diff)
+          qm(i) = min(qm(i),  diff)
+          qm(j) = min(qm(j), -diff)
+
         end do
       end do
+
 
       ! Compute nodal correction factors
       do i = 1, NEQ
         qp(i) = qp(i)*ML(i)
         qm(i) = qm(i)*ML(i)
-
+        
         if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
         if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
-      
+
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
         
@@ -1319,124 +1130,33 @@ contains
           ! and let the separator point to the preceeding entry.
           j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
 
-!!$          ! Flux correction in primitive variables
-!!$          select case(ivar)
-!!$          case default
-            
-            ! Flux correction in conservative variables
-            f_ij = flux(ivar,iedge)
-            
-            ! Limit conservative fluxes
-            if (f_ij > SYS_EPSREAL) then
-              alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-            elseif (f_ij < -SYS_EPSREAL) then
-              alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
-            end if
-
-!!$          case (4)
-!!$            
-!!$            ! Flux correction in primitive variables
-!!$            
-!!$            ! Velocities
-!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
-!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
-!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
-!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
-!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
-!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
-!!$                                -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
-!!$            
-!!$            p_ji = -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
-!!$                                 -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
-!!$
-!!$            if (p_ij > SYS_EPSREAL) then
-!!$              r_i = rp(i)
-!!$            elseif (p_ij < -SYS_EPSREAL) then
-!!$              r_i = rm(i)
-!!$            else
-!!$              r_i = 1.0
-!!$            end if
-!!$
-!!$            if (p_ji > SYS_EPSREAL) then
-!!$              r_j = rp(j)
-!!$            elseif (p_ji < -SYS_EPSREAL) then
-!!$              r_j = rm(j)
-!!$            else
-!!$              r_j = 1.0
-!!$            end if
-!!$
-!!$            alpha(iedge) = min(alpha(iedge), r_i, r_j)
-!!$            
-!!$          end select
+          ! Limit conservative fluxes
+          f_ij = flux(iedge)
+          if (f_ij > 0.0_DP) then
+            f_ij = min(rp(i), rm(j))*f_ij
+          else
+            f_ij = min(rm(i), rp(j))*f_ij
+          end if
           
+          ! Apply correction
+          data(i) = data(i) + f_ij
+          data(j) = data(j) - f_ij
+
           ! Update edge counter
           iedge = iedge-1
           
         end do
       end do
 
-    end subroutine buildCorrectionCons
 
-    !***************************************************************************
-
-    subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        NEDGE, ML, flux, alpha, data, u)
-      
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
-      real(DP), dimension(:), intent(in) :: ML,alpha
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ,NVAR,NEDGE
-      
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
-      integer, dimension(:), intent(inout) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: f_ij
-      integer :: ij,ji,i,j,iedge
-
-      ! Initialize correction
-      call lalg_clearVector(data)
-
-      ! Initialize edge counter
-      iedge = 0
-      
-      ! Loop over all rows
       do i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-
-          ! Limit raw antidiffusive flux
-          f_ij = alpha(iedge)*flux(:,iedge)
-          
-          ! Apply correction
-          data(:,i) = data(:,i) + f_ij
-          data(:,j) = data(:,j) - f_ij
-        end do
+        u(i) = (u(i) + data(i))/ML(i)
       end do
 
-      ! Loop over all rows
-      do i = 1, NEQ
-        u(:,i) = u(:,i) + data(:,i)/ML(i)
-      end do
+      ! Deallocate temporal memory
+      deallocate(pp,pm,qp,qm,rp,rm)
 
-      ! Just to be sure that this routine can be called repeatedly
-      Ksep = Kld
-      
-    end subroutine applyCorrection
+    end subroutine buildCorrection
 
     !***************************************************************************
 
@@ -1452,7 +1172,7 @@ contains
         minmod = 0
       end if
     end function minmod
-
+    
   end subroutine zpinch_calcLinearizedFCT
 
 end module zpinch_callback
