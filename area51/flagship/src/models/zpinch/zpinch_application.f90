@@ -2153,40 +2153,26 @@ contains
       ! Compute linearized FCT correction for Euler model
       !-------------------------------------------------------------------------
       
-!!$      ! Prepare quick access arrays
-!!$      rcollection%SquickAccess(1) = ssectionNameEuler
-!!$      
-!!$      ! Apply linearized FCT correction for Euler model
-!!$      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
-!!$          rtimestep, p_rsolutionEuler, rcollection)
+      ! Prepare quick access arrays
+      rcollection%SquickAccess(1) = ssectionNameEuler
+      
+      ! Apply linearized FCT correction for Euler model
+      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
+          rtimestep, p_rsolutionEuler, rcollection)
 
-      !---------------------------------------------------------------------------
-      ! Calculate density-averaged mass matrices for the scalar model
-      ! problem based on the corrected solution U^{n+1} of the Euler model
-      !---------------------------------------------------------------------------
-      
-      call zpinch_initDensityAveraging(rparlist, ssectionNameTransport,&
-          p_rproblemLevel, p_rsolutionEuler, rcollection)
-      
-      !---------------------------------------------------------------------------
-      ! Calculate velocity field (\rho v) for the scalar model problem
-      ! based on the corrected solution U^{n+1} of the Euler model
-      !---------------------------------------------------------------------------
-      
-      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
-          p_rproblemLevel, p_rsolutionEuler, rcollection)
-      
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for transport model
       !-------------------------------------------------------------------------
 
-!!$      ! Prepare quick access arrays
-!!$      rcollection%SquickAccess(1) = ssectionNameTransport
-!!$
-!!$      ! Apply linearized FCT correction for transport model
-!!$      call transp_calcLinearizedFCT(rbdrCondTransport,&
-!!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
-!!$          rcollection)
+      ! Prepare quick access arrays
+      rcollection%SquickAccess(1) = ssectionNameTransport
+      
+      ! Apply linearized FCT correction for transport model (note
+      ! that the density averaged mass matrix and the new velocity
+      ! field are computed internally by this subroutine)
+      call zpinch_calcLinearizedFCT(rbdrCondTransport,&
+          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
+          rcollection)
  
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
@@ -2205,7 +2191,7 @@ contains
       print *, (dmassEuler0-dmassEuler)/dmassEuler0
       print *, (dmassTransport0-dmassTransport)/dmassTransport0
       print *, "################################################################"
-      
+
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
 
