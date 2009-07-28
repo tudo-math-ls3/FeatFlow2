@@ -249,8 +249,8 @@ dAdMatThreshold    = 20.0
 # Projection type for velocity and pressure.
 # 0 = hard-coded projection (default)
 # 1 = matrix-based projection
-iprojTypeVelocity = 1
-iprojTypePressure = 1
+iprojTypeVelocity = 0
+iprojTypePressure = 0
 
 # Order of the prolongation/restriction to use for velocity components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
