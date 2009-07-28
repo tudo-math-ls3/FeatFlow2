@@ -1885,7 +1885,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rsolution0, rrhs, istep, rcollection, rsource)
+      rsolver, rsolution, rsolution0, rrhs, istep, rcollection,&
+      rsource, fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
 !<description>
     ! This subroutine computes the right-hand side vector
@@ -1907,6 +1908,11 @@ contains
 
     ! OPTIONAL: load vector specified by the application
     type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal_sim
+    optional :: fcb_coeffVecBdrDual_sim
 !</input>
 
 !<inputoutput>
@@ -2035,7 +2041,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rrhs, rcollection, rsource)
+      rsolver, rsolution, rrhs, rcollection, rsource,&
+      fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
 
 !<description>
     ! This subroutine computes the constant right-hand side
@@ -2054,6 +2061,11 @@ contains
 
     ! OPTIONAL: source vector
     type(t_vectorBlock), intent(in), optional :: rsource
+
+    ! OPTIONAL: user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal_sim
+    optional :: fcb_coeffVecBdrDual_sim
 !</input>
 
 !<inputoutput>
@@ -2162,14 +2174,16 @@ contains
         ! --- explicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
             smode, ivelocitytype, rtimestep%dTime-rtimestep%dStep,&
-            -dscale, rrhs%RvectorBlock(1), rcollection)
+            -dscale, rrhs%RvectorBlock(1), rcollection,&
+            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
         
         dscale = rtimestep%theta*rtimestep%dStep
 
         ! --- implicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
             smode, ivelocitytype, rtimestep%dTime,&
-            -dscale, rrhs%RvectorBlock(1), rcollection)
+            -dscale, rrhs%RvectorBlock(1), rcollection,&
+            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
         
       else ! theta = 1
         
@@ -2188,7 +2202,8 @@ contains
         ! --- implicit part ---
         call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
             smode, ivelocitytype, rtimestep%dTime,&
-            -dscale, rrhs%RvectorBlock(1), rcollection)
+            -dscale, rrhs%RvectorBlock(1), rcollection,&
+            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
         
       end if ! theta
       
@@ -2206,7 +2221,8 @@ contains
       ! Evaluate bilinear form for boundary integral (if any)
       call transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
           smode, ivelocitytype, rtimestep%dTime, -1.0_DP,&
-          rrhs%RvectorBlock(1), rcollection)
+          rrhs%RvectorBlock(1), rcollection,&
+            fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
       
     end select
     
@@ -2805,7 +2821,8 @@ contains
 !<subroutine>
   
   subroutine transp_calcLinfBdrCondQuick(rproblemLevel, rsolver,&
-      smode, ivelocitytype, dtime, dscale, rvectorScalar, rcollection)
+      smode, ivelocitytype, dtime, dscale, rvectorScalar,&
+      rcollection, fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
     
 !<description>
     ! This subroutine is a shortcut for building the linear form
@@ -2832,6 +2849,11 @@ contains
 
     ! scaling parameter
     real(DP), intent(in) :: dscale
+
+    ! user-defined callback functions
+    include 'intf_transpCoeffVecBdr.inc'
+    optional :: fcb_coeffVecBdrPrimal_sim
+    optional :: fcb_coeffVecBdrDual_sim
 !</intput>
 
 !<inputoutput>
@@ -2850,8 +2872,26 @@ contains
       
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
+      case default
+        ! The user-defined callback function is used if present;
+        ! otherwise an error is throws
+        if (present(fcb_coeffVecBdrPrimal_sim)) then
+          call transp_calcLinfBoundaryConditions(rproblemLevel,&
+              rsolver, dtime, dscale, fcb_coeffVecBdrPrimal_sim,&
+              rvectorScalar, rcollection)
+          
+        else ! callback function not present
+          
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+          call sys_halt()
+
+        end if
+        
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
+
         
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
@@ -2860,17 +2900,20 @@ contains
             dtime, dscale, transp_coeffVecBdrPrimalConst2d,&
             rvectorScalar, rcollection)
         
+
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             dtime, dscale, transp_coeffVecBdrPrimalBurgersSpT2d,&
             rvectorScalar, rcollection)
+
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             dtime, dscale, transp_coeffVecBdrPrimalBuckLevSpT2d,&
             rvectorScalar, rcollection)
+
         
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
@@ -2884,18 +2927,14 @@ contains
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             dtime, dscale, transp_coeffVecBdrPrimalBurgers2d,&
             rvectorScalar, rcollection)
+
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         
         ! @TODO: Implement weak boundary conditions
         print *, "Weak boundary conditions are not available!"
-        stop
-        
-      case DEFAULT
-        call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
-        call sys_halt()
+        stop     
       end select
       
       
@@ -2903,15 +2942,34 @@ contains
       
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
+        case default
+        ! The user-defined callback function is used if present;
+        ! otherwise an error is throws
+        if (present(fcb_coeffVecBdrDual_sim)) then
+          call transp_calcLinfBoundaryConditions(rproblemLevel,&
+              rsolver, dtime, dscale, fcb_coeffVecBdrDual_sim,&
+              rvectorScalar, rcollection)
+          
+        else ! callback function not present
+          
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcLinfBdrCondQuick')
+          call sys_halt()
+
+        end if
+        
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
+
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
             dtime, -dscale, transp_coeffVecBdrDualConst2d,&
             rvectorScalar, rcollection)
+
         
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
@@ -2919,6 +2977,7 @@ contains
         ! @TODO: Implement weak boundary conditions
         print *, "Weak boundary conditions are not available!"
         stop
+
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
@@ -2926,6 +2985,7 @@ contains
         ! @TODO: Implement weak boundary conditions
         print *, "Weak boundary conditions are not available!"
         stop
+
         
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
@@ -2934,12 +2994,14 @@ contains
         print *, "Weak boundary conditions are not available!"
         stop
         
+
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         
         ! @TODO: Implement weak boundary conditions
         print *, "Weak boundary conditions are not available!"
         stop
+
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
@@ -2947,12 +3009,8 @@ contains
         ! @TODO: Implement weak boundary conditions
         print *, "Weak boundary conditions are not available!"
         stop
-        
-      case DEFAULT
-        call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
-        call sys_halt()
       end select
+
       
     case DEFAULT
       call output_line('Invalid mode!',&
