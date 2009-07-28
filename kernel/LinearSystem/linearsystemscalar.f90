@@ -241,6 +241,9 @@
 !# 69.) lsyssc_addConstant
 !#      -> Adds a constant to a vector.
 !#
+!# 70.) lsyssc_swapMatrices
+!#      -> Swaps two matrices
+!#
 !# Sometimes useful auxiliary routines:
 !#
 !# 1.) lsyssc_rebuildKdiagonal (Kcol, Kld, Kdiagonal, neq)
@@ -807,6 +810,7 @@ module linearsystemscalar
   public :: lsyssc_multMatMat
   public :: lsyssc_matrixLinearComb
   public :: lsyssc_swapVectors
+  public :: lsyssc_swapMatrices
   public :: lsyssc_isMatrixStructureShared
   public :: lsyssc_isMatrixContentShared
   public :: lsyssc_resizeVector
@@ -18275,15 +18279,56 @@ contains
     ! local variables
     type(t_vectorScalar) :: rvector
 
+    ! Vector1 -> Vector
     rvector  = rvector1
     rvector%p_rspatialDiscr => rvector1%p_rspatialDiscr
     
+    ! Vector2 -> Vector1
     rvector1 = rvector2
     rvector1%p_rspatialDiscr => rvector2%p_rspatialDiscr
     
+    ! Vector -> Vector2
     rvector2 = rvector
     rvector2%p_rspatialDiscr => rvector%p_rspatialDiscr
   end subroutine lsyssc_swapVectors
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_swapMatrices(rmatrix1,rmatrix2)
+
+!<description>
+    ! This subroutine swaps the content of two different matrices
+!</description>
+
+!<inputoutput>
+    ! first scalar matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix1
+
+    ! second scalar matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix2
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_matrixScalar) :: rmatrix
+
+    ! Matrix1 -> Matrix
+    rmatrix  = rmatrix1
+    rmatrix%p_rspatialDiscrTest => rmatrix1%p_rspatialDiscrTest
+    rmatrix%p_rspatialDiscrTrial => rmatrix1%p_rspatialDiscrTrial
+    
+    ! Matrix2 -> Matrix1
+    rmatrix1 = rmatrix2
+    rmatrix1%p_rspatialDiscrTest => rmatrix2%p_rspatialDiscrTest
+    rmatrix1%p_rspatialDiscrTrial => rmatrix2%p_rspatialDiscrTrial
+    
+    ! Matrix -> Matrix2
+    rmatrix2 = rmatrix
+    rmatrix2%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTest
+    rmatrix2%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTrial
+  end subroutine lsyssc_swapMatrices
 
   ! ***************************************************************************
 
