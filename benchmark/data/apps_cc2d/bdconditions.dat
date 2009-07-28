@@ -28,6 +28,10 @@
 #    x = x-coordinate of the point on the boundary
 #    y = y-coordinate of the point on the boundary
 #    TIME = time in a nonstationary simulation
+#    MFVELX = x-velocity of the moving frame (if imovingFrame=1)
+#    MFVELY = y-velocity of the moving frame (if imovingFrame=1)
+#    MFACCX = x-acceleration of the moving frame (if imovingFrame=1)
+#    MFACCY = y-acceleration of the moving frame (if imovingFrame=1)
 #
 # The following constants are defined:
 #
@@ -64,13 +68,13 @@ bdExpressions(6) =
 
 ineumannBoundary = -1
 
-# For each boundary component, a boundary component specifier 
-# 'bdComponentX([n])' must exist. [n] defines the number of sub-segments
+# For each boundary component, a bondary component specifier 
+# 'bdComponentX([n])' must exist. [n] defined the number of sub-segments
 # that follow. A sub-segment either corresponds to an actual boundary
 # segment or is a 'free' boundary segment anywhere on the boundary.
 # To each sub-segment, a boundary condition is associated.
 #
-# Definition of boundary segments always starts at parameter value 0.0.
+# Definition of boundary segments always start at parameter value 0.0.
 # Each specified sub-segment allows to specify the end parameter
 # value of the segment:
 # "    0  4.0  3  [bdcid] ..."

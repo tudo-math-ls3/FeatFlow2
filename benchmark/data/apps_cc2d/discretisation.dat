@@ -13,7 +13,7 @@
 # =0: Use zero solution.
 # =1: Read from file. isolutionStart specifies the level of the initial 
 #     solution, ssolutionStart specifies the filename to be read.
-#     THe file is expected as formatted text file.
+#     The file is expected as formatted text file.
 # =2: Read from file. isolutionStart specifies the level of the initial 
 #     solution, ssolutionStart specifies the filename to be read.
 #     The file is expected as unformatted binary file.
@@ -104,7 +104,7 @@ RE                 = 1000
 # 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
 #   in every timestep of the simulation
 
-iRHS               = 0
+iRHS               = 2
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
@@ -114,6 +114,18 @@ iRHS               = 0
 # nonstationary boundary conditions.
 
 iBoundary          = 2
+
+# Activates the moving-frames formulation.
+# 0=deactivate
+# 1=activate
+# Can be used to track e.g. falling particles.
+# When activated, the callback routine getMovingFrameVelocity must return
+# the velocity and acceleration of the moving frame in every timestep.
+# The acceleration is added to the RHS of the Navier-Stokes equation
+# while the velocity influences the Dirichlet boundary condition
+# and the posiprocessing.
+
+imovingFrame = 0
 
 # ------------------------------------------------------------------------
 
@@ -126,9 +138,13 @@ iBoundary          = 2
 #  5 = Q1~(EM30) / Q1~(EM30) / Q0 unpivoted (much faster than 3 but less stable)
 #  6 = Q1~(EM30) / Q1~(EM30) / Q0 unscaled (slightly faster than 3 but less stable)
 #  7 = Q1~(EM30) / Q1~(EM30) / Q0 new interface implementation
+#  8 = Q1~(EB30) / Q1~(EB30) / Q0 (experimental, works only with NLMIN=NLMAX and general VANKA/UMFPACK)
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
+# 20 = Q1        / Q1        / Q1 (unstabilised!)
+
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
+# (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
 iElementType       = 3
@@ -230,12 +246,18 @@ dAdMatThreshold    = 20.0
 [CC-PROLREST]
 #############
 
+# Projection type for velocity and pressure.
+# 0 = hard-coded projection (default)
+# 1 = matrix-based projection
+iprojTypeVelocity = 0
+iprojTypePressure = 0
+
 # Order of the prolongation/restriction to use for velocity components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
 
 iinterpolationOrderVel   = -1
 
-# Order of the prolongation/restriction to use for pressurte components.
+# Order of the prolongation/restriction to use for pressure components.
 # -1=default, 0=constant, 1=linear, 2=quadratic,...
 
 iinterpolationOrderPress = -1
