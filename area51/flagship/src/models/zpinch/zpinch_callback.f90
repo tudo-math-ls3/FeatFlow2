@@ -621,23 +621,27 @@ contains
     
     ! Create/resize velocity vector if required
     if (rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
-      call lsysbl_createVectorBlock(rproblemLevel&
-          %rvectorBlock(velocityfield), neq, ndim, .true.)
-    elseif (rproblemLevel%RvectorBlock(velocityfield)%NEQ .ne. neq*ndim) then
-      call lsysbl_resizeVectorBlock(rproblemLevel&
-          %rvectorBlock(velocityfield), neq, .true.)
+      call lsysbl_createVectorBlock(&
+          rproblemLevel%rvectorBlock(velocityfield),&
+          neq, ndim, .true.)
+    elseif (rproblemLevel%RvectorBlock(velocityfield)%NEQ&
+            .ne. neq*ndim) then
+      call lsysbl_resizeVectorBlock(&
+          rproblemLevel%rvectorBlock(velocityfield),&
+          neq, .true.)
     end if
-
+    
     ! Set x-velocity, i.e., momentum in x-direction
-    call euler_getVariable(rsolution, 'momentum_x', rproblemLevel&
-        %RvectorBlock(velocityfield)%RvectorBlock(1))
-
+    call euler_getVariable(rsolution, 'momentum_x',&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+    call zpinch_setVariable2d(&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+    
     ! Set y-velocity, i.e., momentum in y-direction
-    call euler_getVariable(rsolution, 'momentum_y', rproblemLevel&
-        %RvectorBlock(velocityfield)%RvectorBlock(2))
-
-    ! Set global solution vector as external vector for the transport model
-    call zpinch_setVariable2d(rsolution%RvectorBlock(1), 3)
+    call euler_getVariable(rsolution, 'momentum_y',&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+    call zpinch_setVariable2d(&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
     
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
