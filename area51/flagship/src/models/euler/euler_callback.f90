@@ -2003,7 +2003,8 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorScalar) :: rflux0, rflux, ralpha
     type(t_vectorBlock) :: rdata
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data, p_alpha
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
+    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data, p_alpha
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
@@ -2054,7 +2055,7 @@ contains
     call lsyssc_getbase_double(ralpha, p_alpha)
 
     ! Initialize alpha with ones
-    p_alpha = 1.0_DP
+    call lalg_setVector(p_alpha, 1.0_DP)
     
     ! Build the flux
     call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
@@ -2133,14 +2134,16 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
           
           ! Calculate low-order flux
-          call euler_calcFluxRusanov2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+          call euler_calcFluxRusanov2d(u(:,i), u(:,j),&
+              C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Update the time rate of change vector
           troc(:,i) = troc(:,i) + F_ij
           troc(:,j) = troc(:,j) + F_ji
 
           ! Calculate diffusion coefficient
-          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j), C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+          call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
+              C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Compute solution difference
           Diff = u(:,i)-u(:,j)         
@@ -2198,11 +2201,16 @@ contains
       real(DP) :: f_ij,f0_ij,diff,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
       integer :: ij,ji,i,j,iedge
 
+      ! Allocate temporal memory
       allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
       
-      pp = 0.0_DP; pm = 0.0_DP
-      qp = 0.0_DP; qm = 0.0_DP
-      rp = 1.0_DP; rm = 1.0_DP
+      ! Initialize vectors
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+      call lalg_setVector(rp, 1.0_DP)
+      call lalg_setVector(rm, 1.0_DP)
 
       ! Initialize edge counter
       iedge = 0
