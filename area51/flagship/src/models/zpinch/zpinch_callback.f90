@@ -123,7 +123,8 @@ contains
 !</subroutine>
 
     ! local parameter which is saved
-    real(DP), save :: dtime = 0.0_DP
+    real(DP), save :: dtimeEuler = 0.0_DP
+    real(DP), save :: dtimeTransport = 0.0_DP
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
@@ -155,7 +156,13 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
         
-        if (istep .eq. 0) then
+        if ((istep .eq. 0) .and.&
+            (dtimeEuler .ne. rtimestep%dTime)) then
+          
+          ! Update time variable so that no re-evaluation of the
+          ! const right-hand side takes place for current time step
+          dtimeEuler = rtimestep%dTime
+          
           ! Compute the constant right-hand side including the
           ! given explicit part of the Lorentz force term
           call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
@@ -261,11 +268,11 @@ contains
         
         if (istep .eq. 0) then
           
-          if (dtime .ne. rtimestep%dTime) then
+          if (dtimeTransport .ne. rtimestep%dTime) then
             
             ! Update time variable so that no re-evaluation of the
             ! const right-hand side takes place for current time step
-            dtime = rtimestep%dTime
+            dtimeTransport = rtimestep%dTime
 
             ! Compute the preconditioner
             call transp_calcPrecondThetaScheme(rproblemLevel,&
