@@ -3935,8 +3935,8 @@ contains
       call lalg_clearVector(pm)
       call lalg_clearVector(qp)
       call lalg_clearVector(qm)
-      call lalg_clearVector(rp, 1.0_DP)
-      call lalg_clearVector(rm, 1.0_DP)
+      call lalg_setVector(rp, 1.0_DP)
+      call lalg_setVector(rm, 1.0_DP)
       
       ! Initialize edge counter
       iedge = 0
