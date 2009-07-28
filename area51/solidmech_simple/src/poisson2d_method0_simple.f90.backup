@@ -112,7 +112,7 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror
     
-    real(DP) :: mu, lemda
+    real(DP) :: dmu, dlambda
     ! Error of FE function to reference function
     real(DP) :: derror
     
@@ -123,13 +123,14 @@ contains
     real(DP), Dimension(:,:), pointer :: p_DvertexCoords
     integer :: i
 
+
     ! Ok, let's start. 
     !
     ! We want to solve our linear elasticity problem on level...
-    NLMAX =5
+    NLMAX = 9
     
-    mu = 0.5_DP
-    lemda = 1.0_DP
+    dmu = 0.5_DP
+    dlambda = 0.75_DP
 
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -197,8 +198,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 2*mu + lemda
-    rform%Dcoefficients(2)  = mu
+    rform%Dcoefficients(1)  = 2*dmu + dlambda
+    rform%Dcoefficients(2)  = dmu
               
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -218,15 +219,17 @@ contains
     ! we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
     ! scalar system matrix in 2D.
-    rform%itermCount = 1
+    rform%itermCount = 2
     rform%Idescriptors(1,1) = DER_DERIV_Y
     rform%Idescriptors(2,1) = DER_DERIV_X
+    rform%Idescriptors(1,2) = DER_DERIV_X
+    rform%Idescriptors(2,2) = DER_DERIV_Y
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = mu + lemda
-              
+    rform%Dcoefficients(1)  = dlambda
+    rform%Dcoefficients(2)  = dmu
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
     ! As long as we use constant coefficients, this routine is not used.
@@ -245,14 +248,17 @@ contains
     ! we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
     ! scalar system matrix in 2D.
-    rform%itermCount = 1
+    rform%itermCount = 2
     rform%Idescriptors(1,1) = DER_DERIV_X
     rform%Idescriptors(2,1) = DER_DERIV_Y
+    rform%Idescriptors(1,2) = DER_DERIV_Y
+    rform%Idescriptors(2,2) = DER_DERIV_X
 
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = mu + lemda
+    rform%Dcoefficients(1)  = dlambda
+    rform%Dcoefficients(2)  = dmu
               
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -281,8 +287,8 @@ contains
     ! In the standard case, we have constant coefficients:
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = mu
-    rform%Dcoefficients(2)  = 2*mu + lemda
+    rform%Dcoefficients(1)  = dmu
+    rform%Dcoefficients(2)  = 2*dmu + dlambda
               
     ! Now we can build the matrix entries.
     ! We specify the callback function coeff_Laplace for the coefficients.
@@ -306,27 +312,61 @@ contains
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
     
+    ! Clear the solution vector on the finest level.
+    call lsysbl_clearVector(rrhs)
+
     ! ... and then discretise the RHS to the first two subvectors of
     ! the block vector using the discretisation structure of the 
     ! corresponding blocks.
     !
     ! Note that the vector is unsorted after calling this routine!
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-                  rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_X_2D)
+                  rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_Vol_u1_2D)
 
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
-                  rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Y_2D)
+                  rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Vol_u2_2D)
 
-    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+
+
+! 
+!   call lsyssc_getbase_double (rrhs%RvectorBlock(1),p_Ddata)
+!     call lsyssc_getbase_double (rrhs%RvectorBlock(2),p_Ddata2)
+! 
+!    print *, 'Block 1Vol'
+!    do i = 1,size(p_Ddata)
+!         print *, i,p_Ddata(i)
+!    end do
+!    print * , 'Block 2Vol'
+!       do i = 1,size(p_Ddata2)
+!         print *, i,p_Ddata2(i)
+!    end do
+
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
 
     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
 
-    call linf_buildVectorScalarBdr2d(rlinform,CUB_G2X2,.false.,&
-		  rrhs%RvectorBlock(1),coeff_RHS_neumBdr_X_2D, rboundaryRegion)
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+		  rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion)
 
-    call linf_buildVectorScalarBdr2d(rlinform,CUB_G2X2,.false.,&
-		  rrhs%RvectorBlock(2),coeff_RHS_neumBdr_Y_2D, rboundaryRegion)
-     ! Clear the solution vector on the finest level.
+    call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+		  rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion)
+
+
+
+!    call lsyssc_getbase_double (rrhs%RvectorBlock(1),p_Ddata)
+!     call lsyssc_getbase_double (rrhs%RvectorBlock(2),p_Ddata2)
+! 
+!    print *, 'Block 1neu'
+!    do i = 1,size(p_Ddata)
+!         print *, i,p_Ddata(i)
+!    end do
+!    print * , 'Block 2neu'
+!       do i = 1,size(p_Ddata2)
+!         print *, i,p_Ddata2(i)
+!    end do
+   
+
+   ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rvector)
 
     ! For implementing boundary conditions, we use a 'filter technique with
@@ -353,7 +393,7 @@ contains
     
     ! The endpoint of this segment should also be Dirichlet. We set this by
     ! changing the region properties in rboundaryRegion.
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
     
     ! We use this boundary region and specify that we want to have Dirichlet
     ! boundary there. The following call does the following:
@@ -368,26 +408,26 @@ contains
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
                              
-     ! Edge 2 of boundary component 1.
-     call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                        rboundaryRegion,rdiscreteBC,&
-                                        getBoundaryValues_2D)
+!      Edge 2 of boundary component 1.
+!      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!      rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+!      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                         rboundaryRegion,rdiscreteBC,&
+!                                         getBoundaryValues_2D)
                              
-    ! Edge 3 of boundary component 1.
+!     Edge 3 of boundary component 1.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
     
-    ! Edge 4 of boundary component 1. That's it.
-!     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!     rboundaryRegion%iproperties = BDR_PROP_WITHSTART
-!     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_2D)
+!     Edge 4 of boundary component 1. That's it.
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D)
 
     ! Now continue with defining the boundary conditions of the Y-velocity:
     !
@@ -403,26 +443,27 @@ contains
                                        getBoundaryValues_2D)
                              
      ! Edge 2 of boundary component 1.
-     call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-                                        rboundaryRegion,rdiscreteBC,&
-                                        getBoundaryValues_2D)
+!      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!     rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+!      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+!                                         rboundaryRegion,rdiscreteBC,&
+!                                         getBoundaryValues_2D)
 !                              
     ! Edge 3 of boundary component 1.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
                                        getBoundaryValues_2D)
     
     ! Edge 4 of boundary component 1. That's it.
-!     call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!     rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-!     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_2D)
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    rboundaryRegion%iproperties = BDR_PROP_WITHSTART
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D)
     
+
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.!
@@ -440,6 +481,30 @@ contains
     call vecfil_discreteBCsol (rvector)
     call matfil_discreteBC (rmatrix)
 
+!    call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
+!     call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
+! 
+!    print *, 'Block 1rvector'
+!    do i = 1,size(p_Ddata)
+!         print *, i,p_Ddata(i)
+!    end do
+!    print * , 'Block 2rvector'
+!       do i = 1,size(p_Ddata2)
+!         print *, i,p_Ddata2(i)
+!    end do 
+
+
+! call lsyssc_getbase_double (rrhs%RvectorBlock(1),p_Ddata)
+!     call lsyssc_getbase_double (rrhs%RvectorBlock(2),p_Ddata2)
+! 
+!    print *, 'Block 1'
+!    do i = 1,size(p_Ddata)
+!         print *, i,p_Ddata(i)
+!    end do
+!    print * , 'Block 2'
+!       do i = 1,size(p_Ddata2)
+!         print *, i,p_Ddata2(i)
+!    end do
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
     ! a filter chain. As the linear solver does not work with 
@@ -448,7 +513,7 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+!     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Create a BiCGStab-solver.
     ! Attach the above filter chain to the solver, so that the solver
@@ -457,7 +522,7 @@ contains
     nullify(p_rpreconditioner)
     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 !     call linsol_initUMFPACK4 (p_rsolverNode)
-    !p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
+!     p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
@@ -494,20 +559,50 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
 
+! call lsyssc_getbase_double (rvector%RvectorBlock(1),p_Ddata)
+!     call lsyssc_getbase_double (rvector%RvectorBlock(2),p_Ddata2)
+! 
+!    print *, 'Block 1v'
+!    do i = 1,size(p_Ddata)
+!         print *, i,p_Ddata(i)
+!    end do
+!    print * , 'Block 2v'
+!       do i = 1,size(p_Ddata2)
+!         print *, i,p_Ddata2(i)
+!    end do
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rVector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_u1_2D)
+    call output_line ('L2-error for X: ' // sys_sdEL(derror,10) )
+
+     call pperr_scalar (rVector%RvectorBlock(2),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_u2_2D)
+    call output_line ('L2-error for Y: ' // sys_sdEL(derror,10) )
+
+    call pperr_scalar (rVector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+                       getReferenceFunction_u1_2D)
+    call output_line ('H1-error for X: ' // sys_sdEL(derror,10) )
+
+    call pperr_scalar (rVector%RvectorBlock(2),PPERR_H1ERROR,derror,&
+                       getReferenceFunction_u2_2D)
+    call output_line ('H1-error for Y: ' // sys_sdEL(derror,10) )
+    
+
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
-    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_DvertexCoords)
+!     call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
      ! Write velocity field
     call lsyssc_getbase_double (rVector%RvectorBlock(1),p_Ddata)
     call lsyssc_getbase_double (rVector%RvectorBlock(2),p_Ddata2)
   
-    do i = 1,rtriangulation%NVT
-    	p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
-    	p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
-    end do
+!     do i = 1,rtriangulation%NVT
+!     	p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
+!     	p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
+!     end do
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
@@ -529,24 +624,6 @@ contains
      ! Write the file to disc, that's it.
     call ucd_write (rexport)
     call ucd_release (rexport)
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rVector%RvectorBlock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_X_2D)
-    call output_line ('L2-error for X: ' // sys_sdEL(derror,10) )
-
-     call pperr_scalar (rVector%RvectorBlock(2),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_Y_2D)
-    call output_line ('L2-error for Y: ' // sys_sdEL(derror,10) )
-
-    call pperr_scalar (rVector%RvectorBlock(1),PPERR_H1ERROR,derror,&
-                       getReferenceFunction_X_2D)
-    call output_line ('H1-error for X: ' // sys_sdEL(derror,10) )
-
-    call pperr_scalar (rVector%RvectorBlock(2),PPERR_H1ERROR,derror,&
-                       getReferenceFunction_Y_2D)
-    call output_line ('H1-error for Y: ' // sys_sdEL(derror,10) )
-    
 
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
