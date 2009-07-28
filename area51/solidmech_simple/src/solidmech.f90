@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson </name>
+!# <name> solidmech </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -26,9 +26,9 @@
 !# </purpose>
 !##############################################################################
 
-program poisson
+program solidmech
    
-  use poisson2d_method0_simple
+  use solidmech2d_method0_simple
   
   implicit none
   
@@ -58,11 +58,11 @@ program poisson
   ! Initialise the FEAT 2.0 storage management: 
   call storage_init(999, 100)
 
-  ! Call the problem to solve. Poisson 2D method 1 - simple:
+  ! Call the problem to solve. Solidmech 2D method 1 - simple:
   call output_lbrk ()
-  call output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
+  call output_line ('Calculating Solidmech-2D-Problem with method 0 - simple')
   call output_line ('-----------------------------------------------------')
-  call poisson2d_0_simple
+  call solidmech2d_0_simple
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

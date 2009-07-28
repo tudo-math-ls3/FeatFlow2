@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson2d_callback </name>
+!# <name> solidmech2d_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -69,7 +69,7 @@
 !# </purpose>
 !##############################################################################
 
-module poisson2d_callback
+module solidmech2d_callback
 
   use fsystem
   use storage
@@ -96,9 +96,8 @@ integer, parameter :: cfuncId_u1 = 4
 integer, parameter :: cfuncId_u2 = 52
 real(DP), parameter :: dmu = 0.5_DP
 real(DP), parameter :: dlambda = 0.75_DP
+
 contains
-
-
 
 ! ***************************************************************************
   !<subroutine>

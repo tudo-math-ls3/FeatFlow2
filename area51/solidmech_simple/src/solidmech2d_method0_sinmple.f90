@@ -1,16 +1,16 @@
 
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson2d_method0_simple </name>
+!# <name> solidmech2d_method0_simple </name>
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module is a demonstration program how to solve a simple Poisson
+!# This module is a demonstration program how to solve a simple linear elasticity
 !# problem with constant coefficients on a simple domain.
 !# </purpose>
 !##############################################################################
 
-module poisson2d_method0_simple
+module solidmech2d_method0_simple
 
   use fsystem
   use genoutput
@@ -34,7 +34,7 @@ module poisson2d_method0_simple
   use ucd
   use pprocerror
     
-  use poisson2d_callback
+  use solidmech2d_callback
   
   implicit none
 
@@ -44,7 +44,7 @@ contains
 
 !<subroutine>
 
-  subroutine poisson2d_0_simple
+  subroutine solidmech2d_0_simple
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
