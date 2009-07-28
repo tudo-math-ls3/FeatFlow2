@@ -869,8 +869,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalConst2d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixPrimalConst2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -898,16 +898,13 @@ contains
 
     ! local variables
     real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
-    integer :: idx,jdx
 
     ! Compute convective coefficients
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
     k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
 
     ! Compute artificial diffusion coefficient
-!!$    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-    d_ij = max( abs(k_ij), abs(k_ji) )
+    d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
   end subroutine transp_calcMatrixPrimalConst2d
 
@@ -915,8 +912,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst2d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixDualConst2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -947,9 +944,7 @@ contains
     k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
 
     ! Compute artificial diffusion coefficient
-!!$    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-    d_ij = max( abs(k_ij), abs(k_ji) )
+    d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
   end subroutine transp_calcMatrixDualConst2d
 
@@ -1857,8 +1852,8 @@ contains
     
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBurgersSpT2d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixPrimalBurgersSpT2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2095,8 +2090,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBuckLevSpT2d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixPrimalBuckLevSpT2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -2343,8 +2338,8 @@ contains
     
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBurgers2d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatrixPrimalBurgers2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
