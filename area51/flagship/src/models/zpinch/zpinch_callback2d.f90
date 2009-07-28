@@ -9,13 +9,22 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_hadaptCallbackScalar2d
+!# 1.) zpinch_setVariable2d
+!#     -> Sets global variables for external data, e.g., velocity fields in 2D
+!#
+!# 2.) zpinch_hadaptCallbackScalar2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 1.) zpinch_hadaptCallbackBlock2d
+!# 3.) zpinch_hadaptCallbackBlock2d
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
+!#
+!# 4.) zpinch_calcMatrixPrimalConst2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
+!#
+!# 5.) zpinch_calcMatrixDualConst2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
 !#
 !# </purpose>
 !##############################################################################
@@ -35,12 +44,70 @@ module zpinch_callback2d
   implicit none
   
   private
+  public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
   public :: zpinch_hadaptCallbackBlock2d
+  public :: zpinch_calcMatrixPrimalConst2d
+  public :: zpinch_calcMatrixDualConst2d
+
+!<globals>
+
+  !*****************************************************************
+  ! Pointers to external data vectors.
+  !
+  ! Using global variables is not good programming style but it is the
+  ! only way to allow for an efficient access to the velocity data
+  ! from within the callback routines which are called repeatedly
+
+  real(DP), dimension(:), pointer, save :: p_Dvariable1 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable2 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable3 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable4 => null()
+  real(DP), dimension(:), pointer, save :: p_Dvariable5 => null()
+
+!</globals>
 
 contains
 
-    !*****************************************************************************
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_setVariable2d(rvector, ivariable)
+
+!<description>
+    ! This subroutine sets one of the the global pointers to the given vector.
+!</description>
+
+!<input>
+    ! scalar vector
+    type(t_vectorScalar), intent(in) :: rvector
+
+    ! variable number
+    integer, intent(in) :: ivariable
+!</input>
+!</subroutine>
+
+    select case(ivariable)
+    case (1)
+      call lsyssc_getbase_double(rvector, p_Dvariable1)
+    case (2)
+      call lsyssc_getbase_double(rvector, p_Dvariable2)
+    case (3)
+      call lsyssc_getbase_double(rvector, p_Dvariable3)
+    case (4)
+      call lsyssc_getbase_double(rvector, p_Dvariable4)
+    case (5)
+      call lsyssc_getbase_double(rvector, p_Dvariable5)
+    case DEFAULT
+      call output_line('Invalid variable number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariable2d')
+      call sys_halt()
+    end select
+    
+  end subroutine zpinch_setVariable2d
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -407,5 +474,89 @@ contains
     end select
     
   end subroutine zpinch_hadaptCallbackBlock2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatrixPrimalConst2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: idx,jdx
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
+
+    ! Compute artificial diffusion coefficient
+    d_ij = max( abs(k_ij), abs(k_ji) )
+
+  end subroutine zpinch_calcMatrixPrimalConst2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine zpinch_calcMatrixDualConst2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
+    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
+
+    ! Compute artificial diffusion coefficient
+    d_ij = max( abs(k_ij), abs(k_ji) )
+    
+  end subroutine zpinch_calcMatrixDualConst2d
   
 end module zpinch_callback2d
