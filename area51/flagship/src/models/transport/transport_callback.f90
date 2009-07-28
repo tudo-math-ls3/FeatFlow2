@@ -322,7 +322,8 @@ contains
 !<subroutine>
 
   subroutine transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-      rsolver, rsolution, rcollection)
+      rsolver, rsolution, rcollection, fcb_calcMatrixPrimal,&
+      fcb_calcMatrixDual)
 
 !<description>
     ! This subroutine calculates the nonlinear preconditioner for the
@@ -336,6 +337,11 @@ contains
 
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
+
+    ! user-defined callback functions
+    include 'intf_transpCalcPrecond.inc'
+    optional :: fcb_calcMatrixPrimal
+    optional :: fcb_calcMatrixDual
 !</input>
 
 !<inputoutput>
@@ -549,6 +555,72 @@ contains
 
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
+      case default
+        ! The user-defined callback function is used if present;
+        ! otherwise an error is throws
+        if (present(fcb_calcMatrixPrimal)) then
+          
+          if (bbuildAFC) then
+
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              
+            case (NDIM2D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              
+            case (NDIM3D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+            end select
+
+          else   ! bbuildAFC = false
+            
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+              
+            case (NDIM2D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+              
+            case (NDIM3D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+            end select
+            
+          end if
+          
+        else ! callback function not present
+          
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
+          call sys_halt()
+          
+        end if
+        
+        
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
@@ -772,12 +844,6 @@ contains
         ! Set update notification in problem level structure
         rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
                                          PROBLEV_MSPEC_UPDATE)
-
-
-      case DEFAULT
-        call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-        call sys_halt()
       end select
 
       
@@ -793,6 +859,72 @@ contains
       
       ! @FAQ2: Which type of velocity are we?
       select case(abs(ivelocitytype))
+      case default
+        ! The user-defined callback function is used if present;
+        ! otherwise an error is throws
+        if (present(fcb_calcMatrixDual)) then
+          
+          if (bbuildAFC) then
+            
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rsolution, fcb_calcMatrixDual, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              
+            case (NDIM2D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rsolution, fcb_calcMatrixDual, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              
+            case (NDIM3D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rsolution, fcb_calcMatrixDual, .true., .false.,&
+                  rproblemLevel%Rmatrix(transportMatrix),&
+                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
+            end select
+
+          else   ! bbuildAFC = false
+            
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rsolution, fcb_calcMatrixDual, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+              
+            case (NDIM2D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rsolution, fcb_calcMatrixDual, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+              
+            case (NDIM3D)
+              call gfsc_buildConvectionOperator(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rsolution, fcb_calcMatrixDual, bStabilize,&
+                  .false., rproblemLevel%Rmatrix(transportMatrix),&
+                  bisConservative = bconservative)
+            end select
+            
+          end if
+          
+        else ! callback function not present
+          
+          call output_line('Missing user-defined callback function!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
+          call sys_halt()
+          
+        end if
+
+
       case (VELOCITY_ZERO)
         ! zero velocity, do nothing
         
@@ -868,12 +1000,8 @@ contains
         ! @TODO: The dual mode has only been implemented for linear
         ! convection. If you need to compute the dual problem for
         ! some other velocity type, then you have to add the
-        ! implementation of the dual transport operator below!        
+        ! implementation of the dual transport operator below!
 
-      case DEFAULT
-        call output_line('Invalid velocity profile!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
-        call sys_halt()
       end select
 
     case DEFAULT
