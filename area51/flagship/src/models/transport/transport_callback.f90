@@ -3736,7 +3736,8 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorScalar) :: rflux0, rflux
     type(t_vectorBlock) :: rdata
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy, p_u, p_flux0, p_flux, p_data
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
+    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
     integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
@@ -3788,8 +3789,8 @@ contains
     call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix&
         %NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
         p_data, p_flux, p_flux0)
-
-    ! Build the correction
+   
+    ! Build the correction and apply it directly
     call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
         p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
     
@@ -3840,7 +3841,8 @@ contains
         C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients
-        call transp_calcMatrixPrimalConst2d(u(i), u(i), C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
+        call transp_calcMatrixPrimalConst2d(u(i), u(i),&
+            C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
         troc(i) = troc(i) + dscale*k_ii*u(i)
@@ -3859,11 +3861,11 @@ contains
           C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
           ! Compute convection coefficients
-          call transp_calcMatrixPrimalConst2d(u(i), u(j), C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+          call transp_calcMatrixPrimalConst2d(u(i), u(j),&
+              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Artificial diffusion coefficient
-!!$          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-          d_ij = max(abs(k_ij), abs(k_ji))
+          d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
           ! Compute auxiliary value
           aux = d_ij*(u(j)-u(i))
@@ -3925,11 +3927,16 @@ contains
       real(DP) :: f_ij,diff
       integer :: ij,ji,i,j,iedge,ivar
 
+      ! Allocate temporal memory
       allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
       
-      pp=0.0_DP; pm=0.0_DP
-      qp=0.0_DP; qm=0.0_DP
-      rp=0.0_DP; rm=0.0_DP
+      ! Initialize vectors
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+      call lalg_clearVector(rp, 1.0_DP)
+      call lalg_clearVector(rm, 1.0_DP)
       
       ! Initialize edge counter
       iedge = 0
@@ -3947,7 +3954,7 @@ contains
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
           ! Apply minmod prelimiter ...
-          f_ij = minmod(flux(iedge), flux0(iedge))
+          f_ij = minmod(flux(iedge), 2*flux0(iedge))
           
           ! ... and store prelimited flux
           flux(iedge) = f_ij
@@ -3971,8 +3978,11 @@ contains
 
       ! Compute nodal correction factors
       do i = 1, NEQ
-        if (pp(i) >  SYS_EPSREAL) rp(i) = min(1.0_DP, ML(i)*qp(i)/pp(i))
-        if (pm(i) < -SYS_EPSREAL) rm(i) = min(1.0_DP, ML(i)*qm(i)/pm(i))
+        qp(i) = qp(i)*ML(i)
+        qm(i) = qm(i)*ML(i)
+        
+        if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
+        if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
 
 
@@ -4012,6 +4022,9 @@ contains
       do i = 1, NEQ
         u(i) = u(i) + data(i)/ML(i)
       end do
+
+      ! Deallocate temporal memory
+      deallocate(pp,pm,qp,qm,rp,rm)
 
     end subroutine buildCorrection
 
