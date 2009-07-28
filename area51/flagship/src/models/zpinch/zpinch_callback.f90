@@ -901,10 +901,14 @@ contains
         %NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
         p_data, p_flux, p_flux0)
 
-    ! Multiply the low-order solution by the density-averaged mass
-    ! matrix evaluated at the low-order density profile
+    ! Build the correction
+    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+
+    ! Multiply the low-order solution by the 
+    ! density-averaged lumped mass matrix
     do i = 1, size(p_u)
-      p_u(i) = p_ML(i) * p_u(i)
+      p_u(i) = p_u(i)*p_ML(i)
     end do
 
     ! Set pointer to solution from Euler model
@@ -920,9 +924,10 @@ contains
         rcollection%SquickAccess(1), rproblemLevel,&
         p_rsolutionEuler, rcollection)
     
-    ! Build the correction and apply it directly
-    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    ! Apply correction to low-order solution
+    do i = 1, size(p_u)
+      p_u(i) = (p_u(i) + p_data(i))/p_ML(i)
+    end do
     
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
@@ -1047,9 +1052,10 @@ contains
       
       real(DP), dimension(:), intent(in) :: ML,flux0
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), dimension(:), intent(in) :: u
       integer, intent(in) :: NEQ,NEDGE
       
-      real(DP), dimension(:), intent(inout) :: data,u,flux
+      real(DP), dimension(:), intent(inout) :: data,flux
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
@@ -1065,8 +1071,8 @@ contains
       call lalg_clearVector(pm)
       call lalg_clearVector(qp)
       call lalg_clearVector(qm)
-      call lalg_setVector(rp, 1.0_DP)
-      call lalg_setVector(rm, 1.0_DP)
+      call lalg_clearVector(rp)
+      call lalg_clearVector(rm)
       
       ! Initialize edge counter
       iedge = 0
@@ -1146,11 +1152,6 @@ contains
           iedge = iedge-1
           
         end do
-      end do
-
-
-      do i = 1, NEQ
-        u(i) = (u(i) + data(i))/ML(i)
       end do
 
       ! Deallocate temporal memory
