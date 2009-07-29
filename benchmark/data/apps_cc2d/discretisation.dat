@@ -12,10 +12,10 @@
 # Type of the initial solution.
 # =0: Use zero solution.
 # =1: Read from file. isolutionStart specifies the level of the initial 
-#     solution, ssolutionStart specifies the filename to be read.
+#     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as formatted text file.
 # =2: Read from file. isolutionStart specifies the level of the initial 
-#     solution, ssolutionStart specifies the filename to be read.
+#     solution, sinitialSolutionFilename specifies the filename to be read.
 #     The file is expected as unformatted binary file.
 #     (smaller, but processor dependent and not human readable!)
 # =3: Analytical initial solution. Create the solution by calling
@@ -27,34 +27,53 @@ ctypeInitialSolution = 0
 
 # If ctypeInitialSolution=1: Level of the initial solution in the file
 # to be read.
-# =1,2,3,...: File ssolutionStart specifies a solution on 
-#             level isolutionStart.
-# =0,-1,-2,...: File ssolutionStart specifies a solution on 
-#               level (NLMAX+isolutionStart).
+# =1,2,3,...: File sinitialSolutionFilename specifies a solution on 
+#             level iinitialSolutionLevel.
+#             iinitialSolutionlevel must be in the range
+#             nlmin <= iinitialSolutionlevel <= nlmax
+# =0,-1,-2,...: File sinitialSolutionFilename specifies a solution on 
+#               level (NLMAX+iinitialSolutionLevel).
 
-isolutionStart     = 0
+iinitialSolutionlevel = 0
 
 # Name/path of file with the initial solution
 
-ssolutionStart     = ''
+sinitialSolutionFilename = ''
+
+# Element type to use for the initial solution.
+# =-1: The initial solution is given in the same FEM space as specified
+#      by ielementType below
+# >=0: The initial solution is given in the FEM space 
+#      ielementTypeInitialSolution. All FEM spaces that are possible
+#      for ielementType are available here.
+
+ielementTypeInitialSolution = -1
 
 # Write final solution vector to a file. After a stationary simulation,
 # the stationary solution is written out. After a nonstationary simulation,
 # the solution after the last timestep is written out.
 # 0=don't write
-# |.|=1: write start vector to sSolutionWrite vector on level NLMAX,
-# |.|=2: write start vector to sSolutionWrite on level NLMAX-1.
-# etc... 
-# <0: sSolutionWrite is unformatted file 
-#     (smaller, but processor dependent and not human readable)
+# 1=write on level specified by iwriteSolutionLevel, use formatted output
+# 2=write on level specified by iwriteSolutionLevel, use unformatted output
 # To write out raw solution data during a nonstationary simulation,
 # use the 'film output' feature in the postprocessing!
 
-iSolutionWrite     = 0
+cwriteFinalSolution = 0
+
+# Specifies the level where to write the final solution.
+# 0=don't write
+# =1,2,3,...: Write to file swriteSolutionFilename on
+#             level iwriteSolutionLevel.
+#             iwriteSolutionLevel must be in the range
+#             nlmin <= iwriteSolutionLevel <= nlmax
+# =0,-1,-2,...: Write to file swriteSolutionFilename on
+#               level (NLMAX+iwriteSolutionLevel).
+
+iwriteSolutionLevel = 0
 
 # Name/path of file for writing the final solution
 
-sSolutionWrite     = ''
+swriteSolutionFilename = ''
 
 # ------------------------------------------------------------------------
 
@@ -65,7 +84,6 @@ NLMIN              = 1
 # maximum mg-level = level of computation of nonlinear iteration
 
 NLMAX              = 4
-
 
 # ------------------------------------------------------------------------
 
@@ -147,7 +165,7 @@ imovingFrame = 0
 # (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
 # (QP1  = Quadrilateral discontinuous P1 element)
 
-iElementType       = 3
+ielementType       = 3
 
 # ------------------------------------------------------------------------
 
@@ -178,11 +196,11 @@ iLocalH = 1
 # Element type to use for the unified edge oriented jump stabilisation.
 # Allows to use a different finite element for setting up the stabilisation
 # than for discretising the equation. Only used if iUpwind=2.
-# =-1: Use iElementType.
+# =-1: Use ielementType.
 # >=0: Use a different FE type for the stabilisation than for the equation.
 #      See the documentation of ielementType which numbers are allowed here.
 
-iElementTypeStabil = -1
+ielementTypeStabil = -1
 
 # ------------------------------------------------------------------------
 
