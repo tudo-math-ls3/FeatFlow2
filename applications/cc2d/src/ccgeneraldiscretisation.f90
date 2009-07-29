@@ -74,6 +74,8 @@ module ccgeneraldiscretisation
   use scalarpde
   use stdoperators
   use multileveloperators
+  use analyticprojection
+  use feevaluation
   
   use collection
   use convection
@@ -1483,6 +1485,85 @@ contains
 
   ! ***************************************************************************
 
+  !<subroutine>
+
+    subroutine fcoeff_solProjection (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, &
+                  IdofsTest, rdomainIntSubset, &
+                  Dcoefficients, rcollection)
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! Called when the initial solution has to be projected into another FEM
+    ! space. Evaluated the current initial solution in cubature points.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+      integer :: icomponent
+      
+      ! Evaluate copmponent icomponent
+      icomponent = rcollection%IquickAccess(1)
+      
+      call fevl_evaluate_sim (&
+          rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
+          rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+  
+    end subroutine
+
+  ! ***************************************************************************
+
 !<subroutine>
 
   subroutine cc_initInitialSolution (rproblem,rvector)
@@ -1508,26 +1589,31 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: istart,ctypeInitialSolution
-    type(t_vectorBlock) :: rvector1,rvector2
+    integer :: iinitialSolutionLevel,ctypeInitialSolution,ielementTypeInitialSolution
+    type(t_vectorBlock), target :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
-    integer :: ilev,ierror
+    integer :: ilev,ierror,ispace
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_linearForm) :: rlinform
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisationInitSol
     type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
     type(t_matrixBlock), dimension(1) :: Rmatrices
     type(t_vectorBlock) :: rsingleRHS,rsingleSol
+    type(t_collection) :: rcollection
 
     ! Get the parameter what to do with rvector
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'ctypeInitialSolution',ctypeInitialSolution,0)
+        'ctypeInitialSolution',ctypeInitialSolution,0)
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'isolutionStart',istart,0)
+        'iinitialSolutionLevel',iinitialSolutionLevel,0)
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'ssolutionStart',sfileString,'')
+        'sinitialSolutionFilename',sfileString,'')
+
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+        'ielementTypeInitialSolution',ielementTypeInitialSolution,-1)
 
     ! What is the type of the initial solution?
     select case (ctypeInitialSolution)
@@ -1538,36 +1624,80 @@ contains
     case (1,2)
       ! We have to read a file -- formatted or unformatted.
       !
-      ! Create a temp vector at level NLMAX-istart+1.
-      if (istart .gt. 0) then
-        ilev = istart
+      ! Create a temp vector at level NLMAX-iinitialSolutionLevel+1.
+      if (iinitialSolutionLevel .gt. 0) then
+        ilev = iinitialSolutionLevel
       else
-        ilev = rproblem%NLMAX-abs(istart)
+        ilev = rproblem%NLMAX-abs(iinitialSolutionLevel)
       end if
       
       if (ilev .lt. rproblem%NLMIN) then
         call output_line (&
             'Level of start vector is < NLMIN! Initialising with zero!', &
             OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-        istart = 0
+        iinitialSolutionLevel = 0
       end if
 
       if (ilev .gt. rproblem%NLMAX) then
         call output_line (&
             'Level of start vector is > NLMAX! Initialising with zero!', &
             OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-        istart = 0
+        iinitialSolutionLevel = 0
       end if
       
       ! Remove possible ''-characters
       read(sfileString,*) sfile
 
+      ! Create a basic block vector that takes our solution.
       call lsysbl_createVectorBlock (&
           rproblem%RlevelInfo(ilev)%rdiscretisation,rvector1,.false.)
       
-      ! Read in the vector
-      call vecio_readBlockVectorHR (&
+      ! Can we directly read in the solution?
+      if (ielementTypeInitialSolution .eq. -1) then
+        ! Read in the vector
+        call vecio_readBlockVectorHR (&
           rvector1, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
+      else
+        ! Create a compatible discretisation for the alternative element type
+        call cc_deriveDiscretisation (ielementTypeInitialSolution,&
+            rproblem%RlevelInfo(ilev)%rdiscretisation,&
+            rdiscretisationInitSol)
+       
+        ! Create a temp vector and read the solution
+        call lsysbl_createVectorBlock (&
+            rdiscretisationInitSol,rvector2,.false.)
+        call vecio_readBlockVectorHR (&
+          rvector2, sarray, .true., 0, sfile, ctypeInitialSolution .eq. 1)
+          
+        ! Put the vector to the collection, will be needed for the projection.
+        rcollection%p_rvectorQuickAccess1 => rvector2
+          
+        ! Project the solution to out current FEM space, so to say to the
+        ! vector vector1.
+        !
+        ! X-velocity
+        rcollection%IquickAccess(1) = 1
+        call anprj_analytL2projectionByMass (rvector1%RvectorBlock(1),&
+            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMass,&
+            fcoeff_solProjection,rcollection)
+
+        ! Y-velocity
+        rcollection%IquickAccess(1) = 2
+        call anprj_analytL2projectionByMass (rvector1%RvectorBlock(2),&
+            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMass,&
+            fcoeff_solProjection,rcollection)
+            
+        ! Pressure
+        rcollection%IquickAccess(1) = 3
+        call anprj_analytL2projectionByMass (rvector1%RvectorBlock(3),&
+            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMassPressure,&
+            fcoeff_solProjection,rcollection)
+        
+        ! rvector2 is not needed anymore, as well as the temporary discretisation.
+        call lsysbl_releaseVector (rvector2)
+        call spdiscr_releaseBlockDiscr (rdiscretisationInitSol)
+      end if
+
           
       ! If the vector is on level < NLMAX, we have to bring it to level NLMAX
       do while (ilev .lt. rproblem%NLMAX)
@@ -1796,7 +1926,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: idestLevel
+    integer :: iwriteSolutionLevel,cwriteFinalSolution
     type(t_vectorBlock) :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sfile,sfileString
@@ -1807,29 +1937,34 @@ contains
 
     ! Get the parameter what to do with rvector
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iSolutionWrite',idestLevel,0)
+                              'cwriteFinalSolution',cwriteFinalSolution,0)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iwriteSolutionLevel',iwriteSolutionLevel,0)
     call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'sSolutionWrite',sfileString,'')
+                                 'swriteSolutionFilename',sfileString,'')
 
-    if (idestLevel .eq. 0) return ! nothing to do.
+    if (cwriteFinalSolution .eq. 0) return ! nothing to do.
     
     ! Remove possible ''-characters
     read(sfileString,*) sfile
     
-    bformatted = idestLevel .gt. 0
-    idestLevel = rproblem%NLMAX-abs(idestLevel)+1 ! level where to write out
+    bformatted = cwriteFinalSolution .gt. 0
+    ! level where to write out; correct if negative.
+    if (iwriteSolutionLevel .le. 0) then
+      iwriteSolutionLevel = rproblem%NLMAX-abs(iwriteSolutionLevel) 
+    end if
 
-    if (idestLevel .lt. rproblem%NLMIN) then
+    if (iwriteSolutionLevel .lt. rproblem%NLMIN) then
       call output_line (&
           'Warning: Level for solution vector is < NLMIN! Writing out at level NLMIN!',&
           OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-      idestLevel = rproblem%NLMIN
+      iwriteSolutionLevel = rproblem%NLMIN
     end if
     
-    ! Interpolate the solution down to level istart.
+    ! Interpolate the solution down to level iinitialSolutionLevel.
     call lsysbl_copyVector (rvector,rvector1)   ! creates new rvector1!
 
-    do ilev = rproblem%NLMAX,idestLevel+1,-1
+    do ilev = rproblem%NLMAX,iwriteSolutionLevel+1,-1
       
       ! Initialise a vector for the lower level and a prolongation structure.
       call lsysbl_createVectorBlock (&
