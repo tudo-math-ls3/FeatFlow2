@@ -76,7 +76,7 @@ contains
 !<subroutine>
 
   subroutine cc_get1LevelDiscretisation (rparlist,rboundary,rtriangulation,&
-      nequations,rdiscretisation)
+      nequations,rdiscretisation,ieltype)
   
 !<description>
   ! Sets up the discretisation structures for the (primal) velocity and pressure
@@ -97,6 +97,10 @@ contains
   
   ! Underlying triangulation
   type(t_triangulation), intent(IN), target :: rtriangulation
+  
+  ! OPTIONAL: Element type. If not specified, the element type is taken
+  ! from the parameter list.
+  integer, intent(in), optional :: ieltype
 !</input>
 
 !<inputoutput>
@@ -112,6 +116,8 @@ contains
     ! Get parameters about the discretisation from the parameter list
     call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
                               'iElementType',ielementType,3)
+                              
+    if (present(ieltype)) ielementType = ieltype
 
     call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
                                  'scubStokes',sstr,'')
@@ -1667,6 +1673,9 @@ contains
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ilevelTargetFlow',rproblem%roptcontrol%ilevelTargetFlow,0)
 
+    call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
+        'ielementTypeTargetFlow',rproblem%roptcontrol%ielementTypeTargetFlow,-1)
+
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
         'smeshTargetFlow',spar,'''''')
     read(spar,*) rproblem%roptcontrol%smeshTargetFlow
@@ -1801,11 +1810,17 @@ contains
         call tria_initStandardMeshFromRaw (&
             rproblem%roptcontrol%p_rtriangulationTargetFlow,rproblem%rboundary)
             
-        ! Create a discretisation structure corresponding to that mesh.
+        ! Create a discretisation structure corresponding to that mesh and element type
         allocate(rproblem%roptcontrol%p_rdiscrTargetFlow)
-        call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
-            rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
-            rproblem%roptcontrol%p_rdiscrTargetFlow)
+        if (rproblem%roptcontrol%ielementTypeTargetFlow .eq. -1) then
+          call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
+              rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
+              rproblem%roptcontrol%p_rdiscrTargetFlow)
+        else
+          call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
+              rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
+              rproblem%roptcontrol%p_rdiscrTargetFlow,rproblem%roptcontrol%ielementTypeTargetFlow)
+        end if
         
       end if
     else
@@ -1822,9 +1837,15 @@ contains
       
       ! Create a discretisation structure corresponding to that mesh.
       allocate(rproblem%roptcontrol%p_rdiscrTargetFlow)
-      call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
-          rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
-          rproblem%roptcontrol%p_rdiscrTargetFlow)
+      if (rproblem%roptcontrol%ielementTypeTargetFlow .eq. -1) then
+        call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
+            rproblem%roptcontrol%p_rdiscrTargetFlow)
+      else
+        call cc_get1LevelDiscretisation (rproblem%rparamList,rproblem%rboundary,&
+            rproblem%roptcontrol%p_rtriangulationTargetFlow,NDIM2D+1,&
+            rproblem%roptcontrol%p_rdiscrTargetFlow,rproblem%roptcontrol%ielementTypeTargetFlow)
+      end if
     end if
 
     ! Probably create a vector containing the target flow
@@ -1944,7 +1965,8 @@ contains
     end select
 
     if ((rproblem%roptcontrol%smeshTargetFlow .eq. '') .and. &
-        (rproblem%roptcontrol%ilevelTargetFlow .le. rproblem%NLMAX)) then
+        (rproblem%roptcontrol%ilevelTargetFlow .le. rproblem%NLMAX) .and. &
+        (rproblem%roptcontrol%ielementTypeTargetFlow .eq. -1)) then
       ! Create references to the existing triangulation
       nullify(rproblem%roptcontrol%p_rtriangulationTargetFlow)
       nullify(rproblem%roptcontrol%p_rdiscrTargetFlow)

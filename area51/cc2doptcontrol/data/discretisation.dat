@@ -286,6 +286,12 @@ stargetFlowExpressionY = ''
 
 ilevelTargetFlow = 7
 
+# Element type of the target flow.
+# =-1: Use the same element as the discretisation.
+# >=0: Use an alternative element.
+
+ielementTypeTargetFlow = -1
+
 # Name and path to the TRI file containing the mesh that corresponds to the
 # reference solution. ='': Use the same TRI file as for the computation of the
 # solution.

@@ -252,6 +252,9 @@ module basicstructures
     ! Refinement level of the target flow.
     integer :: ilevelTargetFlow = 0
     
+    ! Element type of the target flow
+    integer :: ielementTypeTargetFlow = -1
+    
     ! Name of the TRI file with the mesh corresponding to target flow.
     ! ='': Use the same mesh as for the computation of the solution
     character(SYS_STRLEN) :: smeshTargetFlow = ''
