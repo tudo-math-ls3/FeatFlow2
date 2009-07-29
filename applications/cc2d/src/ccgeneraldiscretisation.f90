@@ -1635,14 +1635,14 @@ contains
         call output_line (&
             'Level of start vector is < NLMIN! Initialising with zero!', &
             OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-        iinitialSolutionLevel = 0
+        ilev = rproblem%NLMIN
       end if
 
       if (ilev .gt. rproblem%NLMAX) then
         call output_line (&
             'Level of start vector is > NLMAX! Initialising with zero!', &
             OU_CLASS_WARNING,OU_MODE_STD,'cc_initInitialSolution')
-        iinitialSolutionLevel = 0
+        ilev = rproblem%NLMAX
       end if
       
       ! Remove possible ''-characters
