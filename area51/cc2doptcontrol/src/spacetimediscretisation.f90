@@ -43,7 +43,7 @@ module spacetimediscretisation
   use collection
   use convection
     
-  use cc2dmediumm2basic
+  use basicstructures
 
   implicit none
 

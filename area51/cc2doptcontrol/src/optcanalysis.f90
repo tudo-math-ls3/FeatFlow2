@@ -31,7 +31,7 @@ module optcanalysis
   use linearsystemblock
   use pprocerror
   use spacetimevectors
-  use cc2dmedium_callback
+  use user_callback
   use spacematvecassembly
     
   implicit none

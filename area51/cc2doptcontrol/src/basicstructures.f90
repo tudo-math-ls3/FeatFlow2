@@ -10,7 +10,7 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmediumm2basic
+module basicstructures
 
   use fsystem
   use storage

@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmediumm2boundarydef </name>
+!# <name> spatialbcdef </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -21,7 +21,7 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmediumm2boundarydef
+module spatialbcdef
 
   use fsystem
   use storage
@@ -45,8 +45,8 @@ module cc2dmediumm2boundarydef
   use collection
   use convection
     
-  use cc2dmediumm2basic
-  use cc2dmedium_callback
+  use basicstructures
+  use user_callback
   
   implicit none
 

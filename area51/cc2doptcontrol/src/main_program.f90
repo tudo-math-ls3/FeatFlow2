@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmedium_method2 </name>
+!# <name> main_program </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -34,7 +34,7 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmedium_method2
+module main_program
 
   use fsystem
   use storage
@@ -56,9 +56,9 @@ module cc2dmedium_method2
   use collection
   use convection
     
-  use cc2dmediumm2basic
-  use cc2dmediumm2init
-  use cc2dmediumm2boundary
+  use basicstructures
+  use paramtriainit
+  use spatialbc
   use spacediscretisation
   use postprocessing
   use stationaryoptcsolver
@@ -1281,7 +1281,7 @@ contains
     
     ! Call the problem to solve. 
     call output_lbrk ()
-    call output_line ('Calculating cc2dmediumoptc-Problem')
+    call output_line ('Calculating cc2doptc-Problem')
     call output_separator (OU_SEP_MINUS)
     
     call cc2dmedium2calculate ()

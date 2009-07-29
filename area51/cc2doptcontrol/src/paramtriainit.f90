@@ -22,7 +22,7 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmediumm2init
+module paramtriainit
 
   use fsystem
   use storage
@@ -44,7 +44,7 @@ module cc2dmediumm2init
   use collection
   use convection
     
-  use cc2dmediumm2basic
+  use basicstructures
   use nonstationaryoptcsolver
   
   implicit none

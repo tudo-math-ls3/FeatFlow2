@@ -28,13 +28,13 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmediumm2scriptfile
+module scriptfilesupport
 
   use fsystem
   use io
   use storage
   
-  use cc2dmediumm2basic
+  use basicstructures
   
   implicit none
 

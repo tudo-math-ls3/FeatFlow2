@@ -151,14 +151,14 @@ module linearspacetimesolver
   use collection
   use convection
     
-  use cc2dmediumm2basic
-  use cc2dmedium_callback
+  use basicstructures
+  use user_callback
 
   use spacepreconditioner
   use spacepreconditionerinit
   use stationaryoptcsolver
   use timeanalysis
-  use cc2dmediumm2boundary
+  use spatialbc
   use spacediscretisation
   use postprocessing
   use spacematvecassembly

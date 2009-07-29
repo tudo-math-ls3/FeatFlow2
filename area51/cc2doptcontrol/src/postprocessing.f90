@@ -42,10 +42,10 @@ module postprocessing
   
   use pprocnavierstokes
   
-  use cc2dmediumm2basic
+  use basicstructures
   use optcanalysis
-  use cc2dmedium_callback
-  use cc2dmediumm2boundarydef
+  use user_callback
+  use spatialbcdef
   use spacematvecassembly
   
   use spacetimediscretisation

@@ -110,7 +110,7 @@ module spacepreconditioner
   use collection
   use convection
     
-  use cc2dmedium_callback
+  use user_callback
   
   use matrixio
   use vectorio

@@ -117,7 +117,7 @@ module spacematvecassembly
   use collection
   use numbersets
   
-  use cc2dmediumm2basic
+  use basicstructures
     
   implicit none
   

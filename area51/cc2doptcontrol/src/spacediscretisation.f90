@@ -63,8 +63,8 @@ module spacediscretisation
   use convection
   use analyticprojection
     
-  use cc2dmediumm2basic
-  use cc2dmedium_callback
+  use basicstructures
+  use user_callback
   use spacepreconditionerinit
   
   implicit none

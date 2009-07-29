@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> cc2dmedium_callback </name>
+!# <name> user_callback </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -87,7 +87,7 @@
 !# </purpose>
 !##############################################################################
 
-module cc2dmedium_callback
+module user_callback
 
   use fsystem
   use storage
@@ -111,7 +111,7 @@ module cc2dmedium_callback
   
   use timeevaluation
   
-  use cc2dmediumm2basic
+  use basicstructures
   
   implicit none
 

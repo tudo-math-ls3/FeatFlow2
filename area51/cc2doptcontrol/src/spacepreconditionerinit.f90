@@ -93,7 +93,7 @@ module spacepreconditionerinit
   use collection
   use convection
     
-  use cc2dmediumm2basic
+  use basicstructures
   use spacepreconditioner
   
   implicit none
