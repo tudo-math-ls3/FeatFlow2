@@ -130,7 +130,7 @@ dinexactNewtonExponent = 2.0
 # Filename prefix for GMV output.
 # ='': Disable GMV output
 
-sgmvFileName = 'gmv/u1_4.gmv'
+sgmvFileName = ''
 
 # Filename prefix for output of the solution vector. If this is '',
 # the solution vector is not written out.
