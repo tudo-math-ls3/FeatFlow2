@@ -153,6 +153,7 @@
 		<File RelativePath="..\..\..\kernel\PDEOperators\stdoperators.f90"/></Filter>
 		<Filter Name="Postprocessing">
 		<File RelativePath="..\..\..\kernel\Postprocessing\boundaryintegral.f90"/>
+		<File RelativePath="..\..\..\kernel\Postprocessing\geometryoutput.f90"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScBdr2D.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_functionScSimple.inc"/>
 		<File RelativePath="..\..\..\kernel\Postprocessing\intf_refFunctionSc.inc"/>

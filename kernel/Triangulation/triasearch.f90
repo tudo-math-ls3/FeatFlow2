@@ -35,6 +35,10 @@ module triasearch
   use triangulation
   use geometryaux
   
+  ! DEBUG!!!
+  ! use io
+  ! use geometryoutput
+  
   implicit none
   
   private
@@ -387,26 +391,34 @@ contains
     
     nnve = ubound(IverticesAtElement,1)
     
-    ! If the point is in element iel, we are immediately done.
-    
-    
-    do ive = 1,nnve
-      if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
-      DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
-      DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
-    end do
+    ! DEBUG!!!
+    ! call io_deleteFile('overview.dat')
+    ! call geoout_writeGnuplotPoint (Dpoint,0,'overview.dat')
     
     ! We restrict our raytracing search to imaxIter neighbour cells;
     ! let us hope a point is not moved more than imaxIter elements in 
     ! one step...
     ieliteration: do ite = 1,imaxIter
     
+      ! Fetch the element
+      do ive = 1,nnve
+        if (IverticesAtElement(ive,iel) .eq. 0) exit ! Triangle in a quad mesh
+        DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
+        DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
+      end do
+      
       ! Check if the point is in the element.
       ! bcheck will be set to TRUE if that is the case.
       if (ive .eq. TRIA_NVETRI2D+1) then
         call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+
+        ! DEBUG!!!
+        ! call geoout_writeGnuplotTria2D (DcornerCoords,0,'overview.dat')
       else
         call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
+
+        ! DEBUG!!!
+        ! call geoout_writeGnuplotQuad2D (DcornerCoords,0,'overview.dat')
       end if
       
       if (bcheck) then
