@@ -2059,21 +2059,21 @@ contains
     
     ! Build the flux
     call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_u, rtimestep%dStep, p_MC,&
-        p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
+        p_rmatrix%NEQ, NVAR2D, nedge, p_u, p_MC, p_ML,&
+        p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_flux0, 1,&
-        p_alpha, p_u)
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_flux0,&
+        1, p_alpha, p_u)
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_flux0, 4,&
-        p_alpha, p_u)
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_flux0,&
+        4, p_alpha, p_u)
 
     ! Apply correction to low-order solution
     call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_alpha, p_data,&
-        p_u)
+        p_rmatrix%NEQ, NVAR2D, nedge, rtimestep%dStep,&
+        p_ML, p_flux, p_alpha, p_data, p_u)
 
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
@@ -2090,12 +2090,11 @@ contains
 
     !***************************************************************************
 
-    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        NEDGE, u, dscale, MC, ML, Cx, Cy, troc, flux, flux0)
+    subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep,&
+        NEQ, NVAR, NEDGE, u, MC, ML, Cx, Cy, troc, flux, flux0)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: u
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
-      real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NVAR,NEDGE
       
@@ -2135,7 +2134,7 @@ contains
           
           ! Calculate low-order flux
           call euler_calcFluxRusanov2d(u(:,i), u(:,j),&
-              C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+              C_ij, C_ji, i, j, 1.0_DP, F_ij, F_ji)
           
           ! Update the time rate of change vector
           troc(:,i) = troc(:,i) + F_ij
@@ -2143,7 +2142,7 @@ contains
 
           ! Calculate diffusion coefficient
           call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
-              C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+              C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
           
           ! Compute solution difference
           Diff = u(:,i)-u(:,j)         
@@ -2238,11 +2237,11 @@ contains
             
             ! MinMod prelimiting of antidiffusive fluxes
             if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-              aux = min(f_ij, 2*f0_ij)
+              aux = min(f_ij, f0_ij)
               alpha(iedge) = min(alpha(iedge), aux/f_ij)
               f_ij = aux
             elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-              aux = max(f_ij, 2*f0_ij)
+              aux = max(f_ij, f0_ij)
               alpha(iedge) = min(alpha(iedge), aux/f_ij)
               f_ij = aux
             else
@@ -2306,18 +2305,24 @@ contains
 !!$                                 -u(3,i)*u(3,i) + u(1,i)*u(4,i) )
 !!$            
 !!$            ! MinMod prelimiting of antidiffusive fluxes
-!!$            if ((p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) .or.&
-!!$                (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL)) then
-!!$              aux = min(p_ij, 2*p0_ij)
+!!$            if (p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) then
+!!$              aux = min(p_ij, p0_ij)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
+!!$              p_ij = aux
+!!$            elseif (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL) then
+!!$              aux = max(p_ij, p0_ij)
 !!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
 !!$              p_ij = aux
 !!$            else
 !!$              p_ij = 0.0; alpha(iedge) = 0.0
 !!$            end if
 !!$
-!!$            if ((p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) .or.&
-!!$                (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL)) then
-!!$              aux = min(p_ji, 2*p0_ji)
+!!$            if (p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) then
+!!$              aux = min(p_ji, p0_ji)
+!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
+!!$              p_ji = aux
+!!$            elseif (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL) then
+!!$              aux = max(p_ji, p0_ji)
 !!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
 !!$              p_ji = aux
 !!$            else
@@ -2428,11 +2433,12 @@ contains
     !***************************************************************************
 
     subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        NEDGE, ML, flux, alpha, data, u)
+        NEDGE, dscale, ML, flux, alpha, data, u)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
       real(DP), dimension(:), intent(in) :: ML,alpha
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR,NEDGE
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
@@ -2471,7 +2477,7 @@ contains
 
       ! Loop over all rows
       do i = 1, NEQ
-        u(:,i) = u(:,i) + data(:,i)/ML(i)
+        u(:,i) = u(:,i) + dscale * data(:,i)/ML(i)
       end do
 
       ! Just to be sure that this routine can be called repeatedly
