@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains callback functions for the Poisson problem that are
+!# This module contains callback functions for the Solidmech problem that are
 !# used during the matrix/vector assembly for specifying analytical data.
 !# There are three callback functions involved, which may be called depending
 !# on the situation. All of them correspond to a specific interface for
@@ -19,52 +19,58 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 2.) coeff_RHS_2D
-!#     -> Returns analytical values for the right hand side of the Laplace
-!#        equation. 2D case, Q2 bubble solution.
+!# 2.) coeff_RHS_Vol_u1_2D
+!#     -> Returns analytical values for the right hand side(f1) of the Laplace
+!#        equation. 2D case.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) coeff_RHS_Sin2D
-!#     -> Returns analytical values for the right hand side of the Laplace
-!#        equation. 2D case, sinus bubble solution.
+!# 3.) coeff_RHS_Vol_u2_2D
+!#     -> Returns analytical values for the right hand side(f2) of the Laplace
+!#        equation. 2D case.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) getBoundaryValues_2D
+!# 4.) coeff_RHS_neumBdr_u1_2D
+!#     -> Returns analytical values for the right hand side(f1) of neumann bounfary
+!#        part(which is added to volumetric part). 2D case.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 5.) coeff_RHS_neumBdr_u2_2D
+!#     -> Returns analytical values for the right hand side(f2) of neumann bounfary
+!#        part(which is added to volumetric part). 2D case.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 6.) getStressTensor
+!#     -> Returns Stress Tensorwhich is used to calculate normal value in
+!#        above two routines. 2D case.
+!#     -> Corresponds to the interface defined in the file
+!#        'intf_coefficientVectorSc.inc'
+!#
+!# 7.) getReferenceFunction_u1_2D
+!#     -> Returns the values of the analytic function and its derivatives,
+!#        corresponding to coeff_RHS_Vol_u1_2D
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 8.) getReferenceFunction_u2_2D
+!#     -> Returns the values of the analytic function and its derivatives,
+!#        corresponding to coeff_RHS_Vol_u2_2D
+!#     -> Is only used for the postprocessing to calculate the $L_2$- and
+!#        $H_1$-error of the FE function in comparison to the analytic
+!#        function
+!#
+!# 9.) getBoundaryValues_2D
 !#     -> Returns analytic values on the (Dirichlet) boundary of the
 !#        problem to solve.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
-!# 5.) getBoundaryValuesFBC_2D
-!#     -> Returns analytic values in the inner of the domain on
-!#        fictitious boundary objects
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_bcfassembly.inc'
-!#
-!# 6.) getBoundaryValuesMR_2D
-!#     -> Returns discrete values on the (Dirichlet) boundary of the
-!#        problem to solve.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_discretebc.inc'
-!#
-!# 7.) getReferenceFunction_2D
-!#     -> Returns the values of the analytic function and its derivatives,
-!#        corresponding to coeff_RHS_2D, Q2 bubble solution.
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the FE function in comparison to the analytic
-!#        function
-!#
-!# 8.) getReferenceFunction_Sin2D
-!#     -> Returns the values of the analytic function and its derivatives,
-!#        corresponding to coeff_RHS_Sin2D, sinus bubble solution.
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the FE function in comparison to the analytic
-!#        function
-!#
-!# 9.) gethadaptMonitorFunction_2D
-!#     -> Controls the grid adaption strategy in poisson2d_method1_hadapt.
+!# 9.) function aux_danalyticFunction
+!#     -> Returns analytic values of the function and their derivatives.
 !#
 !# </purpose>
 !##############################################################################
@@ -91,11 +97,56 @@ module solidmech2d_callback
   
   implicit none
 
+  integer, parameter :: SIMUL_REAL       = 1
+  integer, parameter :: SIMUL_ANALYTICAL = 2
+  integer, parameter :: ON = 392
+  integer, parameter :: OFF = 104
 
-integer, parameter :: cfuncId_u1 = 4
-integer, parameter :: cfuncId_u2 = 52
-real(DP), parameter :: dmu = 0.5_DP
-real(DP), parameter :: dlambda = 0.75_DP
+  type t_problem
+
+!     grid file
+    character(len=500) :: sgridFileTri
+    character(len=500) :: sgridFilePrm
+
+!     number of boundary segments (has to be set manually by the user who has to know
+!     the number segments in the current grid)
+    integer :: nboundarySegments = 4
+
+!     definition of boundary conditions (array with length equal to number of boundary
+!     segments; each entry is either 'N' (for Neumann) or 'D' (for Dirichlet)
+    character(len=1), dimension(:), pointer :: Sbc
+
+!     kind of element used(possible values: Q1, Q2)
+    character(len=2) :: selement
+
+!     NLMAX receives the level where we want to solve.
+    integer :: NLMAX
+
+!     material parameters (Poisson ratio nu and shear modulus mu)
+    real(DP) :: dnu     = 0.3_DP
+    real(DP) :: dmu     = 0.5_DP
+    real(DP) :: dlambda = 0.75_DP
+
+!     kind of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
+    integer :: ctypeOfSimulation = SIMUL_REAL
+
+!     function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
+    integer :: cfuncID_u1 = 4
+    integer :: cfuncID_u2 = 52
+
+!     constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
+    real(DP) :: drhsVol1   = 0.0_DP
+    real(DP) :: drhsVol2   = 0.0_DP
+    real(DP) :: drhsBound1 = 0.0_DP
+    real(DP) :: drhsBound2 = 0.0_DP
+
+!      used to show deformation in gmv(possible values: ON, OFF)
+    integer :: DEFORMATION = OFF
+
+  end type
+
+ type(t_problem) :: rproblem
+
 
 contains
 
@@ -253,8 +304,10 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
+  !</subroutine>
 
    real(DP), dimension(:,:), pointer                      :: Der_u1xx,Der_u1yy,Der_u2xy
+
    allocate(Der_u1xx(npointsPerElement,nelements),Der_u1yy(npointsPerElement,nelements),Der_u2xy(npointsPerElement,nelements))
 
    call getReferenceFunction_u1_2D (DER_DERIV_XX,rdiscretisation, &
@@ -272,10 +325,12 @@ contains
                 IdofsTest,rdomainIntSubset,&
                 Der_u1yy,rcollection)
     
-  !</subroutine>
-    Dcoefficients (1,:,:) = -(2 * dmu + dlambda) * Der_u1xx - dmu * Der_u1yy - (dmu + dlambda) * Der_u2xy
-!     Dcoefficients (1,:,:) = 0.0_DP
 
+   if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+	Dcoefficients (1,:,:) = rproblem%drhsVol1
+   else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
+        Dcoefficients (1,:,:) = -(2 * rproblem%dmu + rproblem%dlambda) * Der_u1xx - rproblem%dmu * Der_u1yy - (rproblem%dmu + rproblem%dlambda) * Der_u2xy
+   end if
 
    deallocate(Der_u1xx,Der_u1yy,Der_u2xy)
 
@@ -352,8 +407,9 @@ contains
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
-
+  !</subroutine>
    real(DP), dimension(:,:), pointer                      :: Der_u2xx,Der_u2yy,Der_u1yx
+
    allocate(Der_u2xx(npointsPerElement,nelements),Der_u2yy(npointsPerElement,nelements),Der_u1yx(npointsPerElement,nelements))
 
    call getReferenceFunction_u2_2D (DER_DERIV_XX,rdiscretisation, &
@@ -370,11 +426,13 @@ contains
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 Der_u2yy,rcollection)
-  !</subroutine>
 
-    Dcoefficients (1,:,:) = -(dmu + dlambda) * Der_u1yx - dmu * Der_u2xx - (2 * dmu + dlambda) * Der_u2yy
-!     Dcoefficients (1,:,:) = 0.0_DP
-
+ 
+   if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+	Dcoefficients (1,:,:) = rproblem%drhsVol2
+   else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
+	Dcoefficients (1,:,:) = -(rproblem%dmu + rproblem%dlambda) * Der_u1yx - rproblem%dmu * Der_u2xx - (2 * rproblem%dmu + rproblem%dlambda) * Der_u2yy
+   end if
 
    deallocate(Der_u2xx,Der_u2yy,Der_u1yx)
 
@@ -529,13 +587,12 @@ contains
        end if
 
        ! Compute the normal value
-!      print *, Dpoints(1,ipoint,iel),Dpoints(2,ipoint,iel)
-!      print *, dnx, dny, DstressTensor(1,1,ipoint,iel), DstressTensor(1,2,ipoint,iel),DstressTensor(2,1,ipoint,iel),DstressTensor(2,2,ipoint,iel)
-!   
 
-     Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) + dny * DstressTensor(1,2,ipoint,iel)
-
-!        Dcoefficients(1,ipoint,iel) = 1.0e-2_DP
+       if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+	    Dcoefficients(1,ipoint,iel) = rproblem%drhsBound1
+       else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
+            Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) + dny * DstressTensor(1,2,ipoint,iel)
+      end if
 
      end do
    end do
@@ -692,15 +749,16 @@ deallocate(DstressTensor)
        end if
 
        ! Compute the normal value
-!     print *, dnx, dny, ibct, dt
-! 
-       Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel) + dny * DstressTensor(2,2,ipoint,iel)
 
-!        Dcoefficients(1,ipoint,iel) = 0.0_DP
+   if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+	Dcoefficients(1,ipoint,iel) = rproblem%drhsBound2
+   else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
+        Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel) + dny * DstressTensor(2,2,ipoint,iel)
+   end if
 
      end do
    end do
-print *, nelements, npointsPerElement,nelements,npointsPerElement
+
 deallocate(DstressTensor)
 
  end subroutine coeff_RHS_neumBdr_u2_2D
@@ -773,6 +831,8 @@ subroutine getStressTensor (rdiscretisation, &
   real(DP), dimension(:,:,:,:), intent(OUT)                      :: Dvalues
 !</output>
 
+!<subroutine>
+
 real(DP), dimension(:,:), pointer                      :: Der_u1x,Der_u2x,Der_u1y,Der_u2y
 allocate(Der_u1x(npointsPerElement,nelements),Der_u2x(npointsPerElement,nelements),&
               Der_u1y(npointsPerElement,nelements),Der_u2y(npointsPerElement,nelements))
@@ -798,10 +858,10 @@ call getReferenceFunction_u2_2D (DER_DERIV_Y,rdiscretisation, &
                 IdofsTest,rdomainIntSubset,&
                 Der_u2y,rcollection)
 
-Dvalues (1,1,:,:) = 2 * dmu * Der_u1x(:,:) + dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
-Dvalues (1,2,:,:) = dmu * (Der_u1y(:,:) + Der_u2x(:,:))
-Dvalues (2,1,:,:) = dmu * (Der_u2x(:,:) + Der_u1y(:,:))
-Dvalues (2,2,:,:) = 2 * dmu * Der_u2y(:,:) + dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
+Dvalues (1,1,:,:) = 2 * rproblem%dmu * Der_u1x(:,:) + rproblem%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
+Dvalues (1,2,:,:) = rproblem%dmu * (Der_u1y(:,:) + Der_u2x(:,:))
+Dvalues (2,1,:,:) = rproblem%dmu * (Der_u2x(:,:) + Der_u1y(:,:))
+Dvalues (2,2,:,:) = 2 * rproblem%dmu * Der_u2y(:,:) + rproblem%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
 
 Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
 
@@ -884,47 +944,8 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   
 !</subroutine>
 
-   Dvalues(:,:) = aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderivative, cfuncId_u1)
+   Dvalues(:,:) = aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderivative, rproblem%cfuncID_u1)
 
-
-
-!     select case (cderivative)
-!     case (DER_FUNC)
-! !     u(x,y) = x*(1-x)*y*(1-y)
-!     Dvalues (:,:) = Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
-!                              Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-!   case (DER_DERIV_X)
-! !        u(x,y)   = x*(1-x)*y*(1-y)
-! !     => u_x(x,y) =  y*(1-x)*(1-y)-x*y*(1-y) 
-!    Dvalues (:,:) = Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-!        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:))
-!   case (DER_DERIV_Y)
-! !        u(x,y)   = x*(1-x)*y*(1-y)
-! !     => u_y(x,y) = x*(1-x)*(1-y)-x*y*(1-x)
-!    Dvalues (:,:) = Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-!        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:))
-!  case DEFAULT
-! !     Unknown. Set the result to 0.0.
-!    Dvalues = 0.0_DP
-!  end select
-
-!   select case (cderivative)
-!   case (DER_FUNC)
-!     ! u(x,y) = 0.1*y**2
-!     Dvalues (:,:) = 0.1_DP * Dpoints(2,:,:) * Dpoints(2,:,:)
-!   case (DER_DERIV_X)
-!     !    u(x,y) = 0.1 * y**2
-!     ! => u_x(x,y) =  0 
-!     Dvalues (:,:) = 0.0_DP
-!   case (DER_DERIV_Y)
-!     !    u(x,y) = 0.1 * y**2
-!     ! => u_y(x,y) = 0.2 * y
-!     Dvalues (:,:) = 0.2_DP * Dpoints(2,:,:)
-!   case DEFAULT
-!     ! Unknown. Set the result to 0.0.
-!     Dvalues = 0.0_DP
-!   end select
-! !   
 
   end subroutine getReferenceFunction_u1_2D
 
@@ -1003,43 +1024,7 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   
 !</subroutine>
 ! 
-    Dvalues(:,:) = aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderivative, cfuncId_u2)
-
-!   select case (cderivative)
-!   case (DER_FUNC)
-!     ! u(x,y) = 0.05*COS(2*PI * x) * COS(2*PI * y)
-!     Dvalues (:,:) = 0.05_DP * cos(2.0_DP * SYS_PI*Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case (DER_DERIV_X)
-!     !    u(x,y)   = 0.05*COS(2*PI * x) * COS(2*PI * y)
-!     ! => u_x(x,y) = -0.1 * PI * SIN(2* PI * x) * COS(2* PI * y)
-!     Dvalues (:,:) = -0.1_DP * SYS_PI * sin(2.0_DP * SYS_PI*Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case (DER_DERIV_Y)
-!     !    u(x,y)   = 0.05*COS(2*PI * x) * COS(2*PI * y)
-!     ! => u_y(x,y) = -0.1 * PI * COS(2 * PI * x) * SIN(2 * PI * y)
-!     Dvalues (:,:) = -0.1_DP * SYS_PI * cos(2.0_DP * SYS_PI*Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case DEFAULT
-!     ! Unknown. Set the result to 0.0.
-!     Dvalues = 0.0_DP
-!   end select
-
- 
-!   select case (cderivative)
-!   case (DER_FUNC)
-!     ! u(x,y) = 0.05*SIN(2*PI * x) * SIN(2*PI * y)
-!     Dvalues (:,:) = 0.05_DP * sin(2.0_DP * SYS_PI*Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case (DER_DERIV_X)
-!     !    u(x,y)   = 0.05*SIN(2 * PI * x) * SIN(2 * PI * y)
-!     ! => u_x(x,y) = 0.1 * PI * COS(2* PI * x) * SIN(2* PI * y)
-!     Dvalues (:,:) = 0.1_DP * SYS_PI * cos(2.0_DP * SYS_PI*Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case (DER_DERIV_Y)
-!     !    u(x,y)   = 0.05*SIN(2 * PI * x) * SIN(2 * PI * y)
-!     ! => u_y(x,y) = 0.1 * PI * SIN(2 * PI * x) * COS(2 * PI * y)
-!     Dvalues (:,:) = 0.1_DP * SYS_PI * sin(2.0_DP * SYS_PI*Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI*Dpoints(2,:,:))
-!   case DEFAULT
-!     ! Unknown. Set the result to 0.0.
-!     Dvalues = 0.0_DP
-!   end select
-  
+    Dvalues(:,:) = aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderivative, rproblem%cfuncID_u2)
 
   end subroutine getReferenceFunction_u2_2D
 
@@ -1146,22 +1131,18 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
   ! Now, depending on the problem, calculate the actual velocity value.
    Dpoints(1,1,1) = dx
    Dpoints(2,1,1) = dy
-  select case (icomponent)
-  case (1) ! X-velocity
-    Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, cfuncId_u1)
-    Dvalues(1) = Daux(1,1)
-   case (2) ! Y-velocity
-    Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, cfuncId_u2)
-    Dvalues(1) = Daux(1,1)
-   end select
-!  print *, Dvalues(1)
-!   select case (icomponent)
-!   case (1) ! X-velocity
-!     Dvalues(1) = 0.1_DP * dy * dy
-!    case (2) ! Y-velocity
-!     Dvalues(1) = 0.05_DP*cos(2.0_DP * SYS_PI *dx) * cos(2.0_DP * SYS_PI * dy)
-!    end select
-
+   if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+	Dvalues (1) = 0.0_DP
+   else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
+	select case (icomponent)
+  	case (1) ! X-velocity
+    		Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, rproblem%cfuncID_u1)
+    		Dvalues(1) = Daux(1,1)
+   	case (2) ! Y-velocity
+    		Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, rproblem%cfuncID_u2)
+    		Dvalues(1) = Daux(1,1)
+   	end select
+   end if
 
   end subroutine getBoundaryValues_2D
 
