@@ -2059,8 +2059,8 @@ contains
     
     ! Build the flux
     call buildFluxCons2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, p_u, p_MC, p_ML,&
-        p_Cx, p_Cy, p_data, p_flux, p_flux0)
+        p_rmatrix%NEQ, NVAR2D, nedge, rtimestep%dStep,&
+        p_u, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
@@ -2069,11 +2069,11 @@ contains
     call buildCorrectionCons(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
         p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_flux0,&
         4, p_alpha, p_u)
-
+    
     ! Apply correction to low-order solution
     call applyCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, NVAR2D, nedge, rtimestep%dStep,&
-        p_ML, p_flux, p_alpha, p_data, p_u)
+        p_rmatrix%NEQ, NVAR2D, nedge, p_ML, p_flux, p_alpha,&
+        p_data, p_u)
 
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
@@ -2091,20 +2091,19 @@ contains
     !***************************************************************************
 
     subroutine buildFluxCons2d(Kld, Kcol, Kdiagonal, Ksep,&
-        NEQ, NVAR, NEDGE, u, MC, ML, Cx, Cy, troc, flux, flux0)
+        NEQ, NVAR, NEDGE, dscale, u, MC, ML, Cx, Cy, troc, flux, flux0)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: u
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR,NEDGE
       
-      integer, dimension(:), intent(inout) :: Ksep
       real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux0,flux
-
+      integer, dimension(:), intent(inout) :: Ksep
+      
       real(DP), dimension(NVAR,NEQ), intent(out) :: troc     
-
-      real(DP), parameter :: c_d = 1.0
-
+      
       ! local variables
       real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2134,7 +2133,7 @@ contains
           
           ! Calculate low-order flux
           call euler_calcFluxRusanov2d(u(:,i), u(:,j),&
-              C_ij, C_ji, i, j, 1.0_DP, F_ij, F_ji)
+              C_ij, C_ji, i, j, dscale, F_ij, F_ji)
           
           ! Update the time rate of change vector
           troc(:,i) = troc(:,i) + F_ij
@@ -2142,7 +2141,7 @@ contains
 
           ! Calculate diffusion coefficient
           call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
-              C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
+              C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
           
           ! Compute solution difference
           Diff = u(:,i)-u(:,j)         
@@ -2432,13 +2431,12 @@ contains
 
     !***************************************************************************
 
-    subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ, NVAR,&
-        NEDGE, dscale, ML, flux, alpha, data, u)
+    subroutine applyCorrection(Kld, Kcol, Kdiagonal, Ksep,&
+        NEQ, NVAR, NEDGE, ML, flux, alpha, data, u)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
       real(DP), dimension(:), intent(in) :: ML,alpha
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR,NEDGE
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
@@ -2477,11 +2475,8 @@ contains
 
       ! Loop over all rows
       do i = 1, NEQ
-        u(:,i) = u(:,i) + dscale * data(:,i)/ML(i)
+        u(:,i) = u(:,i) + data(:,i)/ML(i)
       end do
-
-      ! Just to be sure that this routine can be called repeatedly
-      Ksep = Kld
       
     end subroutine applyCorrection
 

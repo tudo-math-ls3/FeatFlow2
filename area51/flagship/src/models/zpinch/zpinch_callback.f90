@@ -915,8 +915,8 @@ contains
 
     ! Build the flux
     call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_u, p_MC, p_ML,&
-        p_Cx, p_Cy, p_data, p_flux, p_flux0)
+        p_rmatrix%NEQ, nedge, rtimestep%dStep,&
+        p_MC, p_ML, p_Cx, p_Cy, p_u, p_data, p_flux, p_flux0)
 
     ! Build the correction
     call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
@@ -943,7 +943,7 @@ contains
     
     ! Apply correction to low-order solution
     do i = 1, size(p_u)
-      p_u(i) = (p_u(i) + rtimestep%dStep * p_data(i))/p_MLRho(i)
+      p_u(i) = (p_u(i) + p_data(i))/p_MLRho(i)
     end do
     
     ! Set boundary conditions explicitly
@@ -960,10 +960,11 @@ contains
     !***************************************************************************
 
     subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
-        u, MC, ML, Cx, Cy, troc, flux0, flux)
+        dscale, MC, ML, Cx, Cy, u, troc, flux0, flux)
 
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NEDGE
       
       integer, dimension(:), intent(inout) :: Ksep
@@ -996,7 +997,7 @@ contains
             C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
-        troc(i) = troc(i) + k_ii*u(i)
+        troc(i) = troc(i) + dscale * k_ii*u(i)
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1022,8 +1023,8 @@ contains
           aux = d_ij*(u(j)-u(i))
           
           ! Update the time rate of change vector
-          troc(i) = troc(i) + (k_ij*u(j) + aux)
-          troc(j) = troc(j) + (k_ji*u(i) - aux)
+          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
+          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
 
           ! Compute raw antidiffusive flux
           flux0(iedge) = -aux
