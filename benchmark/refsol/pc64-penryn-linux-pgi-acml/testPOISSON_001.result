@@ -298,39 +298,20 @@ L2prj: Iteration 8,  !!RES!! = 8.358738981476934E-08
 Calculating Poisson-2D-Problem with method 1 - Prol.-Matrix
 -----------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 2.676838518739047E-03
-Multigrid: Iteration 1,  !!RES!! = 3.647796480118485E-03
-Multigrid: Iteration 2,  !!RES!! = 1.503539553995139E-03
-Multigrid: Iteration 3,  !!RES!! = 9.103836222858819E-04
-Multigrid: Iteration 4,  !!RES!! = 5.114757127100018E-04
-Multigrid: Iteration 5,  !!RES!! = 2.946117071935349E-04
-Multigrid: Iteration 6,  !!RES!! = 1.692381721743586E-04
-Multigrid: Iteration 7,  !!RES!! = 9.746625893888904E-05
-Multigrid: Iteration 8,  !!RES!! = 5.616185707334268E-05
-Multigrid: Iteration 9,  !!RES!! = 3.238149126476997E-05
-Multigrid: Iteration 10,  !!RES!! = 1.867689320859464E-05
-Multigrid: Iteration 11,  !!RES!! = 1.077520973298421E-05
-Multigrid: Iteration 12,  !!RES!! = 6.217636330643599E-06
-Multigrid: Iteration 13,  !!RES!! = 3.588242942020085E-06
-Multigrid: Iteration 14,  !!RES!! = 2.070998115205502E-06
-Multigrid: Iteration 15,  !!RES!! = 1.195385451011681E-06
-Multigrid: Iteration 16,  !!RES!! = 6.900152734205421E-07
-Multigrid: Iteration 17,  !!RES!! = 3.983145339408564E-07
-Multigrid: Iteration 18,  !!RES!! = 2.299355249549878E-07
-Multigrid: Iteration 19,  !!RES!! = 1.327380187451020E-07
-Multigrid: Iteration 20,  !!RES!! = 7.662872320261035E-08
-Multigrid: Iteration 21,  !!RES!! = 4.423775794891927E-08
-Multigrid: Iteration 22,  !!RES!! = 2.553868807022757E-08
+Multigrid: Iteration 1,  !!RES!! = 5.577552768728229E-05
+Multigrid: Iteration 2,  !!RES!! = 7.138149142691232E-07
+Multigrid: Iteration 3,  !!RES!! = 1.689449866621050E-08
 
 Multigrid statistics:
 
-Iterations              : 22
+Iterations              : 3
 !!INITIAL RES!!         : 2.676838518739047E-03
-!!RES!!                 : 2.553868807022757E-08
-!!RES!!/!!INITIAL RES!! : 9.540615876320342E-06
+!!RES!!                 : 1.689449866621050E-08
+!!RES!!/!!INITIAL RES!! : 6.311362657082817E-06
 
-Rate of convergence     : 5.912878128438817E-01
-L2-error: 3.3593528844E-04
-H1-error: 5.6542639278E-02
+Rate of convergence     : 1.848024446475573E-02
+L2-error: 3.3435835611E-04
+H1-error: 5.6542638326E-02
 
 Calculating Poisson-2D-Problem with method 2
 --------------------------------------------
