@@ -297,8 +297,8 @@ contains
           ! Calculate the density averaged mass matrices using the
           ! solution of the Euler model from the current time step
           call zpinch_initDensityAveraging(p_rparlist,&
-              rcollection%SquickAccess(1), rproblemLevel,&
-              p_rsolutionEuler, rcollection)
+              rcollection%SquickAccess(3), rcollection%SquickAccess(4),&
+              rproblemLevel, p_rsolutionEuler, rcollection)
           
           ! Calculate the velocity vector using the solution of the
           ! Euler model from the current time step
@@ -468,8 +468,8 @@ contains
 !<subroutine>
 
   subroutine zpinch_initDensityAveraging(rparlist,&
-      ssectionNameTransport, rproblemlevel, rsolutionEuler,&
-      rcollection)
+      ssectionNameEuler, ssectionNameTransport,&
+      rproblemlevel, rsolutionEuler, rcollection)
 
 !<description>
     ! This subroutine initializes the density averaged mass matrices
@@ -481,6 +481,7 @@ contains
     type(t_parlist), intent(in) :: rparlist
 
     ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionNameEuler
     character(LEN=*), intent(in) :: ssectionNameTransport
 
     ! solution vector for Euler model
@@ -499,41 +500,49 @@ contains
     ! local variables
     type(t_trilinearform) :: rform
     type(t_vectorScalar) :: rvector
-    integer :: lumpedMassMatrix, consistentMassMatrix
+    real(DP), dimension(:), pointer :: p_ML, p_Density
+    integer :: lumpedMassMatrix, lumpedMassMatrixDensity
+    integer :: i
 
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrix)
+        ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'consistentmassmatrix', consistentMassMatrix)
+        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrixDensity)
     
     ! Get density distribution from the solution of the Euler model
     ! and create block vector which is attached to the collection
     call euler_getVariable(rsolutionEuler, 'density', rvector)
-    
-    ! We have variable coefficients
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff    = .true.
+    call lsyssc_getbase_double(rvector, p_Density)
 
-    ! Initialize the bilinear form
-    rform%itermCount = 1
-    rform%Dcoefficients(1)  = 1.0_DP
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
-    rform%Idescriptors(3,1) = DER_FUNC
-
-    ! Create density averaged consistent mass matrix
-    call trilf_buildMatrixScalar(rform, .true.,&
-        rproblemLevel%Rmatrix(consistentMassMatrix), rvector)
+!!$    ! We have variable coefficients
+!!$    rform%ballCoeffConstant = .true.
+!!$    rform%BconstantCoeff    = .true.
+!!$
+!!$    ! Initialize the bilinear form
+!!$    rform%itermCount = 1
+!!$    rform%Dcoefficients(1)  = 1.0_DP
+!!$    rform%Idescriptors(1,1) = DER_FUNC
+!!$    rform%Idescriptors(2,1) = DER_FUNC
+!!$    rform%Idescriptors(3,1) = DER_FUNC
+!!$
+!!$    ! Create density averaged consistent mass matrix
+!!$    call trilf_buildMatrixScalar(rform, .true.,&
+!!$        rproblemLevel%Rmatrix(consistentMassMatrix), rvector)
     
     ! Create density averaged lumped mass matrix
-    call lsyssc_duplicateMatrix(rproblemLevel&
-        %Rmatrix(consistentMassMatrix), rproblemLevel &
-        %Rmatrix(lumpedMassMatrix), LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+    call lsyssc_duplicateMatrix(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        rproblemLevel%Rmatrix(lumpedMassMatrixDensity),&
+        LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
     
-    call lsyssc_lumpMatrixScalar(rproblemLevel&
-        %Rmatrix(lumpedMassMatrix), LSYSSC_LUMP_DIAG)
+    call lsyssc_getbase_double(&
+        rproblemLevel%Rmatrix(lumpedMassMatrixDensity), p_ML)
+    
+    do i = 1, size(p_Density)
+      p_ML(i) = p_ML(i)*p_Density(i)
+    end do
     
     ! Release temporal vector
     call lsyssc_releaseVector(rvector)
@@ -832,7 +841,7 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
 
-    ! solution vector
+    ! solution vector for the transport model
     type(t_vectorBlock), intent(inout) :: rsolution
 
     ! collection structure
@@ -844,12 +853,14 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rsolutionEuler
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorScalar) :: rflux0, rflux
+    type(t_vectorScalar) :: rflux0, rflux, rvector
     type(t_vectorBlock) :: rdata
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
-    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data
+    real(DP), dimension(:), pointer :: p_MC, p_ML, p_MCRho, p_MLRho, p_Cx, p_Cy
+    real(DP), dimension(:), pointer :: p_u, p_rho, p_flux0, p_flux, p_data
     integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
-    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
+    integer :: h_Ksep, templatematrix
+    integer :: lumpedMassMatrix,  consistentMassMatrix
+    integer :: lumpedMassMatrixRho, consistentMassMatrixRho
     integer :: coeffMatrix_CX, coeffMatrix_CY
     integer :: i, nedge
 
@@ -862,9 +873,13 @@ contains
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'coeffMatrix_CY', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
+        'consistentmassmatrix', consistentMassMatrixRho)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
+        'lumpedmassmatrix', lumpedMassMatrixRho)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
+        'consistentmassmatrix', consistentMassMatrix)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
+        'lumpedmassmatrix', lumpedMassMatrix)   
 
     ! Set pointers to template matrix
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
@@ -874,6 +889,8 @@ contains
     
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrixRho), p_MCRho)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrixRho), p_MLRho)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
 
@@ -897,18 +914,18 @@ contains
     call lsyssc_getbase_double(rflux0, p_flux0)
 
     ! Build the flux
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep, p_rmatrix&
-        %NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML, p_Cx, p_Cy,&
-        p_data, p_flux, p_flux0)
+    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+        p_rmatrix%NEQ, nedge, p_u, p_MC, p_ML,&
+        p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
     call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+        p_rmatrix%NEQ, nedge, p_MLRho, p_flux, p_flux0, p_data, p_u)
 
     ! Multiply the low-order solution by the 
     ! density-averaged lumped mass matrix
     do i = 1, size(p_u)
-      p_u(i) = p_u(i)*p_ML(i)
+      p_u(i) = p_u(i)*p_MLRho(i)
     end do
 
     ! Set pointer to solution from Euler model
@@ -916,8 +933,8 @@ contains
 
     ! Calculate the density averaged mass matrix for the new density
     call zpinch_initDensityAveraging(p_rparlist,&
-        rcollection%SquickAccess(1), rproblemLevel,&
-        p_rsolutionEuler, rcollection)
+        rcollection%SquickAccess(2), rcollection%SquickAccess(1),&
+        rproblemLevel, p_rsolutionEuler, rcollection)
     
     ! Calculate the new velocity field based on the new momentum
     call zpinch_initVelocityField(p_rparlist,&
@@ -926,7 +943,7 @@ contains
     
     ! Apply correction to low-order solution
     do i = 1, size(p_u)
-      p_u(i) = (p_u(i) + p_data(i))/p_ML(i)
+      p_u(i) = (p_u(i) + rtimestep%dStep * p_data(i))/p_MLRho(i)
     end do
     
     ! Set boundary conditions explicitly
@@ -942,11 +959,10 @@ contains
 
     !***************************************************************************
 
-    subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
-        dscale, MC, ML, Cx, Cy, troc, flux0, flux)
+    subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
+        u, MC, ML, Cx, Cy, troc, flux0, flux)
 
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
-      real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE
       
@@ -980,7 +996,7 @@ contains
             C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
-        troc(i) = troc(i) + dscale*k_ii*u(i)
+        troc(i) = troc(i) + k_ii*u(i)
 
         ! Loop over all off-diagonal matrix entries IJ which are
         ! adjacent to node J such that I < J. That is, explore the
@@ -1006,8 +1022,8 @@ contains
           aux = d_ij*(u(j)-u(i))
           
           ! Update the time rate of change vector
-          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
-          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
+          troc(i) = troc(i) + (k_ij*u(j) + aux)
+          troc(j) = troc(j) + (k_ji*u(i) - aux)
 
           ! Compute raw antidiffusive flux
           flux0(iedge) = -aux
@@ -1090,7 +1106,7 @@ contains
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
           ! Apply minmod prelimiter ...
-          f_ij = minmod(flux(iedge), 2*flux0(iedge))
+          f_ij = minmod(flux(iedge), flux0(iedge))
           
           ! ... and store prelimited flux
           flux(iedge) = f_ij

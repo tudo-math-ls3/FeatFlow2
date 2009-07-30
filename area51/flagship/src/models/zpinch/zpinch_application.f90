@@ -2048,7 +2048,8 @@ contains
     ! problem based on the initial solution U^0 of the Euler model
     !---------------------------------------------------------------------------
 
-    call zpinch_initDensityAveraging(rparlist, ssectionNameTransport,&
+    call zpinch_initDensityAveraging(rparlist,&
+        ssectionNameEuler, ssectionNameTransport,&
         p_rproblemLevel, p_rsolutionEuler, rcollection)
 
     !---------------------------------------------------------------------------
@@ -2148,24 +2149,43 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
-      
+     
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for Euler model
       !-------------------------------------------------------------------------
       
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = ssectionNameEuler
+      rcollection%SquickAccess(2) = ssectionNameTransport
       
       ! Apply linearized FCT correction for Euler model
       call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
           rtimestep, p_rsolutionEuler, rcollection)
 
+!!$      !---------------------------------------------------------------------------
+!!$      ! Calculate density-averaged mass matrices for the scalar model
+!!$      ! problem based on the initial solution U^0 of the Euler model
+!!$      !---------------------------------------------------------------------------
+!!$      
+!!$      call zpinch_initDensityAveraging(rparlist,&
+!!$          ssectionNameEuler, ssectionNameTransport,&
+!!$          p_rproblemLevel, p_rsolutionEuler, rcollection)
+!!$      
+!!$      !---------------------------------------------------------------------------
+!!$      ! Calculate velocity field (\rho v) for the scalar model problem
+!!$      ! based on the initial solution U^0 of the Euler model
+!!$      !---------------------------------------------------------------------------
+!!$      
+!!$      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+!!$          p_rproblemLevel, p_rsolutionEuler, rcollection)
+      
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for transport model
       !-------------------------------------------------------------------------
 
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = ssectionNameTransport
+      rcollection%SquickAccess(2) = ssectionNameEuler
       
       ! Apply linearized FCT correction for transport model (note
       ! that the density averaged mass matrix and the new velocity
