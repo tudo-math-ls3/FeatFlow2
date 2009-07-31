@@ -348,7 +348,11 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinchBE_FCT
+ucdsolution = out/zpinch_tria_BE_FCT
+
+# file for UCD import of solution
+ucdimport = 
+#out/zpinchBE_FCT.00076.gmv
 
 # file for UCD output of error
 ucderror = out/
@@ -705,7 +709,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 4
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 0
