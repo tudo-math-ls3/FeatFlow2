@@ -180,6 +180,7 @@ module linearalgebra
     module procedure lalg_copyVectorChar2D
   end interface
   
+  public :: lalg_copyVector
   public :: lalg_copyVectorSngl
   public :: lalg_copyVectorDble
   public :: lalg_copyVectorQuad
