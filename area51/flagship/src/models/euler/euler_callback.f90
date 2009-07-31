@@ -2153,9 +2153,11 @@ contains
       end do
 
       ! Scale the time rate of change by the lumped mass matrix
+      !$omp parallel do
       do i = 1, NEQ
         troc(:,i) = troc(:,i)/ML(i)
       end do
+      !$omp end parallel do
 
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -2345,6 +2347,7 @@ contains
       end do
 
       ! Compute nodal correction factors
+      !$omp parallel do
       do i = 1, NEQ
         qp(i) = qp(i)*ML(i)
         qm(i) = qm(i)*ML(i)
@@ -2352,6 +2355,7 @@ contains
         if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
         if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
+      !$omp end parallel do
       
       ! Loop over all rows (backward)
       do i = NEQ, 1, -1
@@ -2435,19 +2439,25 @@ contains
         NEQ, NVAR, NEDGE, ML, flux, alpha, data, u)
       
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
-      real(DP), dimension(:), intent(in) :: ML,alpha
+      real(DP), dimension(:), intent(in) :: ML
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NVAR,NEDGE
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
+      real(DP), dimension(:), intent(inout) :: alpha
       integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
+      real(DP), dimension(:,:), pointer :: ufail
+      logical, dimension(:), pointer :: bfail
       real(DP), dimension(NVAR) :: f_ij
       integer :: ij,ji,i,j,iedge
 
       ! Initialize correction
       call lalg_clearVector(data)
+
+      allocate(ufail(NVAR, NEQ), bfail(NEQ))
+      ufail = u
 
       ! Initialize edge counter
       iedge = 0
@@ -2474,10 +2484,84 @@ contains
       end do
 
       ! Loop over all rows
+      !$omp parallel do
       do i = 1, NEQ
+
+        ! Compute flux-correction solution
         u(:,i) = u(:,i) + data(:,i)/ML(i)
+
+        ! Check that kinetic energy does not exceed total energy
+        bfail(i) = u(4,i) .le. 0.5_DP * (u(2,i)**2 + u(3,i)**2)/u(1,i)
+      end do
+      !$omp end parallel do
+      
+      
+      ! Do we need to apply failsave limiting?
+      if (all(.not.bfail)) then
+        deallocate(ufail, bfail)
+        return
+      end if
+     
+     
+      ! Loop over all rows (backward)
+      do i = NEQ, 1, -1
+        
+        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
+        ! node J such that I < J. That is, explore the upper triangular matrix.
+        do ij = Kld(i+1)-1, Ksep(i)+1, -1
+          
+          ! Get node number J, the corresponding matrix position JI,
+          ! and let the separator point to the preceeding entry.
+          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
+
+          ! Do we have to cancel the antidiffusive flux for this edge?
+          if (bfail(i) .or. bfail(j)) alpha(iedge) = 0.0_DP
+          
+          ! Update edge counter
+          iedge = iedge-1
+          
+        end do
       end do
       
+      ! Deallocate temporal memory
+      deallocate(bfail)
+
+
+      ! Initialize correction
+      call lalg_clearVector(data)
+      
+      ! Loop over all rows
+      do i = 1, NEQ
+        
+        ! Loop over all off-diagonal matrix entries IJ which are
+        ! adjacent to node J such that I < J. That is, explore the
+        ! upper triangular matrix
+        do ij = Kdiagonal(i)+1, Kld(i+1)-1
+          
+          ! Get node number J, the corresponding matrix positions JI,
+          ! and let the separator point to the next entry
+          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+
+          ! Limit raw antidiffusive flux
+          f_ij = alpha(iedge)*flux(:,iedge)
+          
+          ! Apply correction
+          data(:,i) = data(:,i) + f_ij
+          data(:,j) = data(:,j) - f_ij
+        end do
+      end do
+
+
+      ! Loop over all rows
+      !$omp parallel do
+      do i = 1, NEQ
+        u(:,i) = ufail(:,i) + data(:,i)/ML(i)
+      end do
+      !$omp end parallel do
+
+      ! Deallocate temporal memory
+      deallocate(ufail)
+
     end subroutine applyCorrection
 
     !***************************************************************************
