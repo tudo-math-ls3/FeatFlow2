@@ -304,6 +304,7 @@ my %defaults = (
     CFLAGSF77           => [],
     CFLAGSF90           => [],
     COPROCLIST          => [],
+    CPP                 => "",
     CXX                 => "",
     F77                 => "",
     F90                 => "",
@@ -315,7 +316,8 @@ my %defaults = (
     LDFLAGS             => [],
     LIBDIR              => [],
     LIBS                => [],
-    MODE                => "SERIAL",
+    MPI                 => "NO",
+    MODE                => "NO",   # deprecated
     MODEXTENSION        => "",
     MONITOR_COMPILE_ENV => "YES",
     MOVEMOD             => "",
@@ -325,6 +327,7 @@ my %defaults = (
     MPIWRAPPERS         => "NO",
     OBJDIR              => "",
     OBJDIR_LIB          => "",
+    OPENMP              => "NO",
     OPT                 => "YES",
     PROGRAMFILE         => "DETERMINED_ON_DEMAND_IF_UNSET",
     RANLIB              => "",
@@ -373,8 +376,8 @@ GetOptions (
             "cflagsf77=s"                   => \@{ $cl{'CFLAGSF77'} },
             "cflagsf90=s"                   => \@{ $cl{'CFLAGSF90'} },
             "coproclist=s"                  => \@{ $cl{'COPROCLIST'} },
-            "cxx=s"                         => \$cl{'CXX'},       # an alias for --cpp, for consistency with --cflagscxx
-            "cpp=s"                         => \$cl{'CXX'},
+            "cxx=s"                         => \$cl{'CXX'},
+            "cpp=s"                         => \$cl{'CPP'},
             "debug"                         => \$cl{'debug'},
             "f77=s"                         => \$cl{'F77'},
             "f90=s"                         => \$cl{'F90'},
@@ -395,22 +398,26 @@ GetOptions (
             "listids"                       => \$cl{'listids'},
             "make=s"                        => \$cl{'make'},
             "makefile=s"                    => \$cl{'makefile'},
-            "mode=s"                        => \$cl{'MODE'},
+            "mode=s"                        => \$cl{'MODE'},   # deprecated, use --mpi=
             "modextension=s"                => \$cl{'MODEXTENSION'},
             "monitor-compile-env!"          => \$cl{'MONITOR_COMPILE_ENV'},
             "movemod=s"                     => \$cl{'MOVEMOD'},
+            "no-mpi"                        => sub { $cl{'MPI'} = 0 },
+            "mpi:s"                         => \$cl{'MPI'},
             "mpiinc=s"                      => \@{ $cl{'MPIINC'} },
             "mpilibdir=s"                   => \@{ $cl{'MPILIBDIR'} },
             "mpilibs=s"                     => \@{ $cl{'MPILIBS'} },
             "mpiwrappers!"                  => \$cl{'MPIWRAPPERS'},
             "objdir-prefix=s"               => \$cl{'objdirprefix'},
             "objdir-lib-prefix=s"           => \$cl{'objdirlibprefix'},
+            "no-openmp"                     => sub { $cl{'OPENMP'} = 0 },
+            "openmp:s"                      => \$cl{'OPENMP'},
             "opt:s"                         => \$cl{'OPT'},
-            "parallel"                      => sub { $cl{'MODE'} = "parallel" },
+            "parallel"                      => sub { $cl{'MPI'} = "yes" },
             "programfile=s"                 => \$cl{'PROGRAMFILE'},
             "ranlib=s"                      => \$cl{'RANLIB'},
             "relink-always!"                => \$cl{'RELINK_ALWAYS'},
-            "serial"                        => sub { $cl{'MODE'} = "serial" },
+            "serial"                        => sub { $cl{'MPI'} = "no" },
             "srcextra=s"                    => \@{ $cl{'SRCEXTRA'} },
             "srclist-app=s"                 => \@{ $cl{'SRCLIST_APP'} },
             "srclist_app=s"                 => \@{ $cl{'SRCLIST_APP'} },
@@ -547,6 +554,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --cflagsf77=\""      . join(',', @{$cl{'cflagsf77'}})    . "\"" if ($#{$cl{'cflagsf77'}} >= 0);
     $options .= " --cflagsf90=\""      . join(',', @{$cl{'cflagsf90'}})    . "\"" if ($#{$cl{'cflagsf90'}} >= 0);
     $options .= " --coproclist=\""     . join(',', @{$cl{'COPROCLIST'}})   . "\"" if ($#{$cl{'coproclist'}} >= 0);
+    $options .= " --cpp=\""            . $cl{'CPP'}                        . "\"" if (defined($cl{'CPP'}) && $cl{'CPP'});
     $options .= " --cxx=\""            . $cl{'CXX'}                        . "\"" if (defined($cl{'CXX'}) && $cl{'CXX'});
     $options .= " --debug"                                                        if (defined($cl{'debug'}) && $cl{'debug'});
     $options .= " --f77=\""            . $cl{'F77'}                        . "\"" if (defined($cl{'F77'}) && $cl{'F77'});
@@ -568,6 +576,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --monitor-compile-env"                                          if (defined($cl{'MONITOR_COMPILE_ENV'}) && $cl{'MONITOR_COMPILE_ENV'} eq "YES");
     $options .= " --no-monitor-compile-env"                                       if (defined($cl{'MONITOR_COMPILE_ENV'}) && $cl{'MONITOR_COMPILE_ENV'} eq "NO");
     $options .= " --movemod=\""        . $cl{'MOVEMOD'}                    . "\"" if (defined($cl{'MOVEMOD'}) && $cl{'MOVEMOD'});
+    $options .= " --mpi=\""            . $cl{'MPI'}                        . "\"" if (defined($cl{'MPI'}) && $cl{'MPI'});
     $options .= " --mpiinc=\""         . join(',', @{$cl{'mpiinc'}})       . "\"" if ($#{$cl{'mpiinc'}} >= 0);
     $options .= " --mpilibdir=\""      . join(',', @{$cl{'mpilibdir'}})    . "\"" if ($#{$cl{'mpilibdir'}} >= 0);
     $options .= " --mpilibs=\""        . join(',', @{$cl{'mpilibs'}})      . "\"" if ($#{$cl{'mpilibs'}} >= 0);
@@ -575,6 +584,7 @@ if ($cl{'regressionbenchmark'}) {
     $options .= " --no-mpiwrappers"                                               if (defined($cl{'MPIWRAPPERS'}) && $cl{'MPIWRAPPERS'} eq "NO");
     $options .= " --objdir-prefix=\""     . $cl{'objdirprefix'}            . "\"" if (defined($cl{'objdirprefix'}) && $cl{'objdirprefix'});
     $options .= " --objdir-lib-prefix=\"" . $cl{'objdirlibprefix'}         . "\"" if (defined($cl{'objdirlibprefix'}) && $cl{'objdirlibprefix'});
+    $options .= " --openmp=\""         . $cl{'OPENMP'}                     . "\"" if (defined($cl{'OPENMP'}) && $cl{'OPENMP'});
     $options .= " --opt=\""            . $cl{'OPT'}                        . "\"" if (defined($cl{'OPT'}) && $cl{'OPT'});
     # --parallel skipped as it is an alternative for --mode=".." only
     $options .= " --ranlib=\""         . $cl{'ranlib'}                     . "\"" if (defined($cl{'RANLIB'}) && $cl{'RANLIB'});
@@ -593,6 +603,7 @@ if ($cl{'regressionbenchmark'}) {
             # that cause skipping of time-consuming (and, for benchmark
             # applications' configure being sub-configure calls, redundant)
             # sanity checks.
+	    print "./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options\n" if ($cl{'debug'});
             system("./configure --cached-make-program='$make' --cached-gnumake-version='$makeversion' --cached-make-sets-make-var --cached-build-id='$buildID' $options");
             # Catch errors
             if ($? != 0) {
@@ -837,7 +848,8 @@ sub check_options {
     $MAKEFILE = $cl{'makefile'} if (defined($cl{'makefile'}));
 
 
-    # Special treatment of --opt/--no-opt/--opt=expensive option:
+    # Special treatment of --opt/--no-opt/--opt=expensive option,
+    # as well as --mpi/--no-mpi, --openmp/--no-openmp.
     # The problem is that we want to provide a consistent way to specify
     # optimisation levels: --opt, --no-opt (as with every other switch),
     # but also want to allow for arguments: --opt=expensive.
@@ -849,8 +861,10 @@ sub check_options {
     # * $cl{'OPT'} has an empty value when --opt has been specified
     # * $cl{'OPT'} has value 0 when --no-opt has been specified
     # * $cl{'OPT'} has value "string" when --opt="string" has been specified
-    if (defined($cl{'OPT'})) {
-        $cl{'OPT'} = 1 if ($cl{'OPT'} eq "");
+    foreach my $entry ('MPI', 'OPT', 'OPENMP') {
+	if (defined($cl{$entry})) {
+	    $cl{$entry} = 1 if ($cl{$entry} eq "");
+	}
     }
 
     # Special feature for Sven who always forgets the correct
@@ -871,7 +885,7 @@ sub check_options {
     # * Values are converted to upper case for the Makefile
     # * 0/1 values are mapped to NO/YES for the Makefile
     foreach my $entry ('FORCE_ID', 'INTSIZE', 'MODE', 'MONITOR_COMPILE_ENV',
-                       'MPIWRAPPERS', 'OPT', 'RELINK_ALWAYS') {
+                       'MPI', 'MPIWRAPPERS', 'OPENMP', 'OPT', 'RELINK_ALWAYS') {
         # Check environment variable MAKEFLAGS and give a warning if
         # options given via environment *and* command line collide.
         if ($ENV{'MAKEFLAGS'}) {
@@ -932,16 +946,17 @@ sub check_options {
         "COPROCLIST"          => [ "cpu", "cuda10", "cuda11", "cuda13", "opengl" ],  # List of valid coprocessor backends
         "FORCE_ID"            => [ "yes", "no" ],
         "INTSIZE"             => [ "std", "large" ],
-        "MODE"                => [ "parallel", "serial" ],
+        "MPI"                 => [ "yes", "no" ],
+        "MODE"                => [ "parallel", "serial" ],  # deprecated, use MPI=yes/no
         "MONITOR_COMPILE_ENV" => [ "yes", "no" ],
         "MPIWRAPPERS"         => [ "yes", "no" ],
+        "OPENMP"              => [ "yes", "no" ],
         "OPT"                 => [ "yes", "no", "expensive" ],
         "RELINK_ALWAYS"       => [ "yes", "no" ],
     );
     
     foreach my $entry (keys %validkeywords) {
         if (defined($cl{$entry})) {
-        print 1;
             if (ref($cl{$entry}) eq "") {
                 # Dealing with a scalar value
 
@@ -984,6 +999,18 @@ sub check_options {
             } # end case command line option takes multiple values
         } # end case command line option has been given
     } # end loop over all command line options to test
+
+    # Map deprecated MODE=PARALLEL/SERIAL to MPI=YES/NO
+    if (defined($cl{'MODE'})) {
+	warn "\n$progname: WARNING:\n".
+	     "The use of --mode=<parallel,serial> is deprecated, use --mpi=<yes,no> instead.\n";
+	if ($cl{'MODE'} eq "PARALLEL") {
+	    $cl{'MPI'} = "YES";
+	} elsif ($cl{'MODE'} eq "SERIAL") {
+	    $cl{'MPI'} = "NO";
+	}
+    }
+
 
     return;
 }
@@ -1127,7 +1154,7 @@ sub create_feastAppMakefile {
         "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
         "#          S.Kilian, S.Turek                                           #\n" .
         "#                                                                      #\n" .
-        "# Contact: Applied Mathematics, Dortmund University of Technology      #\n" .
+        "# Contact: Applied Mathematics, TU Dortmund                            #\n" .
         "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
         "#          Germany                                                     #\n" .
         "#                                                                      #\n" .
@@ -1189,29 +1216,37 @@ sub create_feastAppMakefile {
         "# =LARGE: Large integers (64 bit integers). Supports arrays with > 4GB size.\n" .
         "INTSIZE             = $entry\n\n";
 
-    $entry = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
-    print MAKEFILE_HDL
-        "# Create binary for serial or parallel execution?\n" .
-        "MODE                = $entry\n\n";
-
     $entry = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
     print MAKEFILE_HDL
         "# Enable checks whether compiler modification dates or compiler settings for\n" .
         "# current build ID have changed since last invocation of make?\n" .
         "MONITOR_COMPILE_ENV = $entry\n\n";
 
-    $entry = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
-    print MAKEFILE_HDL
-        "# Create binary with or without mpi wrappers\n" .
-        "MPIWRAPPERS         = $entry\n\n";
-
     $entry = (defined($cl{'RELINK_ALWAYS'})) ? $cl{'RELINK_ALWAYS'} : $defaults{'RELINK_ALWAYS'};
     print MAKEFILE_HDL
         "# Relink application every time make is invoked\n" .
         "# (i.e. regardless whether a source file has changed?)\n" .
         "# (Might be useful when developing on multiple platforms.)\n" .
-        "RELINK_ALWAYS       = $entry\n" .
-        "\n\n";
+        "RELINK_ALWAYS       = $entry\n\n";
+
+    $entry = (defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'};
+    print MAKEFILE_HDL
+        "# Create binary with OpenMP support?\n" .
+        "OPENMP              = $entry\n\n";
+
+#    $entry = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+    $entry = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
+    print MAKEFILE_HDL
+        "# Create binary for use with MPI?\n" .
+        "MPI                 = $entry\n\n";
+
+    $entry = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
+    print MAKEFILE_HDL
+        "# Create binary with or without mpi wrappers\n" .
+        "MPIWRAPPERS         = $entry\n\n";
+
+    print MAKEFILE_HDL
+        "\n";
 
 
     ##############################################################################
@@ -1398,7 +1433,7 @@ sub create_feastAppMakefile {
     print MAKEFILE_HDL "# Settings from configure command line which override settings from Makefile.inc\n";
     my $overwritten = 0;
     foreach my $entry ('APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
-                       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CXX', 'F77',
+		       'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90', 'CPP', 'CXX', 'F77',
                        'F90', 'INC', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS',
                        'MODEXTENSION', 'MOVEMOD', 'MPIINC', 'MPILIBDIR',
                        'MPILIBS', 'RANLIB') {
@@ -1571,8 +1606,7 @@ sub create_feastAppMakefile {
         "CFLAGSF77LIBS = \$(CFLAGSF77)\n" .
         "endif\n\n" .
 
-        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
-        "# mode PARALLEL\n" .
+        "ifeq (\$(strip \$(MPI)), YES)\n" .
         "LIBDIR := \$(MPILIBDIR) \$(LIBDIR)\n" .
         "LIBS   := \$(MPILIBS)   \$(LIBS)\n" .
         "endif\n\n\n\n";
@@ -1705,7 +1739,7 @@ sub create_feastAppMakefile {
         "ifneq (\$(strip \$(OPT)), NO)\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
-        "\t   echo '*** Error: Optimisation level keyword \$(OPT) unknown.'; \\\n" .
+        "\t   echo '*** Error: Optimisation level keyword OPT=\$(OPT) unknown.'; \\\n" .
         "\t   echo '***        Valid keywords are NO, YES and EXPENSIVE.'; \\\n" .
         "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t   echo; \\\n" .
@@ -1729,7 +1763,7 @@ sub create_feastAppMakefile {
         "ifneq (\$(strip \$(INTSIZE)), LARGE)\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
-        "\t   echo '*** Error: Integer size \$(INTSIZE) unknown.'; \\\n" .
+        "\t   echo '*** Error: Integer size INTSIZE=\$(INTSIZE) unknown.'; \\\n" .
         "\t   echo '***        Valid keywords are STD or LARGE.'; \\\n" .
         "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t   echo; \\\n" .
@@ -1744,16 +1778,39 @@ sub create_feastAppMakefile {
         "endif\n" .
         "endif\n\n" .
 
-        "# Makefile variable MODE must have exactly one out of two possible values:\n" .
-        "# PARALLEL or SERIAL\n" .
-        "# In case neither PARALLEL nor SERIAL is given as mode, unset all compiler\n" .
+        "# Makefile variable MPI must have exactly one out of two possible values:\n" .
+        "# YES or NO\n" .
+        "# In case neither YES nor NO are given as mode, unset all compiler\n" .
         "# definitions in order to always raise an error when make is invoked.\n" .
-        "ifneq (\$(strip \$(MODE)), PARALLEL)\n" .
-        "ifneq (\$(strip \$(MODE)), SERIAL)\n" .
+        "ifneq (\$(strip \$(MPI)), YES)\n" .
+        "ifneq (\$(strip \$(MPI)), NO)\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
-        "\t   echo '*** Error: Build type \$(MODE) unknown.'; \\\n" .
-        "\t   echo '***        Valid keywords are SERIAL or PARALLEL.'; \\\n" .
+        "\t   echo '*** Error: Build type MPI=\$(MPI) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
+        "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
+        "\t   echo; \\\n" .
+        "\t   exit 1;\n" .
+        "# The trailing 'echo' in the next command definition is necessary to catch\n" .
+        "# all the command line options a compile command usually gets.\n" .
+        "F77 = \$(MESSAGE) echo\n" .
+        "F90 = \$(F77)\n" .
+        "CC  = \$(F77)\n" .
+        "CXX = \$(F77)\n" .
+        "LD  = \$(F77)\n" .
+        "endif\n" .
+        "endif\n\n" .
+
+        "# Makefile variable OPENMP must have exactly one out of two possible values:\n" .
+        "# YES or NO\n" .
+        "# In case neither YES nor NO are given as mode, unset all compiler\n" .
+        "# definitions in order to always raise an error when make is invoked.\n" .
+        "ifneq (\$(strip \$(OPENMP)), YES)\n" .
+        "ifneq (\$(strip \$(OPENMP)), NO)\n" .
+        "MESSAGE := \$(MESSAGE) \\\n" .
+        "\t   echo; \\\n" .
+        "\t   echo '*** Error: Build type OPENMP=\$(OPENMP) unknown.'; \\\n" .
+        "\t   echo '***        Valid keywords are YES or NO.'; \\\n" .
         "\t   echo '***        Cowardly refusing compilation.'; \\\n" .
         "\t   echo; \\\n" .
         "\t   exit 1;\n" .
@@ -1770,12 +1827,12 @@ sub create_feastAppMakefile {
         "# If a parallel application should be built, but preprocessor switch\n" .
         "# -DENABLE_SERIAL_BUILD appears among compiler flags, unset all compiler definitions\n" .
         "# in order to always raise an error when make is invoked.\n" .
-        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "ifeq (\$(strip \$(MPI)), YES)\n" .
         "ifneq (,\$(findstring -DENABLE_SERIAL_BUILD ,\\\n" .
         "\t\$(APPONLYFLAGS) \$(CFLAGSF77) \$(CFLAGSF90) \$(CFLAGSC) \$(CFLAGSCXX) ))\n" .
         "MESSAGE := \$(MESSAGE) \\\n" .
         "\t   echo; \\\n" .
-        "\t   echo '*** Error: Build type PARALLEL cannot be used in combination'; \\\n" .
+        "\t   echo '*** Error: Build type MPI=YES cannot be used in combination'; \\\n" .
         "\t   echo '***        with preprocessor switch -DENABLE_SERIAL_BUILD.'; \\\n" .
         "\t   echo '***        Please choose for either one. Cowardly refusing compilation.'; \\\n" .
         "\t   echo; \\\n" .
@@ -1811,8 +1868,8 @@ sub create_feastAppMakefile {
         "endif\n" .
         "endif\n\n" .
 
-        "# Test for 6th token in case of MODE=PARALLEL\n" .
-        "ifeq (\$(strip \$(MODE)), PARALLEL)\n" .
+        "# Test for 6th token in case of MPI=YES\n" .
+        "ifeq (\$(strip \$(MPI)), YES)\n" .
         "ifneq (\$(TOKEN6), 1)\n" .
         "DETAIL := \$(DETAIL) echo '***        6th token not matched against any rule in \$(MAKEFILE_CPU_INC).';\n" .
         "endif\n" .
@@ -3146,8 +3203,10 @@ sub create_feastAppMakefile {
         "\t\@echo \"                 whether or not $make should check path and modification dates\"\n" .
         "\t\@echo \"                   of compilers and compiler settings across multiple\"\n" .
         "\t\@echo \"                   compilation attempts\"\n" .
-        "\t\@echo \"  MODE=<PARALLEL|SERIAL>\"\n" .
-        "\t\@echo \"                 whether to build parallel or serial version of application\"\n" .
+        "\t\@echo \"  MPI=<YES|NO>\"\n" .
+        "\t\@echo \"                 whether to build a MPI or serial version of the application\"\n" .
+        "\t\@echo \"  OPENMP=<YES|NO>\"\n" .
+        "\t\@echo \"                 whether to add OpenMP support to the application\"\n" .
         "\t\@echo \"\"\n" .
         "\n\n";
 
@@ -3196,7 +3255,7 @@ sub create_feastBenchmarkMakefile {
         "#          S.Buijssen, D.Goeddeke, M.Grajewski, H.Wobker,              #\n" .
         "#          S.Kilian, S.Turek                                           #\n" .
         "#                                                                      #\n" .
-        "# Contact: Applied Mathematics, Dortmund University of Technology      #\n" .
+        "# Contact: Applied Mathematics, TU Dortmund                            #\n" .
         "#          Vogelpothsweg 87, 44227 Dortmund                            #\n" .
         "#          Germany                                                     #\n" .
         "#                                                                      #\n" .
@@ -3219,10 +3278,10 @@ sub create_feastBenchmarkMakefile {
             "ID                 := $cl{'ID'}\n\n";
     }
 
-    $entry = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+    $entry = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
     print MAKEFILE_HDL
-        "# Create test suite to execute serial or parallel binaries?\n" .
-        "MODE = $entry\n\n";
+        "# Create test suite to execute binaries with MPI support?\n" .
+        "MPI = $entry\n\n";
 
     $entry = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
     print MAKEFILE_HDL
@@ -3431,7 +3490,7 @@ sub create_feastBenchmarkMakefile {
         ".PHONY: create-script-body\n" .
         "create-script-body:\n" .
         "        # Create detailed instructions for each test in \$(TESTCASES)\n" .
-        "\t\@MODE=\$(MODE) ID=\$(LIBID) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
+        "\t\@MPI=\$(MPI) ID=\$(LIBID) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
         "\n" .
         "        # Call footer function\n" .
         "\t\@( echo; echo fb_footer; echo; ) >> \$(SCRIPT)\n" .
@@ -3460,42 +3519,57 @@ sub create_feastBenchmarkMakefile {
         "# for current build ID.\n" .
         ".PHONY:\tclean\n" .
         "clean:\n" .
+        "ifneq (\$(APPS),)\n" .
         "\t-rm -f \$(APPS)\n" .
+        "endif\n" .
         "\t-rm -f \$(SCRIPT)\n" .
+        "ifneq (\$(SRCDIRS),)\n" .
         "         # the following removes binaries created by test-compile (simultaneous \n" .
         "         # compilation in one checkout with several build IDs) \n" .
         "\t-rm -f \$(patsubst kernel_%, \$(ID)-\$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
         "\t       \$(patsubst apps_%,   \$(ID)-\$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
         "\t       \$(patsubst area51_%, \$(ID)-\$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
+        "endif\n" .
+        "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) clean-app ); )\n" .
+        "endif\n" .
         "endif\n\n" .
         "# Clean up all FEAT2 object files for all applications for current architecture\n" .
         ".PHONY:\tclean-apps clean-app clean-libs purge\n" .
         "clean-apps: clean-app\n\n" .
         "# Clean up targets for all applications for current architecture\n" .
         "clean-app:\n" .
+        "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) \$\@ ); )\n" .
+        "endif\n" .
         "endif\n\n" .
         "clean-libs:\n" .
+        "ifneq (\$(SRCDIR),)\n" .
         "ifeq \"\$(origin SRCDIR)\" \"command line\"\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) \$\@\n" .
         "else\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) clean-libs\n" .
+        "endif\n" .
         "endif\n\n" .
         "# Clean up FEAT2 output and auxiliary files for the FEAT2 benchmark,\n" .
         "# clean up all FEAT2 benchmark applications, libraries and object files\n" .
         "# for all build IDs.\n" .
         "purge:\tclean\n" .
+        "ifneq (\$(SRCDIR),)\n" .
         "\t\@\$(MAKE) -C\$(SRCDIR) purge-libs\n" .
+        "endif\n" .
+        "ifneq (\$(SRCDIRS),)\n" .
         "\t\@\$(foreach dir, \$(SRCDIRS), ( \$(MAKE) -C\$(dir) purge-app ); )\n" .
         "\t\@-\$(foreach dir, \$(SRCDIRS), rm \$(dir)/$MAKEFILE \$(dir)/$MAKEFILE.bak; )\n" .
+        "endif\n" .
+        "\trm -f $MAKEFILE $MAKEFILE.bak\n" .
         "\n\n\n" .
 
 
@@ -3672,9 +3746,9 @@ sub debug_command_line_options {
 
     foreach my $entry ('APPNAME', 'APPONLYFLAGS', 'AR', 'BUILDLIB', 'CC', 'CFLAGSC',
                        'CFLAGSCXX', 'CFLAGSF77', 'CFLAGSF90',
-                       'COPROCLIST', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
-                       'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MODE', 'MODEXTENSION',
-                       'MOVEMOD', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS',
+                       'COPROCLIST', 'CPP', 'CXX', 'F77', 'F90', 'FORCE_ID', 'ID', 'INC',
+                       'INTSIZE', 'LD', 'LDFLAGS', 'LIBDIR', 'LIBS', 'MPI', 'MODEXTENSION',
+                       'MOVEMOD', 'MPIINC', 'MPILIBDIR', 'MPILIBS', 'MPIWRAPPERS', 'OPENMP',
                        'OPT', 'RANLIB', 'RELINK_ALWAYS', 'SRCEXTRA', 'SRCLIST_APP') {
         # Determine type of variable: scalar or array
         if (ref($cl{$entry}) eq "") {
@@ -3782,7 +3856,7 @@ sub get_buildID {
             # Pass along the desired execution mode of the application.
             # If set to parallel mode, the build ID contains an additional 6th token
             # naming the MPI library.
-            my $mode = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
+            my $mpi = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
 
             # Use '--no-print-directory' to ensure that when this configure script
             # is run from a Makefile, make will not print lines like
@@ -3791,7 +3865,7 @@ sub get_buildID {
             # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
             my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_INC)) .
                           "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) . 
-                          " MODE=$mode FEAT2BASEDIR=. .idonly";
+                          " MPI=$mpi FEAT2BASEDIR=. .idonly";
             $buildID = `$command`;
             chomp($buildID);
         }
@@ -4353,21 +4427,25 @@ sub print_statistics_about_feastAppMakefile {
         print "no optimisation\n";
     }
 
+    $string = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
+    print "  Integer size                 : " .
+        ( ($string eq "STD") ? "standard" : "large integers" ) . "\n";
+
     $string = (defined($cl{'MONITOR_COMPILE_ENV'})) ? $cl{'MONITOR_COMPILE_ENV'} : $defaults{'MONITOR_COMPILE_ENV'};
     print "  Detect changes in compile env: " .
         ( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
 
+    $string = (defined($cl{'OPENMP'})) ? $cl{'OPENMP'} : $defaults{'OPENMP'};
+    print "  OpenMP support               : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
+    $string = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
+    print "  MPI support                  : " .
+        ( ($string eq "YES") ? "yes" : "no" ) . "\n";
+
     $string = (defined($cl{'MPIWRAPPERS'})) ? $cl{'MPIWRAPPERS'} : $defaults{'MPIWRAPPERS'};
     print "  Use MPI wrapper commands     : " .
         ( ($string eq "YES") ? "enabled" : "disabled" ) . "\n";
-
-    $string = (defined($cl{'MODE'})) ? $cl{'MODE'} : $defaults{'MODE'};
-    print "  Runtime mode                 : " .
-        ( ($string eq "SERIAL") ? "serial application" : "parallel application" ) . "\n";
-
-    $string = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
-    print "  Integer size                 : " .
-        ( ($string eq "STD") ? "standard" : "large integers" ) . "\n";
 
     if ($#{$cl{'COPROCLIST'}} >= 0) {
         print &format_list("  Coprocessor(s)               :", 33, 100,
@@ -4416,9 +4494,6 @@ sub show_help {
         "                     avoids problems with less tidy users.)\n" .
         "--srclist_app=<string>\n" .
         "                    Set application's source files to <string>\n" .
-        "--mode=<string>     where <string> is one of PARALLEL or SERIAL.\n" .
-        "                    Create Makefile for a parallel or serial application\n" .
-        "                    (default: " . lc($defaults{'MODE'}) . ").\n" .
         "--[no-]opt,--opt=expensive\n" .
         "                    Controls whether to use no (but including debugging\n" .
         "                    symbols), good or expensive compiler optimisation\n" .
@@ -4434,9 +4509,17 @@ sub show_help {
         "                    compile settings. In particular when compiling the\n" .
         "                    the regression benchmark it makes a big difference\n" .
         "                    having to compile libraries only once (default: ../..).\n" .
+        "--mode=<string>     (deprecated, use MPI=YES/NO)\n" .
+        "                    where <string> is one of PARALLEL or SERAIL.\n" .
+        "                    Create Makefile for a parallel or serial application\n" .
+        "                    (default: " . lc($defaults{'MODE'}) . ").\n" .
+        "--[no-]mpi          Create Makefile for application with/without MPI support\n" .
+        "                    (default: " . lc($defaults{'MPI'}) . ").\n" .
         "--[no-]mpiwrappers  Controls whether or not to use MPI wrappers for\n" .
         "                    compiling and linking (default: " .
         lc($defaults{'MPIWRAPPERS'}) . ").\n" .
+        "--[no-]openmp       Create Makefile for application with/without OpenMP support\n" .
+        "                    (default: " . lc($defaults{'OPENMP'}) . ").\n" .
         "--[no-]monitor-compile-env\n" .
         "                    Monitor modification dates of all compilers and\n" .
         "                    compile settings for changes in subsequent\n" .
@@ -4448,7 +4531,8 @@ sub show_help {
         "--f77=<file>        Fortran 77 compiler\n" .
         "--f90=<file>        Fortran 90 compiler\n" .
         "--cc=<file>         C compiler\n" .
-        "--cpp=<file>        C++ compiler\n" .
+        "--cxx=<file>        C++ compiler\n" .
+        "--cpp=<file>        C preprocessor\n" .
         "--ld=<file>         Linker\n" .
         "--cflagsf77=<string>\n" .
         "                    Set Fortran 77 compiler flags to <string>\n" .
