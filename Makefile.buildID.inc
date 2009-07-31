@@ -162,7 +162,7 @@ endif
 
 # Set default target platforms for compilation of parallel applications.
 # i.e. refine the machine ID even more by specifying the MPI environment.
-ifeq ($(strip $(MODE)), PARALLEL)
+ifeq ($(strip $(MPI)), YES)
 ifeq ($(strip $(ID)), ibm-powerpc_power4-aix-xlf-goto)
 ID:=$(strip $(ID))-poempi
 endif
@@ -212,6 +212,6 @@ LIBID:=$(shell echo "$(ID)" | LC_ALL=C perl -pe 's/^([^-]+-[^-]+-[^-]+-[^-]+-[^-
 .libidonly:
 	@echo $(LIBID)
 
-.PHONY: .mode
-.mode:
-	@echo $(MODE)
+.PHONY: .mpi
+.mpi:
+	@echo $(MPI)

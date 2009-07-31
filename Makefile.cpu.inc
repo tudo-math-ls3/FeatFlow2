@@ -216,7 +216,7 @@ SBB_SRCEXTRA  = ztime.f
 #
 ##############################################################################
 
-ifeq ($(MODE), SERIAL)
+ifeq ($(MPI), NO)
 CFLAGSF77 := -DENABLE_SERIAL_BUILD $(CFLAGSF77)
 CFLAGSF90 := -DENABLE_SERIAL_BUILD $(CFLAGSF90)
 CFLAGSC   := -DENABLE_SERIAL_BUILD $(CFLAGSC)
@@ -2544,9 +2544,9 @@ endif
         # If preprocessor switch -DENABLE_SERIAL_BUILD does occur in compiler flags,
         # a build for serial execution is requested.
 	@if test -z "$(findstring -DENABLE_SERIAL_BUILD ,$(APPONLYFLAGS) $(CFLAGSF90) )"; then \
-	    echo 'Parallel build mode enabled.'; \
+	    echo 'Build with MPI enabled.'; \
 	else \
-	    echo 'Serial build mode enabled.'; \
+	    echo 'Serial build enabled.'; \
 	fi
         # Catch cases where something requires a user's attention and
         # show the message we will get when trying to compile also here.
