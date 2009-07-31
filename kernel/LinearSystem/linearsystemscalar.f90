@@ -18281,15 +18281,13 @@ contains
 
     ! Vector1 -> Vector
     rvector  = rvector1
-    rvector%p_rspatialDiscr => rvector1%p_rspatialDiscr
     
     ! Vector2 -> Vector1
     rvector1 = rvector2
-    rvector1%p_rspatialDiscr => rvector2%p_rspatialDiscr
     
     ! Vector -> Vector2
     rvector2 = rvector
-    rvector2%p_rspatialDiscr => rvector%p_rspatialDiscr
+    
   end subroutine lsyssc_swapVectors
 
   ! ***************************************************************************
@@ -18315,19 +18313,14 @@ contains
     type(t_matrixScalar) :: rmatrix
 
     ! Matrix1 -> Matrix
-    rmatrix  = rmatrix1
-    rmatrix%p_rspatialDiscrTest => rmatrix1%p_rspatialDiscrTest
-    rmatrix%p_rspatialDiscrTrial => rmatrix1%p_rspatialDiscrTrial
+    rmatrix = rmatrix1
     
     ! Matrix2 -> Matrix1
     rmatrix1 = rmatrix2
-    rmatrix1%p_rspatialDiscrTest => rmatrix2%p_rspatialDiscrTest
-    rmatrix1%p_rspatialDiscrTrial => rmatrix2%p_rspatialDiscrTrial
     
     ! Matrix -> Matrix2
     rmatrix2 = rmatrix
-    rmatrix2%p_rspatialDiscrTest => rmatrix%p_rspatialDiscrTest
-    rmatrix2%p_rspatialDiscrTrial => rmatrix%p_rspatialDiscrTrial
+    
   end subroutine lsyssc_swapMatrices
 
   ! ***************************************************************************

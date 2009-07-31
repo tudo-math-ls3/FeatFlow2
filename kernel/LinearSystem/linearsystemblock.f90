@@ -4297,52 +4297,11 @@ contains
 
     ! local variables
     type(t_vectorBlock) :: rvector
-    integer :: iblock
 
-    ! Vector1 -> Vector
     rvector = rvector1
-    rvector%p_rblockDiscr => rvector1%p_rblockDiscr
-    rvector%p_rdiscreteBC => rvector1%p_rdiscreteBC
-    rvector%p_rdiscreteBCfict => rvector1%p_rdiscreteBCfict
-    if (associated(rvector1%RvectorBlock)) then
-      allocate(rvector%RvectorBlock(rvector%nblocks))
-      do iblock=1,rvector%nblocks
-        rvector1%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
-        rvector1%RvectorBlock(iblock)%p_rspatialDiscr =>&
-            rvector%RvectorBlock(iblock)%p_rspatialDiscr
-      end do
-      deallocate(rvector1%RvectorBlock)
-    end if
-
-    ! Vector2 -> Vector1
     rvector1 = rvector2
-    rvector1%p_rblockDiscr => rvector2%p_rblockDiscr
-    rvector1%p_rdiscreteBC => rvector2%p_rdiscreteBC
-    rvector1%p_rdiscreteBCfict => rvector2%p_rdiscreteBCfict
-    if (associated(rvector2%RvectorBlock)) then
-      allocate(rvector1%RvectorBlock(rvector1%nblocks))
-      do iblock=1,rvector1%nblocks
-        rvector1%RvectorBlock(iblock)=rvector2%RvectorBlock(iblock)
-        rvector1%RvectorBlock(iblock)%p_rspatialDiscr =>&
-            rvector2%RvectorBlock(iblock)%p_rspatialDiscr
-      end do
-      deallocate(rvector2%RvectorBlock)
-    end if
-
-    ! Vector -> Vector2
     rvector2 = rvector
-    rvector2%p_rblockDiscr => rvector%p_rblockDiscr
-    rvector2%p_rdiscreteBC => rvector%p_rdiscreteBC
-    rvector2%p_rdiscreteBCfict => rvector%p_rdiscreteBCfict
-    if (associated(rvector%RvectorBlock)) then
-      allocate(rvector2%RvectorBlock(rvector2%nblocks))
-      do iblock=1,rvector2%nblocks
-        rvector2%RvectorBlock(iblock)=rvector%RvectorBlock(iblock)
-        rvector2%RvectorBlock(iblock)%p_rspatialDiscr =>&
-            rvector%RvectorBlock(iblock)%p_rspatialDiscr
-      end do
-      deallocate(rvector%RvectorBlock)
-    end if
+    
   end subroutine lsysbl_swapVectors
 
   !****************************************************************************
@@ -4366,74 +4325,11 @@ contains
 
     ! local variables
     type(t_matrixBlock) :: rmatrix
-    integer :: iblock,jblock
 
-    ! Matrix1 -> Matrix
     rmatrix = rmatrix1
-    rmatrix%p_rblockDiscrTest => rmatrix1%p_rblockDiscrTest
-    rmatrix%p_rblockDiscrTrial => rmatrix1%p_rblockDiscrTrial
-    rmatrix%p_rdiscreteBC => rmatrix1%p_rdiscreteBC
-    rmatrix%p_rdiscreteBCfict => rmatrix1%p_rdiscreteBCfict
-    if (associated(rmatrix1%RmatrixBlock)) then
-      allocate(rmatrix%RmatrixBlock(&
-          rmatrix%nblocksPerCol,rmatrix%nblocksPerRow))
-      do jblock=1,rmatrix%nblocksPerRow
-        do iblock=1,rmatrix%nblocksPerCol
-          rmatrix%RmatrixBlock(iblock,jblock)=&
-              rmatrix1%RmatrixBlock(iblock,jblock)
-          rmatrix%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest =>&
-              rmatrix1%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest
-          rmatrix%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial =>&
-              rmatrix1%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial
-        end do
-      end do
-      deallocate(rmatrix1%RmatrixBlock)
-    end if
-
-    ! Matrix2 -> Matrix1
     rmatrix1 = rmatrix2
-    rmatrix1%p_rblockDiscrTest => rmatrix2%p_rblockDiscrTest
-    rmatrix1%p_rblockDiscrTrial => rmatrix2%p_rblockDiscrTrial
-    rmatrix1%p_rdiscreteBC => rmatrix2%p_rdiscreteBC
-    rmatrix1%p_rdiscreteBCfict => rmatrix2%p_rdiscreteBCfict
-    if (associated(rmatrix2%RmatrixBlock)) then
-      allocate(rmatrix1%RmatrixBlock(&
-          rmatrix1%nblocksPerCol,rmatrix1%nblocksPerRow))
-      do jblock=1,rmatrix1%nblocksPerRow
-        do iblock=1,rmatrix1%nblocksPerCol
-          rmatrix1%RmatrixBlock(iblock,jblock)=&
-              rmatrix2%RmatrixBlock(iblock,jblock)
-          rmatrix1%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest =>&
-              rmatrix2%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest
-          rmatrix1%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial =>&
-              rmatrix2%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial
-        end do
-      end do
-      deallocate(rmatrix2%RmatrixBlock)
-    end if
-
-    ! Matrix -> Matrix2
     rmatrix2 = rmatrix
-    rmatrix2%p_rblockDiscrTest => rmatrix%p_rblockDiscrTest
-    rmatrix2%p_rblockDiscrTrial => rmatrix%p_rblockDiscrTrial
-    rmatrix2%p_rdiscreteBC => rmatrix%p_rdiscreteBC
-    rmatrix2%p_rdiscreteBCfict => rmatrix%p_rdiscreteBCfict
-    if (associated(rmatrix%RmatrixBlock)) then
-      allocate(rmatrix2%RmatrixBlock(&
-          rmatrix2%nblocksPerCol,rmatrix2%nblocksPerRow))
-      do jblock=1,rmatrix2%nblocksPerRow
-        do iblock=1,rmatrix2%nblocksPerCol
-          rmatrix2%RmatrixBlock(iblock,jblock)=&
-              rmatrix%RmatrixBlock(iblock,jblock)
-          rmatrix2%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest =>&
-              rmatrix%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTest
-          rmatrix2%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial =>&
-              rmatrix%RmatrixBlock(iblock,jblock)%p_rspatialDiscrTrial
-        end do
-      end do
-      deallocate(rmatrix%RmatrixBlock)
-    end if
-
+    
   end subroutine lsysbl_swapMatrices
 
   !****************************************************************************
