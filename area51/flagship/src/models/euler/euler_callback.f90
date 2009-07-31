@@ -2449,15 +2449,21 @@ contains
       
       ! local variables
       real(DP), dimension(:,:), pointer :: ufail
+      real(DP), dimension(:), pointer :: pp,pm
       logical, dimension(:), pointer :: bfail
       real(DP), dimension(NVAR) :: f_ij
+      real(DP) :: diff
       integer :: ij,ji,i,j,iedge
 
       ! Initialize correction
       call lalg_clearVector(data)
 
-      allocate(ufail(NVAR, NEQ), bfail(NEQ))
-      ufail = u
+      allocate(ufail(NVAR, NEQ), bfail(NEQ), pp(NEQ), pm(NEQ))
+
+      ! Initialize vectors
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_copyVector(u, ufail)
 
       ! Initialize edge counter
       iedge = 0
@@ -2480,6 +2486,17 @@ contains
           ! Apply correction
           data(:,i) = data(:,i) + f_ij
           data(:,j) = data(:,j) - f_ij
+
+          ! Compute pressure difference at nodes I and J
+          diff = (GAMMA-1) * ( u(4,j) - u(4,i) &
+                             - 0.5_DP*(u(2,j)**2 + u(3,j)**2)/u(1,j)&
+                             + 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i))
+
+          ! Compute upper and lower bounds for the pressure
+          pp(i) = max(pp(i),  diff)
+          pp(j) = max(pp(j), -diff)
+          pm(i) = min(pm(i),  diff)
+          pm(j) = min(pm(j), -diff)
         end do
       end do
 
@@ -2487,18 +2504,24 @@ contains
       !$omp parallel do
       do i = 1, NEQ
 
-        ! Compute flux-correction solution
+        ! Compute flux-corrected solution
         u(:,i) = u(:,i) + data(:,i)/ML(i)
 
-        ! Check that kinetic energy does not exceed total energy
-        bfail(i) = u(4,i) .le. 0.5_DP * (u(2,i)**2 + u(3,i)**2)/u(1,i)
+        ! Compute pressure difference between the low-order solution
+        ! and flux-corrected solution value at node I
+        diff = (GAMMA-1) * ( u(4,i) - ufail(4,i) &
+                           - 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i)&
+                           + 0.5_DP*(ufail(2,i)**2 + ufail(3,i)**2)/ufail(1,i))
+        
+        ! Check if pressure violates upper/lower bounds
+        bfail(i) = (pm(i) .gt. diff) .or. (diff .gt. pp(i))
       end do
       !$omp end parallel do
       
       
       ! Do we need to apply failsave limiting?
       if (all(.not.bfail)) then
-        deallocate(ufail, bfail)
+        deallocate(ufail, bfail, pp, pm)
         return
       end if
      
@@ -2524,7 +2547,7 @@ contains
       end do
       
       ! Deallocate temporal memory
-      deallocate(bfail)
+      deallocate(bfail, pp, pm)
 
 
       ! Initialize correction
