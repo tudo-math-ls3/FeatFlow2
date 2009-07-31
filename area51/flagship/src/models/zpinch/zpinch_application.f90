@@ -1775,8 +1775,10 @@ contains
     ! Section names
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
+    character(LEN=SYS_STRLEN) :: ucdimport
 
     ! local variables
+    type(t_ucdExport) :: rimport
     real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt, dscale
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
@@ -2043,6 +2045,24 @@ contains
       
     end if
 
+
+    ! Get name of import file (if any)
+    call parlst_getvalue_string(rparlist,&
+        trim(soutputName), 'ucdimport', ucdimport, '')
+
+    ! Do we have to read in a precomdputed solution?
+    if (trim(ucdimport) .ne. '') then
+      call ucd_readGMV(ucdimport, rimport, p_rproblemLevel%rtriangulation)
+      call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
+      call ucd_getSimulationTime(rimport, rtimestep%dTime)
+      call euler_setVariables(rimport, p_rsolutionEuler)
+      call transp_setVariable(rimport, 'advect', p_rsolutionTransport)
+      call ucd_release(rimport)
+
+      ! Set time for solution output
+      dtimeUCD = rtimestep%dinitialTime
+    end if
+
     !---------------------------------------------------------------------------
     ! Calculate density-averaged mass matrices for the scalar model
     ! problem based on the initial solution U^0 of the Euler model
@@ -2150,6 +2170,16 @@ contains
         call sys_halt()
       end select
      
+      ! Check if pressure is negative
+      if (.not.zpinch_checkPressure(rsolution(1))) then
+        print *, "Pressure has become negative in the low-order scheme"
+
+        call zpinch_outputSolution(rparlist, ssectionName,&
+            p_rproblemLevel, rsolution, rtimestep%dTime)
+
+        stop
+      end if
+
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for Euler model
       !-------------------------------------------------------------------------
@@ -2161,6 +2191,16 @@ contains
       ! Apply linearized FCT correction for Euler model
       call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
           rtimestep, p_rsolutionEuler, rcollection)
+
+      ! Check if pressure is negative
+      if (.not.zpinch_checkPressure(rsolution(1))) then
+        print *, "Pressure has become negative by flux limiting"
+
+        call zpinch_outputSolution(rparlist, ssectionName,&
+            p_rproblemLevel, rsolution, rtimestep%dTime)
+
+        stop
+      end if
 
 !!$      !---------------------------------------------------------------------------
 !!$      ! Calculate density-averaged mass matrices for the scalar model
