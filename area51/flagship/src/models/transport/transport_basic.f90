@@ -12,6 +12,9 @@
 !# 1.) transp_hasVelocityVector
 !#     -> Checks if the velocity vector is given as explicit vector
 !#
+!# 2.) transp_setVariable
+!#     -> Sets the scalar variable from an UCD import
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -19,13 +22,18 @@ module transport_basic
 
   use fparser
   use fsystem
+  use genoutput
+  use linearsystemblock
+  use linearsystemscalar
   use statistics
+  use ucd
 
   implicit none
 
   private 
 
   public :: transp_hasVelocityVector
+  public :: transp_setVariable
 
 !<constants>
 
@@ -230,5 +238,73 @@ contains
     end select
 
   end function transp_hasVelocityVector
+  
+  !*****************************************************************************
+
+!<subroutine>
+  
+  subroutine transp_setVariable(rexport, cvariable, rvectorBlock, iblock)
+
+!<description>
+    ! This subroutine sets the scalar variable from a UCD export
+!</description>
+
+!<input>
+    ! UCD export
+    type(t_ucdExport), intent(in) :: rexport
+
+    ! Name of the veariable in the UCD export
+    character(LEN=*), intent(in) :: cvariable
+
+    ! OPTIONAL: Number of the scalar subvector
+    ! where to set the variable
+    integer, intent(in), optional :: iblock
+!</input>
+
+!<inputoutput>
+    ! Solution vector
+    type(t_vectorBlock), intent(inout) :: rvectorBlock
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: neq, nlength, jblock
+
+    if ((rvectorBlock%nblocks .ne. 1) .and.&
+        .not.present(iblock)) then
+      call output_line ('Optional block number must be given for &
+          &a multi-component vector', &
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable')
+      call sys_halt()
+    end if
+
+    jblock = 1
+    if (present(iblock)) jblock = iblock
+
+    if (jblock .gt. rvectorBlock%nblocks) then
+      call output_line ('Invalid block number', &
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable')
+      call sys_halt()
+    end if
+
+    ! Set dimensions
+    neq  = rvectorBlock%RvectorBlock(jblock)%NEQ
+    
+    ! Set pointer
+    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(jblock), p_Ddata)
+    
+    ! Get length of values
+    call ucd_getVariable(rexport, cvariable, nlength=nlength)
+    if (nlength .ne. neq) then
+      call output_line ('Invalid size of data', &
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable')
+      call sys_halt()
+    end if
+
+    ! Get variable values
+    call ucd_getVariable(rexport, cvariable, p_Ddata)
+    
+  end subroutine transp_setVariable
 
 end module transport_basic
