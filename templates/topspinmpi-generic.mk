@@ -33,7 +33,7 @@ MPILIBS   = -lmpich -lfmpich
 
 endif  # MPIWRAPPERS=NO
 
-endif  # MODE=PARALLEL aka -DENABLE_SERIAL_BUILD not set
+endif  # MPI=YES aka -DENABLE_SERIAL_BUILD not set
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed

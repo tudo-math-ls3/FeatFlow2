@@ -46,6 +46,16 @@ CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
 # and with same -xarch setting to ensure that the correct startup routine is 
 # linked.
 
+# Specify -xopenmp for all Sun compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77LIBS := -xopenmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -xopenmp $(CFLAGSF77)
+CFLAGSF90     := -xopenmp $(CFLAGSF90)
+CFLAGSC       := -xopenmp $(CFLAGSC)
+CFLAGSCXX     := -xopenmp $(CFLAGSCXX)
+LDFLAGS       := -xopenmp $(LDFLAGS)
+endif
+
 # WARNING WARNING WARNING
 # All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
 # The only native integers are literals and code written in F77 (blas, lapack, 

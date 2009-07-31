@@ -41,7 +41,7 @@ MPILIBS   = -lopt -lpapi -lmpich  #lamf77mpi -lmpi -llam -lpthread
 
 endif  # MPIWRAPPERS=NO
 
-endif  # MODE=PARALLEL aka -DENABLE_SERIAL_BUILD not set
+endif  # MPI=YES aka -DENABLE_SERIAL_BUILD not set
 
 
 # When profiling the code with Allinea's Optimization and Profiling Tool

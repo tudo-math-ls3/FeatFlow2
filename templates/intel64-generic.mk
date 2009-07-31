@@ -60,6 +60,15 @@ CFLAGSCXX     := -ipo $(CFLAGSCXX)
 LDFLAGS       := -ipo $(LDFLAGS)
 endif
 
+# Specify -openmp for all Intel compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77LIBS := -openmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -openmp $(CFLAGSF77)
+CFLAGSF90     := -openmp $(CFLAGSF90)
+CFLAGSC       := -openmp $(CFLAGSC)
+CFLAGSCXX     := -openmp $(CFLAGSCXX)
+LDFLAGS       := -openmp $(LDFLAGS)
+endif
 
 # WARNING WARNING WARNING
 # All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.

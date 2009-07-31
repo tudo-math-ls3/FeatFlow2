@@ -28,7 +28,7 @@ endif
 #CFLAGSF90 := -DENABLE_BUFFERED_EDGE_COMM $(CFLAGSF90)
 #endif
 
-endif  # MODE=PARALLEL aka -DENABLE_SERIAL_BUILD not set
+endif  # MPI=YES aka -DENABLE_SERIAL_BUILD not set
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
