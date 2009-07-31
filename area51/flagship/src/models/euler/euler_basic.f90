@@ -265,7 +265,8 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call euler_getVarInterleaveFormat(neq, nvar, cvariable, p_Ddata, p_Dvalue)
+      call euler_getVarInterleaveFormat(neq, nvar, cvariable,&
+          p_Ddata, p_Dvalue)
 
     else
 
@@ -285,12 +286,14 @@ contains
       call lsyssc_getbase_double(rvectorScalar, p_Dvalue)
 
       ! Fill the scalar vector with data from the variable
-      call euler_getVarBlockFormat(neq, nvar, cvariable, p_Ddata, p_Dvalue)
+      call euler_getVarBlockFormat(neq, nvar, cvariable,&
+          p_Ddata, p_Dvalue)
 
     end if
     
     ! Attach spatial discretization from first subvector
-    rvectorScalar%p_rspatialDiscr => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
+    rvectorScalar%p_rspatialDiscr =>&
+        rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
     
   end subroutine euler_getVariable
 
@@ -332,89 +335,118 @@ contains
     
     select case (trim(adjustl(sys_upcase(cvariable))))
     case ('DENSITY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(1, ieq)
       end do
+      !$omp end parallel do
 
     case ('VELOCITY_MAGNITUDE')
       select case(nvar)
       case (NVAR1D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = abs(Ddata(2, ieq))/Ddata(1, ieq)
         end do
+        !$omp end parallel do
 
       case (NVAR2D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
                              Ddata(3, ieq)**2)/Ddata(1, ieq)
         end do
+        !$omp end parallel do
 
       case (NVAR3D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = sqrt(Ddata(2, ieq)**2 +&
                              Ddata(3, ieq)**2 +&
                              Ddata(4, ieq)**2)/Ddata(1, ieq)
         end do
+        !$omp end parallel do
       end select
       
     case ('VELOCITY_X')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
       end do
+      !$omp end parallel do
       
     case ('VELOCITY_Y')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
       end do
+      !$omp end parallel do
       
     case ('VELOCITY_Z')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
       end do
+      !$omp end parallel do
 
     case ('MOMENTUM_X')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(2, ieq)
       end do
+      !$omp end parallel do
       
     case ('MOMENTUM_Y')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)
       end do
+      !$omp end parallel do
       
     case ('MOMENTUM_Z')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)
       end do
+      !$omp end parallel do
       
     case ('ENERGY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
       end do
+      !$omp end parallel do
 
     case ('EFFECTIVE_ENERGY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(nvar, ieq)
       end do
+      !$omp end parallel do
       
     case ('PRESSURE')
       select case (nvar)
       case (NVAR1D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
         
       case (NVAR2D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
         
       case (NVAR3D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
@@ -422,11 +454,13 @@ contains
               Ddata(3, ieq)/Ddata(1, ieq),&
               Ddata(4, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
       end select
       
     case ('MACHNUMBER')
       select case (nvar)
       case (NVAR1D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
@@ -436,8 +470,10 @@ contains
               p, Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
         
       case (NVAR2D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
@@ -449,8 +485,10 @@ contains
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
         
       case (NVAR3D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
@@ -464,13 +502,15 @@ contains
               Ddata(3, ieq)/Ddata(1, ieq),&
               Ddata(4, ieq)/Ddata(1, ieq))
         end do
+        !$omp end parallel do
       end select
 
     case DEFAULT
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = 0.0_DP
       end do
-      
+      !$omp end parallel do      
     end select
     
   end subroutine euler_getVarInterleaveFormat
@@ -513,89 +553,118 @@ contains
     
     select case (trim(adjustl(sys_upcase(cvariable))))
     case ('DENSITY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 1)
       end do
+      !$omp end parallel do
 
     case ('VELOCITY_MAGNITUDE')
       select case(nvar)
       case (NVAR1D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = abs(Ddata(ieq, 2))/Ddata(ieq, 1)
         end do
+        !$omp end parallel do
 
       case (NVAR2D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
                              Ddata(ieq, 3)**2)/Ddata(ieq, 1)
         end do
+        !$omp end parallel do
 
       case (NVAR3D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = sqrt(Ddata(ieq, 2)**2 +&
                              Ddata(ieq, 3)**2 +&
                              Ddata(ieq, 4)**2)/Ddata(ieq, 1)
         end do
+        !$omp end parallel do
       end select
       
     case ('VELOCITY_X')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 2)/Ddata(ieq, 1)
       end do
+      !$omp end parallel do
       
     case ('VELOCITY_Y')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)/Ddata(ieq, 1)
       end do
+      !$omp end parallel do
       
     case ('VELOCITY_Z')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)/Ddata(ieq, 1)
       end do
+      !$omp end parallel do
 
     case ('MOMENTUM_X')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 2)
       end do
+      !$omp end parallel do
       
     case ('MOMENTUM_Y')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)
       end do
+      !$omp end parallel do
       
     case ('MOMENTUM_Z')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)
       end do
+      !$omp end parallel do
       
     case ('ENERGY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)
       end do
+      !$omp end parallel do
 
     case ('EFFECTIVE_ENERGY')
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, nvar)
       end do
+      !$omp end parallel do
       
     case ('PRESSURE')
       select case (nvar)
       case (NVAR1D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
         
       case (NVAR2D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
         
       case (NVAR3D)
+        !$omp parallel do
         do ieq = 1, neq
           Dvalue(ieq) = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
@@ -603,11 +672,13 @@ contains
               Ddata(ieq, 3)/Ddata(ieq, 1),&
               Ddata(ieq, 4)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
       end select
       
     case ('MACHNUMBER')
       select case (nvar)
       case (NVAR1D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
@@ -617,8 +688,10 @@ contains
               p, Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
         
       case (NVAR2D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
@@ -630,8 +703,10 @@ contains
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
         
       case (NVAR3D)
+        !$omp parallel do private(p)
         do ieq = 1, neq
           p = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
@@ -645,12 +720,15 @@ contains
               Ddata(ieq, 3)/Ddata(ieq, 1),&
               Ddata(ieq, 4)/Ddata(ieq, 1))
         end do
+        !$omp end parallel do
       end select
 
     case DEFAULT
+      !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = 0.0_DP
       end do
+      !$omp end parallel do
 
     end select
     
@@ -879,9 +957,11 @@ contains
       ! local variables
       integer :: ieq
 
+      !$omp parallel do
       do ieq = 1, neq
         Ddata(ivar, ieq) = Dvalue(ieq)
       end do
+      !$omp end parallel do
 
     end subroutine setVarInterleaveformat
 
@@ -898,9 +978,11 @@ contains
       ! local variables
       integer :: ieq
 
+      !$omp parallel do
       do ieq = 1, neq
         Ddata(ieq, ivar) = Dvalue(ieq)
       end do
+      !$omp end parallel do
 
     end subroutine setVarBlockformat
    
