@@ -24,6 +24,9 @@
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in block format
 !#
+!# 5.) euler_setVariables
+!#     -> Sets the conservative variables from an UCD import
+!#
 !# </purpose>
 !##############################################################################
 
@@ -31,12 +34,14 @@ module euler_basic
 
   use fparser
   use fsystem
+  use genoutput
   use linearsystemblock
   use linearsystemscalar
   use problem
   use statistics
   use thermodynamics
   use triangulation
+  use ucd
 
   implicit none
 
@@ -45,6 +50,7 @@ module euler_basic
   public :: euler_getVariable
   public :: euler_getVarInterleaveFormat
   public :: euler_getVarBlockFormat
+  public :: euler_setVariables
 
 !<constants>
 
@@ -650,4 +656,254 @@ contains
     
   end subroutine euler_getVarBlockformat
 
+  !*****************************************************************************
+
+!<subroutine>
+  
+  subroutine euler_setVariables(rexport, rvectorBlock)
+
+!<description>
+    ! This subroutine sets the conservative variables from a UCD export
+!</description>
+
+!<input>
+    ! UCD export
+    type(t_ucdExport), intent(in) :: rexport
+!</input>
+
+!<inputoutput>
+    ! Solution vector
+    type(t_vectorBlock), intent(inout) :: rvectorBlock
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_Ddata, p_Ddensity
+    real(DP), dimension(:), pointer :: p_Dvelocity_x, p_Dvelocity_y
+    real(DP), dimension(:), pointer :: p_Denergy
+    integer :: neq, nvar, nlength
+
+    ! Check if we are in interleave of block format
+    if (rvectorBlock%nblocks .eq. 1) then
+
+      ! Set dimensions
+      neq  = rvectorBlock%RvectorBlock(1)%NEQ
+      nvar = rvectorBlock%RvectorBlock(1)%NVAR
+
+      ! Set pointer
+      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+
+      ! Get density values
+      call ucd_getVariable(rexport, 'density', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Ddensity(neq))
+      call ucd_getVariable(rexport, 'density', p_Ddensity)
+
+      ! Set density variable
+      call setVarInterleaveFormat(neq, nvar, 1,&
+          p_Ddensity, p_Ddata)
+
+
+      ! Get velocity in x-direction
+      call ucd_getVariable(rexport, 'velocity_X', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvelocity_x(neq))
+      call ucd_getVariable(rexport, 'velocity_X', p_Dvelocity_x)
+
+      ! Generate momentum in x-direction
+      p_Dvelocity_x = p_Dvelocity_x * p_Ddensity
+
+      ! Set momentum variable in x-direction
+      call setVarInterleaveFormat(neq, nvar, 2,&
+          p_Dvelocity_x, p_Ddata)
+
+      
+      ! Get velocity in y-direction
+      call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvelocity_y(neq))
+      call ucd_getVariable(rexport, 'velocity_y', p_Dvelocity_y)
+
+      ! Generate momentum in y-direction
+      p_Dvelocity_y = p_Dvelocity_y * p_Ddensity
+
+      ! Set momentum variable in y-direction
+      call setVarInterleaveFormat(neq, nvar, 3,&
+          p_Dvelocity_y, p_Ddata)
+
+
+      ! Get total energy
+      call ucd_getVariable(rexport, 'energy', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Denergy(neq))
+      call ucd_getVariable(rexport, 'energy', p_Denergy)
+
+      ! Generate total energy
+      p_Denergy = p_Denergy * p_Ddensity
+
+      ! Set energy variable
+      call setVarInterleaveFormat(neq, nvar, 4,&
+          p_Denergy, p_Ddata)
+
+      ! Deallocate temporal memory
+      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy)
+      
+    else
+
+      ! Set dimensions
+      neq  = int(rvectorBlock%NEQ/rvectorBlock%nblocks)
+      nvar = rvectorBlock%nblocks
+
+      ! Set pointer
+      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+
+      ! Get density values
+      call ucd_getVariable(rexport, 'density', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Ddensity(neq))
+      call ucd_getVariable(rexport, 'density', p_Ddensity)
+
+      ! Set density variable
+      call setVarBlockFormat(neq, nvar, 1,&
+          p_Ddensity, p_Ddata)
+
+
+      ! Get velocity in x-direction
+      call ucd_getVariable(rexport, 'velocity_X', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvelocity_x(neq))
+      call ucd_getVariable(rexport, 'velocity_X', p_Dvelocity_x)
+
+      ! Generate momentum in x-direction
+      p_Dvelocity_x = p_Dvelocity_x * p_Ddensity
+
+      ! Set momentum variable in x-direction
+      call setVarBlockFormat(neq, nvar, 2,&
+          p_Dvelocity_x, p_Ddata)
+
+      
+      ! Get velocity in y-direction
+      call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvelocity_y(neq))
+      call ucd_getVariable(rexport, 'velocity_y', p_Dvelocity_y)
+
+      ! Generate momentum in y-direction
+      p_Dvelocity_y = p_Dvelocity_y * p_Ddensity
+
+      ! Set momentum variable in y-direction
+      call setVarBlockFormat(neq, nvar, 3,&
+          p_Dvelocity_y, p_Ddata)
+
+
+      ! Get total energy
+      call ucd_getVariable(rexport, 'energy', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Denergy(neq))
+      call ucd_getVariable(rexport, 'energy', p_Denergy)
+
+      ! Generate total energy
+      p_Denergy = p_Denergy * p_Ddensity
+
+      ! Set energy variable
+      call setVarBlockFormat(neq, nvar, 4,&
+          p_Denergy, p_Ddata)
+
+      ! Deallocate temporal memory
+      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy)
+
+    end if
+
+  contains
+
+    ! Here, the working routine follow
+    
+    !**************************************************************
+    ! Set variable stored in interleave format
+
+    pure subroutine setVarInterleaveformat(neq, nvar, ivar, Dvalue, Ddata)
+
+      integer, intent(in) :: neq, nvar, ivar
+      real(DP), dimension(:), intent(in) :: Dvalue
+      
+      real(DP), dimension(nvar,neq), intent(inout) :: Ddata
+
+      ! local variables
+      integer :: ieq
+
+      do ieq = 1, neq
+        Ddata(ivar, ieq) = Dvalue(ieq)
+      end do
+
+    end subroutine setVarInterleaveformat
+
+    !**************************************************************
+    ! Set variable stored in block format
+
+    pure subroutine setVarBlockformat(neq, nvar, ivar, Dvalue, Ddata)
+
+      integer, intent(in) :: neq, nvar, ivar
+      real(DP), dimension(:), intent(in) :: Dvalue
+      
+      real(DP), dimension(neq,nvar), intent(inout) :: Ddata
+
+      ! local variables
+      integer :: ieq
+
+      do ieq = 1, neq
+        Ddata(ieq, ivar) = Dvalue(ieq)
+      end do
+
+    end subroutine setVarBlockformat
+   
+  end subroutine euler_setVariables
+ 
 end module euler_basic
