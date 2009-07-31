@@ -554,7 +554,6 @@ contains
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_vec,p_def,p_da
-    type(t_vanka) :: rvanka
     type(t_matrixblock) :: rpremat
     type(t_linsolNode), pointer :: p_rsolver
     call lsysbl_getbase_double (rd,p_def)
