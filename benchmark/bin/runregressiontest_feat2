@@ -36,7 +36,7 @@ CHECKOUT=
 # clean up object files (--cleanup-feat2-object-files, "yes"|"no")
 CLEANUPOBJFILES=
 #
-# clone 'benchmark' directory to 'benchmark_host_mode' or - in case
+# clone 'benchmark' directory to 'benchmark_host_mpi' or - in case
 # '--id=*' is given to 'benchmark_host_buildID
 # (--clone-benchmark-directory, "yes"|"no")
 CLONEBENCHMARKDIR=
@@ -741,31 +741,31 @@ fb_cleanUpOldCheckout() {
 
 #   Function: Init mail message
 fb_initialiseGlobalLogFile() {
-    mode="$1"  # IN
+    mpi="$1"  # IN
 
     # Double double ticks are on purpose. To catch cases where a variable contains a newline
     # that otherwise would break the script with unpredictable side effects.
     GLOBALLOG=$HOME"/featflow2benchmark_mainlog_""$HOSTNAME"
     if [ -n "$FORCEBUILDID" ]; then
-	case "$mode" in
-	    parallel)
+	case "$mpi" in
+	    yes)
 		# Ensure build ID has 6 tokens, then take it.
-		# Otherwise append "_$mode"
-		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		# Otherwise append "_mpi"
+		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
 		GLOBALLOG=$GLOBALLOG"_""$suffix"
 		;;
-	    serial)
+	    no)
 		# Ensure build ID has at most 5 tokens, then take it.
-		# For more than 5 tokens, crop. For less than 5 tokens, append "$_mode"
-		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		# For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
+		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
 		GLOBALLOG=$GLOBALLOG"_""$suffix"
 		;;
 	    *)
-		GLOBALLOG=$GLOBALLOG"_""$mode"
+		GLOBALLOG=$GLOBALLOG"_""$mpi"
 		;;
 	esac
     else
-	GLOBALLOG=$GLOBALLOG"_""$mode"
+	GLOBALLOG=$GLOBALLOG"_""$mpi"
     fi
     test -r $GLOBALLOG && \rm -f $GLOBALLOG
 
@@ -905,27 +905,27 @@ fb_checkWhetherToRun() {
 #   Function: Restore symbolic links, clone benchmark directory to be able to run
 #             benchmark in parallel (i.e. for several build IDs) within *one* working copy
 fb_prepareForRun() {
-    mode="$1"  # IN
+    mpi="$1"  # IN
 
     # Create copy of benchmark folder
     if [ "$CLONEBENCHMARKDIR""x" = "yesx" ]; then
-	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mode"
+	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mpi"
 	if [ -n "$FORCEBUILDID" ]; then
-	    case "$mode" in
-		parallel)
+	    case "$mpi" in
+		yes)
 		    # Ensure build ID has 6 tokens, then take it.
-		    # Otherwise append "_$mode"
-		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		    # Otherwise append "_mpi"
+		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
-		serial)
+		no)
 		    # Ensure build ID has at most 5 tokens, then take it.
-		    # Fore more than 5 tokens, crop. For less than 5 tokens, append "$_mode"
-		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_$mode/; }"`
+		    # Fore more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
+		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
 		*)
-		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mode"
+		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$FORCEBUILDID""_""$mpi"
 		    ;;
 	    esac
 	fi
@@ -953,7 +953,7 @@ fb_prepareForRun() {
 
 #   Function: Configure all benchmark applications
 fb_configureBenchmark() {
-    mode="$1"  # IN
+    mpi="$1"  # IN
 
     # print out some more details about envvars and module environment
     fb_banner "CONFIGURATION DETAILS" >> $GLOBALLOG
@@ -961,7 +961,7 @@ fb_configureBenchmark() {
     (echo "Hostname          : $HOSTNAME";
      echo "Compiler suite    : $COMPILERNAME";
      echo "Test suite        : $TESTSUITE";
-     echo "Execution mode    : $mode";
+     echo "Using MPI         : $mpi";
      echo "Benchmark dir     : $BENCHMARKDIR";
      echo "") >> $GLOBALLOG
 
@@ -974,7 +974,11 @@ fb_configureBenchmark() {
     # and do the real configuring
     fb_banner "CONFIGURE" >> $GLOBALLOG
 
-    test $DEBUG -gt 0 && echo "# Configuring benchmark applications ($mode mode)"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Configuring benchmark applications (with MPI)"
+    else
+	test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
+    fi
     if [ -z "$BENCHMARKDIR" ]; then
 	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
@@ -982,7 +986,7 @@ fb_configureBenchmark() {
     fi
     cd $BENCHMARKDIR
     fb_startTimer
-    ./configure --no-monitor-compile-env --mode=$mode $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1
+    ./configure --no-monitor-compile-env --mpi=$mpi $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     # Catch the special case where configure died with an error stating
@@ -1001,11 +1005,15 @@ fb_configureBenchmark() {
 
 #   Function: Compile all benchmark applications
 fb_compileBenchmark() {
-    mode="$1"  # IN
+    mpi="$1"  # IN
 
     fb_banner "COMPILE" >> $GLOBALLOG
 
-    test $DEBUG -gt 0 && echo "# Compiling benchmark applications ($mode mode)"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Compiling benchmark applications (with MPI)"
+    else
+	test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
+    fi
     if [ -z "$BENCHMARKDIR" ]; then
 	MAILSUBJECT="$MAILPREFIX Variable <BENCHMARKDIR> not set ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
 	echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT
@@ -1028,17 +1036,21 @@ fb_compileBenchmark() {
 
 #   Function: Create a script that actually runs the benchmark tests
 fb_createTestSuiteScript() {
-    MODE="$1"  # IN
+    mpi="$1"  # IN
 
     fb_banner "CREATING TEST SUITE SCRIPT" >> $GLOBALLOG
 
-    test $DEBUG -gt 0 && echo "# Creating test suite script ($mode mode)"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Creating test suite script (with MPI)"
+    else
+	test $DEBUG -gt 0 && echo "# Creating test suite script"
+    fi
     cd $BENCHMARKDIR
     fb_startTimer
 
-    # Explicitly specifying MODE=PARALLEL/SERIAL is optional.
+    # Explicitly specifying MPI=YES/NO is optional.
     # Benchmark applications have been configured for parallel/serial build.
-    # This information is stored in file 'config.status', so it even works
+    # This information is queried by the Makefile, so it even works
     # as intended without specifying the mode
     make $TESTSUITE > $AUXILIARYLOG 2>&1
 
@@ -1055,14 +1067,18 @@ fb_createTestSuiteScript() {
 
 #   Function: Run benchmark tests on LiDO
 fb_runBenchmarkOnLiDO() {
-    MODE="$1"  # IN
+    mpi="$1"  # IN
 
     # Only parallel tests of LiDO!
 #    if [ "$mode""x" != "parallelx" ]; then
 #	return
 #    fi
 
-    test $DEBUG -gt 0 && echo "# Submitting $MODE benchmark jobs to the queue on LiDO"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Submitting MPI benchmark jobs to the queue on LiDO"
+    else
+	test $DEBUG -gt 0 && echo "# Submitting serial benchmark jobs to the queue on LiDO"
+    fi
 
     # LiDO has a queueing system, for every benchmarks test a job file
     # needs to be created and submitted. Then this script needs to wait
@@ -1082,7 +1098,11 @@ fb_runBenchmarkOnLiDO() {
     fi
 
     # Now wait till all jobs have finished
-    test $DEBUG -gt 0 && echo "# Waiting for the $mode benchmark jobs on LiDO to finish"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Waiting for the MPI benchmark jobs on LiDO to finish"
+    else
+	test $DEBUG -gt 0 && echo "# Waiting for the serial benchmark jobs on LiDO to finish"
+    fi
     fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
 
     # time to wait (in seconds) between subsequent qstat calls
@@ -1128,13 +1148,17 @@ fb_runBenchmarkOnLiDO() {
 
 #   Function: Run benchmark tests
 fb_runBenchmark() {
-    mode="$1"  # IN
+    mpi="$1"  # IN
 
-    test $DEBUG -gt 0 && echo "# Running $mode benchmark"
+    if [ "$mpi" == "yes" ]; then
+	test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
+    else
+	test $DEBUG -gt 0 && echo "# Running benchmark"
+    fi
 
     if [ "$ARCH""x" != "LiDOx" ]; then
         # Create script that control and actually runs the benchmark tests
-	fb_createTestSuiteScript "$mode"
+	fb_createTestSuiteScript "$mpi"
 
     	fb_banner "RUN" "`make idonly`" >> $GLOBALLOG
 
@@ -1153,7 +1177,7 @@ fb_runBenchmark() {
 	# remain from a previous run (That earlier run might have used a different 
 	# test suite, so we can not sure that all existing files will be overwritten.)
 	rm -f logs/error.* logs/output.* > /dev/null
-	fb_runBenchmarkOnLiDO "$mode"
+	fb_runBenchmarkOnLiDO "$mpi"
     fi
 }
 

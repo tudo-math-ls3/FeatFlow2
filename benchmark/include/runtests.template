@@ -840,7 +840,7 @@ fb_runAndEvalBenchmarkTest() {
 		# parallel
 		case "${EXECMODE}" in
 		    # ############################
-		    PARALLEL)
+		    MPI)
 			# boot up MPI universe
 			eval ${MPISTART} ${outputredirect}
 

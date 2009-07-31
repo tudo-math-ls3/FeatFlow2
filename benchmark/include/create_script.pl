@@ -70,8 +70,8 @@
 #
 #
 #   execmode:
-#      comma-separated list of execution modes. Valid values are 'parallel' and
-#      'serial'.
+#      comma-separated list of execution modes. Valid values are 'mpi' and
+#      'serial'. We might add 'openmp' in future.
 #
 # Current version:
 # $Id$
@@ -84,7 +84,7 @@ use strict;
 use warnings;
 
 # Try to import execmode from environment (set by calling Makefile)
-use Env qw(MODE ID);
+use Env qw(MPI ID);
 
 # handling of command line options
 use Getopt::Long 2.33 qw(:config prefix_pattern=--);
@@ -147,7 +147,7 @@ if ($#ARGV < 0) {
 
 
 # Set default execution mode
-$ENV{"MODE"} = "PARALLEL" unless ($ENV{"MODE"});
+$ENV{"MPI"} = "NO" unless ($ENV{"MPI"});
 
 # Set build ID
 my $buildID = $ENV{"ID"} || "";
@@ -277,7 +277,7 @@ foreach my $testfile (@testfiles) {
 
     # For backwards compatibility, all tests are supposed to be suitable for
     # parallel execution.
-    $inherited{EXECMODE} = "parallel";
+    $inherited{EXECMODE} = "serial";
 
     # Copy defaults to inherited
     foreach my $keyword (keys %default) {
@@ -527,15 +527,26 @@ ID: foreach my $testid (@idsToCode) {
 
     # Check whether definition of requested ID has an execmode
     # that matches current one.
-    if ($test{$testid}{EXECMODE} !~ m/\b$ENV{"MODE"}\b/i) {
+    my $requestedExecmode = "";
+    if ("YES" =~ m/\b$ENV{"MPI"}\b/i) {
+	$requestedExecmode = "mpi";
+    }
+    elsif ("NO" =~ m/\b$ENV{"MPI"}\b/i) {
+	$requestedExecmode = "serial";
+    } else {
+	warn "$progname: WARNING:\n" .
+	    "  Environment variable MPI is set to <" . $ENV{"MPI"} . ">. Only YES and NO are permitted..\n" .
+	next ID;
+    }
+    if ($test{$testid}{EXECMODE} !~ m/\b$requestedExecmode\b/i) {
 	warn "$progname: WARNING:\n" .
 	    "  Test case with ID <$testid> is coded to work with execmode <$test{$testid}{EXECMODE}>.\n" .
-	    "  Requested, however, is for execmode <" . $ENV{"MODE"} . ">. Test will be skipped.\n";
+	    "  Requested, however, is for execmode <$requestedExecmode>. Test will be skipped.\n";
 	next ID;
     } else {
 	# A single runtests script can only do either parallel or serial tests
 	# So, if multiple execmodes are given, override value with the currently active one.
-	$test{$testid}{EXECMODE} = $ENV{"MODE"};
+	$test{$testid}{EXECMODE} = $requestedExecmode;
     }
 
 

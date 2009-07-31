@@ -349,7 +349,6 @@ EOF
     # Add the content of our runtests script to the jobfile, but
     # * omit the first lines (i.e. the shebang, leading comments)
     # * set execution mode to PBSQUEUED
-#    # * give each test its own LOGDIR
     # * set MPI environment to use
 #         s|^LOGDIR=[ ]*\.|LOGDIR=$sedLogDir|i;
 #         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
@@ -455,7 +454,7 @@ EOF
     echo $ALLTESTS | tr ' ' '\n' > $tmpfile;
 
     # Create part of job scripts that is identical for all tests (for a given
-    # choice of execution mode and build ID)
+    # choice of MPI/no MPI and build ID)
     $GNUMAKE create-script-header
     if [ $? -ne 0 ]; then
 	cat <<EOF 1>&2
@@ -492,8 +491,8 @@ EOF
 
     # Now, replicate the actions of the make target 'create-script-body'
     #
-    # Determine execution mode
-    MODE=`$GNUMAKE .mode`
+    # Determine whether or not to use MPI
+    MPI=`$GNUMAKE .mpi`
     #
     # Determine build ID (without MPI token)
     ID=`$GNUMAKE .idonly`
@@ -502,7 +501,7 @@ EOF
     # a given test, but unlike in the GNUmakefile call it with additional command
     # line parameters instructing it to not write to screen, but to append
     # directly to the temporary files just created.
-    export MODE ID;
+    export MPI ID;
     include/create_script.pl --append-to-files "_tmp_.$BENCHMARKRUNSCRIPT." $tmpfile
     rm $tmpfile
     trap "rm -f _tmp_.$BENCHMARKRUNSCRIPT.*; exit 15" 2 3 9
