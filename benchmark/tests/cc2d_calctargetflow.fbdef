@@ -189,18 +189,20 @@ BDC_UMAX = 0.3
 # Re=5000, Navier Stokes, EOJ(0.01)
 # Q2
 # Level 4
+# Time: 0..5 sec
+# 64 timesteps per second
 # Starts at Stokes solution calculated in CC2D_TARGET_006 and
 # simulates 5 seconds of Navier-Stokes.
 
 testid   = CC2D_TARGET_007
-descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, Level 4, EOJ(0.01)
+descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, Level 4, SD(0.1)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 4
 MINLEVEL = 2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
 TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
 TIMEDISCRETISATION_DTIMEMAX = 5
 DISCRETISATION_IEQUATION = 0
