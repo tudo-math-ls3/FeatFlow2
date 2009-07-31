@@ -164,7 +164,8 @@ ibodyForcesBdComponent = 2
 
 # 2nd coefficient in the boundary integral of the drag coefficient.
 # If this is commented out, 0.004 is assumed (corresonds to flow 
-# around cylinder with RE=1000)
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
 
 # dbdForcesCoeff2 = 0.004
 
