@@ -165,7 +165,7 @@ descr    = stationary bench Stokes flow, Re=5000, Q2, Level 4
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
-mglevels = 5
+mglevels = 4
 MINLEVEL = 2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
 TIMEDISCRETISATION_DTIMESTEP = 0.0078125
