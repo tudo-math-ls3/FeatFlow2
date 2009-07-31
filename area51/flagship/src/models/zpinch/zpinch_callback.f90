@@ -1107,7 +1107,7 @@ contains
           j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
 
           ! Apply minmod prelimiter ...
-          f_ij = minmod(flux(iedge), flux0(iedge))
+          f_ij = minmod(flux(iedge), 2*flux0(iedge))
           
           ! ... and store prelimited flux
           flux(iedge) = f_ij
