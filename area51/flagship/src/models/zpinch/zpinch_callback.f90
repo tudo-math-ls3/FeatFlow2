@@ -62,6 +62,7 @@ module zpinch_callback
   public :: zpinch_initDensityAveraging
   public :: zpinch_initLorentzforceTerm
   public :: zpinch_calcLinearizedFCT
+  public :: zpinch_checkPressure
   
 contains
 
@@ -169,9 +170,6 @@ contains
               rsolver, rsolution0, rrhs, rcollection, rsource)
         end if
         
-        ! Set pointer to parameter list
-        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
         ! Set pointers to current solution vectors stored in the
         ! first and second quick access vector
         p_rsolutionEuler     => rcollection%p_rvectorQuickAccess1
@@ -179,9 +177,12 @@ contains
         
         ! Calculate scaling for implicit part of the Lorentz force
         dscale = -rtimestep%theta * rtimestep%dStep
-
+        
         if (dscale .ne. 0.0_DP) then
           
+          ! Set pointer to parameter list
+          p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
           ! Compute the implicit part of the Lorentz force
           call zpinch_initLorentzforceTerm(p_rparlist,&
               rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
@@ -289,6 +290,9 @@ contains
                 fcb_coeffVecBdrDual_sim=transp_coeffVecBdrDualConst2d)
             
           end if
+
+          ! Set pointer to parameter list
+          p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
           ! Set pointer to the solution vector of the Euler model
           ! from the current time step
@@ -498,7 +502,6 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_trilinearform) :: rform
     type(t_vectorScalar) :: rvector
     real(DP), dimension(:), pointer :: p_ML, p_Density
     integer :: lumpedMassMatrix, lumpedMassMatrixDensity
@@ -515,21 +518,6 @@ contains
     ! and create block vector which is attached to the collection
     call euler_getVariable(rsolutionEuler, 'density', rvector)
     call lsyssc_getbase_double(rvector, p_Density)
-
-!!$    ! We have variable coefficients
-!!$    rform%ballCoeffConstant = .true.
-!!$    rform%BconstantCoeff    = .true.
-!!$
-!!$    ! Initialize the bilinear form
-!!$    rform%itermCount = 1
-!!$    rform%Dcoefficients(1)  = 1.0_DP
-!!$    rform%Idescriptors(1,1) = DER_FUNC
-!!$    rform%Idescriptors(2,1) = DER_FUNC
-!!$    rform%Idescriptors(3,1) = DER_FUNC
-!!$
-!!$    ! Create density averaged consistent mass matrix
-!!$    call trilf_buildMatrixScalar(rform, .true.,&
-!!$        rproblemLevel%Rmatrix(consistentMassMatrix), rvector)
     
     ! Create density averaged lumped mass matrix
     call lsyssc_duplicateMatrix(&
@@ -540,9 +528,11 @@ contains
     call lsyssc_getbase_double(&
         rproblemLevel%Rmatrix(lumpedMassMatrixDensity), p_ML)
     
+    !$omp parallel do
     do i = 1, size(p_Density)
       p_ML(i) = p_ML(i)*p_Density(i)
     end do
+    !$omp end parallel do
     
     ! Release temporal vector
     call lsyssc_releaseVector(rvector)
@@ -625,8 +615,8 @@ contains
         'isystemformat', isystemFormat)
     
     ! Get lumped and consistent mass matrix
-    call lsyssc_getbase_double(rproblemLevel&
-        %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+    call lsyssc_getbase_double(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
     
     ! Set pointer to global solution vectors
     call lsysbl_getbase_double(rforce, p_Ddata)
@@ -634,8 +624,8 @@ contains
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
     
     ! Set pointer to the vertex coordinates
-    call storage_getbase_double2D(rproblemLevel%rtriangulation&
-        %h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_double2D(&
+        rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
     
     ! Set dimensions
     neq  = rsolutionTransport%NEQ
@@ -729,6 +719,7 @@ contains
       integer :: i
       
       ! Loop over all rows
+      !$omp parallel do private(x1,x2,drad,daux1,daux2)
       do i = 1, neq
         
         ! Get coordinates at node i
@@ -760,6 +751,7 @@ contains
         DdataForce(3, i) = daux1 * x2
         DdataForce(4, i) = daux2
       end do
+      !$omp end parallel do
       
     end subroutine calcForceXYInterleaveFormat
 
@@ -784,6 +776,7 @@ contains
       integer :: i
       
       ! Loop over all rows
+      !$omp parallel do private(x1,x2,drad,daux1,daux2)
       do i = 1, neq
         
         ! Get coordinates at node i
@@ -813,6 +806,7 @@ contains
         DdataForce(3, i) = daux1 * x2
         DdataForce(4, i) = daux2
       end do
+      !$omp end parallel do
 
     end subroutine calcForceRZInterleaveFormat
 
@@ -924,9 +918,11 @@ contains
 
     ! Multiply the low-order solution by the 
     ! density-averaged lumped mass matrix
+    !$omp parallel do
     do i = 1, size(p_u)
       p_u(i) = p_u(i)*p_MLRho(i)
     end do
+    !$omp end parallel do
 
     ! Set pointer to solution from Euler model
     p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
@@ -942,9 +938,11 @@ contains
         p_rsolutionEuler, rcollection)
     
     ! Apply correction to low-order solution
+    !$omp parallel do
     do i = 1, size(p_u)
       p_u(i) = (p_u(i) + p_data(i))/p_MLRho(i)
     end do
+    !$omp end parallel do
     
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
@@ -1034,9 +1032,11 @@ contains
 
 
       ! Scale the time rate of change by the lumped mass matrix
+      !$omp parallel do
       do i = 1, NEQ
         troc(i) = troc(i)/ML(i)
       end do
+      !$omp end parallel do
 
 
       ! Loop over all rows (backward)
@@ -1130,6 +1130,7 @@ contains
 
 
       ! Compute nodal correction factors
+      !$omp parallel do
       do i = 1, NEQ
         qp(i) = qp(i)*ML(i)
         qm(i) = qm(i)*ML(i)
@@ -1137,6 +1138,7 @@ contains
         if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
         if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
+      !$omp end parallel do
 
 
       ! Initialize correction
@@ -1192,5 +1194,50 @@ contains
     end function minmod
     
   end subroutine zpinch_calcLinearizedFCT
+
+  !*****************************************************************************
+
+  function zpinch_checkPressure(rvector) result(bpositive)
+
+    type(t_vectorBlock), intent(in) :: rvector
+
+    logical :: bpositive
+
+    ! local variabels
+    real(DP), dimension(:), pointer :: p_Ddata
+    integer :: neq
+    
+    neq = rvector%NEQ/4
+
+    call lsysbl_getbase_double(rvector, p_Ddata)
+
+    bpositive =  docheck(4, neq, p_Ddata)
+
+  contains
+
+    function docheck(nvar, neq, data) result(bpositive)
+      
+      integer, intent(in) :: nvar, neq
+      real(DP), dimension(nvar, neq), intent(in) :: data
+
+      logical :: bpositive
+
+      real(DP) :: p
+      integer :: ieq
+
+      bpositive = .true.
+
+      do ieq = 1, neq
+        
+        p = 0.4_DP * (data(4,ieq) - 0.5_DP * &
+            (data(2,ieq)**2 + data(3,ieq)**2) / data(1,ieq) )
+
+        if (p .le. 0.0_DP) bpositive = .false.
+        
+      end do
+      
+    end function docheck
+
+  end function zpinch_checkPressure
 
 end module zpinch_callback
