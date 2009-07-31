@@ -506,7 +506,7 @@ contains
     !  ( Y1-Y0  Y2-Y3 )   (b)   ( Y2-Y0 )
     !
     ! to get the "parameter" values a,b along the two lines where
-    ! the intersection occurres.
+    ! the intersection occurs.
     !
     ! The determinant of the system is:
 
