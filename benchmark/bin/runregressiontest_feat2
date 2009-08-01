@@ -748,13 +748,13 @@ fb_initialiseGlobalLogFile() {
     GLOBALLOG=$HOME"/featflow2benchmark_mainlog_""$HOSTNAME"
     if [ -n "$FORCEBUILDID" ]; then
 	case "$mpi" in
-	    yes)
+	    mpi)
 		# Ensure build ID has 6 tokens, then take it.
 		# Otherwise append "_mpi"
 		suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
 		GLOBALLOG=$GLOBALLOG"_""$suffix"
 		;;
-	    no)
+	    no-mpi)
 		# Ensure build ID has at most 5 tokens, then take it.
 		# For more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
 		suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
@@ -912,13 +912,13 @@ fb_prepareForRun() {
 	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$mpi"
 	if [ -n "$FORCEBUILDID" ]; then
 	    case "$mpi" in
-		yes)
+		mpi)
 		    # Ensure build ID has 6 tokens, then take it.
 		    # Otherwise append "_mpi"
 		    suffix=`echo $FORCEBUILDID | sed -e "/^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_mpi/; }"`
 		    BENCHMARKDIR="$BASEDIR/Featflow2/benchmark_""$HOSTNAME""_""$suffix"
 		    ;;
-		no)
+		no-mpi)
 		    # Ensure build ID has at most 5 tokens, then take it.
 		    # Fore more than 5 tokens, crop. For less than 5 tokens, append "_less_than_5_tokens"
 		    suffix=`echo $FORCEBUILDID | sed -e "s/^\([^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*\)-[^-][^-]*$/\1/; /^[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*-[^-][^-]*$/! { s/$/_less_than_5_tokens/; }"`
@@ -961,7 +961,7 @@ fb_configureBenchmark() {
     (echo "Hostname          : $HOSTNAME";
      echo "Compiler suite    : $COMPILERNAME";
      echo "Test suite        : $TESTSUITE";
-     echo "Using MPI         : $mpi";
+     test "$mpi" == "mpi" && echo "Using MPI         : yes";
      echo "Benchmark dir     : $BENCHMARKDIR";
      echo "") >> $GLOBALLOG
 
@@ -974,7 +974,7 @@ fb_configureBenchmark() {
     # and do the real configuring
     fb_banner "CONFIGURE" >> $GLOBALLOG
 
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Configuring benchmark applications (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Configuring benchmark applications"
@@ -986,7 +986,7 @@ fb_configureBenchmark() {
     fi
     cd $BENCHMARKDIR
     fb_startTimer
-    ./configure --no-monitor-compile-env --mpi=$mpi $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1
+    ./configure --no-monitor-compile-env --$mpi $CONFIGUREOPTIONS > $AUXILIARYLOG 2>&1
 
     # Check whether an error occured
     # Catch the special case where configure died with an error stating
@@ -1009,7 +1009,7 @@ fb_compileBenchmark() {
 
     fb_banner "COMPILE" >> $GLOBALLOG
 
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Compiling benchmark applications"
@@ -1040,7 +1040,7 @@ fb_createTestSuiteScript() {
 
     fb_banner "CREATING TEST SUITE SCRIPT" >> $GLOBALLOG
 
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Creating test suite script (with MPI)"
     else
 	test $DEBUG -gt 0 && echo "# Creating test suite script"
@@ -1074,7 +1074,7 @@ fb_runBenchmarkOnLiDO() {
 #	return
 #    fi
 
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Submitting MPI benchmark jobs to the queue on LiDO"
     else
 	test $DEBUG -gt 0 && echo "# Submitting serial benchmark jobs to the queue on LiDO"
@@ -1098,7 +1098,7 @@ fb_runBenchmarkOnLiDO() {
     fi
 
     # Now wait till all jobs have finished
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Waiting for the MPI benchmark jobs on LiDO to finish"
     else
 	test $DEBUG -gt 0 && echo "# Waiting for the serial benchmark jobs on LiDO to finish"
@@ -1150,7 +1150,7 @@ fb_runBenchmarkOnLiDO() {
 fb_runBenchmark() {
     mpi="$1"  # IN
 
-    if [ "$mpi" == "yes" ]; then
+    if [ "$mpi" == "mpi" ]; then
 	test $DEBUG -gt 0 && echo "# Running benchmark with MPI support"
     else
 	test $DEBUG -gt 0 && echo "# Running benchmark"
@@ -1379,7 +1379,7 @@ fb_checkWhetherToRun
 fb_prepareForRun "serial"
 
 # Configure benchmark applications
-fb_configureBenchmark "serial"
+fb_configureBenchmark "no"
 
 # Compile benchmark applications
 fb_compileBenchmark "serial"
