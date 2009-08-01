@@ -23,7 +23,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#if !defined(__APPLE__)
 #include <malloc.h>
+#endif
 #include <math.h>
 
 #define FLOAT32 4
