@@ -2449,6 +2449,58 @@ endif
 
 
 
+#################################### APPLE #####################################
+
+ifeq ($(call match,$(ID),i386-i486-darwin-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
+CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
+CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
+CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
+CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
+LDFLAGS       := $(LDFLAGS) -read_only_relocs suppress
+endif
+endif
+
+
+ifeq ($(call match,$(ID),i386-i486-darwin-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+# optimal flags taken from script CPUFlags v0.7.2
+#
+# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
+# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
+# different settings:
+# * GCC 4.1:
+#   - use -march=prescott for Intel Core Solo/Duo
+#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
+# * GCC 4.2:
+#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
+#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
+CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
+CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
+CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
+endif
+endif
+
+
+ifeq ($(call match,$(ID),i386-i486-darwin-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),i386-i486-darwin-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
 ##############################################################################
 # auxiliary targets: .id, .idonly
 #
