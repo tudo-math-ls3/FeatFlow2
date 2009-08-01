@@ -159,6 +159,10 @@ ifeq ($(strip $(ID)), ia64-itanium2x2-linux)
 ID:=$(strip $(ID))-intel-mkl
 endif
 
+ifeq ($(strip $(ID)), i386-i486-darwin)
+ID:=$(strip $(ID))-g95-blas
+endif
+
 
 # Set default target platforms for compilation of parallel applications.
 # i.e. refine the machine ID even more by specifying the MPI environment.
