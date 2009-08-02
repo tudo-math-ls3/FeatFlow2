@@ -481,38 +481,41 @@
 !#       6.) linsol_initUMFPACK4
 !#           -> UMFPACK preconditioner
 !#
-!#       7.) linsol_initMILUs1x1
+!#       7.) linsol_initILU0
+!#           -> ILU(0)-preconditioner
+!#
+!#       8.) linsol_initMILUs1x1
 !#           -> (M)ILU-preconditioner for 1x1-matrices from SPLIB
 !#           -> see [David Hysom and A. Pothen; Level-based Incomplete LU 
 !#                   factorization: Graph Model and Algorithms; 
 !#                   Tech Report UCRL-JC-150789; Lawrence Livermore National Labs;
 !#                   Nov 2002; http://www.cs.odu.edu/~pothen/papers.html]
 !#
-!#       8.) linsol_initBiCGStab
+!#       9.) linsol_initBiCGStab
 !#           -> BiCGStab preconditioner
 !#           -> see [van der Vorst, H.A.; BiCGStab: A Fast and Smoothly Converging
 !#                   Variant of Bi-CG for the Solution of Nonsymmetric Linear Systems;
 !#                   SIAM J. Sci. Stat. Comput. 1992, Vol. 13, No. 2, pp. 631-644]
 !#
-!#       9.) linsol_initCG
+!#      10.) linsol_initCG
 !#           -> Conjugate Gradient preconditioner
 !#
-!#      10.) linsol_initGMRES
+!#      11.) linsol_initGMRES
 !#           -> (flexible) Generalized Minimal-Residual preconditioner
 !#           -> see [Y. Saad; A flexible inner outer preconditioned GMRES algorithm;
 !#                   SIAM J. Sci. Comput. 1993, Vol. 14, No. 2, pp. 461-469]
 !#                  [http://www-users.cs.umn.edu/~saad/]
 !#                  [http://www.netlib.org/linalg/html_templates/Templates.html]
 !#
-!#      11.) linsol_initMultigrid
+!#      12.) linsol_initMultigrid
 !#           -> Multigrid preconditioner
 !#
-!#      12.) linsol_initMultigrid2
+!#      13.) linsol_initMultigrid2
 !#           -> Multigrid preconditioner; alternative implementation using
 !#              an array to store level information rather than a linear list.
 !#              Simplified interface.
 !#
-!#      13.) linsol_initSPSOR
+!#      14.) linsol_initSPSOR
 !#           -> SP-SOR preconditioner
 !#
 !# 9.) What is this linsol_matricesCompatible?
@@ -652,6 +655,7 @@ module linearsolver
   public :: linsol_initSSOR
   public :: linsol_initVANKA
   public :: linsol_initUMFPACK4
+  public :: linsol_initILU0
   public :: linsol_initMILUs1x1
   public :: linsol_initBiCGStab
   public :: linsol_initCG
@@ -722,8 +726,8 @@ module linearsolver
   ! Multigrid iteration
   integer, parameter, public :: LINSOL_ALG_MULTIGRID2    = 12
 
-  ! ILU(0) iteration (scalar system)
-  integer, parameter, public :: LINSOL_ALG_ILU01x1       = 50
+  ! ILU(0) iteration
+  integer, parameter, public :: LINSOL_ALG_ILU0          = 50
   
   ! (M)ILU(s) iteration (scalar system)
   integer, parameter, public :: LINSOL_ALG_MILUS1x1      = 51
@@ -1249,8 +1253,8 @@ module linearsolver
     ! Pointer to a structure for the Multigrid solver; NULL() if not set
     type (t_linsolSubnodeMultigrid2), pointer     :: p_rsubnodeMultigrid2  => null()
 
-    ! Pointer to a structure for the ILU0 1x1 solver; NULL() if not set
-    type (t_linsolSubnodeILU01x1), pointer        :: p_rsubnodeILU01x1     => null()
+    ! Pointer to a structure for the ILU0 solver; NULL() if not set
+    type (t_linsolSubnodeILU0), pointer           :: p_rsubnodeILU0        => null()
     
     ! Pointer to a structure for (M)ILUs 1x1 solver; NULL() if not set
     type (t_linsolSubnodeMILUs1x1), pointer       :: p_rsubnodeMILUs1x1    => null()
@@ -1275,28 +1279,7 @@ module linearsolver
   public :: t_linsolNode
 
 !</typeblock>
-  
-! *****************************************************************************
 
-
-
-!<typeblock>
-  
-  ! This structure realises the subnode for the scalar ILU(0) solver in
-  ! FEAT style.
-  
-  type t_linsolSubnodeILU01x1
-  
-    ! A pointer to the ILU0-decomposition of the main matrix.
-    ! Shares the structure with the system matrix.
-    type(t_matrixScalar)              :: p_DiluDecomposition      
-    
-  end type
-  
-  public :: t_linsolSubnodeILU01x1
-
-!</typeblock>
-  
 ! *****************************************************************************
 
 !<typeblock>
@@ -1564,6 +1547,23 @@ module linearsolver
   
 !</typeblock>
 
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the scalar ILU(0) solver.
+  
+  type t_linsolSubnodeILU0
+  
+    ! A pointer to the ILU0-decomposition of the main matrix.
+    type(t_matrixBlock) :: rmatLU
+    
+  end type
+  
+  public :: t_linsolSubnodeILU0
+
+!</typeblock>
+  
 ! *****************************************************************************
 
 !<typeblock>
@@ -2363,6 +2363,8 @@ contains
       call linsol_initStructureDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
       call linsol_initStructureUMFPACK4 (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_ILU0)
+      call linsol_initStructureILU0 (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_MILUS1X1)
       ! No structure routine for (M)ILU(s)
     case (LINSOL_ALG_CG)
@@ -2442,6 +2444,8 @@ contains
       call linsol_initDataDefCorr (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
       call linsol_initDataUMFPACK4 (rsolverNode,ierror,isubgroup)
+    case (LINSOL_ALG_ILU0)
+      call linsol_initDataILU0 (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_MILUS1X1)
       call linsol_initDataMILUs1x1 (rsolverNode,ierror,isubgroup)
     case (LINSOL_ALG_CG)
@@ -2614,6 +2618,8 @@ contains
       call linsol_doneDataDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
       call linsol_doneDataUMFPACK4 (rsolverNode,isubgroup)
+    case (LINSOL_ALG_ILU0)
+      !  No data routine for ILU(0)
     case (LINSOL_ALG_MILUS1X1)
       call linsol_doneDataMILUs1x1 (rsolverNode,isubgroup)
     case (LINSOL_ALG_CG)
@@ -2678,6 +2684,8 @@ contains
       call linsol_doneStructureDefCorr (rsolverNode,isubgroup)
     case (LINSOL_ALG_UMFPACK4)
       call linsol_doneStructureUMFPACK4 (rsolverNode,isubgroup)
+    case (LINSOL_ALG_ILU0)
+      call linsol_doneStructureILU0 (rsolverNode,isubgroup)
     case (LINSOL_ALG_MILUS1X1)
       ! No structure routine for (M)ILU(s)
     case (LINSOL_ALG_CG)
@@ -2756,6 +2764,8 @@ contains
       call linsol_doneBiCGStab (p_rsolverNode)
     case (LINSOL_ALG_GMRES)
       call linsol_doneGMRES (p_rsolverNode)
+    case (LINSOL_ALG_ILU0)
+      call linsol_doneILU0 (p_rsolverNode)
     case (LINSOL_ALG_MILUS1X1)
       call linsol_doneMILUs1x1 (p_rsolverNode)
     case (LINSOL_ALG_MULTIGRID)
@@ -2830,6 +2840,8 @@ contains
       call linsol_alterDefCorr (rsolverNode, ralterConfig)
     case (LINSOL_ALG_UMFPACK4)
       ! No alter routine for UMFPACK
+    case (LINSOL_ALG_ILU0)
+      ! No alter routine for ILU(0)
     case (LINSOL_ALG_MILUS1X1)
       ! No alter routine for (M)ILU(s)
     case (LINSOL_ALG_CG)
@@ -3069,6 +3081,8 @@ contains
       call linsol_precSSOR (rsolverNode,rd)
     case (LINSOL_ALG_UMFPACK4)
       call linsol_precUMFPACK4 (rsolverNode,rd)
+    case (LINSOL_ALG_ILU0)
+      call linsol_precILU0 (rsolverNode,rd)
     case (LINSOL_ALG_MILUS1x1)
       call linsol_precMILUS1x1 (rsolverNode,rd)
     case (LINSOL_ALG_CG)
@@ -6959,6 +6973,469 @@ contains
   
   end subroutine
   
+! *****************************************************************************
+! Routines for the ILU(0) solver
+! *****************************************************************************
+! This is a 1-step solver usually used for preconditioning: x_1 = C^-1 x_0.
+
+!<subroutine>
+  
+  subroutine linsol_initILU0 (rsolverNode)
+  
+!<description>
+  ! Creates a t_linsolNode solver structure for the ILU(0) solver. The node
+  ! can be used to directly solve a problem or to be attached as solver
+  ! or preconditioner to another solver structure. The node can be deleted
+  ! by linsol_releaseSolver.
+!</description>
+  
+!<output>
+  ! A pointer to a t_linsolNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_linsolNode), pointer :: rsolverNode
+!</output>
+
+!</subroutine>
+
+    ! Create a default solver structure
+    call linsol_initSolverGeneral(rsolverNode)
+    
+    ! Normally this solver iterates only once (used e.g. in a preconditioner).
+    ! This is the default value. The application can set it higher to
+    ! apply it multiple times.
+    rsolverNode%nminIterations = 1
+    rsolverNode%nmaxIterations = 1
+    
+    ! Initialise the type of the solver
+    rsolverNode%calgorithm = LINSOL_ALG_ILU0
+    
+    ! Initialise the ability bitfield with the ability of this solver.
+    rsolverNode%ccapability = LINSOL_ABIL_SCALAR + LINSOL_ABIL_BLOCK &
+                            + LINSOL_ABIL_DIRECT
+    
+    ! Allocate the subnode for ILU(0).
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    allocate(rsolverNode%p_rsubnodeILU0)
+    
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_matCompatILU0 (rsolverNode,Rmatrices,&
+      ccompatible,CcompatibleDetail)
+  
+!<description>
+  ! This routine is called to check if the matrices in Rmatrices are
+  ! compatible to the solver. Calls linsol_matricesCompatible for possible
+  ! subsolvers to check the compatibility.
+!</description>
+  
+!<input>
+  ! The solver node which should be checked against the matrices
+  type(t_linsolNode), intent(in)             :: rsolverNode
+
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  type(t_matrixBlock), dimension(:), intent(in)   :: Rmatrices
+!</input>
+  
+!<output>
+  ! A LINSOL_COMP_xxxx flag that tells the caller whether the matrices are
+  ! compatible (which is the case if LINSOL_COMP_OK is returned).
+  integer, intent(out) :: ccompatible
+
+  ! OPTIONAL: An array of LINSOL_COMP_xxxx that tell for every level if
+  ! the matrices on that level are ok or not. Must have the same size
+  ! as Rmatrices!
+  integer, dimension(:), intent(inout), optional :: CcompatibleDetail
+!</output>
+  
+!</subroutine>
+
+    ! Normally, we can handle the matrix.
+    ccompatible = LINSOL_COMP_OK
+
+    ! Set the compatibility flag only for the maximum level -- this is a
+    ! one-level solver acting only there!
+    if (present(CcompatibleDetail)) &
+        CcompatibleDetail (ubound(CcompatibleDetail,1)) = ccompatible
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine linsol_initStructureILU0 (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Calls the initStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with linsol_initStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup,i
+  type(t_linsolSubnodeCG), pointer :: p_rsubnode
+    
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! Cancel here, if we do not belong to the subgroup to be initialised
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Okay, are we talking about a scalar matrix here?
+    if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
+       (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
+      
+      ! The system matrix is a scalar matrix - that's fine.
+      ! In this case we just need to make a copy of the matrix
+      ! structure.
+      call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
+          rsolverNode%p_rsubnodeILU0%rmatLU, &
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
+    
+    else
+    
+      ! The system matrix is a non-scalar block matrix.
+      ! In this case we'll assemble a global scalar matrix of it.
+      call glsys_assembleGlobal(rsolverNode%rsystemMatrix, &
+         rsolverNode%p_rsubnodeILU0%rmatLU, .true., .false.)
+      
+    end if
+  
+  end subroutine
+    
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_initDataILU0 (rsolverNode, ierror,isolverSubgroup)
+  
+!<description>
+  ! Performs a numeric factorisation on the assigned matrix, i.e.
+  ! computes the ILU0 decomposition.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout), target :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the LINSOL_ERR_XXXX constants. A value different to 
+  ! LINSOL_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(out) :: ierror
+!</output>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag, p_Iaux
+  real(DP), dimension(:), pointer :: p_DLU
+  real(DP) :: dmult
+  integer :: i,j,k,m,n,idx
+  
+    ! A-priori we have no error...
+    ierror = LINSOL_ERR_NOERROR
+
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+
+    ! Okay, are we talking about a scalar matrix here?
+    if((rsolverNode%rsystemMatrix%nblocksPerRow .eq. 1) .and. &
+       (rsolverNode%rsystemMatrix%nblocksPerCol .eq. 1)) then
+      
+      ! The system matrix is a scalar matrix - that's fine.
+      ! So let's copy the matrix content to our LU matrix.
+      call lsysbl_duplicateMatrix(rsolverNode%rsystemMatrix, &
+          rsolverNode%p_rsubnodeILU0%rmatLU, &
+          !LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+          
+        ! Note: Although we already share the structure of the system matrix,
+        ! there is a bug in lsysbl_duplicateMatrix which throws away the
+        ! old matrix structure if we specify LSYSSC_DUP_IGNORE for the
+        ! structure :(
+    
+    else
+    
+      ! The system matrix is a non-scalar block matrix.
+      ! In this case we'll assemble a global scalar matrix of it.
+      call glsys_assembleGlobal (rsolverNode%rsystemMatrix, &
+         rsolverNode%p_rsubnodeILU0%rmatLU, .false., .true.)
+    
+    end if
+    
+    ! Now let's fetch the matrix arrays
+    call lsyssc_getbase_Kld(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kld)
+    call lsyssc_getbase_Kcol(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kdiag)
+    call lsyssc_getbase_double(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_DLU)
+    
+    ! ---------- FACTORISATION CODE FOLLOWS ----------
+    n = rsolverNode%p_rsubnodeILU0%rmatLU%NEQ
+    
+    ! allocate an auxiliary array
+    allocate(p_Iaux(n))
+    
+    ! clear the auxiliary array
+    call lalg_clearVectorInt(p_Iaux,n)
+    
+    ! Loop over all rows of the matrix
+    do k = 1, n
+    
+      ! Set up the auxiliary array for this row
+      do j = p_Kld(k), p_Kld(k+1)-1
+        p_Iaux(p_Kcol(j)) = j
+      end do ! j
+      
+      ! Loop over row k of L
+      do j = p_Kld(k), p_Kdiag(k)-1
+      
+        ! Get the column index
+        idx = p_Kcol(j)
+        
+        ! Calculate L_kj := L_kj / U_jj
+        p_DLU(j) = p_DLU(j) * p_DLU(p_Kdiag(idx))
+        dmult = p_DLU(j)
+        
+        do i = p_Kdiag(idx), p_Kld(idx+1)-1
+          m = p_Iaux(p_Kcol(i))
+          if(m .gt. 0) &
+            p_DLU(m) = p_DLU(m) - dmult*p_DLU(i)
+        end do ! i
+        
+      end do ! j
+      
+      ! Reset auxiliary array
+      do j = p_Kld(k), p_Kld(k+1)-1
+        p_Iaux(p_Kcol(j)) = 0
+      end do ! j
+      
+      ! Invert main diagonal entry (if possible)
+      j = p_Kdiag(k)
+      if(abs(p_DLU(j)) .lt. SYS_EPSREAL) then
+        
+        ! Oops... zero pivot
+        ierror = LINSOL_ERR_SINGULAR
+        
+        ! Exit the main loop
+        exit
+        
+      else
+        p_DLU(j) = 1.0_DP / p_DLU(j)
+      end if
+      
+    end do ! k
+    
+    ! release auxiliary array
+    deallocate(p_Iaux)
+    
+    ! That's it
+      
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneStructureILU0 (rsolverNode,isolverSubgroup)
+  
+!<description>
+  ! Releases the memory of the numeric factorisation of the given matrix.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!<input>
+  ! Optional parameter. isolverSubgroup allows to specify a specific 
+  ! subgroup of solvers in the solver tree to be processed. By default,
+  ! all solvers in subgroup 0 (the default solver group) are processed,
+  ! solvers in other solver subgroups are ignored.
+  ! If isolverSubgroup != 0, only the solvers belonging to subgroup
+  ! isolverSubgroup are processed.
+  integer, optional, intent(in) :: isolverSubgroup
+!</input>
+
+!</subroutine>
+
+  ! local variables
+  integer :: isubgroup
+  
+    ! by default, initialise solver subroup 0
+    isubgroup = 0
+    if (present(isolversubgroup)) isubgroup = isolverSubgroup
+
+    ! If isubgroup does not coincide with isolverSubgroup from the solver
+    ! structure, skip the rest here.
+    if (isubgroup .ne. rsolverNode%isolverSubgroup) return
+    
+    ! Release the ILU matrix.
+    if(rsolverNode%p_rsubnodeILU0%rmatLU%NEQ .gt. 0) &
+      call lsysbl_releaseMatrix(rsolverNode%p_rsubnodeILU0%rmatLU)
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_doneILU0 (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the solver from
+  ! the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of which is to be cleaned up.
+  type(t_linsolNode), intent(inout) :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+  ! local variables
+  integer :: isubgroup
+  
+    ! The done-routine always releases everything.
+    isubgroup = rsolverNode%isolverSubgroup
+    
+    ! Release symbolical and numerical factorisation if still associated...
+    call linsol_doneStructureILU0 (rsolverNode, isubgroup)
+    
+    deallocate(rsolverNode%p_rsubnodeILU0)
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  subroutine linsol_precILU0 (rsolverNode,rd)
+  
+!<description>
+  ! Applies ILU(0) preconditioner $LU \approx A$ to the defect 
+  ! vector rd and solves $LUd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_linsolNode structure of the ILU(0) solver
+  type(t_linsolNode), intent(inout) :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_vectorBlock), intent(inout) :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables
+  real(DP), dimension(:), pointer :: p_Dx, p_DLU
+  integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiag
+  integer :: i,j,k
+  real(DP) :: dt
+
+    ! Status reset
+    rsolverNode%iresult = 0
+
+    ! Get the data array of the vector
+    call lsysbl_getbase_double(rd, p_Dx)
+    
+    ! Fetch the data arrays of the LU decompositon
+    call lsyssc_getbase_Kld(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kld)
+    call lsyssc_getbase_Kcol(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kcol)
+    call lsyssc_getbase_Kdiagonal(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_Kdiag)
+    call lsyssc_getbase_double(rsolverNode%p_rsubnodeILU0%rmatLU%RmatrixBlock(1,1), p_DLU)
+    
+    ! Forward insertion
+    do i = 2, rd%NEQ
+    
+      dt = 0.0_DP
+      do j = p_Kld(i), p_Kdiag(i)-1
+        dt = dt + p_DLU(j)*p_Dx(p_Kcol(j))
+      end do ! j
+      
+      p_Dx(i) = p_Dx(i) - dt
+      
+    end do ! i
+    
+    ! Backward insertion
+    do i = rd%NEQ, 1, -1
+      
+      k = p_Kdiag(i)
+      
+      dt = 0.0_DP
+      do j = p_Kld(i+1)-1, k+1, -1
+        dt = dt + p_DLU(j)*p_Dx(p_Kcol(j))
+      end do ! j
+      
+      p_Dx(i) = (p_Dx(i) - dt) * p_DLU(k)
+      
+    end do ! i
+    
+    ! That's it
+
+  end subroutine
+
 ! *****************************************************************************
 ! Routines for the (M)ILUs 1x1 solver
 ! *****************************************************************************
