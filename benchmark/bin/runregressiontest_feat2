@@ -1354,7 +1354,7 @@ test $DEBUG -gt 0 && echo "# Cleaning up files and directories from previous run
 fb_cleanUpOldCheckout
 
 # Create a new log file the content of which is send later on
-fb_initialiseGlobalLogFile "serial"
+fb_initialiseGlobalLogFile "no-mpi"
 test $DEBUG -gt 0 && echo "# New logfile created"
 # (now GLOBALLOG is set and can be used)
 
@@ -1376,13 +1376,13 @@ fb_checkWhetherToRun
 
 # Restore symbolic links, clone benchmark directory if necessary
 # (also sets BENCHMARKDIR, this call must not be simply commented out)
-fb_prepareForRun "serial"
+fb_prepareForRun "no-mpi"
 
 # Configure benchmark applications
-fb_configureBenchmark "no"
+fb_configureBenchmark "no-mpi"
 
 # Compile benchmark applications
-fb_compileBenchmark "serial"
+fb_compileBenchmark "no-mpi"
 
 # If merely compilability of benchmark applications is to be tested
 # end script here.
@@ -1391,7 +1391,7 @@ if [ "$COMPILEONLY""x" = "yesx" ]; then
 fi
 
 # Run serial benchmark tests
-fb_runBenchmark "serial"
+fb_runBenchmark "no-mpi"
 
 # Normal end. Send results to whomever it may concern
 # For convenience, we want HTML anchors to directly jump to any deviant or crashed test.
