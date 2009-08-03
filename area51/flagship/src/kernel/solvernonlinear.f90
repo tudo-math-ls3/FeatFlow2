@@ -284,6 +284,7 @@ contains
     ! local variables
     type(t_solver), pointer :: p_rsolver
     integer :: iiterations, icomponent, ncomponent
+    real(DP) :: dinitialDefect, dinitialRHS
 
     ! What kind of solver are we?
     if (rsolver%csolverType .ne. SV_COUPLED) then
@@ -315,11 +316,11 @@ contains
         call sys_halt()
       end if
     end if
-
-    ! Initialize solver
+    
+    ! Initialization
     rsolver%dinitialDefect = 0.0_DP
     rsolver%dinitialRHS    = 0.0_DP
-    
+
     ! Outer coupling loop
     outer: do iiterations = 1, rsolver%nmaxIterations
       
@@ -331,6 +332,9 @@ contains
         call output_lbrk()
       end if
       
+      ! Initialization
+      rsolver%dfinalDefect = 0.0_DP
+
       ! Inner solution loop
       inner: do icomponent = 1, ncomponent
 
@@ -358,25 +362,71 @@ contains
               rsolutionInitial(icomponent), fcb_nlsolverCallback,&
               rcollection)
         end if
-
-        ! Get maximum values of first outer iteration
+        
         if (iiterations .eq. 1) then
-          if ((p_rsolver%dinitialDefect .gt. rsolver%dinitialDefect) .or.&
-              (p_rsolver%dinitialRHS    .gt. rsolver%dinitialRHS)) then
-            rsolver%dinitialDefect =&
-                max(rsolver%dinitialDefect, p_rsolver%dinitialDefect)
-            rsolver%dinitialRHS =&
-                max(rsolver%dinitialRHS, p_rsolver%dinitialRHS)
-          end if
+          ! Store initial defect/right-hand side  
+          dinitialDefect = p_rsolver%dinitialDefect
+          dinitialRHS    = p_rsolver%dinitialRHS
+        else
+          ! Restore initial defect from first iteration
+          p_rsolver%dinitialDefect = dinitialDefect
+          p_rsolver%dinitialRHS    = dinitialRHS
         end if
         
+        ! Update coupled solver
+        select case(rsolver%iresNorm)
+        case (LINALG_NORMEUCLID, LINALG_NORML1, LINALG_NORML2)
+          rsolver%dfinalDefect = rsolver%dfinalDefect +&
+                                 p_rsolver%dfinalDefect
+          if (iiterations .eq. 1) then
+            rsolver%dinitialDefect = rsolver%dinitialDefect +&
+                                     dinitialDefect
+            rsolver%dinitialRHS    = rsolver%dinitialRHS +&
+                                     dinitialRHS
+          end if
+        case (LINALG_NORMMAX)
+          rsolver%dfinalDefect = max(rsolver%dfinalDefect,&
+                                     p_rsolver%dfinalDefect)
+          if (iiterations .eq. 1) then
+            rsolver%dinitialDefect = max(rsolver%dinitialDefect,&
+                                         dinitialDefect)
+            rsolver%dinitialRHS    = max(rsolver%dinitialRHS,&
+                                         dinitialRHS)
+          end if
+        end select
+
       end do inner
 
-      pause
-
-      print *, "FULLY COUPLED",iiterations
+      ! Check convergence criteria
+      if (iiterations .ge. rsolver%nminIterations) then
+        if (solver_testConvergence(rsolver)) then
+          rsolver%istatus = SV_CONVERGED
+          exit outer
+        end if
+        if (solver_testDivergence(rsolver)) then
+          rsolver%istatus = SV_INCR_DEF
+          exit outer
+        end if
+      end if
+      
     end do outer
-    stop
+
+    ! Compute convergence rates
+    call solver_statistics(rsolver, iiterations)
+
+    if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
+      call output_lbrk()
+      call output_separator(OU_SEP_HASH)
+      call output_line('Coupled solution                '//solver_getstatus(rsolver))
+      call output_line('Number of outer iterations:     '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Norm of final residual:         '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
+      call output_line('Norm of initial residual:       '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
+      call output_line('Improvement of residual:        '//trim(sys_sdEL(&
+                       rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
+      call output_line('Convergence rate:               '//trim(sys_sdEL(rsolver%dconvergenceRate,5)))
+      call output_separator(OU_SEP_HASH)
+      call output_lbrk()
+    end if
 
   end subroutine nlsol_solveCoupledBlock
 
