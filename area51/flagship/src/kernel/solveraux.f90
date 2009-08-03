@@ -103,6 +103,12 @@
 !# 27.) solver_testConvergence
 !#      -> Checks all convergence criteria for a particular solver
 !#
+!# 28.) solver_testDivergence
+!#      -> Checks all divergence criteria for a particular solver
+!#
+!# 29.) solver_testStagnation
+!#      -> Checks all stagnation criteria for a particular solver
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) solver_initUMFPACK
@@ -168,6 +174,8 @@ module solveraux
   public :: solver_restrictionScalar
   public :: solver_restrictionBlock
   public :: solver_testConvergence
+  public :: solver_testDivergence
+  public :: solver_testStagnation
   
   ! ****************************************************************************
 
@@ -5799,7 +5807,92 @@ contains
       call sys_halt()
     end select
 
-    end function solver_testConvergence
+  end function solver_testConvergence
+
+  ! ***************************************************************************
+
+!<function>
+
+  function solver_testDivergence(rsolver) result(bdiverged)
+
+!<description>
+    ! This function check all divergence criteria for the solver
+!</description>
+
+!<input>
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+!</input>
+
+!<result>
+    ! Boolean value. 
+    ! =TRUE if the divergence criterion holds; 
+    ! =FALSE otherwise.
+    logical :: bdiverged
+!</result>
+!</function>
+
+    bdiverged = .false.
+
+    ! Absolute divergence criterion? Check the norm directly.
+    if (rsolver%ddivAbs .ne. SYS_INFINITY) then
+      
+      ! use NOT here - gives a better handling of special cases like NaN!
+      if ( .not. (rsolver%dfinalDefect .le. rsolver%ddivAbs)) then
+        bdiverged = .true.
+        return
+      end if
+      
+    end if
+
+    ! Relative divergence criterion? Multiply with initial residuum
+    ! and check the norm. 
+    if (rsolver%depsRel .ne. SYS_INFINITY) then
+      if ( .not. (rsolver%dfinalDefect .le. rsolver%dinitialDefect*rsolver%ddivRel) ) then
+        bdiverged = .true.
+        return
+      end if
+    end if
+
+  end function solver_testDivergence
+  
+  ! ***************************************************************************
+
+!<function>
+
+  function solver_testStagnation(rsolver, doldDefect) result(bstagnated)
+
+!<description>
+    ! This function check all stagnation criteria for the solver
+!</description>
+
+!<input>
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! norm of previous defect
+    real(DP), intent(in) :: doldDefect
+!</input>
+
+!<result>
+    ! Boolean value. 
+    ! =TRUE if the stagnation criterion holds; 
+    ! =FALSE otherwise.
+    logical :: bstagnated
+!</result>
+!</function>
+
+    bstagnated = .false.
+    
+    ! Stagnation criterion?
+    if (rsolver%depsStag .ne. 0.0_DP) then
+      if (rsolver%dfinalDefect .gt. rsolver%depsStag*doldDefect) then
+        bstagnated = .true.
+        return
+      end if
+    end if
+    
+  end function solver_testStagnation
 
   ! ***************************************************************************
   ! Auxiliary routines
