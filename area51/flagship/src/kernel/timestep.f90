@@ -32,9 +32,9 @@
 !#     -> Removes temporal storage from time-stepping structure
 !#
 !# 6.) tstep_performThetaStep = tstep_performThetaStepScalar /
-!#                              tstep_performCplThetaStepScalar /
+!#                              tstep_performThetaStepScalarCpl /
 !#                              tstep_performThetaStepBlock /
-!#                              tstep_performCplThetaStepBlock
+!#                              tstep_performThetaStepBlockCpl
 !#     -> Performs one step by the two-level theta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep. 
 !#
@@ -50,7 +50,8 @@
 !#
 !# The following auxiliary routines are available: 
 !#
-!# 1.) tstep_checkTimestep
+!# 1.) tstep_checkTimestep = tstep_checkTimestep /
+!#                           tstep_checlTimestepCpl
 !#     -> Checks the solution computed in one time step and adjust
 !#        the size of the time step accordingly
 !#
@@ -94,8 +95,8 @@ module timestep
   interface tstep_performThetaStep
     module procedure tstep_performThetaStepScalar
     module procedure tstep_performThetaStepBlock
-    module procedure tstep_performCplThetaStepScalar
-    module procedure tstep_performCplThetaStepBlock
+    module procedure tstep_performThetaStepScalarCpl
+    module procedure tstep_performThetaStepBlockCpl
   end interface
 
   interface tstep_performRKStep
@@ -106,6 +107,11 @@ module timestep
   interface tstep_performPseudoStepping
     module procedure tstep_performPseudoSteppingScalar
     module procedure tstep_performPseudoSteppingBlock
+  end interface
+
+  interface tstep_checkTimestep
+    module procedure tstep_checkTimestep
+    module procedure tstep_checkTimestepCpl
   end interface
 
   ! *****************************************************************************
@@ -899,12 +905,11 @@ contains
           call output_separator(OU_SEP_AT)
           call output_lbrk()
         end if
-
-
+        
         ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
             p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback,&
-            rcollection)
+            rcollection, rsource)
 
         ! Save intermediate solution
         call lsysbl_copyVector(p_rsolutionRef, p_rsolutionAux)
@@ -920,7 +925,7 @@ contains
         ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
         call nlsol_solveMultigrid(rproblemLevel, rtimestep, p_rsolver,&
             p_rsolutionRef, p_rsolutionAux, fcb_nlsolverCallback,&
-            rcollection)
+            rcollection, rsource)
         
         ! Check if solution from this time step can be accepted and
         ! adjust the time step size automatically if this is required
@@ -968,7 +973,7 @@ contains
 
 !<subroutine>
 
-  subroutine tstep_performCplThetaStepScalar(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepScalarCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1046,7 +1051,7 @@ contains
         call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
       end do
       
-      call tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
           rsourceBlock)
       
@@ -1071,7 +1076,7 @@ contains
         call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
       end do
       
-      call tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+      call tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
           rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
       
       do i = 1, size(rsolution)
@@ -1083,13 +1088,13 @@ contains
 
     end if
     
-  end subroutine tstep_performCplThetaStepScalar
+  end subroutine tstep_performThetaStepScalarCpl
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine tstep_performCplThetaStepBlock(rproblemLevel, rtimestep,&
+  subroutine tstep_performThetaStepBlockCpl(rproblemLevel, rtimestep,&
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
@@ -1147,7 +1152,7 @@ contains
     type(t_vectorBlock), dimension(:), pointer :: p_rsolutionRef
     type(t_vectorBlock), dimension(:), pointer :: p_rsolutionAux
     type(t_vectorBlock), dimension(:), pointer :: p_rsolutionOld
-    logical :: bcompatible, breject, brejectAll
+    logical :: bcompatible, breject
     integer :: icomponent,ncomponent
 
     ! Get number of components
@@ -1157,7 +1162,7 @@ contains
     if (present(rsource)) then
       if (size(rsource) .ne. ncomponent) then
         call output_line('Dimensione of coupled problem mismatch!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performCplThetaStepBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlockCpl')
         call sys_halt()
       end if
     end if
@@ -1167,7 +1172,7 @@ contains
     
     if (.not. associated(p_rsolver)) then
       call output_line('Unsupported/invalid solver type!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performCplThetaStepBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'tstep_performThetaStepBlockCpl')
       call sys_halt()
     end if
     
@@ -1245,127 +1250,89 @@ contains
       ! Adjust status information of top-most solver
       call solver_copySolver(p_rsolver, rsolver, .false., .true.)
 
-      stop
+      ! Compute reference solution by performing two time steps of size Dt/2
+      if (rtimestep%iadaptTimestep .eq. TSTEP_AUTOADAPT) then
+
+        ! Set time step to smaller value
+        rtimestep%dStep = rtimestep%dStep/2.0_DP
+
+        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
+          call output_lbrk()
+          call output_separator(OU_SEP_AT)
+          call output_line('First substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+          call output_lbrk()
+        end if
+
+
+        ! Solve the nonlinear algebraic system for time step t^n -> t^{n+1/2}
+        call nlsol_solveCoupled(rproblemLevel, rtimestep, p_rsolver,&
+            p_rsolutionRef, p_rsolutionOld, fcb_nlsolverCallback,&
+            rcollection, rsource)
+
+        ! Save intermediate solution
+        do icomponent = 1, ncomponent
+          call lsysbl_copyVector(p_rsolutionRef(icomponent),&
+              p_rsolutionAux(icomponent))
+        end do
+
+        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
+          call output_lbrk()
+          call output_separator(OU_SEP_AT)
+          call output_line('Second substep in automatic time step control')
+          call output_separator(OU_SEP_AT)
+          call output_lbrk()
+        end if
+
+        ! Solve the nonlinear algebraic system for time step t^{n+1/2} -> t^{n+1}
+        call nlsol_solveCoupled(rproblemLevel, rtimestep, p_rsolver,&
+            p_rsolutionRef, p_rsolutionAux, fcb_nlsolverCallback,&
+            rcollection, rsource)
+        
+        ! Check if solution from this time step can be accepted and
+        ! adjust the time step size automatically if this is required
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+            p_rsolutionRef, p_rsolutionOld)
+
+        ! Prepare time step size for next "large" time step
+        rtimestep%dStep = rtimestep%dStep*2.0_DP
+        
+      else
+
+        ! Check if solution from this time step can be accepted and
+        ! adjust the time step size automatically if this is required
+        breject = tstep_checkTimestep(rtimestep, p_rsolver,&
+            rsolution, p_rsolutionOld)
+        
+      end if
+
+      if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
+        call output_lbrk()
+        call output_separator(OU_SEP_TILDE)
+        call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
+        call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
+        call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
+        call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
+        call output_separator(OU_SEP_TILDE)
+        call output_lbrk()
+      end if
+
+      ! Do we have to reject to current solution?
+      if (breject) then
+        ! Yes, so restore the old solution and
+        ! repeat the adaptive time-stepping loop
+        do icomponent = 1, ncomponent
+          call lsysbl_copyVector(p_rsolutionOld(icomponent),&
+              rsolution(icomponent))
+        end do
+      else
+        ! No, accept current solution and 
+        ! exit adaptive time-stepping loop
+        exit timeadapt
+      end if
     end do timeadapt
 
-!!$      
-!!$      outer: do ite = 1, 25
-!!$        
-!!$        if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-!!$          call output_lbrk()
-!!$          call output_separator(OU_SEP_TILDE)
-!!$          call output_line('Outer iteration step '//&
-!!$                           trim(sys_siL(ite,5)))
-!!$          call output_separator(OU_SEP_TILDE)
-!!$          call output_lbrk()
-!!$        end if
-!!$
-!!$        inner: do icpl = 1, ncpl
-!!$
-!!$          if (rtimestep%ioutputLevel .ge. TSTEP_IOLEVEL_INFO) then
-!!$            call output_lbrk()
-!!$            call output_separator(OU_SEP_TILDE)
-!!$            call output_line('Component '//&
-!!$                             trim(sys_siL(icpl,5))//' of '//&
-!!$                             trim(sys_siL(ncpl,5)))
-!!$            call output_separator(OU_SEP_TILDE)
-!!$            call output_lbrk()
-!!$          end if
-!!$          
-!!$          ! Solve the nonlinear algebraic system for component ICPL
-!!$          ! in the time interval (t^n, t^{n+1})
-!!$          if (present(rsource)) then
-!!$            call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-!!$                rsolverCpl(icpl)%p_rsolver, rsolution(icpl),&
-!!$                p_rsolutionOld(icpl), fcb_nlsolverCallback,&
-!!$                rcollection, rsource(icpl))
-!!$          else
-!!$            call nlsol_solveMultigrid(rproblemLevel, rtimestep,&
-!!$                rsolverCpl(icpl)%p_rsolver, rsolution(icpl),&
-!!$                p_rsolutionOld(icpl), fcb_nlsolverCallback,&
-!!$                rcollection)
-!!$          end if
-!!$          
-!!$        end do inner
-!!$
-!!$        if (ite .eq. 1) then
-!!$          do icpl = 1, ncpl
-!!$            DinitialDefect(icpl) =&
-!!$                rsolverCpl(icpl)%p_rsolver%dinitialDefect
-!!$          end do
-!!$        end if
-!!$
-!!$        ! Check relative defect
-!!$        drelDefect = rsolverCpl(1)%p_rsolver%dinitialDefect /&
-!!$            DinitialDefect(1)
-!!$        dabsDefect = rsolverCpl(1)%p_rsolver%dinitialDefect
-!!$        do icpl = 2, ncpl
-!!$          drelDefect = max(drelDefect,&
-!!$              rsolverCpl(icpl)%p_rsolver%dinitialDefect /&
-!!$              DinitialDefect(icpl))
-!!$          dabsDefect = max(dabsDefect,&
-!!$              rsolverCpl(icpl)%p_rsolver%dinitialDefect)
-!!$        end do
-
-!!$   !     if ((drelDefect .le. 1e-4) .and. &
-!!$   !         (dabsDefect .le. 1e-12)) exit outer
-
-!!$        if (dabsDefect .le. 1e-11) exit outer
-!!$        
-!!$      end do outer
-!!$
-!!$      ! Initialize indicator
-!!$      brejectAll = .false.
-!!$      
-!!$      do icpl = 1, ncpl
-!!$        
-!!$        ! Adjust status information of top-most solver
-!!$        call solver_copySolver(rsolverCpl(icpl)%p_rsolver,&
-!!$            rsolver(icpl), .false., .true.)
-!!$        
-!!$        ! Check if solution from this time step can be accepted and
-!!$        ! adjust the time step size automatically if this is required
-!!$        breject = tstep_checkTimestep(rtimestep, rsolverCpl(icpl)&
-!!$            %p_rsolver, rsolution(icpl), p_rsolutionOld(icpl))
-!!$        
-!!$        if (rtimestep%ioutputlevel .ge. TSTEP_IOLEVEL_VERBOSE) then
-!!$          call output_lbrk()
-!!$          call output_separator(OU_SEP_TILDE)
-!!$          call output_line('Coupled sub-problem #'//trim(sys_siL(icpl,5)))
-!!$          call output_separator(OU_SEP_TILDE)
-!!$          call output_line('Time step was     '//merge('!!! rejected !!!','accepted        ',breject))
-!!$          call output_line('New stepsize:     '//trim(sys_sdEL(rtimestep%dStep,5)))
-!!$          call output_line('Last stepsize:    '//trim(sys_sdEL(rtimestep%dStep1,5)))
-!!$          call output_line('Relative changes: '//trim(sys_sdEL(rtimestep%drelChange,5)))
-!!$          call output_separator(OU_SEP_TILDE)
-!!$          call output_lbrk()
-!!$        end if
-!!$        
-!!$        ! Update indicator
-!!$        brejectAll = (brejectAll .and. breject)
-!!$
-!!$      end do
-!!$
-!!$      ! Do we have to reject to current solution?
-!!$      if (brejectAll) then
-!!$        ! Yes, so restore the old solution and
-!!$        ! repeat the adaptive time-stepping loop
-!!$        do icpl = 1, ncpl
-!!$          call lsysbl_copyVector(p_rsolutionOld(icpl),&
-!!$              rsolution(icpl))
-!!$        end do
-!!$      else
-!!$        ! No, accept current solution and 
-!!$        ! exit adaptive time-stepping loop
-!!$        exit timeadapt
-!!$      end if
-!!$    end do timeadapt
-    
-
-    print *, "DONE ALL"
-    stop
-
-  end subroutine tstep_performCplThetaStepBlock
+  end subroutine tstep_performThetaStepBlockCpl
 
   ! *****************************************************************************
 
@@ -1481,7 +1448,7 @@ contains
     type(t_vectorBlock), pointer :: p_rsolutionInitial, p_rsolutionRef, p_rsolutionAux
     type(t_vectorBlock), pointer :: p_rconstB, p_raux
     integer(I32) :: ioperationSpec
-    integer :: istep, istatus
+    integer :: istep
     logical :: bcompatible,breject
     
 
@@ -2164,5 +2131,86 @@ contains
     end select
 
   end function tstep_checkTimestep
+
+  ! *****************************************************************************
+
+!<function>
+  
+  function tstep_checkTimestepCpl(rtimestep, rsolver, rsolution1,&
+      rsolution2) result(breject)
+
+!<description>
+    ! This functions checks the result of the current time step and
+    ! performs adaptive time-step controlling if this is required
+    !
+    ! First, it checks if the solution failed due to some critical error.
+    ! If this is the case, the time step is reduced unless the smallest
+    ! admissible time step size has been reached. In this case, the 
+    ! simulation is stopped unconditionally since a critical error occured.
+    !
+    ! If the time step size should be computed adaptively the corresponding
+    ! time-stepping algorithm is used to adjust the time step.
+!</description>
+
+!<input>
+    ! solver
+    type(t_solver), intent(in):: rsolver
+
+    ! first solution vector
+    type(t_vectorBlock), dimension(:), intent(in) :: rsolution1
+
+    ! second soluion vector
+    type(t_vectorBlock), dimension(:), intent(in) :: rsolution2
+!</input>
+
+!<inputoutput>
+    ! time-stepping algorithm
+    type(t_timestep), intent(inout) :: rtimestep
+!</inputoutput>
+
+!<result>
+    ! reject solution
+    logical :: breject
+!</result>
+!</function>
+    
+    ! local variable
+    type(t_timestep) :: rtimestep0, rtimestep1
+    integer :: icomponent
+    
+    breject = .false.
+
+    ! Make a duplicate of the given time step structure
+    rtimestep0 = rtimestep
+
+    ! Loop over all componenets
+    do icomponent = 1, size(rsolver%p_solverSubnode)
+      
+      ! Adopt values from original time step structure
+      rtimestep1 = rtimestep0
+
+      ! Check if time step can be accepted
+      breject = breject .or. tstep_checkTimestep(&
+          rtimestep1, rsolver%p_solverSubnode(icomponent),&
+          rsolution1(icomponent), rsolution2(icomponent))
+
+      ! Update original time step
+      rtimestep%nrejectedSteps = rtimestep1%nrejectedSteps
+
+      if (icomponent .eq. 1) then
+        rtimestep%dTime      = rtimestep1%dTime
+        rtimestep%dStep      = rtimestep1%dStep
+        rtimestep%dStep1     = rtimestep1%dStep1
+        rtimestep%drelChange = rtimestep1%drelChange
+      elseif (rtimestep1%dStep .lt. rtimestep%dStep) then
+        rtimestep%dTime      = rtimestep1%dTime
+        rtimestep%dStep      = rtimestep1%dStep
+        rtimestep%dStep1     = rtimestep1%dStep1
+        rtimestep%drelChange = rtimestep1%drelChange
+      end if
+      
+    end do
+
+  end function tstep_checkTimestepCpl
 
 end module timestep
