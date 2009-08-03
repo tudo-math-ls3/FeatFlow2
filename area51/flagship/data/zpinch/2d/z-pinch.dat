@@ -360,7 +360,7 @@ ucderror = out/
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 4
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -391,10 +391,10 @@ dfinalTime = 1.0
 dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 1e-6
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 1e-2
 
 # adaptive time stepping algorithm
 iadaptTimestep = 1
@@ -412,7 +412,7 @@ dincreaseFactor = 1.5
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel = 1e-4
+depsRel = 1e-3
 
 # absolute tolerance for relative changes
 depsAbs = 0.0
@@ -436,14 +436,17 @@ depsSteady = 0.0
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
 # 1 = L1-norm
 # 2 = L2-norm
 # 3 = MAX-norm
-iresNorm = 0
+iresNorm = 3
+
+# stopping criterion
+istoppingCriterion = 0
 
 # minimum number of coupling steps
 nminIterations = 1
@@ -455,10 +458,10 @@ nmaxIterations = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-11
+depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 1e-4
 
 # relative tolerance for stagnation
 depsStag = 0.0
