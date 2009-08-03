@@ -5848,10 +5848,12 @@ contains
     ! Relative divergence criterion? Multiply with initial residuum
     ! and check the norm. 
     if (rsolver%depsRel .ne. SYS_INFINITY) then
+      
       if ( .not. (rsolver%dfinalDefect .le. rsolver%dinitialDefect*rsolver%ddivRel) ) then
         bdiverged = .true.
         return
       end if
+
     end if
 
   end function solver_testDivergence
