@@ -100,6 +100,9 @@
 !# 26.) solver_copySolver
 !#      -> Copies input/output parameters from one solver to another solver
 !#
+!# 27.) solver_testConvergence
+!#      -> Checks all convergence criteria for a particular solver
+!#
 !# The following auxiliary routines are available:
 !#
 !# 1.) solver_initUMFPACK
@@ -164,6 +167,7 @@ module solveraux
   public :: solver_prolongationBlock
   public :: solver_restrictionScalar
   public :: solver_restrictionBlock
+  public :: solver_testConvergence
   
   ! ****************************************************************************
 
@@ -213,8 +217,12 @@ module solveraux
   
   ! Full multigrid solver for steady state computations
   integer, parameter, public :: SV_FMG          = 5
+
+  ! Block of coupled solvers
+  integer, parameter, public :: SV_COUPLED      = 6
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global flags for information output">
 
@@ -235,6 +243,7 @@ module solveraux
 
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global status messages of the solver">
 
@@ -260,6 +269,27 @@ module solveraux
   integer, parameter, public :: SV_STAGNATED    = 6
 !</constantblock>
 
+  ! ****************************************************************************
+
+!<constantblock description="Identifiers for stopping criterium istoppingCriterion.">
+
+  ! Use 'maximum' stopping criterion.
+  ! If depsRel>0: use relative stopping criterion.
+  ! If depsAbs>0: use abs stopping criterion.
+  ! If both are > 0: use both, i.e. the iteration stops when both,
+  !    the relative AND the absolute stopping criterium holds
+  integer, parameter, public :: SV_STOP_ALL = 0
+
+  ! Use 'minimum' stopping criterion.
+  ! If depsRel>0: use relative stopping criterion.
+  ! If depsAbs>0: use abs stopping criterion.
+  ! If both are > 0: use one of them, i.e. the iteration stops when the
+  !    either the relative OR the absolute stopping criterium holds
+  integer, parameter, public :: SV_STOP_ANY = 1
+  
+!</constantblock>
+
+  ! ****************************************************************************
 
 !<constantblock description="Flags for the solver specification bitfield">
 
@@ -277,6 +307,7 @@ module solveraux
   integer(I32), parameter :: SV_SSPEC_EMPTY                = SV_SSPEC_NEEDSUPDATE
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global nonlinear solution algorithms">
 
@@ -284,6 +315,7 @@ module solveraux
   integer, parameter, public :: NLSOL_SOLVER_FIXEDPOINT    = 101
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global nonlinear preconditioners">
   
@@ -298,6 +330,7 @@ module solveraux
   integer, parameter, public :: NLSOL_PRECOND_NEWTON_FAILED = -3
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global nonlinear smoothers">
 
@@ -305,6 +338,7 @@ module solveraux
   integer, parameter, public :: NLSOL_SMOOTHER_FIXEDPOINT   = NLSOL_SOLVER_FIXEDPOINT
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Flags for the nonlinear solver operation specification bitfield">
 
@@ -324,6 +358,7 @@ module solveraux
   integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**4  
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global linear solution algorithms">
 
@@ -352,6 +387,7 @@ module solveraux
   integer, parameter, public :: LINSOL_SOLVER_ILU      = 50
 !</constantblock>
 
+  ! ****************************************************************************
 
 !<constantblock description="Global linear smoothers">
 
@@ -425,6 +461,9 @@ module solveraux
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Information output level
     integer :: ioutputLevel = 0
+
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS
+    integer :: istoppingCriterion = SV_STOP_ALL    
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Status of the solver
@@ -519,8 +558,8 @@ module solveraux
     ! all nonlinear/linear iterations to impose boundary conditions
     type(t_boundaryCondition), pointer :: rboundaryCondition => null()
 
-    ! INTERNAL: substructure for generic solver
-    type(t_solver), pointer :: p_solverSubnode => null()
+    ! INTERNAL: substructure for generic solvers
+    type(t_solver), dimension(:), pointer :: p_solverSubnode => null()
 
     ! INTERNAL: substructure for Multigrid solver
     type(t_solverMultigrid), pointer :: p_solverMultigrid => null()
@@ -858,7 +897,7 @@ contains
     ! local variables
     character(LEN=SYS_STRLEN) :: ssolverName,sprecondName,ssmootherName
     integer, dimension(2) :: Isize
-    integer :: csolverType,nKrylov,isolver,ismoother
+    integer :: csolverType,nKrylov,isolver,ismoother,nsolver
 
     ! Get solver type from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, "csolvertype", csolverType)
@@ -872,6 +911,22 @@ contains
 
     ! What kind of solver are we
     select case(csolverType)
+      
+    case (SV_COUPLED)
+      ! ----------------------------------------------------------------------------------
+      ! Create a coupled solver:
+      ! ~~~~~~~~~~~~~~~~~~~~~~~~
+      ! This type of solver has an array of p_solverSubnode subnodes, where each
+      ! solver subnode represents the complete solver structure for an individual
+      ! component of the coupled problem.
+      nsolver = parlst_querysubstrings(rparlist, ssectionName, "ssolvername")
+      allocate(rsolver%p_solverSubnode(nsolver))
+      do isolver = 1, nsolver
+        call parlst_getvalue_string(rparlist, ssectionName, "ssolvername",&
+                                    ssolverName, isubstring=isolver)
+        call solver_createSolver(rparlist, ssolverName,&
+                                 rsolver%p_solverSubnode(isolver))
+      end do
       
     case (SV_FMG)
       ! ----------------------------------------------------------------------------------
@@ -1120,10 +1175,10 @@ contains
       ! if a linear multigrid or single grid solver should be employed. Hence,
       ! we just get the name of the linear solver from the parameter list and
       ! create the linear solver recursively:
-      allocate(rsolver%p_solverSubnode)
+      allocate(rsolver%p_solverSubnode(1))
       call parlst_getvalue_string(rparlist, ssectionName, "ssolverName", &
                                   ssolverName)
-      call solver_createSolver(rparlist, ssolverName, rsolver%p_solverSubnode)
+      call solver_createSolver(rparlist, ssolverName, rsolver%p_solverSubnode(1))
       ! Now, we are done with the nonlinear singlegrid solver !!!
 
     case (SV_LINEAR)
@@ -1212,11 +1267,13 @@ contains
       call sys_halt()
     end select
 
-    ! In the second part, all (optinal) parameters which apply to all solvers are read
+    ! In the second part, parameters which apply to all solvers are read
     call parlst_getvalue_int(rparlist, ssectionName, "ioutputlevel", &
                              rsolver%ioutputlevel)
     call parlst_getvalue_int(rparlist, ssectionName, "iresNorm", &
                              rsolver%iresNorm)
+    call parlst_getvalue_int(rparlist, ssectionName, "istoppingCriterion", &
+                             rsolver%istoppingCriterion)
     call parlst_getvalue_int(rparlist, ssectionName, "nminIterations", &
                              rsolver%nminIterations)
     call parlst_getvalue_int(rparlist, ssectionName, "nmaxIterations", &
@@ -1468,6 +1525,8 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+    integer :: i
 
     ! The INTENT(out) already initializes rsolver with the most
     ! important information. The rest comes now
@@ -1485,9 +1544,11 @@ contains
     
     ! Generic solver subnode
     if (associated(rsolverTemplate%p_solverSubnode)) then
-      allocate(rsolver%p_solverSubnode)
-      call solver_createSolver(rsolver%p_solverSubnode,&
-                               rsolverTemplate%p_solverSubnode)
+      allocate(rsolver%p_solverSubnode(size(rsolverTemplate%p_solverSubnode)))
+      do i = 1, size(rsolverTemplate%p_solverSubnode)
+        call solver_createSolver(rsolver%p_solverSubnode(i),&
+                                 rsolverTemplate%p_solverSubnode(i))
+      end do
     else
       nullify(rsolver%p_solverSubnode)
     end if
@@ -1774,6 +1835,8 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    integer :: i
     
     ! Nullify boundary condition pointer
     nullify(rsolver%rboundaryCondition)
@@ -1786,7 +1849,9 @@ contains
     
     ! Generic solver subnode
     if (associated(rsolver%p_solverSubnode)) then
-      call solver_releaseSolver(rsolver%p_solverSubnode)
+      do i = 1, size(rsolver%p_solverSubnode)
+        call solver_releaseSolver(rsolver%p_solverSubnode(i))
+      end do
       deallocate(rsolver%p_solverSubnode)
       nullify(rsolver%p_solverSubnode)
     end if
@@ -2120,11 +2185,11 @@ contains
     ! local variable
     integer :: i
     logical :: bprint
+
     
     ! What should be printed?
     bprint = .false.
     if (present(bprintInternal)) bprint=bprintInternal
-
     
     ! Output general information
     call output_line('Solver:')
@@ -2132,41 +2197,58 @@ contains
     call output_line('Name: '//trim(rsolver%ssolverName))
     
     select case(rsolver%csolverType)
+    case (SV_COUPLED)
+      call output_line('Number of coupled components:                 '//&
+          trim(sys_siL(size(rsolver%p_solverSubnode),3)))
 
     case (SV_FMG)
-      call output_line('Number of full multigrid steps:               '//trim(sys_siL(rsolver%niterations,15)))
+      call output_line('Number of full multigrid steps:               '//&
+          trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
-            call output_line('Number of nonlinear steps per multigrid step: '//trim(sys_siL(&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations, DP)),15)))
+            call output_line('Number of nonlinear steps per multigrid step: '&
+            //trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            real(rsolver%niterations, DP)),15)))
       end if
 
     case (SV_NONLINEARMG)
-      call output_line('Number of nonlinear multigrid steps:          '//trim(sys_siL(rsolver%niterations, 15)))
+      call output_line('Number of nonlinear multigrid steps:          '//&
+          trim(sys_siL(rsolver%niterations, 15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
-            call output_line('Number of nonlinear steps per multigrid step: '//trim(sys_siL(&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP)),15)))
+            call output_line('Number of nonlinear steps per multigrid step: '//&
+            trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            real(rsolver%niterations,DP)),15)))
       end if
       
     case (SV_LINEARMG)
-      call output_line('Number of linear steps:                       '//trim(sys_siL(rsolver%niterations,15)))
+      call output_line('Number of linear steps:                       '//&
+          trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
         if (rsolver%niterations .ne. 0)&
-            call output_line('Number of linear steps per multigrid step:    '//trim(sys_siL(&
-            int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/real(rsolver%niterations,DP)),15)))
+            call output_line('Number of linear steps per multigrid step:    '//&
+            trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
+            real(rsolver%niterations,DP)),15)))
       end if
       
     case(SV_NONLINEAR)
-      call output_line('Number of nonlinear steps:                    '//trim(sys_siL(rsolver%niterations,15)))
+      call output_line('Number of nonlinear steps:                    '//&
+          trim(sys_siL(rsolver%niterations,15)))
       if (associated(rsolver%p_solverSubnode)) then
         if (rsolver%niterations .ne. 0)&
-            call output_line('Number of linear steps per nonlinear step:    '//trim(sys_siL(&
-            int(rsolver%p_solverSubnode%niterations/real(rsolver%niterations,DP)),15)))
+            call output_line('Number of linear steps per nonlinear step:    '//&
+            trim(sys_siL(int(rsolver%p_solverSubnode(1)%niterations/&
+            real(rsolver%niterations,DP)),15)))
       end if
 
     case(SV_LINEAR)
-      call output_line('Number of linear steps:                       '//trim(sys_siL(rsolver%niterations,15)))
+      call output_line('Number of linear steps:                       '//&
+          trim(sys_siL(rsolver%niterations,15)))
+
+    case default
+      call output_line('Unsupported solver type!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'solver_infoSolver')
+      call sys_halt()
     end select
     
     ! Output internal information
@@ -2176,6 +2258,7 @@ contains
       call output_line('iprecond:                                     '//trim(sys_siL(rsolver%iprecond,3)))
       call output_line('ioutputlevel:                                 '//trim(sys_siL(rsolver%ioutputLevel,3)))
       call output_line('iresNorm:                                     '//trim(sys_siL(rsolver%iresNorm,3)))
+      call output_line('istoppingCriterion:                           '//trim(sys_siL(rsolver%istoppingCriterion,3)))
       call output_line('nminIterations:                               '//trim(sys_siL(rsolver%nminIterations,5)))
       call output_line('nmaxIterations:                               '//trim(sys_siL(rsolver%nmaxIterations,5)))
       call output_line('domega:                                       '//trim(sys_sdL(abs(rsolver%domega),2))//&
@@ -2330,10 +2413,12 @@ contains
       
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        call output_lbrk()
-        call output_line('>>> Generic solver subnode:')
-        call output_line('---------------------------')
-        call solver_infoSolver(rsolver%p_solverSubnode, bprint)
+        do i = 1, size(rsolver%p_solverSubnode)
+          call output_lbrk()
+          call output_line('>>> Generic solver subnode: '//trim(sys_siL(i,3)))
+          call output_line('-------------------------------')
+          call solver_infoSolver(rsolver%p_solverSubnode(i), bprint)
+        end do
       end if
       
       ! Multigrid solver
@@ -2467,10 +2552,12 @@ contains
 
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        call output_lbrk()
-        call output_line('>>> Generic solver subnode:')
-        call output_line('---------------------------')
-        call solver_infoSolver(rsolver%p_solverSubnode, bprint)
+        do i = 1, size(rsolver%p_solverSubnode)
+          call output_lbrk()
+          call output_line('>>> Generic solver subnode: '//trim(sys_siL(i,3)))
+          call output_line('-------------------------------')
+          call solver_infoSolver(rsolver%p_solverSubnode(i), bprint)
+        end do
       end if
 
       ! Multigrid solver
@@ -2542,7 +2629,9 @@ contains
 
     ! Reset generic solver subnode
     if (associated(rsolver%p_solverSubnode)) then
-      call solver_resetSolver(rsolver%p_solverSubnode, bresetStatistics)
+      do i = 1, size(rsolver%p_solverSubnode)
+        call solver_resetSolver(rsolver%p_solverSubnode(i), bresetStatistics)
+      end do
     end if
 
     ! Reset multigrid solver
@@ -2601,12 +2690,17 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    integer :: i
+
     ! This type of solver does not have and temporals.
     ! Hence, we can directly proceed to the subnodes.
 
     ! Generic solver subnode
     if (associated(rsolver%p_solverSubnode)) then
-      call solver_removeTempFromSolver(rsolver%p_solverSubnode)
+      do i = 1, size(rsolver%p_solverSubnode)
+        call solver_removeTempFromSolver(rsolver%p_solverSubnode(i))
+      end do
     end if
 
     ! Multigrid solver
@@ -2905,7 +2999,9 @@ contains
 
     ! Do we have a solver subnode?
     if (associated(rsolver%p_solverSubnode)) then
-      call solver_adjustHierarchy(rsolver%p_solverSubnode, nlmin, nlmax)
+      do i = 1, size(rsolver%p_solverSubnode)
+        call solver_adjustHierarchy(rsolver%p_solverSubnode(i), nlmin, nlmax)
+      end do
     end if
 
     ! Do we have a multigrid structure?
@@ -3134,7 +3230,7 @@ contains
         call startIndent(cindent, "Nonlinear Solver")
         if (associated(rsolver%p_solverSubnode)) then
           call continueIndent(cindent, "Subsolver")
-          call showLevel(rsolver%p_solverSubnode,cindent//"  |")
+          call showLevel(rsolver%p_solverSubnode(1),cindent//"  |")
         end if
         
         if (associated(rsolver%p_solverDefcor)) then
@@ -3150,7 +3246,7 @@ contains
         call startIndent(cindent, "Linear Solver")
         if (associated(rsolver%p_solverSubnode)) then
           call continueIndent(cindent, "Subsolver")
-          call showLevel(rsolver%p_solverSubnode,cindent//"  |")
+          call showLevel(rsolver%p_solverSubnode(1),cindent//"  |")
         end if
 
         if (associated(rsolver%p_solverUMFPACK)) then
@@ -3330,7 +3426,7 @@ contains
 
 !<function>
 
-  function solver_getNextSolver(rsolver) result(p_rsubsolver)
+  function solver_getNextSolver(rsolver, isubsolver) result(p_rsubsolver)
 
 !<description>
     ! This functions sets the pointer to the next solver structure in the solver 
@@ -3343,6 +3439,9 @@ contains
 !<input>
     ! Solver that is used as base solver
     type(t_solver), intent(in) :: rsolver
+
+    ! OPTIONAL: Number of the subsolver if there are more than one
+    integer, intent(in), optional :: isubsolver
 !</input>
 
 !<result>
@@ -3352,8 +3451,27 @@ contains
 !</result>
 !</function>
 
+    ! local variables
+    integer :: isub
+
+    ! Initialize subsolver number
+    isub = 1
+    if (present(isubsolver)) isub = isubsolver
+
     ! What type of solver are we?
     select case(rsolver%csolverType)
+
+    case (SV_COUPLED)
+      if (associated(rsolver%p_solverSubnode)) then
+        if (size(rsolver%p_solverSubnode) .ge. isub) then
+          p_rsubsolver => rsolver%p_solverSubnode(isub)
+        else
+          nullify(p_rsubsolver)
+        end if
+      else
+        nullify(p_rsubsolver)
+      end if
+
     case (SV_FMG, SV_NONLINEARMG, SV_LINEARMG)
       if (associated(rsolver%p_solverMultigrid)) then
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
@@ -3367,7 +3485,7 @@ contains
       
     case (SV_NONLINEAR, SV_LINEAR)
       if (associated(rsolver%p_solverSubnode)) then
-        p_rsubsolver => rsolver%p_solverSubnode
+        p_rsubsolver => rsolver%p_solverSubnode(1)
       else
         nullify(p_rsubsolver)
       end if
@@ -3382,7 +3500,8 @@ contains
   
 !<function>
 
-  function solver_getNextSolverByTypes(rsolver, CsolverType) result(p_rsubsolver)
+  function solver_getNextSolverByTypes(rsolver, CsolverType, isubsolver)&
+      result(p_rsubsolver)
 
 !<description>
     ! This functions sets the pointer to the next solver structure in the
@@ -3397,6 +3516,9 @@ contains
 
     ! Array of types of solver to return
     integer, dimension(:), intent(in) :: CsolverType
+
+    ! OPTIONAL: Number of the subsolver if there are more than one
+    integer, intent(in), optional :: isubsolver
 !</input>
 
 !<result>
@@ -3409,7 +3531,7 @@ contains
     p_rsubsolver => rsolver
     do while (associated(p_rsubsolver))
       if (any(p_rsubsolver%csolverType .eq. CsolverType)) exit
-      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
+      p_rsubsolver => solver_getNextSolver(p_rsubsolver, isubsolver)
     end do
 
   end function solver_getNextSolverByTypes
@@ -3418,7 +3540,8 @@ contains
   
 !<function>
 
-  function solver_getNextSolverByType(rsolver, csolverType) result(p_rsubsolver)
+  function solver_getNextSolverByType(rsolver, csolverType, isubsolver)&
+      result(p_rsubsolver)
 
 !<description>
     ! This functions sets the pointer to the next solver structure in the
@@ -3433,6 +3556,9 @@ contains
 
     ! Type of solver to return
     integer, intent(in) :: csolverType
+
+    ! OPTIONAL: Number of the subsolver if there are more than one
+    integer, intent(in), optional :: isubsolver
 !</input>
 
 !<result>
@@ -3445,7 +3571,7 @@ contains
     p_rsubsolver => rsolver
     do while (associated(p_rsubsolver))
       if (p_rsubsolver%csolverType .eq. csolverType) exit
-      p_rsubsolver => solver_getNextSolver(p_rsubsolver)
+      p_rsubsolver => solver_getNextSolver(p_rsubsolver, isubsolver)
     end do
 
   end function solver_getNextSolverByType
@@ -3502,12 +3628,17 @@ contains
       type(t_solver), intent(in) :: rsolver
       integer :: nlmin
 
+      ! local varialbles
+      integer :: i
+
       ! Initialization
       nlmin = huge(1)
       
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
-        nlmin = min(nlmin, get_nlmin(rsolver%p_solverSubnode))
+        do i = 1, size(rsolver%p_solverSubnode)
+          nlmin = min(nlmin, get_nlmin(rsolver%p_solverSubnode(i)))
+        end do
       end if
       
       ! Do we have multigrid subnode?
@@ -3575,12 +3706,17 @@ contains
       type(t_solver), intent(in) :: rsolver
       integer :: nlmax
       
+      ! local variables
+      integer :: i
+
       ! Initialization
       nlmax = 0
       
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
-        nlmax = max(nlmax, get_nlmax(rsolver%p_solverSubnode))
+        do i = 1, size(rsolver%p_solverSubnode)
+          nlmax = max(nlmax, get_nlmax(rsolver%p_solverSubnode(i)))
+        end do
       end if
       
       ! Do we have multigrid subnode?
@@ -3632,11 +3768,14 @@ contains
       type(t_solver), intent(inout) :: rsolver
       integer, intent(in) :: nlmin
       
+      ! local variables
       integer :: i
       
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
-        call set_nlmin(rsolver%p_solverSubnode, nlmin)
+        do i = 1, size(rsolver%p_solverSubnode)
+          call set_nlmin(rsolver%p_solverSubnode(i), nlmin)
+        end do
       end if
       
       ! Do we have multigrid subnode?
@@ -3712,11 +3851,14 @@ contains
       type(t_solver), intent(inout) :: rsolver
       integer, intent(in) :: nlmax
       
+      ! local variables
       integer :: i
       
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
-        call set_nlmax(rsolver%p_solverSubnode, nlmax)
+        do i = 1, size(rsolver%p_solverSubnode)
+          call set_nlmax(rsolver%p_solverSubnode(i), nlmax)
+        end do
       end if
       
       ! Do we have multigrid subnode?
@@ -3795,7 +3937,10 @@ contains
 
     ! Do we have a generic solver subnode?
     if (associated(rsolver%p_solverSubnode)) then
-      call solver_setBoundaryCondition(rsolver%p_solverSubnode, rboundaryCondition, brecursive)
+      do i = 1, size(rsolver%p_solverSubnode)
+        call solver_setBoundaryCondition(rsolver%p_solverSubnode(i),&
+            rboundaryCondition, brecursive)
+      end do
     end if
     
     ! Do we have a multigrid subnode?
@@ -4488,6 +4633,22 @@ contains
     ! What kind of solver are we?
     select case(rsolver%csolverType)
 
+    case (SV_COUPLED)
+      ! ------------------------------------------------------------------------
+      ! Coupled solver - do nothing for the solver itself
+
+      ! Remove update marker from specification bitfields
+      rsolver%isolverSpec = iand(rsolver%isolverSpec,&
+                                 not(SV_SSPEC_STRUCTURENEEDSUPDATE))
+      
+      ! Proceed to solver subnodes
+      if (associated(rsolver%p_solverSubnode)) then
+        do i = 1, size(rsolver%p_solverSubnode)
+          call solver_updateStructure(rsolver%p_solverSubnode(i))
+        end do
+      end if
+
+
     case (SV_FMG)
       ! ------------------------------------------------------------------------
       ! Full multigrid solver - do nothing for the solver itself
@@ -4692,7 +4853,7 @@ contains
         
       ! Proceed to the generic solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        call solver_updateStructure(rsolver%p_solverSubnode)
+        call solver_updateStructure(rsolver%p_solverSubnode(1))
       end if
       
 
@@ -5042,7 +5203,7 @@ contains
 
       ! Porceed to the generic solver subnode
       if (associated(rsolver%p_solverSubnode)) then
-        call solver_updateContent(rsolver%p_solverSubnode)
+        call solver_updateContent(rsolver%p_solverSubnode(1))
       end if
 
       
@@ -5536,30 +5697,109 @@ contains
 
     ! Copy input parameters?
     if (bcopyInput) then
-      rsolverDest%iresNorm       = rsolverSource%iresNorm
-      rsolverDest%nminIterations = rsolverSource%nminIterations
-      rsolverDest%nmaxIterations = rsolverSource%nmaxIterations
-      rsolverDest%domega         = rsolverSource%domega
-      rsolverDest%depsRel        = rsolverSource%depsRel
-      rsolverDest%depsAbs        = rsolverSource%depsAbs
-      rsolverDest%depsStag       = rsolverSource%depsStag
-      rsolverDest%ddivRel        = rsolverSource%ddivRel
-      rsolverDest%ddivAbs        = rsolverSource%ddivAbs
-      rsolverDest%drhsZero       = rsolverSource%drhsZero
-      rsolverDest%ddefZero       = rsolverSource%ddefZero
+      rsolverDest%iresNorm           = rsolverSource%iresNorm
+      rsolverDest%istoppingCriterion = rsolverSource%istoppingCriterion
+      rsolverDest%nminIterations     = rsolverSource%nminIterations
+      rsolverDest%nmaxIterations     = rsolverSource%nmaxIterations
+      rsolverDest%domega             = rsolverSource%domega
+      rsolverDest%depsRel            = rsolverSource%depsRel
+      rsolverDest%depsAbs            = rsolverSource%depsAbs
+      rsolverDest%depsStag           = rsolverSource%depsStag
+      rsolverDest%ddivRel            = rsolverSource%ddivRel
+      rsolverDest%ddivAbs            = rsolverSource%ddivAbs
+      rsolverDest%drhsZero           = rsolverSource%drhsZero
+      rsolverDest%ddefZero           = rsolverSource%ddefZero
     end if
     
     ! Copy output parameters?
     if (bcopyOutput) then
-      rsolverDest%istatus          = rsolverSource%istatus
-      rsolverDest%iiterations      = rsolverSource%iiterations
-      rsolverDest%dinitialRHS      = rsolverSource%dinitialRHS
-      rsolverDest%dinitialDefect   = rsolverSource%dinitialDefect
-      rsolverDest%dfinalDefect     = rsolverSource%dfinalDefect
-      rsolverDest%dconvergenceRate = rsolverSource%dconvergenceRate
+      rsolverDest%istatus            = rsolverSource%istatus
+      rsolverDest%iiterations        = rsolverSource%iiterations
+      rsolverDest%dinitialRHS        = rsolverSource%dinitialRHS
+      rsolverDest%dinitialDefect     = rsolverSource%dinitialDefect
+      rsolverDest%dfinalDefect       = rsolverSource%dfinalDefect
+      rsolverDest%dconvergenceRate   = rsolverSource%dconvergenceRate
     end if
 
   end subroutine solver_copySolver
+
+  ! ***************************************************************************
+
+!<function>
+
+  function solver_testConvergence(rsolver) result(bconverged)
+
+!<description>
+    ! This function check all convergence criteria for the solver
+!</description>
+
+!<input>
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+!</input>
+
+!<result>
+    ! Boolean value. 
+    ! =TRUE if the convergence criterion is reached; 
+    ! =FALSE otherwise.
+    logical :: bconverged
+!</result>
+!</function>
+
+    select case (rsolver%istoppingCriterion)
+
+    case (SV_STOP_ANY)
+      ! Iteration stops if either the absolute or the relative
+      ! criterium holds.
+      bconverged = .false.
+      
+      ! Absolute convergence criterion? Check the norm directly.
+      if (rsolver%depsAbs .ne. 0.0_DP) then
+        if (.not. (rsolver%dfinalDefect .gt. rsolver%depsAbs)) then
+          bconverged = .true.
+          return
+        end if
+      end if
+
+      ! Relative convergence criterion? Multiply with initial residuum
+      ! and check the norm. 
+      if (rsolver%depsRel .ne. 0.0_DP) then
+        if (.not. (rsolver%dfinalDefect .gt. rsolver%depsRel *&
+                   rsolver%dinitialDefect)) then
+          bconverged = .true.
+          return
+        end if
+      end if
+      
+    case (SV_STOP_ALL)
+      ! Iteration stops if both the absolute and the relative criterium holds.
+      bconverged = .true.
+
+      ! Absolute convergence criterion? Check the norm directly.
+      if (rsolver%depsAbs .ne. 0.0_DP) then
+        if (rsolver%dfinalDefect .gt. rsolver%depsAbs) then
+          bconverged = .false.
+          return
+        end if
+      end if
+      
+      ! Relative convergence criterion? Multiply with initial residuum
+      ! and check the norm. 
+      if (rsolver%depsRel .ne. 0.0_DP) then
+        if (rsolver%dfinalDefect .gt. rsolver%depsRel *&
+            rsolver%dinitialDefect) then
+          bconverged = .false.
+          return
+        end if
+      end if
+
+    case default
+      call output_line('Invalid stopping criterion',&
+          OU_CLASS_ERROR,OU_MODE_STD,'solver_testConvergence')
+      call sys_halt()
+    end select
+
+    end function solver_testConvergence
 
   ! ***************************************************************************
   ! Auxiliary routines

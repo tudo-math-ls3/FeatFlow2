@@ -316,7 +316,7 @@ contains
         doldDefect             = rsolver%dinitialDefect
         rsolver%istatus        = 0
 
-        ! Check if initial residual is too large ...
+        ! Check if initial residual is too large onv...
         if (rsolver%dinitialDefect > rsolver%ddivAbs) then
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
             call output_line('!!! Norm of initial residual is too large '//&
