@@ -445,7 +445,7 @@ contains
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
 
         ! Directly proceed to the linear solver subnode.
-        call updateMatrix(rproblemLevel, rsolver%p_solverSubnode,&
+        call updateMatrix(rproblemLevel, rsolver%p_solverSubnode(1),&
                           imatrix, isystemformat, iupdflag, nlmin, nlmax)
         
         

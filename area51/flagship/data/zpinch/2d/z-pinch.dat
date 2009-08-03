@@ -36,14 +36,17 @@ ndimension = 2
 # 2 = Cylindrical coordinates (r-z)
 icoords = 1
 
+# section name of Lorentz force term
+slorentzforcename = @forceterm
+
 # solution algorithm
 algorithm = transient_primal
 
 # section name of the time-stepping algorithm
 timestep = Timestepping
 
-# section name of Lorentz force term
-slorentzforcename = @forceterm
+# section name of the top-level solver
+solver = CoupledSolver
 
 # section name of the adaptation configuration
 adaptivity = Adaptivity
@@ -158,12 +161,6 @@ isystemformat = 0
 
 # section name of the inviscid stabilization
 inviscid = Inviscid
-
-# section name of the time-stepping algorithm
-timestep = Timestepping
-
-# section name of the top-level solver
-solver = FullMultigridSolverEuler
 
 
 ################################################################################
@@ -311,12 +308,6 @@ ijacobianformat = 0
 # section name of the convection stabilization
 convection = Convection
 
-# section name of the time-stepping algorithm
-timestep = Timestepping
-
-# section name of the top-level solver
-solver = FullMultigridSolverTransport
-
 
 ################################################################################
 [Convection]
@@ -348,7 +339,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_tria_BE_FCT
+ucdsolution = out/zpinch_test
 
 # file for UCD import of solution
 ucdimport = 
@@ -431,6 +422,51 @@ dmaxRel = 1e-2
 
 # tolerance for steady state convergence
 depsSteady = 0.0
+
+
+################################################################################
+[CoupledSolver]
+ csolverType = 6
+################################################################################
+
+# level of output information:
+# 0 = no output
+# 1 = errors
+# 2 = errors+warnings
+# 3 = information
+# 4 = verbose output
+# >9 = file output
+ioutputlevel = 2
+
+# norm to use for defect checking
+# 0 = Euclidian norm
+# 1 = L1-norm
+# 2 = L2-norm
+# 3 = MAX-norm
+iresNorm = 0
+
+# minimum number of coupling steps
+nminIterations = 1
+
+# maximum number of coupling steps
+nmaxIterations = 25
+
+# nonlinear relaxation parameter
+domega = 1.0
+
+# absolute tolerance for residual
+depsAbs = 1e-11
+
+# relative tolerance for residual
+depsRel = 1e-3
+
+# relative tolerance for stagnation
+depsStag = 0.0
+
+# names of the subsolvers
+ssolvername(2) = 
+   FullMultigridSolverEuler
+   FullMultigridSolverTransport
 
 
 ################################################################################

@@ -147,8 +147,8 @@ contains
     type(t_timestep) :: rtimestep
     
     ! Global solver structure and points
-    type(t_solver), dimension(2), target :: rsolver
-    type(t_solver), pointer :: p_rsolverEuler, p_rsolverTransport
+    type(t_solver) :: rsolver
+    type(t_solver), pointer :: p_rsolver => null()
 
     ! Solution vectors and pointers
     type(t_vectorBlock), dimension(2), target :: rsolution
@@ -201,10 +201,6 @@ contains
     
     ! Start time measurement
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
-
-    ! Set pointers for coupled problems
-    p_rsolverEuler => rsolver(1)
-    p_rsolverTransport => rsolver(2)
 
     p_rsolutionEuler => rsolution(1)
     p_rsolutionTransport => rsolution(2)
@@ -283,15 +279,12 @@ contains
     call collct_setvalue_pars(rcollection,&
         'rfparser', rfparser, .true.)
     
-    ! Initialize the solver structures   
-    call zpinch_initSolvers(rparlist, 'zpinch', ssectionNameEuler,&
-        ssectionNameTransport, rtimestep, rsolver)
-    
+    ! Initialize the solver structures
+    call zpinch_initSolvers(rparlist, 'zpinch', rtimestep, rsolver)
+
     ! Initialize the abstract problem structure
-    nlmin = min(solver_getMinimumMultigridlevel(p_rsolverEuler),&
-                solver_getMinimumMultigridlevel(p_rsolverTransport))
-    nlmax = max(solver_getMaximumMultigridlevel(p_rsolverEuler),&
-                solver_getMaximumMultigridlevel(p_rsolverTransport))
+    nlmin = solver_getMinimumMultigridlevel(rsolver)
+    nlmax = solver_getMaximumMultigridlevel(rsolver)
     
     ! Initialize the abstract problem structure
     call zpinch_initProblem(rparlist, 'zpinch',&
@@ -308,21 +301,28 @@ contains
         ssectionNameEuler, 'systemMatrix', systemMatrix)
     call parlst_getvalue_int(rparlist,&
         ssectionNameEuler, 'isystemFormat', isystemFormat)
+
+    ! Get first solver subnode
+    p_rsolver => solver_getNextSolver(rsolver, 1)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
-        p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
-    call solver_updateStructure(p_rsolverEuler)
+        p_rsolver, systemMatrix, isystemFormat, UPDMAT_ALL)
 
     ! Prepare internal data arrays of the solver structure for transport model
     call parlst_getvalue_int(rparlist,&
         ssectionNameTransport, 'systemMatrix', systemMatrix)
+
+    ! Get second solver subnode
+    p_rsolver => solver_getNextSolver(rsolver, 2)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
-        p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
-    call solver_updateStructure(p_rsolverTransport)
+        p_rsolver, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+
+    ! Update complete solver structure
+    call solver_updateStructure(rsolver)
     
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
-   
-
+    
+    
     !---------------------------------------------------------------------------
     ! Solution algorithm
     !---------------------------------------------------------------------------
@@ -397,8 +397,7 @@ contains
     call tstep_releaseTimestep(rtimestep)
     
     ! Release solver
-    call solver_releaseSolver(p_rsolverEuler)
-    call solver_releaseSolver(p_rsolverTransport)
+    call solver_releaseSolver(rsolver)
     
     ! Release problem structure
     call problem_releaseProblem(rproblem)
@@ -432,8 +431,7 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_initSolvers(rparlist, ssectionName,&
-      ssectionNameEuler, ssectionNameTransport, rtimestep, rsolver)
+  subroutine zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
 !<description>
     ! This subroutine initializes the time-stepping structure and
@@ -446,8 +444,6 @@ contains
 
     ! section names in parameter list
     character(LEN=*), intent(in) :: ssectionName
-    character(LEN=*), intent(in) :: ssectionNameEuler
-    character(LEN=*), intent(in) :: ssectionNameTransport
 !</input>
 
 !<output>
@@ -455,7 +451,7 @@ contains
     type(t_timestep), intent(out) :: rtimestep
 
     ! solver struchture
-    type(t_solver), dimension(2), intent(out) :: rsolver
+    type(t_solver), intent(out) :: rsolver
 !</output>
 !</subroutine>
 
@@ -465,9 +461,6 @@ contains
     ! section name for time-stepping scheme
     character(LEN=SYS_STRLEN) :: stimestepName
         
-    ! local variables
-    integer :: nlmin, nlmax
- 
     
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -479,34 +472,12 @@ contains
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
-        ssectionNameEuler, 'solver', ssolverName)
+        ssectionName, 'solver', ssolverName)
     
-    ! Initialize solver structure
-    call solver_createSolver(rparlist, ssolverName, rsolver(1))
-    if (rsolver(1)%csolverType .eq. SV_FMG) then
-      nlmin = rsolver(1)%p_solverMultigrid%nlmin
-      nlmax = rsolver(1)%p_solverMultigrid%nlmax
-      call solver_adjustHierarchy(rsolver(1), nlmin, nlmax)
-    else
-      call solver_adjustHierarchy(rsolver(1))
-    end if
-    call solver_updateStructure(rsolver(1))
-
-    
-    ! Get global configuration from parameter list
-    call parlst_getvalue_string(rparlist,&
-        ssectionNameTransport, 'solver', ssolverName)
-    
-    ! Initialize solver structure
-    call solver_createSolver(rparlist, ssolverName, rsolver(2))
-    if (rsolver(2)%csolverType .eq. SV_FMG) then
-      nlmin = rsolver(2)%p_solverMultigrid%nlmin
-      nlmax = rsolver(2)%p_solverMultigrid%nlmax
-      call solver_adjustHierarchy(rsolver(2), nlmin, nlmax)
-    else
-      call solver_adjustHierarchy(rsolver(2))
-    end if
-    call solver_updateStructure(rsolver(2))
+    ! Initialize solver structures
+    call solver_createSolver(rparlist, ssolverName, rsolver)
+    call solver_adjustHierarchy(rsolver)
+    call solver_updateStructure(rsolver)
     
   end subroutine zpinch_initSolvers
 
@@ -1729,8 +1700,8 @@ contains
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
     
-    ! solver struchture
-    type(t_solver), dimension(:), intent(inout), target :: rsolver
+    ! solver structure
+    type(t_solver), intent(inout), target :: rsolver
 
     ! primal solution vector
     type(t_vectorBlock), dimension(:), intent(inout), target :: rsolution
@@ -1803,8 +1774,8 @@ contains
         collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
     
     ! Set pointers to solver structures
-    p_rsolverEuler => rsolver(1)
-    p_rsolverTransport => rsolver(2)
+    p_rsolverEuler     => solver_getNextSolver(rsolver, 1)
+    p_rsolverTransport => solver_getNextSolver(rsolver, 2)
     
     ! Set pointers to solution vectors
     p_rsolutionEuler => rsolution(1)
