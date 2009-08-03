@@ -607,8 +607,7 @@ contains
           end if          
 
           ! Check if residual increased too much
-          if (rsolver%dfinalDefect > rsolver%ddivRel*rsolver%dinitialDefect .or.&
-              rsolver%dfinalDefect > rsolver%ddivAbs) then
+          if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                   rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5))//' !!!')
@@ -623,8 +622,8 @@ contains
 
           ! Check convergence criteria
           if (imgstep .ge. p_solverMultigrid%ilmin) then
-            if ((rsolver%dfinalDefect .le. rsolver%depsAbs) .or.&
-                (rsolver%dfinalDefect .le. rsolver%depsRel*rsolver%dinitialDefect)) then
+            if (solver_testConvergence(rsolver)) then
+              rsolver%istatus = SV_CONVERGED
               exit mgstep
             end if
           end if
@@ -978,10 +977,9 @@ contains
     p_rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, p_rsolver%iresNorm)
     p_rsolver%dfinalDefect   = p_rsolver%dinitialDefect
     doldDefect               = p_rsolver%dinitialDefect
-    p_rsolver%istatus        = SV_CONVERGED
     
     ! Check if initial residual is too large ...
-    if (p_rsolver%dinitialDefect > p_rsolver%ddivAbs) then
+    if (solver_testDivergence(p_rsolver)) then
       if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Norm of initial residual is too large '//&
             trim(sys_sdEL(p_rsolver%dinitialDefect,5))//' !!!')
@@ -1273,8 +1271,7 @@ contains
       !--------------------------------------------------------------
       
       ! Check if residual increased too much
-      if (p_rsolver%dfinalDefect > p_rsolver%ddivRel*p_rsolver%dinitialDefect .or. &
-          p_rsolver%dfinalDefect > p_rsolver%ddivAbs) then
+      if (solver_testDivergence(p_rsolver)) then
         if (p_rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
               p_rsolver%dfinalDefect/max(SYS_EPSREAL, p_rsolver%dinitialDefect),5))//' !!!')
@@ -1282,9 +1279,7 @@ contains
         
         ! Adjust solver status
         p_rsolver%istatus = SV_INCR_DEF
-        
-        ! Also adjust solver status of top-most solver
-        rsolver%istatus = SV_INCR_DEF
+        rsolver%istatus   = SV_INCR_DEF
         
         ! That is it, return.
         return
@@ -1292,10 +1287,12 @@ contains
 
       ! Check convergence criteria
       if (iiterations .ge. p_rsolver%nminIterations) then
-        if ((p_rsolver%dfinalDefect .le. p_rsolver%depsAbs) .or.&
-            (p_rsolver%dfinalDefect .le. p_rsolver%depsRel*p_rsolver%dinitialDefect)) then
+        if (solver_testConvergence(p_rsolver)) then
+          p_rsolver%istatus = SV_CONVERGED
+          rsolver%istatus   = SV_CONVERGED
           exit fixpoint
-        elseif(p_rsolver%depsStag > 0.0_DP) then
+        end if
+        if (p_rsolver%depsStag > 0.0_DP) then
           if (nlsol_checkStagnation(p_rsolver, iiterations)) exit fixpoint
         end if
       end if
