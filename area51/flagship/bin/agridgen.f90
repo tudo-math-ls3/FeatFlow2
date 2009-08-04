@@ -13,6 +13,9 @@ program agridgen
   ! Definition of the outer radius
   real(DP) :: douterRadius = 1.0_DP
 
+  ! Definition of the grid anisotropy
+  real(DP) :: danisotropy = 1.0_DP
+
   ! Definition of the number of segments
   integer :: nsegments = 6
 
@@ -31,7 +34,7 @@ program agridgen
   ! local variables
   character(len=80) :: cbuffer
   character(len=32) :: cbuffer1,cbuffer2,cbuffer3,cbuffer4,cbuffer5,cbuffer6
-  real(DP) :: x,y,r,phi
+  real(DP) :: x,y,r,dr0,phi
   integer :: i,j,k,ivt,jvt,isegment,iaux,irefine,nvt,nel,nmt
 
   !-----------------------------------------------------------------------------
@@ -46,6 +49,7 @@ program agridgen
       write(*,'(A)') 'Usage: agridgen [OPTION]'
       write(*,'(A)') 'Generate an annular grid in TRI/PRM format.'
       write(*,*)
+      write(*,'(A,T30,A)') '-A,  --anisotropy','degree of grid anisotropy'
       write(*,'(A,T30,A)') '-R0, --innerradius','radius of the inner circle'
       write(*,'(A,T30,A)') '-R1, --outerradius','radius of the outer circle'
       write(*,'(A,T30,A)') '-S,  --segments','number of segments in azimuthal direction'
@@ -55,6 +59,10 @@ program agridgen
       write(*,*)
       write(*,'(A)') 'Report bugs to <matthias.moeller@math.tu-dortmund.de>.'
       stop
+
+    case('-A','--anisotropy')
+      call get_command_argument(i+1, cbuffer)
+      read(cbuffer,*) danisotropy
 
     case('-R0','--innerradius')
       call get_command_argument(i+1, cbuffer)
@@ -201,12 +209,24 @@ program agridgen
     iaux = iaux + isegment
   end do
 
+  ! Compute minimal grid spacing
+  if (danisotropy .eq. 1.0_DP) then
+    dr0 = (douterRadius-dinnerRadius)/nlayers
+  else
+    dr0 = (danisotropy-1) / (danisotropy**nlayers-1)*&
+          (douterRadius-dinnerRadius)
+  end if
+
   ! Write interior vertices in the outer layer
   do i = 1, nsegments
     do j = 1, nlayers-1
 
       ! Compute radius
-      r = dinnerRadius + j*(douterRadius-dinnerRadius)/nlayers
+      if (danisotropy .eq. 1.0_DP) then
+        r = dinnerRadius + j*dr0
+      else
+        r = dinnerRadius + (danisotropy**j-1)/(danisotropy-1)*dr0
+      end if
       
       ! Compute angle
       phi = 2*(i-1)*pi/nsegments
