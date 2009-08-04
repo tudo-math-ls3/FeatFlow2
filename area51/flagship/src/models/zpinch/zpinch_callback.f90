@@ -29,6 +29,7 @@
 
 module zpinch_callback
 
+  use afcstabilisation
   use boundaryfilter
   use collection
   use derivatives
@@ -847,12 +848,14 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_vectorBlock), pointer :: p_rsolutionEuler
     type(t_parlist), pointer :: p_rparlist
+    type(t_afcstab), pointer :: p_rafcstab
     type(t_vectorScalar) :: rflux0, rflux, rvector
     type(t_vectorBlock) :: rdata
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     real(DP), dimension(:), pointer :: p_MC, p_ML, p_MCRho, p_MLRho, p_Cx, p_Cy
     real(DP), dimension(:), pointer :: p_u, p_rho, p_flux0, p_flux, p_data
-    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
-    integer :: h_Ksep, templatematrix
+    integer, dimension(:), pointer :: p_Kdiagonal
+    integer :: templatematrix, convectionAFC
     integer :: lumpedMassMatrix,  consistentMassMatrix
     integer :: lumpedMassMatrixRho, consistentMassMatrixRho
     integer :: coeffMatrix_CX, coeffMatrix_CY
@@ -870,32 +873,36 @@ contains
         'consistentmassmatrix', consistentMassMatrixRho)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedMassMatrixRho)
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'convectionAFC', convectionAFC)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
         'consistentmassmatrix', consistentMassMatrix)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
-        'lumpedmassmatrix', lumpedMassMatrix)   
-
-    ! Set pointers to template matrix
-    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-    call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
-    call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
-    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
+        'lumpedmassmatrix', lumpedMassMatrix)
     
+    ! Set pointers to template matrix and stabilisation structure
+    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
+    p_rafcstab => rproblemLevel%Rafcstab(convectionAFC)
+
+    ! Let us check if the edge-based data structure has been generated
+    if((iand(p_rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
+       (iand(p_rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+      call afcstab_generateVerticesAtEdge(p_rmatrix, p_rafcstab)
+    end if
+
+    ! Set pointers
+    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
+    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrixRho), p_MCRho)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrixRho), p_MLRho)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
-
-    ! Create diagonal separator
-    h_Ksep = ST_NOHANDLE
-    call storage_copy(p_rmatrix%h_Kld, h_Ksep)
-    call storage_getbase_int(h_Ksep, p_Ksep, p_rmatrix%NEQ+1)
-
+    
     ! Compute number of edges
     nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
-
+    
     ! Create auxiliary vectors
     call lsyssc_createVector(rflux0, nedge, .true., ST_DOUBLE)
     call lsyssc_createVector(rflux,  nedge, .true., ST_DOUBLE)
@@ -908,13 +915,13 @@ contains
     call lsyssc_getbase_double(rflux0, p_flux0)
 
     ! Build the flux
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
+    call buildFlux2d(p_Kdiagonal, p_IverticesAtEdge,&
         p_rmatrix%NEQ, nedge, rtimestep%dStep,&
         p_MC, p_ML, p_Cx, p_Cy, p_u, p_data, p_flux, p_flux0)
 
     ! Build the correction
-    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_MLRho, p_flux, p_flux0, p_data, p_u)
+    call buildCorrection(p_IverticesAtEdge, p_rmatrix%NEQ, nedge,&
+        p_MLRho, p_flux, p_flux0, p_data, p_u)
 
     ! Multiply the low-order solution by the 
     ! density-averaged lumped mass matrix
@@ -948,7 +955,6 @@ contains
     call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
 
     ! Release flux vectors
-    call storage_free(h_Ksep)
     call lsyssc_releaseVector(rflux0)
     call lsyssc_releaseVector(rflux)
     call lsysbl_releaseVector(rdata)
@@ -957,15 +963,30 @@ contains
 
     !***************************************************************************
 
-    subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE,&
+    pure elemental function minmod(a,b)
+      real(DP), intent(in) :: a,b
+      real(DP) :: minmod
+
+      if (a > 0 .and. b > 0) then
+        minmod = min(a,b)
+      elseif (a < 0 .and. b < 0) then
+        minmod = max(a,b)
+      else
+        minmod = 0
+      end if
+    end function minmod
+
+    !***************************************************************************
+
+    subroutine buildFlux2d(Kdiagonal, IverticesAtEdge, NEQ, NEDGE,&
         dscale, MC, ML, Cx, Cy, u, troc, flux0, flux)
 
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
+      integer, dimension(:), intent(in) :: Kdiagonal
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NEDGE
       
-      integer, dimension(:), intent(inout) :: Ksep
       real(DP), dimension(:), intent(inout) :: flux0,flux
       
       real(DP), dimension(:), intent(out) :: troc     
@@ -978,10 +999,8 @@ contains
       ! Initialize time rate of change
       call lalg_clearVector(troc)
 
-      ! Initialize edge counter
-      iedge = 0
-      
       ! Loop over all rows
+      !$omp parallel do private(ii,C_ii,k_ii,d_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -996,41 +1015,39 @@ contains
 
         ! Update the time rate of change vector
         troc(i) = troc(i) + dscale * k_ii*u(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call zpinch_calcMatrixPrimalConst2d(u(i), u(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(abs(k_ij), abs(k_ji))
-
-          ! Compute auxiliary value
-          aux = d_ij*(u(j)-u(i))
-          
-          ! Update the time rate of change vector
-          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
-          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
-
-          ! Compute raw antidiffusive flux
-          flux0(iedge) = -aux
-
-        end do
       end do
+      !$omp end parallel do
 
 
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+      
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        
+        ! Compute convection coefficients
+        call zpinch_calcMatrixPrimalConst2d(u(i), u(j),&
+            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+        
+        ! Compute auxiliary value
+        aux = d_ij*(u(j)-u(i))
+        
+        ! Update the time rate of change vector
+        troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
+        troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
+        
+        ! Compute raw antidiffusive flux
+        flux0(iedge) = -aux
+      end do
+      
+      
       ! Scale the time rate of change by the lumped mass matrix
       !$omp parallel do
       do i = 1, NEQ
@@ -1039,41 +1056,33 @@ contains
       !$omp end parallel do
 
 
-      ! Loop over all rows (backward)
-      do i = NEQ, 1, -1
-
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        do ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-          
-          ! Apply mass antidiffusion
-          flux(iedge) = flux0(iedge) + MC(ij)*(troc(i)-troc(j))
-          
-          ! Update edge counter
-          iedge = iedge-1
-          
-        end do
+      ! Loop over all edges
+      !$omp parallel do private(i,j,ij)
+      do iedge = 1, NEDGE
+      
+        ! Get node numbers and matrix position
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        
+        ! Apply mass antidiffusion
+        flux(iedge) = flux0(iedge) + MC(ij)*(troc(i)-troc(j))
       end do
+      !$omp end parallel do
 
     end subroutine buildFlux2d
 
     !***************************************************************************
     
-    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        NEDGE, ML, flux, flux0, data, u)
+    subroutine buildCorrection(IverticesAtEdge, NEQ, NEDGE,&
+        ML, flux, flux0, data, u)
 
-      
+      integer, dimension(:,:) :: IverticesAtEdge
       real(DP), dimension(:), intent(in) :: ML,flux0
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       real(DP), dimension(:), intent(in) :: u
       integer, intent(in) :: NEQ,NEDGE
       
       real(DP), dimension(:), intent(inout) :: data,flux
-      integer, dimension(:), intent(inout) :: Ksep
       
       ! local variables
       real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
@@ -1091,44 +1100,35 @@ contains
       call lalg_clearVector(rp)
       call lalg_clearVector(rm)
       
-      ! Initialize edge counter
-      iedge = 0
+      ! Loop over all edges
+      do iedge = 1, NEDGE
       
-      ! Loop over all rows
-      do i = 1, NEQ
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
         
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-
-          ! Apply minmod prelimiter ...
-          f_ij = minmod(flux(iedge), 2*flux0(iedge))
-          
-          ! ... and store prelimited flux
-          flux(iedge) = f_ij
-          diff        = u(j)-u(i)
-
-          ! Sums of raw antidiffusive fluxes
-          pp(i) = pp(i) + max(0.0_DP,  f_ij)
-          pp(j) = pp(j) + max(0.0_DP, -f_ij)
-          pm(i) = pm(i) + min(0.0_DP,  f_ij)
-          pm(j) = pm(j) + min(0.0_DP, -f_ij)
-
-          ! Sums of admissible edge contributions
-          qp(i) = max(qp(i),  diff)
-          qp(j) = max(qp(j), -diff)
-          qm(i) = min(qm(i),  diff)
-          qm(j) = min(qm(j), -diff)
-
-        end do
+        ! Apply minmod prelimiter ...
+        f_ij = minmod(flux(iedge), 2*flux0(iedge))
+        
+        ! ... and store prelimited flux
+        flux(iedge) = f_ij
+        diff        = u(j)-u(i)
+        
+        ! Sums of raw antidiffusive fluxes
+        pp(i) = pp(i) + max(0.0_DP,  f_ij)
+        pp(j) = pp(j) + max(0.0_DP, -f_ij)
+        pm(i) = pm(i) + min(0.0_DP,  f_ij)
+        pm(j) = pm(j) + min(0.0_DP, -f_ij)
+        
+        ! Sums of admissible edge contributions
+        qp(i) = max(qp(i),  diff)
+        qp(j) = max(qp(j), -diff)
+        qm(i) = min(qm(i),  diff)
+        qm(j) = min(qm(j), -diff)
+        
       end do
-
-
+      
+      
       ! Compute nodal correction factors
       !$omp parallel do
       do i = 1, NEQ
@@ -1144,54 +1144,31 @@ contains
       ! Initialize correction
       call lalg_clearVector(data)
 
-      ! Loop over all rows (backward)
-      do i = NEQ, 1, -1
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+      
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
         
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        do ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-
-          ! Limit conservative fluxes
-          f_ij = flux(iedge)
-          if (f_ij > 0.0_DP) then
-            f_ij = min(rp(i), rm(j))*f_ij
-          else
-            f_ij = min(rm(i), rp(j))*f_ij
-          end if
-          
-          ! Apply correction
-          data(i) = data(i) + f_ij
-          data(j) = data(j) - f_ij
-
-          ! Update edge counter
-          iedge = iedge-1
-          
-        end do
+        ! Limit conservative fluxes
+        f_ij = flux(iedge)
+        if (f_ij > 0.0_DP) then
+          f_ij = min(rp(i), rm(j))*f_ij
+        else
+          f_ij = min(rm(i), rp(j))*f_ij
+        end if
+        
+        ! Apply correction
+        data(i) = data(i) + f_ij
+        data(j) = data(j) - f_ij
+        
       end do
 
       ! Deallocate temporal memory
       deallocate(pp,pm,qp,qm,rp,rm)
 
     end subroutine buildCorrection
-
-    !***************************************************************************
-
-    pure elemental function minmod(a,b)
-      real(DP), intent(in) :: a,b
-      real(DP) :: minmod
-
-      if (a > 0 .and. b > 0) then
-        minmod = min(a,b)
-      elseif (a < 0 .and. b < 0) then
-        minmod = max(a,b)
-      else
-        minmod = 0
-      end if
-    end function minmod
     
   end subroutine zpinch_calcLinearizedFCT
 
@@ -1226,15 +1203,16 @@ contains
       integer :: ieq
 
       bpositive = .true.
-
+      
+      !$omp parallel do private(p)
       do ieq = 1, neq
         
         p = 0.4_DP * (data(4,ieq) - 0.5_DP * &
             (data(2,ieq)**2 + data(3,ieq)**2) / data(1,ieq) )
 
         if (p .le. 0.0_DP) bpositive = .false.
-        
       end do
+      !$omp end parallel do
       
     end function docheck
 
