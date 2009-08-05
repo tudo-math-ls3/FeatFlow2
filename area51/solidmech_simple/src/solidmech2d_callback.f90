@@ -1919,6 +1919,25 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
                               * cos(2.0_DP * SYS_PI *Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
       end select
 
+    case (53) ! u(x,y) = -x^3*y
+      select case (cderiv)
+      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  -3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_XX); Dvalues(:,:) =  -6.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
+      case (DER_DERIV_XY); Dvalues(:,:) =  -3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      end select
+
+    case (54) ! u(x,y) = 0.33*x^4
+      select case (cderiv)
+      case (DER_FUNC);     Dvalues(:,:) =  0.33_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  1.33_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_XX); Dvalues(:,:) =  4.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
+      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
+      end select
       
 
     end select

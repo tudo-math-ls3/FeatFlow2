@@ -32,6 +32,7 @@ module solidmech2d_method0_simple
   use spdiscprojection
   use scalarpde
   use ucd
+  use paramlist
   use pprocerror
     
   use solidmech2d_callback
@@ -110,69 +111,174 @@ contains
     integer :: ierror
     
     ! Error of FE function to reference function
-    real(DP) :: derror
+    real(DP) :: derror1, derror2
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir
+    character(len=SYS_STRLEN) :: sucddir, smaster,sstring
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
     real(DP), Dimension(:,:), pointer :: p_DvertexCoords
     integer :: i
 
+    ! Structure for saving parameters from the DAT file
+    type (t_parlist) :: rparams
+    
     ! Ok, let's start. 
-
-!     set grid file
-  rproblem%sgridFileTri = 'QUAD.tri'
-  rproblem%sgridFilePrm = 'QUAD.prm'
-
-!       set number of boundary segments (here, one has to know the number of
+  !
+    ! +------------------------------------------------------------------------
+    ! | READ DAT FILE PARAMETERS
+    ! +------------------------------------------------------------------------
+    !
+    ! Initialise the parameter structure and read the DAT file.
+    call parlst_init(rparams)
+ 
+    ! Get the data file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./dat/solidmech2d.dat')
+    call parlst_readfromfile (rparams, smaster)
+    
+    ! Get the parameters...
+    !
+    ! PRM file
+    call parlst_getvalue_string (rparams, '', &
+                                 'sgridFilePRM', sstring)
+    read(sstring,*) rproblem%sgridFilePRM
+                                 
+    ! TRI file
+    call parlst_getvalue_string (rparams, '', &
+                                 'sgridFileTRI', sstring)
+    read(sstring,*) rproblem%sgridFileTRI
+       
+    ! Element type
+    call parlst_getvalue_string (rparams, '', &
+                              'selementType', sstring)
+    read(sstring,*) rproblem%selement
+                              
+!       boundary conditions
+    allocate(rproblem%Sbc(rproblem%nboundarySegments))
+    call parlst_getvalue_string (rparams, '', &
+                                 'Sbc1', sstring)
+    read(sstring,*) rproblem%Sbc(1)
+    call parlst_getvalue_string (rparams, '', &
+                                 'Sbc2', sstring)
+    read(sstring,*) rproblem%Sbc(2)
+    call parlst_getvalue_string (rparams, '', &
+                                 'Sbc3', sstring)
+    read(sstring,*) rproblem%Sbc(3)
+    call parlst_getvalue_string (rparams, '', &
+                                 'Sbc4', sstring)
+    read(sstring,*) rproblem%Sbc(4)
+       
+    ! Maximum level
+    call parlst_getvalue_int (rparams, '', &
+                                     'NLMAX', rproblem%NLMAX)
+       
+!       number of boundary segments (here, one has to know the number of
 !       boundary segments in the current grid)
-  rproblem%nboundarySegments = 4
+    call parlst_getvalue_int (rparams, '', &
+                                     'nboundarySegments', rproblem%nboundarySegments)
+    
+!       type of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
+    call parlst_getvalue_string (rparams, '', &
+                                     'ctypeOfSimulation',sstring)
+   if(trim(sstring) .eq. 'ANALYTICAL') then
+	rproblem%ctypeOfSimulation = SIMUL_ANALYTICAL
+   else if(trim(sstring) .eq. 'REAL') then
+	rproblem%ctypeOfSimulation = SIMUL_REAL
+   else
+	print *,'Invalid sstring for simulation type'
+   end if
+        
+!      function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
+    call parlst_getvalue_int (rparams, '', &
+                                     'cfuncID_u1', rproblem%cfuncID_u1)
 
-!       set boundary conditions
-  allocate(rproblem%Sbc(rproblem%nboundarySegments))
-  rproblem%Sbc(1) = 'N'
-  rproblem%Sbc(2) = 'D'
-  rproblem%Sbc(3) = 'N'
-  rproblem%Sbc(4) = 'D'
-
-!      set element(possible values: Q1, Q2)
-  rproblem%selement = 'Q2'
-
-!      set refinement level
-  rproblem%NLMAX = 5
-
+    call parlst_getvalue_int (rparams, '', &
+                                     'cfuncID_u2', rproblem%cfuncID_u2)
+         
+!      deformation in gmv(possible values: ON, OFF)
+    call parlst_getvalue_string (rparams, '', &
+                                     'Deformation', sstring)
+   if(trim(sstring) .eq. 'ON') then
+	rproblem%DEFORMATION = ON
+   else if(trim(sstring) .eq. 'OFF') then
+	rproblem%DEFORMATION = OFF
+   else
+	print *,'Invalid sstring for simulation type'
+   end if
+         
 !       material parameters (Poisson ratio nu and shear modulus mu)
-  rproblem%dnu     = 0.3_DP
-  rproblem%dmu     = 0.5_DP
+    call parlst_getvalue_double (rparams, '', &
+                                     'dnu', rproblem%dnu)
+
+    call parlst_getvalue_double (rparams, '', &
+                                     'dmu', rproblem%dmu)
   rproblem%dlambda = 2.0_DP * rproblem%dmu * rproblem%dnu/(1 - 2.0_DP * rproblem%dnu)
-
-!       set type of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
-  rproblem%ctypeOfSimulation = SIMUL_REAL
-
-!      set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
-  rproblem%cfuncID_u1 = 50
-  rproblem%cfuncID_u2 = 52
-
+                     
 !      set constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
-  rproblem%drhsVol1   = 0.0_DP
-  rproblem%drhsVol2   = 0.0_DP
-  rproblem%drhsBound1 = 0.2_DP
-  rproblem%drhsBound2 = 0.0_DP
+    call parlst_getvalue_double (rparams, '', &
+                                     'drhsVol1', rproblem%drhsVol1)
 
-!      set deformation(possible values: ON, OFF)
-  rproblem%DEFORMATION = ON
+    call parlst_getvalue_double (rparams, '', &
+                                     'drhsVol2', rproblem%drhsVol2)
 
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
-    ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    call parlst_getvalue_double (rparams, '', &
+                                     'drhsBound1', rproblem%drhsBound1)
 
+    call parlst_getvalue_double (rparams, '', &
+                                     'drhsBound2', rproblem%drhsBound2)
+                 
+! !     set grid file
+!   rproblem%sgridFileTri = 'cook.tri'
+!   rproblem%sgridFilePrm = 'cook.prm'
+! 
+! !       set number of boundary segments (here, one has to know the number of
+! !       boundary segments in the current grid)
+!   rproblem%nboundarySegments = 4
+! 
+! !       set boundary conditions
+!   allocate(rproblem%Sbc(rproblem%nboundarySegments))
+!   rproblem%Sbc(1) = 'N'
+!   rproblem%Sbc(2) = 'N'
+!   rproblem%Sbc(3) = 'N'
+!   rproblem%Sbc(4) = 'D'
+! 
+! !      set element(possible values: Q1, Q2)
+!   rproblem%selement = 'Q1'
+! 
+! !      set refinement level
+!   rproblem%NLMAX = 1
+! 
+! !       material parameters (Poisson ratio nu and shear modulus mu)
+!   rproblem%dnu     = 0.3_DP
+!   rproblem%dmu     = 0.5_DP
+!   rproblem%dlambda = 2.0_DP * rproblem%dmu * rproblem%dnu/(1 - 2.0_DP * rproblem%dnu)
+! 
+! !       set type of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
+!   rproblem%ctypeOfSimulation = SIMUL_ANALYTICAL
+! 
+! !      set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
+!   rproblem%cfuncID_u1 = 53
+!   rproblem%cfuncID_u2 = 52
+! 
+! !      set constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
+!   rproblem%drhsVol1   = 0.0_DP
+!   rproblem%drhsVol2   = -0.001_DP
+!   rproblem%drhsBound1 = 0.0_DP
+!   rproblem%drhsBound2 = 0.0_DP
+! 
+! !      set deformation(possible values: ON, OFF)
+!   rproblem%DEFORMATION = ON
+
+    ! +------------------------------------------------------------------------
+    ! | BOUNDARY AND TRIANGULATION
+    ! +------------------------------------------------------------------------
+    !
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/'//trim(rproblem%sgridFilePrm))
+    call boundary_read_prm(rboundary, rproblem%sgridFilePRM)
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/'//trim(rproblem%sgridFileTri), rboundary)
+    call tria_readTriFile2D (rtriangulation, rproblem%sgridFileTRI, rboundary)
      
     ! Refine it.
     call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1,rtriangulation,rboundary)
@@ -373,6 +479,11 @@ contains
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
                   rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Vol_u2_2D)
 
+!      print # of DOF
+    call lsysbl_getbase_double (rVector,p_Ddata)
+
+    call output_line ('Number of DOF: ' // sys_siL(size(p_Ddata),12) )
+
 !    Clear the solution vector on the finest level.
     call lsysbl_clearVector(rvector)
 
@@ -452,7 +563,6 @@ contains
 	end if
    end do
 
-
     ! Hang the pointer into the vector and matrix. That way, these
     ! boundary conditions are always connected to that matrix and that
     ! vector.!
@@ -483,19 +593,19 @@ contains
     ! Create a BiCGStab-solver.
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    nullify(p_rpreconditioner)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!     p_RfilterChain => RfilterChain
+!     nullify(p_rpreconditioner)
+!     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
 !    For Direct solver we use following 
-!     call linsol_initUMFPACK4 (p_rsolverNode)
-!     p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 1
+    call linsol_initUMFPACK4 (p_rsolverNode)
+    p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 0
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
     ! We will allow the solver to perform 200 iterations
-    p_rsolverNode%nmaxIterations = 5000
+    p_rsolverNode%nmaxIterations = 10000
 
     p_rsolverNode%depsRel = 1E-10_DP
    ! p_rsolverNode%depsAbs = 1E-10_DP
@@ -529,21 +639,25 @@ contains
     ! Calculate the error to the reference function.
 
     if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
-	call pperr_scalar (rVector%RvectorBlock(1),PPERR_L2ERROR,derror,&
+	call pperr_scalar (rVector%RvectorBlock(1),PPERR_L2ERROR,derror1,&
 			getReferenceFunction_u1_2D)
-	call output_line ('L2-error for X: ' // sys_sdEL(derror,10) )
+! 	call output_line ('L2-error for U1: ' // sys_sdEL(derror1,10) )
 	
-	call pperr_scalar (rVector%RvectorBlock(2),PPERR_L2ERROR,derror,&
+	call pperr_scalar (rVector%RvectorBlock(2),PPERR_L2ERROR,derror2,&
 			getReferenceFunction_u2_2D)
-	call output_line ('L2-error for Y: ' // sys_sdEL(derror,10) )
+! 	call output_line ('L2-error for U2: ' // sys_sdEL(derror2,10) )
+
+	call output_line ('L2-error for U: ' // sys_sdEL(sqrt(derror1*derror1 + derror2*derror2),10) )
 	
-	call pperr_scalar (rVector%RvectorBlock(1),PPERR_H1ERROR,derror,&
+	call pperr_scalar (rVector%RvectorBlock(1),PPERR_H1ERROR,derror1,&
 			getReferenceFunction_u1_2D)
-	call output_line ('H1-error for X: ' // sys_sdEL(derror,10) )
+! 	call output_line ('H1-error for U1: ' // sys_sdEL(derror1,10) )
 	
-	call pperr_scalar (rVector%RvectorBlock(2),PPERR_H1ERROR,derror,&
+	call pperr_scalar (rVector%RvectorBlock(2),PPERR_H1ERROR,derror2,&
 			getReferenceFunction_u2_2D)
-	call output_line ('H1-error for Y: ' // sys_sdEL(derror,10) )
+! 	call output_line ('H1-error for U2: ' // sys_sdEL(derror2,10) )
+
+	call output_line ('H1-error for U: ' // sys_sdEL(sqrt(derror1*derror1 + derror2*derror2),10) )
     end if
 
     ! Get the path for writing postprocessing files from the environment variable
