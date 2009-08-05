@@ -385,7 +385,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 2e-4
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 1e-4
@@ -805,10 +805,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 1e-4 #3e-4
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 1
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
