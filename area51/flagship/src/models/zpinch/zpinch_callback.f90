@@ -437,7 +437,7 @@ contains
     ! Get number of degrees of freedom and spatial dimension
     neq  = rproblemLevel%rtriangulation%NVT
     ndim = rproblemLevel%rtriangulation%ndim
-    
+
     ! Create/resize velocity vector if required
     if (rproblemLevel%RvectorBlock(velocityfield)%NEQ .eq. 0) then
       call lsysbl_createVectorBlock(&
@@ -1183,8 +1183,9 @@ contains
     ! local variabels
     real(DP), dimension(:), pointer :: p_Ddata
     integer :: neq
-    
-    neq = rvector%NEQ/4
+
+    ! Compute number of equations
+    neq = rvector%NEQ/NVAR2D
 
     call lsysbl_getbase_double(rvector, p_Ddata)
 
