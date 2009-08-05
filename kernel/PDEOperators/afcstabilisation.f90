@@ -75,10 +75,6 @@ module afcstabilisation
   public :: afcstab_generateSubdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_limit
-!  public :: afcstab_assembleVectorScalar
-!  public :: afcstab_assembleVectorBlock
-!  public :: afcstab_assembleMatrixScalar
-!  public :: afcstab_assembleMatrixBlock
  
   ! *****************************************************************************
   ! *****************************************************************************
@@ -125,13 +121,13 @@ module afcstabilisation
   ! Stabilisation has been initialised
   integer, parameter, public :: AFCSTAB_INITIALISED       = 2**1
 
-  ! Edge-based structure generated: KEDGE
+  ! Edge-based structure generated: IverticesAtEdge
   integer, parameter, public :: AFCSTAB_EDGESTRUCTURE     = 2**2
 
-  ! Edge-based structure oriented: KEDGE
+  ! Edge-based structure oriented: IverticesAtEdge
   integer, parameter, public :: AFCSTAB_EDGEORIENTATION   = 2**3
 
-  ! Edge-based values computed from matrix: DEDGE
+  ! Edge-based values computed from matrix: DcoefficientsAtEdge
   integer, parameter, public :: AFCSTAB_EDGEVALUES        = 2**4
 
   ! Nodal antidiffusion: PP,PM
@@ -532,6 +528,13 @@ contains
       end if
     end if
 
+    ! Set state of stabilisation
+    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      rafcstab%iSpec = AFCSTAB_UNDEFINED
+    else
+      rafcstab%iSpec = AFCSTAB_INITIALISED
+    end if
+
   end subroutine afcstab_resizeStabDirect
 
   !*****************************************************************************
@@ -882,6 +885,9 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'afcstab_generateVerticesAtEdge')
       call sys_halt()
     end select
+
+    ! Set state of stabiliation
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
          
   contains
 
