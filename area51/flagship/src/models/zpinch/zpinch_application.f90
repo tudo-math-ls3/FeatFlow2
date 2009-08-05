@@ -2069,10 +2069,6 @@ contains
     
     timeloop: do
       
-      call lsysbl_infoVector(rsolution(1))
-      call lsysbl_infoVector(rsolution(2))
-      pause
-
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call zpinch_outputSolution(rparlist, ssectionName,&
