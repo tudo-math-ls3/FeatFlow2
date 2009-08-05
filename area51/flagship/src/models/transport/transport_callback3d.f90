@@ -12,10 +12,12 @@
 !# 1.) transp_setVariable1d
 !#     -> Sets global variables for external data, e.g., velocity fields in 3D
 !#
-!# 2.) transp_calcMatrixPrimalConst3d
+!# 2.) transp_calcMatGalConvectionP3d
+!#     transp_calcMatUpwConvectionP3d
 !#     -> Calculates the transport coefficients for linear convection in 3D
 !#
-!# 3.) transp_calcMatrixDualConst3d
+!# 3.) transp_calcMatGalConvectionD3d
+!#     transp_calcMatUpwConvectionD3d
 !#     -> Calculates the transport coefficients for linear convection in 3D
 !#
 !# 4.) transp_hadaptCallback3d
@@ -38,8 +40,10 @@ module transport_callback3d
 
   private
   public :: transp_setVariable3d
-  public :: transp_calcMatrixPrimalConst3d
-  public :: transp_calcMatrixDualConst3d
+  public :: transp_calcMatGalConvectionP3d
+  public :: transp_calcMatUpwConvectionP3d
+  public :: transp_calcMatGalConvectionD3d
+  public :: transp_calcMatUpwConvectionD3d
   public :: transp_hadaptCallback3d
 
 !<globals>
@@ -103,8 +107,47 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalConst3d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionP3d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)-p_Dvariable3(j)*C_ij(3)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)-p_Dvariable3(i)*C_ji(3)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+
+  end subroutine transp_calcMatGalConvectionP3d
+
+    !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionP3d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -137,14 +180,54 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalConst3d
+  end subroutine transp_calcMatUpwConvectionP3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst3d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionD3d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)+p_Dvariable3(j)*C_ij(3)
+    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)+p_Dvariable3(i)*C_ji(3)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+    
+  end subroutine transp_calcMatGalConvectionD3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionD3d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -177,7 +260,7 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
-  end subroutine transp_calcMatrixDualConst3d
+  end subroutine transp_calcMatUpwConvectionD3d
 
   !*****************************************************************************
 

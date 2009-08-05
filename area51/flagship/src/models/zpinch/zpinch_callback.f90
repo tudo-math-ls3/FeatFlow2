@@ -247,17 +247,17 @@ contains
         ! Compute the preconditioner
         call transp_calcPrecondThetaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rcollection,&
-            zpinch_calcMatrixPrimalConst2d,&
-            zpinch_calcMatrixDualConst2d,&
-            transp_coeffMatBdrPrimalConst2d,&
-            transp_coeffMatBdrDualConst2d)
+            zpinch_calcMatRusConvectionP2d,&
+            zpinch_calcMatRusConvectionD2d,&
+            transp_coeffMatBdrConvectionP2d,&
+            transp_coeffMatBdrConvectionD2d)
 
         ! Compute the right-hand side
         call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
             rrhs, istep, rcollection,&
-            fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrPrimalConst2d,&
-            fcb_coeffVecBdrDual_sim=transp_coeffVecBdrDualConst2d)
+            fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvectionP2d,&
+            fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvectionD2d)
         
         ! Remove specifier for the preconditioner (if any)
         iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -279,16 +279,16 @@ contains
             ! Compute the preconditioner
             call transp_calcPrecondThetaScheme(rproblemLevel,&
                 rtimestep, rsolver, rsolution0, rcollection,&
-                zpinch_calcMatrixPrimalConst2d,&
-                zpinch_calcMatrixDualConst2d,&
-                transp_coeffMatBdrPrimalConst2d,&
-                transp_coeffMatBdrDualConst2d)
+                zpinch_calcMatRusConvectionP2d,&
+                zpinch_calcMatRusConvectionD2d,&
+                transp_coeffMatBdrConvectionP2d,&
+                transp_coeffMatBdrConvectionD2d)
             
             ! Assemble the constant right-hand side
             call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution0, rrhs, rcollection,&
-                fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrPrimalConst2d,&
-                fcb_coeffVecBdrDual_sim=transp_coeffVecBdrDualConst2d)
+                fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvectionP2d,&
+                fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvectionD2d)
             
           end if
 
@@ -314,10 +314,10 @@ contains
           ! Compute the preconditioner
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatrixPrimalConst2d,&
-              zpinch_calcMatrixDualConst2d,&
-              transp_coeffMatBdrPrimalConst2d,&
-              transp_coeffMatBdrDualConst2d)
+              zpinch_calcMatRusConvectionP2d,&
+              zpinch_calcMatRusConvectionD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
 
           ! Remove specifier for the preconditioner (if any)
           iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -337,10 +337,10 @@ contains
         ! Compute the preconditioner
         call transp_calcPrecondThetaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rcollection,&
-            zpinch_calcMatrixPrimalConst2d,&
-            zpinch_calcMatrixDualConst2d,&
-            transp_coeffMatBdrPrimalConst2d,&
-            transp_coeffMatBdrDualConst2d)
+            zpinch_calcMatRusConvectionP2d,&
+            zpinch_calcMatRusConvectionD2d,&
+            transp_coeffMatBdrConvectionP2d,&
+            transp_coeffMatBdrConvectionD2d)
       end if
       
       
@@ -351,10 +351,10 @@ contains
         ! Compute the Jacobian matrix
         call transp_calcJacobianThetaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-            zpinch_calcMatrixPrimalConst2d,&
-            zpinch_calcMatrixDualConst2d,&
-            transp_coeffMatBdrPrimalConst2d,&
-            transp_coeffMatBdrDualConst2d)
+            zpinch_calcMatRusConvectionP2d,&
+            zpinch_calcMatRusConvectionD2d,&
+            transp_coeffMatBdrConvectionP2d,&
+            transp_coeffMatBdrConvectionD2d)
       end if
       
       
@@ -1010,7 +1010,7 @@ contains
         C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 
         ! Compute convection coefficients
-        call zpinch_calcMatrixPrimalConst2d(u(i), u(i),&
+        call zpinch_calcMatRusConvectionP2d(u(i), u(i),&
             C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
         ! Update the time rate of change vector
@@ -1033,7 +1033,7 @@ contains
         C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
         
         ! Compute convection coefficients
-        call zpinch_calcMatrixPrimalConst2d(u(i), u(j),&
+        call zpinch_calcMatRusConvectionP2d(u(i), u(j),&
             C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
         
         ! Compute auxiliary value

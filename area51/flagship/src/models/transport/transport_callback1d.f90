@@ -12,17 +12,25 @@
 !# 1.) transp_setVariable1d
 !#     -> Sets global variables for external data, e.g., velocity fields in 1D
 !#
-!# 2.) transp_calcMatrixPrimalConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
+!# 2.) transp_calcMatGalConvectionP1d
+!#     transp_calcMatUpwConvectionP1d
+!#     -> Calculates the transport coefficients
+!#        for linear convection in 1D
 !#
-!# 3.) transp_calcMatrixDualConst1d
-!#     -> Calculates the transport coefficients for linear convection in 1D
+!# 3.) transp_calcMatGalConvectionD1d
+!#     transp_calcMatUpwConvectionD1d
+!#     -> Calculates the transport coefficients
+!#        for linear convection in 1D
 !#
-!# 4.) transp_calcMatrixPrimalBurgers1d
-!#     -> Calculates the transport coefficients for Burgers` equation in 1D
+!# 4.) transp_calcMatGalBurgersP1d
+!#     transp_calcMatUpwBurgersP1d
+!#     -> Calculates the transport coefficients
+!#        for Burgers` equation in 1D
 !#
-!# 5.) transp_calcMatrixPrimalBuckLev1d
-!#     -> Calculates the transport coefficients for Buckley-Leverett equation in 1D
+!# 5.) transp_calcMatGalBuckLevP1d
+!#     transp_calcMatUpwBuckLevP1d
+!#     -> Calculates the transport coefficients
+!#        for Buckley-Leverett equation in 1D
 !#
 !# 6.) transp_hadaptCallback1d
 !#      -> Performs application specific tasks in the adaptation algorithm in 1D
@@ -44,10 +52,14 @@ module transport_callback1d
 
   private
   public :: transp_setVariable1d
-  public :: transp_calcMatrixPrimalConst1d
-  public :: transp_calcMatrixDualConst1d
-  public :: transp_calcMatrixPrimalBurgers1d
-  public :: transp_calcMatrixPrimalBuckLev1d
+  public :: transp_calcMatGalConvectionP1d
+  public :: transp_calcMatUpwConvectionP1d
+  public :: transp_calcMatGalConvectionD1d
+  public :: transp_calcMatUpwConvectionD1d
+  public :: transp_calcMatGalBurgersP1d
+  public :: transp_calcMatUpwBurgersP1d
+  public :: transp_calcMatGalBuckLevP1d
+  public :: transp_calcMatUpwBuckLevP1d
   public :: transp_hadaptCallback1d
 
 !<globals>
@@ -111,7 +123,46 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalConst1d(u_i, u_j, C_ij, C_ji&
+  pure subroutine transp_calcMatGalConvectionP1d(u_i, u_j, C_ij, C_ji&
+      , i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)
+    k_ji = -p_Dvariable1(i)*C_ji(1)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+
+  end subroutine transp_calcMatGalConvectionP1d
+
+    !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionP1d(u_i, u_j, C_ij, C_ji&
       , i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -145,13 +196,52 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalConst1d
+  end subroutine transp_calcMatUpwConvectionP1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst1d(u_i, u_j, C_ij, C_ji,&
+  pure subroutine transp_calcMatGalConvectionD1d(u_i, u_j, C_ij, C_ji,&
+      i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = p_Dvariable1(j)*C_ij(1)
+    k_ji = p_Dvariable1(i)*C_ji(1)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+    
+  end subroutine transp_calcMatGalConvectionD1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionD1d(u_i, u_j, C_ij, C_ji,&
       i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -185,13 +275,13 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
-  end subroutine transp_calcMatrixDualConst1d
+  end subroutine transp_calcMatUpwConvectionD1d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBurgers1d(u_i, u_j, C_ij,&
+  pure subroutine transp_calcMatGalBurgersP1d(u_i, u_j, C_ij,&
       C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -220,16 +310,55 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)
     k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)
 
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+    
+  end subroutine transp_calcMatGalBurgersP1d
+
+  !*****************************************************************************
+    
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwBurgersP1d(u_i, u_j, C_ij,&
+      C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 1D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+   
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)
+    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)
+
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalBurgers1d
+  end subroutine transp_calcMatUpwBurgersP1d
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBuckLev1d(u_i, u_j, C_ij,&
+  pure subroutine transp_calcMatGalBuckLevP1d(u_i, u_j, C_ij,&
       C_ji, i, j, k_ij, k_ji, d_ij)
                                                 
 !<description>
@@ -263,10 +392,55 @@ contains
     k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
     k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
     
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+
+  end subroutine transp_calcMatGalBuckLevP1d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwBuckLevP1d(u_i, u_j, C_ij,&
+      C_ji, i, j, k_ij, k_ji, d_ij)
+                                                
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation 
+    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is 
+    ! given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
+    !
+    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
+    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+    !
+    ! Moreover, artificial diffusion is applied.
+!</description>
+   
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
+    k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
+    
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalBuckLev1d
+  end subroutine transp_calcMatUpwBuckLevP1d
 
   !*****************************************************************************
 

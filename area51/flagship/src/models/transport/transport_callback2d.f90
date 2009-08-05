@@ -34,22 +34,24 @@
 !#
 !# The following routines for linear velocity case are available:
 !#
-!# 1.) transp_calcMatrixPrimalConst2d
+!# 1.) transp_calcMatGalConvectionP2d
+!#     transp_calcMatUpwConvectionP2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 2.) transp_calcMatrixDualConst2d
+!# 2.) transp_calcMatGalConvectionD2d
+!#     transp_calcMatUpwConvectionD2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 3.) transp_coeffVecBdrPrimalConst2d
+!# 3.) transp_coeffVecBdrConvectionP2d
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
-!# 4.) transp_coeffVecBdrDualConst2d
+!# 4.) transp_coeffVecBdrConvectionD2d
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
-!# 5.) transp_coeffMatBdrPrimalConst2d
+!# 5.) transp_coeffMatBdrConvectionP2d
 !#     -> Calculates the coefficients for the bilinear form in 2D
 !#
-!# 6.) transp_coeffMatBdrDualConst2d
+!# 6.) transp_coeffMatBdrConvectionD2d
 !#     -> Calculates the coefficients for the bilinear form in 2D
 !#
 !#
@@ -58,55 +60,58 @@
 !# The following routines for Burgers` equation 
 !# in space-time are available:
 !#
-!# 1.) transp_calcMatrixPrimalBurgersSpT2d
+!# 1.) transp_calcMatGalSTBurgersP2d
+!#     transp_calcMatUpwSTBurgersP2d
 !#     -> Calculates the transport coefficients for 
 !#        Burgers` equation in space-time
 !#
 !# 2.) ...
 !#
-!# 3.) transp_coeffVecBdrPrimalBurgersSpT2d
+!# 3.) transp_coeffVecBdrSTBurgersP2d
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
 !# 4.) ...
 !#
-!# 5.) transp_coeffMatBdrPrimalBurgersSpT2d
+!# 5.) transp_coeffMatBdrSTBurgersP2d
 !#     -> Calculates the coefficients for the bilinear form in 2D
 !#
 !# ****************************************************************************
 !#
-!# The following routines for the Buckley-Leverette
+!# The following routines for the Buckley-Leverett
 !#  equation in space-time are available:
 !#
-!# 1.) transp_calcMatrixPrimalBuckLevSpT2d
+!# 1.) transp_calcMatGalSTBuckLevP2d
+!#     transp_calcMatUpwSTBuckLevP2d
 !#     -> Calculates the transport coefficients for 
 !#        Buckley-Leverett equation in space-time
 !#
 !# 2.) ...
 !#
-!# 3.) transp_coeffVecBdrPrimalBuckLevSpT2d
+!# 3.) transp_coeffVecBdrSTBuckLevP2d
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
 !# 4.) ...
 !#
-!# 5.) transp_coeffMatBdrPrimalBuckLevSpT2d
+!# 5.) transp_coeffMatBdrSTBuckLevP2d
 !#     -> Calculates the coefficients for the bilinear form in 2D
 !#
 !# ****************************************************************************
 !#
 !# The following routines for the Burgers` equation in 2D are available:
 !#
-!# 1.) transp_calcMatrixPrimalBurgers2d
+!# 1.) transp_calcMatGalBurgersP2d
+!#     transp_calcMatUpwBurgersP2d
 !#     -> Calculates the transport coefficients for 
 !#        Burgers` equation in 2D
 !#
 !# 2.) ...
 !#
-!# 3.) transp_coeffVecBdrPrimalBurgers2d
+!# 3.) transp_coeffVecBdrBurgersP2d
 !#      -> Calculates the coefficients for the linear form in 2D
 !#
 !# 4.) ...
 !#
-!# 5.) transp_coeffMatBdrPrimalBurgers2d
+!# 5.) transp_coeffMatBdrBurgersP2d
 !#     -> Calculates the coefficients for the bilinear form in 2D
 !#
 !# </purpose>
@@ -128,21 +133,26 @@ module transport_callback2d
   implicit none
 
   private
-  public :: transp_calcMatrixDualConst2d
-  public :: transp_calcMatrixPrimalBuckLevSpT2d
-  public :: transp_calcMatrixPrimalBurgers2d
-  public :: transp_calcMatrixPrimalBurgersSpT2d
-  public :: transp_calcMatrixPrimalConst2d
-  public :: transp_coeffMatBdrDualConst2d
-  public :: transp_coeffMatBdrPrimalBuckLevSpT2d
-  public :: transp_coeffMatBdrPrimalBurgers2d
-  public :: transp_coeffMatBdrPrimalBurgersSpT2d
-  public :: transp_coeffMatBdrPrimalConst2d
-  public :: transp_coeffVecBdrDualConst2d
-  public :: transp_coeffVecBdrPrimalBuckLevSpT2d
-  public :: transp_coeffVecBdrPrimalBurgers2d
-  public :: transp_coeffVecBdrPrimalBurgersSpT2d
-  public :: transp_coeffVecBdrPrimalConst2d
+  public :: transp_calcMatGalConvectionD2d
+  public :: transp_calcMatUpwConvectionD2d
+  public :: transp_calcMatGalSTBuckLevP2d
+  public :: transp_calcMatUpwSTBuckLevP2d
+  public :: transp_calcMatGalBurgersP2d
+  public :: transp_calcMatUpwBurgersP2d
+  public :: transp_calcMatGalSTBurgersP2d
+  public :: transp_calcMatUpwSTBurgersP2d
+  public :: transp_calcMatGalConvectionP2d
+  public :: transp_calcMatUpwConvectionP2d
+  public :: transp_coeffMatBdrConvectionD2d
+  public :: transp_coeffMatBdrSTBuckLevP2d
+  public :: transp_coeffMatBdrBurgersP2d
+  public :: transp_coeffMatBdrSTBurgersP2d
+  public :: transp_coeffMatBdrConvectionP2d
+  public :: transp_coeffVecBdrConvectionD2d
+  public :: transp_coeffVecBdrSTBuckLevP2d
+  public :: transp_coeffVecBdrBurgersP2d
+  public :: transp_coeffVecBdrSTBurgersP2d
+  public :: transp_coeffVecBdrConvectionP2d
   public :: transp_errorBdrInt2d
   public :: transp_hadaptCallback2d
   public :: transp_refFuncBdrInt2d
@@ -869,7 +879,49 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalConst2d(&
+  pure subroutine transp_calcMatGalConvectionP2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+
+  end subroutine transp_calcMatGalConvectionP2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -906,13 +958,52 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalConst2d
+  end subroutine transp_calcMatUpwConvectionP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine transp_calcMatrixDualConst2d(&
+  pure subroutine transp_calcMatGalConvectionD2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+!</description>
+    
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
+    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
+
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+    
+  end subroutine transp_calcMatGalConvectionD2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvectionD2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -946,13 +1037,13 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
-  end subroutine transp_calcMatrixDualConst2d
+  end subroutine transp_calcMatUpwConvectionD2d
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrPrimalConst2d(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrConvectionP2d(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1196,13 +1287,13 @@ contains
       
     end select
 
-  end subroutine transp_coeffVecBdrPrimalConst2d
+  end subroutine transp_coeffVecBdrConvectionP2d
 
    ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrDualConst2d(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrConvectionD2d(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1444,13 +1535,13 @@ contains
 
     end select
 
-  end subroutine transp_coeffVecBdrDualConst2d  
+  end subroutine transp_coeffVecBdrConvectionD2d  
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrPrimalConst2d(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrConvectionP2d(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -1644,13 +1735,13 @@ contains
 
     end select
     
-  end subroutine transp_coeffMatBdrPrimalConst2d
+  end subroutine transp_coeffMatBdrConvectionP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrDualConst2d(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrConvectionD2d(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -1845,14 +1936,13 @@ contains
 
     end select
 
-  end subroutine transp_coeffMatBdrDualConst2d
-
+  end subroutine transp_coeffMatBdrConvectionD2d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBurgersSpT2d(&
+  pure subroutine transp_calcMatGalSTBurgersP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -1883,16 +1973,57 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
     k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
 
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+
+  end subroutine transp_calcMatGalSTBurgersP2d
+
+   !*****************************************************************************
+    
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwSTBurgersP2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
+    ! the flux function is given by $f(u)=0.5*u^2$.
+    ! Moreover, scalar artificial diffusion is applied
+!</description>
+   
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
+    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
+
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
-  end subroutine transp_calcMatrixPrimalBurgersSpT2d
+  end subroutine transp_calcMatUpwSTBurgersP2d
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrPrimalBurgersSpT2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBurgersP2d(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1982,13 +2113,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrPrimalBurgersSpT2d
+  end subroutine transp_coeffVecBdrSTBurgersP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrPrimalBurgersSpT2d(&
+  subroutine transp_coeffMatBdrSTBurgersP2d(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -2084,13 +2215,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrPrimalBurgersSpT2d
+  end subroutine transp_coeffMatBdrSTBurgersP2d
 
   !*****************************************************************************
   
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBuckLevSpT2d(&
+  pure subroutine transp_calcMatGalSTBuckLevP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -2131,16 +2262,67 @@ contains
     k_ij = -v_j*C_ij(1)-C_ij(2)
     k_ji = -v_i*C_ji(1)-C_ji(2)
 
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+        
+  end subroutine transp_calcMatGalSTBuckLevP2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwSTBuckLevP2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
+    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
+    !
+    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
+    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+   
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: v_i,v_j
+    
+    ! Compute velocities
+    v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
+    v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
+
+    ! Compute convective coefficients
+    k_ij = -v_j*C_ij(1)-C_ij(2)
+    k_ji = -v_i*C_ji(1)-C_ji(2)
+
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
         
-  end subroutine transp_calcMatrixPrimalBuckLevSpT2d
+  end subroutine transp_calcMatUpwSTBuckLevP2d
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrPrimalBuckLevSpT2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBuckLevP2d(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2230,13 +2412,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrPrimalBuckLevSpT2d
+  end subroutine transp_coeffVecBdrSTBuckLevP2d
 
     !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrPrimalBuckLevSpT2d(&
+  subroutine transp_coeffMatBdrSTBuckLevP2d(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -2332,13 +2514,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrPrimalBuckLevSpT2d
+  end subroutine transp_coeffMatBdrSTBuckLevP2d
 
   !*****************************************************************************
     
 !<subroutine>
 
-  pure subroutine transp_calcMatrixPrimalBurgers2d(&
+  pure subroutine transp_calcMatGalBurgersP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -2367,16 +2549,55 @@ contains
     k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
     k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
 
+    ! Set artificial diffusion to zero
+    d_ij = 0.0_DP
+    
+  end subroutine transp_calcMatGalBurgersP2d
+
+  !*****************************************************************************
+    
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwBurgersP2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+   
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij, k_ji, d_ij
+!</output>
+!</subroutine>
+
+    ! Compute convective coefficients
+    k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
+    k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
+
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
     
-  end subroutine transp_calcMatrixPrimalBurgers2d
+  end subroutine transp_calcMatUpwBurgersP2d
 
    ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrPrimalBurgers2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrBurgersP2d(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2466,13 +2687,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrPrimalBurgers2d
+  end subroutine transp_coeffVecBdrBurgersP2d
 
     !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrPrimalBurgers2d( rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrBurgersP2d( rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -2568,6 +2789,6 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrPrimalBurgers2d
+  end subroutine transp_coeffMatBdrBurgersP2d
     
 end module transport_callback2d

@@ -20,10 +20,10 @@
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
-!# 4.) zpinch_calcMatrixPrimalConst2d
+!# 4.) zpinch_calcMatRusConvectionP2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
-!# 5.) zpinch_calcMatrixDualConst2d
+!# 5.) zpinch_calcMatRusConvectionD2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
 !#
 !# </purpose>
@@ -47,8 +47,8 @@ module zpinch_callback2d
   public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
   public :: zpinch_hadaptCallbackBlock2d
-  public :: zpinch_calcMatrixPrimalConst2d
-  public :: zpinch_calcMatrixDualConst2d
+  public :: zpinch_calcMatRusConvectionP2d
+  public :: zpinch_calcMatRusConvectionD2d
 
 !<globals>
 
@@ -479,7 +479,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatrixPrimalConst2d(&
+  pure subroutine zpinch_calcMatRusConvectionP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -517,13 +517,13 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max( abs(k_ij), abs(k_ji) )
 
-  end subroutine zpinch_calcMatrixPrimalConst2d
+  end subroutine zpinch_calcMatRusConvectionP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine zpinch_calcMatrixDualConst2d(&
+  pure subroutine zpinch_calcMatRusConvectionD2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -557,6 +557,6 @@ contains
     ! Compute artificial diffusion coefficient
     d_ij = max( abs(k_ij), abs(k_ji) )
     
-  end subroutine zpinch_calcMatrixDualConst2d
+  end subroutine zpinch_calcMatRusConvectionD2d
   
 end module zpinch_callback2d
