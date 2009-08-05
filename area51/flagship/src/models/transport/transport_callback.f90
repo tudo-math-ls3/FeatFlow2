@@ -366,7 +366,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     character(LEN=SYS_STRLEN) :: smode
-    logical :: bStabilize, bbuildAFC, bconservative
+    logical :: bStabilize, bconservative
     integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: imasstype, ivelocitytype, idiffusiontype
@@ -437,10 +437,11 @@ contains
       
     case (DIFFUSION_ISOTROPIC)
       ! Isotropic diffusion
-      call gfsc_buildDiffusionOperator(rproblemLevel&
-          %Rmatrix(coeffMatrix_S), .false., .true., rproblemLevel&
-          %Rmatrix(transportMatrix))
-
+      call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rproblemLevel%Rmatrix(transportMatrix),&
+          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+      
     case (DIFFUSION_ANISOTROPIC)
       ! Anisotropic diffusion
       call parlst_getvalue_int(p_rparlist,&
@@ -454,28 +455,33 @@ contains
         case (AFCSTAB_DMP)
           ! Satisfy discrete maximum principle
           call gfsc_buildDiffusionOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_S), .true., .true., rproblemLevel&
-              %Rmatrix(transportMatrix))
+              %Rmatrix(coeffMatrix_S), rproblemLevel&
+              %Rafcstab(diffusionAFC), .false., .true.,&
+              rproblemLevel%Rmatrix(transportMatrix))
           
         case (AFCSTAB_SYMMETRIC)
-          ! Satisfy discrete maximum principle and assemble stabilization structure
+          ! Satisfy discrete maximum principle
+          ! and assemble stabilization structure
           call gfsc_buildDiffusionOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_S), .true., .true., rproblemLevel&
-              %Rmatrix(transportMatrix), rproblemLevel%Rafcstab(diffusionAFC))
+              %Rmatrix(coeffMatrix_S), rproblemLevel&
+              %Rafcstab(diffusionAFC), .true., .true.,&
+              rproblemLevel%Rmatrix(transportMatrix))
 
         case default
           ! Compute the standard Galerkin approximation
-          call gfsc_buildDiffusionOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_S), .false., .true., rproblemLevel&
-              %Rmatrix(transportMatrix))
+          call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rproblemLevel%Rmatrix(transportMatrix),&
+          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
         end select
 
       else   ! diffusionAFC < 0
 
         ! Compute the standard Galerkin approximation
-        call gfsc_buildDiffusionOperator(rproblemLevel&
-            %Rmatrix(coeffMatrix_S), .false., .true., rproblemLevel&
-            %Rmatrix(transportMatrix))
+        call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rproblemLevel%Rmatrix(transportMatrix),&
+          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
 
       end if   ! diffusionAFC
 
@@ -519,24 +525,7 @@ contains
         rcollection%SquickAccess(1), 'ivelocitytype', ivelocitytype)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'convectionAFC', convectionAFC)
-
-    if (convectionAFC > 0) then
-
-      ! Check if stabilization should be applied
-      bStabilize = AFCSTAB_GALERKIN .ne.&
-                   rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-
-      ! Check if stabilization structure should be built
-      bbuildAFC = bStabilize .and. AFCSTAB_UPWIND .ne.&
-                  rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
-      
-    else   ! convectionAFC < 0
-
-      bStabilize = .false.
-      bbuildAFC  = .false.
-
-    end if   ! convectionAFC
-
+    
     ! Check if conservative or non-conservative formulation should be applied
     bconservative = (ivelocitytype .gt. 0)
 
@@ -565,59 +554,39 @@ contains
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixPrimal)) then
-          
-          if (bbuildAFC) then
 
-            select case(rproblemLevel%rtriangulation%ndim)
-            case (NDIM1D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-              
-            case (NDIM2D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-              
-            case (NDIM3D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixPrimal, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-            end select
-
-          else   ! bbuildAFC = false
-            
-            select case(rproblemLevel%rtriangulation%ndim)
-            case (NDIM1D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-              
-            case (NDIM2D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-              
-            case (NDIM3D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixPrimal, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-            end select
-            
-          end if
+          ! Check if stabilization should be applied
+          select case(rproblemLevel%Rafcstab(convectionAFC)&
+                      %ctypeAFCstabilisation)
+          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
+            bStabilize = .false.
+          case default
+            bStabilize = .true.
+          end select
           
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixPrimal, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+            
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixPrimal, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+            
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixPrimal, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+          end select
+                
         else ! callback function not present
           
           call output_line('Missing user-defined callback function!',&
@@ -653,57 +622,65 @@ contains
             VELOCITY_TIMEDEP)
         ! linear velocity
 
-        if (bbuildAFC) then
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
+
+        case (AFCSTAB_GALERKIN)
           
+          ! Apply standard Galerkin discretization
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatrixPrimalConst1d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst1d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatrixPrimalConst2d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst2d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcMatrixPrimalConst3d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst3d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
           end select
+
+        case default
           
-        else   ! bbuildAFC = false
-          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatrixPrimalConst1d,&
-                bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst1d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatrixPrimalConst2d,&
-                bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst2d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcMatrixPrimalConst3d,&
-                bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixPrimalConst3d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
           end select
-          
-        end if
+
+        end select
         
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
@@ -721,23 +698,31 @@ contains
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
 
-        if (bbuildAFC) then
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
           
+        case (AFCSTAB_GALERKIN)
+          
+          ! Apply standard Galerkin discretization
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
-              .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgersSpT2d, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        else   ! bbuildAFC = no
+        case default
+
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBurgersSpT2d,&
-              bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-              bisConservative = bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgersSpT2d, bStabilize, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        end if
+        end select
         
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
@@ -753,23 +738,31 @@ contains
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
 
-        if (bbuildAFC) then
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
+          
+        case (AFCSTAB_GALERKIN)
+          
+          ! Apply standard Galerkin discretization
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBuckLevSpT2d, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+
+        case default
+          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
-              .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBuckLevSpT2d, bStabilize, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        else   ! bbuildAFC = no
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBuckLevSpT2d,&
-              bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-              bisConservative = bconservative)
-
-        end if
+        end select
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
@@ -784,25 +777,33 @@ contains
 
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
+        
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
+          
+        case (AFCSTAB_GALERKIN)
+          
+          ! Apply standard Galerkin discretization
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgers1d, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        if (bbuildAFC) then
+        case default
+          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatrixPrimalBurgers1d,&
-              .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgers1d, bStabilize, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        else   ! bbuildAFC = no
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatrixPrimalBurgers1d,&
-              bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-              bisConservative = bconservative)
-
-        end if
-
+        end select
+        
         ! @TODO: Weak boundary conditions
         
         ! Set update notification in problem level structure
@@ -813,23 +814,31 @@ contains
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
 
-        if (bbuildAFC) then
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
+          
+        case (AFCSTAB_GALERKIN)
+          
+          ! Apply standard Galerkin discretization
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgers2d, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+
+        case default
+          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBurgers2d,&
-              .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBurgers2d, bStabilize, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        else   ! bbuildAFC = no
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatrixPrimalBurgers2d,&
-              bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-              bisConservative = bconservative)
-
-        end if
+        end select
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
@@ -845,23 +854,31 @@ contains
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
 
-        if (bbuildAFC) then
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
+          
+        case (AFCSTAB_GALERKIN)
+          
+          ! Apply standard Galerkin discretization
+          call gfsc_buildConvectionOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBuckLev1d, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+
+        case default
+          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatrixPrimalBuckLev1d,&
-              .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC), bconservative)
+              rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+              transp_calcMatrixPrimalBuckLev1d, bStabilize, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
-        else   ! bbuildAFC = no
-
-          call gfsc_buildConvectionOperator(&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatrixPrimalBuckLev1d,&
-              bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-              bisConservative = bconservative)
-
-        end if
+        end select
 
         ! @TODO: Weak boundary conditions
 
@@ -888,57 +905,37 @@ contains
         !  is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixDual)) then
           
-          if (bbuildAFC) then
-            
-            select case(rproblemLevel%rtriangulation%ndim)
-            case (NDIM1D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixDual, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-              
-            case (NDIM2D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixDual, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-              
-            case (NDIM3D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixDual, .true., .false.,&
-                  rproblemLevel%Rmatrix(transportMatrix),&
-                  rproblemLevel%Rafcstab(convectionAFC), bconservative)
-            end select
+          ! Check if stabilization should be applied
+          select case(rproblemLevel%Rafcstab(convectionAFC)&
+                      %ctypeAFCstabilisation)
+          case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
+            bStabilize = .false.
+          case default
+            bStabilize = .true.
+          end select
 
-          else   ! bbuildAFC = false
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDual, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
             
-            select case(rproblemLevel%rtriangulation%ndim)
-            case (NDIM1D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixDual, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-              
-            case (NDIM2D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixDual, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-              
-            case (NDIM3D)
-              call gfsc_buildConvectionOperator(&
-                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixDual, bStabilize,&
-                  .false., rproblemLevel%Rmatrix(transportMatrix),&
-                  bisConservative = bconservative)
-            end select
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDual, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
             
-          end if
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                fcb_calcMatrixDual, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+          end select
           
         else ! callback function not present
           
@@ -974,59 +971,67 @@ contains
       case (VELOCITY_CONSTANT,&
             VELOCITY_TIMEDEP)
         ! linear velocity
+        
+        select case(rproblemLevel%Rafcstab(convectionAFC)&
+                    %ctypeAFCstabilisation)
 
-        if (bbuildAFC) then
-
-          select case(rproblemLevel%rtriangulation%ndim)
-          case (NDIM1D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatrixDualConst1d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
-
-          case (NDIM2D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatrixDualConst2d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
-
-          case (NDIM3D)
-            call gfsc_buildConvectionOperator(&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcMatrixDualConst3d,&
-                .true., .false., rproblemLevel%Rmatrix(transportMatrix),&
-                rproblemLevel%Rafcstab(convectionAFC), bconservative)
-          end select
-
-        else   ! bbuildAFC = false
+        case (AFCSTAB_GALERKIN)
           
+          ! Apply standard Galerkin discretization
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatrixDualConst1d,&
-                bstabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst1d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+            
+          case (NDIM2D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst2d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+            
+          case (NDIM3D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst3d, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+          end select
+
+          case default
+          
+          ! Apply low-order discretization
+          bStabilize = AFCSTAB_UPWIND .ne.&
+              rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+
+          select case(rproblemLevel%rtriangulation%ndim)
+          case (NDIM1D)
+            call gfsc_buildConvectionOperator(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst1d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatrixDualConst2d,&
-                bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst2d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, transp_calcMatrixDualConst3d,&
-                bStabilize, .false., rproblemLevel%Rmatrix(transportMatrix),&
-                bisConservative = bconservative)
+                rproblemLevel%Rafcstab(convectionAFC), rsolution,&
+                transp_calcMatrixDualConst3d, bStabilize, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), bconservative)
           end select
 
-        end if
-
+        end select
+        
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, -1.0_DP, transp_coeffMatBdrDualConst2d,&
@@ -1280,10 +1285,11 @@ contains
     case (DIFFUSION_ISOTROPIC,&
           DIFFUSION_ANISOTROPIC)
       ! Isotropic diffusion
-      call gfsc_buildDiffusionOperator(rproblemLevel&
-          %Rmatrix(coeffMatrix_S), .false., .true., rproblemLevel&
-          %Rmatrix(transportMatrix))
-      
+      call lsyssc_duplicateMatrix(&
+          rproblemLevel%Rmatrix(coeffMatrix_S),&
+          rproblemLevel%Rmatrix(transportMatrix),&
+          LSYSSC_DUP_IGNORE, LSYSSC_DUP_COPY)
+            
     case (DIFFUSION_VARIABLE)
       print *, "Variable diffusion matrices are yet not implemented!"
       stop
