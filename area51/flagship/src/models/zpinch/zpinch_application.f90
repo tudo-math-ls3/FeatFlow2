@@ -2069,6 +2069,10 @@ contains
     
     timeloop: do
       
+      call lsysbl_infoVector(rsolution(1))
+      call lsysbl_infoVector(rsolution(2))
+      pause
+
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call zpinch_outputSolution(rparlist, ssectionName,&
@@ -2172,23 +2176,6 @@ contains
 
         stop
       end if
-
-!!$      !---------------------------------------------------------------------------
-!!$      ! Calculate density-averaged mass matrices for the scalar model
-!!$      ! problem based on the initial solution U^0 of the Euler model
-!!$      !---------------------------------------------------------------------------
-!!$      
-!!$      call zpinch_initDensityAveraging(rparlist,&
-!!$          ssectionNameEuler, ssectionNameTransport,&
-!!$          p_rproblemLevel, p_rsolutionEuler, rcollection)
-!!$      
-!!$      !---------------------------------------------------------------------------
-!!$      ! Calculate velocity field (\rho v) for the scalar model problem
-!!$      ! based on the initial solution U^0 of the Euler model
-!!$      !---------------------------------------------------------------------------
-!!$      
-!!$      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
-!!$          p_rproblemLevel, p_rsolutionEuler, rcollection)
       
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for transport model
@@ -2359,6 +2346,15 @@ contains
             p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(p_rsolverTransport)
 
+        ! Calculate density-averaged mass matrices
+        call zpinch_initDensityAveraging(rparlist,&
+            ssectionNameEuler, ssectionNameTransport,&
+            p_rproblemLevel, p_rsolutionEuler, rcollection)
+        
+        ! Calculate velocity field (\rho v)
+        call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+            p_rproblemLevel, p_rsolutionEuler, rcollection)
+        
         ! Stop time measurement for generation of constant
         ! coefficient matrices
         call stat_stopTimer(p_rtimerAssemblyCoeff)
