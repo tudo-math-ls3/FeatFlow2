@@ -1432,9 +1432,6 @@ contains
       call sys_halt()
     end if
 
-    print *, iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-    print *, iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
-
     ! Check if stabilisation provides edge-based structure
     ! Let us check if the edge-based data structure has been generated
     if((iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
