@@ -250,7 +250,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     integer :: systemMatrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, inviscidAFC
     integer :: isystemCoupling, isystemPrecond, isystemFormat, imasstype, ivar, jvar
 
     ! Start time measurement for matrix evaluation
@@ -267,6 +267,8 @@ contains
         rcollection%SquickAccess(1), 'coeffMatrix_CY', coeffMatrix_CY)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1), 'inviscidAFC', inviscidAFC)
 
     !---------------------------------------------------------------------------
     ! Check if fully explicit time-stepping is used
@@ -367,21 +369,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixGalerkinDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixGalerkinDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixGalerkinDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -400,21 +405,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixScalarDissDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixScalarDissDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixScalarDissDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -433,21 +441,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixTensorDissDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixTensorDissDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
           
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixTensorDissDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -466,21 +477,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixRusanovDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixRusanovDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
           
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixRusanovDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -515,21 +529,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d, euler_calcMatrixGalerkin1d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d, euler_calcMatrixGalerkin2d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d, euler_calcMatrixGalerkin3d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
@@ -548,21 +565,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d,&
               euler_calcMatrixScalarDiss1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d,&
               euler_calcMatrixScalarDiss2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d,&
               euler_calcMatrixScalarDiss3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -581,21 +601,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d,&
               euler_calcMatrixTensorDiss1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d,&
               euler_calcMatrixTensorDiss2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d,&
               euler_calcMatrixTensorDiss3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -614,21 +637,24 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d, euler_calcMatrixRusanov1d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d, euler_calcMatrixRusanov2d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d, euler_calcMatrixRusanov3d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
@@ -967,17 +993,20 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin1d, dscale, .true., rrhs)
             
           case (NDIM2D)
             call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin2d, dscale, .true., rrhs)
             
           case (NDIM3D)
             call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin3d, dscale, .true., rrhs)
           end select
       
@@ -1003,17 +1032,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true. , rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss3d, dscale, .true., rrhs)
             end select
             
@@ -1025,17 +1057,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitScalarDiss2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitScalarDiss3d, dscale, .true., rrhs)
             end select
             
@@ -1046,17 +1081,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss3d, dscale, .true., rrhs)
             end select
 
@@ -1068,17 +1106,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitTensorDiss2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitTensorDiss3d, dscale, .true., rrhs)
             end select
 
@@ -1089,17 +1130,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov3d, dscale, .true., rrhs)
             end select
 
@@ -1111,17 +1155,20 @@ contains
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
               
             case (NDIM2D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitRusanov2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxDSplitRusanov3d, dscale, .true., rrhs)
             end select
 
@@ -1142,24 +1189,24 @@ contains
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr1d,&
-                euler_calcCharacteristics1d, rproblemLevel&
-                %Rafcstab(inviscidAFC), dscale, .true., rrhs)
+                euler_calcCharacteristics1d, dscale, .true., rrhs)
             
           case (NDIM2D)
             call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr2d,&
-                euler_calcCharacteristics2d, rproblemLevel&
-                %Rafcstab(inviscidAFC), dscale, .true., rrhs)
+                euler_calcCharacteristics2d, dscale, .true., rrhs)
             
           case (NDIM3D)
             call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr3d,&
-                euler_calcCharacteristics3d, rproblemLevel&
-                %Rafcstab(inviscidAFC), dscale, .true., rrhs)
+                euler_calcCharacteristics3d, dscale, .true., rrhs)
           end select
           
         case DEFAULT
@@ -1368,17 +1415,20 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rres)
         
       case (NDIM2D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rres)
         
       case (NDIM3D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rres)
       end select
 
@@ -1404,17 +1454,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rres)
         end select
         
@@ -1426,17 +1479,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitScalarDiss2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitScalarDiss3d, dscale, .false., rres)
         end select
         
@@ -1447,17 +1503,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rres)
         end select
         
@@ -1469,17 +1528,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitTensorDiss2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitTensorDiss3d, dscale, .false., rres)
         end select
 
@@ -1490,17 +1552,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rres)
         end select
         
@@ -1512,17 +1577,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
           
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitRusanov2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxDSplitRusanov3d, dscale, .false., rres)
         end select
 
@@ -1542,24 +1610,24 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
-            euler_calcCharacteristics1d, rproblemLevel &
-            %Rafcstab(inviscidAFC), dscale, .false., rres)
+            euler_calcCharacteristics1d, dscale, .false., rres)
         
       case (NDIM2D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
-            euler_calcCharacteristics2d, rproblemLevel &
-            %Rafcstab(inviscidAFC), dscale, .false., rres)
+            euler_calcCharacteristics2d, dscale, .false., rres)
         
       case (NDIM3D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
-            euler_calcCharacteristics3d, rproblemLevel&
-            %Rafcstab(inviscidAFC), dscale , .false., rres)
+            euler_calcCharacteristics3d, dscale , .false., rres)
       end select
       
     case DEFAULT
@@ -1725,17 +1793,20 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rrhs)
 
       end select
@@ -1762,17 +1833,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rrhs)
 
         end select
@@ -1784,17 +1858,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rrhs)
 
         end select
@@ -1806,17 +1883,20 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rrhs)
 
         end select
@@ -1838,24 +1918,24 @@ contains
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
-            euler_calcCharacteristics1d, rproblemLevel&
-            %Rafcstab(inviscidAFC), dscale, .false., rrhs)
+            euler_calcCharacteristics1d, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
-            euler_calcCharacteristics2d, rproblemLevel&
-            %Rafcstab(inviscidAFC), dscale, .false., rrhs)
+            euler_calcCharacteristics2d, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rsolution,&
+            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+            %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
-            euler_calcCharacteristics3d, rproblemLevel&
-            %Rafcstab(inviscidAFC), dscale, .false., rrhs)
+            euler_calcCharacteristics3d, dscale, .false., rrhs)
 
       end select
 
@@ -2089,9 +2169,6 @@ contains
     call lsyssc_releaseVector(rflux)
     call lsyssc_releaseVector(ralpha)
     call lsysbl_releaseVector(rdata)
-
-    print *, "DONE"
-    stop
 
   contains
 
