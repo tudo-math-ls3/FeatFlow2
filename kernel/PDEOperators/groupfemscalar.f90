@@ -278,11 +278,17 @@ contains
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND,&
           AFCSTAB_DMP)
-      ! do nothing
-
+      
+      ! Handle for IverticesAtEdge
+      Isize = (/4, rafcstab%NEDGE/)
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
+          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
     case (AFCSTAB_FEMFCT,&
           AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_LINEARIZED,&
           AFCSTAB_FEMGP,&
           AFCSTAB_FEMTVD)
       
