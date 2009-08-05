@@ -1623,7 +1623,7 @@ contains
       
       
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -1690,7 +1690,7 @@ contains
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -1758,7 +1758,7 @@ contains
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -1828,7 +1828,7 @@ contains
       
       
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -1895,7 +1895,7 @@ contains
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
@@ -1963,7 +1963,7 @@ contains
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i)
+      !$omp parallel do private(ii,C_ij,K_ij)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
