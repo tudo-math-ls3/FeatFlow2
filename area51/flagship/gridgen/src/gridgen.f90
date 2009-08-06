@@ -174,7 +174,7 @@ program agridgen
     ! user-defined element area (-a) without generating additional
     ! Steiner points on the boundary (-Y) based on vertex distribution
     write(cbuffer1, cFormat) darea
-    call system('triangle -Y -D -a'//trim(adjustl(cbuffer1))&
+    call system('triangle -Y -D -e -a'//trim(adjustl(cbuffer1))&
         //' '//trim(adjustl(cfilename))//'.node')
  
 
