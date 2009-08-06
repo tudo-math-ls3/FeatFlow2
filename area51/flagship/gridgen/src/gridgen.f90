@@ -31,11 +31,14 @@ program agridgen
   ! Definition of output format
   character(LEN=*), parameter :: cFormat = '(F32.15)'
  
+  ! Definition whether to use external triangulation
+  logical :: bexternalDelaunay = .true.
+
   ! local variables
   character(len=80) :: cbuffer
   character(len=32) :: cbuffer1,cbuffer2,cbuffer3,cbuffer4,cbuffer5,cbuffer6
-  real(DP) :: x,y,r,dr0,phi
-  integer :: i,j,k,ivt,jvt,isegment,iaux,irefine,nvt,nel,nmt
+  real(DP) :: x,y,r,dr0,phi,darea
+  integer :: i,j,k,ivt,jvt,isegment,iaux,irefine,nvt,nel,nmt,i1,i2,i3
 
   !-----------------------------------------------------------------------------
   ! Get command line arguments
@@ -90,6 +93,7 @@ program agridgen
     end select
   end do
 
+
   !-----------------------------------------------------------------------------
   ! Write statistics
   !-----------------------------------------------------------------------------
@@ -107,6 +111,7 @@ program agridgen
   write(cbuffer, *) nminsegments
   write(*,'(A,T45,A)') 'minimum number of segments in inner circle:',trim(adjustl(cbuffer))
     write(*,'(A,T45,A)') 'name of output file: ',trim(adjustl(cfilename))
+
   
   !-----------------------------------------------------------------------------
   ! Generate PRM-file
@@ -131,42 +136,105 @@ program agridgen
   write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
   
   close(100)
-  
-  !-----------------------------------------------------------------------------
-  ! Determine the number of inner layers
-  !-----------------------------------------------------------------------------
-  
-  isegment = nsegments; irefine = 0
-  inner: do
-    if ((mod(isegment, 2) .eq. 0) .and.&
-        (isegment .ge. 2*nminsegments)) then
-      isegment = isegment/2
-      irefine  = irefine+1
-    else
-      exit inner
-    end if
-  end do inner
-  
-  ! Determine number of vertices/elements in the interior circle. To
-  ! this we we initialize the quantities NEL, NVT and NMT by the
-  ! values of the initial coarse grid in perform regular subdivision.
-  nel = isegment
-  nvt = isegment+1
-  nmt = 2*isegment
-  
-  do i = 1, irefine
-    
-    ! Each edge produces a new vertex
-    nvt = nvt + nmt
-    
-    ! Each edge is subdivided into two new edges and 
-    ! each element produces three new edges
-    nmt = 2*nmt + 3*nel
 
-    ! Each element is subdivided into four new elements
-    nel = 4*nel
-  end do
 
+  if (bexternalDelaunay) then
+
+    !---------------------------------------------------------------------------
+    ! Generate inner triangulation - using external program triangle
+    !---------------------------------------------------------------------------
+    
+    open(unit=100, file=trim(adjustl(cfilename))//'.node')
+    
+    ! Write number of points
+    write(cbuffer1, '(I)') nsegments
+    write(100, '(A)') trim(adjustl(cbuffer1))//' 2 0 1'
+    
+    ! Write vertex coordinates
+    do isegment = 1, nsegments
+      
+      ! Compute angle
+      phi = (isegment-1)*2.0_DP*pi/nsegments
+      
+      write(cbuffer1, '(I)') isegment
+      write(cbuffer2, cFormat) dinnerRadius * cos(phi)
+      write(cbuffer3, cFormat) dinnerRadius * sin(phi)
+      
+      write(100, '(A)') trim(adjustl(cbuffer1))//' '&
+          //trim(adjustl(cbuffer2))//' '//trim(adjustl(cbuffer3))
+    end do
+    
+    close(100)
+    
+    ! Compute minimum edge length
+    phi = 2.0_DP*pi/nsegments
+    darea = (dinnerradius**2) * ((cos(phi)-1)**2 + sin(phi)**2)
+    
+    ! Generate conforming Delaunay triangulation (-D) subject to a
+    ! user-defined element area (-a) without generating additional
+    ! Steiner points on the boundary (-Y) based on vertex distribution
+    write(cbuffer1, cFormat) darea
+    call system('triangle -Y -D -a'//trim(adjustl(cbuffer1))&
+        //' '//trim(adjustl(cfilename))//'.node')
+ 
+
+    !---------------------------------------------------------------------------
+    ! Read data for inner triangulation and convert it into TRI format
+    !---------------------------------------------------------------------------
+    
+    open(unit=100, file=trim(adjustl(cfilename))//'.1.node')
+    read(100, fmt=*) nvt
+    close(100)
+
+    open(unit=100, file=trim(adjustl(cfilename))//'.1.ele')
+    read(100, fmt=*) nel
+    close(100)
+    
+    open(unit=100, file=trim(adjustl(cfilename))//'.1.edge')
+    read(100, fmt=*) nmt
+    close(100)
+
+  else
+
+    
+    !---------------------------------------------------------------------------
+    ! Determine the number of inner layers by hand
+    !---------------------------------------------------------------------------
+    
+    isegment = nsegments; irefine = 0
+    inner: do
+      if ((mod(isegment, 2) .eq. 0) .and.&
+          (isegment .ge. 2*nminsegments)) then
+        isegment = isegment/2
+        irefine  = irefine+1
+      else
+        exit inner
+      end if
+    end do inner
+    
+    ! Determine number of vertices/elements in the interior circle. To
+    ! this we we initialize the quantities NEL, NVT and NMT by the
+    ! values of the initial coarse grid in perform regular subdivision.
+    nel = isegment
+    nvt = isegment+1
+    nmt = 2*isegment
+    
+    do i = 1, irefine
+      
+      ! Each edge produces a new vertex
+      nvt = nvt + nmt
+      
+      ! Each edge is subdivided into two new edges and 
+      ! each element produces three new edges
+      nmt = 2*nmt + 3*nel
+      
+      ! Each element is subdivided into four new elements
+      nel = 4*nel
+    end do
+    
+  end if
+  
+  
   !-----------------------------------------------------------------------------
   ! Generate TRI-file
   !-----------------------------------------------------------------------------
@@ -184,43 +252,66 @@ program agridgen
   write(100,'(A)') 'DCORVG'
   !-----------------------------------------------------------------------------
 
-  ! Write vertex at origin
-  write(cbuffer1, cFormat) 0.0
-  write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1))
-  
-  ! Write interior vertices in the inner layer
-  iaux = isegment
-  do j = 1, 2**irefine
-    do i = 1, iaux
+  if (bexternalDelaunay) then
+
+    ! Write interior vertices in the inner layer
+    open(unit=200, file=trim(adjustl(cfilename))//'.1.node')
+    read(200, fmt=*) nvt
+    
+    ! Read node file line by line and convert coordinates
+    do ivt = 1, nvt
+      read(200, fmt=*) i, x, y, iaux
+
+      write(cbuffer1, cFormat) x
+      write(cbuffer2, cFormat) y
       
-      ! Compute radius
-      r = j*(dinnerRadius)/(2**irefine)
-
-      ! Compute angle
-      phi = (i-1)*2.0_DP*pi/iaux
-
-      write(cbuffer1, '(F20.12)') r * cos(phi)
-      write(cbuffer2, '(F20.12)') r * sin(phi)
-
-      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
+      write(100,'(A)') trim(adjustl(cbuffer1))//' '&
+          //trim(adjustl(cbuffer2))
     end do
     
-    ! Increate the number of segments
-    iaux = iaux + isegment
-  end do
+    close(200)
+    
+  else
+
+    ! Write vertex at origin
+    write(cbuffer1, cFormat) 0.0
+    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer1))
+    
+    ! Write interior vertices in the inner layer
+    iaux = isegment
+    do j = 1, 2**irefine
+      do i = 1, iaux
+        
+        ! Compute radius
+        r = j*(dinnerRadius)/(2**irefine)
+        
+        ! Compute angle
+        phi = (i-1)*2.0_DP*pi/iaux
+        
+        write(cbuffer1, cFormat) r * cos(phi)
+        write(cbuffer2, cFormat) r * sin(phi)
+        
+        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
+      end do
+      
+      ! Increate the number of segments
+      iaux = iaux + isegment
+    end do
+    
+  end if
 
   ! Compute minimal grid spacing
   if (danisotropy .eq. 1.0_DP) then
     dr0 = (douterRadius-dinnerRadius)/nlayers
   else
     dr0 = (danisotropy-1) / (danisotropy**nlayers-1)*&
-          (douterRadius-dinnerRadius)
+        (douterRadius-dinnerRadius)
   end if
-
+  
   ! Write interior vertices in the outer layer
   do i = 1, nsegments
     do j = 1, nlayers-1
-
+      
       ! Compute radius
       if (danisotropy .eq. 1.0_DP) then
         r = dinnerRadius + j*dr0
@@ -230,120 +321,160 @@ program agridgen
       
       ! Compute angle
       phi = 2*(i-1)*pi/nsegments
-
+      
       write(cbuffer1, cFormat) r * cos(phi)
       write(cbuffer2, cFormat) r * sin(phi)
-
+      
       write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
     end do
-
+    
     ! Write parameter for boundary vertex
     r = real(i-1,DP)/real(nsegments,DP)
     write(cbuffer1, cFormat) r
     write(cbuffer2, cFormat) 0.0
     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))
   end do
-
+    
   !-----------------------------------------------------------------------------
   write(100,'(A)') 'KVERT'
   !-----------------------------------------------------------------------------
 
-  ! Process inner most triangles
-  do i = 1, isegment
-    
-    write(cbuffer1, '(I)') 1
-    write(cbuffer2, '(I)') mod(i-1, isegment)+2
-    write(cbuffer3, '(I)') mod(i,   isegment)+2
-    write(cbuffer4, '(I)') 0
+  if (bexternalDelaunay) then
 
-    write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                     trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-  end do
-  
+    open(unit=200, file=trim(adjustl(cfilename))//'.1.ele')
+    read(200, fmt=*) nel
 
-  ! Initialize counter
-  iaux = 0
-  
-  ! Loop over all layers
-  do j = 1, 2**irefine-1
-    
-    iaux = iaux + j
+    ! Read element file line by line and convert coordinates
+    do i = 1, nel
+      read(200, fmt=*) iaux, i1, i2, i3
 
-    ! Loop over all segments
-    do i = 1, isegment
-
-      ! Compute number of starting vertices in current layer and the
-      ! next layer which is located interior to the current one
-      ivt = iaux*isegment+(i-1)*j+i+1
-      jvt = (iaux-j)*isegment+(i-1)*(j-1)+i+1
-
-      ! Loop over all edges in the current layer
-      do k = 1, iaux*isegment+i*j+i+1-ivt
-
-        write(cbuffer1, '(I)') ivt
-        write(cbuffer2, '(I)') ivt+1
-        write(cbuffer3, '(I)') jvt
-        write(cbuffer4, '(I)') 0
-
-        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                         trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-        
-        ! Increase vertex number in current layer
-        ivt = ivt + 1
-        
-        write(cbuffer1, '(I)') ivt
-        ! Check if this is the last=first vertex in the inner layer
-        if (jvt+1 .eq. iaux*isegment+2) then
-          write(cbuffer2, '(I)') (iaux-j)*isegment+2
-        else
-          write(cbuffer2, '(I)') jvt+1
-        end if
-        write(cbuffer3, '(I)') jvt
-        write(cbuffer4, '(I)') 0
-
-        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                         trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-        
-        ! Increase vertex number in inner layer
-        jvt = jvt + 1
-        
-      end do
-
-      write(cbuffer1, '(I)') ivt
-      ! Check if this is the last=first vertex in the current layer
-      if (ivt+1 .eq. (iaux+j+1)*isegment+2) then
-        write(cbuffer2, '(I)') jvt
-      else
-        write(cbuffer2, '(I)') ivt+1
-      end if
-      ! Check if this is the last=first vertex in the inner layer
-      if (jvt .eq. iaux*isegment+2) then
-        write(cbuffer3, '(I)') (iaux-j)*isegment+2
-      else
-        write(cbuffer3, '(I)') jvt
-      end if
+      write(cbuffer1, '(I)') i1
+      write(cbuffer2, '(I)') i2
+      write(cbuffer3, '(I)') i3
       write(cbuffer4, '(I)') 0
 
       write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                       trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-    end do   
-  end do
+          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+    end do
+    
+    close(200)
 
-  ! Process connection layer between unstructured and structured grids
-  do i = 1, nsegments
-
-    ! Compute base vertex number
-    ivt = nlayers*(i-1)
-
-     write(cbuffer1, '(I)') mod(i-1,         nsegments)+nvt-nsegments+1
-     write(cbuffer2, '(I)') mod(ivt,         nsegments*nlayers)+nvt+1
-     write(cbuffer3, '(I)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
-     write(cbuffer4, '(I)') mod(i,           nsegments)+nvt-nsegments+1
-
-     write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
-                      trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
-  end do
-
+    ! Process connection layer between unstructured and structured grids
+    do i = 1, nsegments
+      
+      ! Compute base vertex number
+      ivt = nlayers*(i-1)
+      
+      write(cbuffer1, '(I)') mod(i-1,         nsegments)+1
+      write(cbuffer2, '(I)') mod(ivt,         nsegments*nlayers)+nvt+1
+      write(cbuffer3, '(I)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
+      write(cbuffer4, '(I)') mod(i,           nsegments)+1
+      
+      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+    end do
+    
+  else
+    
+    ! Process inner most triangles
+    do i = 1, isegment
+      
+      write(cbuffer1, '(I)') 1
+      write(cbuffer2, '(I)') mod(i-1, isegment)+2
+      write(cbuffer3, '(I)') mod(i,   isegment)+2
+      write(cbuffer4, '(I)') 0
+      
+      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+    end do
+    
+    
+    ! Initialize counter
+    iaux = 0
+    
+    ! Loop over all layers
+    do j = 1, 2**irefine-1
+      
+      iaux = iaux + j
+      
+      ! Loop over all segments
+      do i = 1, isegment
+        
+        ! Compute number of starting vertices in current layer and the
+        ! next layer which is located interior to the current one
+        ivt = iaux*isegment+(i-1)*j+i+1
+        jvt = (iaux-j)*isegment+(i-1)*(j-1)+i+1
+        
+        ! Loop over all edges in the current layer
+        do k = 1, iaux*isegment+i*j+i+1-ivt
+          
+          write(cbuffer1, '(I)') ivt
+          write(cbuffer2, '(I)') ivt+1
+          write(cbuffer3, '(I)') jvt
+          write(cbuffer4, '(I)') 0
+          
+          write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+              trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+          
+          ! Increase vertex number in current layer
+          ivt = ivt + 1
+          
+          write(cbuffer1, '(I)') ivt
+          ! Check if this is the last=first vertex in the inner layer
+          if (jvt+1 .eq. iaux*isegment+2) then
+            write(cbuffer2, '(I)') (iaux-j)*isegment+2
+          else
+            write(cbuffer2, '(I)') jvt+1
+          end if
+          write(cbuffer3, '(I)') jvt
+          write(cbuffer4, '(I)') 0
+          
+          write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+              trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+          
+          ! Increase vertex number in inner layer
+          jvt = jvt + 1
+          
+        end do
+        
+        write(cbuffer1, '(I)') ivt
+        ! Check if this is the last=first vertex in the current layer
+        if (ivt+1 .eq. (iaux+j+1)*isegment+2) then
+          write(cbuffer2, '(I)') jvt
+        else
+          write(cbuffer2, '(I)') ivt+1
+        end if
+        ! Check if this is the last=first vertex in the inner layer
+        if (jvt .eq. iaux*isegment+2) then
+          write(cbuffer3, '(I)') (iaux-j)*isegment+2
+        else
+          write(cbuffer3, '(I)') jvt
+        end if
+        write(cbuffer4, '(I)') 0
+        
+        write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+            trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+      end do
+    end do
+    
+    ! Process connection layer between unstructured and structured grids
+    do i = 1, nsegments
+      
+      ! Compute base vertex number
+      ivt = nlayers*(i-1)
+      
+      write(cbuffer1, '(I)') mod(i-1,         nsegments)+nvt-nsegments+1
+      write(cbuffer2, '(I)') mod(ivt,         nsegments*nlayers)+nvt+1
+      write(cbuffer3, '(I)') mod(ivt+nlayers, nsegments*nlayers)+nvt+1
+      write(cbuffer4, '(I)') mod(i,           nsegments)+nvt-nsegments+1
+      
+      write(100,'(A)') trim(adjustl(cbuffer1))//' '//trim(adjustl(cbuffer2))//' '//&
+          trim(adjustl(cbuffer3))//' '//trim(adjustl(cbuffer4))
+    end do
+    
+  end if
+  
+  
   ! Process outer structured grid
   do i = 1, nsegments
     do j = 1, nlayers-1
