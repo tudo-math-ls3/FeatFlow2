@@ -878,6 +878,13 @@ contains
                     gravconst, dt, Method, prelimiting)
     end if
 
+	        ! Take care of Boundary Conditions after this fct correction
+	        call ImplementShallowWaterBCs (&
+	                rboundary, rtriangulation, &
+	                rarrayP, rarraySol, rarrayDef, &
+	                p_Kdiagonal, p_Kld, &
+	                gravconst, boundarycorner)
+
 	! That's it. RvectorBlock now contains our solution at the current time
 
     ! write gmvfiles for video (if needed)
