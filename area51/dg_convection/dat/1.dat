@@ -1,0 +1,122 @@
+[TRIANGULATION]
+
+# We want to solve our problem on level ...
+nlmax = 2
+
+# Name of the parametrisation file
+#prmname = ./pre/QUAD.prm
+#prmname = ./pre/TRIA.prm
+#prmname = ./pre/unstructured.prm
+#prmname = ./pre/zwanzigm.prm
+#prmname = ./pre/zehnm.prm
+#prmname = ./pre/damv1.prm
+#prmname = ./pre/balken.prm
+prmname = ./pre/zylinderusefein.prm
+
+# Name of the triangulation file
+#triname = ./pre/QUAD.tri
+#triname = ./pre/TRIA.tri
+#triname = ./pre/unstructured.tri
+#triname = ./pre/zwanzigm.tri
+#triname = ./pre/zehnm.tri
+#triname = ./pre/damv1.tri
+#triname = ./pre/balken.tri
+triname =./pre/zylinderusefein.tri
+
+# What kind of finite elements do we use?
+# 0: linear conforming triangular FE, P1
+# 1: bilinear conforming quadrilateral FE, Q1
+FEkind = 1
+#FEkind = 0
+
+
+
+[TIMESTEPPING]
+
+# Timestepsize
+dt = 0.01
+
+# Final time
+ttfinal = 2.9
+
+# Implicitness parameter
+theta = 0.5
+
+
+
+[SOLVER]
+
+# Always update Preconditioner?
+alwaysupdatepreconditioner = 1
+
+# Maximum number of iterations for the nonlinear solver
+itemax = 20
+
+# Stopping criterium for the nonlinear solver
+# (this is where you determine how accurate your solution is - this should be small)
+# Absolute value of the norm of the defect
+nonlinabsdef = 1e-11
+# Relative value of the norm of the defect
+nonlinreldef = 1e-10
+# Norm of solutionupdate
+nonlinsolup = 1e-12
+
+# Stopping criterium for linear solver
+# (this is only for the inner defect correction loop - doesn't have to be too small)
+# Absolute value of the norm of the defect
+linabsdef = 1e-7
+# Relative value of the norm of the defect
+linreldef = 1e-4
+
+# Specify, if boundary conditions are to be applied in a corner
+# Can be set to zero, if the inner angle of the boundary is much
+# larger than 180 degrees (for example a 270 degrees corner)
+boundarycorner = 0
+
+
+[METHOD]
+
+# What Method to use
+Method = 3
+# 0: High Order Scheme (No Dissipation)
+# 1: Low Order Scheme (Scalar Dissipation)
+# 2: Low Order Scheme (Tensorial Dissipation)
+# 3: TVD
+# 4: FCT (Scalar Dissipation)
+# 5: FCT (Tensorial Dissipation)
+
+# What limiter to use for TVD?
+limiter = 2
+# 1: MinMod
+# 2: Van Leer
+# 3: MC
+# 4: Superbee
+
+# Apply prelimiting for FCT?
+prelimiting = 1
+# 0: no prelimiting
+# 1: apply simple prelimiting
+
+
+
+[PROBLEM]
+
+# Gravitation constant
+gravconst = 9.81
+
+# Choose the startvalues for h, hu, hv
+# You can use a function parser, depending on x and y
+# Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
+hstart = if(x<40, 5, 10)
+hustart = 0
+hvstart = 0
+
+[VIDEO]
+
+# Create files for video?
+# 0: No
+# 1: Yes
+makevideo = 1
+
+# Make gmv snapshot every ... seconds (must be n*dt)
+videotimestep = 0.1
