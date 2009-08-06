@@ -438,6 +438,52 @@ contains
 	end if
 	
 	end function
+
+
+
+    ! This routine returns the eigenvalues of the jacobi matrix in direction d
+    ! d=1: x-direction, d=2: y-direction
+	function buildFlux(Q,d,g) result(Flux)
+	
+	! The flux vector in direction d at Q
+	real(DP), dimension(3)	:: Flux
+	
+	! The solution components q1 = h, q2 = uh, q3 = vh
+	real(DP), dimension(3), intent(IN)		:: Q
+
+	! The gravitational konstant
+	real(DP), intent(IN)		        	:: g
+	
+	! the direction: d=1: x-direction, d=2: y-direction
+	integer, intent(IN)                     :: d
+	
+	! speed of gravitational waves
+	real(DP)                                :: c
+	
+	! temporary variable
+	real(DP)                                :: coeff, h, u, v
+	
+	! Calculate primitive variables
+	!h=Q(1)
+	!u=Q(2)/Q(1)
+	!v=Q(3)/Q(1)
+	
+	! compute c = sqrt(g*h)
+	!c = sqrt(g*h)
+	
+    if (d==1) then
+    ! build eigenvalues in x direction
+	    Flux(1) = Q(2)
+	    Flux(2) = Q(2)*Q(2)/Q(1)+0.5_DP*g*Q(1)*Q(1)
+	    Flux(3) = Q(2)*Q(3)/Q(1)
+    else
+    ! build eigenvalues in y direction
+	    Flux(1) = Q(3)
+	    Flux(2) = Q(2)*Q(3)/Q(1)
+	    Flux(3) = Q(3)*Q(3)/Q(1)+0.5_DP*g*Q(1)*Q(1)
+	end if
+	
+	end function
 	
 	
 	
@@ -652,6 +698,14 @@ contains
 			! deltaK = Aij*deltaQij
 			deltaKi = matmul(Aij+Bij,deltaQij)
 			deltaKj = matmul(Aij-Bij,deltaQij)
+			
+			! Calculate this alternatively by calculating
+			! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+			! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+			deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
+			         -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
+			deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
+		    	     -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
 			
 			! Now choose the artificial diffusion method
 			if ((Method == 0).or.(Method == 3)) then
@@ -1019,6 +1073,14 @@ contains
 			    ! deltaK
 			    deltaKi = matmul(Aij+Bij,deltaQij)
 			    deltaKj = matmul(Aij-Bij,deltaQij)
+
+				! Calculate this alternatively by calculating
+				! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+				! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+				deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
+				         -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
+				deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
+			    	     -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
 			    
 			    ! Now choose the artificial diffusion method
 			    if ((Method == 0).or.(Method == 3)) then
@@ -1051,7 +1113,7 @@ contains
 			                               buildinvTrafo(Qroeij,2,gravconst)))
 			    end if
 			    
-			    ! deltaD
+! 			    ! deltaD
 			    deltaDi = matmul(Dij-Bij,-deltaQij)
 			    deltaDj = -deltaDi
 			    
