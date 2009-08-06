@@ -92,10 +92,6 @@ CSWITCHES = -O -DLINUX -I/usr/X11R6/include -L/usr/X11R6/lib
 
 TRILIBDEFS = -DTRILIBRARY
 
-# RM should be set to the name of your favorite rm (file deletion program).
-
-RM = /bin/rm
-
 # The action starts here.
 
 all: $(BIN)triangle $(BIN)showme $(BIN)gridgen
@@ -119,5 +115,5 @@ $(BIN)triangle.o: $(SRC)triangle.c $(SRC)triangle.h
 $(BIN)showme: $(SRC)showme.c
 	$(CC) $(CSWITCHES) -o $(BIN)showme $(SRC)showme.c -lX11
 
-distclean:
-	$(RM) $(BIN)triangle $(BIN)triangle.o $(BIN)tricall $(BIN)showme
+clean:
+	rm -f $(BIN)triangle $(BIN)showme $(BIN)gridgen
