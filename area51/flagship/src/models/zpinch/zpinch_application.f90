@@ -2096,7 +2096,7 @@ contains
           isize, .false., .false.)
     end if
 
-    ! Initialize the solution vector and impose boundary conditions
+    ! Initialize the solution vector
     call euler_initSolution(rparlist, ssectionNameEuler,&
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
@@ -2105,6 +2105,7 @@ contains
     call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
         p_rproblemLevel, p_rsolutionEuler, rcollection)
 
+    ! Impose boundary conditions
     select case(ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
@@ -2147,7 +2148,8 @@ contains
     call zpinch_redistributeMassTransport(rparlist,&
         ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
         rcollection)
-
+    
+    ! Impose boundary conditions
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
         p_rsolutionTransport, rtimestep%dinitialTime)
     
@@ -2261,6 +2263,7 @@ contains
                 ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler,&
                 rcollection)
             
+            ! Impose boundary conditions
             select case(ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
@@ -2288,6 +2291,7 @@ contains
                 ssectionNameTransport, p_rproblemLevel,&
                 p_rsolutionTransport, rcollection)
 
+            ! Impose boundary conditions
             call bdrf_filterVectorExplicit(rbdrCondTransport,&
                 p_rsolutionTransport, rtimestep%dinitialTime)
           end do
@@ -2449,41 +2453,50 @@ contains
         print *, "Pressure has become negative in the low-order scheme"
       end if
 
-      !-------------------------------------------------------------------------
-      ! Compute linearized FCT correction for Euler model
-      !-------------------------------------------------------------------------
+!!$      !-------------------------------------------------------------------------
+!!$      ! Compute linearized FCT correction for Euler model
+!!$      !-------------------------------------------------------------------------
+!!$      
+!!$      ! Prepare quick access arrays
+!!$      rcollection%SquickAccess(1) = ssectionNameEuler
+!!$      rcollection%SquickAccess(2) = ssectionNameTransport
+!!$      
+!!$      ! Apply linearized FCT correction for Euler model
+!!$      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
+!!$          rtimestep, p_rsolutionEuler, rcollection)
+!!$
+!!$      ! Check if pressure is negative
+!!$      if (.not.zpinch_checkPressure(rsolution(1))) then
+!!$        print *, "Pressure has become negative by flux limiting"
+!!$      end if
       
-      ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = ssectionNameEuler
-      rcollection%SquickAccess(2) = ssectionNameTransport
-      
-      ! Apply linearized FCT correction for Euler model
-      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
-          rtimestep, p_rsolutionEuler, rcollection)
+!!$      !-------------------------------------------------------------------------
+!!$      ! Compute linearized FCT correction for transport model
+!!$      !-------------------------------------------------------------------------
+!!$
+!!$      ! Prepare quick access arrays
+!!$      rcollection%SquickAccess(1) = ssectionNameTransport
+!!$      rcollection%SquickAccess(2) = ssectionNameEuler
+!!$      
+!!$      ! Apply linearized FCT correction for transport model (note
+!!$      ! that the density averaged mass matrix and the new velocity
+!!$      ! field are computed internally by this subroutine)
+!!$      call zpinch_calcLinearizedFCT(rbdrCondTransport,&
+!!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
+!!$          rcollection)
+!!$ 
+!!$      ! Stop time measurement for solution procedure
+!!$      call stat_stopTimer(p_rtimerSolution)
 
-      ! Check if pressure is negative
-      if (.not.zpinch_checkPressure(rsolution(1))) then
-        print *, "Pressure has become negative by flux limiting"
-      end if
-      
-      !-------------------------------------------------------------------------
-      ! Compute linearized FCT correction for transport model
-      !-------------------------------------------------------------------------
+      ! Calculate density-averaged mass matrices
+      call zpinch_initDensityAveraging(rparlist,&
+        ssectionNameEuler, ssectionNameTransport,&
+        p_rproblemLevel, p_rsolutionEuler, rcollection)
 
-      ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = ssectionNameTransport
-      rcollection%SquickAccess(2) = ssectionNameEuler
-      
-      ! Apply linearized FCT correction for transport model (note
-      ! that the density averaged mass matrix and the new velocity
-      ! field are computed internally by this subroutine)
-      call zpinch_calcLinearizedFCT(rbdrCondTransport,&
-          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
-          rcollection)
- 
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
-      
+      ! Calculate velocity field (\rho v)
+      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+        p_rproblemLevel, p_rsolutionEuler, rcollection)
+
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
           ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
