@@ -758,18 +758,18 @@ contains
           x1 = 0.0; x2 = 0.0
         end if
         
-        ! Compute source term
-        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
-        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-                         max(drad, 1.0e-4_DP)
-
 !!$        ! Compute source term
-!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
-!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+!!$                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
+!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
 !!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
 !!$                         max(drad, 1.0e-4_DP)
+
+        ! Compute source term
+        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
+        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+                         max(drad, 1.0e-4_DP)
                
         ! Impose source values
         DdataForce(1, i) = 0.0_DP
@@ -819,18 +819,18 @@ contains
           x1 = 0.0; x2 = 0.0
         end if
         
-        ! Compute source term
-        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
-        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-                         max(drad, 1.0e-4_DP)
-
 !!$        ! Compute source term
-!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
-!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
+!!$                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
+!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
 !!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
 !!$                         max(drad, 1.0e-4_DP)
+
+        ! Compute source term
+        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
+        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+                         max(drad, 1.0e-4_DP)
         
         ! Impose source values
         DdataForce(1, i) = 0.0_DP
