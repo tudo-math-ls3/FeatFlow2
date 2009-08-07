@@ -145,8 +145,8 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkin3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard Galerkin 
@@ -179,8 +179,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr3d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkinNoBdr3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -216,8 +216,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxScalarDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -250,8 +250,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitScalarDiss3d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitScalarDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -285,8 +285,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxTensorDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -319,8 +319,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitTensorDiss3d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitTensorDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -354,8 +354,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRusanov3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -388,8 +388,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitRusanov3d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitRusanov3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -423,7 +423,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -456,7 +456,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -489,8 +489,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag3d(U_i, U_j, C_ij, C_ji, i,&
-      j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkinDiag3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 3D
@@ -522,8 +522,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkin3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
      ! This subroutine computes the Galerkin matrices in 3D
@@ -555,8 +555,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag3d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDissDiag3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -589,8 +589,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -623,8 +623,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag3d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixTensorDissDiag3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
     !<description>
     ! This subroutine computes the Galerkin matrices
@@ -657,8 +657,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixTensorDiss3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -691,8 +691,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag3d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanovDiag3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -725,8 +725,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov3d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanov3d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -759,8 +759,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics3d(U_i, U_j, Dweight, W_ij,&
-      Lbd_ij, R_ij, L_ij)
+  pure subroutine euler_calcCharacteristics3d(&
+      U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 3D
