@@ -764,9 +764,13 @@ contains
          write(*,*), 'Limiter: Superbee'
         end if
        else if (Method==4) then
-        write(*,*), 'FCT: Calculating the low order (scalar dissipation) predictor'
+        write(*,*), 'char. FCT: Calculating the low order (scalar dissipation) predictor'
        else if (Method==5) then
-        write(*,*), 'FCT: Calculating the low order (tensorial dissipation) predictor'
+        write(*,*), 'char. FCT: Calculating the low order (tensorial dissipation) predictor'
+       else if (Method==6) then
+        write(*,*), 'syncron. FCT: Calculating the low order (scalar dissipation) predictor'
+       else if (Method==7) then
+        write(*,*), 'syncron. FCT: Calculating the low order (tensorial dissipation) predictor'
        end if
 
       
@@ -865,7 +869,33 @@ contains
 	! But if we are using the linearised FCT, we've got only the low order predictor
 	! and need to add explicit linearised limited antidiffusion
     if ((Method==4).or.(Method==5)) then
-        write(*,*) 'FCT: Adding limited antidiffusion'
+        write(*,*) 'linearised characteristic FCT: Adding limited antidiffusion'
+    
+        ! This routine adds limited antidiffusion according to the linearised
+        ! FCT limiter
+        call linFctShallowWaterAddLimitedAntidiffusion_characteristic(&
+	                rarraySol, rarraySolDot, rarrayRhs,&
+	                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
+	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+                    h_fld1, p_fld1, p_fld2, &
+                    p_Kdiagonal, p_Kedge, NEQ, nedge, &
+                    gravconst, dt, Method, prelimiting)
+
+			call BuildShallowWaterPreconditioner (rmatrixBlockP, &
+	                rarrayP, rarraySol, p_CXdata, p_CYdata, &
+	                p_MLdata, p_Kdiagonal, p_kedge, &
+	                NEQ, nedge, theta, dt, gravconst)
+
+			! Take care of Boundary Conditions after this fct correction
+	        call ImplementShallowWaterBCs (&
+	                rboundary, rtriangulation, &
+	                rarrayP, rarraySol, rarrayDef, &
+	                p_Kdiagonal, p_Kld, &
+	                gravconst, boundarycorner)
+    end if
+
+    if ((Method==6).or.(Method==7)) then
+        write(*,*) 'linearised syncronized FCT: Adding limited antidiffusion'
     
         ! This routine adds limited antidiffusion according to the linearised
         ! FCT limiter

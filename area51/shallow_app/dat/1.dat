@@ -77,13 +77,15 @@ boundarycorner = 0
 [METHOD]
 
 # What Method to use
-Method = 4
+Method = 7
 # 0: High Order Scheme (No Dissipation)
 # 1: Low Order Scheme (Scalar Dissipation)
 # 2: Low Order Scheme (Tensorial Dissipation)
 # 3: TVD
-# 4: FCT (Scalar Dissipation)
-# 5: FCT (Tensorial Dissipation)
+# 4: linearised FCT characteristic (Scalar Dissipation)
+# 5: linearised FCT characteristic (Tensorial Dissipation)
+# 6: linearised FCT syncronized (Scalar Dissipation)
+# 7: linearised FCT syncronized (Tensorial Dissipation)
 
 # What limiter to use for TVD?
 limiter = 2

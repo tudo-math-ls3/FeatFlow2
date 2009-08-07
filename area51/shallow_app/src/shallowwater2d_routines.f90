@@ -711,7 +711,7 @@ contains
 			if ((Method == 0).or.(Method == 3)) then
 			    ! Here we do not add artificial diffusion - so we have the high order method
 			    Dij = 0
-			else if ((Method == 1).or.(Method == 4)) then
+			else if ((Method == 1).or.(Method == 4).or.(Method == 6)) then
 			    ! Here we use scalar dissipation
 			    ! compute the maximum of the eigenvalues of Aij
 			    scalefactor = sqrt(JcoeffxA**2.0_DP+JcoeffyA**2.0_DP)
@@ -728,7 +728,7 @@ contains
 			    
 			    ! compute Dij
 			    Dij = scalarDissipation*Eye
-			else if ((Method == 2).or.(Method == 5)) then
+			else if ((Method == 2).or.(Method == 5).or.(Method == 7)) then
 			    ! Here we use tensorial dissipation
 			    Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
 			                    matmul(buildaLambda(Qroeij,1,gravconst),&
@@ -1086,7 +1086,7 @@ contains
 			    if ((Method == 0).or.(Method == 3)) then
 			        ! Here we do not add artificial diffusion - so we have the high order method
 			        Dij = 0
-			    else if ((Method == 1).or.(Method == 4)) then
+			    else if ((Method == 1).or.(Method == 4).or.(Method == 6)) then
 			        ! Here we use scalar dissipation
 			        ! compute the maximum of the eigenvalues of Aij
 			        scalefactor = sqrt(JcoeffxA**2.0_DP+JcoeffyA**2.0_DP)
@@ -1103,7 +1103,7 @@ contains
 			        
 			        ! compute Dij
 			        Dij = scalarDissipation*Eye
-			    else if ((Method == 2).or.(Method == 5)) then
+			    else if ((Method == 2).or.(Method == 5).or.(Method == 7)) then
 			        ! Here we use tensorial dissipation
 			        Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
 			                        matmul(buildaLambda(Qroeij,1,gravconst),&
@@ -2000,7 +2000,7 @@ contains
 			JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
 			    
 			! compute Dij
-			if (Method == 4) then
+			if (Method == 6) then
 			    ! Build Dij using scalar dissipation
 	    	scalarDissipation = &
 			abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
@@ -2008,7 +2008,7 @@ contains
 			
 			! compute Dij
 			Dij = scalarDissipation*Eye
-			else if (Method == 5) then
+			else if (Method == 7) then
 			    ! Build Dij using tensorial dissipation
 			    Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
 			                    matmul(buildaLambda(Qroeij,1,gravconst),&
@@ -2077,14 +2077,14 @@ contains
 			JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
 			    
 			! compute Dij
-			if (Method == 4) then
+			if (Method == 6) then
 			    ! Build Dij using scalar dissipation
 	    		scalarDissipation = &
 				abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
 				abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
 			
 				Dij = scalarDissipation*Eye
-			else if (Method == 5) then
+			else if (Method == 7) then
 			    ! Build Dij using tensorial dissipation
 			    Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
 			                    matmul(buildaLambda(Qroeij,1,gravconst),&
