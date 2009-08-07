@@ -131,7 +131,7 @@
 !# The following auxiliary routines are available:
 !#
 !# 1.) gfsc_hasOrientation
-!#     -> Checks if the stabilisation techniques requires an oriented structure
+!#     -> Checks if the stabilisation technique requires an oriented structure
 !#
 !# </purpose>
 !##############################################################################
@@ -166,7 +166,7 @@ module groupfemscalar
   public :: gfsc_buildJacobianTVD
   public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
-
+  
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
@@ -288,7 +288,6 @@ contains
       
     case (AFCSTAB_FEMFCT,&
           AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_LINEARIZED,&
           AFCSTAB_FEMGP,&
           AFCSTAB_FEMTVD)
       
@@ -322,6 +321,43 @@ contains
       ! We need 2 edgewise vectors for the explicit and implicit fluxes
       allocate(rafcstab%RedgeVectors(2))
       do i = 1, 2
+        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
+                                 rafcstab%NEDGE, .false., ST_DOUBLE)
+      end do
+
+
+    case (AFCSTAB_FEMFCT_LINEARIZED)
+      
+      ! Handle for IsuperdiagonalEdgesIdx
+      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
+      call storage_new('gfsc_initStabilisation', 'IsuperdiagonalEdgesIdx',&
+          rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
+      
+      ! Handle for IverticesAtEdge
+      Isize = (/4, rafcstab%NEDGE/)
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
+          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      
+      ! Handle for DcoefficientsAtEdge
+      Isize = (/3, rafcstab%NEDGE/)
+      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DcoefficientsAtEdge)
+      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
+          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
+
+      ! We need 6 nodal vectors for P's, Q's and R's
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
+        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
+                                 rafcstab%NEQ, .false., ST_DOUBLE)
+      end do
+
+      ! We need 3 edgewise vectors for the explicit and implicit fluxes
+      allocate(rafcstab%RedgeVectors(3))
+      do i = 1, 3
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
                                  rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
@@ -465,7 +501,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, rafcstab, ru,&
-      fcb_calcMatrix, bStabilise, bclear, rconvMatrix, bisConservative)
+      fcb_calcMatrix, bbuildStabilisation, bclear, rconvMatrix, bisConservative)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -490,7 +526,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(in) :: bStabilise
+    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -525,7 +561,7 @@ contains
     else
       
       call gfsc_buildConvOperatorScalar(RcoeffMatrices, rafcstab,&
-          ru%RvectorBlock(1), fcb_calcMatrix, bStabilise, bclear,&
+          ru%RvectorBlock(1), fcb_calcMatrix, bbuildStabilisation, bclear,&
           rconvMatrix, bisConservative)
 
     end if
@@ -537,7 +573,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, rafcstab,&
-      ru, fcb_calcMatrix, bStabilise, bclear, rconvMatrix, bisConservative)
+      ru, fcb_calcMatrix, bbuildStabilisation, bclear, rconvMatrix, bisConservative)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
@@ -583,7 +619,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(in) :: bStabilise
+    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -680,7 +716,7 @@ contains
       end if
 
       ! Do we have to perform stabilisation?
-      if (bstabilise) then
+      if (bbuildStabilisation) then
         
         ! Set additional pointers
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
@@ -792,7 +828,7 @@ contains
           
         end if   ! bhasOrientation
         
-      else   ! bStabilise == no
+      else   ! bbuildStabilisation == no
         
         ! Apply standard discretisation without stabilisation
         
@@ -2083,7 +2119,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildDiffusionOperator(rcoeffMatrix, rafcstab,&
-      bStabilise, bclear, rdiffMatrix)
+      bbuildStabilisation, bclear, rdiffMatrix)
 
 !<description>
     ! This subroutine assembles the diffusive part of the discrete
@@ -2111,7 +2147,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(in) :: bStabilise
+    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -2173,7 +2209,7 @@ contains
       end if
       
       ! Do we have to perform stabilisation?
-      if (bstabilise) then
+      if (bbuildStabilisation) then
         
         ! Set additional pointers
         call afcstab_getbase_DcoeffsAtEdge(rafcstab,&
@@ -3878,7 +3914,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, ru, fcb_calcMatrix,&
-                                         hstep, bStabilise, bclear, rjacobianMatrix)
+                                         hstep, bbuildStabilisation, bclear, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -3901,7 +3937,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(in) :: bStabilise
+    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -3928,7 +3964,7 @@ contains
     else
       
       call gfsc_buildConvJacobianScalar(RcoeffMatrices, ru%RvectorBlock(1),&
-                                        fcb_calcMatrix, hstep, bStabilise,&
+                                        fcb_calcMatrix, hstep, bbuildStabilisation,&
                                         bclear, rjacobianMatrix)
       
     end if
@@ -3940,7 +3976,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, ru, fcb_calcMatrix,&
-                                          hstep, bStabilise, bclear, rjacobianMatrix)
+                                          hstep, bbuildStabilisation, bclear, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -3960,7 +3996,7 @@ contains
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
-    logical, intent(in) :: bStabilise
+    logical, intent(in) :: bbuildStabilisation
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
@@ -4029,7 +4065,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
-      if (bStabilise) then
+      if (bbuildStabilisation) then
         
         select case(ndim)
         case (NDIM1D)
@@ -4043,7 +4079,7 @@ contains
                                p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      else   ! bStabilise
+      else   ! bbuildStabilisation
 
         select case(ndim)
         case (NDIM1D)
@@ -4057,7 +4093,7 @@ contains
                                  p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      end if   ! bStabilise
+      end if   ! bbuildStabilisation
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
@@ -4079,7 +4115,7 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
       ! Do we have to build the upwind Jacobian?
-      if (bStabilise) then
+      if (bbuildStabilisation) then
         
         select case(ndim)
         case (NDIM1D)
@@ -4093,7 +4129,7 @@ contains
                                rjacobianMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
       
-      else   ! bStabilise
+      else   ! bbuildStabilisation
 
         select case(ndim)
         case (NDIM1D)
@@ -4107,7 +4143,7 @@ contains
                                  rjacobianMatrix%NEQ, p_Cx, p_Cy, p_Cz, p_u, p_Jac)
         end select
 
-      end if   ! bStabilise
+      end if   ! bbuildStabilisation
 
       ! Release diagonal separator
       call storage_free(h_Ksep)
@@ -6224,11 +6260,11 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    pure subroutine doJacobianMat79_TVD(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                        IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
-                                        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-                                        u, flux, pp, pm, qp, qm, tstep, hstep,&
-                                        NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
+    subroutine doJacobianMat79_TVD(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
+                                   IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+                                   DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
+                                   u, flux, pp, pm, qp, qm, tstep, hstep,&
+                                   NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: u,flux,pp,pm,qp,qm
@@ -6342,10 +6378,10 @@ contains
     !**************************************************************
     ! Update the local coefficients for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    pure subroutine updateJacobianMat79_TVD(IverticesAtEdge, DcoefficientsAtEdge,&
-                                            u, pp, pm, qp, qm, tstep, hstep,&
-                                            iedge, iloc, k, pploc, pmloc,&
-                                            qploc, qmloc, fluxloc, Kloc)
+    subroutine updateJacobianMat79_TVD(IverticesAtEdge, DcoefficientsAtEdge,&
+                                       u, pp, pm, qp, qm, tstep, hstep,&
+                                       iedge, iloc, k, pploc, pmloc,&
+                                       qploc, qmloc, fluxloc, Kloc)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: u,pp,pm,qp,qm
@@ -6458,9 +6494,9 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    pure subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal,&
-                                              flux, Kloc, rploc, rmloc, fluxloc,&
-                                              hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
+    subroutine assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal,&
+                                         flux, Kloc, rploc, rmloc, fluxloc,&
+                                         hstep, iedge, iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:), intent(in) :: flux
       real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc
@@ -10363,11 +10399,11 @@ contains
     !**************************************************************
     ! Update the local coefficients for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    pure subroutine updateJacobianMat79_GP(DcoefficientsAtEdge, MC, u, u0, flux,&
-                                           flux0, pp, pm, qp, qm, c_ij, c_ji,&
-                                           theta, tstep, hstep, iedge, i, j, ij, ji,&
-                                           iloc, k, pploc, pmloc, qploc, qmloc,&
-                                           fluxloc, fluxloc0, Kloc)
+    subroutine updateJacobianMat79_GP(DcoefficientsAtEdge, MC, u, u0, flux,&
+                                      flux0, pp, pm, qp, qm, c_ij, c_ji,&
+                                      theta, tstep, hstep, iedge, i, j, ij, ji,&
+                                      iloc, k, pploc, pmloc, qploc, qmloc,&
+                                      fluxloc, fluxloc0, Kloc)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
       real(DP), dimension(:), intent(in) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,C_ij,C_ji
@@ -10601,10 +10637,10 @@ contains
     !**************************************************************
     ! Assemble the given column of the Jacobian for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    pure subroutine assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
-                                             flux0, rp, rm, Kloc, rploc, rmloc,&
-                                             fluxloc, fluxloc0, hstep, iedge,&
-                                             iloc, k, l, bisExtended, Ksep, Jac)
+    subroutine assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
+                                        flux0, rp, rm, Kloc, rploc, rmloc,&
+                                        fluxloc, fluxloc0, hstep, iedge,&
+                                        iloc, k, l, bisExtended, Ksep, Jac)
 
       real(DP), dimension(:,0:), intent(in) :: rploc,rmloc,fluxloc,fluxloc0
       real(DP), dimension(:), intent(in) :: flux,flux0,rp,rm
