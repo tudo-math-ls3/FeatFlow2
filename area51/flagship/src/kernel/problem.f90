@@ -179,9 +179,6 @@ module problem
     ! Number of block vectors
     integer :: nvectorBlock
 
-    ! Number of boundary conditions
-    integer :: nboundaryCondition
-
     ! Name of the triangulation file
     character(LEN=SYS_STRLEN) :: trifile
 
