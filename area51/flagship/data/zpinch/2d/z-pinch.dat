@@ -57,10 +57,10 @@ errorestimator = ErrorEstimator
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_structured.prm
+prmfile = gridgen/grid.prm
 
 # file which contains the triangulation
-trifile = grids/2d/z-pinch_structured.tri
+trifile = gridgen/grid.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -175,7 +175,7 @@ inviscid = Inviscid
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 12
 
 
 ################################################################################
@@ -339,11 +339,10 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_test
+ucdsolution = out/zpinch_BEFCT
 
 # file for UCD import of solution
 ucdimport = 
-#out/zpinchBE_FCT.00076.gmv
 
 # file for UCD output of error
 ucderror = out/
@@ -391,7 +390,7 @@ dfinalTime = 1.0
 dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 1e-6
+dminStep = 1e-4
 
 # upper bound for the admissible time step
 dmaxStep = 1e-2
@@ -403,22 +402,22 @@ iadaptTimestep = 1
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.5
+ddecreaseFactor = 0.9
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.5
+dincreaseFactor = 1.1
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
 
 # target tolerace for relative changes
-depsRel = 1e-3
+depsRel = 1e-2
 
 # absolute tolerance for relative changes
 depsAbs = 0.0
 
 # maximum tolerance for relative changes
-dmaxRel = 1e-2
+dmaxRel = 1e-1
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -487,10 +486,10 @@ ssolvername(2) =
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -529,10 +528,10 @@ ssolvername = NonlinearSolverEuler
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
