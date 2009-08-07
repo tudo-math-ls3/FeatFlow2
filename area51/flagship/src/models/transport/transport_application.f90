@@ -704,7 +704,6 @@ contains
     rproblemDescriptor%nmatrixBlock    = 0
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = merge(1,0,transp_hasVelocityVector(ivelocitytype)) ! velocity field
-    rproblemDescriptor%nboundarycondition = 2
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
