@@ -398,7 +398,7 @@ contains
     
     ! Release solver
     call solver_releaseSolver(rsolver)
-    
+
     ! Release problem structure
     call problem_releaseProblem(rproblem)
 
@@ -565,8 +565,7 @@ contains
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 10
     rproblemDescriptor%nmatrixBlock    = 2
     rproblemDescriptor%nvectorScalar   = 0
-    rproblemDescriptor%nvectorBlock    = 1   ! external velocity field
-    rproblemDescriptor%nboundarycondition = 4
+    rproblemDescriptor%nvectorBlock    = 2   ! external velocity field
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0)&
@@ -595,6 +594,289 @@ contains
     end do
 
   end subroutine zpinch_initProblem
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_redistributeMassEuler(rparlist, ssectionName,&
+      rproblemLevel, rsolution, rcollection)
+
+!<description>
+    ! This subroutine redistributes the mass so that the total mass
+    ! is equal to the total mass of Bank and Shadid
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in), target :: rproblemLevel
+!</input>
+
+!<inputoutput>
+    ! solution vector
+    type(t_vectorBlock), intent(inout) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_ML, p_u
+    real(DP) :: ddensity1, ddensity2, ddensity3
+    real(DP) :: dmass1, dmass2, dmass3, dradius
+    integer :: lumpedMassMatrix, isystemFormat
+    integer :: ivt
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+    call parlst_getvalue_int(rparlist,&
+          ssectionName, 'isystemformat', isystemFormat)
+
+    ! Compute total densities
+    ddensity1 = SYS_PI
+    ddensity2 = SYS_PI * (1.05_DP**2-1._DP) * 1e6_DP
+    ddensity3 = SYS_PI * (1.5_DP**2-1.05_DP**2) * 5e-1_DP
+
+    ! Set pointer to triangulation
+    p_rtriangulation => rproblemLevel%rtriangulation
+
+    ! Set pointer to coordinate vector
+    call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Set pointer to lumped mass matrix
+    call lsyssc_getbase_double(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+
+    ! Set pointer to conservative variables
+    call lsysbl_getbase_double(rsolution, p_u)
+
+    ! Compute total masses
+    dmass1 = 0.0_DP
+    dmass2 = 0.0_DP
+    dmass3 = 0.0_DP
+    
+    ! Loop over all vertices
+    do ivt = 1, p_rtriangulation%NVT
+      
+      ! Compute distance to origin
+      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
+                     p_DvertexCoords(2,ivt)**2)
+      
+      if (dradius .lt. 1.0_DP) then
+        dmass1 = dmass1 + p_ML(ivt)
+      elseif (dradius .gt. 1.05_DP) then
+        dmass3 = dmass3 + p_ML(ivt)
+      else
+        dmass2 = dmass2 + p_ML(ivt)
+      end if
+    end do
+
+    ddensity1 = ddensity1/dmass1
+    ddensity2 = ddensity2/dmass2
+    ddensity3 = ddensity3/dmass3
+
+    select case(isystemFormat)
+    case(SYSTEM_INTERLEAVEFORMAT)
+      call doRedistributeInterleaveFormat(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
+          ddensity2, ddensity3, p_DvertexCoords, p_ML, p_u)
+      
+    case(SYSTEM_BLOCKFORMAT)
+      call doRedistributeBlockFormat(rproblemLevel&
+          %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
+          ddensity2, ddensity3, p_DvertexCoords, p_ML, p_u)
+
+    case DEFAULT
+      call output_line('Invalid system format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_redistributeMassEuler')
+      call sys_halt()
+    end select
+
+  contains
+
+    ! Here, the working routine follow
+    
+    !**************************************************************
+    ! Redistribute mass density stored in interleave format
+    
+    subroutine doRedistributeInterleaveFormat(neq, nvar, ddensity1,&
+        ddensity2, ddensity3, DvertexCoords, ML, u)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), intent(in) :: ddensity1,ddensity2,ddensity3
+      integer, intent(in) :: neq, nvar
+
+      real(DP), dimension(nvar,neq), intent(inout) :: u
+      
+      ! local vairables
+      integer :: ieq
+      real(DP) :: dradius
+
+      !$omp parallel do private(dradius)
+      do ieq = 1, neq
+        
+        ! Compute distance to origin
+        dradius = sqrt(DvertexCoords(1,ieq)**2 +&
+                       DvertexCoords(2,ieq)**2)
+        
+        if (dradius .lt. 1.0_DP) then
+          u(1,ieq) = ddensity1
+        elseif (dradius .gt. 1.05_DP) then
+          u(1,ieq) = ddensity3
+        else
+          u(1,ieq) = ddensity2
+        end if
+      end do
+      !$omp end parallel do
+      
+    end subroutine doRedistributeInterleaveFormat
+
+    !**************************************************************
+    ! Redistribute mass density stored in block format
+    
+    subroutine doRedistributeBlockFormat(neq, nvar, ddensity1,&
+        ddensity2, ddensity3, DvertexCoords, ML, u)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), intent(in) :: ddensity1,ddensity2,ddensity3
+      integer, intent(in) :: neq, nvar
+
+      real(DP), dimension(neq,nvar), intent(inout) :: u
+      
+      ! local vairables
+      integer :: ieq
+      real(DP) :: dradius
+
+      !$omp parallel do private(dradius)
+      do ieq = 1, neq
+        
+        ! Compute distance to origin
+        dradius = sqrt(DvertexCoords(1,ieq)**2 +&
+                       DvertexCoords(2,ieq)**2)
+        
+        if (dradius .lt. 1.0_DP) then
+          u(ieq,1) = ddensity1
+        elseif (dradius .gt. 1.05_DP) then
+          u(ieq,1) = ddensity3
+        else
+          u(ieq,1) = ddensity2
+        end if
+      end do
+      !$omp end parallel do
+      
+    end subroutine doRedistributeBlockFormat
+    
+  end subroutine zpinch_redistributeMassEuler
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_redistributeMassTransport(rparlist, ssectionName,&
+      rproblemLevel, rsolution, rcollection)
+
+!<description>
+    ! This subroutine redistributes the mass so that the total mass
+    ! is equal to the total mass of Bank and Shadid
+!</description>
+
+!<input>
+    ! parameter list
+    type(t_parlist), intent(in) :: rparlist
+
+    ! section names in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! problem level structure
+    type(t_problemLevel), intent(in), target :: rproblemLevel
+!</input>
+
+!<inputoutput>
+    ! solution vector
+    type(t_vectorBlock), intent(inout) :: rsolution
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_ML, p_u
+    real(DP) :: ddensity, dmass, dradius
+    integer :: lumpedMassMatrix
+    integer :: ivt
+
+    ! Get global configuration from parameter list
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+
+    ! Compute total density
+    ddensity = SYS_PI * (1.05_DP**2-1._DP) * 1e6_DP
+    
+    ! Set pointer to triangulation
+    p_rtriangulation => rproblemLevel%rtriangulation
+
+    ! Set pointer to coordinate vector
+    call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+    ! Set pointer to lumped mass matrix
+    call lsyssc_getbase_double(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+
+    ! Set pointer to conservative variables
+    call lsysbl_getbase_double(rsolution, p_u)
+
+    ! Compute total mass
+    dmass = 0.0_DP
+    
+    ! Loop over all vertices
+    do ivt = 1, p_rtriangulation%NVT
+      
+      ! Compute distance to origin
+      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
+                     p_DvertexCoords(2,ivt)**2)
+      
+      if (dradius .ge. 1.0_DP .and.&
+          dradius .le. 1.05_DP) then
+        dmass = dmass + p_ML(ivt)
+      end if
+    end do
+    
+    ddensity = ddensity/dmass
+
+    !$omp parallel do private(dradius)
+    do ivt = 1, p_rtriangulation%NVT
+
+      ! Compute distance to origin
+      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
+                     p_DvertexCoords(2,ivt)**2)
+    
+      if (dradius .ge. 1.0_DP .and.&
+          dradius .le. 1.05_DP) then
+        p_u(ivt) = ddensity
+      else
+        p_u(ivt) = 0.0_DP
+      end if
+    end do
+    !$omp end parallel do
+    
+  end subroutine zpinch_redistributeMassTransport
 
   !*****************************************************************************
 
@@ -1220,7 +1502,7 @@ contains
     deallocate(p_BisActiveElement)
     
   end subroutine zpinch_calcAdaptationIndicator
-
+ 
   !*****************************************************************************
 
 !<subroutine>
@@ -1819,6 +2101,10 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
 
+    ! Redistribute the density
+    call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
+        p_rproblemLevel, p_rsolutionEuler, rcollection)
+
     select case(ndimension)
     case (NDIM1D)
       call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
@@ -1856,6 +2142,12 @@ contains
     call transp_initSolution(rparlist, ssectionNameTransport,&
         p_rproblemLevel, rtimestep%dinitialTime,&
         p_rsolutionTransport, rcollection)
+
+    ! Redistribute the tracer
+    call zpinch_redistributeMassTransport(rparlist,&
+        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
+        rcollection)
+
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
         p_rsolutionTransport, rtimestep%dinitialTime)
     
@@ -1964,6 +2256,11 @@ contains
                 p_rproblemLevel, rtimestep%dinitialTime,&
                 p_rsolutionEuler, rcollection)
 
+            ! Redistribute the density
+            call zpinch_redistributeMassEuler(rparlist,&
+                ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler,&
+                rcollection)
+            
             select case(ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
@@ -1985,6 +2282,12 @@ contains
             call transp_initSolution(rparlist, ssectionnameTransport,&
                 p_rproblemLevel, rtimestep%dinitialTime,&
                 p_rsolutionTransport, rcollection)
+
+            ! Redistribute the tracer
+            call zpinch_redistributeMassTransport(rparlist,&
+                ssectionNameTransport, p_rproblemLevel,&
+                p_rsolutionTransport, rcollection)
+
             call bdrf_filterVectorExplicit(rbdrCondTransport,&
                 p_rsolutionTransport, rtimestep%dinitialTime)
           end do
@@ -2120,7 +2423,7 @@ contains
       case (TSTEP_THETA_SCHEME)
         
         if (dscale .gt. 0.0_DP) then
-          
+
           ! Adopt two-level theta-scheme with source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
@@ -2144,11 +2447,6 @@ contains
       ! Check if pressure is negative
       if (.not.zpinch_checkPressure(rsolution(1))) then
         print *, "Pressure has become negative in the low-order scheme"
-
-        call zpinch_outputSolution(rparlist, ssectionName,&
-            p_rproblemLevel, rsolution, rtimestep%dTime)
-
-        stop
       end if
 
       !-------------------------------------------------------------------------
@@ -2166,11 +2464,6 @@ contains
       ! Check if pressure is negative
       if (.not.zpinch_checkPressure(rsolution(1))) then
         print *, "Pressure has become negative by flux limiting"
-
-        call zpinch_outputSolution(rparlist, ssectionName,&
-            p_rproblemLevel, rsolution, rtimestep%dTime)
-
-        stop
       end if
       
       !-------------------------------------------------------------------------
@@ -2190,7 +2483,6 @@ contains
  
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
-           
       
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
