@@ -1391,7 +1391,7 @@ contains
 	forall (ivar = 1: nvar2d)
         Eye(ivar,ivar) = 1.0_DP
 	end forall
-	
+
     
     ! For the following use dimensional splitting
     do d = 1, 2
@@ -1432,6 +1432,22 @@ contains
 			! deltaK
 			deltaKi = -matmul(Aij,deltaQij)
 			deltaKj = deltaKi
+
+			! Calculate this alternatively by calculating
+			! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+			! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+			if (d==1) then
+	    	    deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)&
+			         	 -p_CXdata(ij)*buildFlux(Qj,1,gravconst)
+				deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)&
+			    	     -p_CXdata(ji)*buildFlux(Qi,1,gravconst)
+	    	else
+	    		deltaKi = p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
+			    	     -p_CYdata(ij)*buildFlux(Qj,2,gravconst)
+				deltaKj = p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
+		    		     -p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+	    	end if
+
 			    
 			! compute Dij
 			if (Method == 4) then
