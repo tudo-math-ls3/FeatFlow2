@@ -294,7 +294,8 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_hadaptCallbackBlock2d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine zpinch_hadaptCallbackBlock2d(rcollection, iOperation,&
+      Ivertices, Ielements)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -479,7 +480,7 @@ contains
   
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvectionP2d(&
+  subroutine zpinch_calcMatRusConvectionP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
@@ -506,9 +507,12 @@ contains
 !</output>
 !</subroutine>
 
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+
     ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
-    integer :: idx,jdx
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj, d2_ij
+    integer :: idx, jdx
 
     ! Compute convective coefficients
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
@@ -516,14 +520,37 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max( abs(k_ij), abs(k_ji) )
-
+!!$
+!!$    
+!!$    ! Compute base indices
+!!$    idx = 4*(i-1); jdx = 4*(j-1)
+!!$    
+!!$    ! Compute auxiliary variables
+!!$    ui = p_Dvariable5(idx+2)/p_Dvariable5(idx+1)
+!!$    vi = p_Dvariable5(idx+3)/p_Dvariable5(idx+1)
+!!$    Ei = p_Dvariable5(idx+4)/p_Dvariable5(idx+1)
+!!$    uj = p_Dvariable5(jdx+2)/p_Dvariable5(jdx+1)
+!!$    vj = p_Dvariable5(jdx+3)/p_Dvariable5(jdx+1)
+!!$    Ej = p_Dvariable5(jdx+4)/p_Dvariable5(jdx+1)
+!!$
+!!$    ! Compute auxiliary quantities
+!!$    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+!!$    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$
+!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+!!$
+!!$    ! Compute dissipation tensor D_ij
+!!$    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+!!$                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+    
   end subroutine zpinch_calcMatRusConvectionP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine zpinch_calcMatRusConvectionD2d(&
+  subroutine zpinch_calcMatRusConvectionD2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
