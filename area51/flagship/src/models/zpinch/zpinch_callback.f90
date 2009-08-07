@@ -278,12 +278,12 @@ contains
 
             ! Compute the preconditioner
             call transp_calcPrecondThetaScheme(rproblemLevel,&
-                rtimestep, rsolver, rsolution0, rcollection,&
-                zpinch_calcMatRusConvectionP2d,&
-                zpinch_calcMatRusConvectionD2d,&
-                transp_coeffMatBdrConvectionP2d,&
-                transp_coeffMatBdrConvectionD2d)
-            
+                  rtimestep, rsolver, rsolution0, rcollection,&
+                  zpinch_calcMatRusConvectionP2d,&
+                  zpinch_calcMatRusConvectionD2d,&
+                  transp_coeffMatBdrConvectionP2d,&
+                  transp_coeffMatBdrConvectionD2d)
+              
             ! Assemble the constant right-hand side
             call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution0, rrhs, rcollection,&
@@ -461,6 +461,25 @@ contains
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
     call zpinch_setVariable2d(&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+
+!!$    ! Set x-velocity
+!!$    call euler_getVariable(rsolution, 'velocity_x',&
+!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+!!$    call zpinch_setVariable2d(&
+!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+!!$    
+!!$    ! Set y-velocity
+!!$    call euler_getVariable(rsolution, 'velocity_y',&
+!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+!!$    call zpinch_setVariable2d(&
+!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+!!$
+!!$    call lsysbl_duplicateVector(rsolution, rproblemLevel&
+!!$        %RvectorBlock(2), LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY) !! HACK
+!!$
+!!$    ! Set global vector
+!!$    call lsysbl_getbase_double(rproblemLevel&
+!!$        %RvectorBlock(2), p_Dvariable5) !! HACK
     
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
@@ -507,8 +526,7 @@ contains
     real(DP), dimension(:), pointer :: p_ML, p_Density
     integer :: lumpedMassMatrix, lumpedMassMatrixDensity
     integer :: i
-
-
+    
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
@@ -745,6 +763,12 @@ contains
         daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
                          (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
                          max(drad, 1.0e-4_DP)
+
+!!$        ! Compute source term
+!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
+!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+!!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+!!$                         max(drad, 1.0e-4_DP)
                
         ! Impose source values
         DdataForce(1, i) = 0.0_DP
@@ -800,6 +824,12 @@ contains
         daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
                          (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
                          max(drad, 1.0e-4_DP)
+
+!!$        ! Compute source term
+!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
+!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
+!!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
+!!$                         max(drad, 1.0e-4_DP)
         
         ! Impose source values
         DdataForce(1, i) = 0.0_DP
@@ -846,20 +876,20 @@ contains
 
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
-    type(t_vectorBlock), pointer :: p_rsolutionEuler
+    type(t_vectorBlock), pointer :: p_rsolutionEuler 
     type(t_parlist), pointer :: p_rparlist
     type(t_afcstab), pointer :: p_rafcstab
-    type(t_vectorScalar) :: rflux0, rflux, rvector
     type(t_vectorBlock) :: rdata
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_MC, p_ML, p_MCRho, p_MLRho, p_Cx, p_Cy
-    real(DP), dimension(:), pointer :: p_u, p_rho, p_flux0, p_flux, p_data
+    real(DP), dimension(:), pointer :: p_pp, p_pm, p_qp, p_qm, p_rp, p_rm
+    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data, p_alpha
     integer, dimension(:), pointer :: p_Kdiagonal
     integer :: templatematrix, convectionAFC
     integer :: lumpedMassMatrix,  consistentMassMatrix
-    integer :: lumpedMassMatrixRho, consistentMassMatrixRho
-    integer :: coeffMatrix_CX, coeffMatrix_CY
-    integer :: i, nedge
+    integer :: lumpedMassMatrixRho, consistentMassMatrixRho 
+    integer :: coeffMatrix_CX, coeffMatrix_CY, i
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -876,9 +906,10 @@ contains
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'convectionAFC', convectionAFC)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),&
+        'consistentmassmatrix', consistentMassMatrix) 
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(2),& 
         'lumpedmassmatrix', lumpedMassMatrix)
+    
     
     ! Set pointers to template matrix and stabilisation structure
     p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
@@ -891,37 +922,44 @@ contains
     end if
 
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
+    call lsysbl_getbase_double(rsolution, p_u)
+    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
+    call afcstab_getbase_DcoeffsAtEdge(p_rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrixRho), p_MCRho)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrixRho), p_MLRho)
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrixRho), p_MCRho) 
+    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrixRho), p_MLRho) 
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
-    
-    ! Compute number of edges
-    nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(2), p_flux0)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(3), p_alpha)
     
     ! Create auxiliary vectors
-    call lsyssc_createVector(rflux0, nedge, .true., ST_DOUBLE)
-    call lsyssc_createVector(rflux,  nedge, .true., ST_DOUBLE)
     call lsysbl_createVectorBlock(rsolution, rdata, .false.)
-    
-    ! Set pointers
-    call lsysbl_getbase_double(rsolution, p_u)
     call lsysbl_getbase_double(rdata, p_data)
-    call lsyssc_getbase_double(rflux, p_flux)
-    call lsyssc_getbase_double(rflux0, p_flux0)
 
     ! Build the flux
     call buildFlux2d(p_Kdiagonal, p_IverticesAtEdge,&
-        p_rmatrix%NEQ, nedge, rtimestep%dStep,&
+        p_rmatrix%NEQ, p_rafcstab%NEDGE, rtimestep%dStep,&
         p_MC, p_ML, p_Cx, p_Cy, p_u, p_data, p_flux, p_flux0)
 
     ! Build the correction
-    call buildCorrection(p_IverticesAtEdge, p_rmatrix%NEQ, nedge,&
-        p_MLRho, p_flux, p_flux0, p_data, p_u)
+    call buildCorrection(p_IverticesAtEdge, p_rmatrix%NEQ,&
+        p_rafcstab%NEDGE, p_ML, p_flux, p_flux0, p_alpha, p_u,&
+        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+
+    ! Apply correction to low-order solution
+    call applyCorrection(p_IverticesAtEdge, p_rmatrix%NEQ,&
+        p_rafcstab%NEDGE, p_ML, p_flux, p_alpha, p_data, p_u)
+
 
     ! Multiply the low-order solution by the 
     ! density-averaged lumped mass matrix
@@ -955,8 +993,6 @@ contains
     call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
 
     ! Release flux vectors
-    call lsyssc_releaseVector(rflux0)
-    call lsyssc_releaseVector(rflux)
     call lsysbl_releaseVector(rdata)
 
   contains
@@ -979,7 +1015,7 @@ contains
     !***************************************************************************
 
     subroutine buildFlux2d(Kdiagonal, IverticesAtEdge, NEQ, NEDGE,&
-        dscale, MC, ML, Cx, Cy, u, troc, flux0, flux)
+        dscale, MC, ML, Cx, Cy, u, troc, flux, flux0)
 
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
@@ -987,7 +1023,7 @@ contains
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NEDGE
       
-      real(DP), dimension(:), intent(inout) :: flux0,flux
+      real(DP), dimension(:), intent(inout) :: flux,flux0
       
       real(DP), dimension(:), intent(out) :: troc     
 
@@ -1009,7 +1045,7 @@ contains
         ! Compute coefficient
         C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
 
-        ! Compute convection coefficients
+        ! Compute diagonal convection coefficients
         call zpinch_calcMatRusConvectionP2d(u(i), u(i),&
             C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
 
@@ -1044,7 +1080,7 @@ contains
         troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
         
         ! Compute raw antidiffusive flux
-        flux0(iedge) = -aux
+        flux0(iedge) = -dscale * aux
       end do
       
       
@@ -1075,22 +1111,21 @@ contains
     !***************************************************************************
     
     subroutine buildCorrection(IverticesAtEdge, NEQ, NEDGE,&
-        ML, flux, flux0, data, u)
+        ML, flux, flux0, alpha, u, pp, pm, qp, qm, rp, rm)
 
       integer, dimension(:,:) :: IverticesAtEdge
       real(DP), dimension(:), intent(in) :: ML,flux0
       real(DP), dimension(:), intent(in) :: u
       integer, intent(in) :: NEQ,NEDGE
       
-      real(DP), dimension(:), intent(inout) :: data,flux
+      real(DP), dimension(:), intent(inout) :: flux,alpha
+      
+      real(DP), dimension(:), intent(out) :: pp,pm,qp,qm,rp,rm
       
       ! local variables
-      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
       real(DP) :: f_ij,diff
       integer :: ij,ji,i,j,iedge,ivar
 
-      ! Allocate temporal memory
-      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
       
       ! Initialize vectors
       call lalg_clearVector(pp)
@@ -1140,6 +1175,47 @@ contains
       end do
       !$omp end parallel do
 
+      
+      ! Loop over all edges
+      !$omp parallel do private(i,j,f_ij)
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Flux correction in conservative variables
+        f_ij = flux(iedge)
+        
+        ! Limit conservative fluxes
+        if (f_ij > SYS_EPSREAL) then
+          alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
+        elseif (f_ij < -SYS_EPSREAL) then
+          alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
+        end if
+
+      end do
+      !$omp end parallel do
+
+    end subroutine buildCorrection
+
+    !***************************************************************************
+    
+
+    subroutine applyCorrection(IverticesAtEdge, NEQ, NEDGE,&
+        ML, flux, alpha, data, u)
+
+      real(DP), dimension(:), intent(in) :: flux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:), intent(in) :: ML
+      integer, intent(in) :: NEQ,NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: alpha,u,data
+
+      ! local variables
+      real(DP) :: f_ij,diff
+      integer :: ij,ji,i,j,iedge
+      
 
       ! Initialize correction
       call lalg_clearVector(data)
@@ -1152,12 +1228,7 @@ contains
         j  = IverticesAtEdge(2, iedge)
         
         ! Limit conservative fluxes
-        f_ij = flux(iedge)
-        if (f_ij > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*f_ij
-        else
-          f_ij = min(rm(i), rp(j))*f_ij
-        end if
+        f_ij = alpha(iedge)*flux(iedge)
         
         ! Apply correction
         data(i) = data(i) + f_ij
@@ -1165,10 +1236,16 @@ contains
         
       end do
 
-      ! Deallocate temporal memory
-      deallocate(pp,pm,qp,qm,rp,rm)
-
-    end subroutine buildCorrection
+!!$      ! Loop over all rows
+!!$      !$omp parallel do
+!!$      do i = 1, NEQ
+!!$        
+!!$        ! Compute flux-corrected solution
+!!$        u(i) = u(i) + data(i)/ML(i)
+!!$      end do
+!!$      !$omp end parallel do
+      
+    end subroutine applyCorrection
     
   end subroutine zpinch_calcLinearizedFCT
 
