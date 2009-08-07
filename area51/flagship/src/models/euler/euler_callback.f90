@@ -2083,15 +2083,15 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_parlist), pointer :: p_rparlist
     type(t_afcstab), pointer :: p_rafcstab
-    type(t_vectorScalar) :: rflux0, rflux, ralpha
     type(t_vectorBlock) :: rdata
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
-    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data, p_alpha
+    real(DP), dimension(:), pointer :: p_pp, p_pm, p_qp, p_qm, p_rp, p_rm
+    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_alpha, p_data
     integer, dimension(:), pointer :: p_Kdiagonal
     integer :: templatematrix, inviscidAFC
     integer :: lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
+    integer :: coeffMatrix_CX, coeffMatrix_CY
 
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2117,57 +2117,54 @@ contains
        (iand(p_rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(p_rmatrix, p_rafcstab)
     end if
-
+    
     ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
+    call lsysbl_getbase_double(rsolution, p_u)
+    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(1), p_flux)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(2), p_flux0)
+    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(3), p_alpha)
     
-    ! Compute number of edges
-    nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
-
-    ! Create auxiliary vectors
-    call lsyssc_createVector(rflux0, nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(rflux,  nedge, NVAR2D, .true., ST_DOUBLE)
-    call lsyssc_createVector(ralpha, nedge, .false., ST_DOUBLE)
+    ! Create auxiliary vector
     call lsysbl_createVectorBlock(rsolution, rdata, .true.)
-    
-    ! Set pointers
-    call lsysbl_getbase_double(rsolution, p_u)
     call lsysbl_getbase_double(rdata, p_data)
-    call lsyssc_getbase_double(rflux, p_flux)
-    call lsyssc_getbase_double(rflux0, p_flux0)
-    call lsyssc_getbase_double(ralpha, p_alpha)
-
+    
     ! Initialize alpha with ones
     call lalg_setVector(p_alpha, 1.0_DP)
     
     ! Build the flux
     call buildFluxCons2d(p_Kdiagonal, p_IverticesAtEdge,&
-        p_rmatrix%NEQ, NVAR2D, nedge, rtimestep%dStep,&
+        p_rmatrix%NEQ, NVAR2D, p_rafcstab%NEDGE, rtimestep%dStep,&
         p_u, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
 
     ! Build the correction
     call buildCorrectionCons(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        nedge, p_ML, p_flux, p_flux0, 1, p_alpha, p_u)
+        p_rafcstab%NEDGE, 1, p_ML, p_flux, p_flux0, p_alpha, p_u,&
+        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
     call buildCorrectionCons(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        nedge, p_ML, p_flux, p_flux0, 4, p_alpha, p_u)
+        p_rafcstab%NEDGE, 4, p_ML, p_flux, p_flux0, p_alpha, p_u, p_pp, p_pm,&
+        p_qp, p_qm, p_rp, p_rm)
     
     ! Apply correction to low-order solution
     call applyCorrection(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        nedge, p_ML, p_flux, p_alpha, p_data, p_u)
+        p_rafcstab%NEDGE, p_ML, p_flux, p_alpha, p_data, p_u)
 
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
         rtimestep%dTime, euler_calcBoundaryvalues2d)
 
     ! Release flux vectors
-    call lsyssc_releaseVector(rflux0)
-    call lsyssc_releaseVector(rflux)
-    call lsyssc_releaseVector(ralpha)
     call lsysbl_releaseVector(rdata)
 
   contains
@@ -2253,8 +2250,8 @@ contains
     
     !***************************************************************************
 
-    subroutine  buildCorrectionCons(IverticesAtEdge, NEQ,&
-        NVAR, NEDGE, ML, flux, flux0, ivar, alpha, u)
+    subroutine  buildCorrectionCons(IverticesAtEdge, NEQ, NVAR, NEDGE,&
+        ivar, ML, flux, flux0, alpha, u, pp, pm, qp, qm, rp, rm)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -2265,13 +2262,12 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(inout) :: u
       real(DP), dimension(:), intent(inout) :: alpha
       
+      real(DP), dimension(:), intent(out) :: pp,pm,qp,qm,rp,rm
+      
+      
       ! local variables
-      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
-      real(DP) :: f_ij,f0_ij,diff,aux,p_ij,p_ji,p0_ij,p0_ji,u_i,u_j,v_i,v_j,r_i,r_j
+      real(DP) :: f_ij,f0_ij,diff,aux
       integer :: i,j,iedge
-
-      ! Allocate temporal memory
-      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
       
       ! Initialize vectors
       call lalg_clearVector(pp)
@@ -2406,6 +2402,7 @@ contains
             
       end do
 
+
       ! Compute nodal correction factors
       !$omp parallel do
       do i = 1, NEQ
@@ -2416,6 +2413,7 @@ contains
         if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
       end do
       !$omp end parallel do
+
       
       ! Loop over all edges
       !$omp parallel do private(i,j,f_ij)
