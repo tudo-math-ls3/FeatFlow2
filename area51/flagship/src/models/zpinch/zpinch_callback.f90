@@ -450,36 +450,34 @@ contains
           neq, .true.)
     end if
     
-    ! Set x-velocity, i.e., momentum in x-direction
-    call euler_getVariable(rsolution, 'momentum_x',&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-    call zpinch_setVariable2d(&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
-    
-    ! Set y-velocity, i.e., momentum in y-direction
-    call euler_getVariable(rsolution, 'momentum_y',&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
-    call zpinch_setVariable2d(&
-        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
-
-!!$    ! Set x-velocity
-!!$    call euler_getVariable(rsolution, 'velocity_x',&
+!!$    ! Set x-velocity, i.e., momentum in x-direction
+!!$    call euler_getVariable(rsolution, 'momentum_x',&
 !!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
 !!$    call zpinch_setVariable2d(&
 !!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
 !!$    
-!!$    ! Set y-velocity
-!!$    call euler_getVariable(rsolution, 'velocity_y',&
+!!$    ! Set y-velocity, i.e., momentum in y-direction
+!!$    call euler_getVariable(rsolution, 'momentum_y',&
 !!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
 !!$    call zpinch_setVariable2d(&
 !!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
-!!$
-!!$    call lsysbl_duplicateVector(rsolution, rproblemLevel&
-!!$        %RvectorBlock(2), LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY) !! HACK
-!!$
-!!$    ! Set global vector
-!!$    call lsysbl_getbase_double(rproblemLevel&
-!!$        %RvectorBlock(2), p_Dvariable5) !! HACK
+
+    ! Set x-velocity
+    call euler_getVariable(rsolution, 'velocity_x',&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
+    call zpinch_setVariable2d(&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
+    
+    ! Set y-velocity
+    call euler_getVariable(rsolution, 'velocity_y',&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
+    call zpinch_setVariable2d(&
+        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
+
+    ! Set the global solution vector at the current time step
+    call lsysbl_duplicateVector(rsolution, rproblemLevel&
+        %RvectorBlock(2), LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+    call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), 3)
     
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
@@ -527,34 +525,37 @@ contains
     integer :: lumpedMassMatrix, lumpedMassMatrixDensity
     integer :: i
     
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist,&
-        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrixDensity)
-    
-    ! Get density distribution from the solution of the Euler model
-    ! and create block vector which is attached to the collection
-    call euler_getVariable(rsolutionEuler, 'density', rvector)
-    call lsyssc_getbase_double(rvector, p_Density)
-    
-    ! Create density averaged lumped mass matrix
-    call lsyssc_duplicateMatrix(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        rproblemLevel%Rmatrix(lumpedMassMatrixDensity),&
-        LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-    
-    call lsyssc_getbase_double(&
-        rproblemLevel%Rmatrix(lumpedMassMatrixDensity), p_ML)
-    
-    !$omp parallel do
-    do i = 1, size(p_Density)
-      p_ML(i) = p_ML(i)*p_Density(i)
-    end do
-    !$omp end parallel do
-    
-    ! Release temporal vector
-    call lsyssc_releaseVector(rvector)
+    ! OK, IN THE CURRENT IMPLEMENTATION WE DO NOT NEED A
+    ! DENSITY_AVERAGED MASS MATRIX, HENCE RETURN
+ 
+!!$    ! Get global configuration from parameter list
+!!$    call parlst_getvalue_int(rparlist,&
+!!$        ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
+!!$    call parlst_getvalue_int(rparlist,&
+!!$        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrixDensity)
+!!$    
+!!$    ! Get density distribution from the solution of the Euler model
+!!$    ! and create block vector which is attached to the collection
+!!$    call euler_getVariable(rsolutionEuler, 'density', rvector)
+!!$    call lsyssc_getbase_double(rvector, p_Density)
+!!$    
+!!$    ! Create density averaged lumped mass matrix
+!!$    call lsyssc_duplicateMatrix(&
+!!$        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$        rproblemLevel%Rmatrix(lumpedMassMatrixDensity),&
+!!$        LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+!!$    
+!!$    call lsyssc_getbase_double(&
+!!$        rproblemLevel%Rmatrix(lumpedMassMatrixDensity), p_ML)
+!!$    
+!!$    !$omp parallel do
+!!$    do i = 1, size(p_Density)
+!!$      p_ML(i) = p_ML(i)*p_Density(i)
+!!$    end do
+!!$    !$omp end parallel do
+!!$    
+!!$    ! Release temporal vector
+!!$    call lsyssc_releaseVector(rvector)
     
   end subroutine zpinch_initDensityAveraging
 
