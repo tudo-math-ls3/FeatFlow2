@@ -538,7 +538,6 @@ contains
     rproblemDescriptor%nmatrixBlock    = 2   ! system matrix and Jacobian
     rproblemDescriptor%nvectorScalar   = 0
     rproblemDescriptor%nvectorBlock    = 0
-    rproblemDescriptor%nboundarycondition = 2
 
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0) then
