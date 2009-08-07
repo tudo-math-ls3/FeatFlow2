@@ -318,16 +318,16 @@ contains
       call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 7 nodal vectors for P's, Q's and R's
-      allocate(rafcstab%RnodalVectors(7))
-      do i = 1, 7
+      ! We need 6 nodal vectors for P's, Q's and R's
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
-      ! We need 4 edgewise vectors for the fluxes
-      allocate(rafcstab%RedgeVectors(4))
-      do i = 1, 4
+      ! We need 3 edgewise vectors for the fluxes
+      allocate(rafcstab%RedgeVectors(3))
+      do i = 1, 3
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
@@ -420,15 +420,15 @@ contains
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! We need 6 nodal vectors for P's, Q's and R's
-      allocate(rafcstab%RnodalVectors(7))
-      do i = 1, 7
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
-      ! We need 4 edgewise vectors for the fluxes
-      allocate(rafcstab%RedgeVectors(4))
-      do i = 1, 4
+      ! We need 3 edgewise vectors for the fluxes
+      allocate(rafcstab%RedgeVectors(3))
+      do i = 1, 3
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
