@@ -11,7 +11,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+    subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
     use fsystem
 

@@ -10,8 +10,8 @@
   ! ***************************************************************************
 
 !<subroutine>
-
-    pure subroutine fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+    
+    subroutine fcb_calcMatrix(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
     use fsystem
 
@@ -38,4 +38,4 @@
 
   end subroutine fcb_calcMatrix
 
-  end interface
+end interface
