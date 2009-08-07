@@ -23,9 +23,6 @@
 !# 1.) Remove the old splib (ILU-k) from the solver module and replace it
 !#     by the routines from the iluk.f90 module.
 !#
-!# 2.) Rewrite the zpinch application so that it does not taint the transport
-!#     application any longer. Distinguish between circular and rectangular
-!#     grids. Test implementation with momentum rather then velocity vector.
 !# </purpose>
 !##############################################################################
 
