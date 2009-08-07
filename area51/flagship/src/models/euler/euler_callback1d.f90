@@ -128,8 +128,8 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkin1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -162,8 +162,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr1d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkinNoBdr1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -199,8 +199,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxScalarDiss1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -233,8 +233,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxTensorDiss1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -267,8 +267,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRusanov1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -301,7 +301,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonalDiag1d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonalDiag1d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -334,7 +334,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonal1d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonal1d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -367,8 +367,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag1d(U_i, U_j, C_ij, C_ji, i,&
-      j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkinDiag1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 1D
@@ -400,8 +400,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkin1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D
@@ -433,8 +433,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag1d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDissDiag1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -468,8 +468,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDiss1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -502,8 +502,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag1d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixTensorDissDiag1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -536,8 +536,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixTensorDiss1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -570,8 +570,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag1d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanovDiag1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -604,8 +604,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov1d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanov1d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -638,7 +638,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics1d(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  pure subroutine euler_calcCharacteristics1d(&
+      U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 1D
