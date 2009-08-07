@@ -94,7 +94,7 @@ TRILIBDEFS = -DTRILIBRARY
 
 # The action starts here.
 
-all: $(BIN)triangle $(BIN)showme $(BIN)gridgen
+all: $(BIN)triangle $(BIN)gridgen
 
 trilibrary: $(BIN)triangle.o $(BIN)tricall
 
