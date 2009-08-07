@@ -958,6 +958,7 @@ contains
     call lsyssc_getbase_double(p_rafcstabEuler%RnodalVectors(6), p_rmEuler)
     call lsyssc_getbase_double(p_rafcstabEuler%RedgeVectors(1), p_fluxEuler)
     call lsyssc_getbase_double(p_rafcstabEuler%RedgeVectors(2), p_flux0Euler)
+    call lsyssc_getbase_double(p_rafcstabEuler%RedgeVectors(3), p_alpha)
     call lsyssc_getbase_double(p_rafcstabTransport%RnodalVectors(1), p_ppTransport)
     call lsyssc_getbase_double(p_rafcstabTransport%RnodalVectors(2), p_pmTransport)
     call lsyssc_getbase_double(p_rafcstabTransport%RnodalVectors(3), p_qpTransport)
@@ -966,8 +967,7 @@ contains
     call lsyssc_getbase_double(p_rafcstabTransport%RnodalVectors(6), p_rmTransport)
     call lsyssc_getbase_double(p_rafcstabTransport%RedgeVectors(1), p_fluxTransport)
     call lsyssc_getbase_double(p_rafcstabTransport%RedgeVectors(2), p_flux0Transport)
-    call lsyssc_getbase_double(p_rafcstabEuler%RedgeVectors(3), p_alpha)
-    
+
     ! Create auxiliary vectors
     call lsysbl_createVectorBlock(rsolutionEuler, rdataEuler, .false.)
     call lsysbl_createVectorBlock(rsolutionTransport, rdataTransport, .false.)
@@ -1510,8 +1510,8 @@ contains
       real(DP), dimension(:), intent(out) :: pp,pm,qp,qm,rp,rm
       
       ! local variables
-      real(DP) :: f_ij,diff
-      integer :: ij,ji,i,j,iedge,ivar
+      real(DP) ::  f_ij,f0_ij,diff,aux
+      integer :: ij,ji,i,j,iedge
 
       
       ! Initialize vectors
@@ -1519,8 +1519,8 @@ contains
       call lalg_clearVector(pm)
       call lalg_clearVector(qp)
       call lalg_clearVector(qm)
-      call lalg_clearVector(rp)
-      call lalg_clearVector(rm)
+      call lalg_setVector(rp, 1.0_DP)
+      call lalg_setVector(rm, 1.0_DP)
       
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -1529,12 +1529,23 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
         
-        ! Apply minmod prelimiter ...
-        f_ij = minmod(flux(iedge), 2*flux0(iedge))
-        
-        ! ... and store prelimited flux
-        flux(iedge) = f_ij
-        diff        = u(j)-u(i)
+        ! Flux correction in conservative variables
+        f_ij  = flux(iedge)
+        f0_ij = flux0(iedge)
+        diff  = u(j)-u(i)
+
+        ! MinMod prelimiting of antidiffusive fluxes
+        if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
+          aux = min(f_ij, f0_ij)
+          alpha(iedge) = min(alpha(iedge), aux/f_ij)
+          f_ij = aux
+        elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
+          aux = max(f_ij, f0_ij)
+          alpha(iedge) = min(alpha(iedge), aux/f_ij)
+          f_ij = aux
+        else
+          f_ij = 0.0; alpha(iedge) = 0.0
+        end if
         
         ! Sums of raw antidiffusive fluxes
         pp(i) = pp(i) + max(0.0_DP,  f_ij)
@@ -1547,7 +1558,6 @@ contains
         qp(j) = max(qp(j), -diff)
         qm(i) = min(qm(i),  diff)
         qm(j) = min(qm(j), -diff)
-        
       end do
       
       
@@ -1571,16 +1581,15 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
         
-        ! Flux correction in conservative variables
+        ! Flux correction
         f_ij = flux(iedge)
         
-        ! Limit conservative fluxes
+        ! Limit fluxes
         if (f_ij > SYS_EPSREAL) then
           alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
         elseif (f_ij < -SYS_EPSREAL) then
           alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
         end if
-
       end do
       !$omp end parallel do
 
