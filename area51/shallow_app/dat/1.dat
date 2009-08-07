@@ -37,7 +37,7 @@ FEkind = 1
 dt = 0.01
 
 # Final time
-ttfinal = 0.6
+ttfinal = 0.2
 
 # Implicitness parameter
 theta = 0.5
@@ -77,7 +77,7 @@ boundarycorner = 0
 [METHOD]
 
 # What Method to use
-Method = 5
+Method = 4
 # 0: High Order Scheme (No Dissipation)
 # 1: Low Order Scheme (Scalar Dissipation)
 # 2: Low Order Scheme (Tensorial Dissipation)
@@ -107,7 +107,7 @@ gravconst = 9.81
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = 5+5*exp(-(x*x+y*y)/10)
+hstart  = if(x<0, 5, 10)
 hustart = 0
 hvstart = 0
 
