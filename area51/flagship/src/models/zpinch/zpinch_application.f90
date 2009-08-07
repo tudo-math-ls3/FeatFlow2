@@ -2487,9 +2487,6 @@ contains
 !!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
 !!$          rcollection)
 !!$ 
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerSolution)
-
       ! Calculate density-averaged mass matrices
       call zpinch_initDensityAveraging(rparlist,&
           ssectionNameEuler, ssectionNameTransport,&
@@ -2499,6 +2496,9 @@ contains
       call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
           p_rproblemLevel, p_rsolutionEuler, rcollection)
       
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
+
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
           ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
