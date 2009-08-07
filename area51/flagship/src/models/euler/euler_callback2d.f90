@@ -146,8 +146,8 @@ contains
   
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkin2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkin2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -243,8 +243,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxGalerkinNoBdr2d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalerkinNoBdr2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -276,7 +276,6 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
-    real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
 
@@ -319,8 +318,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxScalarDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -422,8 +421,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitScalarDiss2d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitScalarDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -525,8 +524,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxTensorDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -657,8 +656,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitTensorDiss2d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitTensorDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -826,8 +825,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, F_ij, F_ji)
+  subroutine euler_calcFluxRusanov2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -919,8 +918,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxDSplitRusanov2d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxDSplitRusanov2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -951,7 +950,6 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
 
@@ -1016,7 +1014,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonalDiag2d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonalDiag2d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1061,7 +1059,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixDiagonal2d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatrixDiagonal2d(U_i, C_ii, i, dscale, K_ii)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -1125,8 +1123,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkinDiag2d(U_i, U_j, C_ij, C_ji, i,&
-      j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkinDiag2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 2D
@@ -1180,8 +1178,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixGalerkin2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixGalerkin2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 2D
@@ -1271,8 +1269,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDissDiag2d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDissDiag2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1348,8 +1346,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixScalarDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixScalarDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1468,8 +1466,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDissDiag2d(U_i, U_j, C_ij, C_ji, i&
-      , j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixTensorDissDiag2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1619,8 +1617,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  subroutine euler_calcMatrixTensorDiss2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1652,7 +1650,7 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-
+    
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
@@ -1792,8 +1790,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanovDiag2d(U_i, U_j, C_ij, C_ji, i, j&
-      , dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanovDiag2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1859,8 +1857,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcMatrixRusanov2d(U_i, U_j, C_ij, C_ji, i, j,&
-      dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatrixRusanov2d(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1888,7 +1886,6 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux,hi,hj,ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj&
         ,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
     
@@ -1967,8 +1964,8 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcCharacteristics2d(U_i, U_j, Dweight, W_ij,&
-      Lbd_ij, R_ij, L_ij)
+  pure subroutine euler_calcCharacteristics2d(&
+      U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
 !<description>
     ! This subroutine computes the characteristic variables in 2D
