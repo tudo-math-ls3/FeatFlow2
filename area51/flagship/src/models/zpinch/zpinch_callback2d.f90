@@ -9,7 +9,8 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) zpinch_setVariable2d
+!# 1.) zpinch_setVariable2d = zpinch_setVariableScalar2d /
+!#                            zpinch_setVariableBlock2d
 !#     -> Sets global variables for external data, e.g., velocity fields in 2D
 !#
 !# 2.) zpinch_hadaptCallbackScalar2d
@@ -50,6 +51,11 @@ module zpinch_callback2d
   public :: zpinch_calcMatRusConvectionP2d
   public :: zpinch_calcMatRusConvectionD2d
 
+  interface zpinch_setVariable2d
+    module procedure zpinch_setVariableScalar2d
+    module procedure zpinch_setVariableBlock2d
+  end interface
+
 !<globals>
 
   !*****************************************************************
@@ -73,10 +79,11 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_setVariable2d(rvector, ivariable)
+  subroutine zpinch_setVariableScalar2d(rvector, ivariable)
 
 !<description>
-    ! This subroutine sets one of the the global pointers to the given vector.
+    ! This subroutine sets one of the the global pointers to
+    ! the given scalar vector.
 !</description>
 
 !<input>
@@ -101,11 +108,50 @@ contains
       call lsyssc_getbase_double(rvector, p_Dvariable5)
     case DEFAULT
       call output_line('Invalid variable number!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariable2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableScalar2d')
       call sys_halt()
     end select
     
-  end subroutine zpinch_setVariable2d
+  end subroutine zpinch_setVariableScalar2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_setVariableBlock2d(rvector, ivariable)
+
+!<description>
+    ! This subroutine sets one of the the global pointers to
+    ! the given block vector.
+!</description>
+
+!<input>
+    ! block vector
+    type(t_vectorBlock), intent(in) :: rvector
+
+    ! variable number
+    integer, intent(in) :: ivariable
+!</input>
+!</subroutine>
+
+    select case(ivariable)
+    case (1)
+      call lsysbl_getbase_double(rvector, p_Dvariable1)
+    case (2)
+      call lsysbl_getbase_double(rvector, p_Dvariable2)
+    case (3)
+      call lsysbl_getbase_double(rvector, p_Dvariable3)
+    case (4)
+      call lsysbl_getbase_double(rvector, p_Dvariable4)
+    case (5)
+      call lsysbl_getbase_double(rvector, p_Dvariable5)
+    case DEFAULT
+      call output_line('Invalid variable number!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableBlock2d')
+      call sys_halt()
+    end select
+    
+  end subroutine zpinch_setVariableBlock2d
 
   !*****************************************************************************
 
@@ -518,31 +564,30 @@ contains
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
     k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
 
-    ! Compute artificial diffusion coefficient
-    d_ij = max( abs(k_ij), abs(k_ji) )
-!!$
-!!$    
-!!$    ! Compute base indices
-!!$    idx = 4*(i-1); jdx = 4*(j-1)
-!!$    
-!!$    ! Compute auxiliary variables
-!!$    ui = p_Dvariable5(idx+2)/p_Dvariable5(idx+1)
-!!$    vi = p_Dvariable5(idx+3)/p_Dvariable5(idx+1)
-!!$    Ei = p_Dvariable5(idx+4)/p_Dvariable5(idx+1)
-!!$    uj = p_Dvariable5(jdx+2)/p_Dvariable5(jdx+1)
-!!$    vj = p_Dvariable5(jdx+3)/p_Dvariable5(jdx+1)
-!!$    Ej = p_Dvariable5(jdx+4)/p_Dvariable5(jdx+1)
-!!$
-!!$    ! Compute auxiliary quantities
-!!$    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-!!$    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
-!!$
-!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-!!$
-!!$    ! Compute dissipation tensor D_ij
-!!$    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-!!$                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+!!$    ! Compute artificial diffusion coefficient
+!!$    d_ij = max( abs(k_ij), abs(k_ji) )
+    
+    ! Compute base indices
+    idx = 4*(i-1); jdx = 4*(j-1)
+    
+    ! Compute auxiliary variables
+    ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
+    vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
+    Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
+    uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
+    vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
+    Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+
+    ! Compute auxiliary quantities
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    ! Compute dissipation tensor D_ij
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
     
   end subroutine zpinch_calcMatRusConvectionP2d
 
