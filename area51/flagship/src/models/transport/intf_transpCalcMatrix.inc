@@ -9,7 +9,8 @@
   
 !<subroutine>
 
-    pure subroutine fcb_calcMatrixPrimal(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+    subroutine fcb_calcMatrixPrimal(&
+        u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
     use fsystem
 
@@ -44,7 +45,8 @@
   
 !<subroutine>
 
-    pure subroutine fcb_calcMatrixDual(u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+    subroutine fcb_calcMatrixDual(&
+        u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
     use fsystem
 
