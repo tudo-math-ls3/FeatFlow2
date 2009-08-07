@@ -2093,6 +2093,9 @@ contains
     integer :: lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY
 
+    print *, "We must not use this routine"
+    stop
+
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
