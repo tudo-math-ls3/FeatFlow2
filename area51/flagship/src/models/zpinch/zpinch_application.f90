@@ -2451,24 +2451,26 @@ contains
       ! Check if pressure is negative
       if (.not.zpinch_checkPressure(rsolution(1))) then
         print *, "Pressure has become negative in the low-order scheme"
+        pause
       end if
 
-!!$      !-------------------------------------------------------------------------
-!!$      ! Compute linearized FCT correction for Euler model
-!!$      !-------------------------------------------------------------------------
-!!$      
-!!$      ! Prepare quick access arrays
-!!$      rcollection%SquickAccess(1) = ssectionNameEuler
-!!$      rcollection%SquickAccess(2) = ssectionNameTransport
-!!$      
-!!$      ! Apply linearized FCT correction for Euler model
-!!$      call euler_calcLinearizedFCT(rbdrCondEuler, p_rproblemLevel,&
-!!$          rtimestep, p_rsolutionEuler, rcollection)
-!!$
-!!$      ! Check if pressure is negative
-!!$      if (.not.zpinch_checkPressure(rsolution(1))) then
-!!$        print *, "Pressure has become negative by flux limiting"
-!!$      end if
+      !-------------------------------------------------------------------------
+      ! Compute linearized FCT correction
+      !-------------------------------------------------------------------------
+      
+      ! Prepare quick access arrays
+      rcollection%SquickAccess(1) = ssectionNameEuler
+      rcollection%SquickAccess(2) = ssectionNameTransport
+      
+      ! Apply linearized FCT correction for Euler model
+      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
+          p_rproblemLevel, rtimestep, p_rsolutionEuler,&
+          p_rsolutionTransport, rcollection)
+
+      ! Check if pressure is negative
+      if (.not.zpinch_checkPressure(rsolution(1))) then
+        print *, "Pressure has become negative by flux limiting"
+      end if
       
 !!$      !-------------------------------------------------------------------------
 !!$      ! Compute linearized FCT correction for transport model
@@ -2485,17 +2487,17 @@ contains
 !!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
 !!$          rcollection)
 !!$ 
-!!$      ! Stop time measurement for solution procedure
-!!$      call stat_stopTimer(p_rtimerSolution)
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
 
-      ! Calculate density-averaged mass matrices
-      call zpinch_initDensityAveraging(rparlist,&
-        ssectionNameEuler, ssectionNameTransport,&
-        p_rproblemLevel, p_rsolutionEuler, rcollection)
-
-      ! Calculate velocity field (\rho v)
-      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
-        p_rproblemLevel, p_rsolutionEuler, rcollection)
+!!$      ! Calculate density-averaged mass matrices
+!!$      call zpinch_initDensityAveraging(rparlist,&
+!!$        ssectionNameEuler, ssectionNameTransport,&
+!!$        p_rproblemLevel, p_rsolutionEuler, rcollection)
+!!$
+!!$      ! Calculate velocity field (\rho v)
+!!$      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+!!$        p_rproblemLevel, p_rsolutionEuler, rcollection)
 
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
