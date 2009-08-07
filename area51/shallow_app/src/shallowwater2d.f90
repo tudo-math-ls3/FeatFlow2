@@ -869,21 +869,28 @@ contains
     
         ! This routine adds limited antidiffusion according to the linearised
         ! FCT limiter
-        call FctShallowWaterAddLimitedAntidiffusion(&
+        call linFctShallowWaterAddLimitedAntidiffusion_syncronized(&
 	                rarraySol, rarraySolDot, rarrayRhs,&
 	                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
 	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
                     h_fld1, p_fld1, p_fld2, &
                     p_Kdiagonal, p_Kedge, NEQ, nedge, &
                     gravconst, dt, Method, prelimiting)
-    end if
 
-	        ! Take care of Boundary Conditions after this fct correction
+			call BuildShallowWaterPreconditioner (rmatrixBlockP, &
+	                rarrayP, rarraySol, p_CXdata, p_CYdata, &
+	                p_MLdata, p_Kdiagonal, p_kedge, &
+	                NEQ, nedge, theta, dt, gravconst)
+
+			! Take care of Boundary Conditions after this fct correction
 	        call ImplementShallowWaterBCs (&
 	                rboundary, rtriangulation, &
 	                rarrayP, rarraySol, rarrayDef, &
 	                p_Kdiagonal, p_Kld, &
 	                gravconst, boundarycorner)
+    end if
+
+	        
 
 	! That's it. RvectorBlock now contains our solution at the current time
 

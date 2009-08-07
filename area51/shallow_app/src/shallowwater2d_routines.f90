@@ -1347,7 +1347,8 @@ contains
 	
 	! linearised FCT Method for Shallow Water
 	! adding limited antidiffusion to the low order predictor
-	subroutine FctShallowWaterAddLimitedAntidiffusion(&
+	! using characteristic variables and so dimensional splitting
+	subroutine linFctShallowWaterAddLimitedAntidiffusion_characteristic(&
 	                rarraySol, rarraySolDot, rarrayRhs,&
 	                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
 	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
@@ -1895,5 +1896,369 @@ contains
 	end do
 	
     end subroutine
+
+
+
+
+
+	! linearised FCT Method for Shallow Water
+	! adding limited antidiffusion to the low order predictor
+	! using conservative variables variables and a syncronized limiting factor
+	subroutine linFctShallowWaterAddLimitedAntidiffusion_syncronized(&
+	                rarraySol, rarraySolDot, rarrayRhs,&
+	                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
+	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+                    h_fld1, p_fld1, p_fld2, &
+                    p_Kdiagonal, p_Kedge, NEQ, nedge, &
+                    gravconst, dt, Method, prelimiting)
+	
+	! parameter values
+    type(t_array), dimension(nvar2d), intent(INOUT) :: rarraySol, rarraySolDot
+	type(t_array), dimension(nvar2d), intent(IN)    :: rarrayRhs
+	type(t_vectorBlock), intent(INOUT)              :: rdefBlock, rstempBlock
+	type(t_vectorBlock), intent(IN)                 :: rsolBlock
+	type(t_vectorBlock), intent(INOUT)              :: rSolDotBlock
+	type(t_matrixScalar), intent(IN)                :: rmatrixML
+	real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+	integer                                         :: h_fld1
+	real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
+	integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
+	integer, dimension(:,:), pointer                :: p_Kedge
+	integer, intent(IN)                             :: NEQ,	nedge
+	real(DP), intent(IN)                            :: gravconst, dt
+	integer, intent(IN)                             :: Method, prelimiting
+	
+	
+	! variables
+	integer                             :: i, j, l, ii, jj, ij, ji, d, iedge, ivar
+	real(DP), dimension(nvar2d)         :: deltaQij, Qi, Qj, Qroeij
+	real(DP), dimension(nvar2d,nvar2d)  :: JacobixRoeij, JacobiyRoeij
+	real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
+	real(DP), dimension(nvar2d,nvar2d)  :: Aij, Bij, Dij, Eye, Tij, invTij
+	real(DP)                            :: scalarDissipation, scalefactor, lambda
+	real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj
+	real(DP)                            :: cRoe, uRoe, vRoe
+	real(DP), dimension(nvar2d)         :: Udoti, Udotj
+	real(DP), dimension(nvar2d)         :: deltaWij, deltaGij, deltaFij
+	real(DP), dimension(nvar2d,nvar2d)  :: Rij, invRij
+	real(DP)                            :: alphaij
+	
+	
+	! unit matrix
+	Eye = 0.0_DP
+	forall (ivar = 1: nvar2d)
+        Eye(ivar,ivar) = 1.0_DP
+	end forall
+
+    
+
+    
+        ! Clear SolDot
+        call lsysbl_clearVector (rSolDotBlock)
+        
+        ! First compute SolDot
+        do iedge = 1, nedge
+            i  = p_Kedge(1, iedge)
+			j  = p_Kedge(2, iedge)
+    		ij = p_Kedge(3, iedge)
+	    	ji = p_Kedge(4, iedge)
+		    ii = p_Kdiagonal(i)
+			jj = p_Kdiagonal(j)
+						
+    		! get solution values at node i and j
+		    do ivar = 1, nvar2d
+	    	    Qi(ivar) = rarraySol(ivar)%Da(i)
+		        Qj(ivar) = rarraySol(ivar)%Da(j)
+		    end do
+		    	
+		    ! compute deltaQij = Qi - Qj
+		    deltaQij = Qi - Qj
+			
+    		! Compute the Roe-meanvalue for this edge
+	    	Qroeij = calculateQroe(Qi, Qj)
+
+			
+    		! Now we can compute Aij and Bij
+			!Aij = scalefactor*buildJacobi(Qroeij,d,gravconst)
+			
+			! deltaK
+			!deltaKi = -matmul(Aij,deltaQij)
+			!deltaKj = deltaKi
+
+			! Calculate this alternatively by calculating
+			! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+			! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+			deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
+			         -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
+			deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
+		    	     -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+
+			! Compute the coeffitients for the jacobi matrices
+			JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+			JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+			JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+			JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+			    
+			! compute Dij
+			if (Method == 4) then
+			    ! Build Dij using scalar dissipation
+	    	scalarDissipation = &
+			abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+			abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+			
+			! compute Dij
+			Dij = scalarDissipation*Eye
+			else if (Method == 5) then
+			    ! Build Dij using tensorial dissipation
+			    Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
+			                    matmul(buildaLambda(Qroeij,1,gravconst),&
+			                           buildinvTrafo(Qroeij,1,gravconst))) +&
+			          abs(JcoeffyA)*matmul(buildTrafo(Qroeij,2,gravconst),&
+			                    matmul(buildaLambda(Qroeij,2,gravconst),&
+			                           buildinvTrafo(Qroeij,2,gravconst)))
+			end if
+			    
+			! deltaD
+			deltaDi = matmul(Dij,-deltaQij)
+			deltaDj = -deltaDi
+			    
+			! add deltaK and deltaD to SolDot
+			! SolDot = SolDot + 1/ML*(K*u + D*u)
+			do l = 1, nvar2d
+				rarraySolDot(l)%Da(i) = rarraySolDot(l)%Da(i) &
+				                        + 1.0_DP/p_MLdata(i)*&
+				                        (deltaKi(l) + deltaDi(l))
+				rarraySolDot(l)%Da(j) = rarraySolDot(l)%Da(j) &
+				                        + 1.0_DP/p_MLdata(j)*&
+				                        (deltaKj(l) + deltaDj(l))
+				! Save Qroe
+                p_fld2(1+2*(l-1),iedge) = QRoeij(l)
+			end do
+			
+		end do
+		! SolDot fertig!
+		
+		
+		! Now calculate the limited antidiffusive flux
+        
+        call storage_clear (h_fld1)
+        ! first we fill the array fld1 + fld2 (that means compute deltaWij and deltaGij and save it)
+        do iedge = 1, nedge
+			i  = p_Kedge(1, iedge)
+			j  = p_Kedge(2, iedge)
+			ij = p_Kedge(3, iedge)
+			ji = p_Kedge(4, iedge)
+			ii = p_Kdiagonal(i)
+			jj = p_Kdiagonal(j)
+			
+			! get solution values at node i and j
+			do ivar = 1, nvar2d
+	    	    Qi(ivar) = rarraySol(ivar)%Da(i)
+		        Qj(ivar) = rarraySol(ivar)%Da(j)
+		    end do
+		    
+			! compute deltaQij = Qi - Qj
+		    deltaQij = Qi - Qj
+			
+			! Compute the Roe-meanvalue for this edge
+			Qroeij = calculateQroe(Qi, Qj)
+			
+            ! Trafomatrix Tij
+            !invRij = buildInvTrafo(Qroeij,d,gravconst)
+			Tij = Eye
+            
+            ! compute Tij*(Qj - Qi), the transformed solution differences
+            deltaWij = -matmul(Tij,deltaQij)
+            
+			! Compute the coeffitients for the jacobi matrices
+			JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+			JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+			JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+			JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+			    
+			! compute Dij
+			if (Method == 4) then
+			    ! Build Dij using scalar dissipation
+	    		scalarDissipation = &
+				abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+				abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+			
+				Dij = scalarDissipation*Eye
+			else if (Method == 5) then
+			    ! Build Dij using tensorial dissipation
+			    Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
+			                    matmul(buildaLambda(Qroeij,1,gravconst),&
+			                           buildinvTrafo(Qroeij,1,gravconst))) +&
+			          abs(JcoeffyA)*matmul(buildTrafo(Qroeij,2,gravconst),&
+			                    matmul(buildaLambda(Qroeij,2,gravconst),&
+			                           buildinvTrafo(Qroeij,2,gravconst)))
+			end if
+            
+            ! get Udot at node i and j
+            do ivar = 1, nvar2d
+                Udoti(ivar) = rarraySolDot(ivar)%Da(i)
+                Udotj(ivar) = rarraySolDot(ivar)%Da(j)
+            end do
+            
+            ! compute deltaFij (73)/(59) linearised fct
+            deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
+            
+            ! compute deltaGij, the transformed antidiffusive fluxes
+            deltaGij = matmul(Tij,deltaFij)
+
+!!!!!!!!!!!!!!!!!!! Check methods
+!!!!!!!!!!!!!!!!!!! < ---> >, siehe AFCII(70)
+!             ! Now apply prelimiting
+!             if (prelimiting == 1) then
+!                 if (Method==4) then                 
+!                     ! For scalar dissipation apply
+!                     ! MinMod prelimiting
+!                     do ivar = 1, nvar2d
+!                     if (deltaGij(ivar)*deltaWij(ivar)<0) then
+!                         deltaGij(ivar)=0
+!                     else
+!                         if (abs(deltaGij(ivar))>abs(abs(scalefactor)*scalarDissipation*deltaWij(ivar))) then
+!                                 deltaGij(ivar) = abs(scalefactor)*scalarDissipation*deltaWij(ivar)
+!                         end if
+!                     end if
+!                     end do
+!                 else if (Method==5) then
+!                 ! For tensorial dissipation apply
+!                 ! Simple prelimiting
+!                     do ivar = 1, nvar2d
+!                         if (deltaGij(ivar)*deltaWij(ivar)<0) then
+!                             deltaGij(ivar) = 0
+!                         end if
+!                     end do
+!                 end if
+!             end if
+
+
+            
+            do ivar = 1, nvar2d
+                
+                ! Save deltaGij
+                p_fld2(2+2*(ivar-1),iedge) = deltaGij(ivar)
+                               
+                ! Update the P/Q_i/j +/- (76+77)
+                p_fld1(1+6*(ivar-1),i) = p_fld1(1+6*(ivar-1),i) + max(0.0_DP,deltaGij(ivar)) ! Pi+
+                p_fld1(2+6*(ivar-1),i) = p_fld1(2+6*(ivar-1),i) + min(0.0_DP,deltaGij(ivar)) ! Pi-
+                p_fld1(3+6*(ivar-1),i) = max(p_fld1(3+6*(ivar-1),i),deltaWij(ivar))! Qi+
+                p_fld1(4+6*(ivar-1),i) = min(p_fld1(4+6*(ivar-1),i),deltaWij(ivar))! Qi-
+                
+                p_fld1(1+6*(ivar-1),j) = p_fld1(1+6*(ivar-1),j) + max(0.0_DP,-deltaGij(ivar)) ! Pj+
+                p_fld1(2+6*(ivar-1),j) = p_fld1(2+6*(ivar-1),j) + min(0.0_DP,-deltaGij(ivar)) ! Pj-
+                p_fld1(3+6*(ivar-1),j) = max(p_fld1(3+6*(ivar-1),j),-deltaWij(ivar))! Qj+
+                p_fld1(4+6*(ivar-1),j) = min(p_fld1(4+6*(ivar-1),j),-deltaWij(ivar))! Qj-
+                
+            end do
+            
+        end do
+              
+        do i = 1, NEQ
+        
+            do ivar = 1, nvar2d
+                ! Compute the R_i +/- (73) AFC II
+                if (abs(p_fld1(1+6*(ivar-1),i))>1e-8) then
+                p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)*&
+                                         p_fld1(3+6*(ivar-1),i)/p_fld1(1+6*(ivar-1),i)/dt)! Ri+
+                else
+                p_fld1(5+6*(ivar-1),i) = 0.0_DP
+                end if
+                
+                if (abs(p_fld1(2+6*(ivar-1),i))>1e-8) then
+                p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)*&
+                                         p_fld1(4+6*(ivar-1),i)/p_fld1(2+6*(ivar-1),i)/dt)! Ri-
+                else
+                p_fld1(6+6*(ivar-1),i) = 0.0_DP
+                end if
+            
+            end do
+            
+            
+            
+        end do
+        
+        do iedge = 1, nedge
+			i  = p_Kedge(1, iedge)
+			j  = p_Kedge(2, iedge)
+			ij = p_Kedge(3, iedge)
+			ji = p_Kedge(4, iedge)
+			ii = p_Kdiagonal(i)
+			jj = p_Kdiagonal(j)
+			
+			do ivar = 1, nvar2d
+			    deltaGij(ivar) = p_fld2(2+2*(ivar-1),iedge)
+			end do
+
+			! First calculate the limiting factor alphaij
+			! For this we have two options
+			! 1.: Take only the limiting factor of the variable h=Q(1)
+			if (deltaGij(1)>0.0_DP) then
+		        alphaij =  min(p_fld1(5,i),p_fld1(6,j))
+		    else
+		        alphaij = min(p_fld1(5,j),p_fld1(6,i))
+		    end if
+
+! 			! 2.: Take the smallest of all the limiting factors
+! 			alphaij = 1
+! 			do ivar = 1, nvar2d
+! 		        if (deltaGij(ivar)>0.0_DP) then
+! 		        	alphaij =  min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
+! 		    	else
+! 		        	alphaij = min(alphaij,p_fld1(5+6*(ivar-1),j),p_fld1(6+6*(ivar-1),i))
+! 		    	end if
+! 			end do
+
+			! Limit the antidiffusive fluxes Gij = Gij * alphaij
+			deltaGij = deltaGij * alphaij
+			
+			! get Roe-values at ij
+			!do ivar = 1, nvar2d
+	    	!    Qroeij(ivar) = p_fld2(1+2*(ivar-1),iedge)
+		    !end do
+		    			
+            ! Rij
+            !Rij = buildTrafo(Qroeij,d,gravconst)
+			
+			! Get matrix to trafo back
+			invTij = Eye
+			
+			! Finally we can transform back to deltaFij
+			deltaFij = matmul(invTij,deltaGij)
+			
+			! And save 
+			do ivar = 1, nvar2d
+			    p_fld2(2+2*(ivar-1),iedge) = deltaFij(ivar)
+			end do
+			
+		end do
+			
+			
+		! In the last step add the limited antidiffusion to the low order predictor
+		do iedge = 1, nedge
+			i  = p_Kedge(1, iedge)
+			j  = p_Kedge(2, iedge)
+			ij = p_Kedge(3, iedge)
+			ji = p_Kedge(4, iedge)
+			ii = p_Kdiagonal(i)
+			jj = p_Kdiagonal(j)
+			
+			do ivar = 1, nvar2d
+			    deltaFij(ivar) = p_fld2(2+2*(ivar-1),iedge)
+			    
+			    rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + deltaFij(ivar)   *dt/p_MLdata(i)
+			    rarraySol(ivar)%Da(j) = rarraySol(ivar)%Da(j) - deltaFij(ivar)   *dt/p_MLdata(j)
+			end do
+			
+	    end do
+            
+    
+
+       
+	end subroutine
+
+
+
     
 end module
