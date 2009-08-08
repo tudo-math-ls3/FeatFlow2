@@ -80,7 +80,7 @@ FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s|^.*/$USER/|/|;"`;
 
 # Step 2: 
 #   remove "feast/feast/"
-FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | sed "s|/Featflow2/|/|i;"`;
+FEAT2INSTDIR=`echo ${FEAT2INSTDIR} | tr 'A-Z' 'a-z' | sed "s|/featflow2/|/|;"`;
 
 # Concatenate directory strings to come up with a directory name
 # for FEAST application object files
