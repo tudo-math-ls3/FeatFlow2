@@ -2242,82 +2242,48 @@ endif
 
 ############################### Sun Ultrasparc v9 #############################
 
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-blas-lammpi),yes)
-# invokes the Sun Studio Compiler suite, uses LAM MPI, local BLAS,
-# local umfpack
+ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-.*),yes)
+# invokes the Sun Studio Compiler suite, local umfpack
 include $(TEMPLATESDIR)/sun4u-generic.mk
 include $(TEMPLATESDIR)/sunstudio-generic.mk
-include $(TEMPLATESDIR)/lammpi-generic.mk
-include $(TEMPLATESDIR)/blas-generic.mk
 # Umfpack install instructions advice to set this flag on Sun.
 CFLAGSC       := -DNSUNPERF $(CFLAGSC)
-# For strange reasons the symbol dlamch_ is not found by LAPACK
-# in its own library for this build ID.
-# To get this build ID compiled (no one never uses it anyway),
-# please add a manual link:
-# cd kernel/arch; ln -s ../../libraries/lapack/dlamch.f dlamch.f
-SRCEXTRA      := $(SRCEXTRA) dlamch.f
 # Have 64bit binaries built on Sun
 CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xarch=native64
 CFLAGSF77     := $(CFLAGSF77)     -xarch=native64
 CFLAGSF90     := $(CFLAGSF90)     -xarch=native64
 CFLAGSC       := $(CFLAGSC)       -xarch=native64
 LDFLAGS       := $(LDFLAGS)       -xarch=native64
-# -lmvec Needed? Performance benefit? I don't know (SB)
-#
 # If using -lmvec (some Vectorised Mathematical function) we also
 # need socket and nsl libraries.
 LIBS          := $(LIBS) -lmvec -lsocket -lnsl
 endif
 
 
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-ompi),yes)
-# invokes the Sun Studio Compiler suite, uses OpenMPI, Perflib BLAS,
-# local umfpack
-include $(TEMPLATESDIR)/sun4u-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
+ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-.*-.*-lammpi),yes)
+# Use LAM/MPI
+include $(TEMPLATESDIR)/lammpi-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-.*-.*-ompi),yes)
+# Use OpenMPI
 include $(TEMPLATESDIR)/openmpi-generic.mk
-include $(TEMPLATESDIR)/sunperf-generic.mk
-# Umfpack install instructions advice to set this flag on Sun.
-CFLAGSC       := -DNSUNPERF $(CFLAGSC)
-# Have 64bit binaries built on Sun
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xarch=native64
-CFLAGSF77     := $(CFLAGSF77)     -xarch=native64
-CFLAGSF90     := $(CFLAGSF90)     -xarch=native64
-CFLAGSC       := $(CFLAGSC)       -xarch=native64
-LDFLAGS       := $(LDFLAGS)       -xarch=native64
-# If using -lmvec (some Vectorised Mathematical function) we also
-# need socket and nsl libraries.
-LIBS          := $(LIBS) -lmvec -lsocket -lnsl
-# Is it necessary to replace the way Sunperf Library is included?
-# It works both ways! (SB)
-LIBS          := $(filter-out -lsunperf, $(LIBS))
-LIBS          := $(LIBS) -xlic_lib=sunperf
 endif
 
 
-ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf-lammpi),yes)
-# invokes the Sun Studio Compiler suite, uses LAM MPI, Perflib BLAS,
-# local umfpack
-include $(TEMPLATESDIR)/sun4u-generic.mk
-include $(TEMPLATESDIR)/sunstudio-generic.mk
-include $(TEMPLATESDIR)/lammpi-generic.mk
+ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),sun4u-sparcv9-sunos-sunstudio-perf.*),yes)
+# Use Perflib BLAS,
 include $(TEMPLATESDIR)/sunperf-generic.mk
-# Umfpack install instructions advice to set this flag on Sun.
-CFLAGSC       := -DNSUNPERF $(CFLAGSC)
-# Have 64bit binaries built on Sun
-CFLAGSF77LIBS := $(CFLAGSF77LIBS) -xarch=native64
-CFLAGSF77     := $(CFLAGSF77)     -xarch=native64
-CFLAGSF90     := $(CFLAGSF90)     -xarch=native64
-CFLAGSC       := $(CFLAGSC)       -xarch=native64
-LDFLAGS       := $(LDFLAGS)       -xarch=native64
-# If using -lmvec (some Vectorised Mathematical function) we also
-# need socket and nsl libraries.
-LIBS          := $(LIBS) -lmvec -lsocket -lnsl
 # Is it necessary to replace the way Sunperf Library is included?
 # It works both ways! (SB)
-LIBS          := $(filter-out -lsunperf, $(LIBS))
-LIBS          := $(LIBS) -xlic_lib=sunperf
+LIBS          := $(filter-out -lsunperf, $(LIBS)) -xlic_lib=sunperf
 endif
 
 
