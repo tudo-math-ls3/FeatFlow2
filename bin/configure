@@ -3327,7 +3327,7 @@ sub create_feastBenchmarkMakefile {
         "TESTSETS = \$(FBCONF:%.fbconf=%)\n" .
         "\n" .
         "# All possible test IDs\n" .
-        "TESTIDS  = \$(shell grep -i ^testid \$(FBDEF) | cut -d= -f 2 | sed -e 's/ //g')\n" .
+        "TESTIDS  = \$(shell grep -i \"^testid\" \$(FBDEF) | cut -d= -f 2 | sed -e 's/ //g')\n" .
         "\n" .
         "# Some targets only safely work if not called directly, but recursively\n" .
         "# from this Makefile\n" .
