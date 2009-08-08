@@ -33,6 +33,6 @@ SBB_LIBS       = -lsunperf #-ldl  #$(SBB_BUILDLIB:%=-l%)
 # information available which BLAS implementation to use and where to find the
 # library.
 #
-# In this file, the fifth token has been set: BLAS implementation.
+# In this file, the fifth token has been set: BLAS and LAPACK implementation.
 # Set the flag accordingly.
-TOKEN6 := 1
+TOKEN5 := 1
