@@ -1627,20 +1627,9 @@ contains
               UCD_VAR_STANDARD, p_Ddata1)
           
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'effective_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport,&
-              'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-        
           
         case (NDIM2D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
@@ -1661,18 +1650,8 @@ contains
               UCD_VAR_STANDARD, p_Ddata1)
           
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'effective_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport,&
-              'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
           
         case (NDIM3D)
@@ -1696,18 +1675,8 @@ contains
               UCD_VAR_STANDARD, p_Ddata1)
           
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'effective_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport,&
-              'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-          
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
           
         end select
