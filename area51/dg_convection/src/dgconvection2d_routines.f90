@@ -1295,7 +1295,7 @@ end subroutine
 !</subroutine>
   
     ! local variables
-    integer :: ielement, NEL, ccomplexity, IelementDistr, IelementDistrN, NNVE, NNEE, iedge, iglobalEdgeNumber, ineighbour, i, j, k, i1, icubp
+    integer :: ielement, NEL, ccomplexity, IelementDistr, IelementDistrN, NNVE, NNEE, iedge, iglobalEdgeNumber, ineighbour, i, j, k, i1
     integer :: ilocaledgenumber, ilocaledgenumberneighbour
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscrTrial, p_rspatialDiscrTest
     integer, dimension(:), pointer :: p_IelementDistr
@@ -1386,8 +1386,14 @@ end subroutine
     ! Scalar product of velocity and normal vector 
     real(DP) :: v_n
     
+    ! The velocity vector
+    real(DP), dimension(ndim2d) :: velocity
+    
     ! The corner coordinates of the (center) element
     real(DP), dimension(:,:), pointer :: p_DcornerCoords
+    
+    ! Number of vertices of the element
+    integer :: NVE
     
     
     
@@ -1597,7 +1603,7 @@ end subroutine
     allocate (p_DcornerCoords(ndim2d,NVE))
     
     ! Get the corner coordinates of the element
-    call trafo_getCoords (ctrafoType,rtriangulation,iel,Dcoords)
+    call trafo_getCoords (ctrafoType,p_rspatialDiscrTrial%p_rtriangulation,ielement,Dcoords)
     
     
        
