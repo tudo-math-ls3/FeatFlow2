@@ -104,43 +104,47 @@ module solidmech2d_callback
 
   type t_problem
 
-!     grid file
+    !   grid file
     character(len=500) :: sgridFileTri
     character(len=500) :: sgridFilePrm
 
-!     number of boundary segments (has to be set manually by the user who has to know
-!     the number segments in the current grid)
-    integer :: nboundarySegments = 4
+    !     number of boundaries (has to be set manually by the user who has to know
+    !     the number of boundaries in the current grid)
+    integer :: nboundaries = 1
 
-!     definition of boundary conditions (array with length equal to number of boundary
-!     segments; each entry is either 'N' (for Neumann) or 'D' (for Dirichlet)
-    character(len=1), dimension(:), pointer :: Sbc
+    !     number of boundary segments (has to be set manually by the user who has to know
+    !     the number segments in the current grid)
+    integer, dimension(:), pointer :: NboundarySegments
 
-!     kind of element used(possible values: Q1, Q2)
+    !     definition of boundary conditions (array with dimension(number od boundaries,number of boundary
+    !     segments); each entry is either 'N' (for Neumann) or 'D' (for Dirichlet)
+    character(len=5), dimension(:,:), pointer :: Sbc
+
+    !     kind of element used(possible values: Q1, Q2)
     character(len=2) :: selement
 
-!     NLMAX receives the level where we want to solve.
+    !     NLMAX receives the level where we want to solve.
     integer :: NLMAX
 
-!     material parameters (Poisson ratio nu and shear modulus mu)
+    !     material parameters (Poisson ratio nu and shear modulus mu)
     real(DP) :: dnu     = 0.3_DP
     real(DP) :: dmu     = 0.5_DP
     real(DP) :: dlambda = 0.75_DP
 
-!     kind of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
+    !     kind of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
     integer :: ctypeOfSimulation = SIMUL_REAL
 
-!     function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
+    !     function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
     integer :: cfuncID_u1 = 4
     integer :: cfuncID_u2 = 52
 
-!     constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
+    !     constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
     real(DP) :: drhsVol1   = 0.0_DP
     real(DP) :: drhsVol2   = 0.0_DP
-    real(DP) :: drhsBound1 = 0.0_DP
-    real(DP) :: drhsBound2 = 0.0_DP
+    real(DP), dimension(:,:), pointer :: DrhsBoundx
+    real(DP), dimension(:,:), pointer :: DrhsBoundy
 
-!      used to show deformation in gmv(possible values: ON, OFF)
+    !      used to show deformation in gmv(possible values: ON, OFF)
     integer :: DEFORMATION = OFF
 
   end type
@@ -308,7 +312,8 @@ contains
 
    real(DP), dimension(:,:), pointer                      :: Der_u1xx,Der_u1yy,Der_u2xy
 
-   allocate(Der_u1xx(npointsPerElement,nelements),Der_u1yy(npointsPerElement,nelements),Der_u2xy(npointsPerElement,nelements))
+   allocate(Der_u1xx(npointsPerElement,nelements),Der_u1yy(npointsPerElement,nelements),&
+    Der_u2xy(npointsPerElement,nelements))
 
    call getReferenceFunction_u1_2D (DER_DERIV_XX,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
@@ -327,14 +332,15 @@ contains
     
 
    if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
-	Dcoefficients (1,:,:) = rproblem%drhsVol1
+	   Dcoefficients (1,:,:) = rproblem%drhsVol1
    else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
-        Dcoefficients (1,:,:) = -(2 * rproblem%dmu + rproblem%dlambda) * Der_u1xx - rproblem%dmu * Der_u1yy - (rproblem%dmu + rproblem%dlambda) * Der_u2xy
+     Dcoefficients (1,:,:) = -(2 * rproblem%dmu + rproblem%dlambda) * Der_u1xx - &
+                  rproblem%dmu * Der_u1yy - (rproblem%dmu + rproblem%dlambda) * Der_u2xy
    end if
 
    deallocate(Der_u1xx,Der_u1yy,Der_u2xy)
 
-  end subroutine coeff_RHS_Vol_u1_2D
+   end subroutine coeff_RHS_Vol_u1_2D
 
   ! ***************************************************************************
 
@@ -410,7 +416,8 @@ contains
   !</subroutine>
    real(DP), dimension(:,:), pointer                      :: Der_u2xx,Der_u2yy,Der_u1yx
 
-   allocate(Der_u2xx(npointsPerElement,nelements),Der_u2yy(npointsPerElement,nelements),Der_u1yx(npointsPerElement,nelements))
+   allocate(Der_u2xx(npointsPerElement,nelements),Der_u2yy(npointsPerElement,nelements),&
+            Der_u1yx(npointsPerElement,nelements))
 
    call getReferenceFunction_u2_2D (DER_DERIV_XX,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
@@ -429,9 +436,10 @@ contains
 
  
    if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
-	Dcoefficients (1,:,:) = rproblem%drhsVol2
+	   Dcoefficients (1,:,:) = rproblem%drhsVol2
    else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
-	Dcoefficients (1,:,:) = -(rproblem%dmu + rproblem%dlambda) * Der_u1yx - rproblem%dmu * Der_u2xx - (2 * rproblem%dmu + rproblem%dlambda) * Der_u2yy
+	   Dcoefficients (1,:,:) = -(rproblem%dmu + rproblem%dlambda) * Der_u1yx - rproblem%dmu * Der_u2xx &
+                - (2 * rproblem%dmu + rproblem%dlambda) * Der_u2yy
    end if
 
    deallocate(Der_u2xx,Der_u2yy,Der_u1yx)
@@ -442,7 +450,7 @@ contains
 
 !<subroutine>
 
-   subroutine coeff_RHS_neumBdr_u1_2D (rdiscretisation,rform, &
+  subroutine coeff_RHS_neumBdr_u1_2D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   ibct, DpointPar, IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -534,7 +542,7 @@ contains
    real(DP), dimension(:,:,:,:), pointer                    :: DstressTensor
    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv
    integer :: icomp,iel,ipoint,ndim
-  allocate(DstressTensor(2,2,npointsPerElement,nelements))
+   allocate(DstressTensor(2,2,npointsPerElement,nelements))
 
 
    ! Get the minimum and maximum parameter value. The point with the minimal
@@ -548,54 +556,63 @@ contains
        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
      end do
    end do
-
-    call getStressTensor (rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                DstressTensor,rcollection)
-
+   
 
    ! Multiply the velocity vector with the normal in each point
    ! to get the normal velocity.
    do iel = 1, nelements
      do ipoint = 1, npointsPerElement
+  
+       dt = DpointPar(ipoint,iel) 
 
-       dt = DpointPar(ipoint,iel)
 
-       ! Get the normal vector in the point from the boundary.
-       ! Note that the parameter value is in length parametrisation!
-       ! When we are at the left or right endpoint of the interval, we
-       ! calculate the normal vector based on the current edge.
-       ! Without that, the behaviour of the routine may lead to some
-       ! confusion if the endpoints of the interval coincide with
-       ! the endpoints of a boundary edge. In such a case, the routine
-       ! would normally compute the normal vector as a mean on the
-       ! normal vectors of the edges adjacent to such a point!
-       if (DpointPar(ipoint,iel) .eq. dminPar) then
-         ! Start point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+       if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then 
+      
+         call getStressTensor (rdiscretisation, &
+                      nelements,npointsPerElement,Dpoints, &
+                      IdofsTest,rdomainIntSubset,&
+                      DstressTensor,rcollection)
 
-       else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-         ! End point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-       else
-         ! Inner point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-       end if
 
-       ! Compute the normal value
+  
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length parametrisation!
+          ! When we are at the left or right endpoint of the interval, we
+          ! calculate the normal vector based on the current edge.
+          ! Without that, the behaviour of the routine may lead to some
+          ! confusion if the endpoints of the interval coincide with
+          ! the endpoints of a boundary edge. In such a case, the routine
+          ! would normally compute the normal vector as a mean on the
+          ! normal vectors of the edges adjacent to such a point!
+         if (DpointPar(ipoint,iel) .eq. dminPar) then
+           ! Start point
+           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+  
+         else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+         else
+           ! Inner point
+           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+         end if
 
-       if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
-	    Dcoefficients(1,ipoint,iel) = rproblem%drhsBound1
-       else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
-            Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) + dny * DstressTensor(1,2,ipoint,iel)
-      end if
+         ! Compute the normal value
+         print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
+         print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+         Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
+                + dny * DstressTensor(1,2,ipoint,iel)
+ 
+        else if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
 
-     end do
-   end do
+           Dcoefficients(1,ipoint,iel) = rproblem%DrhsBoundx(ibct,rcollection%IquickAccess(1))
+
+        end if
+
+      end do
+    end do
 
 deallocate(DstressTensor)
 
@@ -712,52 +729,57 @@ deallocate(DstressTensor)
      end do
    end do
 
-    call getStressTensor (rdiscretisation, &
+   ! Multiply the velocity vector with the normal in each point
+   ! to get the normal velocity.
+  do iel = 1, nelements
+    do ipoint = 1, npointsPerElement
+  
+      dt = DpointPar(ipoint,iel)
+
+      if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then 
+
+        call getStressTensor (rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
                 DstressTensor,rcollection)
-
-   ! Multiply the velocity vector with the normal in each point
-   ! to get the normal velocity.
-   do iel = 1, nelements
-     do ipoint = 1, npointsPerElement
-
-       dt = DpointPar(ipoint,iel)
-
-       ! Get the normal vector in the point from the boundary.
-       ! Note that the parameter value is in length parametrisation!
-       ! When we are at the left or right endpoint of the interval, we
-       ! calculate the normal vector based on the current edge.
-       ! Without that, the behaviour of the routine may lead to some
-       ! confusion if the endpoints of the interval coincide with
-       ! the endpoints of a boundary edge. In such a case, the routine
-       ! would normally compute the normal vector as a mean on the
-       ! normal vectors of the edges adjacent to such a point!
-       if (DpointPar(ipoint,iel) .eq. dminPar) then
-         ! Start point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-
-       else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-         ! End point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-       else
-         ! Inner point
-         call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-             ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-       end if
+  
+  
+        ! Get the normal vector in the point from the boundary.
+        ! Note that the parameter value is in length parametrisation!
+        ! When we are at the left or right endpoint of the interval, we
+        ! calculate the normal vector based on the current edge.
+        ! Without that, the behaviour of the routine may lead to some
+        ! confusion if the endpoints of the interval coincide with
+        ! the endpoints of a boundary edge. In such a case, the routine
+        ! would normally compute the normal vector as a mean on the
+        ! normal vectors of the edges adjacent to such a point!
+        if (DpointPar(ipoint,iel) .eq. dminPar) then
+          ! Start point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+  
+        else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+          ! End point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+        else
+          ! Inner point
+          call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+        end if
 
        ! Compute the normal value
-
-   if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
-	Dcoefficients(1,ipoint,iel) = rproblem%drhsBound2
-   else if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
-        Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel) + dny * DstressTensor(2,2,ipoint,iel)
-   end if
-
-     end do
-   end do
+      print *,'2comp', ibct,rcollection%IquickAccess(1),dnx,dny
+      print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+      Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel)&
+            + dny * DstressTensor(2,2,ipoint,iel)
+   
+      else if (rproblem%ctypeOfSimulation .eq. SIMUL_REAL) then
+         Dcoefficients(1,ipoint,iel) = rproblem%DrhsBoundy(ibct,rcollection%IquickAccess(1))
+   
+      end if
+    end do
+  end do
 
 deallocate(DstressTensor)
 
