@@ -1950,9 +1950,6 @@ contains
         Eye(ivar,ivar) = 1.0_DP
 	end forall
 
-    
-
-    
         ! Clear SolDot
         call lsysbl_clearVector (rSolDotBlock)
         
@@ -2106,34 +2103,14 @@ contains
             ! compute deltaGij, the transformed antidiffusive fluxes
             deltaGij = matmul(Tij,deltaFij)
 
-!!!!!!!!!!!!!!!!!!! Check methods
-!!!!!!!!!!!!!!!!!!! < ---> >, siehe AFCII(70)
-!             ! Now apply prelimiting
-!             if (prelimiting == 1) then
-!                 if (Method==4) then                 
-!                     ! For scalar dissipation apply
-!                     ! MinMod prelimiting
-!                     do ivar = 1, nvar2d
-!                     if (deltaGij(ivar)*deltaWij(ivar)<0) then
-!                         deltaGij(ivar)=0
-!                     else
-!                         if (abs(deltaGij(ivar))>abs(abs(scalefactor)*scalarDissipation*deltaWij(ivar))) then
-!                                 deltaGij(ivar) = abs(scalefactor)*scalarDissipation*deltaWij(ivar)
-!                         end if
-!                     end if
-!                     end do
-!                 else if (Method==5) then
-!                 ! For tensorial dissipation apply
-!                 ! Simple prelimiting
-!                     do ivar = 1, nvar2d
-!                         if (deltaGij(ivar)*deltaWij(ivar)<0) then
-!                             deltaGij(ivar) = 0
-!                         end if
-!                     end do
-!                 end if
-!             end if
-
-
+            ! Now apply prelimiting, siehe AFCII(70)
+             if (prelimiting == 1) then
+                 ! For scalar dissipation apply
+                 ! MinMod prelimiting
+                 do ivar = 1, nvar2d
+                     if (deltaGij(ivar)*deltaWij(ivar).ge.0) deltaGij(ivar)=0
+                 end do
+             end if
             
             do ivar = 1, nvar2d
                 
@@ -2175,8 +2152,6 @@ contains
             
             end do
             
-            
-            
         end do
         
         do iedge = 1, nedge
@@ -2204,7 +2179,7 @@ contains
 ! 			alphaij = 1
 ! 			do ivar = 1, nvar2d
 ! 		        if (deltaGij(ivar)>0.0_DP) then
-! 		        	alphaij =  min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
+! 		        	alphaij = min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
 ! 		    	else
 ! 		        	alphaij = min(alphaij,p_fld1(5+6*(ivar-1),j),p_fld1(6+6*(ivar-1),i))
 ! 		    	end if
