@@ -2455,7 +2455,7 @@ contains
       end if
 
       !-------------------------------------------------------------------------
-      ! Compute linearized FCT correction
+      ! Compute linearized FCT correction for Euler and transport model
       !-------------------------------------------------------------------------
       
       ! Prepare quick access arrays
@@ -2472,21 +2472,6 @@ contains
         print *, "Pressure has become negative by flux limiting"
       end if
       
-!!$      !-------------------------------------------------------------------------
-!!$      ! Compute linearized FCT correction for transport model
-!!$      !-------------------------------------------------------------------------
-!!$
-!!$      ! Prepare quick access arrays
-!!$      rcollection%SquickAccess(1) = ssectionNameTransport
-!!$      rcollection%SquickAccess(2) = ssectionNameEuler
-!!$      
-!!$      ! Apply linearized FCT correction for transport model (note
-!!$      ! that the density averaged mass matrix and the new velocity
-!!$      ! field are computed internally by this subroutine)
-!!$      call zpinch_calcLinearizedFCT(rbdrCondTransport,&
-!!$          p_rproblemLevel, rtimestep, p_rsolutionTransport,&
-!!$          rcollection)
-!!$ 
       ! Calculate density-averaged mass matrices
       call zpinch_initDensityAveraging(rparlist,&
           ssectionNameEuler, ssectionNameTransport,&
