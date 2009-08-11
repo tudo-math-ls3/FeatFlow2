@@ -299,12 +299,6 @@ contains
           ! from the current time step
           p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
           
-          ! Calculate the density averaged mass matrices using the
-          ! solution of the Euler model from the current time step
-          call zpinch_initDensityAveraging(p_rparlist,&
-              rcollection%SquickAccess(3), rcollection%SquickAccess(4),&
-              rproblemLevel, p_rsolutionEuler, rcollection)
-          
           ! Calculate the velocity vector using the solution of the
           ! Euler model from the current time step
           call zpinch_initVelocityField(p_rparlist,&
@@ -977,81 +971,62 @@ contains
     call lsysbl_getbase_double(rdataEuler, p_dataEuler)
     call lsysbl_getbase_double(rdataTransport, p_dataTransport)
 
-!!$    ! Compute low-order approximation for transport model
-!!$    call lsyssc_scalarMatVec(p_rmatrixTransport,&
-!!$        rsolutionTransport%RvectorBlock(1),&
-!!$        rdataTransport%RvectorBlock(1), 1.0_DP, 0.0_DP)
-!!$    call lsyssc_invertedDiagMatVec(p_rmatrixMass,&
-!!$        rdataTransport%RvectorBlock(1), 1.0_DP,&
-!!$        rdataTransport%RvectorBlock(1))
     
-!!$    ! Compute force term
-!!$    call zpinch_initLorentzforceTerm(p_rparlist, 'zpinch',&
-!!$        ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
-!!$        rsolutionEuler, rsolutionTransport, rtimestep%dTime, 1.0_DP,&
-!!$        rdataEuler, rcollection)
-       
     ! Initialize alpha with ones
     call lalg_setVector(p_alpha, 1.0_DP)
-
     
-    ! Build the flux for the Euler model
-    call buildFluxEuler2d(p_Kdiagonal, p_IverticesAtEdge,&
-        p_rmatrixMass%NEQ, NVAR2D, p_rafcstabEuler%NEDGE,&
-        p_MC, p_ML, p_Cx, p_Cy, p_uEuler,&
-        p_fluxEuler, p_dataEuler)
+    ! Build the raw antidiffusive fluxes
+    ! - Euler model -
+    call buildFluxEuler2d(p_IverticesAtEdge, p_rmatrixMass%NEQ,&
+        NVAR2D, p_rafcstabEuler%NEDGE, p_Cx, p_Cy, p_uEuler, p_fluxEuler)
 
-    ! Build the flux for the transport model
-    call buildFluxTransport2d(p_Kdiagonal, p_IverticesAtEdge,&
-        p_DcoefficientsAtEdge, p_rmatrixMass%NEQ, p_rafcstabTransport&
-        %NEDGE, p_MC, p_ML, p_Cx, p_Cy, p_uTransport, p_dataTransport,&
+    ! - transport model -
+    call buildFluxTransport2d(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
+        p_rmatrixMass%NEQ, p_rafcstabTransport%NEDGE, p_uTransport,&
         p_fluxTransport)
 
     
     ! Build the correction coefficients
     ! - density -
-    call buildCorrectionEuler(p_IverticesAtEdge, p_rmatrixMass%NEQ,&
-        NVAR2D, p_rafcstabEuler%NEDGE, 1, rtimestep%dStep, p_ML, p_uEuler,&
+    call buildCorrection(p_IverticesAtEdge, p_rmatrixMass%NEQ, NVAR2D,&
+        p_rafcstabEuler%NEDGE, 1, rtimestep%dStep, p_ML, p_uEuler,&
         p_fluxEuler, p_alpha, p_ppEuler, p_pmEuler,&
         p_qpEuler, p_qmEuler, p_rpEuler, p_rmEuler)
 
     ! - pressure -
-    call buildCorrectionEuler(p_IverticesAtEdge, p_rmatrixMass%NEQ,&
-        NVAR2D, p_rafcstabEuler%NEDGE, 4, rtimestep%dStep, p_ML, p_uEuler,&
+    call buildCorrection(p_IverticesAtEdge, p_rmatrixMass%NEQ, NVAR2D,&
+        p_rafcstabEuler%NEDGE, 4, rtimestep%dStep, p_ML, p_uEuler,&
         p_fluxEuler, p_alpha, p_ppEuler, p_pmEuler,&
         p_qpEuler, p_qmEuler , p_rpEuler, p_rmEuler)
     
     ! - tracer -
-    call buildCorrectionEuler(p_IverticesAtEdge, p_rmatrixMass%NEQ,&
-        1, p_rafcstabTransport%NEDGE, 1, rtimestep%dStep, p_ML, p_uTransport,&
-        p_fluxTransport, p_alpha, p_ppTransport,&
+    call buildCorrection(p_IverticesAtEdge, p_rmatrixMass%NEQ, 1,&
+        p_rafcstabTransport%NEDGE, 1, rtimestep%dStep, p_ML,&
+        p_uTransport, p_fluxTransport, p_alpha, p_ppTransport,&
         p_pmTransport, p_qpTransport, p_qmTransport, p_rpTransport,&
         p_rmTransport)
     
     
-    ! Apply correction to low-order solution of the Euler model
-    call applyCorrectionEuler(p_IverticesAtEdge, p_rmatrixMass%NEQ,&
-        NVAR2D, p_rafcstabEuler%NEDGE, rtimestep%dStep, p_ML,&
-        p_fluxEuler, p_alpha, p_uEuler, p_ppEuler, p_pmEuler, p_dataEuler)
-
+    ! Apply correction to low-order solution
+    ! - Euler model -
+    call applyCorrection(p_IverticesAtEdge, p_rmatrixMass%NEQ, NVAR2D,&
+        p_rafcstabEuler%NEDGE, rtimestep%dStep, p_ML,&
+        p_fluxEuler, p_alpha, p_uEuler, p_dataEuler)
+    
+    ! - tranport model -
+    call applyCorrection(p_IverticesAtEdge, p_rmatrixMass%NEQ, 1,&
+        p_rafcstabTransport%NEDGE, rtimestep%dStep, p_ML,&
+        p_fluxTransport, p_alpha, p_uTransport, p_dataTransport)
+    
+    
     ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
         rtimestep%dTime, euler_calcBoundaryvalues2d)
-    
-    ! Release flux vectors
-    call lsysbl_releaseVector(rdataEuler)
-
-    
-    ! Apply correction to low-order solution of the transport model
-    call applyCorrectionTransport(p_IverticesAtEdge, p_rmatrixMass&
-        %NEQ, p_rafcstabTransport%NEDGE, rtimestep%dStep, p_ML,&
-        p_fluxTransport, p_alpha, p_uTransport, p_dataTransport)
-    
-    ! Set boundary conditions explicitly
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
         rsolutionTransport, rtimestep%dTime)
-    
+
     ! Release flux vectors
+    call lsysbl_releaseVector(rdataEuler)
     call lsysbl_releaseVector(rdataTransport)
 
   contains
@@ -1060,33 +1035,28 @@ contains
 
 !<subroutine>    
 
-    subroutine buildFluxEuler2d(Kdiagonal, IverticesAtEdge,&
-        NEQ, NVAR, NEDGE, MC, ML, Cx, Cy, u, flux, troc)
+    subroutine buildFluxEuler2d(IverticesAtEdge, NEQ, NVAR, NEDGE, Cx, Cy, u, flux)
 
 !<input>
-      integer, dimension(:), intent(in) :: Kdiagonal
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEQ,NVAR,NEDGE
-      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
+      real(DP), dimension(:), intent(in) :: Cx,Cy
       real(DP), dimension(NVAR,NEQ), intent(in) :: u
 !</input>
 
-!<inputoutput>
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: troc
-!</inputoutput>
-
-!<output>
+      !<output>
       real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
 !</output>
 !</subroutine>
       
       ! local variables
-      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
+      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       integer :: ij,ji,i,j,iedge
 
 
       ! Loop over all edges
+      !$omp parallel do private(i,j,ij,ji,C_ij,C_ji,K_ij,K_ji,D_ij,Diff)
       do iedge = 1, NEDGE
       
         ! Get node numbers and matrix positions
@@ -1099,14 +1069,6 @@ contains
         C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
         C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
         
-!!$        ! Calculate low-order flux
-!!$        call euler_calcFluxRusanov2d(u(:,i), u(:,j),&
-!!$            C_ij, C_ji, i, j, 1.0_DP, F_ij, F_ji)
-!!$        
-!!$        ! Update the time rate of change vector
-!!$        troc(:,i) = troc(:,i) + F_ij
-!!$        troc(:,j) = troc(:,j) + F_ji
-        
         ! Calculate diffusion coefficient
         call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
             C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
@@ -1115,37 +1077,59 @@ contains
         Diff = u(:,i)-u(:,j)         
         
         ! Compute the raw antidiffusive flux
-!!$        flux0(:,iedge) = D_ij*Diff
         flux(:,iedge) = D_ij*Diff
       end do
-
-!!$      ! Scale the time rate of change by the lumped mass matrix
-!!$      !$omp parallel do
-!!$      do i = 1, NEQ
-!!$        troc(:,i) = troc(:,i)/ML(i)
-!!$      end do
-!!$      !$omp end parallel do
-
-!!$      ! Loop over all edges
-!!$      !$omp parallel do private(i,j,ij)
-!!$      do iedge = 1, NEDGE
-!!$      
-!!$        ! Get node numbers and matrix positions
-!!$        i  = IverticesAtEdge(1, iedge)
-!!$        j  = IverticesAtEdge(2, iedge)
-!!$        ij = IverticesAtEdge(3, iedge)
-!!$        
-!!$        ! Apply mass antidiffusion
-!!$        flux(:,iedge) = flux0(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
-!!$      end do
-!!$      !$omp end parallel do
+      !$omp end parallel do
 
     end subroutine buildFluxEuler2d
 
     !***************************************************************************
+
 !<subroutine>
 
-    subroutine  buildCorrectionEuler(IverticesAtEdge, NEQ, NVAR, NEDGE,&
+    subroutine buildFluxTransport2d(IverticesAtEdge,&
+        DcoefficientsAtEdge, NEQ, NEDGE, u, flux)
+
+!<input>
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      integer, intent(in) :: NEQ,NEDGE
+      real(DP), dimension(:), intent(in) :: u
+!</input>
+
+!<output>
+      real(DP), dimension(:), intent(out) :: flux
+!</output>
+!</subroutine>
+
+      ! local variables
+      real(DP) :: d_ij
+      integer :: i,j,ij,iedge
+
+
+      !$omp parallel do private(i,j,ij,d_ij)
+      do iedge = 1, NEDGE
+      
+        ! Get node numbers and matrix position
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        
+        ! Get artificial diffusion coefficient
+        d_ij = DcoefficientsAtEdge(1, iedge)
+        
+        ! Compute raw antidiffusive flux
+        flux(iedge) = d_ij * (u(i)-u(j))
+        
+      end do
+      !$omp end parallel do
+
+    end subroutine buildFluxTransport2d
+    
+    !***************************************************************************
+!<subroutine>
+
+    subroutine  buildCorrection(IverticesAtEdge, NEQ, NVAR, NEDGE,&
         ivar, dscale, ML, u, flux, alpha, pp, pm, qp, qm, rp, rm)
 
 !<input>
@@ -1181,52 +1165,10 @@ contains
       call lalg_setVector(rp, 1.0_DP)
       call lalg_setVector(rm, 1.0_DP)
 
-      if (ivar .eq. 4) then
+      select case(ivar)
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Get node numbers and matrix position
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
-          
-            ! Velocities
-            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
-            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
-            
-            ! Solution differences
-            p_i = (GAMMA-1) * ( u(4,i) - 0.5 * (u_i*u_i + v_i*v_i) * u(1,i) )
-            p_j = (GAMMA-1) * ( u(4,j) - 0.5 * (u_j*u_j + v_j*v_j) * u(1,j) )
-
-            ! Pressure difference
-            diff = p_j-p_i
-
-            ! Pressure variables
-            p_ij = (GAMMA-1) * ( flux(4,iedge) + 0.5 * (u_i*u_i + v_i*v_i)*flux(1,iedge) -&
-                                 u_i*flux(2,iedge) - v_i*flux(3,iedge) )
-            p_ji =-(GAMMA-1) * ( flux(4,iedge) + 0.5 * (u_j*u_j + v_j*v_j)*flux(1,iedge) -&
-                                 u_j*flux(2,iedge) - v_j*flux(3,iedge) )
-
-!!$            p0_ij = (GAMMA-1) * ( flux0(4,iedge) + 0.5 * (u_i*u_i + v_i*v_i)*flux0(1,iedge) -&
-!!$                                  u_i*flux0(2,iedge) - v_i*flux0(3,iedge) )
-!!$            p0_ji =-(GAMMA-1) * ( flux0(4,iedge) + 0.5 * (u_j*u_j + v_j*v_j)*flux0(1,iedge) -&
-!!$                                  u_j*flux0(2,iedge) - v_j*flux0(3,iedge) )
-            
-            ! Sums of raw antidiffusive fluxes
-            pp(i) = pp(i) + max(0.0_DP, p_ij)
-            pp(j) = pp(j) + max(0.0_DP, p_ji)
-            pm(i) = pm(i) + min(0.0_DP, p_ij)
-            pm(j) = pm(j) + min(0.0_DP, p_ji)
-            
-            ! Sums of admissible edge contributions
-            qp(i) = max(qp(i),  diff)
-            qp(j) = max(qp(j), -diff)
-            qm(i) = min(qm(i),  diff)
-            qm(j) = min(qm(j), -diff)
-
-        end do
-
-      else
+      case (4)
+        ! - pressure -
         
         ! Loop over all edges
         do iedge = 1, NEDGE
@@ -1235,28 +1177,50 @@ contains
           i  = IverticesAtEdge(1, iedge)
           j  = IverticesAtEdge(2, iedge)
           
+          ! Velocities
+          u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
+          u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
+          
+          ! Solution differences
+          p_i = (GAMMA-1) * ( u(4,i) - 0.5 * (u_i*u_i + v_i*v_i) * u(1,i) )
+          p_j = (GAMMA-1) * ( u(4,j) - 0.5 * (u_j*u_j + v_j*v_j) * u(1,j) )
+          
+          ! Pressure difference
+          diff = p_j-p_i
+          
+          ! Pressure variables
+          p_ij = (GAMMA-1) * ( flux(4,iedge) + 0.5 * (u_i*u_i + v_i*v_i)*flux(1,iedge) -&
+                               u_i*flux(2,iedge) - v_i*flux(3,iedge) )
+          p_ji =-(GAMMA-1) * ( flux(4,iedge) + 0.5 * (u_j*u_j + v_j*v_j)*flux(1,iedge) -&
+                               u_j*flux(2,iedge) - v_j*flux(3,iedge) )
+            
+          ! Sums of raw antidiffusive fluxes
+          pp(i) = pp(i) + max(0.0_DP, p_ij)
+          pp(j) = pp(j) + max(0.0_DP, p_ji)
+          pm(i) = pm(i) + min(0.0_DP, p_ij)
+          pm(j) = pm(j) + min(0.0_DP, p_ji)
+          
+          ! Sums of admissible edge contributions
+          qp(i) = max(qp(i),  diff)
+          qp(j) = max(qp(j), -diff)
+          qm(i) = min(qm(i),  diff)
+          qm(j) = min(qm(j), -diff)
+          
+        end do
+
+      case default
+        ! - conservative variable -
+        
+        ! Loop over all edges
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers and matrix position
+          i = IverticesAtEdge(1, iedge)
+          j = IverticesAtEdge(2, iedge)
+          
           ! Flux correction in conservative variables
-          f_ij  = flux(ivar,iedge)
-!!$          f0_ij = flux0(ivar,iedge)
-          diff  = u(ivar,j)-u(ivar,i)
-          
-!!$        ! Prelimiting
-!!$        if (f_ij * diff .ge. 0) then
-!!$          alpha(iedge) = 0.0; f_ij = 0
-!!$        end if
-          
-!!$        ! Prelimiting
-!!$        if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-!!$          aux = min(f_ij, f0_ij)
-!!$          alpha(iedge) = min(alpha(iedge), aux/f_ij)
-!!$        elseif (f_ij < -SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-!!$          aux = max(f_ij, f0_ij)
-!!$          alpha(iedge) = min(alpha(iedge), aux/f_ij)
-!!$        else
-!!$          aux = 0.0; alpha(iedge) = 0.0
-!!$        end if
-!!$        
-!!$        f_ij = aux; flux(ivar,iedge) = f_ij
+          f_ij = flux(ivar,iedge)
+          diff = u(ivar,j)-u(ivar,i)
           
           ! Sums of raw antidiffusive fluxes
           pp(i) = pp(i) + max(0.0_DP,  f_ij)
@@ -1271,7 +1235,8 @@ contains
           qm(j) = min(qm(j), -diff)
         end do
         
-      end if
+      end select
+
 
       ! Compute nodal correction factors
       !$omp parallel do
@@ -1284,9 +1249,12 @@ contains
       end do
       !$omp end parallel do
 
+      
+      select case(ivar)
 
-      if (ivar .eq. 4) then
-
+      case(4)
+        ! - pressure -
+      
         ! Loop over all edges
         !$omp parallel do private(i,j,f_ij,p_ij,p_ji,u_i,v_i,u_j,v_j,r_i,r_j)
         do iedge = 1, NEDGE
@@ -1304,7 +1272,7 @@ contains
                                u_i*flux(2,iedge) - v_i*flux(3,iedge) )
           p_ji =-(GAMMA-1) * ( flux(4,iedge) + 0.5 * (u_j*u_j + v_j*v_j)*flux(1,iedge) -&
                                u_j*flux(2,iedge) - v_j*flux(3,iedge) )
-
+          
 
           if (p_ij > SYS_EPSREAL) then
             r_i = rp(i)
@@ -1324,44 +1292,46 @@ contains
 
           ! Compute correction factor
           alpha(iedge) = min(alpha(iedge), r_i, r_j)
-         
+          
         end do
         !$omp end parallel do
         
-      else
 
-      ! Loop over all edges
-      !$omp parallel do private(i,j,f_ij)
-      do iedge = 1, NEDGE
+      case default
+        ! - conservative variable -
         
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Flux correction in conservative variables
-        f_ij = flux(ivar,iedge)
-        
-        ! Limit conservative fluxes
-        if (f_ij > SYS_EPSREAL) then
-          alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-        elseif (f_ij < SYS_EPSREAL) then
-          alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
-        end if
-      end do
-      !$omp end parallel do
+        ! Loop over all edges
+        !$omp parallel do private(i,j,f_ij)
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Flux correction in conservative variables
+          f_ij = flux(ivar,iedge)
+          
+          ! Limit conservative fluxes
+          if (f_ij > SYS_EPSREAL) then
+            alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
+          elseif (f_ij < SYS_EPSREAL) then
+            alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
+          end if
+        end do
+        !$omp end parallel do
 
-      end if
+      end select
       
-    end subroutine buildCorrectionEuler
+    end subroutine buildCorrection
 
     !***************************************************************************
 
 !<subroutine>
 
-    subroutine applyCorrectionEuler(IverticesAtEdge, NEQ, NVAR, NEDGE,&
-        dscale, ML, flux, alpha, u, pp, pm, data)
+    subroutine applyCorrection(IverticesAtEdge, NEQ, NVAR, NEDGE,&
+        dscale, ML, flux, alpha, u, data)
       
-!<input>
+      !<input>
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEQ,NVAR,NEDGE
       real(DP), intent(in) :: dscale
@@ -1375,28 +1345,17 @@ contains
 !</inputoutput>
 
 !<output>
-      real(DP), dimension(:), intent(out) :: pp,pm
       real(DP), dimension(NVAR,NEQ), intent(out) :: data
 !</output>
 !</subroutine>   
       
       ! local variables
-      real(DP), dimension(:,:), pointer :: ufail
-      logical, dimension(:), pointer :: bfail
       real(DP), dimension(NVAR) :: f_ij
-      real(DP) :: diff
       integer :: i,j,iedge
 
       ! Initialize correction
       call lalg_clearVector(data)
-
-!!$      allocate(ufail(NVAR, NEQ), bfail(NEQ))
-!!$
-!!$      ! Initialize vectors
-!!$      call lalg_clearVector(pp)
-!!$      call lalg_clearVector(pm)
-!!$      call lalg_copyVector(u, ufail)
-
+      
       ! Loop over all edges
       do iedge = 1, NEDGE
       
@@ -1410,17 +1369,6 @@ contains
         ! Apply correction
         data(:,i) = data(:,i) + f_ij
         data(:,j) = data(:,j) - f_ij
-        
-!!$        ! Compute pressure difference at nodes I and J
-!!$        diff = (GAMMA-1) * ( u(4,j) - u(4,i) &
-!!$                         - 0.5_DP*(u(2,j)**2 + u(3,j)**2)/u(1,j)&
-!!$                         + 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i))
-!!$        
-!!$        ! Compute upper and lower bounds for the pressure
-!!$        pp(i) = max(pp(i),  diff)
-!!$        pp(j) = max(pp(j), -diff)
-!!$        pm(i) = min(pm(i),  diff)
-!!$        pm(j) = min(pm(j), -diff)
       end do
       
       ! Loop over all rows
@@ -1429,179 +1377,10 @@ contains
         
         ! Compute flux-corrected solution
         u(:,i) = u(:,i) + dscale * data(:,i)/ML(i)
-
-!!$        ! Compute pressure difference between the low-order solution
-!!$        ! and flux-corrected solution value at node I
-!!$        diff = (GAMMA-1) * ( u(4,i) - ufail(4,i) &
-!!$                           - 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i)&
-!!$                           + 0.5_DP*(ufail(2,i)**2 + ufail(3,i)**2)/ufail(1,i))
-!!$        
-!!$        ! Check if pressure violates upper/lower bounds
-!!$        bfail(i) = (pm(i) .gt. diff) .or. (diff .gt. pp(i))
-      end do
-      !$omp end parallel do
-
-      
-!!$      ! Do we need to apply failsave limiting?
-!!$      if (all(.not.bfail)) then
-!!$        deallocate(ufail, bfail)
-!!$        return
-!!$      end if
-!!$     
-!!$      ! Loop over all edges
-!!$      !$omp parallel do private(i,j)
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Get node numbers and matrix position
-!!$        i  = IverticesAtEdge(1, iedge)
-!!$        j  = IverticesAtEdge(2, iedge)
-!!$        
-!!$        ! Do we have to cancel the antidiffusive flux for this edge?
-!!$        if (bfail(i) .or. bfail(j)) alpha(iedge) = 0.0_DP
-!!$      end do
-!!$      !$omp end parallel do
-!!$
-!!$      ! Deallocate temporal memory
-!!$      deallocate(bfail)
-
-
-      ! Initialize correction
-!!$      call lalg_clearVector(data)
-!!$      
-!!$      ! Loop over all edges
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Get node numbers and matrix position
-!!$        i  = IverticesAtEdge(1, iedge)
-!!$        j  = IverticesAtEdge(2, iedge)
-!!$
-!!$        ! Limit raw antidiffusive flux
-!!$        f_ij = alpha(iedge)*flux(:,iedge)
-!!$        
-!!$        ! Apply correction
-!!$        data(:,i) = data(:,i) + f_ij
-!!$        data(:,j) = data(:,j) - f_ij
-!!$      end do
-
-
-!!$      ! Loop over all rows
-!!$      !$omp parallel do
-!!$      do i = 1, NEQ
-!!$        u(:,i) = ufail(:,i) + dscale * data(:,i)/ML(i)
-!!$      end do
-!!$      !$omp end parallel do
-!!$
-!!$      ! Deallocate temporal memory
-!!$      deallocate(ufail)
-
-    end subroutine applyCorrectionEuler
-
-    !***************************************************************************
-
-!<subroutine>
-
-    subroutine buildFluxTransport2d(Kdiagonal, IverticesAtEdge,&
-        DcoefficientsAtEdge, NEQ, NEDGE, MC, ML, Cx, Cy,&
-        u, troc, flux)
-
-!<input>
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      integer, intent(in) :: NEQ,NEDGE
-      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u,troc
-!</input>
-
-!<output>
-      real(DP), dimension(:), intent(out) :: flux
-!</output>
-!</subroutine>
-
-      ! local variables
-      real(DP) :: d_ij
-      integer :: i,j,ij,iedge
-
-
-      !$omp parallel do private(i,j,ij,d_ij)
-      do iedge = 1, NEDGE
-      
-        ! Get node numbers and matrix position
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        
-        ! Get artificial diffusion coefficient
-        d_ij = DcoefficientsAtEdge(1, iedge)
-
-!!$        ! Compute raw antidiffusive flux
-!!$        flux0(iedge) = d_ij * (u(i)-u(j))
-!!$
-!!$        ! Apply mass antidiffusion
-!!$        flux(iedge) = flux0(iedge) + MC(ij)*(troc(i)-troc(j))
-
-        ! Compute raw antidiffusive flux
-        flux(iedge) = d_ij * (u(i)-u(j))
-        
-      end do
-      !$omp end parallel do
-
-    end subroutine buildFluxTransport2d
-    
-    !***************************************************************************
-    
-!<subroutine>
-
-    subroutine applyCorrectionTransport(IverticesAtEdge, NEQ, NEDGE,&
-        dscale, ML, flux, alpha, u, data)
-
-!<input>
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEQ,NEDGE
-      real(DP), intent(in) :: dscale
-      real(DP), dimension(:), intent(in) :: ML,flux, alpha
-!</input>
-
-!<inputoutput>     
-      real(DP), dimension(:), intent(inout) :: u
-!</inputoutput>
-
-!<output>
-      real(DP), dimension(:), intent(out) :: data
-!</output>
-!<subroutine>
-
-      ! local variables
-      real(DP) :: f_ij,diff
-      integer :: ij,ji,i,j,iedge
-      
-      ! Initialize correction
-      call lalg_clearVector(data)
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-      
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Limit conservative fluxes
-        f_ij = alpha(iedge)*flux(iedge)
-        
-        ! Apply correction
-        data(i) = data(i) + f_ij
-        data(j) = data(j) - f_ij
-      end do
-
-      ! Loop over all rows
-      !$omp parallel do
-      do i = 1, NEQ
-        
-        ! Compute flux-corrected solution
-        u(i) = u(i) + dscale * data(i)/ML(i)
       end do
       !$omp end parallel do
       
-    end subroutine applyCorrectionTransport
+    end subroutine applyCorrection
     
   end subroutine zpinch_calcLinearizedFCT
 

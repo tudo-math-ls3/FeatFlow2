@@ -2311,15 +2311,6 @@ contains
     end if
 
     !---------------------------------------------------------------------------
-    ! Calculate density-averaged mass matrices for the scalar model
-    ! problem based on the initial solution U^0 of the Euler model
-    !---------------------------------------------------------------------------
-
-    call zpinch_initDensityAveraging(rparlist,&
-        ssectionNameEuler, ssectionNameTransport,&
-        p_rproblemLevel, p_rsolutionEuler, rcollection)
-
-    !---------------------------------------------------------------------------
     ! Calculate velocity field (\rho v) for the scalar model problem
     ! based on the initial solution U^0 of the Euler model
     !---------------------------------------------------------------------------
@@ -2416,13 +2407,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
-     
-!!$      ! Check if pressure is negative
-!!$      if (.not.zpinch_checkPressure(rsolution(1))) then
-!!$        print *, "Pressure has become negative in the low-order scheme"
-!!$        pause
-!!$      end if
-
+      
       !-------------------------------------------------------------------------
       ! Compute linearized FCT correction for Euler and transport model
       !-------------------------------------------------------------------------
@@ -2435,16 +2420,6 @@ contains
       call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
           p_rproblemLevel, rtimestep, p_rsolutionEuler,&
           p_rsolutionTransport, rcollection)
-
-!!$      ! Check if pressure is negative
-!!$      if (.not.zpinch_checkPressure(rsolution(1))) then
-!!$        print *, "Pressure has become negative by flux limiting"
-!!$      end if
-      
-      ! Calculate density-averaged mass matrices
-      call zpinch_initDensityAveraging(rparlist,&
-          ssectionNameEuler, ssectionNameTransport,&
-          p_rproblemLevel, p_rsolutionEuler, rcollection)
       
       ! Calculate velocity field (\rho v)
       call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
@@ -2603,11 +2578,6 @@ contains
             p_rsolverTransport, systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
         call solver_updateStructure(p_rsolverTransport)
 
-        ! Calculate density-averaged mass matrices
-        call zpinch_initDensityAveraging(rparlist,&
-            ssectionNameEuler, ssectionNameTransport,&
-            p_rproblemLevel, p_rsolutionEuler, rcollection)
-        
         ! Calculate velocity field (\rho v)
         call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
             p_rproblemLevel, p_rsolutionEuler, rcollection)
