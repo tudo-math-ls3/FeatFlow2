@@ -57,10 +57,10 @@ errorestimator = ErrorEstimator
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = gridgen/grid.prm
+prmfile = gridgen/test.prm
 
 # file which contains the triangulation
-trifile = gridgen/grid.tri
+trifile = gridgen/test.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -339,7 +339,7 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_BEFCT_test
+ucdsolution = out/zpinch_CNFCT1_aniso
 
 # file for UCD import of solution
 ucdimport = 
@@ -375,7 +375,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -393,10 +393,10 @@ dinitialStep = 1e-4
 dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 1e-2
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
-iadaptTimestep = 1
+iadaptTimestep = 0
 
 # initial time for adaptive time stepping
 dadaptTime = 0.0
