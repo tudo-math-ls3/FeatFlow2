@@ -513,11 +513,11 @@ contains
 !</inputoutput>
 !</subroutine>
     
-    ! local variables
-    type(t_vectorScalar) :: rvector
-    real(DP), dimension(:), pointer :: p_ML, p_Density
-    integer :: lumpedMassMatrix, lumpedMassMatrixDensity
-    integer :: i
+!!$    ! local variables
+!!$    type(t_vectorScalar) :: rvector
+!!$    real(DP), dimension(:), pointer :: p_ML, p_Density
+!!$    integer :: lumpedMassMatrix, lumpedMassMatrixDensity
+!!$    integer :: i
     
     ! OK, IN THE CURRENT IMPLEMENTATION WE DO NOT NEED A
     ! DENSITY_AVERAGED MASS MATRIX, HENCE RETURN
@@ -882,7 +882,7 @@ contains
     type(t_vectorBlock) :: rdataEuler, rdataTransport
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
+    real(DP), dimension(:), pointer :: p_ML, p_Cx, p_Cy
     real(DP), dimension(:), pointer :: p_ppEuler, p_pmEuler,&
         p_qpEuler, p_qmEuler, p_rpEuler, p_rmEuler
     real(DP), dimension(:), pointer :: p_ppTransport, p_pmTransport,&
@@ -890,7 +890,6 @@ contains
     real(DP), dimension(:), pointer :: p_uEuler, p_uTransport
     real(DP), dimension(:), pointer :: p_fluxEuler, p_dataEuler
     real(DP), dimension(:), pointer :: p_fluxTransport, p_dataTransport, p_alpha
-    integer, dimension(:), pointer :: p_Kdiagonal
     character(LEN=SYS_STRLEN) :: ssectionNameEuler, ssectionNameTransport
     integer :: transportmatrix, convectionAFC, inviscidAFC
     integer :: lumpedMassMatrix,  consistentMassMatrix
@@ -942,10 +941,8 @@ contains
     ! Set pointers
     call lsysbl_getbase_double(rsolutionEuler, p_uEuler)
     call lsysbl_getbase_double(rsolutionTransport, p_uTransport)
-    call lsyssc_getbase_Kdiagonal(p_rmatrixTransport, p_Kdiagonal)
     call afcstab_getbase_IverticesAtEdge(p_rafcstabTransport, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(p_rafcstabTransport, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
     call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
@@ -1056,7 +1053,6 @@ contains
 
 
       ! Loop over all edges
-      !$omp parallel do private(i,j,ij,ji,C_ij,C_ji,K_ij,K_ji,D_ij,Diff)
       do iedge = 1, NEDGE
       
         ! Get node numbers and matrix positions
@@ -1079,8 +1075,7 @@ contains
         ! Compute the raw antidiffusive flux
         flux(:,iedge) = D_ij*Diff
       end do
-      !$omp end parallel do
-
+      
     end subroutine buildFluxEuler2d
 
     !***************************************************************************
