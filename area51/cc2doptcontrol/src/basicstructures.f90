@@ -33,6 +33,7 @@ module basicstructures
   use spacetimevectors
   use discretebc
   use discretefbc
+  use fparser
   
   use collection
   
