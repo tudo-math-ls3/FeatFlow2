@@ -229,7 +229,7 @@ contains
       ! orientation of the edge, whereby iel counts the total number of
       ! elements in the region.
       iel = 0
-      do iedge = 1,NELbdc
+      do iedge = p_IboundaryCpIdx(ibdc),p_IboundaryCpIdx(ibdc+1)-1
         if (boundary_isInRegion(rboundaryRegion, ibdc,&
             p_DedgeParameterValue(iedge))) then
           
@@ -254,7 +254,7 @@ contains
             
             ! Save the end parameter value. Be careful: The last edge
             ! must be treated differently!
-            if (iedge .ne. NELbdc) then
+            if (iedge .ne. p_IboundaryCpIdx(ibdc+1)-1) then
               dpar2 = boundary_convertParameter(rdiscretisation%p_rboundary, &
                   ibdc, p_DvertexParameterValue(iedge+1), rboundaryRegion%cparType, &
                   BDR_PAR_LENGTH)
