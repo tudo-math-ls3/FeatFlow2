@@ -18,7 +18,7 @@
 !# </purpose>
 !##############################################################################
 
-program cc2d
+program cc2d_pf
 
   use ccmainproblem
   
