@@ -65,12 +65,18 @@ module ccgeneraldiscretisation
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
+  use element
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
+  use scalarpde
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   use paramlist
   use stdoperators
   
@@ -225,13 +231,13 @@ contains
       end do
 
       ! Should we do mass lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                       'IMASS', j, 0)
                                       
       if (j .eq. 0) then
       
         ! How to do lumping?
-        call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                         'IMASSLUMPTYPE', j, 0)
                                         
         ! Set cubature formula for lumping. The constant from the DAT file corresponds
@@ -586,7 +592,7 @@ contains
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
   
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
@@ -786,7 +792,7 @@ contains
     ! Structure for the bilinear form for assembling Stokes,...
     ! TYPE(t_bilinearForm) :: rform
 
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
         'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
 
     ! Initialise the collection for the assembly process with callback routines.
@@ -963,9 +969,9 @@ contains
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
-    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMass,&
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMass,&
         rlevelInfo%rdiscretisationMass)
-    call lsyssc_assignDiscretDirectMat (rlevelInfo%rmatrixMassPressure,&
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMassPressure,&
         rlevelInfo%rdiscretisationMassPressure)
 
     ! Call the standard matrix setup routine to build the matrix.                    
@@ -973,13 +979,13 @@ contains
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
     ! Should we do mass lumping?
-    call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                     'IMASS', j, 0)
                                     
     if (j .eq. 0) then
     
       ! How to do lumping?
-      call parlst_getvalue_int_direct (rproblem%rparamList, 'CC-DISCRETISATION', &
+      call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                                       'IMASSLUMPTYPE', j, 0)
                                       
       ! Lump the mass matrix. The constant from the DAT file corresponds

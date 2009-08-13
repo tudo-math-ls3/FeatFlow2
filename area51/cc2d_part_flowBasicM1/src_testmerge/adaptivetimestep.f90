@@ -37,7 +37,7 @@ module adaptivetimestep
   use fsystem
   use paramlist
   use timestepping
-    
+  use genoutput
   implicit none
   
 !<constants>

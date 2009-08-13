@@ -24,20 +24,27 @@ module ccbasic
   use bcassembly
   use triangulation
   use spatialdiscretisation
+  use linearsystemscalar
+  use linearsystemblock
   use coarsegridcorrection
   use spdiscprojection
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   use nonlinearsolver
   use paramlist
-  use timestepping
-  
+  use discretebc
+  use discretefbc
+  use timestepping  
   use collection
-  
+  use geometry
   use adaptivetimestep
-    
+  use basicgeometry
+  
   implicit none
   
 !<types>
-
+  
 !<typeblock description="Type block defining all information about one level">
 
   type t_problem_lvl
@@ -242,6 +249,14 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
+    real(dp) :: dx
+    
+    real(dp) :: dy
+    
+    real(dp) :: drad
+    
+    real(dp) :: drho2    
+    
     ! Type of problem.
     ! =0: Stokes.
     ! =1: Navier-Stokes.
@@ -297,6 +312,24 @@ module ccbasic
     ! A statistics structure gathering statistical data about the
     ! simulation.
     type(t_cc_statistics)                 :: rstatistics
+    
+    real(dp),dimension(2) :: DResForceX
+    
+    real(dp),dimension(2) :: DResForceY
+
+    real(dp),dimension(2) :: DTrqForce
+    
+    real(dp),dimension(2) :: DVelX
+
+    real(dp),dimension(2) :: DVelY    
+    
+    real(dp),dimension(2) :: DAngVel
+
+    real(dp) :: dCoefficientDrag
+
+    real(dp) :: dCoefficientLift
+    
+    type(t_particleCollection) :: rparticleCollection
 
   end type
 

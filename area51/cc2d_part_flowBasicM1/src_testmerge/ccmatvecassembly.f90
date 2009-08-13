@@ -58,29 +58,46 @@ module ccmatvecassembly
 
   use fsystem
   use storage
+  use genoutput
+
   use linearsystemblock
   use linearsolver
   use boundary
   use bilinearformevaluation
   use linearformevaluation
+  use scalarpde
+  use derivatives
+  use feevaluation
+  use vectorio
   use cubature
+  use basicgeometry
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
+  use linearsystemscalar
+  use linearsystemblock
+  use bilinearformevaluation
+  use linearformevaluation
+  use linearsolver
   use paramlist
   use linearsolverautoinitialise
   use matrixrestriction
   use trilinearformevaluation
   use matrixio
+
   use statistics
   
   use convection
-    
+  use ccbasic
+  use stdoperators  
+  use linearsystemscalar
+  use geometry  
   implicit none
   
 !<constants>
@@ -526,7 +543,7 @@ contains
       ! matrix to the Y-discretisation structure.
       ! Ok, we use the same discretisation structure for both, X- and Y-velocity,
       ! so this is not really necessary - we do this for sure...
-      call lsyssc_assignDiscretDirectMat (rmatrix%RmatrixBlock(2,2),&
+      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
