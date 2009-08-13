@@ -323,10 +323,6 @@ contains
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrix%RmatrixBlock(1,1))
 
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrix)
-      
       ! Allocate memory for the matrix, do not calculate the entries.
       ! Remember hat we have a nonlinear matrix, which entries must be build
       ! in evey step of the nonlinear iteration!
