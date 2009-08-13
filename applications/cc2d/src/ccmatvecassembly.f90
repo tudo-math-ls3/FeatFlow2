@@ -818,11 +818,7 @@ contains
       rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
       call lsyssc_clearMatrix (rmatrix%RmatrixBlock(3,3))
 
-      ! That is it, all submatrices are basically set up.
-      !
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (rmatrix)
+      ! That is it, all submatrices are set up.
         
     end subroutine
     

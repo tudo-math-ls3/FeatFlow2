@@ -723,11 +723,7 @@ contains
                                       LSYSSC_TR_VIRTUAL)
       end if
 
-      ! That's it, all submatrices are basically set up.
-      !
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (rmatrix)
+      ! That's it, all submatrices are set up.
         
     end subroutine
     
@@ -1214,7 +1210,7 @@ contains
       !    \ B1^T B2^T B3^T     /
     ! 
     ! Create a temporary matrix that covers this structure.
-    call lsysbl_createEmptyMatrix (rmatrix,NDIM3D+1)
+    call lsysbl_createMatBlockByDiscr (rnonlinearCCMatrix%p_rdiscretisation,rmatrix)    
     
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
@@ -1260,10 +1256,6 @@ contains
                                   rmatrix%RmatrixBlock(4,3),&
                                   LSYSSC_TR_VIRTUAL)
 
-    ! Update the structural information of the block matrix, as we manually
-    ! changed the submatrices:
-    call lsysbl_updateMatStrucInfo (rmatrix)
-    
     ! In the first step, we assemble the defect that arises in the velocity 
     ! components. This is characterised by the following submatrix:
     !

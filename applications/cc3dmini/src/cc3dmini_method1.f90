@@ -521,10 +521,6 @@ contains
                                    p_rmatrix%RmatrixBlock(4,3),&
                                    LSYSSC_TR_VIRTUAL)
 
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrix)
-      
       ! Now on all levels except for the maximum one, create a temporary 
       ! vector on that level, based on the matrix template.
       ! It's used for building the matrices on lower levels.
