@@ -195,10 +195,6 @@ contains
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrixStatic%RmatrixBlock(1,1))
     
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrixStatic)
-    
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_heatcond for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
@@ -231,10 +227,6 @@ contains
       call lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
            p_rmatrixMass%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrixMass)
-
       ! Now we can build the matrix entries of the mass matrix.
       call bilf_buildMatrixScalar (rformmass,.true.,&
                                    p_rmatrixMass%RmatrixBlock(1,1))
@@ -258,10 +250,6 @@ contains
       call lsyssc_duplicateMatrix(p_rmatrixStatic%RmatrixBlock(1,1),&
            p_rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
       
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrix)
-
     end do
 
     ! (Only) on the finest level, we need to calculate a RHS vector
