@@ -43,7 +43,7 @@ module ccinitgeneralparameters
   
   use collection
   use convection
-  use geometry
+    
   use ccbasic
   use ccnonstationary
   
@@ -327,8 +327,5 @@ contains
     deallocate(rproblem%RlevelInfo)
 
   end subroutine
-
-
-  ! ***************************************************************************
 
 end module

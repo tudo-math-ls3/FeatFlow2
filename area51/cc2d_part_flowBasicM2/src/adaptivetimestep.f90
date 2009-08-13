@@ -38,7 +38,7 @@ module adaptivetimestep
   use genoutput
   use paramlist
   use timestepping
-  use genoutput
+    
   implicit none
   
 !<constants>

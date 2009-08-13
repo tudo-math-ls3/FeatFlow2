@@ -23,10 +23,10 @@ module ccboundaryconditionparser
 
   use fsystem
   use storage
-
+  use linearsolver
   use boundary
-
-
+  use bilinearformevaluation
+  use linearformevaluation
   use cubature
   use basicgeometry
   use matrixfilters
@@ -39,13 +39,10 @@ module ccboundaryconditionparser
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-
+  use bcassembly
   use fparser
   use paramlist
   use bcassembly
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
   
   use collection
   use convection
@@ -318,7 +315,6 @@ contains
         do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
           
           call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
-
           ! Read the segment parameters
           read(cstr,*) dpar2,iintervalEnds,ibctyp
           

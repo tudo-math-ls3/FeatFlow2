@@ -61,7 +61,6 @@ module ccgeneraldiscretisation
   use cubature
   use matrixfilters
   use vectorfilters
-  use discretebc
   use bcassembly
   use triangulation
   use element
@@ -71,10 +70,6 @@ module ccgeneraldiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
-  use scalarpde
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
   use paramlist
   use scalarpde
   use stdoperators
@@ -637,9 +632,6 @@ contains
         'IPROJTYPEVELOCITY', iprojTypeVelocity, 0)
     call parlst_getvalue_int (rproblem%rparamList, 'CC-PROLREST', &
         'IPROJTYPEPRESSURE', iprojTypePressure, 0)
-  
-    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
-        'ISTRONGDERIVATIVEBMATRIX', istrongDerivativeBmatrix, 0)
   
     ! When the jump stabilisation is used, we have to create an extended
     ! matrix stencil!

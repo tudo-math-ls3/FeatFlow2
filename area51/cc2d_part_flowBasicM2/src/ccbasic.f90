@@ -24,13 +24,8 @@ module ccbasic
   use bcassembly
   use triangulation
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
   use coarsegridcorrection
   use spdiscprojection
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
   use nonlinearsolver
   use paramlist
   use timestepping
@@ -38,15 +33,16 @@ module ccbasic
   use discretefbc
   use linearsystemscalar
   use linearsystemblock
-  use collection
   use geometry
-  use adaptivetimestep
-  use basicgeometry
   
+  use collection
+  
+  use adaptivetimestep
+    
   implicit none
   
 !<types>
-  
+
 !<typeblock>
 
   ! A type block specifying all 'static' information which are depending

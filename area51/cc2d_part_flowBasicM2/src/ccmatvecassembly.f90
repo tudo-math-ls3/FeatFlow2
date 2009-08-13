@@ -63,15 +63,9 @@ module ccmatvecassembly
   use genoutput
   use basicgeometry
   use boundary
-  use scalarpde
-  use derivatives
-  use feevaluation
-  use vectorio
   use cubature
-  use basicgeometry
   use matrixfilters
   use vectorfilters
-  use discretebc
   use bcassembly
   use triangulation
   use derivatives
@@ -79,18 +73,13 @@ module ccmatvecassembly
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
-  use linearsystemscalar
-  use linearsystemblock
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
   use paramlist
   use matrixrestriction
+  use linearsystemscalar
   use bilinearformevaluation
   use linearformevaluation
   use trilinearformevaluation
   use matrixio
-
   use statistics
   use linearsystemblock
   use linearsolver
@@ -103,12 +92,6 @@ module ccmatvecassembly
   
   use pprocnavierstokes
   
-  use convection
-  use ccbasic
-  use stdoperators  
-  use linearsystemscalar
-  use geometry  
-
   implicit none
   
 !<constants>

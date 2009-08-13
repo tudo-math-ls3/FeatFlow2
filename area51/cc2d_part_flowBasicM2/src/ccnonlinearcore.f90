@@ -120,6 +120,7 @@ module ccnonlinearcore
 
   use fsystem
   use storage
+  use linearsolver
   use boundary
   use linearalgebra
   use cubature
@@ -127,7 +128,6 @@ module ccnonlinearcore
   use vectorfilters
   use discretebc
   use bcassembly
-  use linearalgebra
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
@@ -149,7 +149,7 @@ module ccnonlinearcore
   
   use ccmatvecassembly
     
-  use cccallback  
+  use cccallback
   
   implicit none
   
@@ -1133,9 +1133,7 @@ contains
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                           rnonlinearIteration%DresidualOld(2)**2)
             
-            if(dres .ne. 0.0_dp) then
-              dtempdef = dres / dresInit
-            end if
+            dtempdef = dres / dresInit
             
             if (bassembleNewton) then
               p_rsolverNode%depsAbs = &
