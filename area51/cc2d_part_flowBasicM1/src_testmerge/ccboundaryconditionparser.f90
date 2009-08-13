@@ -121,25 +121,25 @@ contains
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
   
   ! OPTIONAL: If this flag ist set to TRUE, the boundary conditions are 
   ! assembled for postprocessing of a solution vector. When being set to FALSE
   ! or not present, the boundary condition are assembled for computation.
-  logical, intent(IN), optional :: bforPostprocessing
+  logical, intent(in), optional :: bforPostprocessing
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  type(t_collection), intent(INOUT), target :: rcollection
+  type(t_collection), intent(inout), target :: rcollection
   
   ! A t_discreteBC structure that receives a discretised version
   ! of the boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -580,23 +580,23 @@ contains
   !   Velocity components that are affected by the normal stress
   !   (usually "1 2" for x- and y-velocity while returned value must specify
   !   the pressure at the boundary)
-  integer, dimension(:), intent(IN)                           :: Icomponents
+  integer, dimension(:), intent(in)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
+  type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  integer(I32), intent(IN)                                    :: ielement
+  integer(I32), intent(in)                                    :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  integer, intent(IN)                                         :: cinfoNeeded
+  integer, intent(in)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -615,7 +615,7 @@ contains
   !            should be computed
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   iwhere = Number of the edge where the normal stress should be computed.
-  integer(I32), intent(IN)                                    :: iwhere
+  integer(I32), intent(in)                                    :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -627,11 +627,11 @@ contains
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   dwhere = parameter value of the point on edge iwhere where the normal
   !            stress should be computed.
-  real(DP), intent(IN)                                        :: dwhere
+  real(DP), intent(in)                                        :: dwhere
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
 
 !</input>
 
@@ -644,7 +644,7 @@ contains
   ! The function may return SYS_INFINITY as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
-  real(DP), dimension(:), intent(OUT)                         :: Dvalues
+  real(DP), dimension(:), intent(out)                         :: Dvalues
 !</output>
   
 !</subroutine>
@@ -725,36 +725,36 @@ contains
     
     ! Solution component for which the expression is evaluated.
     ! 1 = X-velocity, 2 = y-velocity,...
-    integer, intent(IN) :: icomponent
+    integer, intent(in) :: icomponent
     
     ! Discretisation structure of the underlying discretisation
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! Current boundary region
-    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
+    type(t_boundaryRegion), intent(in) :: rboundaryRegion
     
     ! Type of expression to evaluate.
     ! One of the BDC_xxxx constants from ccboundaryconditionparser.f90.
-    integer, intent(IN) :: ityp
+    integer, intent(in) :: ityp
     
     ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
     ! the expression in the expression object to evaluate.
     ! Otherwise unused.
-    integer, intent(IN) :: ivalue
+    integer, intent(in) :: ivalue
     
     ! Double precision parameter for simple expressions
-    real(DP), intent(IN) :: dvalue
+    real(DP), intent(in) :: dvalue
     
     ! Current parameter value of the point on the boundary.
     ! 0-1-parametrisation.
-    real(DP), intent(IN) :: dpar
+    real(DP), intent(in) :: dpar
 
     ! String tag that defines more complicated BC's.
-    character(LEN=*), intent(IN) :: stag
+    character(LEN=*), intent(in) :: stag
     
     ! For nonstationary simulation: Simulation time.
     ! =0 for stationary simulations.
-    real(DP), intent(IN) :: dtime
+    real(DP), intent(in) :: dtime
     
     ! A compiled expression for evaluation at runtime
     type(t_fparser), pointer :: p_rparser
@@ -877,20 +877,20 @@ contains
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  type(t_collection), intent(INOUT), target :: rcollection
+  type(t_collection), intent(inout), target :: rcollection
   
   ! A t_discreteFBC structure that receives a discretised version
   ! of the fictitious boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
+  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
