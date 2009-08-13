@@ -1320,7 +1320,7 @@ contains
     
     ! A t_matrixPositions structure specifying the positions that
     ! are affected by the DOF's in the global matrices
-    type(t_matrixPositions), intent(IN) :: rmatrixPositions
+    type(t_matrixPositions), intent(inout) :: rmatrixPositions
 
     ! Structure of FEM matrices for the velocity
     integer, dimension(:), intent(IN) :: KcolA
