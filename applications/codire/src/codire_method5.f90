@@ -372,10 +372,6 @@ contains
                 p_rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
                 p_rmatrix%RmatrixBlock(1,1))
     
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrix)
-    
       ! Now we can build the matrix entries.
       ! We specify the callback function coeff_CoDiRe for the coefficients.
       ! As long as we use constant coefficients, this routine is not used.
