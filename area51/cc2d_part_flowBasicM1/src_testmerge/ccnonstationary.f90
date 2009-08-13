@@ -118,16 +118,16 @@ contains
 !<input>
   ! A parameter list from a DAT file containing parameters that configure the
   ! time dependence.
-  type(t_parlist), intent(IN) :: rparams
+  type(t_parlist), intent(in) :: rparams
   
   ! The name of the section in the parameter list containing the parameters
   ! for the time dependent simulation.
-  character(LEN=*), intent(IN) :: ssection
+  character(LEN=*), intent(in) :: ssection
 !</input>
 
 !<inputoutput>
   ! The problem structure to be initialised.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
   
 !</subroutine>
@@ -169,19 +169,19 @@ contains
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
   
   ! The problem structure with all information about the current problem.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   
   ! A time stepping structure that configures the current time step.
-  type(t_explicitTimeStepping), intent(INOUT), optional :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout), optional :: rtimeStepping
   
   ! Right hand side at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rrhs
+  type(t_vectorBlock), intent(inout), optional :: rrhs
   
   ! Solution vector at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rsolution
+  type(t_vectorBlock), intent(inout), optional :: rsolution
 !</inputoutput>
 
 !</subroutine>
@@ -214,19 +214,19 @@ contains
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
   
   ! The problem structure with all information about the current problem.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   
   ! A time stepping structure that configures the current time step.
-  type(t_explicitTimeStepping), intent(INOUT), optional :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout), optional :: rtimeStepping
   
   ! Right hand side at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rrhs
+  type(t_vectorBlock), intent(inout), optional :: rrhs
   
   ! Solution vector at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rsolution
+  type(t_vectorBlock), intent(inout), optional :: rsolution
   
 !</inputoutput>
 
@@ -259,7 +259,7 @@ contains
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
 !</inputoutput>
 
 !</subroutine>
@@ -285,12 +285,12 @@ contains
 !<input>
   ! A parameter list from a DAT file containing parameters that configure the
   ! time dependence.
-  type(t_parlist), intent(IN) :: rparams
+  type(t_parlist), intent(in) :: rparams
 !</input>
 
 !<inputoutput>
   ! The time stepping scheme structure to be initialised.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout) :: rtimeStepping
 !</inputoutput>
 
 !</subroutine>
@@ -332,26 +332,26 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! The current solution vector at time $t^n$. Is replaced by the
   ! solution vector at time $t^{n+1}.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! The RHS vector at time $t^n$. Is replaced by the RHS at time $t^{n+1}$.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
   
   ! Configuration block of the time stepping scheme.
   type(t_explicitTimeStepping)        :: rtimestepping
 
   ! Structure for the nonlinear iteration for solving the core equation.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
   
   ! A configuration stucture for the nonlinear solver
   type(t_nlsolNode) :: rnlSolver
   
   ! Temporary vectors for the nonlinear solver
-  type(t_vectorBlock), intent(INOUT) :: rtempVector,rtempVectorRhs
+  type(t_vectorBlock), intent(inout) :: rtempVector,rtempVectorRhs
 !</inputoutput>
 
 !</subroutine>
@@ -528,19 +528,19 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 
   ! The initial solution vector. Is replaced by the final solution vector.
   ! Must be unsorted.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! The initial RHS vector. Is replaced by the final RHS vector.
   ! Boundary conditions must not be implemented into that vector, this is done
   ! internally depending on the time.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 
   ! Postprocessing structure. Defines what to do with solution vectors.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
   
 !</inputoutput>
 

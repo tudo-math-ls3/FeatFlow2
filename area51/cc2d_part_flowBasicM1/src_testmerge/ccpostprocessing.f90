@@ -180,15 +180,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! Postprocvessing structure. 
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !</subroutine>
@@ -234,15 +234,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! Postprocvessing structure. Defines what to do with solution vectors.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !</subroutine>
@@ -299,12 +299,12 @@ contains
   
 !<input>
   ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(in) :: rsolution
 !</input>
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -402,12 +402,12 @@ contains
   
 !<input>
   ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(in) :: rsolution
 !</input>
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -459,12 +459,12 @@ contains
   
 !<input>
   ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(in) :: rsolution
 !</input>
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -525,21 +525,21 @@ contains
   
 !<input>
   ! Solution vector.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! OPTIONAL: Simulation time.
   ! Must be ommitted in stationary simulations.
-  real(DP), intent(IN), optional :: dtime
+  real(DP), intent(in), optional :: dtime
 !</input>
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out GMV is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
 !</inputoutput>
 
 !</subroutine>
@@ -825,20 +825,20 @@ contains
   
 !<input>
   ! Solution vector.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   
   ! Simulation time.
-  real(DP), intent(IN) :: dtime
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! Postprocessing structure. Must have been initialised prior
   ! to calling this routine.
   ! The time stamp of the last written out Film file is updated.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing  
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing  
 !</inputoutput>
 
 !</subroutine>
@@ -968,12 +968,12 @@ contains
 
 !<input>
   ! A problem structure that describes the main problem to solve.
-  type(t_problem), intent(IN),target :: rproblem
+  type(t_problem), intent(in),target :: rproblem
 !</input>
 
 !<output>  
   ! Postprocvessing structure.
-  type(t_c2d2postprocessing), intent(OUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
 
 !</subroutine>
@@ -1042,12 +1042,12 @@ contains
 
 !<input>
   ! Source Postprocessing structure.
-  type(t_c2d2postprocessing), intent(IN) :: rpostprocessingSrc
+  type(t_c2d2postprocessing), intent(in) :: rpostprocessingSrc
 !</input>
 
 !<inputoutput>  
   ! Destination Postprocessing structure.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessingDst
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessingDst
 !</inputoutput>
 
 !</subroutine>
@@ -1082,7 +1082,7 @@ contains
 
 !<inputoutput>  
   ! Postprocvessing structure.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1127,7 +1127,7 @@ contains
 !</description>
 
 !<inputoutput>  
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
 !</subroutine>
@@ -1153,12 +1153,12 @@ contains
 
   ! structure for a geometry object
   !<inputoutput>
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
   !</inputoutput>  
 
   !<input>
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   !</input>
   
   !</subroutine>
@@ -1250,36 +1250,36 @@ contains
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
+  integer, intent(in)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(in)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(in)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
 
@@ -1288,7 +1288,7 @@ contains
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
   
 !</subroutine>
@@ -1351,23 +1351,23 @@ contains
   type(t_vectorScalar), intent(in), target :: rvectorAlpha
   
   ! viscosity parameter
-  real(DP),intent(IN) :: dnu
+  real(DP),intent(in) :: dnu
   
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
   
 !</input>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP),intent(OUT) :: Dfx
-  real(DP),intent(OUT) :: Dfy
+  real(DP),intent(out) :: Dfx
+  real(DP),intent(out) :: Dfy
 !</output>
   
 !</subroutine>
@@ -1735,36 +1735,36 @@ contains
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
+  integer, intent(in)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(in)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(in)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
 
@@ -1773,7 +1773,7 @@ contains
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
   
 !</subroutine>
@@ -1833,36 +1833,36 @@ contains
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
+  integer, intent(in)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(in)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(in)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
 
@@ -1871,7 +1871,7 @@ contains
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
   
 !</subroutine>
@@ -1911,12 +1911,12 @@ contains
 
   ! structure for a geometry object
   !<inputoutput>
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
   !</inputoutput>  
 
   !<input>
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
   !</input>
   
   !</subroutine>
@@ -2003,36 +2003,36 @@ contains
   ! This is a DER_xxxx derivative identifier (from derivative.f90) that
   ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
   ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
+  integer, intent(in)                                         :: cderivative
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
   
   ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+  integer, intent(in)                                         :: nelements
   
   ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
+  integer, intent(in)                                         :: npointsPerElement
   
   ! This is an array of all points on all the elements where coefficients
   ! are needed.
   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+  real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
 
   ! An array accepting the DOF's on all elements trial in the trial space.
   ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
+  integer, dimension(:,:), intent(in) :: IdofsTest
 
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being integrated.
   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
   
 !</input>
 
@@ -2041,7 +2041,7 @@ contains
   ! in all the points specified in Dpoints, or the appropriate derivative
   ! of the function, respectively, according to cderivative.
   !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
 !</output>
   
 !</subroutine>
@@ -2115,15 +2115,15 @@ contains
   type(t_vectorScalar), intent(in), target :: rvectorAlpha
   
   ! viscosity parameter
-  real(DP),intent(IN) :: dnu
+  real(DP),intent(in) :: dnu
   
   ! OPTIONAL: 1st weighting factor for the integral.
   ! If neglected, df1=1.0 is assumed.
-  real(DP), intent(IN), optional      :: df1
+  real(DP), intent(in), optional      :: df1
 
   ! OPTIONAL: 2nd weighting factor for the integral.
   ! If neglected, df2=2.0 is assumed.
-  real(DP), intent(IN), optional      :: df2
+  real(DP), intent(in), optional      :: df2
   
 !</input>
 
@@ -2133,8 +2133,8 @@ contains
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP),intent(OUT) :: Dfx
-  real(DP),intent(OUT) :: Dfy
+  real(DP),intent(out) :: Dfx
+  real(DP),intent(out) :: Dfy
 !</output>
   
 !</subroutine>
@@ -2548,7 +2548,7 @@ contains
 !<inputoutput>
   
   type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   real(dp), intent(in) :: dtimestep
 !</inputoutput>
 
@@ -2711,29 +2711,29 @@ contains
 
 !<input>
   ! The FE solution vector. Represents a scalar FE function.
-  type(t_vectorScalar), intent(IN), target :: rvectorScalarU1
-  type(t_vectorScalar), intent(IN), target :: rvectorScalarU2
-  type(t_vectorScalar), intent(IN), target :: rvectorParticle
+  type(t_vectorScalar), intent(in), target :: rvectorScalarU1
+  type(t_vectorScalar), intent(in), target :: rvectorScalarU2
+  type(t_vectorScalar), intent(in), target :: rvectorParticle
   
   ! Type of error to compute. Bitfield. This is a combination of the
   ! PPERR_xxxx-constants, which specifies what to compute.
   ! Example: PPERR_L2ERROR computes the $L_2$-error.
-  integer, intent(IN) :: cerrortype
+  integer, intent(in) :: cerrortype
   
   ! A discretisation structure specifying how to compute the error.
-  type(t_spatialDiscretisation), intent(IN), target :: rdiscretisation
+  type(t_spatialDiscretisation), intent(in), target :: rdiscretisation
 
 !</input>
 
 !<inputoutput>
   ! OPTIONAL: A collection structure to provide additional 
   ! information for callback routines.
-  type(t_collection), intent(INOUT), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
   ! Array receiving the calculated error.
-  real(DP), intent(OUT) :: int2
+  real(DP), intent(out) :: int2
 !</output>
 
 !</subroutine>

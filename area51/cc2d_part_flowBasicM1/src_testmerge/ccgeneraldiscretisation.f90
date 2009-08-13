@@ -105,7 +105,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -530,7 +530,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -568,15 +568,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! A vector structure for the solution vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -769,10 +769,10 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 
   ! A level-info structure. The static matrices in this structure are generated.
-  type(t_problem_lvl), intent(INOUT),target :: rlevelInfo
+  type(t_problem_lvl), intent(inout),target :: rlevelInfo
 !</inputoutput>
 
 !</subroutine>
@@ -1015,7 +1015,7 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -1045,10 +1045,10 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! The RHS vector which is to be filled with data.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -1122,13 +1122,13 @@ contains
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</input>
 
 !<inputoutput>
   ! The solution vector to be initialised. Must be set up according to the
   ! maximum level NLMAX in rproblem!
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !</subroutine>
@@ -1412,11 +1412,11 @@ contains
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(IN) :: rproblem
+  type(t_problem), intent(in) :: rproblem
 
   ! The solution vector to be written out. Must be set up according to the
   ! maximum level NLMAX in rproblem!
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 !</input>
 
 !</subroutine>
@@ -1505,15 +1505,15 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! A vector structure for the solution vector. The structure is cleaned up,
   ! memory is released.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The structure is cleaned up,
   ! memory is released.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
