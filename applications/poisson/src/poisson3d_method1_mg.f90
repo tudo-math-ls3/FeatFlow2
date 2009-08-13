@@ -114,7 +114,7 @@ contains
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rcoarseGridSolver,p_rsmoother
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -224,10 +224,6 @@ contains
            Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
            LSYSSC_MATRIX9,Rlevels(i)%rmatrix%RmatrixBlock(1,1))
       
-      ! Update the structural information of the block matrix, as we manually
-      ! changed one of the submatrices:
-      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
-
       ! And now to the entries of the matrix. For assembling of the entries,
       ! we need a bilinear form, which first has to be set up manually.
       ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
