@@ -26,7 +26,6 @@
 module cctimeanalysis
 
   use fsystem
-  use linearalgebra
   use linearsystemblock
     
   implicit none
@@ -154,20 +153,20 @@ contains
   integer                        :: ctimeErrorControl
   
   ! Solution vector u2.
-  type(t_vectorBlock), intent(in) :: rsolution
+  type(t_vectorBlock), intent(IN) :: rsolution
   
   ! Solution vector u1 of the predictor calculation.
-  type(t_vectorBlock), intent(inout) :: rpredSolution
+  type(t_vectorBlock), intent(INOUT) :: rpredSolution
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  type(t_vectorBlock), intent(inout) :: rauxVector
+  type(t_vectorBlock), intent(INOUT) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time error analysis block. Returns values of different time error functionals.
-  type(t_timeError), intent(out), target, optional :: rtimeError
+  type(t_timeError), intent(OUT), target, optional :: rtimeError
 !</output>
 
 !<result>
@@ -179,7 +178,7 @@ contains
     ! local variables
     real(DP) :: dtmp
     real(DP), dimension(3) :: Dnorms1,Dnorms2
-    integer, dimension(3) :: Cnorms
+    integer(PREC_VECIDX), dimension(3) :: Cnorms
     type(t_timeError),target :: rtimeErrorLocal
 
     ! Calculate d:=u2-u1
@@ -190,8 +189,8 @@ contains
     !
     ! ||d||_l2
     Cnorms = LINALG_NORML2
-    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
-    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
+    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
+    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
 
     ! Compatibility note: For full compatibility to the old CC2D version, one must
     ! test (dtmp .LE. 1.0_DP) everywhere here instead of (dtmp .EQ. 0.0_DP) !
@@ -206,8 +205,8 @@ contains
     
     ! ||d||_max
     Cnorms = LINALG_NORMMAX
-    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
-    call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
+    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
+    Dnorms2 = lsysbl_vectorNormBlock (rsolution,Cnorms)
 
     dtmp = max(Dnorms2(1),Dnorms2(2))
     if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
@@ -271,24 +270,24 @@ contains
   integer                        :: ctimeErrorControl
   
   ! Solution vector $u_{n+1}$ at the end of the time step.
-  type(t_vectorBlock), intent(in) :: rsolutionNew
+  type(t_vectorBlock), intent(IN) :: rsolutionNew
   
   ! Solution vector $u_n$ at the beginning of the time step.
-  type(t_vectorBlock), intent(inout) :: rsolutionOld
+  type(t_vectorBlock), intent(INOUT) :: rsolutionOld
   
   ! Length of time step
-  real(DP), intent(in) :: dtstep
+  real(DP), intent(IN) :: dtstep
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  type(t_vectorBlock), intent(inout) :: rauxVector
+  type(t_vectorBlock), intent(INOUT) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time norm analysis block. Returns different norms of the 
   ! time derivative.
-  type(t_timeDerivatives), intent(inout), target, optional :: rtimeDerivNorms
+  type(t_timeDerivatives), intent(INOUT), target, optional :: rtimeDerivNorms
 !</output>
 
 !<result>
@@ -299,10 +298,10 @@ contains
 
     ! local variables
     real(DP), dimension(3) :: Dnorms1
-    integer, dimension(3) :: Cnorms
+    integer(PREC_VECIDX), dimension(3) :: Cnorms
     type(t_timeDerivatives),target :: rtimeNormLocal
     type(t_timeDerivatives), pointer :: p_rtimeNorm
-    integer :: nequ,neqp
+    integer(PREC_VECIDX) :: nequ,neqp
 
     ! Write the results of the time error analysis either to the local analysis
     ! block or to the one given as parameter.
@@ -321,7 +320,7 @@ contains
     !
     ! ||d||_l2 / dtstep
     Cnorms = LINALG_NORML2
-    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+    Dnorms1 = lsysbl_vectorNormBlock (rauxVector,Cnorms)
     
     p_rtimeNorm%drelUL2 = sqrt( 0.5_DP * (Dnorms1(1)**2+Dnorms1(2)**2) ) &
         / (sqrt(real(nequ,DP)) * dtstep)

@@ -43,7 +43,7 @@ module ccinitgeneralparameters
   
   use collection
   use convection
-  use geometry
+    
   use ccbasic
   use ccnonstationary
   
@@ -64,10 +64,10 @@ contains
 
 !<output>
   ! Name of the message log file.
-  character(LEN=*), intent(out) :: slogfile
+  character(LEN=*), intent(OUT) :: slogfile
   
   ! Name of the error log file.
-  character(LEN=*), intent(out) :: serrorfile
+  character(LEN=*), intent(OUT) :: serrorfile
 !</output>
 
 !</subroutine>
@@ -109,7 +109,7 @@ contains
   ! The parameter list where the values of the DAT files should be stored.
   ! The structure must have been initialised, the parameters are just added
   ! to the list.
-  type(t_parlist), intent(inout) :: rparamList
+  type(t_parlist), intent(INOUT) :: rparamList
 !</inputoutput>
 
 !</subroutine>
@@ -152,7 +152,7 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -184,12 +184,12 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    real(DP) :: dnu,dx,dy,drad,drho2
+    real(DP) :: dnu
     integer :: ilvmin,ilvmax,i1
 
     ! Get the output level for the whole application -- during the
@@ -208,26 +208,6 @@ contains
 
     dnu = 1E0_DP/dnu
     rproblem%dnu = dnu
-    
-     ! get x,y coordinate and the radius
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pX',dx,0.5_DP)
-                                 
-    rproblem%dx = dx
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pY',dy,0.5_DP)
-    rproblem%dy = dy
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pRad',drad,0.15_DP)
-    
-    rproblem%drad = drad
-    
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'rho2',drho2,1.25_DP)
-
-    rproblem%drho2 = drho2
     
     ! Get min/max level from the parameter file.
     !
@@ -286,7 +266,7 @@ contains
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout) :: rproblem
+  type(t_problem), intent(INOUT) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -295,8 +275,5 @@ contains
     deallocate(rproblem%RlevelInfo)
 
   end subroutine
-
-
-  ! ***************************************************************************
 
 end module

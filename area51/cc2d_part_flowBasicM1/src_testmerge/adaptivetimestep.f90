@@ -37,7 +37,7 @@ module adaptivetimestep
   use fsystem
   use paramlist
   use timestepping
-  use genoutput
+    
   implicit none
   
 !<constants>
@@ -200,17 +200,17 @@ contains
   
 !<input>
   ! The parameter block with the parameters.
-  type(t_parlist), intent(in) :: rparams
+  type(t_parlist), intent(IN) :: rparams
   
   ! The name of the section containing the parameters of the adaptive time
   ! stepping.
-  character(LEN=*), intent(in) :: ssection
+  character(LEN=*), intent(IN) :: ssection
 !</input>
 
 !<output>
   ! A configuration block that configures the adaptive time stepping.
   ! Is filled with the parameters from rparams.
-  type(t_adaptimeTimeStepping), intent(out) :: radTimeStepping
+  type(t_adaptimeTimeStepping), intent(OUT) :: radTimeStepping
 !</output>
   
 !</subroutine>
@@ -229,7 +229,7 @@ contains
     end if
     
     ! Get the paramters and fill our structure. Use the standard parameters
-    ! from the Fortran initialisation (by INTENT(out)) for those who don't exist.
+    ! from the Fortran initialisation (by INTENT(OUT)) for those who don't exist.
     call parlst_getvalue_int(p_rsection,'cadaptiveTimeStepping',&
                             radTimeStepping%ctype,&
                             radTimeStepping%ctype)
@@ -291,13 +291,13 @@ contains
 
 !<input>
   ! Configuration block of the adaptive time stepping.
-  type(t_adaptimeTimeStepping), intent(in) :: radTimeStepping
+  type(t_adaptimeTimeStepping), intent(IN) :: radTimeStepping
   
   ! Initial simulation time.
-  real(DP), intent(in)                     :: dtimeInit
+  real(DP), intent(IN)                     :: dtimeInit
   
   ! Current simulation time.
-  real(DP), intent(in)                     :: dtime
+  real(DP), intent(IN)                     :: dtime
 !</input>
 
 !<result>
@@ -380,28 +380,28 @@ contains
 
 !<input>
   ! Configuration block of the adaptive time stepping.
-  type(t_adaptimeTimeStepping), intent(in) :: radTimeStepping
+  type(t_adaptimeTimeStepping), intent(IN) :: radTimeStepping
 
   ! A value of a time error functional. Is used to calculate the new time 
   ! step size. Can be set to 0.0 if bit 0 or 1 in isolverStatus below is set.
-  real(DP), intent(in)                     :: derrorIndicator
+  real(DP), intent(IN)                     :: derrorIndicator
 
   ! Initial simulation time.
-  real(DP), intent(in)                     :: dtimeInit
+  real(DP), intent(IN)                     :: dtimeInit
   
   ! Current simulation time.
-  real(DP), intent(in)                     :: dtime
+  real(DP), intent(IN)                     :: dtime
 
   ! Current (theoretical) time step size.
   ! Can vary from the actual time step size, depending on
   ! the time stepping scheme.
-  real(DP), intent(in)                     :: dtimeStep
+  real(DP), intent(IN)                     :: dtimeStep
   
   ! Order of the time approximation
   ! =1: time approximation is of 1st order(Euler)
   ! =2: time approximation is of 2nd order
   !     (Crank Nicolson, Fractional Step)  
-  integer, intent(in)                      :: itimeApproximationOrder
+  integer, intent(IN)                      :: itimeApproximationOrder
   
   ! Status of the solver. Indicates whether any of the solvers broke down during
   ! the solution process. Bitfield, combination of TADTS_SSL_xxxx constante. 
@@ -422,13 +422,13 @@ contains
   !
   ! If TADTS_SST_NLFAIL or TADTS_SST_NLPRECFAIL is set, the value of 
   ! derrorIndicator is ignored.
-  integer(I32), intent(in)                 :: isolverStatus
+  integer(I32), intent(IN)                 :: isolverStatus
   
   ! Repetition counter.
   ! =0, if the current time step is calculated for the first time; standard.
   ! >0: if the current time step is calculated more than once because
   !     it had to be repeated.
-  integer, intent(in)                      :: irepetitionCounter
+  integer, intent(IN)                      :: irepetitionCounter
 !</input>
 
 !<result>

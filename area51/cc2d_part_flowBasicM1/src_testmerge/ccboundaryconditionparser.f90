@@ -23,15 +23,13 @@ module ccboundaryconditionparser
 
   use fsystem
   use storage
-
+  use linearsolver
   use boundary
-
-
+  use bilinearformevaluation
+  use linearformevaluation
   use cubature
-  use basicgeometry
   use matrixfilters
   use vectorfilters
-  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -39,12 +37,8 @@ module ccboundaryconditionparser
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-
+  use bcassembly
   use fparser
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
-  use paramlist
   
   use collection
   use convection
@@ -127,25 +121,25 @@ contains
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  type(t_blockDiscretisation), intent(in) :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
   
   ! OPTIONAL: If this flag ist set to TRUE, the boundary conditions are 
   ! assembled for postprocessing of a solution vector. When being set to FALSE
   ! or not present, the boundary condition are assembled for computation.
-  logical, intent(in), optional :: bforPostprocessing
+  logical, intent(IN), optional :: bforPostprocessing
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout), target :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  type(t_collection), intent(inout), target :: rcollection
+  type(t_collection), intent(INOUT), target :: rcollection
   
   ! A t_discreteBC structure that receives a discretised version
   ! of the boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  type(t_discreteBC), intent(inout) :: rdiscreteBC
+  type(t_discreteBC), intent(INOUT) :: rdiscreteBC
 !</inputoutput>
 
 !</subroutine>
@@ -218,7 +212,7 @@ contains
     
     ! Create a parser structure for as many expressions as configured
     call fparser_create (rparser,&
-               parlst_querysubstrings (p_rsection, 'bdExpressions'))
+         parlst_querysubstrings_indir (p_rsection, 'bdExpressions'))
     
     ! Add the parser to the collection
     call collct_setvalue_pars (rcoll, BDC_BDPARSER, rparser, &
@@ -226,9 +220,9 @@ contains
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings_indir (p_rsection, 'bdExpressions')
     
-      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string_indir (p_rsection, 'bdExpressions', cstr, '', i)
       
       ! Get the type and decide on the identifier how to save the expression.
       read(cstr,*) cname,ityp
@@ -317,13 +311,13 @@ contains
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue (p_rbdcond, cstr)
+      i = parlst_queryvalue_indir (p_rbdcond, cstr)
       if (i .ne. 0) then
         ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
+        do isegment = 1,parlst_querysubstrings_indir (p_rbdcond, cstr)
           
-          call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
-          
+          call parlst_getvalue_string_fetch (p_rbdcond, &
+                                            i, cstr, isubstring=isegment)
           ! Read the segment parameters
           read(cstr,*) dpar2,iintervalEnds,ibctyp
           
@@ -537,7 +531,7 @@ contains
     call collct_done (rcoll)
 
     ! The setting in the DAT file may overwrite our guess about Neumann boundaries.
-    call parlst_getvalue_int (p_rbdcond, 'ineumannBoundary', i, -1)
+    call parlst_getvalue_int_indir (p_rbdcond, 'ineumannBoundary', i, -1)
     select case (i)
     case (0)
       bNeumann = .false.
@@ -586,23 +580,23 @@ contains
   !   Velocity components that are affected by the normal stress
   !   (usually "1 2" for x- and y-velocity while returned value must specify
   !   the pressure at the boundary)
-  integer, dimension(:), intent(in)                           :: Icomponents
+  integer, dimension(:), intent(IN)                           :: Icomponents
 
   ! The discretisation structure that defines the basic shape of the
   ! triangulation with references to the underlying triangulation,
   ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
   
   ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
   
   ! The element number on the boundary which is currently being processed
-  integer(I32), intent(in)                                    :: ielement
+  integer(I32), intent(IN)                                    :: ielement
   
   ! The type of information, the routine should calculate. One of the
   ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
   ! to return one or multiple information value in the result array.
-  integer, intent(in)                                         :: cinfoNeeded
+  integer, intent(IN)                                         :: cinfoNeeded
   
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -621,7 +615,7 @@ contains
   !            should be computed
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   iwhere = Number of the edge where the normal stress should be computed.
-  integer(I32), intent(in)                                    :: iwhere
+  integer(I32), intent(IN)                                    :: iwhere
 
   ! A reference to a geometric object where information should be computed.
   ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -633,11 +627,11 @@ contains
   ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
   !   dwhere = parameter value of the point on edge iwhere where the normal
   !            stress should be computed.
-  real(DP), intent(in)                                        :: dwhere
+  real(DP), intent(IN)                                        :: dwhere
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(inout), optional      :: rcollection
+  type(t_collection), intent(INOUT), optional      :: rcollection
 
 !</input>
 
@@ -650,7 +644,7 @@ contains
   ! The function may return SYS_INFINITY as a value. This indicates the
   ! framework to ignore the node and treat it as 'natural boundary condition'
   ! node.
-  real(DP), dimension(:), intent(out)                         :: Dvalues
+  real(DP), dimension(:), intent(OUT)                         :: Dvalues
 !</output>
   
 !</subroutine>
@@ -731,36 +725,36 @@ contains
     
     ! Solution component for which the expression is evaluated.
     ! 1 = X-velocity, 2 = y-velocity,...
-    integer, intent(in) :: icomponent
+    integer, intent(IN) :: icomponent
     
     ! Discretisation structure of the underlying discretisation
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
     
     ! Current boundary region
-    type(t_boundaryRegion), intent(in) :: rboundaryRegion
+    type(t_boundaryRegion), intent(IN) :: rboundaryRegion
     
     ! Type of expression to evaluate.
     ! One of the BDC_xxxx constants from ccboundaryconditionparser.f90.
-    integer, intent(in) :: ityp
+    integer, intent(IN) :: ityp
     
     ! Integer tag. If ityp=BDC_EXPRESSION, this must specify the number of
     ! the expression in the expression object to evaluate.
     ! Otherwise unused.
-    integer, intent(in) :: ivalue
+    integer, intent(IN) :: ivalue
     
     ! Double precision parameter for simple expressions
-    real(DP), intent(in) :: dvalue
+    real(DP), intent(IN) :: dvalue
     
     ! Current parameter value of the point on the boundary.
     ! 0-1-parametrisation.
-    real(DP), intent(in) :: dpar
+    real(DP), intent(IN) :: dpar
 
     ! String tag that defines more complicated BC's.
-    character(LEN=*), intent(in) :: stag
+    character(LEN=*), intent(IN) :: stag
     
     ! For nonstationary simulation: Simulation time.
     ! =0 for stationary simulations.
-    real(DP), intent(in) :: dtime
+    real(DP), intent(IN) :: dtime
     
     ! A compiled expression for evaluation at runtime
     type(t_fparser), pointer :: p_rparser
@@ -883,20 +877,20 @@ contains
 !<input>
   ! A discretisation structure defining the discretisation of the current
   ! level.
-  type(t_blockDiscretisation), intent(in) :: rdiscretisation
+  type(t_blockDiscretisation), intent(IN) :: rdiscretisation
 !</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(inout), target :: rproblem
+  type(t_problem), intent(INOUT), target :: rproblem
   
   ! Collection structure to be passed to callback routines
-  type(t_collection), intent(inout), target :: rcollection
+  type(t_collection), intent(INOUT), target :: rcollection
   
   ! A t_discreteFBC structure that receives a discretised version
   ! of the fictitious boundary boundary conditions. The structure should
   ! be empty; new BC's are simply added to the structure.
-  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
+  type(t_discreteFBC), intent(INOUT) :: rdiscreteFBC
 !</inputoutput>
 
 !</subroutine>
@@ -910,8 +904,8 @@ contains
     ! We use the default initialisation of rfictBoundaryRegion and only
     ! change the name of the component.
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
-    call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
-         getBoundaryValuesFBC2,rcollection)
+    ! CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
+    !     getBoundaryValuesFBC,rcollection)
 
   end subroutine  
 
