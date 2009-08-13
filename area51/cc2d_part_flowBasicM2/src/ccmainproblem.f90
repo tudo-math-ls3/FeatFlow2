@@ -43,6 +43,7 @@ module ccmainproblem
   use statistics
   use dofmapping
   
+  use geometry
   use collection
   use convection
     
@@ -104,6 +105,11 @@ contains
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
     
+    ! structure for a geometry object
+    type(t_geometryObject) :: rgeometryObject    
+    
+    real(DP), dimension(:,:), pointer :: pparameters
+    
     integer :: i
     
     ! Ok, let us start. 
@@ -119,9 +125,23 @@ contains
     
     ! Allocate memory fo rthe problem structure -- it is rather large!
     allocate (p_rproblem)
+    allocate(pparameters(4,1))
+    
+    p_rproblem%DAngVel(:) = 0.0_dp
+    p_rproblem%DTrqForce(:) = 0.0_dp
     
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
+    
+    rgeometryObject%ndimension = NDIM2D
+  
+    ! define our particle    
+    !CALL geom_init_circle(rgeometryObject,0.125_dp,(/0.0_dp,0.0_dp/))
+    !CALL geom_init_circle(rgeometryObject,p_rproblem%drad,(/p_rproblem%dx,p_rproblem%dy/))
+    
+    ! we put the geometry object into the collection
+    ! to make it easily accessible
+    !CALL collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
     
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
@@ -143,6 +163,19 @@ contains
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     call cc_initParameters (p_rproblem)
+    pparameters(1,1)=p_rproblem%dx
+    pparameters(2,1)=p_rproblem%dy
+    pparameters(3,1)=p_rproblem%drad
+    pparameters(4,1)=p_rproblem%drho2
+    call geom_init_circle(rgeometryObject,p_rproblem%drad,(/p_rproblem%dx,p_rproblem%dy/))
+    
+    call geom_initParticleCollection(p_rproblem%rparticleCollection,1,pparameters)
+    
+    call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
+                                   p_rproblem%rparticleCollection,.true.)
+    ! we put the geometry object into the collection
+    ! to make it easily accessible
+    call collct_setvalue_geom(p_rproblem%rcollection, 'mini', rgeometryObject,.true.)
     
     ! So now the different steps - one after the other.
     !
@@ -323,6 +356,10 @@ contains
     ! Release the parameter list
     call parlst_done (p_rproblem%rparamList)
     
+    call collct_deletevalue (p_rproblem%rcollection, 'mini')
+    call collct_deletevalue (p_rproblem%rcollection, 'particles')
+    call geom_releaseParticleCollection(p_rproblem%rparticleCollection)
+    
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
     call output_line ('Remaining collection statistics:')
@@ -389,7 +426,7 @@ contains
 
     ! That is it.    
     deallocate(p_rproblem)
-    
+    deallocate(pparameters)
   end subroutine
 
 end module

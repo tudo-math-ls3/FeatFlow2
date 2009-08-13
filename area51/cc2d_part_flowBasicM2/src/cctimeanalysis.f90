@@ -208,7 +208,7 @@ contains
     Cnorms = LINALG_NORMMAX
     call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
     call lsysbl_vectorNormBlock (rsolution,Cnorms,Dnorms2)
-                                                  
+
     dtmp = max(Dnorms2(1),Dnorms2(2))
     if (dtmp .eq. 0.0_DP) dtmp=1.0_DP
     rtimeErrorLocal%drelUmax = max(Dnorms1(1),Dnorms1(2)) / dtmp
