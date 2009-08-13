@@ -387,10 +387,6 @@ contains
       call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
           Rlevels(i)%rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
 
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
-    
     end do
 
     ! Although we could manually create the solution/RHS vector,

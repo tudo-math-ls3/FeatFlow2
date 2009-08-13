@@ -348,10 +348,6 @@ contains
     call lsyssc_transposeMatrix (rmatrixB3, rmatrix%RmatrixBlock(4,3),&
                                  LSYSSC_TR_VIRTUAL)
 
-    ! Update the structural information of the block matrix, as we manually
-    ! changed the submatrices:
-    call lsysbl_updateMatStrucInfo (rmatrix)
-
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:

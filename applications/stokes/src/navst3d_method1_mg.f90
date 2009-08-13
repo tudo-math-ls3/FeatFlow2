@@ -498,10 +498,6 @@ contains
       call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB3, &
           Rlevels(i)%rmatrix%RmatrixBlock(4,3),LSYSSC_TR_VIRTUAL)
 
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
-      
       ! Create the solution vector for this level
       call lsysbl_createVecBlockIndMat (Rlevels(i)%rmatrix,Rlevels(i)%rvecSol,.false.)
     

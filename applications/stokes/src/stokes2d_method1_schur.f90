@@ -300,9 +300,6 @@ contains
       call lsyssc_transposeMatrix (Rlevels(i)%rmatrixB2, &
           Rlevels(i)%rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
 
-      ! Update the structure of the block matrix.
-      call lsysbl_updateMatStrucInfo (Rlevels(i)%rmatrix)
-    
     end do
     
     ! -------------------------------------------------------------------------
@@ -326,9 +323,6 @@ contains
     call stdop_assembleSimpleMatrix (RmatrixS(1)%RmatrixBlock(1,1),&
                                      DER_FUNC2D, DER_FUNC2D)
     
-    ! Update the block structure of S.
-    call lsysbl_updateMatStrucInfo(RmatrixS(1))
-
     ! -------------------------------------------------------------------------
 
     ! Create two vectors and clear them

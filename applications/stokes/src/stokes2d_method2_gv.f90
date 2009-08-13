@@ -451,10 +451,6 @@ contains
                                    p_rmatrix%RmatrixBlock(3,2),&
                                    LSYSSC_TR_ALL)
 
-      ! Update the structural information of the block matrix, as we manually
-      ! changed the submatrices:
-      call lsysbl_updateMatStrucInfo (p_rmatrix)
-      
     end do
 
     ! (Only) on the finest level, we need to calculate a RHS vector
