@@ -2937,22 +2937,6 @@ contains
     ! The whole thing is an iterative process starting with x=l=0.
     ! We repeat this process nminIteration times to get a new preconditioned
     ! defect ( x,l ) which then replaces rd.
-    !
-    !
-    !
-    ! The SOR algorithm (let's say, forward in time) can be represented in 
-    ! matrix-vector formulation as follows:
-    !
-    !    x_n+1 = x_n + (D+wL)^-1 (b-Ax_n)
-    !
-    ! with A=L+D+R, D being the block diagonal. This formula can be rewritten
-    ! in a form where we only need to invert the diagonal:
-    !
-    !    x_n+1 = n_x + D^-1 ( b - wLx_n+1 - (1-w)Lx_n - Dx_n - Rx_n )
-    !
-    ! So when setting up the defect vector, the "L" part is a weighted mean
-    ! between the previous and the next iterate. Therefore we have to use
-    ! two temp vectors, one for x_n and one for x_n+1:
     
     p_rx   => rsolverNode%p_rsubnodeBlockFBSOR%rtempVector
     
@@ -3089,7 +3073,7 @@ contains
           
         ! Create d2 = RHS - A(solution) X2
         call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
-            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
+            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
         if (isubstep .eq. 0) then
@@ -3146,6 +3130,12 @@ contains
       ! rtempVectorSol(1) is undefined, but we don't need it.
       ! rtempVectorSol(2) holds the data of the 0th timestep, 
       ! rtempVectorSol(3) of the 1st one.
+      
+      if (associated(p_rspaceTimeMatrix%p_rsolution)) then
+        call sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+            1, rtempVectorSol(2))
+        ! rtempVectorSol(3) is set later.
+      end if
       
       ! Norm of the residuum
       dres = 0.0_DP
@@ -3204,18 +3194,13 @@ contains
         ! Is this the last timestep or not?
         if (isubstep .lt. p_rspaceTimeDiscr%NEQtime-1) then
           
-          if (isubstep .gt. 0) then
-          
-            ! Get the evaluation point for the nonlinearity in the next timestep
-            ! into rtempVectorSol(3).
-            ! In the 0th timestep, we don't need that; there, rtempVectorSol(3)
-            ! is set from the previous backward loop.
-            if (associated(p_rspaceTimeMatrix%p_rsolution)) then
-              call sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
-                  1+isubstep+1, rtempVectorSol(3))
-            end if
+          ! Get the evaluation point for the nonlinearity in the next timestep
+          ! into rtempVectorSol(3).
+          if (associated(p_rspaceTimeMatrix%p_rsolution)) then
+            call sptivec_getTimestepData (p_rspaceTimeMatrix%p_rsolution, &
+                1+isubstep+1, rtempVectorSol(3))
           end if
-          
+
           ! Read the RHS and solution of the next timestep
           call sptivec_getTimestepData (rd, 1+isubstep+1, rtempVectorD3)
           call sptivec_getTimestepData (p_rx, 1+isubstep+1, rtempVectorX3)
@@ -3897,12 +3882,8 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        ! Commented out; the same behaviour can be reached by taking the weight
-        ! 1-omega in the linear combination below -- and that's cheaper.
-        ! Anyway, we have some kind of defect here, so we will implement the
-        ! defect BC's.
-        !call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
-        !    1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
+            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
             
         ! Filter the defect for BC's and initial conditions if necessary
         if (isubstep .eq. 0) then
@@ -3928,7 +3909,7 @@ contains
       
         ! Add that defect to the current solution -- damped by domega.
         call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP-rsolverNode%domega)
+            rsolverNode%domega,1.0_DP)
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
@@ -4036,12 +4017,8 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        ! Commented out; the same behaviour can be reached by taking the weight
-        ! 1-omega in the linear combination below -- and that's cheaper.
-        ! Anyway, we have some kind of defect here, so we will implement the
-        ! defect BC's.
-        !call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
-        !    1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
+        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
+            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
         if (isubstep .eq. 0) then
@@ -4070,7 +4047,7 @@ contains
       
         ! Add that defect to the current solution -- damped by domega.
         call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP-rsolverNode%domega)
+            rsolverNode%domega,1.0_DP)
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
