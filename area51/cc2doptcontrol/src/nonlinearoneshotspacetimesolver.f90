@@ -2770,6 +2770,11 @@ contains
           call sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
           p_rcgrSolver%domega = domega
           
+        case (7)
+          ! Block SOR solver
+          call sptils_initBlockFBSOR (rproblem,p_rcgrSolver,domega,&
+              domegaPrecond,RspatialPrecond(ilev))
+
         case default
           print *,'Unknown solver: ',ctypeCoarseGridSolver
           stop

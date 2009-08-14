@@ -3897,8 +3897,12 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
-            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
+        ! Commented out; the same behaviour can be reached by taking the weight
+        ! 1-omega in the linear combination below -- and that's cheaper.
+        ! Anyway, we have some kind of defect here, so we will implement the
+        ! defect BC's.
+        !call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
+        !    1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(2))
             
         ! Filter the defect for BC's and initial conditions if necessary
         if (isubstep .eq. 0) then
@@ -3924,7 +3928,7 @@ contains
       
         ! Add that defect to the current solution -- damped by domega.
         call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP)
+            rsolverNode%domega,1.0_DP-rsolverNode%domega)
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
@@ -4032,8 +4036,12 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
           
         ! Create d2 = RHS - A(solution) X2
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
-            1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
+        ! Commented out; the same behaviour can be reached by taking the weight
+        ! 1-omega in the linear combination below -- and that's cheaper.
+        ! Anyway, we have some kind of defect here, so we will implement the
+        ! defect BC's.
+        !call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVectorX2,rtempVectorRHS,&
+        !    1.0_DP,rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3))
             
         ! Filter the defect for BC's and initial conditions if necessary
         if (isubstep .eq. 0) then
@@ -4062,7 +4070,7 @@ contains
       
         ! Add that defect to the current solution -- damped by domega.
         call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP)
+            rsolverNode%domega,1.0_DP-rsolverNode%domega)
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)

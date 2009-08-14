@@ -832,7 +832,7 @@ contains
     
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(IN), optional      :: rcollection
+  type(t_collection), intent(inout), optional      :: rcollection
 
 !</input>
 
