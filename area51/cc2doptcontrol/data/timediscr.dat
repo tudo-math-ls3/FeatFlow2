@@ -265,8 +265,8 @@ dalphamax = 1.0 #1.0
 
 # Type of space-time smoother.
 # =0: Block Jacobi
-# =1: Block Forward-Backward SOR (domegaPrecond)
-# =2: Block Forward-Backward Gauss-Seidel (damped)
+# =1: Block Forward-Backward SOR (domega, domegaPrecond)
+# =2: Block Forward-Backward Gauss-Seidel
 # =3: CG (Jacobi)
 # =4: CG (Forward-Backward Gauss-Seidel)
 # =6: Defect correction with UMFPACK preconditioning
@@ -323,12 +323,13 @@ slinearSolver        = 'CC-LINEARSOLVER'
 
 # Type of coarse grid solver.
 # =0: Iterative Defect correction with Block Jacobi prec.
-# =1: Iterative Defect correction with Block SOR([TIME-COARSEPRECOND].domega)
+# =1: Iterative Defect correction with Block SOR(domega, [TIME-COARSEPRECOND].domega)
 # =2: Iterative Defect correction with Block Forward-Backward Gauss-Seidel precond.
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
 # =5: Iterative BiCGStab with Block Forward-Backward SOR
 # =6: Defect correction with UMFPACK preconditioning
+# =7: Pure block FBSOR solver
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-COARSEPRECOND] below!
 ctypeCoarseGridSolver = 5 #5 # 5 4 0 2 5 4
