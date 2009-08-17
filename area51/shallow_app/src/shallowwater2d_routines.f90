@@ -1774,7 +1774,6 @@ contains
 	        ii = p_Kdiagonal(i)
 	        ! parameter value of the boundary node to edit
 	        parmv = p_DvertexParameterValue(ivbd)
-	        
 
             ! Shall the nodes in a corner be manipulated, too?
 	        if (((abs(parmv-aint(PARMV))>1e-6)).or.(boundarycorner==1)) then
@@ -1910,7 +1909,7 @@ contains
 	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
                     h_fld1, p_fld1, p_fld2, &
                     p_Kdiagonal, p_Kedge, NEQ, nedge, &
-                    gravconst, dt, Method, prelimiting)
+                    gravconst, dt, Method, prelimiting, syncromethod)
 	
 	! parameter values
     type(t_array), dimension(nvar2d), intent(INOUT) :: rarraySol, rarraySolDot
@@ -1926,7 +1925,7 @@ contains
 	integer, dimension(:,:), pointer                :: p_Kedge
 	integer, intent(IN)                             :: NEQ,	nedge
 	real(DP), intent(IN)                            :: gravconst, dt
-	integer, intent(IN)                             :: Method, prelimiting
+	integer, intent(IN)                             :: Method, prelimiting, syncromethod
 	
 	
 	! variables
@@ -2105,8 +2104,6 @@ contains
 
             ! Now apply prelimiting, siehe AFCII(70)
              if (prelimiting == 1) then
-                 ! For scalar dissipation apply
-                 ! MinMod prelimiting
                  do ivar = 1, nvar2d
                      if (deltaGij(ivar)*deltaWij(ivar).ge.0) deltaGij(ivar)=0
                  end do
@@ -2136,14 +2133,14 @@ contains
         
             do ivar = 1, nvar2d
                 ! Compute the R_i +/- (73) AFC II
-                if (abs(p_fld1(1+6*(ivar-1),i))>1e-8) then
+                if (abs(p_fld1(1+6*(ivar-1),i))>1e-10) then
                 p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)*&
                                          p_fld1(3+6*(ivar-1),i)/p_fld1(1+6*(ivar-1),i)/dt)! Ri+
                 else
                 p_fld1(5+6*(ivar-1),i) = 0.0_DP
                 end if
                 
-                if (abs(p_fld1(2+6*(ivar-1),i))>1e-8) then
+                if (abs(p_fld1(2+6*(ivar-1),i))>1e-10) then
                 p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)*&
                                          p_fld1(4+6*(ivar-1),i)/p_fld1(2+6*(ivar-1),i)/dt)! Ri-
                 else
@@ -2167,26 +2164,42 @@ contains
 			end do
 
 			! First calculate the limiting factor alphaij
-			! For this we have two options
-			! 1.: Take only the limiting factor of the variable h=Q(1)
-			if (deltaGij(1)>0.0_DP) then
-		        alphaij =  min(p_fld1(5,i),p_fld1(6,j))
-		    else
-		        alphaij = min(p_fld1(5,j),p_fld1(6,i))
-		    end if
+			! For this we have three options
 
-! 			! 2.: Take the smallest of all the limiting factors
-! 			alphaij = 1
-! 			do ivar = 1, nvar2d
-! 		        if (deltaGij(ivar)>0.0_DP) then
-! 		        	alphaij = min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
-! 		    	else
-! 		        	alphaij = min(alphaij,p_fld1(5+6*(ivar-1),j),p_fld1(6+6*(ivar-1),i))
-! 		    	end if
-! 			end do
+            SELECT CASE (syncromethod)
+                CASE (1)
+                    ! 1.: Take only the limiting factor of the variable h=Q(1)
+			        if (deltaGij(1)>0.0_DP) then
+		                alphaij = min(p_fld1(5,i),p_fld1(6,j))
+		            else
+		                alphaij = min(p_fld1(5,j),p_fld1(6,i))
+		            end if
+		            !Limit the antidiffusive fluxes Gij = Gij * alphaij
+ 		            deltaGij = deltaGij * alphaij
+                CASE (2)
+       			    ! 2.: Take the smallest of all the limiting factors
+ 			        alphaij = 1
+    		        do ivar = 1, nvar2d
+ 		            if (deltaGij(ivar)>0.0_DP) then
+    		          alphaij = min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
+ 	        	    else
+ 		             alphaij = min(alphaij,p_fld1(5+6*(ivar-1),j),p_fld1(6+6*(ivar-1),i))
+ 		    	    end if
+ 			        end do
+ 			        !Limit the antidiffusive fluxes Gij = Gij * alphaij
+ 		            deltaGij = deltaGij * alphaij
+                CASE (3)
+                    ! Last Method: Limit every Component on its own...  
+    	            do ivar = 1, nvar2d
+ 		            if (deltaGij(ivar)>0.0_DP) then
+ 		        	    alphaij = min(p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
+ 		    	    else
+ 		        	    alphaij = min(p_fld1(5+6*(ivar-1),j),p_fld1(6+6*(ivar-1),i))
+ 		    	    end if
+ 		    	    deltaGij(ivar) = deltaGij(ivar) * alphaij
+ 			        end do
+            END SELECT
 
-			! Limit the antidiffusive fluxes Gij = Gij * alphaij
-			deltaGij = deltaGij * alphaij
 			
 			! get Roe-values at ij
 			!do ivar = 1, nvar2d

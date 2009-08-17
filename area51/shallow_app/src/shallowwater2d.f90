@@ -261,6 +261,9 @@ contains
 	
 	! Shall boundary conditions be applied in a corner?
 	integer :: boundarycorner
+	
+	! Syncronisation method for FCT limiting
+	integer :: syncromethod
 
     ! Function parser
     type(t_fparser) :: rfparser
@@ -298,6 +301,9 @@ contains
     
     ! What kind of limiter to use? Default=Van Leer
     call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', limiter, 2)
+    
+    ! What kind of syncromethod to use? Default=indicator variable
+    call parlst_getvalue_int(rparlist, 'METHOD', 'syncromethod', syncromethod, 1)
     
     ! Gravitational constant. Default=9.81
     call parlst_getvalue_double(rparlist, 'PROBLEM', 'gravconst', gravconst, 9.81_DP)
@@ -905,7 +911,7 @@ contains
 	                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
                     h_fld1, p_fld1, p_fld2, &
                     p_Kdiagonal, p_Kedge, NEQ, nedge, &
-                    gravconst, dt, Method, prelimiting)
+                    gravconst, dt, Method, prelimiting, syncromethod)
 
 			call BuildShallowWaterPreconditioner (rmatrixBlockP, &
 	                rarrayP, rarraySol, p_CXdata, p_CYdata, &
