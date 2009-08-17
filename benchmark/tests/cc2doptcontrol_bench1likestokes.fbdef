@@ -1,0 +1,62 @@
+# -*- mode: sh -*-
+
+#============================================================
+# global settings for all CC2DOPTC tests defined in this file
+#============================================================
+# This test tests the solver behaviour on the bench1 mesh.
+# The target flow is a nonstationary Stokes flow at Re=20.
+# The calculation is done with the Navier-Stokes equation.
+# Aim: The Navier-Stokes flow should behave like a Stokes flow.
+# As a result, the calculated control emulates the negative
+# nonlinearity of the Navier-Stokes flow to compensate for that.
+
+appl = cc2doptcontrol
+class = DEFAULT
+
+# Test 1
+
+testid   = CC2DOPTC_00_001
+descr    = Opt-Control-Benchmark. bench1 like Stokes.
+datfile  = ./data/apps_cc2doptcontrol/master_bench1likestokes.dat
+# WARNING: The space-time solver does not use this! There's a
+# separate vraiable SPACELEVEL and TIMELEVEL that configures the refinement.
+# Therefore, the MGLEVELS variable is a dummy here.
+mglevels = 1
+#
+# Space-Refinement
+#
+spacenlmin = 1
+spacenlmax = 2
+#
+# Time-Refinement
+#
+timenlmin = 1
+timenlmax = 2
+TIMEMGispacelevelcoupledtotimelevel = 1
+#
+# Space/time discretisation
+#
+SPACEDISCRETISATIONiElementType = 3
+TIMEDISCRETISATIONntimesteps = 5
+TIMEDISCRETISATIONdtimeStepTheta = 1.0
+#
+# Space-time Newton
+#
+TIMESOLVERctypePreconditioner = 1
+TIMESOLVERnmaxIterations = 100
+$TIMESOLVERdepsRel = 1E-8
+#
+# Space-time-MG
+#
+TIMESMOOTHERcspaceTimeSmoother = 1
+TIMESMOOTHERnsmSteps = 2
+#
+# Space-MG
+#
+LINEARSOLVERSmootherType = 8
+LINEARSOLVERicoarseGridSolverType = 0
+LINEARSOLVERdepsRel = 1E-8
+#
+# Postprocessing
+#
+POSTPROCESSINGsgmvfilename = ''

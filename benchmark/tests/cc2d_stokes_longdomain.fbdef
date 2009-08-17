@@ -1,0 +1,31 @@
+#============================================================
+# global settings for CC2D Stokes test for long domains
+#
+# This test calculates a poiseulle flow on a mesh consisting
+# of cells which are glued together to a long channel.
+#============================================================
+
+appl = cc2d
+class = DEFAULT
+
+# Test 1
+
+testid   = CC2D_STOKES_LONGDOMAIN_001
+descr    = Stokes-test, long domain, 1 cell with AR 1:1000
+datfile  = ./data/apps_cc2d_stokes_longdomain/master.dat
+mglevels = 2,3,4,5,6
+domain   = poiseuille_flow_0..1000_0..1_1m_001p.feast
+
+# Test 2
+
+testid   = CC2D_STOKES_LONGDOMAIN_002
+descr    = Stokes-test, long domain, 1000 cells with AR=1
+mglevels = 2,3,4,5
+domain   = poiseuille_flow_0..1000_0..1_1000m_001p.feast
+
+# Test 3
+
+testid   = CC2D_STOKES_LONGDOMAIN_003
+descr    = Stokes-test, long domain, 100 cells with AR=1
+mglevels = 2,3,4,5,6
+domain   = poiseuille_flow_0..100_0..1_100m_001p.feast
