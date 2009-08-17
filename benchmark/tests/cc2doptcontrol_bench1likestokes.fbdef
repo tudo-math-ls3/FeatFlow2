@@ -17,7 +17,7 @@ class = DEFAULT
 
 testid   = CC2DOPTC_00_001
 descr    = Opt-Control-Benchmark. bench1 like Stokes.
-datfile  = ./data/apps_cc2doptcontrol/master_bench1likestokes.dat
+datfile  = ./data/area51_cc2doptcontrol/master_bench1likestokes.dat
 # WARNING: The space-time solver does not use this! There's a
 # separate vraiable SPACELEVEL and TIMELEVEL that configures the refinement.
 # Therefore, the MGLEVELS variable is a dummy here.

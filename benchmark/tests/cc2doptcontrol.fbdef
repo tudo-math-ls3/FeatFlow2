@@ -30,7 +30,7 @@ class = DEFAULT
 
 testid   = CC2DOPTC_001
 descr    = standard DFG benchmark, CC2D, stationary
-datfile  = ./data/apps_cc2doptcontrol/master.dat
+datfile  = ./data/area_cc2doptcontrol/master.dat
 # WARNING: The space-time solver does not use this! There's a
 # separate vraiable SPACELEVEL and TIMELEVEL that configures the refinement.
 # Therefore, the MGLEVELS variable is a dummy here.
