@@ -1,0 +1,41 @@
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+# This definition file collects a couple of flow calculations
+# for flows which are used as target flows for distributed
+# optimal control.
+
+appl = cc2d_fbbfs
+class = DEFAULT
+
+# Test 1
+# Nonstationary Backward-Facing-Step flow.
+# Re=10000, Navier-Stokes, Inflow = 1.0 max
+# Time: 0..5 sec
+# 128 timesteps per second
+# Q2
+# Level 5
+# The calculation takes place on a 'full' domain. The step is emulated
+# via the fictitious boudary method.
+
+testid   = CC2D_TARGET2_001
+descr    = BFS-test with Fictitious boundary to realise the step, Re=10000, t=0..5, 128 timesteps, Q2, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_fbbfs.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 5
+MINLEVEL = 2
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+TIMEDISCRETISATION_DTIMEMAX = 5.0
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_RE = 10000
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+POSTPROCESSING_IOUTPUTUCD = 1
+POSTPROCESSING_IOUTPUTFILM = 1
+DISCRETISATION_CWRITEFINALSOLUTION=0
+POSTPROCESSING_SFILENAMEFILM = './ns/fbbfsstokesq2lv5re10000_5sec'
+BDC_UMAX = 1.0
