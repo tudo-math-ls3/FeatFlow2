@@ -1,0 +1,125 @@
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+# Directory for visualisation files
+spostdirectory = $LOGDIR
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = $LOGDIR
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(6) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+
+####################################################
+# benchmark configuration, RE=20 Nav.St. like Stokes
+####################################################
+
+[PARAMTRIANG]
+sParametrisation = './pre/bench1.prm'
+sMesh = './pre/bench1.tri'
+
+[BDCONDITIONS]
+bdComponent1(4)=
+  1.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+  2.0  0  0                             # ]1.0,2.0[ : Neumann boundary = do-nothing
+  3.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+  4.0  3  1  'ParProfile'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+
+bdComponent2(1)=
+  4.0  3  1  'Dirichlet0'  'Dirichlet0'  # Complete boundary component Dirichlet-0 boundary
+
+[CC-DISCRETISATION]
+isolutionStart     = 0
+ssolutionStart     = ''
+iequation          = 0
+RE                 = 1000
+NLMIN              = $spacenlmin
+NLMAX              = $spacenlmax
+iElementType       = $SPACEDISCRETISATIONiElementType
+
+[OPTIMALCONTROL]
+smeshTargetFlow = './pre/bench1.tri'
+#stargetFlow = './ns/benchstokesre1000ref4seklv5/benchstokesre1000ref4seklv5'
+stargetFlow = '../cc2d_paper17/ns/benchstokesre1000ref4seklv5'
+itypeTargetFlow = 4
+ilevelTargetFlow = 5
+ielementTypeTargetFlow = 3
+itargetFlowTimesteps = 80
+
+dalphaC = 0.01
+dgammaC = 0.0
+
+ccontrolConstraints = 0
+dumin1 = -0.5
+dumax1 = 0.5
+dumin2 = -0.5
+dumax2 = 0.5
+
+[TIME-DISCRETISATION]
+niterations = $TIMEDISCRETISATIONntimesteps
+dtimeMax = 1.0
+TIMENLMIN = $timenlmin
+TIMENLMAX = $timenlmax
+dtimeStepTheta = $TIMEDISCRETISATIONdtimeStepTheta
+
+[TIME-POSTPROCESSING]
+sgmvFileName = $POSTPROCESSINGsgmvfilename
+
+[TIME-SOLVER]
+ctypePreconditioner = $TIMESOLVERctypePreconditioner
+depsDiff            = 1E-7
+nmaxIterations      = $TIMESOLVERnmaxIterations
+depsRel             = $TIMESOLVERdepsRel
+dinexactNewtonExponent = 2.0
+#nmaxIterations         = 1
+domega                 = 1.0
+
+[TIME-MULTIGRID]
+ispacelevelcoupledtotimelevel = $TIMEMGispacelevelcoupledtotimelevel
+nmaxIterations     = 100
+depsRel            = 1E-10
+
+[TIME-SMOOTHER]
+cspaceTimeSmoother = $TIMESMOOTHERcspaceTimeSmoother
+nsmSteps = $TIMESMOOTHERnsmSteps
+domega = 0.9
+cspaceTimeSmoother = 0
+
+[TIME-COARSEGRIDSOLVER]
+depsRel            = 1E-10
+
+[CC-LINEARSOLVER]
+ismootherType = $LINEARSOLVERSmootherType
+icoarseGridSolverType = $LINEARSOLVERicoarseGridSolverType
+
+[CC-MULTIGRIDSOLVER]
+nmaxIterations     = 30
+depsRel            = 1E-8
+
+[CC-SMOOTHER]
+nsmoothingSteps    = 4
+domega             = 1.0

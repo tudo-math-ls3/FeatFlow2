@@ -1,0 +1,100 @@
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+# Directory for visualisation files
+spostdirectory = $LOGDIR
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = $LOGDIR
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/data/apps_cc2doptcontrol
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(6) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+
+#######################################
+# DC configuration
+#######################################
+
+[PARAMTRIANG]
+# Filename of the parametrisation of the domain
+sParametrisation = '%{spredirectory}/QUAD.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/QUAD.tri'
+
+[CC-DISCRETISATION]
+isolutionStart     = 0
+ssolutionStart     = '%{spredirectory}/drivencav_stat/stokes5re0025'
+
+iequation          = 0
+RE                 = 400
+NLMAX              = 5
+
+[BDCONDITIONS]
+bdComponent1(3)=
+  2.0  3  1  'Dirichlet0'  'Dirichlet0' # [0.0,1.0] : Dirichlet-0 boundary
+  3.0  3  1  'Dirichlet1'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+  4.0  2  1  'Dirichlet0'  'Dirichlet0' # [2.0,3.0] : Dirichlet-0 boundary
+
+[TIME-DISCRETISATION]
+niterations = 20
+TIMENLMIN = 1
+TIMENLMAX = 1
+
+[OPTIMALCONTROL]
+stargetFlow = '%{spredirectory}/lv7re0.025steps80/solution'
+itypeTargetFlow = 4
+ilevelTargetFlow = 7
+itargetFlowTimesteps = 80
+dtimeMax = 1.0
+
+ccontrolConstraints = 0
+dumin1 = -0.5
+dumax1 = 0.5
+dumin2 = -0.5
+dumax2 = 0.5
+
+[TIME-DISCRETISATION]
+TIMENLMAX = 1
+
+[TIME-POSTPROCESSING]
+sgmvFileName = 'gmv/utest2quad.gmv' 
+
+[TIME-SOLVER]
+nmaxIterations     = 100
+depsRel            = 1E-8
+ctypePreconditioner = 3
+dinexactNewtonExponent = 2.0
+#nmaxIterations     = 1
+domega             = 1.0
+
+[TIME-MULTIGRID]
+nmaxIterations     = 100
+depsRel            = 1E-2
+
+[TIME-SMOOTHER]
+nsmSteps = 1
+

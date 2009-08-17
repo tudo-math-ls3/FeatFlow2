@@ -1,0 +1,75 @@
+# -------------------------------------------------------------------
+# This optional master file is the entry point for all data
+# which is processed by the software. The simportdatafiles(.) parameter
+# below defines a list of 'child' data files which are read during
+# the initialisation. All parameters and sections following
+# this parameter overwrite data from the DAT files; this allows
+# to centrally define crucial parameters in numeric tests while
+# the data files specify the general setting.
+#
+# If simportdatafiles(.) is not present as first parameter in this
+# file, all parameters of the software must be defined here. This
+# allows to collect all parameters in one file.
+#
+# If this file is missing, the software will search for parameters in
+# a standard set of data files.
+# -------------------------------------------------------------------
+
+# In the following we define some basic directories that can be used
+# in all sub-data-files as path specifications for input/output
+# files. This allows to run the application in a benchmark
+# environment with different settings
+
+# Directory of the application
+sappdirectory = .
+
+# Directory with data files
+sdatadirectory = %{sappdirectory}/data/apps_cc2d_stokes_longdomain
+
+# Directory for log files
+slogdirectory = $LOGDIR
+
+# Directory for visualisation files
+spostdirectory = $LOGDIR
+
+# Directory containing/receiving plain solution files
+ssolutiondirectory = $LOGDIR
+
+# Directory for preprocessing files
+spredirectory = %{sappdirectory}/data/apps_cc2d_stokes_longdomain
+
+# The following defines a list of data files to read. The files may optionally
+# contain a path specification. If no path os specified, the files
+# are searched for in the same subdirectory as the master.dat.
+# By default, we specify the sdatadirectory variable here as path specifier.
+
+simportdatafiles(8) = 
+  "%{sdatadirectory}/discretisation.dat"
+  "%{sdatadirectory}/linsol_cc2d.dat"
+  "%{sdatadirectory}/nonlinsol_cc2d.dat"
+  "%{sdatadirectory}/output.dat"
+  "%{sdatadirectory}/paramtriang.dat"
+  "%{sdatadirectory}/bdconditions.dat"
+  "%{sdatadirectory}/timediscr.dat"
+  "%{sdatadirectory}/postprocessing.dat"
+
+# We redefine the maximum level and the benchmark result file.
+  
+[GENERALOUTPUT]
+sbenchLog = '$LOGDIR/benchmarkresultfile'
+smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}_$DOMAIN.log'
+
+[CC-DISCRETISATION]
+NLMAX = $MGLEVEL
+RE    = 1
+iequation    = 1
+
+[CC-POSTPROCESSING]
+ioutputUCD = 1
+sfilenameUCD = '%{spostdirectory}/u_%{CC-DISCRETISATION.NLMAX}_$DOMAIN.gmv'
+
+[PARAMTRIANG]
+sParametrisation = '%{spredirectory}/$DOMAIN.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/$DOMAIN.tri'
