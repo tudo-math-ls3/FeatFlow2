@@ -16,7 +16,7 @@ class = DEFAULT
 # Q2
 # Level 7
 
-testid   = CC2D_TARGET_001
+testid   = CC2D_TARGET1_001
 descr    = nonstationary DC Stokes flow, Re=400, t=0..5, 5x128 timesteps, Q2, Level 7
 datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -45,7 +45,7 @@ POSTPROCESSING_SFILENAMEFILM = './ns/dcstokesq2lv7re400_5sec'
 # Q2
 # Level 5
 
-testid   = CC2D_TARGET_002
+testid   = CC2D_TARGET1_002
 descr    = nonstationary bench Stokes flow, Re=1000, t=0..2.5, 128 timesteps each second, Q2, Level 4
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -75,7 +75,7 @@ BDC_UMAX = 0.3
 # Q2
 # Level 8
 
-testid   = CC2D_TARGET_003
+testid   = CC2D_TARGET1_003
 descr    = stationary DC Stokes flow, Re=400,Q2, Level 8
 datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -103,7 +103,7 @@ POSTPROCESSING_SFILENAMEFILM = './ns/dcstokesq2lv8re1'
 # Q2
 # Level 8
 
-testid   = CC2D_TARGET_004
+testid   = CC2D_TARGET1_004
 descr    = stationary DC Navier-Stokes flow, Re=400, Q2, Level 8, EOJ(0.01)
 datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -130,7 +130,7 @@ POSTPROCESSING_SFILENAMEFILM = './ns/dcnavstokesq2lv8re1'
 # Q2
 # Level 5
 
-testid   = CC2D_TARGET_005
+testid   = CC2D_TARGET1_005
 descr    = stationary bench Navier-Stokes flow, Re=1000, Q2, Level 5, SD(0.01)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -160,7 +160,7 @@ BDC_UMAX = 0.3
 # Q2
 # Level 4
 
-testid   = CC2D_TARGET_006
+testid   = CC2D_TARGET1_006
 descr    = stationary bench Stokes flow, Re=5000, Q2, Level 4
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -191,10 +191,10 @@ BDC_UMAX = 0.3
 # Level 4
 # Time: 0..5 sec
 # 64 timesteps per second
-# Starts at Stokes solution calculated in CC2D_TARGET_006 and
+# Starts at Stokes solution calculated in CC2D_TARGET1_006 and
 # simulates 5 seconds of Navier-Stokes.
 
-testid   = CC2D_TARGET_007
+testid   = CC2D_TARGET1_007
 descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, Level 4, EOJ(0.01)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
