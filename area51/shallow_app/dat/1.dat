@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 9
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
@@ -34,10 +34,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.005
 
 # Final time
-ttfinal = 1
+ttfinal = 0.1
 
 # Implicitness parameter
 theta = 0.5
@@ -71,7 +71,7 @@ linreldef = 1e-4
 # Specify, if boundary conditions are to be applied in a corner
 # Can be set to zero, if the inner angle of the boundary is much
 # larger than 180 degrees (for example a 270 degrees corner)
-boundarycorner = 0
+boundarycorner = 1
 
 
 [METHOD]
@@ -99,18 +99,24 @@ prelimiting = 1
 # 0: no prelimiting
 # 1: apply simple prelimiting
 
+# Which method to use for choosing syncronised FCT limiting factor
+syncromethod = 3
+# 1: Indicator variable
+# 2: Minimal factor
+# 3: Each component seperate
+
 
 
 [PROBLEM]
 
 # Gravitation constant
-gravconst = 1
+gravconst = 9.81
 
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = if(sqrt(x^2+y^2)<2.5, 2.5, 0.5)
-hustart = 0
+hstart  = 5
+hustart = if(x<0,5,-5)
 hvstart = 0
 
 [VIDEO]
