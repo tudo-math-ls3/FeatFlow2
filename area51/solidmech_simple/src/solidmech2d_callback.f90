@@ -101,6 +101,12 @@ module solidmech2d_callback
   integer, parameter :: SIMUL_ANALYTICAL = 2
   integer, parameter :: ON = 392
   integer, parameter :: OFF = 104
+  integer, parameter :: DIRECT_SOLVER = 4
+  integer, parameter :: BICGSTAB_SOLVER = 8
+  integer, parameter :: MG_SOLVER = 14
+  integer, parameter :: CG_SOLVER = 19
+  integer, parameter :: J_SMOOTHER = 21
+  integer, parameter :: ILU_SMOOTHER = 22
 
   type t_problem
 
@@ -124,15 +130,33 @@ module solidmech2d_callback
     character(len=2) :: selement
 
     !     NLMAX receives the level where we want to solve.
-    integer :: NLMAX
+    integer :: NLMAX,NLMIN
 
     !     material parameters (Poisson ratio nu and shear modulus mu)
     real(DP) :: dnu     = 0.3_DP
     real(DP) :: dmu     = 0.5_DP
     real(DP) :: dlambda = 0.75_DP
 
+    !   damping parameter
+    real(DP) :: ddamp = 0.7_DP
+
+    !   tolerance
+    real(DP) :: dtolerance = 1E-10_DP
+
+    !    Number of smoothing steps
+    integer :: nsmoothingSteps = 4
+
+    !    Number of smoothing steps
+    integer :: niterations = 5000
+
     !     kind of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
     integer :: ctypeOfSimulation = SIMUL_REAL
+
+    !     kind of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER,CG_SOLVER)
+    integer :: ctypeOfSolver = DIRECT_SOLVER
+
+    !     kind of smoother (possible values: J_SMOOTHER, ILU_SMOOTHER)
+    integer :: ctypeOfSmoother = J_SMOOTHER
 
     !     function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
     integer :: cfuncID_u1 = 4
@@ -600,8 +624,8 @@ contains
          end if
 
          ! Compute the normal value
-         print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
-         print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
+!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
                 + dny * DstressTensor(1,2,ipoint,iel)
  
@@ -769,8 +793,8 @@ deallocate(DstressTensor)
         end if
 
        ! Compute the normal value
-      print *,'2comp', ibct,rcollection%IquickAccess(1),dnx,dny
-      print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+!       print *,'2comp', ibct,rcollection%IquickAccess(1),dnx,dny
+!       print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
       Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel)&
             + dny * DstressTensor(2,2,ipoint,iel)
    

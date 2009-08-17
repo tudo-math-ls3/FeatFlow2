@@ -47,3 +47,12 @@ echo "--------------------------------"
 echo "#DOF"
 grep "Number of DOF:" $* | awk '{print $(NF)}'
 echo "--------------------------------"
+
+echo "Iterations"
+grep "Iterations" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Rate of convergence"
+grep "Rate of convergence" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+

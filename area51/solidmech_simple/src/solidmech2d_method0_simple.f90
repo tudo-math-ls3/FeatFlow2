@@ -40,6 +40,32 @@ module solidmech2d_method0_simple
   
   implicit none
 
+!<types>
+
+!<typeblock description="Type block defining all information about one level">
+
+  type t_level
+  
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation) :: rtriangulation
+
+    ! An object specifying the discretisation (structure of the
+    ! solution, trial/test functions,...)
+    type(t_blockDiscretisation) :: rdiscretisation
+    
+    ! A system matrix for that specific level. The matrix will receive the 
+    ! discrete Laplace operator.
+    type(t_matrixBlock) :: rmatrix
+
+    ! A variable describing the discrete boundary conditions.    
+    type(t_discreteBC) :: rdiscreteBC
+  
+  end type
+  
+!</typeblock>
+
+!</types>
+
 contains
 
   ! ***************************************************************************
@@ -69,18 +95,21 @@ contains
     !
     ! We need a couple of variables for this problem. Let's see...
     !
+    ! An array of problem levels for the multigrid solver
+    type(t_level), dimension(:), pointer :: Rlevels
+
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
+!     ! An object for saving the triangulation on the domain
+!     type(t_triangulation) :: rtriangulation
 
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
 
-    ! An object specifying the discretisation.
-    ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation
+!     ! An object specifying the discretisation.
+!     ! This contains also information about trial/test functions,...
+!     type(t_blockDiscretisation) :: rdiscretisation
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
@@ -88,25 +117,28 @@ contains
     
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    type(t_matrixBlock) :: rmatrix
+!     type(t_matrixBlock) :: rmatrix
     type(t_vectorBlock) :: rvector,rrhs,rtempBlock
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
-    type(t_discreteBC), target :: rdiscreteBC
+!     type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rcoarseGridSolver,p_rsmoother
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
-    type(t_matrixBlock), dimension(1) :: Rmatrices
+    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+
+    ! One level of multigrid
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
     
      ! Error indicator during initialisation of the solver
     integer :: ierror
@@ -119,7 +151,9 @@ contains
     character(len=SYS_STRLEN) :: sucddir, smaster,sstring
     real(DP), dimension(:), pointer :: p_Ddata,p_Ddata2
     real(DP), Dimension(:,:), pointer :: p_DvertexCoords
-    integer :: i, j, imax
+
+    ! some temporary variables
+    integer :: i, j, k, imax
 
     ! Structure for saving parameters from the DAT file
     type (t_parlist) :: rparams
@@ -193,22 +227,71 @@ contains
 ! 	      call parlst_getvalue_string (rparams, '', 'Sbc'//trim(sys_siL(i,3)), sstring)
 ! 	      read(sstring,*) rproblem%Sbc(i)
 !     end do
-       
-    ! Maximum level
-    call parlst_getvalue_int (rparams, '', &
-                                     'NLMAX', rproblem%NLMAX)
-       
+    
     ! type of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
     call parlst_getvalue_string (rparams, '', &
                                      'ctypeOfSimulation',sstring)
 
     if(trim(sstring) .eq. 'ANALYTICAL') then
 	    rproblem%ctypeOfSimulation = SIMUL_ANALYTICAL
+      print *, 'ANALYTICAL SIMULATION'
     else if(trim(sstring) .eq. 'REAL') then
 	    rproblem%ctypeOfSimulation = SIMUL_REAL
+      print *, 'REAL SIMULATION'
     else
-	    print *,'Invalid sstring for simulation type'
+	    print *,'Invalid sstring for simulation type:', trim(sstring)
+    Stop
     end if
+
+    ! type of smoother (possible values: J_SMOOTHER, ILU_SMOOTHER)
+    call parlst_getvalue_string (rparams, '', &
+                                     'ctypeOfSmoother',sstring)
+
+    if(trim(sstring) .eq. 'JACOBI') then
+      rproblem%ctypeOfSmoother = J_SMOOTHER
+      print *, 'JACOBI SMOOTHER'
+    else if(trim(sstring) .eq. 'ILU') then
+      rproblem%ctypeOfSimulation = ILU_SMOOTHER
+      print *, 'ILU SMOOTHER'
+    else
+      print *,'Invalid sstring for smoother type:', trim(sstring)
+    Stop
+    end if
+
+    !     kind of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER)
+    call parlst_getvalue_string (rparams, '', &
+                                     'ctypeOfSolver',sstring)
+
+    if(trim(sstring) .eq. 'DIRECT_SOLVER') then
+      rproblem%ctypeOfSolver = DIRECT_SOLVER
+      print *, 'DIRECT SOLVER'
+    else if(trim(sstring) .eq. 'MG_SOLVER') then
+      rproblem%ctypeOfSolver = MG_SOLVER
+      print *, 'MG_SOLVER'
+    else if(trim(sstring) .eq. 'CG_SOLVER') then
+      rproblem%ctypeOfSolver = CG_SOLVER
+      print *, 'CG_SOLVER'
+    else if(trim(sstring) .eq. 'BICGSTAB_SOLVER') then
+      rproblem%ctypeOfSolver = BICGSTAB_SOLVER
+      print *, 'BICGSTAB_SOLVER'
+    else
+      print *,'Invalid sstring for solver type:', trim(sstring)
+    Stop
+    end if
+
+    ! Minimum level
+    call parlst_getvalue_int (rparams, '', &
+                                     'NLMIN', rproblem%NLMIN)   
+    ! Maximum level
+    call parlst_getvalue_int (rparams, '', &
+                                     'NLMAX', rproblem%NLMAX)
+
+    if (rproblem%ctypeOfSolver /= MG_SOLVER) then
+      rproblem%NLMIN = rproblem%NLMAX
+    end if
+
+    ! Allocate memory for all levels
+    allocate(Rlevels(rproblem%NLMIN:rproblem%NLMAX))
         
     ! function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
     call parlst_getvalue_int (rparams, '', &
@@ -222,13 +305,33 @@ contains
                                      'Deformation', sstring)
     if(trim(sstring) .eq. 'ON') then
 	    rproblem%DEFORMATION = ON
+      print *, 'Deformation ON'
     else if(trim(sstring) .eq. 'OFF') then
 	    rproblem%DEFORMATION = OFF
+      print *, 'Deformation OFF'
     else
-	    print *,'Invalid sstring for simulation type'
+	    print *,'Invalid sstring for simulation type:', trim(sstring)
+    Stop
     end if
+
+    !    max number of iterations
+    call parlst_getvalue_int (rparams, '', &
+                                     'niterations', rproblem%niterations)
+
+    !    number of smoothing steps
+    call parlst_getvalue_int (rparams, '', &
+                                     'nsmoothingSteps', rproblem%nsmoothingSteps)
+
+    !  tolerance
+    call parlst_getvalue_double (rparams, '', &
+                                     'dtolerance', rproblem%dtolerance)
+
+    !  Damping parameter
+    call parlst_getvalue_double (rparams, '', &
+                                     'ddamp', rproblem%ddamp)
          
     ! material parameters (Poisson ratio nu and shear modulus mu)
+
     call parlst_getvalue_double (rparams, '', &
                                      'dnu', rproblem%dnu)
 
@@ -268,14 +371,21 @@ contains
 !     call parlst_getvalue_double (rparams, '', &
 !                                      'drhsBound2', rproblem%drhsBound2)
                  
-
+    print *,'NLMIN = ', rproblem%NLMIN
     print *,'NLMAX = ', rproblem%NLMAX
     print *,'cfuncID_u1 = ', rproblem%cfuncID_u1
     print *,'cfuncID_u2 = ', rproblem%cfuncID_u2
-    print *,'Sbc = ', rproblem%Sbc
     print *,'dnu = ', rproblem%dnu
     print *,'dmu = ', rproblem%dmu
     print *,'dlambda = ', rproblem%dlambda
+    print *,'selementType = ', rproblem%selement
+   
+    do i = 1, rproblem%nboundaries
+      do j = 1,rproblem%NboundarySegments(i)
+        call parlst_getvalue_string (rparams, '', 'Sbc'//trim(sys_siL(i,3)), sstring, isubstring = j)
+        call output_line ('Sbc = ' // trim(rproblem%Sbc(i,j)) )
+      end do
+    end do
 
     ! +------------------------------------------------------------------------
     ! | BOUNDARY AND TRIANGULATION
@@ -286,183 +396,207 @@ contains
     call boundary_read_prm(rboundary, rproblem%sgridFilePRM)
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, rproblem%sgridFileTRI, rboundary)
+    call tria_readTriFile2D (Rlevels(rproblem%NLMIN)%rtriangulation, rproblem%sgridFileTRI, rboundary)
      
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (rproblem%NLMAX-1,rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering (rproblem%NLMIN-1,Rlevels(rproblem%NLMIN)%rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    call tria_initStandardMeshFromRaw (Rlevels(rproblem%NLMIN)%rtriangulation,rboundary)
+
+    ! Now refine the grid for the fine levels.
+    do i = rproblem%NLMIN+1, rproblem%NLMAX
+
+      ! Refine the grid using the 2-Level-Ordering algorithm
+      call tria_refine2LevelOrdering(Rlevels(i-1)%rtriangulation,&
+          Rlevels(i)%rtriangulation,rboundary)
+      
+      ! Create a standard mesh
+      call tria_initStandardMeshFromRaw(Rlevels(i)%rtriangulation,&
+        rboundary)
+    
+    end do
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we have two blocks.
-    call spdiscr_initBlockDiscr (rdiscretisation,2,&
-                                 rtriangulation, rboundary)
+    do i = rproblem%NLMIN, rproblem%NLMAX
+      call spdiscr_initBlockDiscr (Rlevels(i)%rdiscretisation, 2, &
+                                   Rlevels(i)%rtriangulation, rboundary)
+    end do
     
-    if (rproblem%selement .EQ. 'Q2') then
-	    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
-	    ! structures for every component of the solution vector.
-	    ! We have a solution vector with two components:
-	    !  Component 1 = X-velocity
-	    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1),&
-			  EL_Q2, CUB_G3X3, rtriangulation, rboundary)
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! We have a solution vector with two components:
+    do i = rproblem%NLMIN, rproblem%NLMAX
+      if (rproblem%selement .EQ. 'Q2') then
+  
+	      !  Component 1 = X-velocity
+	      call spdiscr_initDiscr_simple (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+			    EL_Q2, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
+	    
+	      ! Component 2 = Y-velocity
+	      call spdiscr_initDiscr_simple (Rlevels(i)%rdiscretisation%RspatialDiscr(2),&
+			      EL_Q2, CUB_G3X3, Rlevels(i)%rtriangulation, rboundary)
+	    
+	    else if (rproblem%selement .EQ. 'Q1') then
+	      ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+	      ! structures for every component of the solution vector.
+	      ! We have a solution vector with two components:
+	      !  Component 1 = X-velocity
+	      call spdiscr_initDiscr_simple (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+			      EL_Q1, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
 	  
-	    ! Component 2 = Y-velocity
-	    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(2),&
-			    EL_Q2, CUB_G3X3, rtriangulation, rboundary)
-	  
-	  else if (rproblem%selement .EQ. 'Q1') then
-	    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
-	    ! structures for every component of the solution vector.
-	    ! We have a solution vector with two components:
-	    !  Component 1 = X-velocity
-	    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1),&
-			    EL_Q1, CUB_G2X2, rtriangulation, rboundary)
-	
-	    ! Component 2 = Y-velocity
-	    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(2),&
-			    EL_Q1, CUB_G2X2, rtriangulation, rboundary)
-    end if
+	      ! Component 2 = Y-velocity
+	      call spdiscr_initDiscr_simple (Rlevels(i)%rdiscretisation%RspatialDiscr(2),&
+			      EL_Q1, CUB_G2X2, Rlevels(i)%rtriangulation, rboundary)
+      end if
+    end do
 
-    ! Initialise the block matrix with default values based on
-    ! the discretisation.
-    call lsysbl_createMatBlockByDiscr (rdiscretisation,rmatrix)
-    
-    ! Inform the matrix that we build a saddle-point problem.
-    ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
-    ! but probably some solvers can use the special structure later.
-    rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
-    
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
-    ! We create that directly in the block (1,1) of the block matrix
-    ! using the discretisation structure of the first block.
-    !
-    ! Create the matrix structure of the X-velocity.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,1))
-    
-    ! And now to the entries of the matrix. For assembling of the entries,
-    ! we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+    do i = rproblem%NLMIN, rproblem%NLMAX
 
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = 2*rproblem%dmu + rproblem%dlambda
-    rform%Dcoefficients(2)  = rproblem%dmu
-              
-    ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical
-    ! data.
-    call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,1),&
-                                 coeff_Laplace_2D)
-              
-    ! Now We create the block (1,2) of the block matrix
-    ! using the discretisation structure of the first block.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9, rmatrix%RmatrixBlock(1,2))
-    
-    ! And now to the entries of the matrix. For assembling of the entries,
-    ! we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_Y
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_X
-    rform%Idescriptors(2,2) = DER_DERIV_Y
-
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = rproblem%dlambda
-    rform%Dcoefficients(2)  = rproblem%dmu
-    ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical
-    ! data.
-    call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(1,2),&
-                                 coeff_Laplace_2D)
-              
-    ! Now We create the block (2,1) of the block matrix
-    ! using the discretisation structure of the first block.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(2),&
-                                     LSYSSC_MATRIX9, rmatrix%RmatrixBlock(2,1))
-    
-    ! And now to the entries of the matrix. For assembling of the entries,
-    ! we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_Y
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_X
-
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = rproblem%dlambda
-    rform%Dcoefficients(2)  = rproblem%dmu
-              
-    ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical
-    ! data.
-    call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,1),&
-                                 coeff_Laplace_2D)
+      ! Initialise the block matrix with default values based on
+      ! the discretisation.
+      call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
+      
+      ! Inform the matrix that we build a saddle-point problem.
+      ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
+      ! but probably some solvers can use the special structure later.
+      Rlevels(i)%rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
+      
+      ! Now as the discretisation is set up, we can start to generate
+      ! the structure of the system matrix which is to solve.
+      ! We create that directly in the block (1,1) of the block matrix
+      ! using the discretisation structure of the first block.
+      !
+      ! Create the matrix structure of the X-velocity.
+      call bilf_createMatrixStructure (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+                                      LSYSSC_MATRIX9, Rlevels(i)%rmatrix%RmatrixBlock(1,1))
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+      ! we need a bilinear form, which first has to be set up manually.
+      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+      ! scalar system matrix in 2D.
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_Y
+  
+      ! In the standard case, we have constant coefficients:
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
+      rform%Dcoefficients(1)  = 2*rproblem%dmu + rproblem%dlambda
+      rform%Dcoefficients(2)  = rproblem%dmu
                 
-    ! Now We create the block (2,2) of the block matrix
-    ! using the discretisation structure of the first block.
-    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(2),&
-                                     LSYSSC_MATRIX9, rmatrix%RmatrixBlock(2,2))
-    
-    ! And now to the entries of the matrix. For assembling of the entries,
-    ! we need a bilinear form, which first has to be set up manually.
-    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
-    ! scalar system matrix in 2D.
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+      ! Now we can build the matrix entries.
+      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! As long as we use constant coefficients, this routine is not used.
+      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! the framework will call the callback routine to get analytical
+      ! data.
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(1,1),&
+                                  coeff_Laplace_2D)
+                
+      ! Now We create the block (1,2) of the block matrix
+      ! using the discretisation structure of the first block.
+      call bilf_createMatrixStructure (Rlevels(i)%rdiscretisation%RspatialDiscr(1),&
+                                      LSYSSC_MATRIX9, Rlevels(i)%rmatrix%RmatrixBlock(1,2))
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+      ! we need a bilinear form, which first has to be set up manually.
+      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+      ! scalar system matrix in 2D.
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_DERIV_Y
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_X
+      rform%Idescriptors(2,2) = DER_DERIV_Y
+  
+      ! In the standard case, we have constant coefficients:
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
+      rform%Dcoefficients(1)  = rproblem%dlambda
+      rform%Dcoefficients(2)  = rproblem%dmu
+      ! Now we can build the matrix entries.
+      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! As long as we use constant coefficients, this routine is not used.
+      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! the framework will call the callback routine to get analytical
+      ! data.
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(1,2),&
+                                  coeff_Laplace_2D)
+                
+      ! Now We create the block (2,1) of the block matrix
+      ! using the discretisation structure of the first block.
+      call bilf_createMatrixStructure (Rlevels(i)%rdiscretisation%RspatialDiscr(2),&
+                                      LSYSSC_MATRIX9, Rlevels(i)%rmatrix%RmatrixBlock(2,1))
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+      ! we need a bilinear form, which first has to be set up manually.
+      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+      ! scalar system matrix in 2D.
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_Y
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_X
+  
+      ! In the standard case, we have constant coefficients:
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
+      rform%Dcoefficients(1)  = rproblem%dlambda
+      rform%Dcoefficients(2)  = rproblem%dmu
+                
+      ! Now we can build the matrix entries.
+      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! As long as we use constant coefficients, this routine is not used.
+      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! the framework will call the callback routine to get analytical
+      ! data.
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(2,1),&
+                                  coeff_Laplace_2D)
+                  
+      ! Now We create the block (2,2) of the block matrix
+      ! using the discretisation structure of the first block.
+      call bilf_createMatrixStructure (Rlevels(i)%rdiscretisation%RspatialDiscr(2),&
+                                      LSYSSC_MATRIX9, Rlevels(i)%rmatrix%RmatrixBlock(2,2))
+      
+      ! And now to the entries of the matrix. For assembling of the entries,
+      ! we need a bilinear form, which first has to be set up manually.
+      ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+      ! scalar system matrix in 2D.
+      rform%itermCount = 2
+      rform%Idescriptors(1,1) = DER_DERIV_X
+      rform%Idescriptors(2,1) = DER_DERIV_X
+      rform%Idescriptors(1,2) = DER_DERIV_Y
+      rform%Idescriptors(2,2) = DER_DERIV_Y
+  
+      ! In the standard case, we have constant coefficients:
+      rform%ballCoeffConstant = .true.
+      rform%BconstantCoeff = .true.
+      rform%Dcoefficients(1)  = rproblem%dmu
+      rform%Dcoefficients(2)  = 2*rproblem%dmu + rproblem%dlambda
+                
+      ! Now we can build the matrix entries.
+      ! We specify the callback function coeff_Laplace for the coefficients.
+      ! As long as we use constant coefficients, this routine is not used.
+      ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+      ! the framework will call the callback routine to get analytical
+      ! data.
+      call bilf_buildMatrixScalar (rform,.true.,Rlevels(i)%rmatrix%RmatrixBlock(2,2),&
+                                  coeff_Laplace_2D)
 
-    ! In the standard case, we have constant coefficients:
-    rform%ballCoeffConstant = .true.
-    rform%BconstantCoeff = .true.
-    rform%Dcoefficients(1)  = rproblem%dmu
-    rform%Dcoefficients(2)  = 2*rproblem%dmu + rproblem%dlambda
-              
-    ! Now we can build the matrix entries.
-    ! We specify the callback function coeff_Laplace for the coefficients.
-    ! As long as we use constant coefficients, this routine is not used.
-    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-    ! the framework will call the callback routine to get analytical
-    ! data.
-    call bilf_buildMatrixScalar (rform,.true.,rmatrix%RmatrixBlock(2,2),&
-                                 coeff_Laplace_2D)
+    end do
               
     ! Although we could manually create the solution/RHS vector,
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template:
-    call lsysbl_createVecBlockIndMat (rmatrix,rrhs, .false.)
-    call lsysbl_createVecBlockIndMat (rmatrix,rvector, .false.)
+    call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rrhs, .false.)
+    call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rvector, .false.)
 
     ! The vector structure is ready but the entries are missing. 
     ! So the next thing is to calculate the content of that vector.
@@ -479,11 +613,11 @@ contains
     !     
     ! Note that the vector is unsorted after calling this routine!
     ! For U1
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+    call linf_buildVectorScalar (Rlevels(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(1),&
                   rlinform,.true.,rrhs%RvectorBlock(1),coeff_RHS_Vol_u1_2D)
 
     ! For U2
-    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(2),&
+    call linf_buildVectorScalar (Rlevels(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(2),&
                   rlinform,.true.,rrhs%RvectorBlock(2),coeff_RHS_Vol_u2_2D)
 
     ! print # of DOF
@@ -494,101 +628,114 @@ contains
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rvector)
 
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
-    ! a discrete version of the analytic BC, which we can implement into the
-    ! solution/RHS vectors using the corresponsolidmechding filter.
-    !   
-    ! Create a t_discreteBC structure where we store all discretised boundary
-    ! conditions.
-    call bcasm_initDiscreteBC(rdiscreteBC)
-    
-    ! We first set up the boundary conditions for the U1-velocity, then those
-    ! of the U2-velocity.
-    ! We 'know' already (from the problem definition) that we have four boundary
-    ! segments in the domain. Each of these, we want to use for enforcing
-    ! some kind of boundary condition.
-    !    
-    ! We ask the bondary routines to create a 'boundary region' - which is
-    ! simply a part of the boundary corresponding to a boundary segment.
-    ! A boundary region roughly contains the type, the min/max parameter value
-    ! and whether the endpoints are inside the region or not.
-    do i = 1, rproblem%nboundaries
-      do j = 1,rproblem%NboundarySegments(i)
-	      call boundary_createRegion(rboundary,i,j,rboundaryRegion)
-	      if (rproblem%Sbc(i,j) .eq. 'D') then
-          ! The endpoint of this segment should also be Dirichlet. We set this by
-          ! changing the region properties in rboundaryRegion.
-		      rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-          print *,'D',i,j 
-          ! We use this boundary region and specify that we want to have Dirichlet
-          ! boundary there. The following call does the following:
-          ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-          ! We specify icomponent='1' to indicate that we set up the
-          ! Dirichlet BC's for the first (here: one and only) component in the 
-          ! solution vector.
-          ! - Discretise the boundary condition so that the BC's can be applied
-          ! to matrices and vectorssolidmech
-          ! - Add the calculated discrete BC's to rdiscreteBC for later use.
-		      call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-						rboundaryRegion,rdiscreteBC,&
-						getBoundaryValues_2D)
+    do i = rproblem%NLMIN, rproblem%NLMAX
 
-          ! Now continue with defining the boundary conditions of the U2-velocity:	
-		      call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
-						rboundaryRegion,rdiscreteBC,&
-						getBoundaryValues_2D)
-	      
-        else if (rproblem%Sbc(i,j) .eq. 'N') then
-		      rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-          print *,'N',i,j
-          rcollection%IquickAccess(1) = j
-          ! For Element Q1
-		      if (rproblem%selement .EQ. 'Q1') then
-
-            ! We use this boundary region and specify that we want to have Neumann boundary there
-            ! and add this to volumetric part(the neumann boundary part on rhs) for U1
-			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
-					    rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
-
-            ! Now its done for U2
-			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
-					    rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
-
-          ! For Element Q2
-		      else if (rproblem%selement .EQ. 'Q2') then
-
-            ! For U1
-			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
-					    rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
-
-            ! For U2
-			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
-					    rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
-		      end if
-	      else
-	      print *, ' Invalid Input for Boundary Condition'
-	      stop
-	      end if
+      ! For implementing boundary conditions, we use a 'filter technique with
+      ! discretised boundary conditions'. This means, we first have to calculate
+      ! a discrete version of the analytic BC, which we can implement into the
+      ! solution/RHS vectors using the corresponsolidmechding filter.
+      !   
+      ! Create a t_discreteBC structure where we store all discretised boundary
+      ! conditions.
+      call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
+  
+      ! We first set up the boundary conditions for the U1-velocity, then those
+      ! of the U2-velocity.
+      ! We 'know' already (from the problem definition) that we have four boundary
+      ! segments in the domain. Each of these, we want to use for enforcing
+      ! some kind of boundary condition.
+      !    
+      ! We ask the bondary routines to create a 'boundary region' - which is
+      ! simply a part of the boundary corresponding to a boundary segment.
+      ! A boundary region roughly contains the type, the min/max parameter value
+      ! and whether the endpoints are inside the region or not.
+      do j = 1, rproblem%nboundaries
+        do k = 1,rproblem%NboundarySegments(j)
+	        call boundary_createRegion(rboundary,j,k,rboundaryRegion)
+	        if (rproblem%Sbc(j,k) .eq. 'D') then
+            ! The endpoint of this segment should also be Dirichlet. We set this by
+            ! changing the region properties in rboundaryRegion.
+		        rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+            if (i .eq. rproblem%NLMAX) then
+              print *,'D',j,k
+            end if 
+            ! We use this boundary region and specify that we want to have Dirichlet
+            ! boundary there. The following call does the following:
+            ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
+            ! We specify icomponent='1' to indicate that we set up the
+            ! Dirichlet BC's for the first (here: one and only) component in the 
+            ! solution vector.
+            ! - Discretise the boundary condition so that the BC's can be applied
+            ! to matrices and vectorssolidmech
+            ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+		        call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+						  rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+						  getBoundaryValues_2D)
+  
+            ! Now continue with defining the boundary conditions of the U2-velocity:	
+		        call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
+						  rboundaryRegion,Rlevels(i)%rdiscreteBC,&
+						  getBoundaryValues_2D)
+	        
+          else if (rproblem%Sbc(j,k) .eq. 'N') then
+		        rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+            if (i .eq. rproblem%NLMAX) then
+              print *,'N',j,k
+            end if 
+            rcollection%IquickAccess(1) = k
+            ! For Element Q1
+		        if (rproblem%selement .EQ. 'Q1') then
+  
+              ! We use this boundary region and specify that we want to have Neumann boundary there
+              ! and add this to volumetric part(the neumann boundary part on rhs) for U1
+			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+					      rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
+  
+              ! Now its done for U2
+			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+					      rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
+  
+            ! For Element Q2
+		        else if (rproblem%selement .EQ. 'Q2') then
+  
+              ! For U1
+			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
+					      rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
+  
+              ! For U2
+			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
+					      rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
+		        end if
+	        else
+	        print *, ' Invalid Input for Boundary Condition'
+	        stop
+	        end if
+        end do
       end do
-    end do
 
-    ! Hang the pointer into the vector and matrix. That way, these
-    ! boundary conditions are always connected to that matrix and that
-    ! vector.!
-    rmatrix%p_rdiscreteBC => rdiscreteBC
-    rrhs%p_rdiscreteBC => rdiscreteBC
-    rvector%p_rdiscreteBC => rdiscreteBC
-    
-    ! Next step is to implement boundary conditions into the RHS,
-    ! solution and matrix. This is done using a vector/matrix filter
-    ! for discrete boundary conditions.
-    ! The discrete boundary conditions are already attached to the
-    ! vectors/matrix. Call the appropriate vector/matrix filter that
-    ! modifies the vectors/matrix according to the boundary conditions.
-    call vecfil_discreteBCrhs (rrhs)
-    call vecfil_discreteBCsol (rvector)
-    call matfil_discreteBC (rmatrix)
+      ! Hang the pointer into the matrix. That way, these
+      ! boundary conditions are always connected to that matrix.
+      Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
+  
+      ! Also implement the boundary conditions into the matrix.
+      call matfil_discreteBC (Rlevels(i)%rmatrix)
+
+    end do
+  
+      ! Hang the pointer into the vector. That way, these
+      ! boundary conditions are always connected to that 
+      ! vector.!
+      rrhs%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
+      rvector%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
+      
+      ! Next step is to implement boundary conditions into the RHS,
+      ! solution and matrix. This is done using a vector/matrix filter
+      ! for discrete boundary conditions.
+      ! The discrete boundary conditions are already attached to the
+      ! vectors/matrix. Call the appropriate vector/matrix filter that
+      ! modifies the vectors/matrix according to the boundary conditions.
+      call vecfil_discreteBCrhs (rrhs)
+      call vecfil_discreteBCsol (rvector)
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -603,33 +750,95 @@ contains
     ! Create a BiCGStab-solver.
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process.
-!     p_RfilterChain => RfilterChain
-!     nullify(p_rpreconditioner)
-!     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    if (rproblem%ctypeOfSolver .eq. BICGSTAB_SOLVER) then
+      p_RfilterChain => RfilterChain
+      nullify(p_rpreconditioner)
+      call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
 
+    ! Create Conjugate solver
+    else if (rproblem%ctypeOfSolver .eq. CG_SOLVER) then
+      p_RfilterChain => RfilterChain
+      nullify(p_rpreconditioner)
+      call linsol_initCG (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    
     ! For Direct solver we use following 
-    call linsol_initUMFPACK4 (p_rsolverNode)
-    p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 0
+    else if (rproblem%ctypeOfSolver .eq. DIRECT_SOLVER) then
+      call linsol_initUMFPACK4 (p_rsolverNode)
+      p_rsolverNode%p_rsubnodeUMFPACK4%imatrixDebugOutput = 0
+
+    ! Now we have to build up the level information for multigrid.
+
+    ! Create a Multigrid-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    else if (rproblem%ctypeOfSolver .eq. MG_SOLVER) then
+      p_RfilterChain => RfilterChain
+      call linsol_initMultigrid2 (p_rsolverNode,rproblem%NLMAX-rproblem%NLMIN+1,p_RfilterChain)
+      
+      ! Set up a coarse grid solver.
+      ! The coarse grid in multigrid is always grid 1!
+      call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+      call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+      
+      ! Now set up the other levels...
+      do i = rproblem%NLMIN+1, rproblem%NLMAX
+      
+        ! Create a Jacobi smoother
+        if (rproblem%ctypeOfSmoother .eq. J_SMOOTHER) then
+          call linsol_initJacobi(p_rsmoother)
+        end if
+
+        ! Create an ILU(0) smoother
+        if (rproblem%ctypeOfSmoother .eq. ILU_SMOOTHER) then
+          call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+        end if
+        
+        ! We will use 4 smoothing steps with damping parameter 0.7
+        call linsol_convertToSmoother(p_rsmoother, rproblem%nsmoothingSteps, rproblem%ddamp)
+        
+        ! And add this multi-grid level. We will use the same smoother
+        ! for pre- and post-smoothing.
+        call linsol_getMultigrid2Level (p_rsolverNode,i-rproblem%NLMIN+1,p_rlevelInfo)
+        p_rlevelInfo%p_rpresmoother => p_rsmoother
+        p_rlevelInfo%p_rpostsmoother => p_rsmoother
+        
+      end do
+    else
+      print *, ' Invalid Input for Solver type'
+    stop
+    end if
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
     ! We will allow the solver to perform 200 iterations
-    p_rsolverNode%nmaxIterations = 10000
+    p_rsolverNode%nmaxIterations = rproblem%niterations
 
-    p_rsolverNode%depsRel = 1E-10_DP
+    p_rsolverNode%depsRel = rproblem%dtolerance
 !     p_rsolverNode%depsAbs = 1E-10_DP
+    print *,'tolerance',p_rsolverNode%depsRel
 
-    ! Attach the system matrix to the solver.
-    ! First create an array with the matrix data (on all levels, but we
-    ! only have one level here), then call the initialisation 
-    ! routine to attach all these matrices.
-    ! Remark: Don't make a call like
-    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
-    ! This doesn't work on all compilers, since the compiler would have
-    ! to create a temp array on the stack - which does not always work!
-    Rmatrices = (/rmatrix/)
-    call linsol_setMatrices(p_rsolverNode,Rmatrices)
+    ! Attach the system matrices to the solver.
+    !
+    ! We copy our matrices to a big matrix array and transfer that
+    ! to the setMatrices routines. This intitialises then the matrices
+    ! on all levels according to that array. Note that this does not
+    ! allocate new memory, we create only 'links' to existing matrices
+    ! into Rmatrices(:)!
+    allocate(Rmatrices(rproblem%NLMIN:rproblem%NLMAX))
+    do i = rproblem%NLMIN, rproblem%NLMAX
+      call lsysbl_duplicateMatrix (Rlevels(i)%rmatrix,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end do
+    
+    call linsol_setMatrices(p_RsolverNode,Rmatrices(rproblem%NLMIN:rproblem%NLMAX))
+
+    ! We can release Rmatrices immediately -- as long as we don't
+    ! release Rlevels(i)%rmatrix!
+    do i = rproblem%NLMIN,rproblem%NLMAX
+      call lsysbl_releaseMatrix (Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -675,7 +884,7 @@ contains
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
     ! For Bending in the gmv
-    call storage_getbase_double2D(rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_double2D(Rlevels(rproblem%NLMAX)%rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
     ! Write velocity field
     call lsyssc_getbase_double (rVector%RvectorBlock(1),p_Ddata)
@@ -683,7 +892,7 @@ contains
   
     ! we add sol. vector to coordinates to see the bending
     if (rproblem%DEFORMATION .eq. ON) then
-	    do i = 1,rtriangulation%NVT
+	    do i = 1,Rlevels(rproblem%NLMAX)%rtriangulation%NVT
 		    p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
 		    p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
 	    end do
@@ -692,7 +901,7 @@ contains
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
     ! We can now start the postprocessing. 
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,Rlevels(rproblem%NLMAX)%rtriangulation,&
         trim(sucddir)//'/u2d_0_simple.gmv')
 
     ! In case we use the VTK exporter, which supports vector output, we will
@@ -722,17 +931,27 @@ contains
     call lsysbl_releaseVector (rvector)
     call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rrhs)
-    call lsysbl_releaseMatrix (rmatrix)
-    
+    do i = rproblem%NLMAX, rproblem%NLMIN, -1
+      call lsysbl_releaseMatrix (Rlevels(i)%rmatrix)
+    end do
+
     ! Release our discrete version of the boundary conditions
-    call bcasm_releaseDiscreteBC (rdiscreteBC)
+    do i = rproblem%NLMAX, rproblem%NLMIN, -1
+      call bcasm_releaseDiscreteBC (Rlevels(i)%rdiscreteBC)
+    end do
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
-    call spdiscr_releaseBlockDiscr(rdiscretisation)
+    do i = rproblem%NLMAX, rproblem%NLMIN, -1
+      call spdiscr_releaseBlockDiscr(Rlevels(i)%rdiscretisation)
+    end do
     
     ! Release the triangulation. 
-    call tria_done (rtriangulation)
+    do i = rproblem%NLMAX, rproblem%NLMIN, -1
+      call tria_done (Rlevels(i)%rtriangulation)
+    end do
+    
+    deallocate(Rlevels)
     
     ! Finally release the domain, that's it.
     call boundary_release (rboundary)

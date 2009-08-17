@@ -4,10 +4,10 @@
 grid="cook"
 
 # choose shear modulus
-mus="0.5"
+mus="80.194"
 
 # choose Poisson ratio
-nus="0.3"
+nus="0.4999"
 
 # choose MG levels
 #mgs="02 03 04 05 06 07 08 09 10"
@@ -38,7 +38,7 @@ sgridFilePRM = './pre/${grid}.prm'
 sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
-selementType = Q2
+selementType = Q1
 
 # boundaries
 nboundaries= 1
@@ -54,11 +54,20 @@ N
 N
 D
 
+# Minimum level of the discretisation
+NLMIN = 2
+
 # Maximum level of the discretisation
 NLMAX = ${mg}
 
 # type of configuration (possible values: REAL, ANALYTICAL)
-ctypeOfSimulation = ANALYTICAL
+ctypeOfSimulation = REAL
+
+# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER,CG_SOlVER)
+ctypeOfSolver = CG_SOLVER
+
+# type of smoother (possible values: JACOBI, ILU)
+ctypeOfSmoother = JACOBI
 
 # set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
 cfuncID_u1 = 53
@@ -66,6 +75,18 @@ cfuncID_u2 = 52
 
 # deformation(possible values: ON, OFF)
 Deformation = ON
+
+# max number of iterations
+niterations = 10000
+
+# number of smoothing steps
+nsmoothingSteps = 2
+
+# damping parameter
+ddamp = 0.7
+
+# tolerance
+dtolerance = 1E-08
 
 # material parameters (Poisson ratio nu and shear modulus mu)
 dnu = ${nu}
@@ -76,15 +97,15 @@ drhsVol1   = 0
 drhsVol2   = 0
 
 DrhsBoundx1(4) =
-1.0
--1.0
+0.0
+0.0
 0.0
 0.0
 
 DrhsBoundy1(4) = 
 0.0
+15.625
 0.0
--1.0
 0.0
 
 
