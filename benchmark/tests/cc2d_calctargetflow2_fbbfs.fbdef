@@ -20,7 +20,7 @@ class = DEFAULT
 
 testid   = CC2D_TARGET2_001
 descr    = BFS-test with Fictitious boundary to realise the step, Re=10000, t=0..5, 128 timesteps, Q2, Level 5
-datfile  = ./data/apps_cc2d/master_calctargetflow_fbbfs.dat
+datfile  = ./data/apps_cc2d_fbbfs/master_calctargetflow_fbbfs.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 5
