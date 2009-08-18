@@ -96,9 +96,10 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 ######################################################
 # Finally, invoke the main workhorse:
 ../../bin/configure \
-	--appname=cc2d \
+../../bin/configure \
+	--appname=cc2d_fbbfs \
 	--programfile=../../applications/cc2d/src/cc2d.f90 \
-	--srclist_app= \
+	--srclist_app=\
 "../../applications/cc2d/src/adaptivetimestep.f90 \
 ../../applications/cc2d/src/cc2d.f90 \
 ../../applications/cc2d/src/ccbasic.f90 \
@@ -115,7 +116,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 ../../applications/cc2d/src/ccnonstationary.f90 \
 ../../applications/cc2d/src/ccpostprocessing.f90 \
 ../../applications/cc2d/src/ccstationary.f90 \
-../../applications/cc2d/src/cctimeanalysis.f90" \	
+../../applications/cc2d/src/cctimeanalysis.f90" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@
