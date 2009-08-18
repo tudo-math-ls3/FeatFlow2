@@ -83,8 +83,8 @@ ioutputFilm = $POSTPROCESSING_IOUTPUTFILM
 sfilenameFilm = '$POSTPROCESSING_SFILENAMEFILM'
 
 [PARAMTRIANG]
-sParametrisation = '%{spredirectory}/bench1.prm'
-sMesh = '%{spredirectory}/bench1.tri'
+sParametrisation = '%{spredirectory}/fbbfs.prm'
+sMesh = '%{spredirectory}/fbbfs.tri'
 
 [CC-LINEARSOLVER]
 icoarseGridSolverType = 0
