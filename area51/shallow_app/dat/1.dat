@@ -1,27 +1,29 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 4
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
 #prmname = ./pre/TRIA.prm
 #prmname = ./pre/unstructured.prm
 #prmname = ./pre/zwanzigm.prm
-prmname = ./pre/zehnm.prm
+#prmname = ./pre/zehnm.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/balken.prm
 #prmname = ./pre/zylinderusefein.prm
+prmname = ./pre/threezylinderfein.prm
 
 # Name of the triangulation file
 #triname = ./pre/QUAD.tri
 #triname = ./pre/TRIA.tri
 #triname = ./pre/unstructured.tri
 #triname = ./pre/zwanzigm.tri
-triname = ./pre/zehnm.tri
+#triname = ./pre/zehnm.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/balken.tri
 #triname =./pre/zylinderusefein.tri
+triname =./pre/threezylinderfein.tri
 
 # What kind of finite elements do we use?
 # 0: linear conforming triangular FE, P1
@@ -34,10 +36,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.005
+dt = 0.001
 
 # Final time
-ttfinal = 0.1
+ttfinal = 4.0
 
 # Implicitness parameter
 theta = 0.5
@@ -100,7 +102,7 @@ prelimiting = 1
 # 1: apply simple prelimiting
 
 # Which method to use for choosing syncronised FCT limiting factor
-syncromethod = 3
+syncromethod = 1
 # 1: Indicator variable
 # 2: Minimal factor
 # 3: Each component seperate
@@ -115,8 +117,8 @@ gravconst = 9.81
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = 5
-hustart = if(x<0,5,-5)
+hstart  = if(x<10,10,5)
+hustart = 0
 hvstart = 0
 
 [VIDEO]
@@ -124,7 +126,7 @@ hvstart = 0
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 0
+makevideo = 1
 
 # Make gmv snapshot every ... seconds (must be n*dt)
-videotimestep = 0.1
+videotimestep = 0.04
