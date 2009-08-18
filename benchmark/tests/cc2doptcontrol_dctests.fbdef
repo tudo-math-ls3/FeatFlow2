@@ -1,0 +1,74 @@
+# -*- mode: sh -*-
+
+#============================================================
+# global settings for all CC2DOPTC tests defined in this file
+#============================================================
+# This test tests the solver behaviour on the bench1 mesh.
+# The target flow is a nonstationary Stokes flow at Re=20.
+# The calculation is done with the Navier-Stokes equation.
+# Aim: The Navier-Stokes flow should behave like a Stokes flow.
+# As a result, the calculated control emulates the negative
+# nonlinearity of the Navier-Stokes flow to compensate for that.
+
+appl = cc2doptcontrol
+class = DEFAULT
+
+#============================================================
+# Test 1
+#
+testid   = CC2DOPTC_DC_00_001
+descr    = Opt-Control-Benchmark. Driven-Cavity.
+datfile  = ./data/area51_cc2doptcontrol/master_dc_re400_reference.dat
+#============================================================
+# WARNING: The space-time solver does not use this! There's a
+# separate variable SPACELEVEL and TIMELEVEL that configures the refinement.
+# Therefore, the MGLEVELS variable is a dummy here.
+mglevels = 1
+#
+# Space-Refinement
+#
+spacenlmin = 1
+spacenlmax = 2
+#
+# Time-Refinement
+#
+timenlmin = 1
+timenlmax = 2
+TIMEMG_ispacelevelcoupledtotimelevel = 1
+#
+# Space/time discretisation
+#
+SPACEDISCRETISATION_iElementType = 3
+TIMEDISCRETISATION_ntimesteps = 5
+TIMEDISCRETISATION_dtimeStepTheta = 1.0
+#
+# Optimal control parameters 
+#
+OPTIMALCONTROL_dalphaC = 0.01
+OPTIMALCONTROL_dgammaC = 0.0
+OPTIMALCONTROL_ccontrolConstraints = 0
+OPTIMALCONTROL_dumin1 = -0.5
+OPTIMALCONTROL_dumax1 = 0.5
+OPTIMALCONTROL_dumin2 = -0.5
+OPTIMALCONTROL_dumax2 = 0.5
+#
+# Space-time Newton
+#
+TIMESOLVER_ctypePreconditioner = 1
+TIMESOLVER_nmaxIterations = 100
+TIMESOLVER_depsRel = 1E-8
+#
+# Space-time-MG
+#
+TIMESMOOTHER_cspaceTimeSmoother = 1
+TIMESMOOTHER_nsmSteps = 2
+#
+# Space-MG
+#
+LINEARSOLVER_iSmootherType = 8
+LINEARSOLVER_icoarseGridSolverType = 0
+LINEARSOLVER_depsRel = 1E-8
+#
+# Postprocessing
+#
+POSTPROCESSING_sgmvfilename = ''
