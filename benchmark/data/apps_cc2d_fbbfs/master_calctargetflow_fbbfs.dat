@@ -95,7 +95,7 @@ bdExpressions(2) =
   'ParProfile'     2    $BDC_UMAX
 
 [BDCONDITIONS]
-bdComponent1(4)=
+bdComponent1(5)=
    1.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[0.0,1.0] : Dirichlet-0 boundary
    2.0  0  0                               # param=]1.0,2.0[ : Neumann boundary = do-nothing
    3.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
