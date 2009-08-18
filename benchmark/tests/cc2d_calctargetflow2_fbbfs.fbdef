@@ -8,6 +8,9 @@
 appl = cc2d_fbbfs
 class = DEFAULT
 
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+
 # Test 1
 # Nonstationary Backward-Facing-Step flow.
 # Re=10000, Navier-Stokes, Inflow = 1.0 max

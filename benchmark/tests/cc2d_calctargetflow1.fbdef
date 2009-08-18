@@ -8,6 +8,9 @@
 appl = cc2d
 class = DEFAULT
 
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+
 # Test 1
 # Nonstationary DC flow.
 # Re=400, Stokes
