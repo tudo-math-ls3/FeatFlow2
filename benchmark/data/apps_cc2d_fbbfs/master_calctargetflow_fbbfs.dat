@@ -24,7 +24,7 @@
 sappdirectory = .
 
 # Directory with data files
-sdatadirectory = %{sappdirectory}/data/apps_cc2d
+sdatadirectory = %{sappdirectory}/data/apps_cc2d_fbbfs
 
 # Directory for log files
 slogdirectory = $LOGDIR
@@ -36,7 +36,7 @@ spostdirectory = $LOGDIR
 ssolutiondirectory = $LOGDIR
 
 # Directory for preprocessing files
-spredirectory = %{sappdirectory}/data/apps_cc2d
+spredirectory = %{sappdirectory}/data/apps_cc2d_fbbfs
 
 # The following defines a list of data files to read. The files may optionally
 # contain a path specification. If no path os specified, the files
