@@ -13,13 +13,15 @@
 appl = cc2doptcontrol
 class = DEFAULT
 
+#============================================================
 # Test 1
-
-testid   = CC2DOPTC_00_001
+#
+testid   = CC2DOPTC_BENCH_00_001
 descr    = Opt-Control-Benchmark. bench1 like Stokes.
 datfile  = ./data/area51_cc2doptcontrol/master_bench1likestokes.dat
+#============================================================
 # WARNING: The space-time solver does not use this! There's a
-# separate vraiable SPACELEVEL and TIMELEVEL that configures the refinement.
+# separate variable SPACELEVEL and TIMELEVEL that configures the refinement.
 # Therefore, the MGLEVELS variable is a dummy here.
 mglevels = 1
 #
@@ -32,31 +34,41 @@ spacenlmax = 2
 #
 timenlmin = 1
 timenlmax = 2
-TIMEMGispacelevelcoupledtotimelevel = 1
+TIMEMG_ispacelevelcoupledtotimelevel = 1
 #
 # Space/time discretisation
 #
-SPACEDISCRETISATIONiElementType = 3
-TIMEDISCRETISATIONntimesteps = 5
-TIMEDISCRETISATIONdtimeStepTheta = 1.0
+SPACEDISCRETISATION_iElementType = 3
+TIMEDISCRETISATION_ntimesteps = 5
+TIMEDISCRETISATION_dtimeStepTheta = 1.0
+#
+# Optimal control parameters 
+#
+OPTIMALCONTROL_dalphaC = 0.01
+OPTIMALCONTROL_dgammaC = 0.0
+OPTIMALCONTROL_ccontrolConstraints = 0
+OPTIMALCONTROL_dumin1 = -0.5
+OPTIMALCONTROL_dumax1 = 0.5
+OPTIMALCONTROL_dumin2 = -0.5
+OPTIMALCONTROL_dumax2 = 0.5
 #
 # Space-time Newton
 #
-TIMESOLVERctypePreconditioner = 1
-TIMESOLVERnmaxIterations = 100
-$TIMESOLVERdepsRel = 1E-8
+TIMESOLVER_ctypePreconditioner = 1
+TIMESOLVER_nmaxIterations = 100
+TIMESOLVER_depsRel = 1E-8
 #
 # Space-time-MG
 #
-TIMESMOOTHERcspaceTimeSmoother = 1
-TIMESMOOTHERnsmSteps = 2
+TIMESMOOTHER_cspaceTimeSmoother = 1
+TIMESMOOTHER_nsmSteps = 2
 #
 # Space-MG
 #
-LINEARSOLVERSmootherType = 8
-LINEARSOLVERicoarseGridSolverType = 0
-LINEARSOLVERdepsRel = 1E-8
+LINEARSOLVER_iSmootherType = 8
+LINEARSOLVER_icoarseGridSolverType = 0
+LINEARSOLVER_depsRel = 1E-8
 #
 # Postprocessing
 #
-POSTPROCESSINGsgmvfilename = ''
+POSTPROCESSING_sgmvfilename = ''
