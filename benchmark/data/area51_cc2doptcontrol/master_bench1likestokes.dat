@@ -59,7 +59,7 @@ iequation          = 0
 RE                 = 1000
 NLMIN              = $spacenlmin
 NLMAX              = $spacenlmax
-iElementType       = $SPACEDISCRETISATIONiElementType
+iElementType       = $SPACEDISCRETISATION_iElementType
 
 [OPTIMALCONTROL]
 smeshTargetFlow = './pre/bench1.tri'
@@ -70,42 +70,42 @@ ilevelTargetFlow = 5
 ielementTypeTargetFlow = 3
 itargetFlowTimesteps = 80
 
-dalphaC = 0.01
-dgammaC = 0.0
+dalphaC = $OPTIMALCONTROL_dalphaC
+dgammaC = $OPTIMALCONTROL_dgammaC
 
-ccontrolConstraints = 0
-dumin1 = -0.5
-dumax1 = 0.5
-dumin2 = -0.5
-dumax2 = 0.5
+ccontrolConstraints = $OPTIMALCONTROL_ccontrolConstraints
+dumin1 = $OPTIMALCONTROL_dumin1
+dumax1 = $OPTIMALCONTROL_dumax1
+dumin2 = $OPTIMALCONTROL_dumin2
+dumax2 = $OPTIMALCONTROL_dumax2
 
 [TIME-DISCRETISATION]
-niterations = $TIMEDISCRETISATIONntimesteps
+niterations = $TIMEDISCRETISATION_ntimesteps
 dtimeMax = 1.0
 TIMENLMIN = $timenlmin
 TIMENLMAX = $timenlmax
-dtimeStepTheta = $TIMEDISCRETISATIONdtimeStepTheta
+dtimeStepTheta = $TIMEDISCRETISATION_dtimeStepTheta
 
 [TIME-POSTPROCESSING]
-sgmvFileName = $POSTPROCESSINGsgmvfilename
+sgmvFileName = $POSTPROCESSING_sgmvfilename
 
 [TIME-SOLVER]
-ctypePreconditioner = $TIMESOLVERctypePreconditioner
+ctypePreconditioner = $TIMESOLVER_ctypePreconditioner
 depsDiff            = 1E-7
-nmaxIterations      = $TIMESOLVERnmaxIterations
-depsRel             = $TIMESOLVERdepsRel
+nmaxIterations      = $TIMESOLVER_nmaxIterations
+depsRel             = $TIMESOLVER_depsRel
 dinexactNewtonExponent = 2.0
 #nmaxIterations         = 1
 domega                 = 1.0
 
 [TIME-MULTIGRID]
-ispacelevelcoupledtotimelevel = $TIMEMGispacelevelcoupledtotimelevel
+ispacelevelcoupledtotimelevel = $TIMEMG_ispacelevelcoupledtotimelevel
 nmaxIterations     = 100
 depsRel            = 1E-10
 
 [TIME-SMOOTHER]
-cspaceTimeSmoother = $TIMESMOOTHERcspaceTimeSmoother
-nsmSteps = $TIMESMOOTHERnsmSteps
+cspaceTimeSmoother = $TIMESMOOTHER_cspaceTimeSmoother
+nsmSteps = $TIMESMOOTHER_nsmSteps
 domega = 0.9
 cspaceTimeSmoother = 0
 
@@ -113,8 +113,8 @@ cspaceTimeSmoother = 0
 depsRel            = 1E-10
 
 [CC-LINEARSOLVER]
-ismootherType = $LINEARSOLVERSmootherType
-icoarseGridSolverType = $LINEARSOLVERicoarseGridSolverType
+ismootherType = $LINEARSOLVER_iSmootherType
+icoarseGridSolverType = $LINEARSOLVER_icoarseGridSolverType
 
 [CC-MULTIGRIDSOLVER]
 nmaxIterations     = 30

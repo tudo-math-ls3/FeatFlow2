@@ -15,7 +15,7 @@ DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
 # Nonstationary Backward-Facing-Step flow.
 # Re=10000, Navier-Stokes, Inflow = 1.0 max
 # Time: 0..5 sec
-# 128 timesteps per second
+# 40 timesteps per second
 # Q2
 # Level 5
 # The calculation takes place on a 'full' domain. The step is emulated
@@ -27,10 +27,10 @@ datfile  = ./data/apps_cc2d_fbbfs/master_calctargetflow_fbbfs.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 5
-MINLEVEL = 2
+MINLEVEL = 3
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.0078125
-TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+TIMEDISCRETISATION_DTIMESTEP = 0.025
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 TIMEDISCRETISATION_DTIMEMAX = 5.0
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_RE = 10000

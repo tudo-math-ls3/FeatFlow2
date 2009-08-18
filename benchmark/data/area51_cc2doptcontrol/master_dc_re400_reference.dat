@@ -71,30 +71,57 @@ ilevelTargetFlow = 7
 itargetFlowTimesteps = 80
 dtimeMax = 1.0
 
-ccontrolConstraints = 0
-dumin1 = -0.5
-dumax1 = 0.5
-dumin2 = -0.5
-dumax2 = 0.5
+dalphaC = $OPTIMALCONTROL_dalphaC
+dgammaC = $OPTIMALCONTROL_dgammaC
+
+ccontrolConstraints = $OPTIMALCONTROL_ccontrolConstraints
+dumin1 = $OPTIMALCONTROL_dumin1
+dumax1 = $OPTIMALCONTROL_dumax1
+dumin2 = $OPTIMALCONTROL_dumin2
+dumax2 = $OPTIMALCONTROL_dumax2
 
 [TIME-DISCRETISATION]
-TIMENLMAX = 1
+niterations = $TIMEDISCRETISATION_ntimesteps
+dtimeMax = 1.0
+TIMENLMIN = $timenlmin
+TIMENLMAX = $timenlmax
+dtimeStepTheta = $TIMEDISCRETISATION_dtimeStepTheta
 
 [TIME-POSTPROCESSING]
-sgmvFileName = 'gmv/utest2quad.gmv' 
+sgmvFileName = $POSTPROCESSING_sgmvfilename
 
 [TIME-SOLVER]
-nmaxIterations     = 100
-depsRel            = 1E-8
-ctypePreconditioner = 3
+ctypePreconditioner = $TIMESOLVER_ctypePreconditioner
+depsDiff            = 1E-7
+nmaxIterations      = $TIMESOLVER_nmaxIterations
+depsRel             = $TIMESOLVER_depsRel
 dinexactNewtonExponent = 2.0
-#nmaxIterations     = 1
-domega             = 1.0
+#nmaxIterations         = 1
+domega                 = 1.0
 
 [TIME-MULTIGRID]
+ispacelevelcoupledtotimelevel = $TIMEMG_ispacelevelcoupledtotimelevel
 nmaxIterations     = 100
-depsRel            = 1E-2
+depsRel            = 1E-10
 
 [TIME-SMOOTHER]
-nsmSteps = 1
+cspaceTimeSmoother = $TIMESMOOTHER_cspaceTimeSmoother
+nsmSteps = $TIMESMOOTHER_nsmSteps
+domega = 0.9
+cspaceTimeSmoother = 0
+
+[TIME-COARSEGRIDSOLVER]
+depsRel            = 1E-10
+
+[CC-LINEARSOLVER]
+ismootherType = $LINEARSOLVER_iSmootherType
+icoarseGridSolverType = $LINEARSOLVER_icoarseGridSolverType
+
+[CC-MULTIGRIDSOLVER]
+nmaxIterations     = 30
+depsRel            = 1E-8
+
+[CC-SMOOTHER]
+nsmoothingSteps    = 4
+domega             = 1.0
 
