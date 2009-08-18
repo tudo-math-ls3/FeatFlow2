@@ -87,13 +87,21 @@ contains
 	real(DP), dimension(3)					:: Qroe
 	
 	! temp variables
-	real(DP)		:: whl, whr, denom
+	real(DP)		:: whl, whr, denom, hl, hr
 
-	denom = sqrt(Ql(1))+sqrt(Qr(1))
-	whl = 1.0_DP/sqrt(Ql(1))
-	whr = 1.0_DP/sqrt(Qr(1))
+! Set the height variables
+hl=Ql(1)
+hr=Qr(1)
 
-	Qroe(1) = sqrt(Ql(1)*Qr(1))
+! Test, if a dry bed state is present
+if (hl<1e-6) hl=1e-6
+if (hr<1e-6) hr=1e-6
+
+	denom = sqrt(hl)+sqrt(hr)
+	whl = 1.0_DP/sqrt(hl)
+	whr = 1.0_DP/sqrt(hr)
+
+	Qroe(1) = sqrt(hl*hr)
 	Qroe(2) = Qroe(1)*(whl*Ql(2)+whr*Qr(2))/denom
 	Qroe(3) = Qroe(1)*(whl*Ql(3)+whr*Qr(3))/denom
 
@@ -470,7 +478,13 @@ contains
 	
 	! compute c = sqrt(g*h)
 	!c = sqrt(g*h)
-	
+
+! Test for dry bed case
+if (Q(1)<1e-6) then
+!dry bed case
+Flux=0
+else
+!wet bed case
     if (d==1) then
     ! build eigenvalues in x direction
 	    Flux(1) = Q(2)
@@ -482,9 +496,37 @@ contains
 	    Flux(2) = Q(2)*Q(3)/Q(1)
 	    Flux(3) = Q(3)*Q(3)/Q(1)+0.5_DP*g*Q(1)*Q(1)
 	end if
-	
+end if ! dry or wet bed
 	end function
 	
+
+
+
+	! This routine walks over the solution vector and clips it if it's smaller than 1e-6
+	subroutine ClipHeight (rarraySol, neq)
+	
+	! parameter values
+	type(t_array), dimension(nvar2d), intent(INOUT)    :: rarraySol
+	integer, intent(in) :: neq
+	
+	! variables
+	integer                             :: i
+	
+	
+	! Assemble the preconditioner rmatrixBlockP: P = ML - theta*dt*L
+	! As we use the block jacobi method, we only need the main diagonal blocks
+	
+
+	
+		! First set all matrix blocks on the main diagonal of P equal to ML
+		
+		do i = 1, NEQ
+				if(rarraySol(1)%Da(i)<1e-6) rarraySol(1)%Da(i) = 0
+		end do
+		
+
+	end subroutine
+
 	
 	
 	
@@ -547,43 +589,44 @@ contains
 			! get solution values at node i and j
 	    	Qi = (/rarraySol(1)%Da(i),rarraySol(2)%Da(i),rarraySol(3)%Da(i)/)
 		    Qj = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
+
+			  ! compute deltaQij = Qi - Qj
+		      deltaQij = Qi - Qj
+
+			  ! Compute the Roe-meanvalue for this edge
+			  Qroeij = calculateQroe(Qi, Qj)
 			
-			! compute deltaQij = Qi - Qj
-		    deltaQij = Qi - Qj
+			  ! Compute the jacobi matrices for x- and y- direction
+			  JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+			  JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
 			
-			! Compute the Roe-meanvalue for this edge
-			Qroeij = calculateQroe(Qi, Qj)
+			  ! Compute the coeffitients for the jacobi matrices
+			  JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+			  JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+			  JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+			  JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
 			
-			! Compute the jacobi matrices for x- and y- direction
-			JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-			JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+			  ! Now we can compute Aij and Bij
+			  Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+			  Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
 			
-			! Compute the coeffitients for the jacobi matrices
-			JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-			JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-			JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-			JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+			  ! Here we use scalar dissipation
+			  ! compute the maximum of the eigenvalues of Aij
+			  scalefactor = sqrt(JcoeffxA**2.0_DP+JcoeffyA**2.0_DP)
+			  cRoe = sqrt(gravconst*Qroeij(1))    ! c_Roe=sqrt(g*h)
+			  cRoe = sqrt(0.5*gravconst*(Qi(1)+Qj(1)))
+			  uRoe = Qroeij(2)/Qroeij(1)
+			  vRoe = Qroeij(3)/Qroeij(1)
+			  lambda = max(abs(uRoe-cRoe),abs(uRoe+cRoe),abs(vRoe-cRoe),abs(vRoe+cRoe),abs(uRoe),abs(vRoe))
+			  scalarDissipation = scalefactor*lambda
 			
-			! Now we can compute Aij and Bij
-			Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-			Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+			  scalarDissipation = &
+			  abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+			  abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
 			
-			! Here we use scalar dissipation
-			! compute the maximum of the eigenvalues of Aij
-			scalefactor = sqrt(JcoeffxA**2.0_DP+JcoeffyA**2.0_DP)
-			cRoe = sqrt(gravconst*Qroeij(1))    ! c_Roe=sqrt(g*h)
-			cRoe = sqrt(0.5*gravconst*(Qi(1)+Qj(1)))
-			uRoe = Qroeij(2)/Qroeij(1)
-			vRoe = Qroeij(3)/Qroeij(1)
-			lambda = max(abs(uRoe-cRoe),abs(uRoe+cRoe),abs(vRoe-cRoe),abs(vRoe+cRoe),abs(uRoe),abs(vRoe))
-			scalarDissipation = scalefactor*lambda
+			  ! compute Dij
+			  Dij = scalarDissipation*Eye
 			
-			scalarDissipation = &
-			abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
-			abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
-			
-			! compute Dij
-			Dij = scalarDissipation*Eye
 			
 			! Now add the entries of Aij and Dij to their corresponding entries in P
 			! P = M^L - theta*dt*L
@@ -1151,7 +1194,7 @@ contains
 			
 			! compute deltaQij = Qi - Qj
 		    deltaQij = Qi - Qj
-			
+		
 			! Compute the Roe-meanvalue for this edge
 			Qroeij = calculateQroe(Qi, Qj)
 			

@@ -927,6 +927,10 @@ contains
     end if
 
 	        
+	! As we now have a simple dry bed handling, we clip all height variables
+	! smaller than 1e-6
+    call ClipHeight (rarraySol, neq)
+
 
 	! That's it. RvectorBlock now contains our solution at the current time
 
