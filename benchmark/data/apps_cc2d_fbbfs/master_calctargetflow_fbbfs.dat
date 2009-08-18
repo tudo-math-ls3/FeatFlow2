@@ -100,3 +100,4 @@ bdComponent1(4)=
    2.0  0  0                               # param=]1.0,2.0[ : Neumann boundary = do-nothing
    3.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
    4.0  3  1  'ParProfile'  'Dirichlet0'   # param=[3.0,4.0] : parabolic profile in X, 0.0 in Y
+   5.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
