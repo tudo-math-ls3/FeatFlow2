@@ -25,7 +25,7 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 7
-MINLEVEL = 4
+MINLEVEL = 3
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.0078125
 TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
@@ -196,27 +196,27 @@ BDC_UMAX = 0.3
 # Q2
 # Level 4
 # Time: 0..5 sec
-# 64 timesteps per second
+# 100 timesteps per second, CN timestepping
 # Starts at Stokes solution calculated in CC2D_TARGET1_006 and
 # simulates 5 seconds of Navier-Stokes.
 
 testid   = CC2D_TARGET1_007
-descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, t=0..5, Level 4, EOJ(0.01)
+descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, t=0..5, Level 4, SD(0.01)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 4
 MINLEVEL = 2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.015625
-TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 TIMEDISCRETISATION_DTIMEMAX = 5.0
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_RE = 5000
 DISCRETISATION_IELEMENTTYPE = 4
-DISCRETISATION_IUPWIND = 4
+DISCRETISATION_IUPWIND = 0
 DISCRETISATION_DUPSAM = 0.01
-DISCRETISATION_CTYPEINITIALSOLUTION=1
+DISCRETISATION_CTYPEINITIALSOLUTION=0
 DISCRETISATION_SINITIALSOLUTIONFILENAME='./ns/bench1stokesq2lv4re5000'
 POSTPROCESSING_IOUTPUTUCD = 1
 POSTPROCESSING_IOUTPUTFILM = 1
@@ -230,25 +230,25 @@ BDC_UMAX = 0.3
 # Q2
 # Level 4
 # Time: 0..20 sec
-# 64 timesteps per second
+# 100 timesteps per second, CN timestepping
 # Starts at Stokes solution calculated in CC2D_TARGET1_006 and
 # simulates 5 seconds of Navier-Stokes.
 
 testid   = CC2D_TARGET1_008
-descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, t=0..20, Level 4, EOJ(0.01)
+descr    = nonstationary bench Navier-Stokes flow, Re=1000, Q2, t=0..20, Level 4, SD(0.01)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 4
 MINLEVEL = 2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.015625
-TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 TIMEDISCRETISATION_DTIMEMAX = 20.0
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_RE = 5000
 DISCRETISATION_IELEMENTTYPE = 4
-DISCRETISATION_IUPWIND = 4
+DISCRETISATION_IUPWIND = 0
 DISCRETISATION_DUPSAM = 0.01
 DISCRETISATION_CTYPEINITIALSOLUTION=1
 DISCRETISATION_SINITIALSOLUTIONFILENAME='./ns/bench1stokesq2lv4re5000'

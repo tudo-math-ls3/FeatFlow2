@@ -27,7 +27,7 @@ datfile  = ./data/apps_cc2d_fbbfs/master_calctargetflow_fbbfs.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 5
-MINLEVEL = 3
+MINLEVEL = 1
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.025
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
