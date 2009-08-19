@@ -87,7 +87,7 @@ sParametrisation = '%{spredirectory}/fbbfs.prm'
 sMesh = '%{spredirectory}/fbbfs.tri'
 
 [CC-LINEARSOLVER]
-icoarseGridSolverType = 0
+icoarseGridSolverType = 2
 
 [BDEXPRESSIONS]
 bdExpressions(2) =
