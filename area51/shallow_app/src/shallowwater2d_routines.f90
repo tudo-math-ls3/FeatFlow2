@@ -1785,9 +1785,15 @@ contains
     integer, parameter :: itemax = 50
     ! Element ij in matrix (preconditioner)
     integer :: ij
+    ! Temp values for newton step
+    real(dp) :: temp1, temp2
+
 
 
     ! Initialise some values
+
+    temp1 = sqrt(2*gravconst)
+    temp2 = sqrt(gravconst/2)
 
     ! get number of boundary components
     nbct = rtriangulation%NBCT
@@ -1879,7 +1885,7 @@ contains
              vtproj = ustar * tangentialV(1) + vstar * tangentialV(2)
 
              ! Test, if dry bed is generated
-             if ((4.0_dp*(sqrt(hstar*gravconst))<-2.0_dp*vnproj).or.(hstar<1e-6)) then
+             if (4.0_dp*(sqrt(hstar*gravconst))<-2.0_dp*vnproj) then
                 !write (*,*) 'ERROR: Boundary Riemann Problem - Physical drybed generation! Wetbet Riemann Solver not applicable!'
                 !write (*,*) hstar,vnproj
                 hstarstar = 0
@@ -1887,32 +1893,35 @@ contains
              ! Bed should stay wet
              ! Initialisiere hstarstar
              ! entweder mit der predicted solution
-             hstarstar = hstar
+             !hstarstar = hstar
              ! oder mit dem two-rarefaction ansatz (der explizit ausgerechnet werden kann)
-             !hstarstar = ((SQRT(gravconst*hstar)+0.5*vnproj)**2.0_dp)/gravconst
+             hstarstar = ((SQRT(gravconst*hstar)+0.5*vnproj)**2.0_dp)/gravconst
 
              iteh: do ite = 1, itemax
 	        ! get h** as solution of the riemannian problem
 	        oldh = hstarstar
 	        if (hstarstar .le. hstar) then
-            ! h** can be computed explicitely
+            ! h** can be computed explicitely (2 rarefaction)
                    hstarstar = ((sqrt(gravconst*hstar)+0.5*vnproj)**2.0_dp)/gravconst
 	        else
-
+            ! 2 Shock
                    hm = hstarstar
 
                    ! compute h** by fixpointiteration
-                   hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
-                   hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
-                   hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
+                   !hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
+                   !hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
+                   !hm = hstar + vnproj/sqrt(0.5*gravconst*(hm+hstar)/(hm*hstar))
 
                    ! or by newton method
-                   ! hm = hm - ...
+                   hm = hm - (2*(hm-hstar)*sqrt(gravconst/2*(hm+hstar)/(hm*hstar))-2*vnproj) & ! !!!!! oder +2*vnproj? !!!!!
+                        /(temp1*sqrt((hm+hstar)/(hm*hstar))+temp2*(hm-hstar)*(1/(hm*hstar)&
+                          -(hm+hstar)/(hm*hm*hstar))/sqrt((hm+hstar)/(hm*hstar)))
 
                    hstarstar = hm
+
 	        end if
          ! Test if the algorithm converged
-	        if (abs(hstarstar - oldh)< 1e-8) then
+	        if (abs((hstarstar - oldh)/(hstarstar+oldh))< 1e-8) then
                    exit iteh
 	        end if
              end do iteh
