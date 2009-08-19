@@ -1425,7 +1425,7 @@ contains
     integer, dimension(1) :: Icomponents
     type(t_discreteBCDirichlet),pointer         :: p_rdirichletBCs
     type(t_triangulation), pointer              :: p_rtriangulation
-    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
+    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     integer, dimension(:), pointer              :: p_IelementDistr
     integer, dimension(:,:), allocatable :: Idofs
     real(DP), dimension(:,:), allocatable       :: DdofValue
@@ -1470,15 +1470,15 @@ contains
     end if
     
     ! Which component is to be discretised?
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(iequation)
+    p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(iequation)
 
     ! For easier access:
-    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
     call storage_getbase_int2D(p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
     call storage_getbase_int (p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
 
-    p_RelementDistribution => p_rspatialDiscretisation%RelementDistr
+    p_RelementDistribution => p_rspatialDiscr%RelementDistr
     
     ! The parameter value arrays may not be initialised.
     if (p_rtriangulation%h_DedgeParameterValue .ne. ST_NOHANDLE) then
@@ -1498,13 +1498,13 @@ contains
     NVT = p_rtriangulation%NVT
     nnve = p_rtriangulation%NNVE
 
-    if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
+    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       ! Every element can be of different type.
-      call storage_getbase_int(p_rspatialDiscretisation%h_IelementDistr,&
+      call storage_getbase_int(p_rspatialDiscr%h_IelementDistr,&
           p_IelementDistr)
     else
       ! All elements are of the samne type. Get it in advance.
-      celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+      celement = p_rspatialDiscr%RelementDistr(1)%celement
       nve = elem_igetNVE (celement)
     end if
     
@@ -1570,12 +1570,12 @@ contains
     !
     ! The 'mult' call only works on uniform discretisations. We cannot assume
     ! that and have to call dof_locGlobMapping for every element separately.
-    if (p_rspatialDiscretisation%ccomplexity .eq. SPDISC_UNIFORM) then
-      call dof_locGlobMapping_mult(p_rspatialDiscretisation, &
+    if (p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      call dof_locGlobMapping_mult(p_rspatialDiscr, &
                 IelementsAtBoundary(1:icount), Idofs)
     else
       do ielement = 1,icount
-        call dof_locGlobMapping(p_rspatialDiscretisation, IelementsAtBoundary(ielement),&
+        call dof_locGlobMapping(p_rspatialDiscr, IelementsAtBoundary(ielement),&
             Idofs(:,ielement))
       end do
     end if
@@ -1591,7 +1591,7 @@ contains
       
       ! Get the element type in case we do not have a uniform triangulation.
       ! Otherwise, celement was set to the trial element type above.
-      if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
+      if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
         celement = p_RelementDistribution(p_IelementDistr(ielement))%celement
         nve = elem_igetNVE (celement)
       end if
@@ -1642,7 +1642,7 @@ contains
       
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
-        call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+        call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                 ipoint1,dpar, Dvalues, rcollection)
                                   
@@ -1670,7 +1670,7 @@ contains
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
                 
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
@@ -1708,7 +1708,7 @@ contains
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
                 
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
@@ -1744,7 +1744,7 @@ contains
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(i2)
                 
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
@@ -1775,7 +1775,7 @@ contains
           if (associated(p_DvertexParameterValue)) &
             dpar = p_DvertexParameterValue(I)
                 
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   ipoint1,dpar, Dvalues, rcollection)
                                     
@@ -1811,7 +1811,7 @@ contains
           if (associated(p_DedgeParameterValue)) &
             dpar = p_DedgeParameterValue(I)
                 
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
                                   iedge,dpar, Dvalues, rcollection)
                                     
@@ -1848,7 +1848,7 @@ contains
               
         ! Get the value at the corner point and accept it as
         ! Dirichlet value.
-        call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+        call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                 ipoint1,dpar, Dvalues,rcollection)
                                 
@@ -1881,7 +1881,7 @@ contains
           if (associated(p_DedgeParameterValue)) &
               dpar = p_DedgeParameterValue(I)
           
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
               rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
               iedge,dpar, Dvalues,rcollection)
           
@@ -1914,7 +1914,7 @@ contains
             if (associated(p_DedgeParameterValue)) &
               dpar = p_DedgeParameterValue(I)
 
-            call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+            call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                     rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
                                     iedge,dpar, Dvalues,rcollection)
                                       
@@ -1942,7 +1942,7 @@ contains
             if (associated(p_DedgeParameterValue)) &
               dpar = p_DedgeParameterValue(I)
 
-            call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+            call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                     rboundaryRegion,ielement, DISCBC_NEEDFUNCMID,&
                                     iedge,dpar, Dvalues,rcollection)
                                       
@@ -1995,7 +1995,7 @@ contains
             if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
               dpar2 = p_DvertexParameterValue(I+1)
             else
-              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
+              dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
                   rboundaryRegion%iboundCompIdx)
             end if
 
@@ -2007,7 +2007,7 @@ contains
           end if
           
           ! Get the value in the Gauss point
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval1 = Dvalues(1)
@@ -2023,7 +2023,7 @@ contains
           end if
           
           ! Get the value in the Gauss point
-          call fgetBoundaryValues (Icomponents,p_rspatialDiscretisation,&
+          call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
                                   rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
                                   iedge,dpar, Dvalues,rcollection)
           dval2 = Dvalues(1)
@@ -2037,17 +2037,17 @@ contains
 !                ! Convert the parameter values of the corners of the edge
 !                ! into length parametrisation. We need this to calculate the length
 !                ! of the edge.
-!                dpar1 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+!                dpar1 = boundary_convertParameter(p_rspatialDiscr%p_rboundary,&
 !                    rboundaryRegion%iboundCompIdx, dpar1, &
 !                    BDR_PAR_01, BDR_PAR_LENGTH)
 !
-!                dpar2 = boundary_convertParameter(p_rspatialDiscretisation%p_rboundary,&
+!                dpar2 = boundary_convertParameter(p_rspatialDiscr%p_rboundary,&
 !                    rboundaryRegion%iboundCompIdx, dpar2, &
 !                    BDR_PAR_01, BDR_PAR_LENGTH)
 !                    
 !                IF (dpar2 .EQ. 0.0_DP) THEN
 !                  ! Wrap around
-!                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscretisation%p_rboundary,&
+!                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
 !                    rboundaryRegion%iboundCompIdx,BDR_PAR_LENGTH)
 !                END IF
 
@@ -2229,7 +2229,7 @@ contains
     integer :: i,icount
     type(t_discreteBCFeastMirror),pointer       :: p_rfeastMirrorBCs
     type(t_triangulation), pointer              :: p_rtriangulation
-    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
+    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
     
     integer, dimension(:), pointer              :: p_ImirrorDOFs
@@ -2260,16 +2260,16 @@ contains
 
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(iequation)
+    p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(iequation)
 
-    if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
+    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'Discrete FEAST mirror boundary conditions currently only supported'
       print *,'for uniform discretisations!'
       call sys_halt()
     end if
     
     ! For easier access:
-    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
     call storage_getbase_int2d(p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
     if (p_rtriangulation%ndim .ne. NDIM2D) then
@@ -2277,7 +2277,7 @@ contains
       call sys_halt()
     end if
     
-    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
       print *,'Discrete FEAST mirror boundary conditions currently only supported'
       print *,'for Q1 element!'
@@ -2458,7 +2458,7 @@ contains
     integer                                    :: iedge
     integer, dimension(2)                      :: ImodifierSize
     
-    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
+    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     type(t_triangulation), pointer              :: p_rtriangulation
     integer, dimension(:,:), pointer            :: p_IedgesAtElement
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
@@ -2494,29 +2494,29 @@ contains
     
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
-    p_rspatialDiscretisation => &
+    p_rspatialDiscr => &
       rblockDiscretisation%RspatialDiscr(Iequations(1))
 
-    if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
+    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'Discrete pressure drop boundary conditions currently only supported'
       print *,'for uniform discretisations!'
       call sys_halt()
     end if
 
-    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       print *,'Discrete pressure drop boundary conditions currently only supported'
       print *,'for Q1~ element!'
       call sys_halt()
     end if
     
-    if (p_rspatialDiscretisation%ndimension .ne. NDIM2D) then
+    if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
       print *,'Pressure drop boundary conditions only support 2D!'
       call sys_halt()
     end if
     
     ! For easier access:
-    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
     ! Note: All elements are of the same type celement.
     !
@@ -2611,7 +2611,7 @@ contains
       ! In a later implementation, we might calculate the value in a cubature
       ! point to calculate the current integral - but here we use the midpoint
       ! rule...
-      call fgetBoundaryValues (p_rpressureDropBCs%Icomponents,p_rspatialDiscretisation,&
+      call fgetBoundaryValues (p_rpressureDropBCs%Icomponents,p_rspatialDiscr,&
                                 rboundaryRegion,ielement, DISCBC_NEEDNORMALSTRESS,&
                                 iedge,p_DedgeParameterValue(I), Dvalues,rcollection)
       
@@ -2710,7 +2710,7 @@ contains
     integer                                     :: iedge
     integer, dimension(2)                       :: InormalsSize
     
-    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
+    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscr
     type(t_triangulation), pointer              :: p_rtriangulation
     integer, dimension(:,:), pointer            :: p_IedgesAtElement
     integer, dimension(:,:), pointer            :: p_IverticesAtElement
@@ -2749,29 +2749,29 @@ contains
     
     ! Get the discretisation structures from one of the components of the solution
     ! vector that is to be modified.
-    p_rspatialDiscretisation => &
+    p_rspatialDiscr => &
       rblockDiscretisation%RspatialDiscr(Iequations(1))  
 
-    if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
+    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
       print *,'Discrete Slip boundary conditions currently only supported'
       print *,'for uniform discretisations!'
       call sys_halt()
     end if
 
-    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
+    celement = p_rspatialDiscr%RelementDistr(1)%celement
     if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
       print *,'Discrete Slip boundary conditions currently only supported'
       print *,'for Q1~ element!'
       call sys_halt()
     end if
     
-    if (p_rspatialDiscretisation%ndimension .ne. NDIM2D) then
+    if (p_rspatialDiscr%ndimension .ne. NDIM2D) then
       print *,'Pressure drop boundary conditions only support 2D!'
       call sys_halt()
     end if
     
     ! For easier access:
-    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
 
     ! Note: All elements are of the same type celement.
     !
@@ -2960,49 +2960,49 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_triangulation), pointer              :: p_rtriangulation
-    type(t_spatialDiscretisation), pointer      :: p_rspatialDiscretisation
-    
-    integer :: nDOFs
-    integer :: h_Ddofs, h_Idofs, i, j, iidx
-    integer(I32) :: celement
-    integer :: nequations
-    integer, dimension(2) :: IdofCount
-    
+    integer(I32) :: casmComplexity
+    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_discreteFBCEntry), pointer :: p_rdiscreteFBCentry
+    type(t_elementDistribution), pointer :: p_relementDist
+    type(t_discreteFBCDirichlet),pointer :: p_rdirichletFBCs
+    integer :: nequations,ieq,nmaxInfoPerElement,icount,i,j,iel,ielidx
+    integer, dimension(:), pointer :: p_Ielements
+    integer, dimension(:,:), allocatable :: Idofs
+    type(t_discreteFBCevaluation), dimension(:), pointer :: p_Revaluation
+    integer :: h_Ddofs,h_Idofs
     integer, dimension(:), pointer :: p_Idofs
     real(DP), dimension(:,:), pointer   :: p_Ddofs
-
-    type(t_discreteFBCDirichlet),pointer        :: p_rdirichletFBCs
+    integer :: idof,iidx,nDOFs,ieldist,nve,ndofloc
+    integer :: isubsetStart,isubsetLength
+    integer, dimension(2) :: IdofCount
+    real(dp), dimension(:,:), pointer :: p_Dwhere
+    integer, dimension(:), pointer :: p_Iwhere,p_Iinside
+    logical :: bok
     
-    integer, dimension(FBCASM_MAXSIM), target      :: Isubset
-    integer, dimension(FBCASM_MAXSIM), target      :: Iinside
-    real(DP), dimension(:,:,:), allocatable, target     :: p_Dsubset
-    integer :: isubsetStart, isubsetLength, icurrentDof
-    type(t_discreteFBCEntry), pointer :: p_rdiscreteFBCentry
-    
-    type(t_discreteFBCevaluation), dimension(DISCFBC_MAXDISCBC) :: Revaluation
-    
-    integer(I32) :: casmComplexity
+    real(dp), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtFace
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
-
-    ! Get the discretisation structure of the first component.
-    ! In this first rough implementation, we only support uniform a uniform 
-    ! discretisation, so check that we are able to handle the current situation.
-    p_rspatialDiscretisation => rblockDiscretisation%RspatialDiscr(Iequations(1))
     
-    if (p_rspatialDiscretisation%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
-      call sys_halt()
-    end if
+    ! Get the discretisation structure of the first component.
+    ! In this first rough implementation, we assume that all equations
+    ! are discretised with the same discretisation!
+    ! Furthermore, Dirichlet values can only be specified for all solution
+    ! components; something like 'slip' where one component is left free
+    ! is not supported!
+    
+    p_rspatialDiscr => rblockDiscretisation%RspatialDiscr(Iequations(1))
 
     ! For easier access:
-    p_rtriangulation => p_rspatialDiscretisation%p_rtriangulation
+    p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
 
-    ! All elements are of the samne type. Get it in advance.
-    celement = p_rspatialDiscretisation%RelementDistr(1)%celement
-    
     ! Get a new FBC entry
     call bcasm_newFBCentry (rdiscreteFBC,iidx)
     p_rdiscreteFBCentry => rdiscreteFBC%p_RdiscFBCList(iidx)
@@ -3019,9 +3019,6 @@ contains
     allocate(p_rdirichletFBCs%Icomponents(1:nequations))
     p_rdirichletFBCs%Icomponents(1:nequations) = Iequations(1:nequations)
     
-    ! Allocate memory for intermediate values
-    allocate(p_Dsubset(FBCASM_MAXSIM,1,nequations))
-    
     ! We have to collect all DOF`s and their values that belong to our current
     ! fictitious boundary object. Depending on the element type we will loop
     ! through all vertices, edges and elements in the triangulation
@@ -3032,7 +3029,7 @@ contains
     ! whether the DOF is actually used by our current FB object.
     ! More specifically, we remember the DOF value for each of the components!
     
-    nDOFs = dof_igetNDofGlob(p_rspatialDiscretisation)
+    nDOFs = dof_igetNDofGlob(p_rspatialDiscr)
     
     IdofCount = (/nequations,nDOFs/)
     if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
@@ -3041,290 +3038,440 @@ contains
                         ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2d (h_Ddofs,p_Ddofs)
     end if
+    
+    ! Initialise p_Idofs with zero.
     call storage_new ('bcasm_discrFBCDirichlet', 'DofUsed', nDOFs, &
-                      ST_INT, h_Idofs, ST_NEWBLOCK_NOINIT)
+                      ST_INT, h_Idofs, ST_NEWBLOCK_ZERO)
     call storage_getbase_int (h_Idofs,p_Idofs)
     
-    ! Depending on the element type, prepare the evaluation structure and call
-    ! the callback routine to calculate what we need.
+    ! At most, we calculate nmaxInfoPerElement pieces of information
+    ! simultaneously.
+    select case (p_rtriangulation%ndim)
+    case (NDIM1D)
+      ! 2 corner vertices or 1 edge midpoint
+      ! -> at most 2 per call
+      nmaxInfoPerElement = 2
+    case (NDIM2D)
+      ! 4 corner vertices or 4 edges or 1 element midpoint
+      ! -> at most 4 per call
+      nmaxInfoPerElement = 4
+    case (NDIM3D)
+      ! 8 corner vertices or 12 edges or 6 faces or 1 element midpoint
+      ! -> at most 12 per call
+      nmaxInfoPerElement = 12
+    end select
     
-    icurrentDof = 0
+    ! Initialise a p_Revaluation structure array for the evaluation
+    allocate(p_Revaluation(nequations))
+    allocate(p_Iwhere(FBCASM_MAXSIM*nmaxInfoPerElement))
+    allocate(p_Iinside(FBCASM_MAXSIM*nmaxInfoPerElement))
+    allocate(p_Dwhere(p_rtriangulation%ndim,FBCASM_MAXSIM*nmaxInfoPerElement))
+    do ieq=1,nequations
+      allocate(p_Revaluation(ieq)%p_Dvalues(FBCASM_MAXSIM*nmaxInfoPerElement,1))
+    end do
+    do ieq=1,nequations
+      p_Revaluation(ieq)%p_Iinside => p_Iinside
+      p_Revaluation(ieq)%p_Iwhere => p_Iwhere
+      p_Revaluation(ieq)%p_Dwhere => p_Dwhere
+    end do
     
-    if(p_rspatialDiscretisation%ndimension .eq. NDIM2D)then
+    ! To collect the values of all the DOF's in question, we loop in sets
+    ! about the elements in every element distribution.
+    !
+    ! So at first, we loop over the element distribution which tells us the
+    ! current element type.
+    do ieldist = 1,p_rspatialDiscr%inumFESpaces
     
-      ! Calculate values in the vertices for Q1,Q2,P1,P2
-      if ((celement .eq. EL_P1) .or. &
-          (celement .eq. EL_Q1) .or. &
-          (celement .eq. EL_P2) .or. &
-          (celement .eq. EL_Q2)) then
+      ! Get the element distribution
+      p_relementDist => p_rspatialDiscr%RelementDistr(ieldist)
       
-        ! Let us start to collect values. This is a rather element-dependent
-        ! part. At first, loop through the vertices in case we have a
-        ! P1/Q1/Q2 discretisation
-        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
-        
-          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
-        
-          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
-          ! subset we evaluate.
-          call fillsubset (isubsetStart,isubsetLength,Isubset)
-          
-          ! Fill the evaluation structure with data for the callback routine
-          do i=1,nequations
-            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
-            Revaluation(i)%nvalues     = isubsetLength
-            Revaluation(i)%p_Iwhere    => Isubset
-            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
-            Revaluation(i)%p_Iinside   => Iinside
-          end do
+      if (p_relementDist%NEL .eq. 0) cycle
+      
+      ! Number of corner vertices.
+      nve = elem_igetNVE(p_relementDist%celement)
 
-          ! Clear the Iinside array
-          Iinside = 0
-          
-          ! Call the callback routine to calculate the values.
-          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
-                                      rblockDiscretisation,&
-                                      Revaluation, rcollection)
-                                      
-          ! Transfer the DOF`s that are affected
-
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-            
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                do j=1,nequations
-                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+      ! Reserve some memory to save temporarily all DOF`s of all elements.
+      ndofloc = elem_igetNDofLoc(p_relementDist%celement)
+      allocate (Idofs(ndofloc,FBCASM_MAXSIM))
+      Idofs(:,:) = 0
+      
+      ! Get the elements in that distribution
+      call storage_getbase_int(p_relementDist%h_IelementList,p_Ielements)
+      
+      ! Loop through the elements in sets a FBCASM_MAXSIM.
+      do isubsetStart = 1,p_relementDist%NEL,FBCASM_MAXSIM
+      
+        ! Remaining elements here...
+        isubsetLength = min(p_relementDist%NEL-isubsetStart+1,FBCASM_MAXSIM)
+        
+        ! Get all the DOF's on all the elements in the current set.
+        call dof_locGlobMapping_mult(p_rspatialDiscr, &
+                  p_Ielements(isubsetStart:isubsetStart+isubsetLength-1), Idofs)
+                  
+        ! Now the element dependent part. What's the dimension of the current space?
+        bok = .false.
+        select case (p_rspatialDiscr%ndimension)
+        case (NDIM1D)
+        case (NDIM2D)
+        
+          call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+          call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,p_IverticesAtEdge)
+        
+          ! Element type? That decides on how to handle the DOF values.
+          !
+          ! -----
+          ! P1, Q1, P2, Q2
+          if ((p_relementDist%celement .eq. EL_P1) .or. &
+              (p_relementDist%celement .eq. EL_Q1) .or. &
+              (p_relementDist%celement .eq. EL_P2) .or. &
+              (p_relementDist%celement .eq. EL_Q2)) then
+              
+            bok = .true.
+              
+            ! Loop through the vertices of the elements and collect them.
+            ! The local DOF's 1..nve correspond to the corner vertices here.
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                ! Initialise the data
+                p_Iwhere(icount+1:icount+nve) = p_IverticesAtElement(1:nve,iel)
+                do i=1,p_rtriangulation%ndim
+                  p_Dwhere(i,icount+j) = p_DvertexCoords(i,p_Iwhere(icount+j))
                 end do
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
+              end do
             end do
-            
-          else
           
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNC
+            p_Revaluation(:)%nvalues = isubsetLength*nve
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                idof = Idofs(j,iel)
+                if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                  do i=1,nequations
+                    p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
+                  end do
+                  p_Idofs(idof) = idof
+                end if
+              end do
             end do
-            
           end if
-        
-        end do
-      
-      end if ! end if el_typ
-    
-      ! Calculate values in the face midpoints / / integral mean values for Q1~
-      if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
-      
-        ! Let us start to collect values. This is a rather element-dependent
-        ! part. At first, loop through the vertices in case we have a
-        ! P1/Q1/Q2 discretisation
-        do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
-        
-          isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
-        
-          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
-          ! subset we evaluate.
-          call fillsubset (isubsetStart,isubsetLength,Isubset)
           
-          ! Fill the evaluation structure with data for the callback routine
-          do i=1,nequations
-            if ((celement .eq. EL_E031) .or. &
-                (celement .eq. EL_EM31)) then
-              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
-            else
-              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDINTMEAN
+          if ((p_relementDist%celement .eq. EL_P2) .or. &
+              (p_relementDist%celement .eq. EL_Q2)) then
+
+            ! Loop through the edges of the elements and collect them.
+            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                ! Initialise the data
+                p_Iwhere(icount+1:icount+nve) = p_IedgesAtElement(1:nve,iel)
+                do i=1,p_rtriangulation%ndim
+                  p_Dwhere(i,icount+j) = 0.5_DP * &
+                      ( p_DvertexCoords(i,p_IverticesAtEdge(1,p_Iwhere(icount+j))) &
+                      + p_DvertexCoords(i,p_IverticesAtEdge(2,p_Iwhere(icount+j))) )
+                end do
+              end do
+            end do
+          
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
+            p_Revaluation(:)%nvalues = isubsetLength*nve
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                idof = Idofs(j+nve,iel)
+                if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                  do i=1,nequations
+                    p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
+                  end do
+                  p_Idofs(idof) = idof
+                end if
+              end do
+            end do
+          end if
+
+          if (p_relementDist%celement .eq. EL_Q2) then
+
+            ! Getthe element midpoints, corresponding to the local DOF 2*nve+1
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = ielidx
+
+              ! Initialise the data
+              p_Iwhere(icount) = iel
+              do i=1,p_rtriangulation%ndim
+                p_Dwhere(i,icount) = 0.25_DP * &
+                                      ( p_DvertexCoords(i,p_IverticesAtElement(1,iel)) &
+                                      + p_DvertexCoords(i,p_IverticesAtElement(2,iel)) &
+                                      + p_DvertexCoords(i,p_IverticesAtElement(3,iel)) &
+                                      + p_DvertexCoords(i,p_IverticesAtElement(4,iel)) )
+              end do
+            end do
+          
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCELMID
+            p_Revaluation(:)%nvalues = isubsetLength
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = ielidx
+
+              idof = Idofs(2*nve+1,iel)
+              if ((p_Iinside(icount) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                do i=1,nequations
+                  p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount,1)
+                end do
+                p_Idofs(idof) = idof
+              end if
+            end do
+          end if
+          
+          ! -----
+          ! Q1~, all implementations
+          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T) then
+
+            bok = .true.
+
+            ! Loop through the edges of the elements and collect them.
+            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                ! Initialise the data
+                p_Iwhere(icount+1:icount+nve) = p_IedgesAtElement(1:nve,iel)
+                do i=1,p_rtriangulation%ndim
+                  p_Dwhere(i,icount+j) = 0.5_DP * &
+                      ( p_DvertexCoords(i,p_IverticesAtEdge(1,p_Iwhere(icount+j))) &
+                      + p_DvertexCoords(i,p_IverticesAtEdge(2,p_Iwhere(icount+j))) )
+                end do
+              end do
+            end do
+          
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
+            if (iand(p_relementDist%celement,2**16) .ne. 0) then
+              ! Integral mean value based element
+              p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDINTMEAN
             end if
-            Revaluation(i)%nvalues     = isubsetLength
-            Revaluation(i)%p_Iwhere    => Isubset
-            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
-            Revaluation(i)%p_Iinside   => Iinside
-          end do
-          
-          ! Clear the Iinside array
-          Iinside = 0
-          
-          ! Call the callback routine to calculate the values.
-          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
-                                      rblockDiscretisation,&
-                                      Revaluation, rcollection)
-                                      
-          ! Transfer the DOF`s that are affected
-
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-            
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                do j=1,nequations
-                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
-                end do
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
+            p_Revaluation(:)%nvalues = isubsetLength*nve
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                idof = Idofs(j,iel)
+                if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                  do i=1,nequations
+                    p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
+                  end do
+                  p_Idofs(idof) = idof
+                end if
+              end do
             end do
-            
-          else
-          
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
-            end do
-            
           end if
-        
-        end do
-      
-      end if ! end if q1tilde
-    
-    end if ! end dim2d
-    
-    ! q2,q1,q1t
-    if(p_rspatialDiscretisation%ndimension .eq. NDIM3D)then
-      if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then      
-      
-        ! Let us start to collect values. This is a rather element-dependent
-        ! part. At first, loop through the vertices in case we have a
-        ! Q1/Q2 discretisation
-        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
-        
-          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
-        
-          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
-          ! subset we evaluate.
-          call fillsubset (isubsetStart,isubsetLength,Isubset)
           
-          ! Fill the evaluation structure with data for the callback routine
-          do i=1,nequations
-            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
-            Revaluation(i)%nvalues     = isubsetLength
-            Revaluation(i)%p_Iwhere    => Isubset
-            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
-            Revaluation(i)%p_Iinside   => Iinside
-          end do
+        case (NDIM3D)
 
-          ! Clear the Iinside array
-          Iinside = 0
-          
-          ! Call the callback routine to calculate the values.
-          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
-                                      rblockDiscretisation,&
-                                      Revaluation, rcollection)
-                                      
-          ! Transfer the DOF`s that are affected
+          call storage_getbase_int2d (p_rtriangulation%h_IverticesAtFace,p_IverticesAtFace)
 
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-            
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                do j=1,nequations
-                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+          ! Element type? That decides on how to handle the DOF values.
+          !
+          ! -----
+          ! P1, Q1, P2, Q2
+          if (p_relementDist%celement .eq. EL_Q1_3D) then
+              
+            bok = .true.
+              
+            ! Loop through the vertices of the elements and collect them.
+            ! The local DOF's 1..nve correspond to the corner vertices here.
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                ! Initialise the data
+                p_Iwhere(icount+1:icount+nve) = p_IverticesAtElement(1:nve,iel)
+                do i=1,p_rtriangulation%ndim
+                  p_Dwhere(i,icount+j) = p_DvertexCoords(i,p_Iwhere(icount+j))
                 end do
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
+              end do
             end do
-            
-          else
           
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNC
+            p_Revaluation(:)%nvalues = isubsetLength*nve
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                idof = Idofs(j,iel)
+                if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                  do i=1,nequations
+                    p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
+                  end do
+                  p_Idofs(idof) = idof
+                end if
+              end do
             end do
-            
           end if
-        
-        end do
+          
+          ! -----
+          ! Q1~, all implementations
+          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T_3D) then
 
+            bok = .true.
+
+            ! Loop through the faces of the elements and collect them.
+            ! The local DOF's nve+1..2*nve correspond to the egdes here.
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                ! Initialise the data
+                p_Iwhere(icount+1:icount+nve) = p_IedgesAtElement(1:nve,iel)
+                do i=1,p_rtriangulation%ndim
+                  p_Dwhere(i,icount+j) = 0.25_DP * &
+                      ( p_DvertexCoords(i,p_IverticesAtFace(1,p_Iwhere(icount+j))) &
+                      + p_DvertexCoords(i,p_IverticesAtFace(2,p_Iwhere(icount+j))) &
+                      + p_DvertexCoords(i,p_IverticesAtFace(3,p_Iwhere(icount+j))) &
+                      + p_DvertexCoords(i,p_IverticesAtFace(4,p_Iwhere(icount+j))) )
+                end do
+              end do
+            end do
+          
+            ! Call the callback routine to calculate the values.
+            p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
+            if (iand(p_relementDist%celement,2**16) .ne. 0) then
+              ! Integral mean value based element
+              p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFACEINTMEAN
+            end if
+            p_Revaluation(:)%nvalues = isubsetLength*nve
+            p_Iinside(1:isubsetLength*nve) = 0
+            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+                                        rblockDiscretisation,&
+                                        p_Revaluation, rcollection)
+                                        
+            ! Save the computed values to the corresponding DOF's.
+            ! Already processed DOF's are strictily positive, they have
+            ! the DOF number in p_Idofs!
+            do ielidx = 1,isubsetLength
+              iel = p_Ielements(isubsetStart+ielidx-1)
+              ! Index of the entry
+              icount = (ielidx-1)*nve
+              do j=1,nve
+                idof = Idofs(j,iel)
+                if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
+                  do i=1,nequations
+                    p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
+                  end do
+                  p_Idofs(idof) = idof
+                end if
+              end do
+            end do
+          end if
+                    
+        end select
+        
+        if (.not. bok) then
+          call output_line (&
+              'Element space not supported!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConFBD')
+          call sys_halt()
+        end if
+
+      end do ! isubsetStart
+    
+    end do
+
+    ! Release memory
+    do ieq=1,nequations
+      deallocate(p_Revaluation(ieq)%p_Dvalues)
+    end do
+    deallocate(p_Iinside)
+    deallocate(p_Iwhere)
+    deallocate(p_Dwhere)
+    deallocate(p_Revaluation)
+
+    ! Now, compress the p_Idofs/p_Ddofs array on to those DOF's
+    ! which must be set. These are those DOF's where p_Ddofs is positive.
+    icount = 0
+    do i=1,size(p_Idofs)
+      if (p_Idofs(i) .gt. 0) then
+        icount = icount + 1
+        p_Idofs(icount) = p_Idofs(i)
+        p_Ddofs(:,icount) = p_Ddofs(:,i)
       end if
-      
-      ! Calculate values in the face midpoints / / integral mean values for Q1~
-      if(elem_getPrimaryElement(celement) .eq. EL_Q1T_3D)then
-      
-        ! Let us start to collect values. This is a rather element-dependent
-        ! part. 
-        do isubsetStart = 1,p_rtriangulation%NAT,FBCASM_MAXSIM
-        
-          isubsetLength = min(p_rtriangulation%NAT-isubsetStart+1,FBCASM_MAXSIM)
-        
-          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
-          ! subset we evaluate.
-          call fillsubset (isubsetStart,isubsetLength,Isubset)
-          
-          ! Fill the evaluation structure with data for the callback routine
-          do i=1,nequations
-            if ((celement .eq. EL_E031) .or. &
-                (celement .eq. EL_EM31)) then
-              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
-            else
-              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFACEINTMEAN
-            end if
-            Revaluation(i)%nvalues     = isubsetLength
-            Revaluation(i)%p_Iwhere    => Isubset
-            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
-            Revaluation(i)%p_Iinside   => Iinside
-          end do
-          
-          ! Clear the Iinside array
-          Iinside = 0
-          
-          ! Call the callback routine to calculate the values.
-          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
-                                      rblockDiscretisation,&
-                                      Revaluation, rcollection)
-                                      
-          ! Transfer the DOF`s that are affected
+    end do
 
-          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-            
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                do j=1,nequations
-                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
-                end do
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
-            end do
-            
-          else
-          
-            do i=1,isubsetLength
-              if (Iinside(i) .ne. 0) then
-                icurrentDof = icurrentDof + 1
-                p_Idofs(icurrentDof) = isubsetStart+i-1
-              end if
-            end do
-            
-          end if
-        
-        end do
-      
-      
-      end if ! end EL_Q1T_3D
-      
-    end if ! end if NDIM3d
-    
-    
-    
     ! Cancel if we did not find any DOF.
-    if (icurrentDof .gt. 0) then
+    if (icount .gt. 0) then
       
       ! Reallocate to save memory. Store the final handles in the structure.
       if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
         ! In the 2D-array, the size of the 2nd dimension is changed to the
         ! number of DOF`s.
-        call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+        call storage_realloc ('bcasm_discrFBCDirichlet', icount, &
                               h_Ddofs, ST_NEWBLOCK_NOINIT)
         p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
       end if
       
-      call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+      call storage_realloc ('bcasm_discrFBCDirichlet', icount, &
                             h_Idofs, ST_NEWBLOCK_NOINIT)
       p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
     else
@@ -3335,23 +3482,483 @@ contains
       call storage_free (h_Idofs)
     end if
 
-    p_rdirichletFBCs%nDOF = icurrentDof
-    
-    ! Release temporary data
-    deallocate(p_Dsubset)
-    
-  contains
-  
-    pure subroutine fillsubset (istart, ilength, Isubset)
-    integer, intent(in) :: istart, ilength
-    integer, dimension(:), intent(out) :: Isubset
-    integer :: i
-      do i=1,ilength
-        Isubset(i) = istart-1+i
-      end do
-    end subroutine
-    
+    p_rdirichletFBCs%nDOF = icount
+
   end subroutine
+
+
+
+!    ! local variables
+!    
+!    integer :: nDOFs
+!    integer :: h_Ddofs, h_Idofs, i, j, iidx, ieldist
+!    integer(I32) :: celement
+!    integer :: nequations
+!    integer, dimension(2) :: IdofCount
+!    
+!    integer, dimension(:), pointer :: p_Ielements
+!    integer :: ndofloc, nve
+!    
+!    integer, dimension(:), pointer :: p_Idofs
+!    real(DP), dimension(:,:), pointer   :: p_Ddofs
+!    
+!    integer, dimension(:), pointer :: p_IdofUsed
+!    type(t_directAccessIntSet) :: rset
+!
+!    
+!    integer :: isubsetStart, isubsetLength, icurrentDof
+!    
+!    type(t_discreteFBCevaluation), dimension(DISCFBC_MAXDISCBC) :: Revaluation
+!    
+!    
+!
+!    
+!    if (p_rspatialDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
+!      call output_line (&
+!          'Element space not supported!', &
+!          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_newDirichletBConFBD')
+!      print *,'bcasm_discrFBCDirichlet: Can only handle uniform discretisation!'
+!      call sys_halt()
+!    end if
+!
+!
+!    ! All elements are of the samne type. Get it in advance.
+!    celement = p_rspatialDiscr%RelementDistr(1)%celement
+!    
+!    ! Depending on the element type, prepare the evaluation structure and call
+!    ! the callback routine to calculate what we need.
+!    
+!    icurrentDof = 0
+!    
+!    if(p_rspatialDiscr%ndimension .eq. NDIM2D) then
+!    
+!      ! Calculate values in the vertices for Q1,Q2,P1,P2
+!      if ((celement .eq. EL_P1) .or. &
+!          (celement .eq. EL_Q1) .or. &
+!          (celement .eq. EL_P2) .or. &
+!          (celement .eq. EL_Q2)) then
+!      
+!        ! Let us start to collect values. This is a rather element-dependent
+!        ! part. At first, loop through the vertices in case we have a
+!        ! P1/P2/Q1/Q2 discretisation
+!        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
+!        
+!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
+!        
+!          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!          ! subset we evaluate.
+!          call fillsubset (isubsetStart,isubsetLength,Isubset)
+!          
+!          ! Fill the evaluation structure with data for the callback routine
+!          do i=1,nequations
+!            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
+!            Revaluation(i)%nvalues     = isubsetLength
+!            Revaluation(i)%p_Iwhere    => Isubset
+!            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!            Revaluation(i)%p_Iinside   => Iinside
+!          end do
+!
+!          ! Clear the Iinside array
+!          Iinside = 0
+!          
+!          ! Call the callback routine to calculate the values.
+!          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                      rblockDiscretisation,&
+!                                      Revaluation, rcollection)
+!                                      
+!          ! Transfer the DOF`s that are affected
+!
+!          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!            
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                do j=1,nequations
+!                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                end do
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          else
+!          
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          end if
+!        
+!        end do
+!      
+!        ! In case of a P2/Q2 discretisation, also loop about the edges.
+!        if ((celement .eq. EL_P2) .or. &
+!            (celement .eq. EL_Q2)) then
+!        
+!          ! Let us start to collect values. This is a rather element-dependent
+!          ! part. At first, loop through the vertices in case we have a
+!          ! P1/P2/Q1/Q2 discretisation
+!          do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
+!          
+!            isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
+!          
+!            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!            ! subset we evaluate.
+!            call fillsubset (isubsetStart,isubsetLength,Isubset)
+!            
+!            ! Fill the evaluation structure with data for the callback routine
+!            do i=1,nequations
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
+!              Revaluation(i)%nvalues     = isubsetLength
+!              Revaluation(i)%p_Iwhere    => Isubset
+!              Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!              Revaluation(i)%p_Iinside   => Iinside
+!            end do
+!
+!            ! Clear the Iinside array
+!            Iinside = 0
+!            
+!            ! Call the callback routine to calculate the values.
+!            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                        rblockDiscretisation,&
+!                                        Revaluation, rcollection)
+!                                        
+!            ! Transfer the DOF`s that are affected
+!
+!            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!              
+!              do i=1,isubsetLength
+!                if (Iinside(i) .ne. 0) then
+!                  icurrentDof = icurrentDof + 1
+!                  do j=1,nequations
+!                    p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                  end do
+!                  ! Save the DOF ID
+!                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+isubsetStart+i-1
+!                end if
+!              end do
+!              
+!            else
+!            
+!              do i=1,isubsetLength
+!                if (Iinside(i) .ne. 0) then
+!                  icurrentDof = icurrentDof + 1
+!                  ! Save the DOF ID
+!                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+isubsetStart+i-1
+!                end if
+!              end do
+!              
+!            end if
+!          
+!          end do
+!        
+!        end if 
+!
+!        ! In case of a Q2 discretisation, also loop about the element midpoints.
+!        if ((celement .eq. EL_Q2)) then
+!        
+!          ! Let us start to collect values. This is a rather element-dependent
+!          ! part. At first, loop through the vertices in case we have a
+!          ! P1/P2/Q1/Q2 discretisation
+!          do isubsetStart = 1,p_rtriangulation%NEL,FBCASM_MAXSIM
+!          
+!            isubsetLength = min(p_rtriangulation%NEL-isubsetStart+1,FBCASM_MAXSIM)
+!          
+!            ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!            ! subset we evaluate.
+!            call fillsubset (isubsetStart,isubsetLength,Isubset)
+!            
+!            ! Fill the evaluation structure with data for the callback routine
+!            do i=1,nequations
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCELMID
+!              Revaluation(i)%nvalues     = isubsetLength
+!              Revaluation(i)%p_Iwhere    => Isubset
+!              Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!              Revaluation(i)%p_Iinside   => Iinside
+!            end do
+!
+!            ! Clear the Iinside array
+!            Iinside = 0
+!            
+!            ! Call the callback routine to calculate the values.
+!            call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                        rblockDiscretisation,&
+!                                        Revaluation, rcollection)
+!                                        
+!            ! Transfer the DOF`s that are affected
+!
+!            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!              
+!              do i=1,isubsetLength
+!                if (Iinside(i) .ne. 0) then
+!                  icurrentDof = icurrentDof + 1
+!                  do j=1,nequations
+!                    p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                  end do
+!                  ! Save the DOF ID
+!                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+&
+!                      p_rtriangulation%NMT+isubsetStart+i-1
+!                end if
+!              end do
+!              
+!            else
+!            
+!              do i=1,isubsetLength
+!                if (Iinside(i) .ne. 0) then
+!                  icurrentDof = icurrentDof + 1
+!                  ! Save the DOF ID
+!                  p_Idofs(icurrentDof) = p_rtriangulation%NVT+p_rtriangulation%NMT+&
+!                      isubsetStart+i-1
+!                end if
+!              end do
+!              
+!            end if
+!          
+!          end do
+!        
+!        end if 
+!      
+!      end if ! end if el_typ
+!    
+!      ! Calculate values in the face midpoints / / integral mean values for Q1~
+!      if (elem_getPrimaryElement(celement) .eq. EL_Q1T) then
+!      
+!        ! Let us start to collect values. This is a rather element-dependent
+!        ! part. At first, loop through the vertices in case we have a
+!        ! P1/Q1/Q2 discretisation
+!        do isubsetStart = 1,p_rtriangulation%NMT,FBCASM_MAXSIM
+!        
+!          isubsetLength = min(p_rtriangulation%NMT-isubsetStart+1,FBCASM_MAXSIM)
+!        
+!          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!          ! subset we evaluate.
+!          call fillsubset (isubsetStart,isubsetLength,Isubset)
+!          
+!          ! Fill the evaluation structure with data for the callback routine
+!          do i=1,nequations
+!            if ((celement .eq. EL_E031) .or. &
+!                (celement .eq. EL_EM31)) then
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCMID
+!            else
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDINTMEAN
+!            end if
+!            Revaluation(i)%nvalues     = isubsetLength
+!            Revaluation(i)%p_Iwhere    => Isubset
+!            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!            Revaluation(i)%p_Iinside   => Iinside
+!          end do
+!          
+!          ! Clear the Iinside array
+!          Iinside = 0
+!          
+!          ! Call the callback routine to calculate the values.
+!          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                      rblockDiscretisation,&
+!                                      Revaluation, rcollection)
+!                                      
+!          ! Transfer the DOF`s that are affected
+!
+!          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!            
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                do j=1,nequations
+!                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                end do
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          else
+!          
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          end if
+!        
+!        end do
+!      
+!      end if ! end if q1tilde
+!    
+!    end if ! end dim2d
+!    
+!    ! q2,q1,q1t
+!    if(p_rspatialDiscr%ndimension .eq. NDIM3D)then
+!      if(elem_getPrimaryElement(celement) .eq. EL_Q1_3D)then      
+!      
+!        ! Let us start to collect values. This is a rather element-dependent
+!        ! part. At first, loop through the vertices in case we have a
+!        ! Q1/Q2 discretisation
+!        do isubsetStart = 1,p_rtriangulation%NVT,FBCASM_MAXSIM
+!        
+!          isubsetLength = min(p_rtriangulation%NVT-isubsetStart+1,FBCASM_MAXSIM)
+!        
+!          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!          ! subset we evaluate.
+!          call fillsubset (isubsetStart,isubsetLength,Isubset)
+!          
+!          ! Fill the evaluation structure with data for the callback routine
+!          do i=1,nequations
+!            Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNC
+!            Revaluation(i)%nvalues     = isubsetLength
+!            Revaluation(i)%p_Iwhere    => Isubset
+!            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!            Revaluation(i)%p_Iinside   => Iinside
+!          end do
+!
+!          ! Clear the Iinside array
+!          Iinside = 0
+!          
+!          ! Call the callback routine to calculate the values.
+!          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                      rblockDiscretisation,&
+!                                      Revaluation, rcollection)
+!                                      
+!          ! Transfer the DOF`s that are affected
+!
+!          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!            
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                do j=1,nequations
+!                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                end do
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          else
+!          
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          end if
+!        
+!        end do
+!
+!      end if
+!      
+!      ! Calculate values in the face midpoints / / integral mean values for Q1~
+!      if(elem_getPrimaryElement(celement) .eq. EL_Q1T_3D)then
+!      
+!        ! Let us start to collect values. This is a rather element-dependent
+!        ! part. 
+!        do isubsetStart = 1,p_rtriangulation%NAT,FBCASM_MAXSIM
+!        
+!          isubsetLength = min(p_rtriangulation%NAT-isubsetStart+1,FBCASM_MAXSIM)
+!        
+!          ! Fill the subset with isubsetStart, isubsetStart+1,... to identify the
+!          ! subset we evaluate.
+!          call fillsubset (isubsetStart,isubsetLength,Isubset)
+!          
+!          ! Fill the evaluation structure with data for the callback routine
+!          do i=1,nequations
+!            if ((celement .eq. EL_E031) .or. &
+!                (celement .eq. EL_EM31)) then
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFUNCFACEMID
+!            else
+!              Revaluation(i)%cinfoNeeded = DISCFBC_NEEDFACEINTMEAN
+!            end if
+!            Revaluation(i)%nvalues     = isubsetLength
+!            Revaluation(i)%p_Iwhere    => Isubset
+!            Revaluation(i)%p_Dvalues   => p_Dsubset(:,:,i)
+!            Revaluation(i)%p_Iinside   => Iinside
+!          end do
+!          
+!          ! Clear the Iinside array
+!          Iinside = 0
+!          
+!          ! Call the callback routine to calculate the values.
+!          call fgetBoundaryValuesFBC (p_rdirichletFBCs%Icomponents(1:nequations),&
+!                                      rblockDiscretisation,&
+!                                      Revaluation, rcollection)
+!                                      
+!          ! Transfer the DOF`s that are affected
+!
+!          if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!            
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                do j=1,nequations
+!                  p_Ddofs(j,icurrentDof) = p_Dsubset(i,1,j)
+!                end do
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          else
+!          
+!            do i=1,isubsetLength
+!              if (Iinside(i) .ne. 0) then
+!                icurrentDof = icurrentDof + 1
+!                p_Idofs(icurrentDof) = isubsetStart+i-1
+!              end if
+!            end do
+!            
+!          end if
+!        
+!        end do
+!      
+!      
+!      end if ! end EL_Q1T_3D
+!      
+!    end if ! end if NDIM3d
+!    
+!    
+!    
+!    ! Cancel if we did not find any DOF.
+!    if (icurrentDof .gt. 0) then
+!      
+!      ! Reallocate to save memory. Store the final handles in the structure.
+!      if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!        ! In the 2D-array, the size of the 2nd dimension is changed to the
+!        ! number of DOF`s.
+!        call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+!                              h_Ddofs, ST_NEWBLOCK_NOINIT)
+!        p_rdirichletFBCs%h_DdirichletValues = h_Ddofs
+!      end if
+!      
+!      call storage_realloc ('bcasm_discrFBCDirichlet', icurrentDof, &
+!                            h_Idofs, ST_NEWBLOCK_NOINIT)
+!      p_rdirichletFBCs%h_IdirichletDOFs = h_Idofs
+!    else
+!      ! Nothging inside; release arrays
+!      if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+!        call storage_free (h_Ddofs)
+!      end if
+!      call storage_free (h_Idofs)
+!    end if
+!
+!    p_rdirichletFBCs%nDOF = icurrentDof
+!    
+!    ! Release temporary data
+!    deallocate(p_Dsubset)
+!    
+!  contains
+!  
+!    pure subroutine fillsubset (istart, ilength, Isubset)
+!    integer, intent(in) :: istart, ilength
+!    integer, dimension(:), intent(out) :: Isubset
+!    integer :: i
+!      do i=1,ilength
+!        Isubset(i) = istart-1+i
+!      end do
+!    end subroutine
+!    
+!  end subroutine
 
   ! ***************************************************************************
 

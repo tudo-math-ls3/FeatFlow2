@@ -8761,9 +8761,9 @@ contains
           FFd2 = FFd2 - dmult52*daux2
         end if
         
-        ia1 = p_KldA12(idof)
-        ia2 = p_KldA12(idof+1)-1
         if (bhaveA12) then
+          ia1 = p_KldA12(idof)
+          ia2 = p_KldA12(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
@@ -8776,6 +8776,8 @@ contains
         end if
         
         if (bhaveA45) then
+          ia1 = p_KldA12(idof)
+          ia2 = p_KldA12(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
@@ -8788,6 +8790,8 @@ contains
         end if
         
         if (bhaveA42) then
+          ia1 = p_KldA12(idof)
+          ia2 = p_KldA12(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
@@ -8800,6 +8804,8 @@ contains
         end if
 
         if (bhaveA24) then
+          ia1 = p_KldA12(idof)
+          ia2 = p_KldA12(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2

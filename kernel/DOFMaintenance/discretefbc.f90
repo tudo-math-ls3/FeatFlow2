@@ -60,23 +60,26 @@ module discretefbc
 
 !<constantblock description="Type identifiers for the callback routine during discretisation of FBC`s">
   
-  ! Calculate the function value in corner vertices of elements in the object
-  integer, parameter, public :: DISCFBC_NEEDFUNC           = 0
+  ! Calculate the function value in some point of the domain.
+  integer, parameter, public :: DISCFBC_NEEDFUNCGENERAL    = 0
+  
+  ! Calculate the function value in corner vertices of elements in the object.
+  integer, parameter, public :: DISCFBC_NEEDFUNC           = 1
 
   ! Calculate the function value in a edge midpoints of elements in the object
-  integer, parameter, public :: DISCFBC_NEEDFUNCMID        = 1
+  integer, parameter, public :: DISCFBC_NEEDFUNCMID        = 2
   
   ! Calculate the integral mean value on edges in the object
-  integer, parameter, public :: DISCFBC_NEEDINTMEAN        = 2
+  integer, parameter, public :: DISCFBC_NEEDINTMEAN        = 3
 
   ! Calculate the function value in midpoints of elements in the object
-  integer, parameter, public :: DISCFBC_NEEDFUNCELMID      = 3
+  integer, parameter, public :: DISCFBC_NEEDFUNCELMID      = 4
 
   ! Calculate the function value in the face midpoints of elements in the object
-  integer, parameter, public :: DISCFBC_NEEDFUNCFACEMID    = 4
+  integer, parameter, public :: DISCFBC_NEEDFUNCFACEMID    = 5
   
   ! Calculate the integral mean value on the faces in the object
-  integer, parameter, public :: DISCFBC_NEEDFACEINTMEAN    = 5
+  integer, parameter, public :: DISCFBC_NEEDFACEINTMEAN    = 6
   
 
 !</constantblock>
@@ -188,7 +191,7 @@ module discretefbc
     integer :: cinfoNeeded = 0
 
     ! Number of values to calculate. What to calculate is depending on cinfoNeeded:
-    ! cinfoNeeded = DISCFBC_NEEDFUNC: 
+    ! cinfoNeeded = DISCFBC_NEEDFUNC,DISCFBC_NEEDFUNCGENERAL: 
     !               nvalues = number of vertices (=length of p_Iwhere) 
     !  
     ! cinfoNeeded = DISCFBC_NEEDFUNCMID:
@@ -204,6 +207,10 @@ module discretefbc
     ! An integer array specifying the location of points/edges/elements where
     ! to evaluate. The content is depending on the situation, specifíed by the
     ! cinfoNeeded parameter: \\
+    !
+    ! cinfoNeeded = DISCFBC_NEEDFUNCGENERAL: \\
+    !   p_Iwhere(.) = 1..NEL -> Number of the element in the triangulation that
+    !                           contains the point.
     !
     ! cinfoNeeded = DISCFBC_NEEDFUNC: \\
     !   p_Iwhere(.) = 1..NVT -> Number of the corner vertex in the triangulation
@@ -225,6 +232,23 @@ module discretefbc
     ! the actual size of p_Iwhere might be larger than nvalues, so the callback
     ! routine should orientate on nvalues.
     integer, dimension(:), pointer :: p_Iwhere => null()
+    
+    ! Coordinate array that specifies the coordinate where to evaluate
+    ! (if available). The content is depending on the situation, specifíed by the
+    ! cinfoNeeded parameter: \\
+    !
+    ! cinfoNeeded = DISCFBC_NEEDFUNCGENERAL,
+    !               DISCFBC_NEEDFUNC,
+    !               DISCFBC_NEEDFUNCMID,
+    !               DISCFBC_NEEDFUNCELMID,
+    !               DISCFBC_NEEDFUNCFACEMID :
+    !   p_Dwhere(1:ndim,.) = x/y/z-coordinate of the point where to evaluate
+    !  
+    ! cinfoNeeded = DISCFBC_NEEDINTMEAN,
+    !               DISCFBC_NEEDFACEINTMEAN :
+    !   p_Dwhere(1:ndim,.) = x/y/z-coordinate of the midpoint of the edge/face
+    !                        where to evaluate
+    real(DP), dimension(:,:), pointer :: p_Dwhere => null()
   
     ! A pointer to an array that accepts calculated values. The callback routine
     ! for evaluating on the fictitious boundary component must fill this
@@ -247,7 +271,7 @@ module discretefbc
     !
     ! Remark: The second dimension is not used for now. In a later implementation
     ! when derivatives might be needed, the shape may be used in a different way,
-    ! e.g. p_Dvalues(1..#derivatives,1..nvalues) or similar.
+    ! e.g. p_Dvalues(1..nvalues,1..#derivatives) or similar.
     !
     ! Remark: Depending on what is to be evaluated, not all values (point values,...)
     ! must be calculated. If some values are left out, the callback routine can
