@@ -386,3 +386,4 @@ d) The benchmark can be run at night for non-default build IDs by
    passing a distinct build ID. Example
 
     "runregressiontest_feat2 --checkout --compare-feat2-checkouts -t [testcase-file] --id=pc64-opteron-linux-gcc-goto"
+
