@@ -3159,7 +3159,7 @@ contains
               ! Index of the entry
               icount = (ielidx-1)*nve
               do j=1,nve
-                idof = Idofs(j,iel)
+                idof = Idofs(j,ielidx)
                 if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                   do i=1,nequations
                     p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
@@ -3206,7 +3206,7 @@ contains
               ! Index of the entry
               icount = (ielidx-1)*nve
               do j=1,nve
-                idof = Idofs(j+nve,iel)
+                idof = Idofs(j+nve,ielidx)
                 if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                   do i=1,nequations
                     p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
@@ -3252,7 +3252,7 @@ contains
               ! Index of the entry
               icount = ielidx
 
-              idof = Idofs(2*nve+1,iel)
+              idof = Idofs(2*nve+1,ielidx)
               if ((p_Iinside(icount) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                 do i=1,nequations
                   p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount,1)
@@ -3305,7 +3305,7 @@ contains
               ! Index of the entry
               icount = (ielidx-1)*nve
               do j=1,nve
-                idof = Idofs(j,iel)
+                idof = Idofs(j,ielidx)
                 if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                   do i=1,nequations
                     p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
@@ -3323,8 +3323,11 @@ contains
           ! Element type? That decides on how to handle the DOF values.
           !
           ! -----
-          ! P1, Q1, P2, Q2
-          if (p_relementDist%celement .eq. EL_Q1_3D) then
+          ! P1, Q1, P2, Q2.
+          ! Note: P2/Q2 not yet supported... too ugly to realise until now,
+          ! but will have to be done similar to 2D.
+          if ((p_relementDist%celement .eq. EL_P1_3D) .or. &
+              (p_relementDist%celement .eq. EL_Q1_3D)) then
               
             bok = .true.
               
@@ -3359,7 +3362,7 @@ contains
               ! Index of the entry
               icount = (ielidx-1)*nve
               do j=1,nve
-                idof = Idofs(j,iel)
+                idof = Idofs(j,ielidx)
                 if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                   do i=1,nequations
                     p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
@@ -3415,7 +3418,7 @@ contains
               ! Index of the entry
               icount = (ielidx-1)*nve
               do j=1,nve
-                idof = Idofs(j,iel)
+                idof = Idofs(j,ielidx)
                 if ((p_Iinside(icount+j) .ne. 0) .and. (p_Idofs(idof) .eq. 0)) then
                   do i=1,nequations
                     p_Ddofs(i,idof) = p_Revaluation(i)%p_Dvalues(icount+j,1)
