@@ -292,7 +292,7 @@ BDC_UMAX = 0.3
 
 #####
 
-# Test 100
+# Test 110
 # Nonstationary DC flow.
 # Re=400, Stokes
 # Time: 0..1 sec
@@ -367,7 +367,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.0078125
 
 #####
 
-# Test 200
+# Test 120
 # Nonstationary DC flow.
 # Re=400, Navier-Stokes
 # Time: 0..1 sec
