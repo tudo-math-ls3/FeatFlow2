@@ -14,24 +14,24 @@ DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
 # Test 1
 # Nonstationary Backward-Facing-Step flow.
 # Re=10000, Navier-Stokes, Inflow = 1.0 max
-# Time: 0..5 sec
-# 40 timesteps per second
+# Time: 0..10 sec
+# 20 timesteps per second
 # Q2
 # Level 5
 # The calculation takes place on a 'full' domain. The step is emulated
 # via the fictitious boudary method.
 
 testid   = CC2D_TARGET2_001
-descr    = BFS-test with Fictitious boundary to realise the step, Re=10000, t=0..5, 200 timesteps, Q2, Level 5
+descr    = BFS-test with Fictitious boundary to realise the step, Re=10000, t=0..10, 200 timesteps, Q2, Level 5
 datfile  = ./data/apps_cc2d_fbbfs/master_calctargetflow_fbbfs.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 5
 MINLEVEL = 1
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.025
+TIMEDISCRETISATION_DTIMESTEP = 0.05
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
-TIMEDISCRETISATION_DTIMEMAX = 5.0
+TIMEDISCRETISATION_DTIMEMAX = 10.0
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_RE = 10000
 DISCRETISATION_IELEMENTTYPE = 4
