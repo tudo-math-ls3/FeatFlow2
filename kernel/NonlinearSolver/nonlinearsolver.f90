@@ -192,6 +192,18 @@ module nonlinearsolver
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR)  :: DfinalDefect
 
     ! OUTPUT PARAMETER:
+    ! Norm of initial residuum for the complete solution vector.
+    ! Only valid, if the fcb_resNormCheck callback procedure is not specified
+    ! in the call to the solver, otherwise undefined!
+    real(DP) :: dinitialDefectTotal = 0.0_DP
+
+    ! OUTPUT PARAMETER:
+    ! Norm of final residuum for the complete solution vector.
+    ! Only valid, if the fcb_resNormCheck callback procedure is not specified
+    ! in the call to the solver, otherwise undefined!
+    real(DP) :: dfinalDefectTotal = 0.0_DP
+
+    ! OUTPUT PARAMETER:
     ! Total time for nonlinear solver
     real(DP)                        :: dtimeTotal
 
@@ -227,6 +239,26 @@ module nonlinearsolver
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DepsAbs = 1E-5_DP
+
+    ! INPUT PARAMETER:
+    ! Standard relative stopping criterion for the complete solution vector.
+    ! Only valid, if there is no callback routine for the calculation of
+    ! residuals passed to the nonlinear solver.
+    ! Stop iteration if everywhere
+    !   !!defect!! < EPSREL * !!initial defect!!.
+    ! =0: ignore, use absolute stopping criterion; standard = 0
+    ! Remark: do not set depsAbs=depsRel=0!
+    real(DP) :: depsRelTotal = 0.0_DP
+
+    ! INPUT PARAMETER:
+    ! Standard absolute stopping criterion for the complete solution vector.
+    ! Only valid, if there is no callback routine for the calculation of
+    ! residuals passed to the nonlinear solver.
+    ! Stop iteration if everywhere
+    !   !!defect!! < EPSREL.
+    ! =0: ignore, use relative stopping criterion; standard = 0
+    ! Remark: do not set depsAbsTotal=depsRelTotal=0!
+    real(DP) :: depsAbsTotal = 0.0_DP
 
     ! INPUT PARAMETER:
     ! Standard relative divergence criterion for each subvector of a block vector. 
@@ -270,6 +302,12 @@ module nonlinearsolver
     ! (cf. linearalgebra.f90).
     ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
     integer, dimension(NLSOL_MAXEQUATIONSERROR) :: IresNorm = 2
+
+    ! INPUT PARAMETER FOR SOLVERS WITH RESIDUAL CHECK: 
+    ! Type of norm to use in the residual checking of the total vector
+    ! (cf. linearalgebra.f90).
+    ! =0: euclidian norm, =1: l1-norm, =2: l2-norm, =3: MAX-norm
+    integer :: iresNormTotal = 2
     
     ! INPUT PARAMETER: Output level
     ! This determines the output level of the solver.
@@ -319,8 +357,8 @@ contains
 
 !<function>
   
-  logical function nlsol_testConvergence (rsolverNode, DvecNorm, nvectorblocks, rdef) &
-          result(loutput)
+  logical function nlsol_testConvergence (rsolverNode, DvecNorm, dvecNormTotal,&
+      nvectorblocks, rdef) result(loutput)
   
 !<description>
   
@@ -367,6 +405,13 @@ contains
   ! vector and convergence is tested using DvecNorm.
   real(DP), dimension(:), intent(inout) :: DvecNorm
 
+  ! Total Norm of the defect vector.
+  ! If rdef if present, the routine will calculate the norm of the subvectors
+  ! and return them in dvecNormTotal.
+  ! If rdef is not present, DvecNorm is assumed to be a valid norm of a
+  ! vector and convergence is tested using DvecNorm.
+  real(DP), intent(inout) :: dvecNormTotal
+
 !</inputoutput>
   
 !</function>
@@ -382,9 +427,12 @@ contains
     if (present(rdef)) then
       call lsysbl_vectorNormBlock (rdef,rsolverNode%IresNorm(1:nblocks),&
           DvecNorm(1:nblocks))
-      where (.not.((DvecNorm .ge. 1D-99) .and. (DvecNorm .le. 1D99))) 
+      where (.not.((DvecNorm .ge. 1E-99_DP) .and. (DvecNorm .le. 1E99_DP))) 
         DvecNorm = 0.0_DP
       end where
+      dvecNormTotal = lsysbl_vectorNorm (rdef,rsolverNode%iresNormTotal)
+      if (.not.((dvecNormTotal .ge. 1E-99_DP) .and. (dvecNormTotal .le. 1E99_DP))) &
+        dvecNormTotal = 0.0_DP
     end if
   
     select case (rsolverNode%istoppingCriterion)
@@ -400,7 +448,7 @@ contains
           bok = bok .or. (.not. (DvecNorm(i) .gt. rsolverNode%DepsAbs(i)))
         end do
         if (bok) then
-          loutput = .false.
+          loutput = .true.
           return
         end if
       end if
@@ -419,12 +467,12 @@ contains
               rsolverNode%depsRel(i) * rsolverNode%dinitialDefect(i))) 
         end do
         if (bok) then
-          loutput = .false.
+          loutput = .true.
           return
         end if
         
       end if
-    
+
     case DEFAULT
       ! Standard stopping criterion.
       ! Iteration stops if both the absolute and the relative criterium holds.
@@ -456,6 +504,23 @@ contains
         
       end do ! i
     end select
+
+    ! Absolute convergence criterion? 
+    if (rsolverNode%depsAbsTotal .ne. 0.0_DP) then
+      if (.not. (DvecNormTotal .gt. rsolverNode%depsAbsTotal)) then
+        loutput = .true.
+      end if
+    end if
+
+    ! Relative convergence of the total vector.
+    if ((rsolverNode%depsRelTotal .ne. 0.0_DP) .and. &
+        (rsolverNode%dinitialDefectTotal .gt. SYS_EPSREAL)) then
+      if (.not. (dvecNormTotal .gt. &
+            rsolverNode%depsRelTotal * rsolverNode%dinitialDefectTotal)) then 
+        loutput = .true.
+      end if
+      
+    end if
   
   end function
   
@@ -842,6 +907,7 @@ contains
   type(t_collection), pointer :: p_rcollection
   integer :: ite,i
   real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DvecNorm
+  real(DP) :: dvecNormTotal
   type(t_vectorBlock) :: rtemp
   real(DP) :: domega
   integer :: nblocks
@@ -885,8 +951,14 @@ contains
       end where
       rsolverNode%DinitialDefect = DvecNorm
       rsolverNode%DfinalDefect = DvecNorm
+
+      dvecNormTotal = lsysbl_vectorNorm (rd,rsolverNode%iresNormTotal)
+      if (.not.((dvecNormTotal .ge. 1D-99) .and. (dvecNormTotal .le. 1D99))) &
+        dvecNormTotal = 0.0_DP
+      rsolverNode%dinitialDefectTotal = dvecNormTotal
+      rsolverNode%dfinalDefectTotal = dvecNormTotal
       
-      bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, nblocks)
+      bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, dvecNormTotal, nblocks)
       bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, nblocks)
       
       if (rsolverNode%ioutputLevel .ge. 2) then
@@ -989,8 +1061,13 @@ contains
               DvecNorm = 0.0_DP
             end where
             rsolverNode%DfinalDefect = DvecNorm
+
+            dvecNormTotal = lsysbl_vectorNorm (rd,rsolverNode%iresNormTotal)
+            if (.not.((dvecNormTotal .ge. 1E-99_DP) .and. (dvecNormTotal .le. 1E99_DP))) &
+              dvecNormTotal = 0.0_DP
+            rsolverNode%dfinalDefectTotal = dvecNormTotal
             
-            bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, nblocks)
+            bconvergence = nlsol_testConvergence (rsolverNode, DvecNorm, dvecNormTotal, nblocks)
             bdivergence  = nlsol_testDivergence (rsolverNode, DvecNorm, nblocks)
 
             if (rsolverNode%ioutputLevel .ge. 2) then
