@@ -243,7 +243,7 @@ BDR_PARPROFILEMAX = 0.3
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 6
-# Q2 element, no stabilisation
+# Q2 element, SD(0.2)
 # 32 seconds with timestep 0.00125
 ##########
 
@@ -256,7 +256,7 @@ mglevels = 6
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 4
 DISCRETISATION_IUPWIND = 0
-DISCRETISATION_DUPSAM = 0.0
+DISCRETISATION_DUPSAM = 0.2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 TIMEDISCRETISATION_DTIMEMAX = 32.0
@@ -271,7 +271,7 @@ BDR_PARPROFILEMAX = 1.5
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q2 element, no stabilisation
+# Q2 element, SD(0.2)
 # 32 seconds with timestep 0.04, Crank-Nicolson
 ##########
 
