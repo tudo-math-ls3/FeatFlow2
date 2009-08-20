@@ -54,7 +54,8 @@ simportdatafiles(8) =
   "%{sdatadirectory}/postprocessing.dat"
 
 [GENERALOUTPUT]
-sbenchLog = '$LOGDIR/benchmarkresultfile'
+sbenchLog = '%{slogdirectory}/benchmarkresultfile'
+smsgLog = '%{slogdirectory}/output_lv%{DISCRETISATION.NLMAX}.log'
 
 [CC-DISCRETISATION]
 NLMIN = $MINLEVEL
