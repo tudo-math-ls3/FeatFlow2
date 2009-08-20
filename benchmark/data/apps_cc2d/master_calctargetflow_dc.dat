@@ -55,7 +55,7 @@ simportdatafiles(8) =
 
 [GENERALOUTPUT]
 sbenchLog = '%{slogdirectory}/benchmarkresultfile'
-smsgLog = '%{slogdirectory}/output_lv%{DISCRETISATION.NLMAX}.log'
+smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}.log'
 
 [CC-DISCRETISATION]
 NLMIN = $MINLEVEL
