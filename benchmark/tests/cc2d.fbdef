@@ -199,7 +199,7 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 # Test 104
 #
 # Nontationary Navier-Stokes on level 2,3.
-# Q2 element, EOJ(0.01)
+# Q1~ element, EOJ(0.01)
 # 5 timesteps with timestep 0.01, Crank-Nicolson
 ##########
 
@@ -208,7 +208,8 @@ descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
-mglevels = 2,3
+mglevels = 2,3,4,5
+DISCRETISATION_IELEMENTTYPE = 3
 DISCRETISATION_IUPWIND = 5
 DISCRETISATION_DUPSAM = 0.01
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
