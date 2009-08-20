@@ -338,7 +338,7 @@ contains
     call parlst_getvalue_double (p_rsection, 'depsPR', &
                                  rnonlinearIteration%DepsNL(4), 0.1_DP)
 
-    call parlst_getvalue_double (p_rsection, 'ddmpD', &
+    call parlst_getvalue_double (p_rsection, 'dDampingD', &
                                  rnonlinearIteration%DepsNL(5), 0.1_DP)
       
     ! Set up a filter that modifies the block vectors/matrix

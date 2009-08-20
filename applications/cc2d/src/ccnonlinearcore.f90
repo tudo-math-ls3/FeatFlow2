@@ -1632,7 +1632,7 @@ contains
         depsDiv = rnonlinearIteration%DepsNL(2)
         depsUR  = rnonlinearIteration%DepsNL(3)
         depsPR  = rnonlinearIteration%DepsNL(4)
-        depsRES = rnonlinearIteration%DepsNL(5)*dresINIT
+        depsRES = rnonlinearIteration%DepsNL(5)*dresINIT ! -> ddampingD
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
