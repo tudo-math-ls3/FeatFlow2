@@ -121,7 +121,7 @@ DISCRETISATION_IEQUATION = 1
 # Test 100
 #
 # Nontationary Navier-Stokes on level 2,3,4,5.
-# Q1~ element, SD(0.1)
+# Q1~ element, SD(1.0)
 # 5 timesteps with timestep 0.01, Backward-Euler
 ##########
 
@@ -147,7 +147,7 @@ BDR_PARPROFILEMAX = 1.5
 # Test 101
 #
 # Nontationary Navier-Stokes on level 2,3,4,5.
-# Q1~ element, SD(0.1)
+# Q1~ element, SD(1.0)
 # 5 timesteps with timestep 0.01, Crank-Nicolson
 ##########
 
