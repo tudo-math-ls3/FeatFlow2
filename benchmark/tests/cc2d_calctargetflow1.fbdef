@@ -211,7 +211,7 @@ POSTPROCESSING_IWRITEBODYFORCES = 1
 # Re=5000, Navier Stokes, SD(0.01)
 # Q2
 # Level 4
-# Time: 0..5 sec
+# Time: 0..25 sec
 # 100 timesteps per second, CN timestepping
 # Starts at Stokes solution calculated in CC2D_TARGET1_006 and
 # simulates 25 seconds of Navier-Stokes.
@@ -224,7 +224,7 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 mglevels = 4
 MINLEVEL = 2
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.025
+TIMEDISCRETISATION_DTIMESTEP = 0.01
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 TIMEDISCRETISATION_DTIMEMAX = 25.0
 DISCRETISATION_IEQUATION = 0
