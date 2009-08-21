@@ -108,7 +108,8 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: I,j,k,ielementType,icubA,icubB,icubF, icubM, iElementTypeStabil
+  integer :: i,j,k,ielementType,icubA,icubB,icubF, icubM
+  integer :: iElementTypeStabil
   character(LEN=SYS_NAMELEN) :: sstr
   
     ! An object for saving the domain:
@@ -166,6 +167,16 @@ contains
 
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'IELEMENTTYPESTABIL',iElementTypeStabil,0)
+
+    call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'scubEOJ',sstr,'')
+    if (sstr .eq. '') then
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'icubEOJ',i,int(CUB_G4_1D))
+      rproblem%rstabilisation%ccubEOJ = int(rproblem%rstabilisation%ccubEOJ,I32)
+    else
+      rproblem%rstabilisation%ccubEOJ = cub_igetID(sstr)
+    end if
 
     ! Now set up discrezisation structures on all levels:
 
@@ -958,6 +969,9 @@ contains
       
       ! Matrix weight
       rjumpStabil%dtheta = 1.0_DP
+      
+      ! Cubature formula
+      rjumpStabil%ccubType = rproblem%rstabilisation%ccubEOJ
       
       ! Allocate an empty matrix
       call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&

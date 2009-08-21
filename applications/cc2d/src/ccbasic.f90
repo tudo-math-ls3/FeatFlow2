@@ -212,6 +212,9 @@ module ccbasic
     ! Type of stabilisation. =0: Streamline diffusion. =1: Upwind, 2=edge oriented.
     integer :: iupwind = 0
     
+    ! Cubature formula for the EOJ stabilisation.
+    integer(I32) :: ccubEOJ
+    
     ! Stabilisation parameter for the nonlinearity.
     ! Standard values: Streamline diffusion: 1.0. Upwind: 0.1. Edge oriented: 0.01.
     real(DP) :: dupsam = 1.0_DP

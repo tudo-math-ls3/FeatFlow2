@@ -518,6 +518,7 @@ contains
       rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
       rnonlinearCCMatrix%dnu = rproblem%dnu
       rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%ccubEOJ = rproblem%rstabilisation%ccubEOJ
       rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
       
       ! 2.) Pointers to global precalculated matrices.

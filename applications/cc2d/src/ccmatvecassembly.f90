@@ -214,6 +214,9 @@ module ccmatvecassembly
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam = 0.0_DP
     
+    ! STABILISATION: Cubature formula for EOJ stabilisation
+    integer(I32) :: ccubEOJ = CUB_G4_1D
+    
     ! STABILISATION: Specifies how the local H should be calculated for
     ! streamline diffusion.
     integer :: clocalH
@@ -1133,6 +1136,9 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
@@ -1259,6 +1265,9 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
@@ -1297,6 +1306,9 @@ contains
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -1917,6 +1929,9 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
@@ -2027,6 +2042,9 @@ contains
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
           ! convective parts...
@@ -2123,6 +2141,9 @@ contains
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+
+          ! Cubature formula
+          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any

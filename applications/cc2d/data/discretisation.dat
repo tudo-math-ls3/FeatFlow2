@@ -232,6 +232,10 @@ scubB              = G4X4
 
 scubF              = G4X4
 
+# cubature formula for the EOJ stabilisation (1D along edges)
+
+scubEOJ            = G4_1D
+
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.
 # This stabilises the preconditioner of the nonlinear iteration
