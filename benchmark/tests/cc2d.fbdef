@@ -263,7 +263,7 @@ TIMEDISCRETISATION_DTIMEMAX = 32.0
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.24999999
 POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
-POSTPROCESSING_DBDFORCESCOEFF2 = 0.01
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
 BDR_PARPROFILEMAX = 1.5
 
 ##########
@@ -305,17 +305,16 @@ TIMEDISCRETISATION_DTIMESTEP = 0.02
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q2 element, SD(0.1)
+# Q2 element, SD(0.5)
 # 32 seconds with timestep 0.01, Crank-Nicolson
 ##########
 
 testid   = CC2D_213
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.1), 32 seconds CN, dt=0.01, lv 2,3,4,5.
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.01, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
-DISCRETISATION_DUPSAM = 0.1
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
 ##########
@@ -323,12 +322,12 @@ TIMEDISCRETISATION_DTIMESTEP = 0.01
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q2 element, SD(0.1)
+# Q2 element, SD(0.5)
 # 32 seconds with timestep 0.005, Crank-Nicolson
 ##########
 
 testid   = CC2D_214
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.1), 32 seconds CN, dt=0.005, lv 2,3,4,5.
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
@@ -340,12 +339,12 @@ TIMEDISCRETISATION_DTIMESTEP = 0.005
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q2 element, SD(0.1)
+# Q2 element, SD(0.5)
 # 32 seconds with timestep 0.0025, Crank-Nicolson
 ##########
 
 testid   = CC2D_215
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.1), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
@@ -357,12 +356,12 @@ TIMEDISCRETISATION_DTIMESTEP = 0.0025
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q2 element, SD(0.1)
+# Q2 element, SD(0.5)
 # 32 seconds with timestep 0.00125, Crank-Nicolson
 ##########
 
 testid   = CC2D_216
-descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.1), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
@@ -375,17 +374,105 @@ TIMEDISCRETISATION_DTIMESTEP = 0.00125
 # Reference calculation
 #
 # Nonstationary Navier-Stokes on level 2,3,4,5.
-# Q1~ element, SD(0.1)
-# 32 seconds with timestep 0.01, Crank-Nicolson
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.04, Crank-Nicolson
 ##########
 
 testid   = CC2D_217
-descr    = standard DFG benchmark, CC2D, stationary
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.04, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+DISCRETISATION_IELEMENTTYPE = 3
+
+##########
+# Test 217
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.02, Crank-Nicolson
+##########
+
+testid   = CC2D_217
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.02, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+DISCRETISATION_IELEMENTTYPE = 3
+
+##########
+# Test 218
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.01, Crank-Nicolson
+##########
+
+testid   = CC2D_218
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.01, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 DISCRETISATION_IELEMENTTYPE = 3
-DISCRETISATION_IUPWIND = 0
-DISCRETISATION_DUPSAM = 0.1
+
+##########
+# Test 219
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.005, Crank-Nicolson
+##########
+
+testid   = CC2D_219
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+DISCRETISATION_IELEMENTTYPE = 3
+
+##########
+# Test 220
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.0025, Crank-Nicolson
+##########
+
+testid   = CC2D_220
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+DISCRETISATION_IELEMENTTYPE = 3
+
+##########
+# Test 221
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.00125, Crank-Nicolson
+##########
+
+testid   = CC2D_221
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 2,3,4,5
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+DISCRETISATION_IELEMENTTYPE = 3
