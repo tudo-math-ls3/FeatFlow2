@@ -2,10 +2,6 @@
 
 # 'fb_' stands for 'FEAST benchmark'.
 # Variables are written in capital letters if used globally.
-#
-# The environment variables "SCRIPT", "EMAIL" and "WALLCLOCK" may be
-# used to overwrite "BENCHMARKRUNSCRIPT", "EMAILADDRESS" and
-# "WALLCLOCKLIMIT" by the caller!
 
 # Initialisations
 ALLTESTS=
@@ -31,20 +27,6 @@ case "`hostname -f`" in
 	PPN=":ppn=2";
 	;;
 esac
-
-# Overwrite the variables by data specified by the caller if possible.
-
-if [ "$SCRIPT" = "" ]; then
-  BENCHMARKRUNSCRIPT=$SCRIPT
-fi
-
-if [ "$EMAILADDRESS" = "" ]; then
-  EMAILADDRESS=$EMAIL
-fi
-
-if [ "$WALLCLOCK" = "" ]; then
-  WALLCLOCKLIMIT=$WALLCLOCK
-fi
 
 # ==================================================================
 # IMPORTANT
