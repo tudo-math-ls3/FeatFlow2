@@ -182,7 +182,7 @@ fb_setMailSender() {
 	    ;;
 
 	*)
-	    if [ "$EMAILADDRESS" = ""]
+	    if [ "$EMAILADDRESS" = ""]; then
 	      cat <<EOF 1>&2
 $0: Error: Unknown user $USER.
 $0: Cannot determine the email address.
