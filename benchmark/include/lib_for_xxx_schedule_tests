@@ -189,7 +189,6 @@ $0: Cannot determine the email address.
 $0: Please update function fb_setMailSender.
 EOF
 	      exit 1002
-	      ;;
 	    else
 	      cat <<EOF 1>&2
 $0: Warning: Unknown user $USER.
@@ -198,6 +197,7 @@ $0: Using email address: $EMAILADDRESS
 EOF
 	      DOSENDMAIL=1
 	    fi
+      ;;
     esac
 }
 
