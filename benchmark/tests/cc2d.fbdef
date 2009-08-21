@@ -403,7 +403,6 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.02
-DISCRETISATION_IELEMENTTYPE = 3
 
 ##########
 # Test 218
@@ -421,7 +420,6 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.01
-DISCRETISATION_IELEMENTTYPE = 3
 
 ##########
 # Test 219
@@ -439,7 +437,6 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.005
-DISCRETISATION_IELEMENTTYPE = 3
 
 ##########
 # Test 220
@@ -457,7 +454,6 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
-DISCRETISATION_IELEMENTTYPE = 3
 
 ##########
 # Test 221
@@ -475,4 +471,3 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
-DISCRETISATION_IELEMENTTYPE = 3
