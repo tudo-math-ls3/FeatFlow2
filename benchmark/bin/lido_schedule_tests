@@ -62,6 +62,7 @@ fb_queryPBSLiDO() {
     eth[0]="short_eth"
     eth[1]="med_eth"
     eth[2]="long_eth"
+    eth[3]="neternal_eth"
     ib[0]="short_ib"
     ib[1]="med_ib"
     ib[2]="long_ib"
@@ -120,7 +121,7 @@ EOF
     }
 
     # eth queue
-    for i in 0 1 2; do
+    for i in 0 1 2 3; do
 	queue=${eth[$i]};
 	# Determine maximum wall clock time
 	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
@@ -151,7 +152,7 @@ fb_determineQueue() {
 
     # Check ethernet queues
     if test "${queuetype}" = "_eth"; then 
-	for i in 0 1 2; do
+	for i in 0 1 2 3; do
 	    queue=${eth[$i]};
 	    # Check whether enough nodes in queue available
 	    if test ${nodes} -le ${eth_maxavailnodes[$i]}; then
