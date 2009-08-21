@@ -181,6 +181,11 @@ fb_setMailSender() {
 	    DOSENDMAIL=1
 	    ;;
 
+	mkoester)
+	    EMAILADDRESS=michael.koester@mathematik.tu-dortmund.de
+	    DOSENDMAIL=1
+	    ;;
+
 	*)
 	    if [ "$EMAILADDRESS" = ""]; then
 	      cat <<EOF 1>&2
