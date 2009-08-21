@@ -260,7 +260,7 @@ g) SUMMARY: The data flow for executing a benchmark application is
          in the command line of lido_schedule_tests, e.g.
            bin/lido_schedule_tests CC2D_001 CC2D_002 ...
          or, resp.,
-           bin/lido_schedule_tests tests1 tests2 ...
+           bin/lido_schedule_tests tests1.fbconf tests2.fbconf ...
          with test1.fbconf, test2.fbconf, ... files containing test cases.
          All tests are independently scheduled and executed in parallel!
       -> The function fb_setMailSender() in the file 
@@ -283,7 +283,7 @@ g) SUMMARY: The data flow for executing a benchmark application is
      cd Featflow2/benchmark
      ./configure
      make benchmark
-     bin/lido_schedule_tests alltests
+     bin/lido_schedule_tests alltests.fbconf
 
 
    How is the benchmark run?
