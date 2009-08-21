@@ -156,6 +156,8 @@ fb_cleanUpPreviousRun() {
 
 
 #  Function: Map local identities to valid email addresses
+#            If no identity is given, the email address must exist,
+#            otherwise the script will not work.
 #            Sets $EMAILADDRESS and $DOSENDMAIL (boolean variable whether to send email at all)
 fb_setMailSender() {
     case "$USER" in
@@ -180,12 +182,22 @@ fb_setMailSender() {
 	    ;;
 
 	*)
-	    cat <<EOF 1>&2
+	    if [ "$EMAILADDRESS" = ""]
+	      cat <<EOF 1>&2
 $0: Error: Unknown user $USER.
+$0: Cannot determine the email address.
 $0: Please update function fb_setMailSender.
 EOF
-	    exit 1002
-	    ;;
+	      exit 1002
+	      ;;
+	    else
+	      cat <<EOF 1>&2
+$0: Warning: Unknown user $USER.
+$0: Please update function fb_setMailSender.
+$0: Using email address: $EMAILADDRESS
+EOF
+	      DOSENDMAIL=1
+	    fi
     esac
 }
 
