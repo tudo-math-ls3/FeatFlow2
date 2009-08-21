@@ -54,7 +54,7 @@ simportdatafiles(8) =
   "%{sdatadirectory}/postprocessing.dat"
 
 [GENERALOUTPUT]
-sbenchLog = '%{slogdirectory}/benchmarkresultfile'
+sbenchLog = ''
 smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}.log'
 
 [CC-DISCRETISATION]
