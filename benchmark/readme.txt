@@ -249,13 +249,26 @@ g) SUMMARY: The data flow for executing a benchmark application is
          but beyond that also automagically determines the most
          appropriate queue based on 
          * configured settings for walltime (hardcoded in the header
-           of bin/lido_schedule_tests),
+           of bin/lido_schedule_tests or specified by the parameter "-t"),
          * the necessary number of processes (which is trivially 1 given
            that Feat2 supports serial applications only) 
          * the interconnect (trivial for Feat2 as well: ethernet)
          Then, the script tries very hard to submit the job, in
          particular in case the queue is so full that no more jobs are
          accepted at first.
+      -> One can specify multiple testcase-ID's or multiple testcase files
+         in the command line of lido_schedule_tests, e.g.
+           bin/lido_schedule_tests CC2D_001 CC2D_002 ...
+         or, resp.,
+           bin/lido_schedule_tests tests1 tests2 ...
+         with test1.fbconf, test2.fbconf, ... files containing test cases.
+         All tests are independently scheduled and executed in parallel!
+      -> The function fb_setMailSender() in the file 
+         include/lib_for_xxx_schedule_tests maps the username to a valid
+         email address. If lido_schedule_tests stops with an error that
+         the user is unknown, one has either to add a mapping here or
+         tell lido_schedule_tests a valid email address using the
+         "-m email address" parameter on the command line.
 
 
    Summary to set up and run benchmark in non-queueing environments:
