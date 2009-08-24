@@ -542,6 +542,7 @@ contains
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
     type(t_vectorBlock) :: rpredictedSolution,roldSolution
+    real(dp) :: doldtime
     
     logical :: babortTimestep
     
@@ -584,7 +585,9 @@ contains
 
     ! Postprocessing. Write out the initial solution.
     call output_line ('Starting postprocessing of initial solution...')
-    call cc_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+    call cc_postprocessingNonstat (rproblem,&
+        rvector,rproblem%rtimedependence%dtimeInit,&
+        rvector,rproblem%rtimedependence%dtimeInit,rpostprocessing)
 
     ! First time step
     rproblem%rtimedependence%itimeStep = 1
@@ -773,6 +776,7 @@ contains
         ! Snapshot the current solution for the later calculation of the
         ! time derivative.
         call lsysbl_copyVector (rvector,roldSolution)
+        doldtime = rproblem%rtimedependence%dtime
         
         ! Proceed the next time step -- if we are allowed to.
         call cc_performTimestep (rproblem,rvector,rrhs,&
@@ -1032,7 +1036,10 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         
         ! Postprocessing. Write out the solution if it was calculated successfully.
-        call cc_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+        call cc_postprocessingNonstat (rproblem,&
+            roldSolution,doldtime,&
+            rvector,rproblem%rtimedependence%dtime,&
+            rpostprocessing)
         
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Analysing time derivative...',&

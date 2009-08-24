@@ -51,12 +51,26 @@ ielementTypeInitialSolution = -1
 
 # Write final solution vector to a file. After a stationary simulation,
 # the stationary solution is written out. After a nonstationary simulation,
-# the solution after the last timestep is written out.
-# 0=don't write
-# 1=write on level specified by iwriteSolutionLevel, use formatted output
-# 2=write on level specified by iwriteSolutionLevel, use unformatted output
+# the solution after the last timestep or in every timestep is written out.
+#
+# =0: don't write
+# =1: write on level specified by iwriteSolutionLevel, use formatted output.
+#     For a nonstationary simulation: Write out the solution after the last 
+#     timestep.
+# =2: write on level specified by iwriteSolutionLevel, use unformatted output.
+#     For a nonstationary simulation: Write out the solution after the last 
+#     timestep.
+# =3: write on level specified by iwriteSolutionLevel, use formatted output.
+#     For a nonstationary simulation: Write out the solution in every timestep.
+# =4: write on level specified by iwriteSolutionLevel, use unformatted output.
+#     For a nonstationary simulation: Write out the solution in every timestep.
+#
 # To write out raw solution data during a nonstationary simulation,
-# use the 'film output' feature in the postprocessing!
+# it's also possible to use the 'film output' feature in the postprocessing.
+# While this feature here writes out the solution to one single file
+# (always overwriting the previous result), 'film output' will write the
+# solution to a sequence of files. The format of both files is the same,
+# both can be used as initial solution to be read with ctypeInitialSolution<>0.
 
 cwriteFinalSolution = 0
 

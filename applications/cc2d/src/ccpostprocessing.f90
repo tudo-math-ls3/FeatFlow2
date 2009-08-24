@@ -109,15 +109,9 @@ module ccpostprocessing
     ! Whether nonstationary postprocessing should be used or not.
     logical              :: bnonstationaryPostprocessing
     
-    ! Point in time when the next UCD file is to be written out
-    real(DP)             :: dnextTimeUCD = 0.0_DP
-    
     ! Next file extension for UCD output file.
     integer              :: inextFileSuffixUCD = 0
 
-    ! Point in time when the next Film file is to be written out
-    real(DP)             :: dnextTimeFilm = 0.0_DP
-    
     ! Next file extension for Film output file.
     integer              :: inextFileSuffixFilm = 0
 
@@ -205,7 +199,8 @@ contains
 
 !<subroutine>
 
-  subroutine cc_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+  subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
+      dtimePrev,rvector,dtime,rpostprocessing)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -221,14 +216,30 @@ contains
 !</inputoutput>
 
 !<input>
-  ! The solution vector which is to be evaluated by the postprocessing routines.
+  ! Solution vector of the previous timestep. Coincides with rvector
+  ! if there is no previous timestep.
+  type(t_vectorBlock), intent(in) :: rvectorPrev
+
+  ! Time of the previous timestep. Coincides with dtime
+  ! if there is no previous timestep.
+  real(dp), intent(in) :: dtimePrev
+
+  ! Solution vector of the current timestep. 
   type(t_vectorBlock), intent(in) :: rvector
+
+  ! Time of the current timestep.
+  real(dp), intent(in) :: dtime
 !</input>
 
 !</subroutine>
 
     ! local variables
     type(t_timer) :: rtimer
+    real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
+    real(DP) :: dtimeDifferenceFilm, dpptime
+    integer :: itime1,itime2,iinterpolateSolutionUCD,iinterpolateSolutionFilm
+    type(t_vectorBlock) :: rintVector
+    real(dp) :: dweight
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
@@ -243,12 +254,96 @@ contains
     call cc_errorAnalysis (rvector,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
-    call cc_writeUCD (rpostprocessing, rvector, rproblem, &
-        rproblem%rtimedependence%dtime)
+    !
+    ! In a nonstationary simulation, first check if we are allowed
+    ! to write something.
+
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMINTIMEUCD', dminTime, -1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMAXTIMEUCD', dmaxTime, 1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
+                                    
+    if ((dtime .ge. dminTime) .and. (dtime .le. dmaxTime)) then
+    
+      ! Figure out if we have to write the solution. This is the case if
+      ! 1.) Precious and current time is the same ot
+      ! 2.) The solution crossed the next ucd timestep.
+    
+      if ((dtimeDifferenceUCD .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+        itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
+        itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceUCD)
+      else
+        itime1 = 0
+        itime2 = 1
+      end if
+    
+      if (itime1 .ne. itime2) then
+        ! Proably we have to interpolate the solution to the point dtime in time.
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+            'IINTERPOLATESOLUTIONUCD', iinterpolateSolutionUCD,1)
+        if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
+            .or. (dtimePrev .eq. dtime)) then
+          ! No interpolation
+          call cc_writeUCD (rpostprocessing, rvector, rproblem, &
+              rproblem%rtimedependence%dtime)
+        else
+          ! Interpolate and write out the interpolated solution.
+          call lsysbl_copyVector (rvectorPrev,rintVector)
+          dpptime = real(itime2,dp)*dtimeDifferenceUCD + rproblem%rtimedependence%dtimeInit
+          dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
+          call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
+          call cc_writeUCD (rpostprocessing, rintVector, rproblem, dpptime)
+          call lsysbl_releaseVector (rintVector)
+        end if
+      end if
+    end if
     
     ! Write film output (raw data vectors)
-    call cc_writeFilm (rpostprocessing, rvector, rproblem, &
-        rproblem%rtimedependence%dtime)
+    !
+    ! First check if we are allowed to write something.
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMINTIMEFILM', dminTime, -1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
+                                    'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
+                                    
+    if ((dtime .ge. dminTime) .or. (dtime .le. dmaxTime)) then
+    
+      ! Figure out if we have to write the solution. This is the case if
+      ! 1.) Precious and current time is the same ot
+      ! 2.) The solution crossed the next ucd timestep.
+    
+      if ((dtimeDifferenceFilm .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+        itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
+        itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dtimeDifferenceFilm)
+      else
+        itime1 = 0
+        itime2 = 1
+      end if
+    
+      if (itime1 .ne. itime2) then
+        ! Proably we have to interpolate the solution to the point dtime in time.
+        call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+            'IINTERPOLATESOLUTIONFILM', iinterpolateSolutionFilm,1)
+        if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
+            .or. (dtimePrev .eq. dtime)) then
+          ! No interpolation
+          call cc_writeFilm (rpostprocessing, rvector, rproblem, &
+              rproblem%rtimedependence%dtime)
+        else
+          ! Interpolate and write out the interpolated solution.
+          call lsysbl_copyVector (rvectorPrev,rintVector)
+          dpptime = real(itime2,dp)*dtimeDifferenceFilm + rproblem%rtimedependence%dtimeInit
+          dweight = (dpptime-dtimePrev) / (dtime-dtimePrev)
+          call lsysbl_vectorLinearComb (rvector,rintVector,dweight,1.0_DP-dweight)
+          call cc_writeFilm (rpostprocessing, rintVector, rproblem, dpptime)
+          call lsysbl_releaseVector (rintVector)
+        end if
+      end if
+    end if
     
     ! Gather statistics
     call stat_stopTimer(rtimer)
@@ -811,7 +906,9 @@ contains
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     
-    real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
+    ! Backup of current simulation time.
+    real(DP) :: dtimebackup
+    
     integer :: ioutputUCD,ilevelUCD
     integer(I32) :: ieltype
     
@@ -821,28 +918,6 @@ contains
     
     character(SYS_STRLEN) :: sfile,sfilename
     
-    if (present(dtime)) then
-      ! In a nonstationary simulation, first check if we are allowed
-      ! to write something.
-
-      call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                      'DMINTIMEUCD', dminTime, -1.E100_DP)
-      call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                      'DMAXTIMEUCD', dmaxTime, 1.E100_DP)
-      call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                      'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
-                                      
-      if ((dtime .lt. dminTime) .or. (dtime .gt. dmaxTime)) return
-      
-      if (dtimeDifferenceUCD .gt. 0.0_DP) then
-        if (rpostprocessing%dnextTimeUCD .gt.  dtime) return
-      else if (dtimeDifferenceUCD .lt. 0.0_DP) then
-        if (rpostprocessing%dnextTimeUCD .lt. dtime) return
-      end if
-      ! Otherwise: Always write!
-      
-    end if
-
     ! Type of output:    
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTUCD', ioutputUCD, 0)
@@ -895,6 +970,10 @@ contains
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
+
+    ! Only for the postprocessing, weitch to time dtime.
+    dtimebackup = rproblem%rtimedependence%dtime
+    rproblem%rtimedependence%dtime = dtime
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -1060,10 +1139,12 @@ contains
     
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+    
+    ! Restore the current simulation time.
+    rproblem%rtimedependence%dtime = dtimebackup
 
     if (present(dtime)) then
       ! Update time stamp of last written out GMV.
-      rpostprocessing%dnextTimeUCD = rpostprocessing%dnextTimeUCD+dtimeDifferenceUCD
       rpostprocessing%inextFileSuffixUCD = rpostprocessing%inextFileSuffixUCD + 1
     end if
 
@@ -1104,7 +1185,6 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: dminTime, dmaxTime, dtimeDifferenceFilm
     integer :: ioutputFilm,ilevelFilm
     
     type(t_vectorBlock) :: rvector1,rvector2
@@ -1119,22 +1199,6 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
                               'IOUTPUTFILM', ioutputFilm, 0)
     if (ioutputFilm .eq. 0) return
-
-    ! First check if we are allowed to write something.
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMINTIMEFILM', dminTime, -1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
-    call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
-                                    
-    if ((dtime .lt. dminTime) .or. (dtime .gt. dmaxTime)) return
-    
-    if (dtimeDifferenceFilm .gt. 0.0_DP) then
-      if (rpostprocessing%dnextTimeFilm .gt.  dtime) return
-    else if (dtimeDifferenceFilm .lt. 0.0_DP) then
-      if (rpostprocessing%dnextTimeFilm .lt. dtime) return
-    end if
 
     ! Basic filename
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
@@ -1209,7 +1273,6 @@ contains
     call lsysbl_releaseVector (rvector1)
 
     ! Update time stamp of last written out Film file.
-    rpostprocessing%dnextTimeFilm = rpostprocessing%dnextTimeFilm+dtimeDifferenceFilm
     rpostprocessing%inextFileSuffixFilm = rpostprocessing%inextFileSuffixFilm + 1
 
   end subroutine
@@ -1272,11 +1335,8 @@ contains
     ! Initialise the time/file suffix when the first UCD file is to be written out.
     rpostprocessing%bnonstationaryPostprocessing = (rproblem%itimedependence .ne. 0)
     if (rproblem%itimedependence .ne. 0) then
-      rpostprocessing%dnextTimeUCD = rproblem%rtimedependence%dtimeInit
       call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
          'ISTARTSUFFIXUCD', rpostprocessing%inextFileSuffixUCD, 1)
-      
-      rpostprocessing%dnextTimeFilm = rproblem%rtimedependence%dtimeInit
       call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
          'ISTARTSUFFIXFILM', rpostprocessing%inextFileSuffixFilm, 1)
     end if
@@ -1313,10 +1373,7 @@ contains
       rpostprocessingDst%bnonstationaryPostprocessing = &
           rpostprocessingSrc%bnonstationaryPostprocessing
 
-      rpostprocessingDst%dnextTimeUCD = rpostprocessingSrc%dnextTimeUCD
       rpostprocessingDst%inextFileSuffixUCD = rpostprocessingSrc%inextFileSuffixUCD
-
-      rpostprocessingDst%dnextTimeFilm = rpostprocessingSrc%dnextTimeFilm
       rpostprocessingDst%inextFileSuffixFilm = rpostprocessingSrc%inextFileSuffixFilm
     end if
                                     

@@ -50,7 +50,19 @@ dmaxTimeUCD = 1.0E100
 # =0.0: generate UCD output for every timestep in the range 
 #       dminTimeUCD..dmaxTimeUCD
 
-dtimeDifferenceUCD = 0.0
+dtimeDifferenceUCD = 0.25
+
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceUCD.
+# =0: Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Standard. Interpolate the solution linearly to get an equidistant 
+#     timestepping for the UCD export. (May lead to slight time interpolation
+#     errors due to linear time interpolation.)
+# If dtimeDifferenceUCD=0, the solutions are written out as they come.
+
+iinterpolateSolutionUCD = 1
 
 # Start number for file suffix when writing UCD files (1='.0001',...).
 # Whether this is used or not depends on the type of output
@@ -96,6 +108,18 @@ dmaxTimeFilm = 1.0E100
 #       dminTimeFilm..dmaxTimeFilm
 
 dtimeDifferenceFilm = 0.0
+
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceFilm.
+# =0: Standard. Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Interpolate the solution linearly to get an equidistant timestepping
+#     for the film export. (May lead to slight time interpolation errors
+#     due to linear time interpolation.)
+# If dtimeDifferenceFilm=0, the solutions are written out as they come.
+
+iinterpolateSolutionFilm = 0
 
 # Start number for file suffix when writing Film files (1='.0001',...).
 
