@@ -27,6 +27,7 @@ case "`hostname -f`" in
 	PPN=":ppn=2";
 	;;
 esac
+AFTERJOB=""
 
 # ==================================================================
 # IMPORTANT
@@ -218,6 +219,12 @@ fb_createJobfileLiDO() {
     if [ "$DOSENDMAIL" -eq "1" ]; then
       pbsOptionMail="#PBS -m bae"
     fi
+    
+    # Let the job depend on another job?
+    pbsOptionAfter=""
+    if [ "$AFTERJOB" != "" ]; then
+      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
+    fi
 
     # Support for OpenMPI + Infiniband, OpenMPI + GigabitEthernet
     # and LAM/MPI + GigabitEthernet.
@@ -326,6 +333,7 @@ $pbsOptionNodes
 #PBS -j oe
 #PBS -M $EMAILADDRESS
 $pbsOptionMail
+$pbsOptionAfter
 
 cd $PWD
 
@@ -646,6 +654,7 @@ $pbsOptionNodes
 #PBS -j oe
 #PBS -M $EMAILADDRESS
 $pbsOptionMail
+$pbsOptionAfter
 
 cd $PWD
 

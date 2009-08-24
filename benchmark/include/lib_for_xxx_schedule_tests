@@ -28,7 +28,7 @@ fb_usage() {
     esac
 
     cat <<EOF
-Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-t wallclock limit] <TEST ID | test suite> [<TEST ID | test suite>]
+Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-w wallclock limit] [-a jobid] <TEST ID | test suite> [<TEST ID | test suite>]
 
 $0 provides a convenient way to schedule one 
 or more FEAST benchmark tests (identified by test ID, given directly 
@@ -47,12 +47,16 @@ submits the job file to the scheduler.
       Optional parameter that allows to specify an email address where
       a notification email is sent after completition of the job.
       Default: $EMAILADDRESS
-  --wallclocklimit <email address>, -t <email address>
+  --wallclocklimit <email address>, -w <email address>
       Optional parameter that allows to specify the maximum allowed
       wallclock time the job may use; the cluster environment usually
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
+  --afterjob <jobid>, -a <jobid>
+      Optional parameter. If specified, the new job(s) is/are executed
+      after the job <jobid> is finished. This allows sequential execution
+      of jobs that are manually added to the queue system.
   --help, -h
       prints this usage statement
   TEST ID
@@ -100,8 +104,14 @@ fb_readargs() {
 	      shift
 	      ;;
 
-	  --wallclocklimit|-t*)  # wallclock time address
+	  --wallclocklimit|-w*)  # wallclock time address
 	      WALLCLOCKLIMIT="$2"
+	      shift
+	      shift
+	      ;;
+
+	  --afterjob|-a*)  # wallclock time address
+	      AFTERJOB="$2"
 	      shift
 	      shift
 	      ;;

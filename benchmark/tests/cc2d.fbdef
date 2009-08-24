@@ -79,6 +79,9 @@ POSTPROCESSING_IWRITEBODYFORCES = 1
 POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
 POSTPROCESSING_DBDFORCESCOEFF2 = 0.004
 BDR_PARPROFILEMAX = 0.3
+DISCRETISATION_CWRITEFINALSOLUTION=1
+POSTPROCESSING_SWRITESOLUTIONFILENAME = '%{spostdirectory}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
 
 ##########
 # Each tests inherits all variables from the previous one!
@@ -490,6 +493,15 @@ datfile  = ./data/apps_cc2d/master.dat
 # e.g. to calculate some error-reduction rates.
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.005
+
+# Continuation on level 6
+
+testid   = CC2D_220_1
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 6
 
 ##########
 # Test 221
