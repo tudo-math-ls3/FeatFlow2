@@ -528,6 +528,15 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
 testid   = CC2D_TARGET1_135
+mglevels = 2,3,4
+descr    = nonstationary bench Navier-Stokes flow, Re=5000, Q1~, t=0..25, Level 2..5, SD(0.1), dt=0.0025
+datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+
+testid   = CC2D_TARGET1_135_1
+mglevels = 5
 descr    = nonstationary bench Navier-Stokes flow, Re=5000, Q1~, t=0..25, Level 2..5, SD(0.1), dt=0.0025
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
@@ -535,6 +544,15 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
 testid   = CC2D_TARGET1_136
+mglevels = 2,3,4
+descr    = nonstationary bench Navier-Stokes flow, Re=5000, Q1~, t=0..25, Level 2..5, SD(0.1), dt=0.00125
+datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+
+testid   = CC2D_TARGET1_136_1
+mglevels = 5
 descr    = nonstationary bench Navier-Stokes flow, Re=5000, Q1~, t=0..25, Level 2..5, SD(0.1), dt=0.00125
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
 # call program several times, each time with a different maximum multigrid level,
