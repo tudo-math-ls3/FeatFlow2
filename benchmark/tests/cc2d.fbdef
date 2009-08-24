@@ -283,9 +283,9 @@ datfile  = ./data/apps_cc2d/master.dat
 mglevels = 2,3,4
 TIMEDISCRETISATION_DTIMESTEP = 0.04
 
-# COntinuation on level 5
+# Continuation on level 5
 
-testid   = CC2D_211
+testid   = CC2D_211_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.04, lv 2,3,4,5.
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
