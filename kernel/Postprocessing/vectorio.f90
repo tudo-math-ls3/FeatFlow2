@@ -239,7 +239,7 @@ contains
 
 !<subroutine>
   subroutine vecio_writeVectorHR (rvector, sarray, bunsort,&
-                                  ifile, sfile, sformat)
+                                  ifile, sfile, sformat, scomment)
   
   !<description>
     ! This routine writes a (scalar) vector into a (text or binary) file.
@@ -270,6 +270,10 @@ contains
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
+
+    ! OPTIONAL: An additional comment which is added to the 1st line of the file.
+    ! Can only be used for formatted files, i.e. if sformat <> "".
+    character(len=*), intent(in), optional :: scomment
   !</input>
     
 !</subroutine>
@@ -298,6 +302,11 @@ contains
     end if
 
     if (present(sformat)) then
+      ! Probably write the comment
+      if (present(scomment)) then
+        write (cf,'(A)') "## "//scomment
+      end if
+
       ! Get length of output strings
       S(:) = ' '
       write (S,sformat) 0.0_DP
@@ -428,8 +437,18 @@ contains
     end if
 
     if (bformatted) then
+      ! Peek the first line(s). Ignore all comments.
+      do 
+        read (cf,'(A2)',ADVANCE="NO") S
+        if (S .eq. "##") then
+          read (cf,*)
+        else
+          exit
+        end if
+      end do
+    
       ! Get the format specification from the file
-      read (cf,'(A2,3A15,2I15)') S,sarrayname, sformat, sformatChar, &
+      read (cf,'(3A15,2I15)') sarrayname, sformat, sformatChar, &
                                 nchar, NEQ
     else
       ! Get array information from the file
@@ -488,7 +507,7 @@ contains
 
 !<subroutine>
   subroutine vecio_writeBlockVectorHR (rvector, sarray, bunsort,&
-                                       ifile, sfile, sformat)
+                                       ifile, sfile, sformat,scomment)
   
   !<description>
     ! This routine writes a block vector into a (text or binary) file.
@@ -521,6 +540,10 @@ contains
     ! If not specified, data is written to the file unformatted 
     ! (i.e. in a computer dependent, not human readable form).
     character(len=*), intent(in), optional :: sformat
+
+    ! OPTIONAL: An additional comment which is added to the 1st line of the file.
+    ! Can only be used for formatted files, i.e. if sformat <> "".
+    character(len=*), intent(in), optional :: scomment
   !</input>
     
 !</subroutine>
@@ -550,6 +573,11 @@ contains
 
     ! Write all format strings into the file
     if (present(sformat)) then
+      ! Probably write the comment
+      if (present(scomment)) then
+        write (cf,'(A)') "## "//scomment
+      end if
+      
       ! Get length of output strings
       S(:) = ' '
       write (S,sformat) 0.0_DP
@@ -567,13 +595,14 @@ contains
       
       ! New line
       write (cf,*)
+      
     else
       sarrayname = sarray
       write (cf) sarrayname, rvector%NEQ,rvector%nblocks
       ! Write block structure
       write (cf) (rvector%RvectorBlock(i)%NEQ,i=1,rvector%nblocks)
     end if
-    
+
     ! Vector precision?
     select case (rvector%cdataType)
     case (ST_DOUBLE)
@@ -699,8 +728,18 @@ contains
     end if
 
     if (bformatted) then
+      ! Peek the first line(s). Ignore all comments.
+      do 
+        read (cf,'(A2)',ADVANCE="NO") S
+        if (S .eq. "##") then
+          read (cf,*)
+        else
+          exit
+        end if
+      end do
+
       ! Get the format specification from the file
-      read (cf,'(A2,3A15,3I15)',ADVANCE="NO") S,sarrayname, sformat, sformatChar, &
+      read (cf,'(3A15,3I15)',ADVANCE="NO") sarrayname, sformat, sformatChar, &
                                              nchar, NEQ
       ! If rvector does not specify the structure, read the vector structure
       ! from the file.
