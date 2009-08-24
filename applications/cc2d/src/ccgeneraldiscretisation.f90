@@ -1921,7 +1921,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_writeSolution (rproblem,rvector)
+  subroutine cc_writeSolution (rproblem,rvector,dtime)
   
 !<description>
   ! Writes a solution vector rvector to a file as configured in the parameters
@@ -1931,10 +1931,15 @@ contains
 !<input>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(in) :: rproblem
-
+  
   ! The solution vector to be written out. Must be set up according to the
   ! maximum level NLMAX in rproblem!
   type(t_vectorBlock), intent(in) :: rvector
+
+  ! OPTIONAL: If present: Current time during a nonstationary simulation.
+  ! For a stationary simulation and for the final timestep in a nonstationary
+  ! simulation, this parameter must not be present.
+  real(dp), intent(in), optional :: dtime
 !</input>
 
 !</subroutine>
@@ -1962,7 +1967,7 @@ contains
     ! Remove possible ''-characters
     read(sfileString,*) sfile
     
-    bformatted = cwriteFinalSolution .gt. 0
+    bformatted = (cwriteFinalSolution .eq. 1) .or. (cwriteFinalSolution .eq. 3)
     ! level where to write out; correct if negative.
     if (iwriteSolutionLevel .le. 0) then
       iwriteSolutionLevel = rproblem%NLMAX-abs(iwriteSolutionLevel) 
@@ -2005,8 +2010,13 @@ contains
 
     ! Write out the solution.
     if (bformatted) then
-      call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
-                                    0, sfile, '(E22.15)')
+      if (.not. present(dtime)) then
+        call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
+            0, sfile, '(E22.15)')
+      else
+        call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,&
+            0, sfile, '(E22.15)',"time="//trim(sys_sdL(dtime,15)))
+      end if
     else
       call vecio_writeBlockVectorHR (rvector1, 'SOLUTION', .true.,0, sfile)
     end if

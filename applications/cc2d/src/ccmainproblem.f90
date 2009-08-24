@@ -307,7 +307,7 @@ contains
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
     
-    ! (Probably) write final solution vector
+    ! (Probably) write (final) solution vector
     call cc_writeSolution (p_rproblem,rvector)
     
     ! Cleanup

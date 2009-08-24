@@ -78,6 +78,7 @@ module ccpostprocessing
   use pprocerror
   
   use ccboundaryconditionparser
+  use ccgeneraldiscretisation
   use ccmatvecassembly
   use ccbasic
   use cccallback
@@ -244,6 +245,9 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
+    ! Write the raw solution
+    call cc_writeSolution (rproblem,rvector,dtime)
+    
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,rproblem)
     
@@ -971,9 +975,11 @@ contains
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
 
-    ! Only for the postprocessing, weitch to time dtime.
-    dtimebackup = rproblem%rtimedependence%dtime
-    rproblem%rtimedependence%dtime = dtime
+    if (present(dtime)) then
+      ! Only for the postprocessing, weitch to time dtime.
+      dtimebackup = rproblem%rtimedependence%dtime
+      rproblem%rtimedependence%dtime = dtime
+    end if
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -1140,8 +1146,10 @@ contains
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
     
-    ! Restore the current simulation time.
-    rproblem%rtimedependence%dtime = dtimebackup
+    if (present(dtime)) then
+      ! Restore the current simulation time.
+      rproblem%rtimedependence%dtime = dtimebackup
+    end if
 
     if (present(dtime)) then
       ! Update time stamp of last written out GMV.
