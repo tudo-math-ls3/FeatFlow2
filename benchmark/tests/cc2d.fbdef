@@ -410,9 +410,17 @@ descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5
 datfile  = ./data/apps_cc2d/master.dat
 # call program several times, each time with a different maximum multigrid level,
 # e.g. to calculate some error-reduction rates.
-mglevels = 2,3,4,5
+mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
+# Continuation on level 3
+
+testid   = CC2D_216_1
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
+datfile  = ./data/apps_cc2d/master.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 3
 
 ##########
 # Test 217
