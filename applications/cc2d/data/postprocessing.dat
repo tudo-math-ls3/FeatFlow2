@@ -50,7 +50,7 @@ dmaxTimeUCD = 1.0E100
 # =0.0: generate UCD output for every timestep in the range 
 #       dminTimeUCD..dmaxTimeUCD
 
-dtimeDifferenceUCD = 0.25
+dtimeDifferenceUCD = 0.0
 
 # For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
 # solution of subsequent timesteps to match the time scale defined by
