@@ -99,7 +99,8 @@ contains
 !</subroutine>
 
     real(DP) :: dvalue, dvalue2, derror, dvalueinit
-    integer(I32) :: ccurrentcubtype, icubref
+    integer(I32) :: ccurrentcubtype
+    integer :: icubref
     
     ! The inital cubature rule is without refinement.
     icubref = 0
