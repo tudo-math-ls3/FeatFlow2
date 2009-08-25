@@ -332,16 +332,28 @@
 !#
 !#     Declare two solver structures, create the ILU(0) solver in the first,
 !#     BiCGStab solver in the second and hang in the ILU(0) solver as
-!#     preconditioner. Use NULL() for the filter chain as long as
-!#     you do not need it:
+!#     preconditioner. Pass a filter chain in case you do not need it:
+!#
+!#     a) No filtering of the vectors:
 !#
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
-!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !#
-!#      NULLIFY(p_RfilterChain)
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+!#
+!#      -> p_rsolverNode is the solver identifying your BiCGStab(ILU(0)) 
+!#         solver.
+!#
+!#     b) Filter the defect vector for Dirichlet boundary conditions
+!#
+!#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
+!#      TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
+!#
+!#      NULLIFY(p_rpreconditioner)
+!#      RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+!#      CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,RfilterChain)
 !#
 !#      -> p_rsolverNode is the solver identifying your BiCGStab(ILU(0)) 
 !#         solver.
@@ -354,11 +366,9 @@
 !#     modify the domega parameter in the solver node:
 !#
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
-!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !#
-!#      NULLIFY(p_RfilterChain)
 !#      NULLIFY(p_rpreconditioner)
-!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
 !#      p_rsolverNode%domega = 0.001   ! or whatever you like
 !#
 !# 3.) And where is the good old Jacobi iteration hidden? There is only that
@@ -372,21 +382,18 @@
 !#                              Jacobi preconditioner
 !#     So,
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
-!#      TYPE(t_filterChain), DIMENSION(:), POINTER :: p_RfilterChain
 !#
-!#      NULLIFY(p_RfilterChain)
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initJacobi (p_rpreconditioner,0.7_DP)
-!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
 !#
 !#    Alternatively, you can use the domega parameter from the defect
 !#    correction to specify the $\omega$, while using no damping parameter
 !#    in the actual Jacobi preconditioner:
 !#
-!#      NULLIFY(p_RfilterChain)
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initJacobi (p_rpreconditioner)
-!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
 !#      p_rsolverNode%domega = 0.7_DP
 !#
 !#  4.) I want to plug in my own solver XY. What do I have to do?
@@ -3239,7 +3246,7 @@ contains
 
 !<subroutine>
   
-  recursive subroutine linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+  recursive subroutine linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,Rfilter)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the defect correction iteration.
@@ -3271,12 +3278,12 @@ contains
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
   
-  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
-  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
   
 !<output>
@@ -3310,8 +3317,8 @@ contains
     end if
 
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubnodeDefCorr%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeDefCorr%p_RfilterChain => Rfilter
     end if
 
   end subroutine
@@ -7852,7 +7859,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initCG (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+  subroutine linsol_initCG (p_rsolverNode,p_rpreconditioner,Rfilter)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the CG solver. The node
@@ -7867,12 +7874,12 @@ contains
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
   
-  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
-  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
   
 !<output>
@@ -7906,8 +7913,8 @@ contains
     end if
 
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubnodeCG%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeCG%p_RfilterChain => Rfilter
     end if
   
   end subroutine
@@ -8745,7 +8752,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_Rfilter)
+  subroutine linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,Rfilter)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the BiCGStab solver. The node
@@ -8760,12 +8767,12 @@ contains
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
   
-  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
-  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
 !</input>
   
 !<output>
@@ -8799,8 +8806,8 @@ contains
     end if
 
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeBiCGStab%p_RfilterChain => Rfilter
     end if
       
   end subroutine
@@ -9627,7 +9634,7 @@ contains
 !<subroutine>
   
   subroutine linsol_initGMRES (p_rsolverNode,ikrylovDim,p_rpreconditioner,&
-                               p_Rfilter,btwiceGS,dpseudoResScale)
+                               Rfilter,btwiceGS,dpseudoResScale)
   
 !<description>
   ! Creates a t_linsolNode solver structure for the GMRES(m) solver. The node
@@ -9647,12 +9654,12 @@ contains
   ! will be used.
   type(t_linsolNode), pointer, optional   :: p_rpreconditioner
   
-  ! OPTIONAL: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
-  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
 
   ! OPTIONAL: A boolean which specifies whether we should apply the Gram-Schmidt
   ! process once or twice per GMRES iteration.
@@ -9727,8 +9734,8 @@ contains
     end if
 
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubNodeGMRES%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubNodeGMRES%p_RfilterChain => Rfilter
     end if
   
   end subroutine
@@ -11965,7 +11972,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initMultigrid (p_rsolverNode,p_Rfilter)
+  subroutine linsol_initMultigrid (p_rsolverNode,Rfilter)
   
 !<description>
   
@@ -11981,12 +11988,12 @@ contains
   
 !<input>
   
-  ! Optional: A pointer to a filter chain (i.e. an array of t_filterChain
+  ! OPTIONAL: A filter chain (i.e. an array of t_filterChain
   ! structures) if filtering should be applied to the vector during the 
-  ! iteration. If not given or set to NULL(), no filtering will be used.
+  ! iteration. If not present, no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
   
 !</input>
   
@@ -12021,8 +12028,8 @@ contains
     call cgcor_init (p_rsolverNode%p_rsubnodeMultigrid%rcoarseGridCorrection)
 
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubnodeMultigrid%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeMultigrid%p_RfilterChain => Rfilter
     end if
   
   end subroutine
@@ -14352,7 +14359,7 @@ contains
 
 !<subroutine>
   
-  subroutine linsol_initMultigrid2 (p_rsolverNode,nlevels,p_Rfilter)
+  subroutine linsol_initMultigrid2 (p_rsolverNode,nlevels,Rfilter)
   
 !<description>
   
@@ -14376,7 +14383,7 @@ contains
   ! iteration. If not given or set to NULL(), no filtering will be used.
   ! The filter chain (i.e. the array) must exist until the system is solved!
   ! The filter chain must be configured for being applied to defect vectors.
-  type(t_filterChain), dimension(:), pointer, optional   :: p_Rfilter
+  type(t_filterChain), dimension(:), target, optional   :: Rfilter
   
 !</input>
   
@@ -14415,8 +14422,8 @@ contains
     p_rsolverNode%p_rsubnodeMultigrid2%nlevels = nlevels
     
     ! Attach the filter if given. 
-    if (present(p_Rfilter)) then
-      p_rsolverNode%p_rsubnodeMultigrid2%p_RfilterChain => p_Rfilter
+    if (present(Rfilter)) then
+      p_rsolverNode%p_rsubnodeMultigrid2%p_RfilterChain => Rfilter
     end if
   
   end subroutine
