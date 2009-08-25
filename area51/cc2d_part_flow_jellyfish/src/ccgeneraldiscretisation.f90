@@ -131,7 +131,7 @@ contains
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,CUB_G2X2)
+                                'icubStokes',icubA,int(CUB_G2X2))
     else
       icubA = cub_igetID(sstr)
     end if
@@ -140,7 +140,7 @@ contains
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2X2)
+                                'icubB',icubB,int(CUB_G2X2))
     else
       icubB = cub_igetID(sstr)
     end if
@@ -149,7 +149,7 @@ contains
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,CUB_G2X2)
+                                'icubF',icubF,int(CUB_G2X2))
     else
       icubF = cub_igetID(sstr)
     end if
@@ -225,7 +225,7 @@ contains
                                   'scubMass',sstr,'')
       if (sstr .eq. '') then
         call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubM',icubM,CUB_G3X3)
+                                  'icubM',icubM,int(CUB_G3X3))
       else
         icubM = cub_igetID(sstr)
       end if
