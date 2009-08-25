@@ -142,7 +142,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
@@ -533,12 +532,11 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,RfilterChain)
     
     ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
     call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
-    call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
 
     ! The coarse grid in multigrid is always grid 1!
     call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)

@@ -962,7 +962,6 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! One level of multigrid
     type(t_linsolMGLevelInfo), pointer :: p_rlevelInfo
@@ -1011,8 +1010,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid (p_rsolverNode,RfilterChain)
     
     ! Set the output level of the solver for some output
     p_rsolverNode%ioutputLevel = 1
@@ -1043,7 +1041,7 @@ contains
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
         ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
         
         ! Set up UMFPACK coarse grid solver.
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)

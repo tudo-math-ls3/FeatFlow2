@@ -532,7 +532,6 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
@@ -581,14 +580,13 @@ contains
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
     nullify(p_rpreconditioner)
     
     ! Calculate an ILU preconditioner for our solver.
     call linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
     
     ! Then initialise the solver and use the above preconditioner.
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

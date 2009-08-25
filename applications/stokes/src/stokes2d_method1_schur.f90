@@ -159,7 +159,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
@@ -371,7 +370,6 @@ contains
 
     ! Create a filter chain
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-    p_RfilterChain => RfilterChain
 
     ! -------------------------------------------------------------------------
     ! Set up subsolver for submatrix A
@@ -433,7 +431,7 @@ contains
                           RmatrixS, LINSOL_SCHUR_TYPE_LTRI)
     
     ! Finally, create a BiCGStab solver for the global system.
-    call linsol_initBiCGStab(p_rsolverNode, p_rsolverSchur, p_RfilterChain)
+    call linsol_initBiCGStab(p_rsolverNode, p_rsolverSchur, RfilterChain)
    
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

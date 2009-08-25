@@ -112,7 +112,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
@@ -470,10 +469,9 @@ contains
     ! Create a BiCGStab-solver with VANCA preconditioner.
     ! Attach the above filter chain to the solver, so that the solver
     ! automatically filters the vector during the solution process.
-    p_RfilterChain => RfilterChain
     nullify(p_rpreconditioner)
     call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DNAVST)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

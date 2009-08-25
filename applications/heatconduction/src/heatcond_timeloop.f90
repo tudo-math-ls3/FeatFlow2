@@ -94,7 +94,6 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation

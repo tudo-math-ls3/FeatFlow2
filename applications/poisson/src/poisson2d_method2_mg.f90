@@ -565,7 +565,6 @@ contains
     ! A filter chain to filter the vectors and the matrix during the
     ! solution process.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
 
     ! A pointer to the system matrix and the RHS vector as well as 
     ! the discretisation
@@ -624,8 +623,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,ilvmax-ilvmin+1,RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
@@ -643,7 +641,7 @@ contains
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
         ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
         
         ! Set up UMFPACK coarse grid solver.
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)

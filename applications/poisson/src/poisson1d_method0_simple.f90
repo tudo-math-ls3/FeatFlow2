@@ -108,7 +108,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! Error indicator during initialisation of the solver
     integer :: ierror    
@@ -276,9 +275,8 @@ contains
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Attach the above filter chain to the solver, so that the solver
-    ! automatically filters the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    
+    ! automatically filters the vector during the solution process!
+    !    
     ! We now have the option to create a preconditioner for the solver.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Preconditioner Remark:
@@ -314,13 +312,13 @@ contains
     ! SOR or (M)ILU(s).
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Setting up a Defect-Correction-Solver would be...
-    !CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    !CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,RfilterChain)
     ! Setting up a PCG-Solver would be...
-    !CALL linsol_initCG (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    !CALL linsol_initCG (p_rsolverNode,p_rpreconditioner,RfilterChain)
     ! Setting up a BiCGStab-Solver would be...
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     ! Setting up a GMRES(17)-Solver would be...
-    !CALL linsol_initGMRES (p_rsolverNode,17,p_rpreconditioner,p_RfilterChain)
+    !CALL linsol_initGMRES (p_rsolverNode,17,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

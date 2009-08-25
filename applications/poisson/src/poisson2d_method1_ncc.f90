@@ -249,7 +249,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
@@ -471,10 +470,9 @@ contains
     ! the vector during the solution process.
     ! As this example is a bit harder than the other ones, we will set up
     ! a SSOR[1.3] preconditioner for BiCGStab to improve the convergence.
-    p_RfilterChain => RfilterChain
     nullify(p_rpreconditioner)
     call linsol_initSSOR(p_rpreconditioner,1.3_DP)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2

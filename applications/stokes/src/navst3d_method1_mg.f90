@@ -156,7 +156,6 @@ contains
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
     type(t_filterChain), dimension(1), target :: RfilterChain
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
     
     ! An interlevel projection structure for changing levels
     type(t_interlevelProjectionBlock) :: rprojection
@@ -652,8 +651,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => RfilterChain
-    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,p_RfilterChain)
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,RfilterChain)
 
     ! As we will use multigrid as a preconditioner for the non-linear loop,
     ! we set the maximum allowed iterations to 10 and the relative convergence
@@ -666,7 +664,7 @@ contains
     
     ! Set up a BiCGStab solver with VANKA preconditioning as coarse grid solver:
     call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_3DNAVST)
-    call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+    call linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the coarse grid solver to -1, so that it
     ! does not print any residuals or warning messages...

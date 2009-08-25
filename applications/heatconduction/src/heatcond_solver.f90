@@ -71,10 +71,6 @@ contains
     ! Error indicator during initialisation of the solver
     integer :: ierror    
   
-    ! A filter chain to filter the vectors and the matrix during the
-    ! solution process.
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer :: p_rsolverNode,p_rsmoother
     type(t_linsolNode), pointer :: p_rcoarseGridSolver,p_rpreconditioner
@@ -109,8 +105,7 @@ contains
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
-    p_RfilterChain => rproblem%RfilterChain
-    call linsol_initMultigrid (p_rsolverNode,p_RfilterChain)
+    call linsol_initMultigrid (p_rsolverNode,rproblem%RfilterChain)
     
     ! Then set up smoothers / coarse grid solver:
     do i=ilvmin,ilvmax
@@ -124,7 +119,8 @@ contains
         ! Set up a BiCGStab solver with ILU preconditioning as coarse grid solver
         ! would be:
         ! CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
-        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,p_RfilterChain)
+        ! CALL linsol_initBiCGStab (p_rcoarseGridSolver,p_rpreconditioner,&
+        !     rproblem%RfilterChain)
         
         ! Set up UMFPACK coarse grid solver.
         call linsol_initUMFPACK4 (p_rcoarseGridSolver)
