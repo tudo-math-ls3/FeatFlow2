@@ -184,7 +184,7 @@ contains
       ! Initialise the block discretisation according to the element specifier.
       call cc_getDiscretisation (ielementType,p_rdiscretisation,&
           rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary, &
-          icubA, icubB, icubF)
+          int(icubA,I32), int(icubB,I32), int(icubF,I32))
       
       ! Probably initialise the element type that is to be used for the jump
       ! stabilisation. A value of -1 means: use the same element(s).
