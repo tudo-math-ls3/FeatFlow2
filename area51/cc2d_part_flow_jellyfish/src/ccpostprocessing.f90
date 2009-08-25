@@ -2928,7 +2928,7 @@ contains
       
       ! Velocity difference for the given time step
       dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
-      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-98.1_dp)/dmasssl
+      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*(-98.1_dp))/dmasssl
    
       ! integrate the torque to get the angular velocity
       ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
