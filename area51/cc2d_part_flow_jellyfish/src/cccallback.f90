@@ -1467,13 +1467,13 @@ contains
     real(DP), dimension(:,:), intent(in) :: DvertexCoords
     
     ! Array with numbers of corner coordinates for all elements (KVERT)
-    integer(PREC_POINTIDX), dimension(:,:), intent(in) :: IverticesAtElement
+    integer, dimension(:,:), intent(in) :: IverticesAtElement
     
     ! Array with numbers of points adjacent to all edges
-    integer(PREC_POINTIDX), dimension(:,:), intent(in) :: IverticesAtEdge
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
     
     ! Number of vertices in the triangulation
-    integer(PREC_POINTIDX), intent(in) :: NVT
+    integer, intent(in) :: NVT
     
     ! Output: X-coordinate
     real(DP), intent(out) :: dx
@@ -1484,7 +1484,7 @@ contains
       ! local variables
       real(DP) :: dm1,dm2
       integer :: i,j
-      integer(PREC_POINTIDX) :: iv1,iv2
+      integer :: iv1,iv2
     
       ! Let's see, what do we have...
       select case (cinfoNeeded)
@@ -1607,8 +1607,8 @@ contains
     ! local variables
     real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy,robx,roby,lvx,lvy
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
-    integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx,iin,ipart
     type(t_geometryObject), pointer :: p_rgeometryObject
