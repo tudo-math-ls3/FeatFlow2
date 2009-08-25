@@ -1713,7 +1713,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
@@ -2480,7 +2480,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
     
     ! A pointer to an element-number list
-    integer(I32), dimension(:), pointer :: p_IelementList
+    integer, dimension(:), pointer :: p_IelementList
     
     ! An array receiving the coordinates of cubature points on
     ! the reference element for all elements in a set.
