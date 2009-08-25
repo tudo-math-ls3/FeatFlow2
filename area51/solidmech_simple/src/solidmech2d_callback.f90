@@ -99,8 +99,8 @@ module solidmech2d_callback
 
   integer, parameter :: SIMUL_REAL       = 1
   integer, parameter :: SIMUL_ANALYTICAL = 2
-  integer, parameter :: ON = 392
-  integer, parameter :: OFF = 104
+  integer, parameter :: Y = 392
+  integer, parameter :: N = 104
   integer, parameter :: DIRECT_SOLVER = 4
   integer, parameter :: BICGSTAB_SOLVER = 8
   integer, parameter :: MG_SOLVER = 14
@@ -129,7 +129,7 @@ module solidmech2d_callback
     !     kind of element used(possible values: Q1, Q2)
     character(len=2) :: selement
 
-    !     NLMAX receives the level where we want to solve.
+    !     MAX & MIN level where we want to solve.
     integer :: NLMAX,NLMIN
 
     !     material parameters (Poisson ratio nu and shear modulus mu)
@@ -142,6 +142,12 @@ module solidmech2d_callback
 
     !   tolerance
     real(DP) :: dtolerance = 1E-10_DP
+
+    ! INPUT PARAMETER: Cycle identifier. 
+    !  0=F-cycle, 
+    !  1=V-cycle, 
+    !  2=W-cycle.
+    integer :: ncycle = 2
 
     !    Number of smoothing steps
     integer :: nsmoothingSteps = 4
@@ -168,8 +174,17 @@ module solidmech2d_callback
     real(DP), dimension(:,:), pointer :: DrhsBoundx
     real(DP), dimension(:,:), pointer :: DrhsBoundy
 
-    !      used to show deformation in gmv(possible values: ON, OFF)
-    integer :: DEFORMATION = OFF
+    !      show deformation in gmv(possible values: Y (YES), N (NO))
+    integer :: DEFORMATION = N
+
+    !      calculate sol on a point(possible values: Y (YES), N (NO))
+    integer :: inquirePoint = N
+
+    !     points where to calculte sol.
+    real(DP) :: inquirePointX,inquirePointY
+
+    !     reference sol for calculating error
+    real(DP) :: refsolU1, refSolU2
 
   end type
 
@@ -1967,7 +1982,7 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
 
     case (53) ! u(x,y) = -x^3*y
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
+      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:)*Dpoints(1,:,:)*Dpoints(2,:,:)
       case (DER_DERIV_X);  Dvalues(:,:) =  -3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
       case (DER_DERIV_Y);  Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
       case (DER_DERIV_XX); Dvalues(:,:) =  -6.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
@@ -1975,10 +1990,11 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
       case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
       end select
 
-    case (54) ! u(x,y) = 0.33*x^4
+    case (54) ! u(x,y) = 1/3*x^4
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  0.33_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  1.33_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_FUNC);     Dvalues(:,:) =  (1.0_DP/3.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * &
+                                            Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  (4.0_DP/3.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
       case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_XX); Dvalues(:,:) =  4.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP

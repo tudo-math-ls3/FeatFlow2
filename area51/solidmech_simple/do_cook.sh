@@ -4,14 +4,15 @@
 grid="cook"
 
 # choose shear modulus
-mus="80.194"
+mus="0.5"
 
 # choose Poisson ratio
-nus="0.4999"
+nus="0.3"
 
 # choose MG levels
+mgs="06"
 #mgs="02 03 04 05 06 07 08 09 10"
-mgs="02 03 04 05 06 07 08 09"
+#mgs="02 03 04 05 06 07 08 09"
 
 #-----------------------------
 
@@ -61,7 +62,7 @@ NLMIN = 2
 NLMAX = ${mg}
 
 # type of configuration (possible values: REAL, ANALYTICAL)
-ctypeOfSimulation = REAL
+ctypeOfSimulation = ANALYTICAL
 
 # type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER,CG_SOlVER)
 ctypeOfSolver = CG_SOLVER
@@ -71,18 +72,29 @@ ctypeOfSmoother = JACOBI
 
 # set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
 cfuncID_u1 = 53
-cfuncID_u2 = 52
+cfuncID_u2 = 54
 
-# deformation(possible values: ON, OFF)
-Deformation = ON
+# deformation(possible values: Y (YES), N (NO))
+Deformation = Y
+
+# calculate sol on a point(possible values: Y (YES), N (NO))
+inquirePoint = Y
+
+# Points where sol will be calculated (only needed in case of inquirePoint .eq. Y)
+inquirePointX = 48.0
+inquirePointY = 60.0
+
+# Reference sol to calculate error (only needed in case of inquirePoint .eq. Y)
+refSolU1 = -20.648992
+refSolU2 = 27.642747
 
 # max number of iterations
-niterations = 10000
+niterations = 30000
 
-# number of smoothing steps
+# number of smoothing steps (only needed in case of MG_SOLVER)
 nsmoothingSteps = 2
 
-# damping parameter
+# damping parameter (only needed in case of MG_SOLVER)
 ddamp = 0.7
 
 # tolerance

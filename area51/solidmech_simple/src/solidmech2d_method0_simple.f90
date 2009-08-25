@@ -35,6 +35,7 @@ module solidmech2d_method0_simple
   use paramlist
   use pprocerror
   use collection
+  use feevaluation
     
   use solidmech2d_callback
   
@@ -139,6 +140,13 @@ contains
 
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+
+    ! A list of points where to evaluate.
+    ! DIMENSION(1..ndim,1..npoints)
+    real(DP), dimension(2,1)  :: Dpoints
+
+    ! Values of the FE function at the points specified by Dpoints.
+    real(DP), dimension(1)    :: Dvalues
     
      ! Error indicator during initialisation of the solver
     integer :: ierror
@@ -154,7 +162,8 @@ contains
 
     ! some temporary variables
     integer :: i, j, k, imax
-
+    real(DP) ::  U1, U2, U1_X, U2_X, U1_Y, U2_Y, sigma11, sigma12, sigma22, sigma33
+    real(DP) :: devsigma11, devsigma12, devsigma22, devsigma33
     ! Structure for saving parameters from the DAT file
     type (t_parlist) :: rparams
 
@@ -292,6 +301,14 @@ contains
 
     ! Allocate memory for all levels
     allocate(Rlevels(rproblem%NLMIN:rproblem%NLMAX))
+
+    ! INPUT PARAMETER: Cycle identifier. 
+    !  0=F-cycle, 
+    !  1=V-cycle, 
+    !  2=W-cycle.
+    call parlst_getvalue_int (rparams, '', &
+                                    'ncycle', rproblem%ncycle)
+    print *,'ncycle:', rproblem%ncycle
         
     ! function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
     call parlst_getvalue_int (rparams, '', &
@@ -300,19 +317,48 @@ contains
     call parlst_getvalue_int (rparams, '', &
                                      'cfuncID_u2', rproblem%cfuncID_u2)
          
-    ! deformation in gmv(possible values: ON, OFF)
+    ! deformation in gmv(possible values: Y (YES), N (NO))
     call parlst_getvalue_string (rparams, '', &
                                      'Deformation', sstring)
-    if(trim(sstring) .eq. 'ON') then
-	    rproblem%DEFORMATION = ON
-      print *, 'Deformation ON'
-    else if(trim(sstring) .eq. 'OFF') then
-	    rproblem%DEFORMATION = OFF
-      print *, 'Deformation OFF'
+    if(trim(sstring) .eq. 'Y') then
+	    rproblem%DEFORMATION = Y
+      print *, 'Deformation Y'
+    else if(trim(sstring) .eq. 'N') then
+	    rproblem%DEFORMATION = N
+      print *, 'Deformation N'
     else
-	    print *,'Invalid sstring for simulation type:', trim(sstring)
+	    print *,'Invalid sstring for Deformation type:', trim(sstring)
     Stop
     end if
+
+    ! calculate sol on a point(possible values: Y (YES), N (NO))
+    call parlst_getvalue_string (rparams, '', &
+                                     'inquirePoint', sstring)
+    if(trim(sstring) .eq. 'Y') then
+      rproblem%inquirePoint = Y
+      print *, 'inquirePoint Y'
+      ! PointX
+      call parlst_getvalue_double (rparams, '', &
+                                     'inquirePointX', rproblem%inquirePointX) 
+      ! PointY
+      call parlst_getvalue_double (rparams, '', &
+                                     'inquirePointY', rproblem%inquirePointY)
+      ! Reference sol for U1
+      call parlst_getvalue_double (rparams, '', &
+                                     'refSolU1', rproblem%refSolU1) 
+      ! Reference sol for U2
+      call parlst_getvalue_double (rparams, '', &
+                                     'refSolU2', rproblem%refSolU2)
+    else if(trim(sstring) .eq. 'N') then
+      rproblem%inquirePoint = N
+      print *, 'inquirePoint N'
+    else
+      print *,'Invalid sstring for inquirePoint type:', trim(sstring)
+    Stop
+    end if
+
+    Dpoints(1,1) = rproblem%inquirePointX
+    Dpoints(2,1) = rproblem%inquirePointY
 
     !    max number of iterations
     call parlst_getvalue_int (rparams, '', &
@@ -363,13 +409,6 @@ contains
       end do
     end do
 
-
-! 
-!     call parlst_getvalue_double (rparams, '', &
-!                                      'drhsBound1', rproblem%drhsBound1)
-! 
-!     call parlst_getvalue_double (rparams, '', &
-!                                      'drhsBound2', rproblem%drhsBound2)
                  
     print *,'NLMIN = ', rproblem%NLMIN
     print *,'NLMAX = ', rproblem%NLMAX
@@ -379,6 +418,8 @@ contains
     print *,'dmu = ', rproblem%dmu
     print *,'dlambda = ', rproblem%dlambda
     print *,'selementType = ', rproblem%selement
+    print *,'inquirePointX = ', rproblem%inquirePointX
+    print *,'inquirePointY = ', rproblem%inquirePointY
    
     do i = 1, rproblem%nboundaries
       do j = 1,rproblem%NboundarySegments(i)
@@ -774,7 +815,7 @@ contains
     else if (rproblem%ctypeOfSolver .eq. MG_SOLVER) then
       p_RfilterChain => RfilterChain
       call linsol_initMultigrid2 (p_rsolverNode,rproblem%NLMAX-rproblem%NLMIN+1,p_RfilterChain)
-      
+
       ! Set up a coarse grid solver.
       ! The coarse grid in multigrid is always grid 1!
       call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
@@ -792,8 +833,8 @@ contains
         if (rproblem%ctypeOfSmoother .eq. ILU_SMOOTHER) then
           call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
         end if
-        
-        ! We will use 4 smoothing steps with damping parameter 0.7
+        print *, 'damp', rproblem%ddamp
+        ! We will use nsmoothingSteps smoothing steps with damping parameter ddamp
         call linsol_convertToSmoother(p_rsmoother, rproblem%nsmoothingSteps, rproblem%ddamp)
         
         ! And add this multi-grid level. We will use the same smoother
@@ -803,6 +844,13 @@ contains
         p_rlevelInfo%p_rpostsmoother => p_rsmoother
         
       end do
+
+      ! INPUT PARAMETER: Cycle identifier. 
+      !  0=F-cycle, 
+      !  1=V-cycle, 
+      !  2=W-cycle.
+      p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ncycle
+      
     else
       print *, ' Invalid Input for Solver type'
     stop
@@ -855,6 +903,49 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
 
+    ! Calculate sol.U1(x,y) & U2(x,y) on a point (x,y) and their
+    ! derivatives U1_x(x,y), U1_y(x,y) & U2_x(x,y), U2_y(x,y)
+    ! and absolute error , Strain, Stress , plain srain
+    if (rproblem%inquirePoint .eq. Y) then
+      call fevl_evaluate (DER_FUNC, Dvalues, rvector%RvectorBlock(1), Dpoints)
+      U1 = Dvalues(1)
+      call output_line ('U1(X,Y): ' // sys_sdEL(U1,10) ) 
+      call fevl_evaluate (DER_FUNC, Dvalues, rvector%RvectorBlock(2), Dpoints) 
+      U2 = Dvalues(1) 
+      call output_line ('U2(X,Y): ' // sys_sdEL(U2,10) )
+      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(1), Dpoints) 
+      U1_X = Dvalues(1)
+      call output_line ('U1_X(X,Y): ' // sys_sdEL(U1_X,10) )
+      call fevl_evaluate (DER_DERIV_X, Dvalues, rvector%RvectorBlock(2), Dpoints) 
+      U2_X = Dvalues(1)
+      call output_line ('U2_X(X,Y): ' // sys_sdEL(U2_X,10) )
+      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(1), Dpoints) 
+      U1_Y = Dvalues(1)
+      call output_line ('U1_Y(X,Y): ' // sys_sdEL(U1_Y,10) )
+      call fevl_evaluate (DER_DERIV_Y, Dvalues, rvector%RvectorBlock(2), Dpoints) 
+      U2_Y = Dvalues(1)
+      call output_line ('U2_Y(X,Y): ' // sys_sdEL(U2_Y,10) )
+      call output_line ('eps11: ' // sys_sdEL(U1_X,10) )
+      call output_line ('eps22: ' // sys_sdEL(U2_Y,10) )
+      call output_line ('eps12: ' // sys_sdEL(0.5_DP*(U2_X+U1_Y),10) )
+      sigma11 = 2.0_DP*rproblem%dmu*U1_X+rproblem%dlambda*(U1_X+U2_Y)
+      sigma22 = 2.0_DP*rproblem%dmu*U2_Y+rproblem%dlambda*(U1_X+U2_Y)
+      sigma12 = rproblem%dmu*(U2_X+U1_Y)
+      sigma33 = rproblem%dlambda*(U1_X+U2_Y)
+      devsigma11 = 1.0_DP/3.0_DP*(2.0_DP*sigma11-sigma22-sigma33)
+      devsigma22 = 1.0_DP/3.0_DP*(2.0_DP*sigma22-sigma11-sigma33)
+      devsigma12 = sigma12
+      devsigma33 = 1.0_DP/3.0_DP*(2.0_DP*sigma33-sigma22-sigma11)
+      call output_line ('sigma11: ' // sys_sdEL(sigma11,10) )
+      call output_line ('sigma22: ' // sys_sdEL(sigma22,10) )
+      call output_line ('sigma12: ' // sys_sdEL(sigma12,10) )
+      call output_line ('sigma33: ' // sys_sdEL(sigma33,10) )
+      call output_line ('|devsigma|: ' // sys_sdEL(sqrt(devsigma11**2+devsigma22**2+ &
+                     devsigma33**2+2.0_DP*devsigma12**2),10) )
+      call output_line ('Abs-error for U: ' // sys_sdEL(sqrt((rproblem%refSolU1-U1)**2+ &
+                    (rproblem%refSolU2-U2)**2)/sqrt((rproblem%refSolU1-rproblem%refSolU2)**2),10) )
+    end if
+
     ! Calculate the error to the reference function.
 
     if (rproblem%ctypeOfSimulation .eq. SIMUL_ANALYTICAL) then
@@ -891,7 +982,7 @@ contains
     call lsyssc_getbase_double (rVector%RvectorBlock(2),p_Ddata2)
   
     ! we add sol. vector to coordinates to see the bending
-    if (rproblem%DEFORMATION .eq. ON) then
+    if (rproblem%DEFORMATION .eq. Y) then
 	    do i = 1,Rlevels(rproblem%NLMAX)%rtriangulation%NVT
 		    p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
 		    p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)

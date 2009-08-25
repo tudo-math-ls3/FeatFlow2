@@ -56,3 +56,49 @@ echo "Rate of convergence"
 grep "Rate of convergence" $* | awk '{print $(NF)}'
 echo "--------------------------------"
 
+grep "Solution diverging!" $*
+echo "--------------------------------"
+
+echo "U1 Displacement"
+grep "U1(X,Y):" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "U2 Displacement"
+grep "U2(X,Y):" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Abs error"
+grep "Abs-error for U:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Strain eps11 "
+grep "eps11:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Strain eps22 "
+grep "eps22:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Strain eps12 "
+grep "eps12:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Stress sigma11 "
+grep "sigma11:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Stress sigma22 "
+grep "sigma22:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Stress sigma33 "
+grep "sigma33:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Stress sigma12 "
+grep "sigma12:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
+echo "Norm of Devsigma "
+grep "|devsigma|:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
