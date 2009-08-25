@@ -3287,7 +3287,7 @@ contains
           
             ! Call the callback routine to calculate the values.
             p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDFUNCMID
-            if (iand(p_relementDist%celement,2**16) .ne. 0) then
+            if (iand(p_relementDist%celement,int(2**16,I32)) .ne. 0) then
               ! Integral mean value based element
               p_Revaluation(:)%cinfoNeeded = DISCFBC_NEEDINTMEAN
             end if
