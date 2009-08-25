@@ -1461,7 +1461,7 @@ contains
     
     ! Identifier. Either vertex number, edge number or element number,
     ! depending on cinfoNeeded.
-    integer(I32), intent(in) :: iwhere
+    integer, intent(in) :: iwhere
     
     ! Array with coordinates of all corner vertices (DCORVG)
     real(DP), dimension(:,:), intent(in) :: DvertexCoords
