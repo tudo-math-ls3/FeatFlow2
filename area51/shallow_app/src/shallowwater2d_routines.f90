@@ -2150,17 +2150,19 @@ end if !dry or wet bed
        end do
 
        ! compute deltaQij = Qi - Qj
-       deltaQij = Qi - Qj
+       deltaQij = Qj - Qi
 
        ! Compute the Roe-meanvalue for this edge
        Qroeij = calculateQroe(Qi, Qj)
 
        ! Trafomatrix Tij
        !invRij = buildInvTrafo(Qroeij,d,gravconst)
-       Tij = Eye
+       !Tij = Eye
 
        ! compute Tij*(Qj - Qi), the transformed solution differences
-       deltaWij = -matmul(Tij,deltaQij)
+       !deltaWij = -matmul(Tij,deltaQij)
+
+        deltaWij = deltaQij
 
        ! Compute the coeffitients for the jacobi matrices
        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
@@ -2193,10 +2195,12 @@ end if !dry or wet bed
        end do
 
        ! compute deltaFij (73)/(59) linearised fct
-       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
+       !deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
+       deltaFij = p_MCdata(ij)*(Udoti-Udotj)-matmul(Dij,deltaQij)
 
        ! compute deltaGij, the transformed antidiffusive fluxes
-       deltaGij = matmul(Tij,deltaFij)
+       !deltaGij = matmul(Tij,deltaFij)
+       deltaGij = deltaFij
 
        ! Now apply prelimiting, siehe AFCII(70)
        if (prelimiting == 1) then
@@ -2229,19 +2233,33 @@ end if !dry or wet bed
 
        do ivar = 1, nvar2d
           ! Compute the R_i +/- (73) AFC II
-          if (abs(p_fld1(1+6*(ivar-1),i))>1e-10) then
-             p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)*&
-                  p_fld1(3+6*(ivar-1),i)/p_fld1(1+6*(ivar-1),i)/dt)! Ri+
-          else
-             p_fld1(5+6*(ivar-1),i) = 0.0_DP
-          end if
+!           if (p_fld1(1+6*(ivar-1),i)>1e-3) then
+!              p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)*&
+!                   p_fld1(3+6*(ivar-1),i)/p_fld1(1+6*(ivar-1),i)/dt)! Ri+
+!           else
+!              p_fld1(5+6*(ivar-1),i) = 0.0_DP
+!           end if
+! 
+!           if (p_fld1(2+6*(ivar-1),i)<-1e-3) then
+!              p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)*&
+!                   p_fld1(4+6*(ivar-1),i)/p_fld1(2+6*(ivar-1),i)/dt)! Ri-
+!           else
+!              p_fld1(6+6*(ivar-1),i) = 0.0_DP
+!           end if
+          
+          
+          
+          
+                  p_fld1(5+6*(ivar-1),i) = min(1.0_DP,p_MLdata(i)/dt*&
+                  p_fld1(3+6*(ivar-1),i)/(p_fld1(1+6*(ivar-1),i)+SYS_EPSREAL))! Ri+
+                  
+                  p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)/dt*&
+                  p_fld1(4+6*(ivar-1),i)/(p_fld1(2+6*(ivar-1),i)-SYS_EPSREAL))! Ri-
+          
+          
 
-          if (abs(p_fld1(2+6*(ivar-1),i))>1e-10) then
-             p_fld1(6+6*(ivar-1),i) = min(1.0_DP, p_MLdata(i)*&
-                  p_fld1(4+6*(ivar-1),i)/p_fld1(2+6*(ivar-1),i)/dt)! Ri-
-          else
-             p_fld1(6+6*(ivar-1),i) = 0.0_DP
-          end if
+
+
           
 !          ! If we are at a maximum (Qi+ = 0) then cancel negative flux (set Ri- = 0) to avoid clipping
 !          if (p_fld1(3+6*(ivar-1),i)<1e-12) then
@@ -2319,7 +2337,7 @@ end if !dry or wet bed
           deltaGij = deltaGij * alphaij
        CASE (2)
           ! 2.: Take the smallest of all the limiting factors
-          alphaij = 1
+          alphaij = 1.0_DP
           do ivar = 1, nvar2d
              if (deltaGij(ivar)>0.0_DP) then
                 alphaij = min(alphaij,p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
@@ -2330,7 +2348,7 @@ end if !dry or wet bed
           !Limit the antidiffusive fluxes Gij = Gij * alphaij
           deltaGij = deltaGij * alphaij
        CASE (3)
-          ! Last Method: Limit every Component on its own...  
+          ! Last Method: Limit every component on its own...  
           do ivar = 1, nvar2d
              if (deltaGij(ivar)>0.0_DP) then
                 alphaij = min(p_fld1(5+6*(ivar-1),i),p_fld1(6+6*(ivar-1),j))
@@ -2351,10 +2369,12 @@ end if !dry or wet bed
        !Rij = buildTrafo(Qroeij,d,gravconst)
 
        ! Get matrix to trafo back
-       invTij = Eye
+       !invTij = Eye
 
        ! Finally we can transform back to deltaFij
-       deltaFij = matmul(invTij,deltaGij)
+       !deltaFij = matmul(invTij,deltaGij)
+
+       deltaFij = deltaGij
 
        ! And save 
        do ivar = 1, nvar2d
@@ -2376,8 +2396,8 @@ end if !dry or wet bed
        do ivar = 1, nvar2d
           deltaFij(ivar) = p_fld2(2+2*(ivar-1),iedge)
 
-          rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + deltaFij(ivar)   *dt/p_MLdata(i)
-          rarraySol(ivar)%Da(j) = rarraySol(ivar)%Da(j) - deltaFij(ivar)   *dt/p_MLdata(j)
+          rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + deltaFij(ivar)   /p_MLdata(i)*dt
+          rarraySol(ivar)%Da(j) = rarraySol(ivar)%Da(j) - deltaFij(ivar)   /p_MLdata(j)*dt
        end do
 
     end do
