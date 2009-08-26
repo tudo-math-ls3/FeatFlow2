@@ -819,7 +819,7 @@ contains
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
-               p_Kdiagonal, p_Kld, &
+               p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
 
 
@@ -896,7 +896,7 @@ contains
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
-               p_Kdiagonal, p_Kld, &
+               p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
        end if
 
@@ -911,7 +911,8 @@ contains
                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
-               gravconst, dt, Method, prelimiting, syncromethod)
+               gravconst, dt, Method, prelimiting, syncromethod, &
+               rtriangulation)
 
           call BuildShallowWaterPreconditioner (rmatrixBlockP, &
                rarrayP, rarraySol, p_CXdata, p_CYdata, &
@@ -922,7 +923,7 @@ contains
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
-               p_Kdiagonal, p_Kld, &
+               p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
        end if
 
