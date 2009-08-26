@@ -1735,7 +1735,7 @@ contains
   subroutine ImplementShallowWaterBCs (&
        rboundary, rtriangulation, &
        rarrayP, rarraySol, rarrayDef, &
-       p_Kdiagonal, p_Kld, &
+       p_Kdiagonal, p_Kld, p_Kcol, &
        gravconst, boundarycorner)
 
     ! PARAMETER VALUES
@@ -1746,7 +1746,7 @@ contains
     ! pointers to datas of preconditioner, solution and defect
     type(t_array), dimension(nvar2d), intent(INOUT) :: rarrayP, rarraySol, rarrayDef
     ! pointer to index of diagonal positions of matrices
-    integer, dimension(:), pointer, intent(IN) :: p_Kdiagonal, p_Kld
+    integer, dimension(:), pointer, intent(IN) :: p_Kdiagonal, p_Kld, p_Kcol
     real(DP), intent(IN) :: gravconst
     integer :: boundarycorner
 
@@ -1767,6 +1767,8 @@ contains
     integer :: i
     ! index of diagonal element ii in matrix
     integer :: ii
+    ! actual column
+    integer :: icol
     ! parametervalue of boundary node to edit
     real(DP) :: parmv
     ! unit outward normal vector and tangential vector
@@ -1785,8 +1787,12 @@ contains
     integer, parameter :: itemax = 50
     ! Element ij in matrix (preconditioner)
     integer :: ij
+    ! explicit update for predicted solution
+    real(DP), dimension(3) :: up
     ! Temp values for newton step
     real(dp) :: temp1, temp2
+    ! actual variable
+    integer :: ivar
 
 
 
@@ -1846,6 +1852,26 @@ contains
              tangentialv(1) = -normalV(2)
              tangentialv(2) =  normalV(1)
 
+!             ! Calculate the predicted values
+!             up = 0
+!             do ij = p_kld(i), p_kld(i+1)-1
+!                if (ij .ne. ii) then
+!                  icol = p_Kcol(ij)
+!                  do ivar = 1, nvar2d
+!                    up(ivar)= up(ivar) - rarrayP(ivar)%Da(ij) * rarrayDef(ivar)%Da(icol)
+!                  end do
+!                else
+!                  do ivar = 1, nvar2d
+!                    up(ivar)= up(ivar) + rarrayDef(ivar)%Da(i)
+!                  end do
+!                end if
+!             end do
+!             
+!             do ivar = 1, nvar2d
+!               rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + up(ivar)/rarrayP(ivar)%Da(ii)
+!             end do
+                          
+
              ! update preconditioner
              do ij = p_kld(i), p_kld(i+1)-1
                 if (ij .ne. ii) then
@@ -1860,6 +1886,7 @@ contains
              rarraySol(1)%Da(i) = rarraySol(1)%Da(i) + rarrayDef(1)%Da(i)/rarrayP(1)%Da(ii)
              rarraySol(2)%Da(i) = rarraySol(2)%Da(i) + rarrayDef(2)%Da(i)/rarrayP(2)%Da(ii)
              rarraySol(3)%Da(i) = rarraySol(3)%Da(i) + rarrayDef(3)%Da(i)/rarrayP(3)%Da(ii)
+             
 
              ! get predicted primitive values
              hstar = rarraySol(1)%Da(i)
@@ -1973,7 +2000,8 @@ end if !dry or wet bed
        rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
-       gravconst, dt, Method, prelimiting, syncromethod)
+       gravconst, dt, Method, prelimiting, syncromethod, &
+       rtriangulation)
 
     ! parameter values
     type(t_array), dimension(nvar2d), intent(INOUT) :: rarraySol, rarraySolDot
@@ -1990,6 +2018,7 @@ end if !dry or wet bed
     integer, intent(IN)                             :: NEQ,	nedge
     real(DP), intent(IN)                            :: gravconst, dt
     integer, intent(IN)                             :: Method, prelimiting, syncromethod
+    type(t_triangulation), intent(IN)               :: rtriangulation
 
 
     ! variables
@@ -2005,7 +2034,10 @@ end if !dry or wet bed
     real(DP), dimension(nvar2d)         :: deltaWij, deltaGij, deltaFij
     real(DP), dimension(nvar2d,nvar2d)  :: Rij, invRij
     real(DP)                            :: alphaij
-
+    integer                             :: ibct, nbct, ivbd, ivbdFirst, ivbdLast
+    integer, dimension(:), pointer      :: p_IboundaryCpIdx
+    integer, dimension(:), pointer      :: p_IverticesAtBoundary
+    
 
     ! unit matrix
     Eye = 0.0_DP
@@ -2210,10 +2242,55 @@ end if !dry or wet bed
           else
              p_fld1(6+6*(ivar-1),i) = 0.0_DP
           end if
+          
+!          ! If we are at a maximum (Qi+ = 0) then cancel negative flux (set Ri- = 0) to avoid clipping
+!          if (p_fld1(3+6*(ivar-1),i)<1e-12) then
+!            p_fld1(6+6*(ivar-1),i) = 0
+!          end if
+!          
+!          ! If we are at a minimum (Qi- = 0) then cancel positive flux (set Ri+ = 0) to avoid clipping
+!          if (p_fld1(4+6*(ivar-1),i)>1e-12) then
+!            p_fld1(5+6*(ivar-1),i) = 0
+!          end if
 
        end do
 
     end do
+    
+    
+    
+    
+!!!!!! New Idea: Cancel antidiffusive fluxes at the boundary:
+!!!!!! Set Ri+/- = 0 at boundary nodes
+!    
+!    ! get number of boundary components
+!    nbct = rtriangulation%NBCT
+!
+!    ! get pointer to IboundaryCpIdx, which saves where the boundarycomponents begin and end
+!    call storage_getbase_int (rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
+!
+!    ! get pointer to IverticesAtBoundary, which saves die numbers of the vertices on the boundary
+!    call storage_getbase_int (rtriangulation%h_IverticesAtBoundary,p_IverticesAtBoundary)
+!
+!
+!    ! loop over all boundarycomponents
+!    do ibct = 1, nbct
+!
+!       ! get Index of first and last node of this boundarycomponent
+!       ivbdFirst = p_IboundaryCpIdx(ibct)
+!       ivbdLast  = p_IboundaryCpIdx(ibct+1)-1
+!
+!       do ivbd = ivbdFirst, ivbdLast
+!          ! the index of the boundary node to edit
+!          i = p_IverticesAtBoundary(ivbd)
+!          p_fld1(5+6*(ivar-1),i) = 0
+!          p_fld1(6+6*(ivar-1),i) = 0
+!       end do
+!    end do
+    
+    
+    
+    
 
     do iedge = 1, nedge
        i  = p_Kedge(1, iedge)
