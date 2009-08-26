@@ -1,29 +1,29 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 4
+nlmax = 9
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
 #prmname = ./pre/TRIA.prm
 #prmname = ./pre/unstructured.prm
 #prmname = ./pre/zwanzigm.prm
-#prmname = ./pre/zehnm.prm
+prmname = ./pre/zehnm.prm
 #prmname = ./pre/damv1.prm
 #prmname = ./pre/balken.prm
 #prmname = ./pre/zylinderusefein.prm
-prmname = ./pre/threezylinderfein.prm
+#prmname = ./pre/threezylinderfein.prm
 
 # Name of the triangulation file
 #triname = ./pre/QUAD.tri
 #triname = ./pre/TRIA.tri
 #triname = ./pre/unstructured.tri
 #triname = ./pre/zwanzigm.tri
-#triname = ./pre/zehnm.tri
+triname = ./pre/zehnm.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/balken.tri
 #triname =./pre/zylinderusefein.tri
-triname =./pre/threezylinderfein.tri
+#triname =./pre/threezylinderfein.tri
 
 # What kind of finite elements do we use?
 # 0: linear conforming triangular FE, P1
@@ -36,10 +36,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.0025
 
 # Final time
-ttfinal = 4.0
+ttfinal = 0.1
 
 # Implicitness parameter
 theta = 0.5
@@ -97,7 +97,7 @@ limiter = 2
 # 4: Superbee
 
 # Apply prelimiting for FCT?
-prelimiting = 1
+prelimiting = 0
 # 0: no prelimiting
 # 1: apply simple prelimiting
 
@@ -117,16 +117,16 @@ gravconst = 9.81
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = if(x<10,10,5)
-hustart = 0
-hvstart = 0
+hstart  = 5
+hustart = if(x+0.1*y<0,-0.09950371902979,0.09950371902979)
+hvstart = if(x+0.1*y<0,0.99503719020911,-0.99503719020911)
 
 [VIDEO]
 
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 1
+makevideo = 0
 
 # Make gmv snapshot every ... seconds (must be n*dt)
 videotimestep = 0.04
