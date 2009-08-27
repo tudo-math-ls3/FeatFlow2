@@ -827,7 +827,7 @@ contains
     
     ! -----------------------------------------------------
 
-    subroutine assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rvector,dvectorWeight)
+    subroutine assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rvelocityvector,dvectorWeight)
         
     ! Assembles the velocity matrix in the block matrix rmatrix at position (1,1):
     !
@@ -843,7 +843,7 @@ contains
     
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    type(t_vectorBlock), target, optional :: rvector
+    type(t_vectorBlock), target, optional :: rvelocityvector
     
     ! Weight for the velocity vector; standard = -1.
     real(DP), intent(in), optional :: dvectorWeight
@@ -976,7 +976,7 @@ contains
           (rnonlinearCCMatrix%isubequation .ne. 0) .or. &
           (rnonlinearCCMatrix%cviscoModel .ne. 0)) then
       
-        if (.not. present(rvector)) then
+        if (.not. present(rvelocityvector)) then
           call output_line ('Velocity vector not present!', &
                              OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
           stop
@@ -1004,7 +1004,7 @@ contains
           
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
                               rmatrix)
@@ -1043,8 +1043,8 @@ contains
             ! The first quick access array specifies the evaluation point
             ! of the velocity -- if it exists.
             nullify(rcollection%p_rvectorQuickAccess1)
-            if (present(rvector)) &
-                rcollection%p_rvectorQuickAccess1 => rvector
+            if (present(rvelocityvector)) &
+                rcollection%p_rvectorQuickAccess1 => rvelocityvector
             
           end if
           
@@ -1067,7 +1067,7 @@ contains
           end if
 
           ! Call the SD method to calculate the nonlinearity.
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector,&
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
               ffunctionViscoModel,rcollection)
 
         case (CCMASM_STAB_UPWIND)
@@ -1087,14 +1087,14 @@ contains
           end if
           
           ! Call the upwind method to calculate the nonlinear matrix.
-          call conv_upwind2d (rvector, rvector, &
+          call conv_upwind2d (rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rupwind, CONV_MODMATRIX, &
                               rmatrix%RmatrixBlock(1,1)) 
                               
           if (.not. bshared) then
             ! Modify also the matrix block (2,2)
-            call conv_upwind2d (rvector, rvector, &
+            call conv_upwind2d (rvelocityvector, rvelocityvector, &
                                 dvecWeight, 0.0_DP,&
                                 rupwind, CONV_MODMATRIX, &
                                 rmatrix%RmatrixBlock(2,2)) 
@@ -1106,25 +1106,29 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
+
           ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
           
-          ! Weight for the Newtop part; =0 deactivates Newton.
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)          
-        
+                              rmatrix)
+                              
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -1158,24 +1162,28 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
+
           ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
           
-          ! Weight for the Newtop part; =0 deactivates Newton.
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvelocityvector, rvelocityvector, &
                               dvecWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)          
+                              rmatrix)
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
@@ -1230,8 +1238,8 @@ contains
             ! The first quick access array specifies the evaluation point
             ! of the velocity -- if it exists.
             nullify(rcollection%p_rvectorQuickAccess1)
-            if (present(rvector)) &
-                rcollection%p_rvectorQuickAccess1 => rvector
+            if (present(rvelocityvector)) &
+                rcollection%p_rvectorQuickAccess1 => rvelocityvector
             
           end if
           
@@ -1251,7 +1259,7 @@ contains
           end if
 
           ! Call the SD method to calculate the nonlinearity.
-          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvector,&
+          call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
               ffunctionViscoModel,rcollection)
 
           ! Set up the jump stabilisation structure.
@@ -1862,7 +1870,7 @@ contains
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
           
           ! Call the upwind method to calculate the nonlinear defect.
-          call conv_upwind2d (rvector, rvector, &
+          call conv_upwind2d (rvelocityvector, rvelocityvector, &
                               dvectorWeight, 0.0_DP,&
                               rupwind, CONV_MODDEFECT, &
                               rmatrix%RmatrixBlock(1,1),rvector,rdefect) 
@@ -1878,14 +1886,18 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
+
           ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
           
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
@@ -1913,10 +1925,10 @@ contains
          
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvelocityVector, rvelocityVector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)          
+                              rmatrix,rsolution=rvector,rdefect=rdefect)
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -1987,8 +1999,8 @@ contains
 
           end if
           
-          ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%dupsam
+          ! Set stabilisation parameter to zero for central difference
+          rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Set calculation method for local H
           rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
@@ -2006,7 +2018,7 @@ contains
           end if
 
           if ((rnonlinearCCMatrix%dnewton .eq. 0.0_DP) .and. &
-              (rstreamlineDiffusion2%dbetaT .eq. 0)) then
+              (rstreamlineDiffusion2%dbetaT .eq. 0.0_DP)) then
 
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
             ! to 0.0. Whatever the content is (if there is content at all),
@@ -2030,7 +2042,7 @@ contains
           ! Call the SD method to assemble.
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
               rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
-        
+          
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -2066,16 +2078,20 @@ contains
           ! In the first step, set up the matrix as above with central discretisation,
           ! i.e. call SD to calculate the matrix without SD stabilisation.
           ! Set up the SD structure for the creation of the defect.
+
           ! There is not much to do, only initialise the viscosity...
           rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-          ! Set stabilisation parameter to 0 to deactivate the stabilisation.
+          ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
-          ! Matrix weight
-          rstreamlineDiffusion%dtheta = rnonlinearCCMatrix%dgamma
+          ! Set calculation method for local H
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
           
-          ! Weight for the Newtop part; =0 deactivates Newton.
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
@@ -2101,7 +2117,7 @@ contains
          
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamlineDiffusionBlk2d (&
-                              rvector, rvector, &
+                              rvelocityvector, rvelocityvector, &
                               dvectorWeight, 0.0_DP,&
                               rstreamlineDiffusion, CONV_MODDEFECT, &
                               rmatrix,rsolution=rvector,rdefect=rdefect)          
