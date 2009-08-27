@@ -233,6 +233,9 @@ contains
 
     ! String to read info from ini file
     character (LEN=100) :: sstring
+    
+    ! Name of output file
+    character (LEN=100) :: ofile
 
     ! The kind of used FE
     integer :: FEkind
@@ -315,10 +318,10 @@ contains
     call parlst_getvalue_int(rparlist, 'METHOD', 'prelimiting', prelimiting, 1)
 
     ! Make gmv snapshots for video? Default=No.
-    call parlst_getvalue_int(rparlist, 'VIDEO', 'makevideo', makevideo, 0)
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'makevideo', makevideo, 0)
 
     ! Make gmv snapshot every ... seconds (must be n*dt)
-    call parlst_getvalue_double(rparlist, 'VIDEO', 'videotimestep', videotimestep, 50000.0_DP)
+    call parlst_getvalue_double(rparlist, 'OUTPUT', 'videotimestep', videotimestep, 50000.0_DP)
 
     ! Maximum number of iterations for the nonlinear solver
     call parlst_getvalue_int(rparlist, 'SOLVER', 'itemax', itemax, 20)
@@ -341,6 +344,8 @@ contains
     call parlst_getvalue_double(rparlist, 'SOLVER', 'linabsdef', linabsdef, 1e-7_DP)
     ! Relative value of the norm of the defect
     call parlst_getvalue_double(rparlist, 'SOLVER', 'linreldef', linreldef, 1e-4_DP)
+    ! The output file
+    call parlst_getvalue_string (rparlist, 'OUTPUT', 'ofile', ofile, 'gmv/u2d.gmv')
 
 
 
@@ -992,7 +997,7 @@ contains
     write(*,*) 'Writing Solution at final time',ttime,'to File'
     write(*,*)
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-         'gmv/u2d.gmv')
+         ofile)
 
     ! We could write Soldot, the approximation of the time derivative
     ! of the solution, which was used while applying the linearised
