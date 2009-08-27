@@ -80,6 +80,7 @@ module ccgeneraldiscretisation
   use collection
   use convection
   use vectorio
+  use matrixio
     
   use ccbasic
   use cccallback
@@ -132,7 +133,7 @@ contains
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,CUB_G2X2)
+                                'icubStokes',icubA,int(CUB_G2X2))
     else
       icubA = cub_igetID(sstr)
     end if
@@ -141,7 +142,7 @@ contains
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,CUB_G2X2)
+                                'icubB',icubB,int(CUB_G2X2))
     else
       icubB = cub_igetID(sstr)
     end if
@@ -150,7 +151,7 @@ contains
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,CUB_G2X2)
+                                'icubF',icubF,int(CUB_G2X2))
     else
       icubF = cub_igetID(sstr)
     end if
@@ -173,7 +174,7 @@ contains
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                                 'icubEOJ',i,int(CUB_G4_1D))
-      rproblem%rstabilisation%ccubEOJ = int(rproblem%rstabilisation%ccubEOJ,I32)
+      rproblem%rstabilisation%ccubEOJ = i
     else
       rproblem%rstabilisation%ccubEOJ = cub_igetID(sstr)
     end if
@@ -195,7 +196,7 @@ contains
       ! Initialise the block discretisation according to the element specifier.
       call cc_getDiscretisation (ielementType,p_rdiscretisation,&
           rproblem%RlevelInfo(i)%rtriangulation, rproblem%rboundary, &
-          icubA, icubB, icubF)
+          int(icubA,I32), int(icubB,I32), int(icubF,I32))
       
       ! Probably initialise the element type that is to be used for the jump
       ! stabilisation. A value of -1 means: use the same element(s).
@@ -236,7 +237,7 @@ contains
                                   'scubMass',sstr,'')
       if (sstr .eq. '') then
         call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubM',icubM,CUB_G3X3)
+                                  'icubM',icubM,int(CUB_G3X3))
       else
         icubM = cub_igetID(sstr)
       end if
@@ -984,8 +985,19 @@ contains
       call conv_jumpStabilisation2d (&
           rjumpStabil, CONV_MODMATRIX, rstaticInfo%rmatrixStabil,&
           rdiscretisation=rstaticInfo%rdiscretisationStabil)
+          
+!      call matio_writeMatrixHR (rstaticInfo%rmatrixStabil, "matrix",&
+!          .true., 0, "matrixstabil.txt", "(E12.2)")
+!      call matio_spyMatrix("matrixstabilmatlab.txt","matrix",rstaticInfo%rmatrixStabil,.true.,&
+!          dthreshold = 0.0_DP)
       
     end if
+
+!    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
+!                rstaticInfo%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+!    call lsyssc_clearMatrix (rstaticInfo%rmatrixStabil)
+!    call matio_spyMatrix("matrixstabilmatlab.txt","matrix",rstaticInfo%rmatrixStabil,.true.,&
+!        dthreshold = 0.0_DP)
                                 
     ! -----------------------------------------------------------------------
     ! Mass matrices. They are used in so many cases, it is better we always
