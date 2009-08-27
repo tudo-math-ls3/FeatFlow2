@@ -660,7 +660,7 @@ contains
       dedgelength = &
         sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = dedgelength !* 0.5_DP
+      dedgeweight = dedgelength * 0.5_DP
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
@@ -2159,7 +2159,7 @@ contains
       dedgelength = &
         sqrt ((p_DvertexCoords(1,ivt2)-p_DvertexCoords(1,ivt1))**2 &
             + (p_DvertexCoords(2,ivt2)-p_DvertexCoords(2,ivt1))**2 )
-      dedgeweight = dedgelength !* 0.5_DP *
+      dedgeweight = dedgelength * 0.5_DP
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
