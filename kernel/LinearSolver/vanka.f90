@@ -6360,29 +6360,29 @@ contains
 !</subroutine>
 
 !    ! local vairables
-!    integer :: iel,ielidx
-!    integer :: inode,idof
-!    
-!    integer, dimension(:), pointer :: p_KcolA
-!    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-!    real(DP), dimension(:), pointer             :: p_DA,p_DA22
-!    integer, dimension(:), pointer :: p_KcolA12
-!    integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
-!    real(DP), dimension(:), pointer             :: p_DA12,p_DA21
-!    integer, dimension(:), pointer :: p_KcolB
-!    integer, dimension(:), pointer :: p_KldB
-!    real(DP), dimension(:), pointer             :: p_DB1
-!    real(DP), dimension(:), pointer             :: p_DB2
-!    real(DP), dimension(:), pointer             :: p_DD1
-!    real(DP), dimension(:), pointer             :: p_DD2
-!    
-!    ! Triangulation information
-!    integer :: NEL
-!    integer   :: NVT
-!    integer    :: NMT
-!    integer, dimension(:,:), pointer :: p_IedgesAtElement
-!    integer, dimension(:,:), pointer :: p_IverticesAtElement
-!    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
+    integer :: iel,ielidx
+    integer :: inode,idof
+    
+    integer, dimension(:), pointer :: p_KcolA
+    integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
+    real(DP), dimension(:), pointer             :: p_DA,p_DA22
+    integer, dimension(:), pointer :: p_KcolA12
+    integer, dimension(:), pointer :: p_KldA12,p_KdiagonalA12
+    real(DP), dimension(:), pointer             :: p_DA12,p_DA21
+    integer, dimension(:), pointer :: p_KcolB
+    integer, dimension(:), pointer :: p_KldB
+    real(DP), dimension(:), pointer             :: p_DB1
+    real(DP), dimension(:), pointer             :: p_DB2
+    real(DP), dimension(:), pointer             :: p_DD1
+    real(DP), dimension(:), pointer             :: p_DD2
+    
+    ! Triangulation information
+    integer :: NEL
+    integer   :: NVT
+    integer    :: NMT
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
 !    
 !    ! Local arrays for informations about one element
 !    integer, parameter :: nnvel = 9      ! Q2 = 9 DOF`s per velocity
