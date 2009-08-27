@@ -189,9 +189,11 @@ ielementType       = 3
 # 2=unified edge oriented jump stabilisation
 # 3=fast unified edge oriented jump stabilisation (precomputed matrix)
 # 4=Streamline Diffusion, element independent implementation
-# 5=unified edge oriented jump stabilisation with the nonlinear terms
+# 5=unified edge oriented jump stabilisation with the nonlinear
 #   matrix being assembled by the element independent implementation
-#   Streamline Diffusion method
+#   Streamline Diffusion method (Suporting mixed TRI/QUAD-meshes)
+# REMARK: To use Q2 with EOJ stabilisation and VANKA smoother, damp
+# the VANKA with domega=0.5.
 
 iUpwind            = 0
 
