@@ -91,3 +91,9 @@ bdExpressions(3) =
   'Dirichlet0'     0    0.0
   'Dirichlet1'     0    1.0
   'ParProfile'     2    $BDR_PARPROFILEMAX
+
+[CC2D-NONLINEAR]
+itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
+
+[CC-SMOOTHER]
+domega             = $SMOOTHER_DOMEGA
