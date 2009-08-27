@@ -137,6 +137,7 @@ module mprimitives
   public :: mprim_meanDeviation,mprim_meanDeviationDble
   public :: mprim_meanValue,mprim_meanValueDble
   public :: mprim_degToRad,mprim_radToDeg
+  public :: mprim_solveDiagSchurComp
 
 contains
 
