@@ -269,7 +269,8 @@ contains
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                     'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
                                     
-    if ((dtime .ge. dminTime) .and. (dtime .le. dmaxTime)) then
+    if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL) .and. &
+        (dtime .le. dmaxTime+1000.0*SYS_EPSREAL)) then
     
       ! Figure out if we have to write the solution. This is the case if
       ! 1.) Precious and current time is the same ot
@@ -314,7 +315,8 @@ contains
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
                                     'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
                                     
-    if ((dtime .ge. dminTime) .or. (dtime .le. dmaxTime)) then
+    if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL) .and. &
+        (dtime .le. dmaxTime+1000.0*SYS_EPSREAL)) then
     
       ! Figure out if we have to write the solution. This is the case if
       ! 1.) Precious and current time is the same ot
