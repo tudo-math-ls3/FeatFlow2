@@ -36,10 +36,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.0025
+dt = 0.001
 
 # Final time
-ttfinal = 0.1
+ttfinal = 1
 
 # Implicitness parameter
 theta = 0.5
@@ -79,7 +79,7 @@ boundarycorner = 1
 [METHOD]
 
 # What Method to use
-Method = 6
+Method = 3
 # 0: High Order Scheme (No Dissipation)
 # 1: Low Order Scheme (Scalar Dissipation)
 # 2: Low Order Scheme (Tensorial Dissipation)
@@ -90,7 +90,7 @@ Method = 6
 # 7: linearised FCT syncronized (Tensorial Dissipation)
 
 # What limiter to use for TVD?
-limiter = 2
+limiter = 4
 # 1: MinMod
 # 2: Van Leer
 # 3: MC
@@ -117,11 +117,14 @@ gravconst = 9.81
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = 5
-hustart = if(x+0.1*y<0,-0.09950371902979,0.09950371902979)
-hvstart = if(x+0.1*y<0,0.99503719020911,-0.99503719020911)
+hstart  = if(sqrt(x^2+y^2)<2.5,2.5,0.5)
+hustart = 0
+hvstart = 0
 
-[VIDEO]
+[OUTPUT]
+
+# Name of output file
+ofile = 
 
 # Create files for video?
 # 0: No
