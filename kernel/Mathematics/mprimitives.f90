@@ -70,6 +70,11 @@
 !#
 !# 19.) mprim_radToDeg
 !#      -> Converts RAD to DEG
+!#
+!# 20.) mprim_solveDiagSchurComp
+!#      -> Solves a 2x2 block system with diagonal diagonal blocks
+!#         using a Schur complement approach.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -268,7 +273,7 @@ contains
 
 !<subroutine>
 
-  subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar)
+  pure subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -312,11 +317,22 @@ contains
 
     ! local variables
     real(DP), dimension(ndim,ndim) :: Db
-    real(DP), dimension(ndim) :: Dpiv
+    integer, dimension(ndim) :: Ipiv
     integer, dimension(ndim) :: Kindx,Kindy
 
     real(DP) :: dpivot,daux
     integer :: idim1,idim2,ix,iy,indx,indy,info
+
+      interface 
+        pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
+        use fsystem
+        integer, intent(in) :: N,LDA,LDB,NRHS
+        integer, intent(inout) :: INFO
+        integer, dimension(*), intent(inout) :: IPIV
+        real(dp), dimension( LDA, * ), intent(inout) :: A
+        real(dp), dimension( LDB, * ), intent(inout) :: B
+        end subroutine
+      end interface
 
     select case (ipar)
     case (0)
@@ -435,8 +451,8 @@ contains
 
       case default
         ! Use LAPACK routine for general NxN system, where N > 6
-        Dpiv=0; Dx=Df
-        call DGESV(ndim,1,Da,ndim,Dpiv,Dx,ndim,info)
+        Ipiv=0; Dx=Df
+        call DGESV(ndim,1,Da,ndim,Ipiv,Dx,ndim,info)
         
       end select
       
@@ -2663,5 +2679,154 @@ contains
     d = r * (180._DP / SYS_PI)
 
   end function mprim_radToDeg
+
+  ! ************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solveDiagSchurComp (ndimA,ndimC,Du,Df,Da,Db,Dd,Dc)
+  
+!<description>
+  ! This routine applies a Schur Complement decomposition to a 2x2 saddle point
+  ! matrix where only entries on the diagonals of the diagonal blocks exist.
+  !
+  ! <!--
+  !
+  ! The system that is to be solved here is assumed to have the following shape:
+  !
+  !   (  A             +----------+  ) ( U ) = ( F )
+  !   (       ..       |    B     |  ) ( U )   ( F )
+  !   (             A  +----------+  ) ( U )   ( F )
+  !   (  +----------+  C             ) ( U )   ( F )
+  !   (  |    D     |       ..       ) ( U )   ( F )
+  !   (  +----------+             C  ) ( U )   ( F )
+  !
+  ! or in short:
+  !
+  !   ( A B ) = (U) = (F)
+  !   ( D C )   (U)   (F)
+  !
+  ! -->
+!</description>
+
+!<input>
+  ! Dimension of the A-matrix
+  integer, intent(in) :: ndimA
+  
+  ! Dimension of the C-matrix
+  integer, intent(in) :: ndimC
+
+  ! Submatrix A, only diagonal entries.
+  real(DP), dimension(:), intent(in) :: Da
+  
+  ! Entries in the submatrix B.
+  real(DP), dimension(:,:), intent(in) :: Db
+
+  ! Entries in the submatrix D.
+  real(DP), dimension(:,:), intent(in) :: Dd
+
+  ! Diagonal elements of the local system matrix C
+  real(DP), dimension(:), intent(in) :: Dc
+
+  ! Local RHS vector.
+  real(DP), dimension(:), intent(in) :: Df
+!</input>
+
+!<output>
+  ! SOlution vector.
+  real(DP), dimension(:), intent(out) :: Du
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j,k
+    
+    ! A^-1
+    real(DP), dimension(ndimA) :: Dainv
+    
+    ! DA^-1, saved transposed for efficiency reasons
+    real(DP), dimension(ndimA,ndimC) :: Ddainv
+    
+    ! S and S^-1
+    real(DP), dimension(ndimC,ndimC) :: Ds
+    
+    ! Temporary RHS vector
+    real(DP), dimension(ndimA) :: Dftemp1
+    real(DP), dimension(ndimC) :: Dftemp2
+
+    ! The system can be written as:
+    !   ( A  B ) = (u) = (f)
+    !   ( D  C )   (p)   (g)
+    
+    ! To solve with the Schur Complement, we have to solve in two steps.
+    !
+    ! 1.) Solve:  (C - D A^-1 B) p = g - D A^-1 f
+    !         <=>                p = (C - D A^-1 B)^-1 (g - D A^-1 f)
+    !         <=>                p = S^-1 (g - D A^-1 f)
+    !
+    ! 2.) Solve:               A u = f - B p
+    !         <=>                u = A^-1 (f - B p)
+    !
+    ! * Solving A^-1 is easy as A is a diagonal matrix.
+    ! * Solving S^-1 involves an inversion of a full matrix using LAPACK
+    !   or a direct inversion.
+    ! * D A^-1 can be easily computed by scaling D by A.
+    !
+    ! At first, compute A^-1 and copy f to Dftemp.
+    do i=1,ndimA
+      Dainv(i) = 1.0_DP/Da(i)
+    end do
+    
+    do i=1,ndimA
+      Dftemp1(i) = Df(i)
+    end do
+    
+    do i=1,ndimC
+      Dftemp2(i) = Df(ndimA+i)
+    end do
+
+    do i=1,ndimC
+      do j=1,ndimA
+        ! Compute D A^-1.
+        ! D A^-1 is saved transposed for efficiency reasons!
+        Ddainv(j,i) = Dd(i,j)*Dainv(j)
+
+        ! Compute (g - D A^-1 f)
+        Dftemp2(i) = Dftemp2(i) - Ddainv(j,i) * Df(j)
+      end do
+    end do
+    
+    ! Compute S = (C - D A^-1 B)
+    ! (Order of loops changed for efficiency reasons...)
+    
+    do j=1,ndimC
+      ! Compute (- (D A^-1) B)
+      do i=1,ndimC
+        Ds(i,j) = 0.0_DP
+        do k=1,ndimA
+          Ds(i,j) = Ds(i,j) - Ddainv(k,i) * Db(k,j)
+        end do
+      end do
+    
+      ! Add C; consists only of the diagonal.
+      Ds(j,j) = Ds(j,j) + Dc(j)
+    end do
+    
+    ! Invert S and compute p.
+    call mprim_invertMatrixDble(Ds, &
+        Dftemp2,Du(ndimA+1:ndimA+ndimC),ndimC,2)
+
+    ! Calculate u = A^-1 (f - B p)
+    do i=1,ndimA
+      do j=1,ndimC
+        Dftemp1(i) = Dftemp1(i) - Db(i,j) * Du(ndimA+j)
+      end do
+      Du(i) = Dainv(i) * Dftemp1(i)
+    end do
+    
+    ! That's it.
+
+  end subroutine
 
 end module mprimitives
