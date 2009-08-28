@@ -7439,6 +7439,9 @@ contains
       
     end do ! i
     
+    ! When the scaling factor is not = 1, scale the vector.
+    call lsysbl_scaleVector(rd,rsolverNode%domega)
+    
     ! That's it
 
   end subroutine
