@@ -324,16 +324,16 @@ contains
     real(DP) :: dpivot,daux
     integer :: idim1,idim2,ix,iy,indx,indy,info
 
-      interface 
-        pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
-        use fsystem
-        integer, intent(in) :: N,LDA,LDB,NRHS
-        integer, intent(inout) :: INFO
-        integer, dimension(*), intent(inout) :: IPIV
-        real(dp), dimension( LDA, * ), intent(inout) :: A
-        real(dp), dimension( LDB, * ), intent(inout) :: B
-        end subroutine
-      end interface
+    interface 
+      pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
+      use fsystem
+      integer, intent(in) :: N,LDA,LDB,NRHS
+      integer, intent(inout) :: INFO
+      integer, dimension(*), intent(inout) :: IPIV
+      real(dp), dimension( LDA, * ), intent(inout) :: A
+      real(dp), dimension( LDB, * ), intent(inout) :: B
+      end subroutine
+    end interface
 
     select case (ipar)
     case (0)
@@ -432,23 +432,69 @@ contains
         
       case (2)
         call mprim_invert2x2MatrixDirectDble(Da,Db)
-        Dx=matmul(Db,Df)
+        ! Dx=matmul(Db,Df)
+        Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2)
+        Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2)
 
       case (3)
         call mprim_invert3x3MatrixDirectDble(Da,Db)
-        Dx=matmul(Db,Df)
+        ! Dx=matmul(Db,Df)
+        Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) + Db(1,3)*Df(3)
+        Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2) + Db(2,3)*Df(3)
+        Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) + Db(3,3)*Df(3)
 
       case (4)
         call mprim_invert4x4MatrixDirectDble(Da,Db)
-        Dx=matmul(Db,Df)
+        ! Dx=matmul(Db,Df)
+        Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
+              + Db(1,3)*Df(3) + Db(1,4)*Df(4)
+        Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2) &
+              + Db(2,3)*Df(3) + Db(2,4)*Df(4)
+        Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) &
+              + Db(3,3)*Df(3) + Db(3,4)*Df(4)
+        Dx(4) = Db(4,1)*Df(1) + Db(4,2)*Df(2) &
+              + Db(4,3)*Df(3) + Db(4,4)*Df(4)
       
       case (5)
         call mprim_invert5x5MatrixDirectDble(Da,Db)
-        Dx=matmul(Db,Df)
+        ! Dx=matmul(Db,Df)
+        Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
+              + Db(1,3)*Df(3) + Db(1,4)*Df(4) &
+              + Db(1,5)*Df(5)
+        Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2) &
+              + Db(2,3)*Df(3) + Db(2,4)*Df(4) &
+              + Db(2,5)*Df(5)
+        Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) &
+              + Db(3,3)*Df(3) + Db(3,4)*Df(4) &
+              + Db(3,5)*Df(5)
+        Dx(4) = Db(4,1)*Df(1) + Db(4,2)*Df(2) &
+              + Db(4,3)*Df(3) + Db(4,4)*Df(4) &
+              + Db(4,5)*Df(5)
+        Dx(5) = Db(5,1)*Df(1) + Db(5,2)*Df(2) &
+              + Db(5,3)*Df(3) + Db(5,4)*Df(4) &
+              + Db(5,5)*Df(5)
 
       case (6)
         call mprim_invert6x6MatrixDirectDble(Da,Db)
-        Dx=matmul(Db,Df)
+        ! Dx=matmul(Db,Df)
+        Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
+              + Db(1,3)*Df(3) + Db(1,4)*Df(4) &
+              + Db(1,5)*Df(5) + Db(1,6)*Df(6)
+        Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2) &
+              + Db(2,3)*Df(3) + Db(2,4)*Df(4) &
+              + Db(2,5)*Df(5) + Db(2,6)*Df(6)
+        Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) &
+              + Db(3,3)*Df(3) + Db(3,4)*Df(4) &
+              + Db(3,5)*Df(5) + Db(3,6)*Df(6)
+        Dx(4) = Db(4,1)*Df(1) + Db(4,2)*Df(2) &
+              + Db(4,3)*Df(3) + Db(4,4)*Df(4) &
+              + Db(4,5)*Df(5) + Db(4,6)*Df(6)
+        Dx(5) = Db(5,1)*Df(1) + Db(5,2)*Df(2) &
+              + Db(5,3)*Df(3) + Db(5,4)*Df(4) &
+              + Db(5,5)*Df(5) + Db(5,6)*Df(6)
+        Dx(6) = Db(6,1)*Df(1) + Db(6,2)*Df(2) &
+              + Db(6,3)*Df(3) + Db(6,4)*Df(4) &
+              + Db(6,5)*Df(5) + Db(6,6)*Df(6)
 
       case default
         ! Use LAPACK routine for general NxN system, where N > 6
@@ -2718,30 +2764,31 @@ contains
   integer, intent(in) :: ndimC
 
   ! Submatrix A, only diagonal entries.
-  real(DP), dimension(:), intent(in) :: Da
+  real(DP), dimension(*), intent(in) :: Da
   
   ! Entries in the submatrix B.
-  real(DP), dimension(:,:), intent(in) :: Db
+  real(DP), dimension(ndimA,*), intent(in) :: Db
 
   ! Entries in the submatrix D.
-  real(DP), dimension(:,:), intent(in) :: Dd
+  real(DP), dimension(ndimC,*), intent(in) :: Dd
 
   ! Diagonal elements of the local system matrix C
-  real(DP), dimension(:), intent(in) :: Dc
+  real(DP), dimension(*), intent(in) :: Dc
 
   ! Local RHS vector.
-  real(DP), dimension(:), intent(in) :: Df
+  real(DP), dimension(*), intent(in) :: Df
 !</input>
 
 !<output>
   ! SOlution vector.
-  real(DP), dimension(:), intent(out) :: Du
+  real(DP), dimension(*), intent(out) :: Du
 !</output>
 
 !</subroutine>
 
     ! local variables
-    integer :: i,j,k
+    integer :: i,j,k,info
+    integer, dimension(ndimC) :: Ipiv
     
     ! A^-1
     real(DP), dimension(ndimA) :: Dainv
@@ -2750,11 +2797,22 @@ contains
     real(DP), dimension(ndimA,ndimC) :: Ddainv
     
     ! S and S^-1
-    real(DP), dimension(ndimC,ndimC) :: Ds
+    real(DP), dimension(ndimC,ndimC) :: Ds, Dsinv
     
     ! Temporary RHS vector
     real(DP), dimension(ndimA) :: Dftemp1
     real(DP), dimension(ndimC) :: Dftemp2
+
+    interface 
+      pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
+      use fsystem
+      integer, intent(in) :: N,LDA,LDB,NRHS
+      integer, intent(inout) :: INFO
+      integer, dimension(*), intent(inout) :: IPIV
+      real(dp), dimension( LDA, * ), intent(inout) :: A
+      real(dp), dimension( LDB, * ), intent(inout) :: B
+      end subroutine
+    end interface
 
     ! The system can be written as:
     !   ( A  B ) = (u) = (f)
@@ -2815,9 +2873,83 @@ contains
     end do
     
     ! Invert S and compute p.
-    call mprim_invertMatrixDble(Ds, &
-        Dftemp2,Du(ndimA+1:ndimA+ndimC),ndimC,2)
+    !
+    ! call mprim_invertMatrixDble(Ds, &
+    !     Dftemp2,Du(ndimA+1:ndimA+ndimC),ndimC,2)
 
+    select case(ndimC)
+    case (1)
+      Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
+      
+    case (2)
+      call mprim_invert2x2MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2)
+
+    case (3)
+      call mprim_invert3x3MatrixDirectDble(Da,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) + Dsinv(1,3)*Dftemp2(3)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) + Dsinv(2,3)*Dftemp2(3)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) + Dsinv(3,3)*Dftemp2(3)
+
+    case (4)
+      call mprim_invert4x4MatrixDirectDble(Da,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
+    
+    case (5)
+      call mprim_invert5x5MatrixDirectDble(Da,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
+                  + Dsinv(1,5)*Dftemp2(5)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4) &
+                  + Dsinv(2,5)*Dftemp2(5)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4) &
+                  + Dsinv(3,5)*Dftemp2(5)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4) &
+                  + Dsinv(4,5)*Dftemp2(5)
+      Du(ndimA+5) = Dsinv(5,1)*Dftemp2(1) + Dsinv(5,2)*Dftemp2(2) &
+                  + Dsinv(5,3)*Dftemp2(3) + Dsinv(5,4)*Dftemp2(4) &
+                  + Dsinv(5,5)*Dftemp2(5)
+
+    case (6)
+      call mprim_invert6x6MatrixDirectDble(Da,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
+                  + Dsinv(1,5)*Dftemp2(5) + Dsinv(1,6)*Dftemp2(6)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4) &
+                  + Dsinv(2,5)*Dftemp2(5) + Dsinv(2,6)*Dftemp2(6)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4) &
+                  + Dsinv(3,5)*Dftemp2(5) + Dsinv(3,6)*Dftemp2(6)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4) &
+                  + Dsinv(4,5)*Dftemp2(5) + Dsinv(4,6)*Dftemp2(6)
+      Du(ndimA+5) = Dsinv(5,1)*Dftemp2(1) + Dsinv(5,2)*Dftemp2(2) &
+                  + Dsinv(5,3)*Dftemp2(3) + Dsinv(5,4)*Dftemp2(4) &
+                  + Dsinv(5,5)*Dftemp2(5) + Dsinv(5,6)*Dftemp2(6)
+      Du(ndimA+6) = Dsinv(6,1)*Dftemp2(1) + Dsinv(6,2)*Dftemp2(2) &
+                  + Dsinv(6,3)*Dftemp2(3) + Dsinv(6,4)*Dftemp2(4) &
+                  + Dsinv(6,5)*Dftemp2(5) + Dsinv(6,6)*Dftemp2(6)
+
+    case default
+      ! Use LAPACK routine for general NxN system, where N > 6
+      Ipiv=0
+      call DGESV(ndimC,1,Dsinv,ndimC,Ipiv,Dftemp2,ndimC,info)
+      Du(ndimA+1:ndimA+ndimC) = Dftemp2(1:ndimC)
+      
+    end select
+    
     ! Calculate u = A^-1 (f - B p)
     do i=1,ndimA
       do j=1,ndimC
