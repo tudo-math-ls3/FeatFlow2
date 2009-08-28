@@ -10,8 +10,7 @@ mus="0.5"
 nus="0.3"
 
 # choose MG levels
-mgs="05"
-#mgs="02 03 04 05 06 07 08 09 10"
+mgs="02 03 04 05 06 07 08 09 10"
 #mgs="02 03 04 05 06 07 08 09"
 
 #-----------------------------
@@ -64,15 +63,6 @@ NLMAX = ${mg}
 # type of configuration (possible values: REAL, ANALYTICAL)
 ctypeOfSimulation = REAL
 
-# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
-ctypeOfSolver = MG_SOLVER
-
-# type of smoother (possible values: JACOBI, ILU)
-ctypeOfSmoother = JACOBI
-
-# Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
-ncycle = 1
-
 # set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
 cfuncID_u1 = 53
 cfuncID_u2 = 52
@@ -94,8 +84,17 @@ refSolU2 = 27.642747
 # max number of iterations
 niterations = 50000
 
+# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
+ctypeOfSolver = MG_SOLVER
+
+# type of smoother (possible values: JACOBI, ILU)
+ctypeOfSmoother = ILU
+
+# Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
+ccycle = 1
+
 # number of smoothing steps
-nsmoothingSteps = 4
+nsmoothingSteps = 128
 
 # damping parameter
 ddamp = 0.7

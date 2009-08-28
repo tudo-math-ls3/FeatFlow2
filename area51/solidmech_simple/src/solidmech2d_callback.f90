@@ -104,7 +104,10 @@ module solidmech2d_callback
   integer, parameter :: DIRECT_SOLVER = 4
   integer, parameter :: BICGSTAB_SOLVER = 8
   integer, parameter :: MG_SOLVER = 14
+  integer, parameter :: CG_MG_SOLVER = 17
+  integer, parameter :: MG_CG_SOLVER = 18
   integer, parameter :: CG_SOLVER = 19
+  integer, parameter :: MG_BICG_SOLVER = 20
   integer, parameter :: J_SMOOTHER = 21
   integer, parameter :: ILU_SMOOTHER = 22
 
@@ -147,7 +150,7 @@ module solidmech2d_callback
     !  0=F-cycle, 
     !  1=V-cycle, 
     !  2=W-cycle.
-    integer :: ncycle = 2
+    integer :: ccycle = 2
 
     !    Number of smoothing steps
     integer :: nsmoothingSteps = 4
@@ -1992,11 +1995,11 @@ Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
 
     case (54) ! u(x,y) = 1/3*x^4
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  (1.0_DP/3.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * &
+      case (DER_FUNC);     Dvalues(:,:) =  (1.0_DP/4.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * &
                                             Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  (4.0_DP/3.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_X);  Dvalues(:,:) =  Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
       case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  4.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
+      case (DER_DERIV_XX); Dvalues(:,:) =  3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
       case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
       case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
       end select

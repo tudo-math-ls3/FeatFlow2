@@ -260,7 +260,7 @@ contains
       rproblem%ctypeOfSmoother = J_SMOOTHER
       print *, 'JACOBI SMOOTHER'
     else if(trim(sstring) .eq. 'ILU') then
-      rproblem%ctypeOfSimulation = ILU_SMOOTHER
+      rproblem%ctypeOfSmoother = ILU_SMOOTHER
       print *, 'ILU SMOOTHER'
     else
       print *,'Invalid sstring for smoother type:', trim(sstring)
@@ -277,9 +277,18 @@ contains
     else if(trim(sstring) .eq. 'MG_SOLVER') then
       rproblem%ctypeOfSolver = MG_SOLVER
       print *, 'MG_SOLVER'
+    else if(trim(sstring) .eq. 'CG_MG_SOLVER') then
+      rproblem%ctypeOfSolver = CG_MG_SOLVER
+      print *, 'CG_MG_SOLVER'
     else if(trim(sstring) .eq. 'CG_SOLVER') then
       rproblem%ctypeOfSolver = CG_SOLVER
       print *, 'CG_SOLVER'
+    else if(trim(sstring) .eq. 'MG_CG_SOLVER') then
+      rproblem%ctypeOfSolver = MG_CG_SOLVER
+      print *, 'MG_CG_SOLVER'
+    else if(trim(sstring) .eq. 'MG_BICG_SOLVER') then
+      rproblem%ctypeOfSolver = MG_BICG_SOLVER
+      print *, 'MG_BICG_SOLVER'
     else if(trim(sstring) .eq. 'BICGSTAB_SOLVER') then
       rproblem%ctypeOfSolver = BICGSTAB_SOLVER
       print *, 'BICGSTAB_SOLVER'
@@ -295,7 +304,10 @@ contains
     call parlst_getvalue_int (rparams, '', &
                                      'NLMAX', rproblem%NLMAX)
 
-    if (rproblem%ctypeOfSolver /= MG_SOLVER) then
+    if (rproblem%ctypeOfSolver /= MG_SOLVER .and. &
+        rproblem%ctypeOfSolver /= CG_MG_SOLVER .and. &
+        rproblem%ctypeOfSolver /= MG_BICG_SOLVER .and. &
+        rproblem%ctypeOfSolver /= MG_CG_SOLVER) then
       rproblem%NLMIN = rproblem%NLMAX
     end if
 
@@ -307,8 +319,8 @@ contains
     !  1=V-cycle, 
     !  2=W-cycle.
     call parlst_getvalue_int (rparams, '', &
-                                    'ncycle', rproblem%ncycle)
-    print *,'ncycle:', rproblem%ncycle
+                                    'ccycle', rproblem%ccycle)
+    print *,'ccycle:', rproblem%ccycle
         
     ! function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
     call parlst_getvalue_int (rparams, '', &
@@ -503,11 +515,6 @@ contains
       ! the discretisation.
       call lsysbl_createMatBlockByDiscr (Rlevels(i)%rdiscretisation,Rlevels(i)%rmatrix)
       
-      ! Inform the matrix that we build a saddle-point problem.
-      ! Normally, imatrixSpec has the value LSYSBS_MSPEC_GENERAL,
-      ! but probably some solvers can use the special structure later.
-      Rlevels(i)%rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
-      
       ! Now as the discretisation is set up, we can start to generate
       ! the structure of the system matrix which is to solve.
       ! We create that directly in the block (1,1) of the block matrix
@@ -669,37 +676,38 @@ contains
     ! Clear the solution vector on the finest level.
     call lsysbl_clearVector(rvector)
 
-    do i = rproblem%NLMIN, rproblem%NLMAX
+    
 
-      ! For implementing boundary conditions, we use a 'filter technique with
-      ! discretised boundary conditions'. This means, we first have to calculate
-      ! a discrete version of the analytic BC, which we can implement into the
-      ! solution/RHS vectors using the corresponsolidmechding filter.
-      !   
-      ! Create a t_discreteBC structure where we store all discretised boundary
-      ! conditions.
+    ! For implementing boundary conditions, we use a 'filter technique with
+    ! discretised boundary conditions'. This means, we first have to calculate
+    ! a discrete version of the analytic BC, which we can implement into the
+    ! solution/RHS vectors using the corresponsolidmechding filter.
+    !   
+    ! Create a t_discreteBC structure where we store all discretised boundary
+    ! conditions.
+    do i = rproblem%NLMIN, rproblem%NLMAX
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
+    end do
   
-      ! We first set up the boundary conditions for the U1-velocity, then those
-      ! of the U2-velocity.
-      ! We 'know' already (from the problem definition) that we have four boundary
-      ! segments in the domain. Each of these, we want to use for enforcing
-      ! some kind of boundary condition.
-      !    
-      ! We ask the bondary routines to create a 'boundary region' - which is
-      ! simply a part of the boundary corresponding to a boundary segment.
-      ! A boundary region roughly contains the type, the min/max parameter value
-      ! and whether the endpoints are inside the region or not.
-      do j = 1, rproblem%nboundaries
-        do k = 1,rproblem%NboundarySegments(j)
-	        call boundary_createRegion(rboundary,j,k,rboundaryRegion)
-	        if (rproblem%Sbc(j,k) .eq. 'D') then
-            ! The endpoint of this segment should also be Dirichlet. We set this by
-            ! changing the region properties in rboundaryRegion.
-		        rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-            if (i .eq. rproblem%NLMAX) then
-              print *,'D',j,k
-            end if 
+    ! We first set up the boundary conditions for the U1-velocity, then those
+    ! of the U2-velocity.
+    ! We 'know' already (from the problem definition) that we have four boundary
+    ! segments in the domain. Each of these, we want to use for enforcing
+    ! some kind of boundary condition.
+    !    
+    ! We ask the bondary routines to create a 'boundary region' - which is
+    ! simply a part of the boundary corresponding to a boundary segment.
+    ! A boundary region roughly contains the type, the min/max parameter value
+    ! and whether the endpoints are inside the region or not.
+    do j = 1, rproblem%nboundaries
+      do k = 1,rproblem%NboundarySegments(j)
+	      call boundary_createRegion(rboundary,j,k,rboundaryRegion)
+	      if (rproblem%Sbc(j,k) .eq. 'D') then
+          ! The endpoint of this segment should also be Dirichlet. We set this by
+          ! changing the region properties in rboundaryRegion.
+		      rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+          print *,'D',j,k
+          do i = rproblem%NLMIN, rproblem%NLMAX
             ! We use this boundary region and specify that we want to have Dirichlet
             ! boundary there. The following call does the following:
             ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
@@ -717,43 +725,42 @@ contains
 		        call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
 						  rboundaryRegion,Rlevels(i)%rdiscreteBC,&
 						  getBoundaryValues_2D)
-	        
-          else if (rproblem%Sbc(j,k) .eq. 'N') then
-		        rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
-            if (i .eq. rproblem%NLMAX) then
-              print *,'N',j,k
-            end if 
-            rcollection%IquickAccess(1) = k
-            ! For Element Q1
-		        if (rproblem%selement .EQ. 'Q1') then
-  
-              ! We use this boundary region and specify that we want to have Neumann boundary there
-              ! and add this to volumetric part(the neumann boundary part on rhs) for U1
-			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
-					      rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
-  
-              ! Now its done for U2
-			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
-					      rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
-  
-            ! For Element Q2
-		        else if (rproblem%selement .EQ. 'Q2') then
-  
-              ! For U1
-			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
-					      rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
-  
-              ! For U2
-			        call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
-					      rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
-		        end if
-	        else
+	        end do  
+        else if (rproblem%Sbc(j,k) .eq. 'N') then
+		      rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+          print *,'N',j,k
+          rcollection%IquickAccess(1) = k
+          ! For Element Q1
+		      if (rproblem%selement .EQ. 'Q1') then
+
+            ! We use this boundary region and specify that we want to have Neumann boundary there
+            ! and add this to volumetric part(the neumann boundary part on rhs) for U1
+			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+					    rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
+
+            ! Now its done for U2
+			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G2_1D,.false.,&
+					    rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
+
+          ! For Element Q2
+		      else if (rproblem%selement .EQ. 'Q2') then
+
+            ! For U1
+			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
+					    rrhs%RvectorBlock(1),coeff_RHS_neumBdr_u1_2D,rboundaryRegion,rcollection)
+
+            ! For U2
+			      call linf_buildVectorScalarBdr2d(rlinform,CUB_G3_1D,.false.,&
+					    rrhs%RvectorBlock(2),coeff_RHS_neumBdr_u2_2D,rboundaryRegion,rcollection)
+		      end if
+	      else
 	        print *, ' Invalid Input for Boundary Condition'
 	        stop
-	        end if
-        end do
-      end do
+	      end if
+      end do ! end segments
+    end do ! end boundaries
 
+    do i = rproblem%NLMIN, rproblem%NLMAX
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
@@ -763,20 +770,20 @@ contains
 
     end do
   
-      ! Hang the pointer into the vector. That way, these
-      ! boundary conditions are always connected to that 
-      ! vector.!
-      rrhs%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
-      rvector%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
-      
-      ! Next step is to implement boundary conditions into the RHS,
-      ! solution and matrix. This is done using a vector/matrix filter
-      ! for discrete boundary conditions.
-      ! The discrete boundary conditions are already attached to the
-      ! vectors/matrix. Call the appropriate vector/matrix filter that
-      ! modifies the vectors/matrix according to the boundary conditions.
-      call vecfil_discreteBCrhs (rrhs)
-      call vecfil_discreteBCsol (rvector)
+    ! Hang the pointer into the vector. That way, these
+    ! boundary conditions are always connected to that 
+    ! vector.!
+    rrhs%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
+    rvector%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
+    
+    ! Next step is to implement boundary conditions into the RHS,
+    ! solution and matrix. This is done using a vector/matrix filter
+    ! for discrete boundary conditions.
+    ! The discrete boundary conditions are already attached to the
+    ! vectors/matrix. Call the appropriate vector/matrix filter that
+    ! modifies the vectors/matrix according to the boundary conditions.
+    call vecfil_discreteBCrhs (rrhs)
+    call vecfil_discreteBCsol (rvector)
 
     ! During the linear solver, the boundary conditions must
     ! frequently be imposed to the vectors. This is done using
@@ -786,7 +793,7 @@ contains
     ! would be wrong.
     ! Therefore, create a filter chain with one filter only,
     ! which implements Dirichlet-conditions into a defect vector.
-!     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Create a BiCGStab-solver.
     ! Attach the above filter chain to the solver, so that the solver
@@ -801,7 +808,7 @@ contains
       p_RfilterChain => RfilterChain
       nullify(p_rpreconditioner)
       call linsol_initCG (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
-    
+
     ! For Direct solver we use following 
     else if (rproblem%ctypeOfSolver .eq. DIRECT_SOLVER) then
       call linsol_initUMFPACK4 (p_rsolverNode)
@@ -831,9 +838,9 @@ contains
 
         ! Create an ILU(0) smoother
         if (rproblem%ctypeOfSmoother .eq. ILU_SMOOTHER) then
-          call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+          call linsol_initILU0(p_rsmoother)
         end if
-        print *, 'damp', rproblem%ddamp
+
         ! We will use nsmoothingSteps smoothing steps with damping parameter ddamp
         call linsol_convertToSmoother(p_rsmoother, rproblem%nsmoothingSteps, rproblem%ddamp)
         
@@ -849,13 +856,121 @@ contains
       !  0=F-cycle, 
       !  1=V-cycle, 
       !  2=W-cycle.
-      p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ncycle
+      p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
       
+    else if (rproblem%ctypeOfSolver .eq. CG_MG_SOLVER) then
+      p_RfilterChain => RfilterChain
+      call linsol_initMultigrid2 (p_rpreconditioner,rproblem%NLMAX-rproblem%NLMIN+1,p_RfilterChain)
+
+      ! Set up a coarse grid solver.
+      ! The coarse grid in multigrid is always grid 1!
+      call linsol_getMultigrid2Level (p_rpreconditioner,1,p_rlevelInfo)
+      call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+      
+      ! Now set up the other levels...
+      do i = rproblem%NLMIN+1, rproblem%NLMAX
+      
+        ! Create a Jacobi smoother
+        if (rproblem%ctypeOfSmoother .eq. J_SMOOTHER) then
+          call linsol_initJacobi(p_rsmoother)
+        end if
+
+        ! Create an ILU(0) smoother
+        if (rproblem%ctypeOfSmoother .eq. ILU_SMOOTHER) then
+          call linsol_initILU0(p_rsmoother)
+        end if
+
+        ! We will use nsmoothingSteps smoothing steps with damping parameter ddamp
+        call linsol_convertToSmoother(p_rsmoother, rproblem%nsmoothingSteps, rproblem%ddamp)
+        
+        ! And add this multi-grid level. We will use the same smoother
+        ! for pre- and post-smoothing.
+        call linsol_getMultigrid2Level (p_rpreconditioner,i-rproblem%NLMIN+1,p_rlevelInfo)
+        p_rlevelInfo%p_rpresmoother => p_rsmoother
+        p_rlevelInfo%p_rpostsmoother => p_rsmoother
+        
+      end do
+
+      ! INPUT PARAMETER: Cycle identifier. 
+      !  0=F-cycle, 
+      !  1=V-cycle, 
+      !  2=W-cycle.
+      p_rpreconditioner%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
+
+      ! Set the output level of the solver to 2 for some output
+      p_rpreconditioner%ioutputLevel = 1
+  
+      ! We will allow the solver to perform 1 iteration
+      p_rpreconditioner%nmaxIterations = 1
+  
+      p_rpreconditioner%depsRel = 1.0E-99_DP
+
+      call linsol_initCG (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+
+    else if (rproblem%ctypeOfSolver .eq. MG_CG_SOLVER .or. &
+             rproblem%ctypeOfSolver .eq. MG_BICG_SOLVER ) then
+      p_RfilterChain => RfilterChain
+      nullify(p_rpreconditioner)
+      ! Create a Multigrid-solver. Attach the above filter chain
+      ! to the solver, so that the solver automatically filters
+      ! the vector during the solution process.
+      call linsol_initMultigrid2 (p_rsolverNode,rproblem%NLMAX-rproblem%NLMIN+1,p_RfilterChain)
+
+      ! Set up a coarse grid solver.
+      ! The coarse grid in multigrid is always grid 1!
+      call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+      call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+      
+      ! Now set up the other levels...
+      do i = rproblem%NLMIN+1, rproblem%NLMAX
+      
+        ! Create a Jacobi smoother
+        if (rproblem%ctypeOfSmoother .eq. J_SMOOTHER) then
+          call linsol_initJacobi(p_rpreconditioner)
+        end if
+
+        ! Create an ILU(0) smoother
+        if (rproblem%ctypeOfSmoother .eq. ILU_SMOOTHER) then
+          call linsol_initILU0(p_rpreconditioner)
+        end if
+
+        ! Create Conjugate solver
+        if (rproblem%ctypeOfSolver .eq. MG_CG_SOLVER) then
+          call linsol_initCG (p_rsmoother,p_rpreconditioner,p_RfilterChain)
+        ! Create BiConjugate solver
+        else if (rproblem%ctypeOfSolver .eq. MG_BICG_SOLVER) then
+          call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,p_RfilterChain)
+        end if
+
+        ! We will use nsmoothingSteps smoothing steps with damping parameter ddamp
+        call linsol_convertToSmoother(p_rsmoother, rproblem%nsmoothingSteps, rproblem%ddamp)
+ 
+        ! And add this multi-grid level. We will use the same smoother
+        ! for pre- and post-smoothing.
+        call linsol_getMultigrid2Level (p_rsolverNode,i-rproblem%NLMIN+1,p_rlevelInfo)
+        p_rlevelInfo%p_rpresmoother => p_rsmoother
+        p_rlevelInfo%p_rpostsmoother => p_rsmoother
+
+        if (i .eq. rproblem%NLMAX) then
+          ! Set the output level of the solver to 1 for some output
+          p_rsmoother%ioutputLevel = 1
+        else
+          p_rsmoother%ioutputLevel = 0
+        end if
+        
+      end do 
+
+      ! INPUT PARAMETER: Cycle identifier. 
+      !  0=F-cycle, 
+      !  1=V-cycle, 
+      !  2=W-cycle.
+      p_rsolverNode%p_rsubnodeMultigrid2%icycle = rproblem%ccycle
+
     else
       print *, ' Invalid Input for Solver type'
     stop
     end if
-
+   
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
@@ -903,6 +1018,9 @@ contains
     ! we would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively (p_rsolverNode,rvector,rrhs,rtempBlock)
 
+    ! Rate of convergence
+    call output_line ('Rate of Convergence: ' // sys_sdEL(p_rsolverNode%dconvergenceRate,10) )
+
     ! Calculate sol.U1(x,y) & U2(x,y) on a point (x,y) and their
     ! derivatives U1_x(x,y), U1_y(x,y) & U2_x(x,y), U2_y(x,y)
     ! and absolute error , Strain, Stress , plain srain
@@ -943,7 +1061,7 @@ contains
       call output_line ('|devsigma|: ' // sys_sdEL(sqrt(devsigma11**2+devsigma22**2+ &
                      devsigma33**2+2.0_DP*devsigma12**2),10) )
       call output_line ('Abs-error for U: ' // sys_sdEL(sqrt((rproblem%refSolU1-U1)**2+ &
-                    (rproblem%refSolU2-U2)**2)/sqrt((rproblem%refSolU1-rproblem%refSolU2)**2),10) )
+                    (rproblem%refSolU2-U2)**2)/sqrt((rproblem%refSolU1)**2+(rproblem%refSolU2)**2),10) )
     end if
 
     ! Calculate the error to the reference function.

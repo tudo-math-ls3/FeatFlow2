@@ -10,8 +10,8 @@ mus="0.5"
 nus="0.3"
 
 # choose MG levels
+#mgs="02 03 04 05 06 07 08 09"
 mgs="02 03 04 05 06 07 08"
-#mgs="02 03"
 
 #-----------------------------
 
@@ -69,29 +69,46 @@ NLMIN = 2
 NLMAX = ${mg}
 
 # type of configuration (possible values: REAL, ANALYTICAL)
-ctypeOfSimulation = ANALYTICAL
-
-# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
-ctypeOfSolver = DIRECT_SOLVER
-
-# type of smoother (possible values: JACOBI, ILU)
-ctypeOfSmoother = JACOBI
+ctypeOfSimulation = REAL
 
 # set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
 cfuncID_u1 = 53
 cfuncID_u2 = 52
 
+# deformation(possible values: Y (YES), N (NO))
+Deformation = Y
+
+# calculate sol on a point(possible values: Y (YES), N (NO))
+inquirePoint = N
+
+# Points where sol will be calculated (only needed in case of inquirePoint .eq. Y)
+inquirePointX = 48.0
+inquirePointY = 60.0
+
+# Reference sol to calculate error (only needed in case of inquirePoint .eq. Y)
+refSolU1 = -20.648992
+refSolU2 = 27.642747
+
 # max number of iterations
-niterations = 10000
+niterations = 30000
+
+# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
+ctypeOfSolver = MG_SOLVER
+
+# type of smoother (possible values: JACOBI, ILU)
+ctypeOfSmoother = JACOBI
+
+# Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
+ccycle = 1
 
 # number of smoothing steps
-nsmoothingSteps = 2
+nsmoothingSteps = 1
 
 # damping parameter
 ddamp = 0.7
 
 # tolerance
-dtolerance = 1E-10_DP
+dtolerance = 1E-10
 
 # material parameters (Poisson ratio nu and shear modulus mu and damping damp)
 dnu = ${nu}
@@ -116,8 +133,8 @@ DrhsBoundx2(4) =
 
 DrhsBoundy1(4) = 
 0.0
+15.625
 0.0
--0.1
 0.0
 
 DrhsBoundy2(4) = 

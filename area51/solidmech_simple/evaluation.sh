@@ -49,11 +49,11 @@ grep "Number of DOF:" $* | awk '{print $(NF)}'
 echo "--------------------------------"
 
 echo "Iterations"
-grep "Iterations" $* | awk '{print $(NF)}'
+grep "Iterations " $* | awk '{print $(NF)}'
 echo "--------------------------------"
 
-echo "Rate of convergence"
-grep "Rate of convergence" $* | awk '{print $(NF)}'
+echo "Rate of Convergence"
+grep "Rate of Convergence" $* | awk '{print $(NF)}'
 echo "--------------------------------"
 
 grep "Solution diverging!" $*
