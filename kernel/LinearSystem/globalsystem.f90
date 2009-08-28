@@ -93,10 +93,14 @@ contains
     cdataTypeLocal = ST_DOUBLE
     cmatrixFormatLocal = LSYSSC_MATRIX9
     
-    if (.not. bstructure) cmatrixFormatLocal = &
-      rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat
-    if (.not. bcontent) cdataTypeLocal = &
-      rdestMatrix%RmatrixBlock(1,1)%cdataType
+    ! If the matrix has already data, try to fetch the data type/
+    ! matrix format from the existing matrix.
+    if (lsysbl_isSubmatrixPresent (rdestMatrix,1,1)) then
+      if (lsyssc_hasMatrixStructure(rdestMatrix%RmatrixBlock(1,1))) &
+          cmatrixFormatLocal = rdestMatrix%RmatrixBlock(1,1)%cmatrixFormat
+      if (lsyssc_hasMatrixContent(rdestMatrix%RmatrixBlock(1,1))) &
+          cdataTypeLocal = rdestMatrix%RmatrixBlock(1,1)%cdataType
+    end if
     
     if (present(cdataType)) cdataTypeLocal = cdataType
     if (present(cmatrixFormat)) cmatrixFormatLocal = cmatrixFormat

@@ -4965,6 +4965,9 @@ contains
 !<description>
   ! This routine checks if the submatrix at position (irow,icolumn)
   ! is present in the matrix rmatrix or not.
+  !
+  ! Note: If the rmatrix identifies an empty/uninitialised matrix, 
+  ! .false. is returned.
 !</description>
   
 !<input>
@@ -4995,6 +4998,11 @@ contains
       bscale = bignoreScaleFactor
     else
       bscale = .false.
+    end if
+    
+    if (.not. associated(rmatrix%RmatrixBlock)) then
+      bispresent = .false.
+      return
     end if
 
     bispresent = &
