@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 9
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
@@ -13,6 +13,7 @@ prmname = ./pre/zehnm.prm
 #prmname = ./pre/balken.prm
 #prmname = ./pre/zylinderusefein.prm
 #prmname = ./pre/threezylinderfein.prm
+#prmname = ./pre/tentimesone.prm
 
 # Name of the triangulation file
 #triname = ./pre/QUAD.tri
@@ -24,6 +25,7 @@ triname = ./pre/zehnm.tri
 #triname = ./pre/balken.tri
 #triname =./pre/zylinderusefein.tri
 #triname =./pre/threezylinderfein.tri
+#triname = ./pre/tentimesone.tri
 
 # What kind of finite elements do we use?
 # 0: linear conforming triangular FE, P1
@@ -36,10 +38,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.0025
 
 # Final time
-ttfinal = 1
+ttfinal = 0.1
 
 # Implicitness parameter
 theta = 0.5
@@ -79,7 +81,7 @@ boundarycorner = 1
 [METHOD]
 
 # What Method to use
-Method = 3
+Method = 6
 # 0: High Order Scheme (No Dissipation)
 # 1: Low Order Scheme (Scalar Dissipation)
 # 2: Low Order Scheme (Tensorial Dissipation)
@@ -90,14 +92,14 @@ Method = 3
 # 7: linearised FCT syncronized (Tensorial Dissipation)
 
 # What limiter to use for TVD?
-limiter = 4
+limiter = 2
 # 1: MinMod
 # 2: Van Leer
 # 3: MC
 # 4: Superbee
 
 # Apply prelimiting for FCT?
-prelimiting = 0
+prelimiting = 1
 # 0: no prelimiting
 # 1: apply simple prelimiting
 
@@ -117,14 +119,14 @@ gravconst = 9.81
 # Choose the startvalues for h, hu, hv
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = if(sqrt(x^2+y^2)<2.5,2.5,0.5)
+hstart  = if(x+y<0,2,1)
 hustart = 0
 hvstart = 0
 
 [OUTPUT]
 
 # Name of output file
-ofile = 
+ofile = ./gmv/u2d.gmv
 
 # Create files for video?
 # 0: No
