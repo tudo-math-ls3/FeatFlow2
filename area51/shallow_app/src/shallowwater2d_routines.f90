@@ -2150,19 +2150,16 @@ end if !dry or wet bed
        end do
 
        ! compute deltaQij = Qi - Qj
-       deltaQij = Qj - Qi
+       deltaQij = Qi - Qj
 
        ! Compute the Roe-meanvalue for this edge
        Qroeij = calculateQroe(Qi, Qj)
 
        ! Trafomatrix Tij
-       !invRij = buildInvTrafo(Qroeij,d,gravconst)
-       !Tij = Eye
+       Tij = Eye
 
        ! compute Tij*(Qj - Qi), the transformed solution differences
-       !deltaWij = -matmul(Tij,deltaQij)
-
-        deltaWij = deltaQij
+       deltaWij = matmul(Tij,-deltaQij)
 
        ! Compute the coeffitients for the jacobi matrices
        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
@@ -2195,8 +2192,7 @@ end if !dry or wet bed
        end do
 
        ! compute deltaFij (73)/(59) linearised fct
-       !deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
-       deltaFij = p_MCdata(ij)*(Udoti-Udotj)-matmul(Dij,deltaQij)
+       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
 
        ! compute deltaGij, the transformed antidiffusive fluxes
        !deltaGij = matmul(Tij,deltaFij)
@@ -2359,20 +2355,11 @@ end if !dry or wet bed
           end do
        END SELECT
 
-
-       ! get Roe-values at ij
-       !do ivar = 1, nvar2d
-       !    Qroeij(ivar) = p_fld2(1+2*(ivar-1),iedge)
-       !end do
-
-       ! Rij
-       !Rij = buildTrafo(Qroeij,d,gravconst)
-
        ! Get matrix to trafo back
-       !invTij = Eye
+       invTij = Eye
 
        ! Finally we can transform back to deltaFij
-       !deltaFij = matmul(invTij,deltaGij)
+       deltaFij = matmul(invTij,deltaGij)
 
        deltaFij = deltaGij
 
