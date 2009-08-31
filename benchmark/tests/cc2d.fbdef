@@ -835,3 +835,188 @@ mglevels = 5
 
 testid   = CC2D_245_6
 mglevels = 6
+
+#####
+#####
+#####
+
+##########
+# Test 250
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.04, Crank-Nicolson
+##########
+
+testid   = CC2D_250_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.04, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.5
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 32.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+BDR_PARPROFILEMAX = 1.5
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+SMOOTHER_DOMEGA = 0.9
+NONLINEAR_ITYPEPRECONDITIONING = 1
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_250_3
+mglevels = 3
+
+testid   = CC2D_250_4
+mglevels = 4
+
+testid   = CC2D_250_5
+mglevels = 5
+
+testid   = CC2D_250_6
+mglevels = 6
+
+
+##########
+# Test 251
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.02, Crank-Nicolson
+##########
+
+testid   = CC2D_251_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.02, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+
+testid   = CC2D_251_3
+mglevels = 3
+
+testid   = CC2D_251_4
+mglevels = 4
+
+testid   = CC2D_251_5
+mglevels = 5
+
+testid   = CC2D_251_6
+mglevels = 6
+
+
+##########
+# Test 252
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.01, Crank-Nicolson
+##########
+
+testid   = CC2D_252_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.01, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+testid   = CC2D_252_3
+mglevels = 3
+
+testid   = CC2D_252_4
+mglevels = 4
+
+testid   = CC2D_252_5
+mglevels = 5
+
+testid   = CC2D_252_6
+mglevels = 6
+
+
+##########
+# Test 253
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.005, Crank-Nicolson
+##########
+
+testid   = CC2D_253_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+
+testid   = CC2D_253_3
+mglevels = 3
+
+testid   = CC2D_253_4
+mglevels = 4
+
+testid   = CC2D_253_5
+mglevels = 5
+
+testid   = CC2D_253_6
+mglevels = 6
+
+##########
+# Test 254
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.0025, Crank-Nicolson
+##########
+
+testid   = CC2D_254_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.0025, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+
+testid   = CC2D_254_3
+mglevels = 3
+
+testid   = CC2D_254_4
+mglevels = 4
+
+testid   = CC2D_254_5
+mglevels = 5
+
+testid   = CC2D_254_6
+mglevels = 6
+
+##########
+# Test 255
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, SD(0.5)
+# 32 seconds with timestep 0.00125, Crank-Nicolson
+##########
+
+testid   = CC2D_255_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.00125, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+
+testid   = CC2D_255_3
+mglevels = 3
+
+testid   = CC2D_255_4
+mglevels = 4
+
+testid   = CC2D_255_5
+mglevels = 5
+
+testid   = CC2D_255_6
+mglevels = 6
