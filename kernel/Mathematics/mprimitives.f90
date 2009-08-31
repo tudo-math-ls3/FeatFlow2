@@ -2887,13 +2887,13 @@ contains
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2)
 
     case (3)
-      call mprim_invert3x3MatrixDirectDble(Da,Dsinv)
+      call mprim_invert3x3MatrixDirectDble(Ds,Dsinv)
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) + Dsinv(1,3)*Dftemp2(3)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) + Dsinv(2,3)*Dftemp2(3)
       Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) + Dsinv(3,3)*Dftemp2(3)
 
     case (4)
-      call mprim_invert4x4MatrixDirectDble(Da,Dsinv)
+      call mprim_invert4x4MatrixDirectDble(Ds,Dsinv)
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
@@ -2904,7 +2904,7 @@ contains
                   + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
     
     case (5)
-      call mprim_invert5x5MatrixDirectDble(Da,Dsinv)
+      call mprim_invert5x5MatrixDirectDble(Ds,Dsinv)
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
                   + Dsinv(1,5)*Dftemp2(5)
@@ -2922,7 +2922,7 @@ contains
                   + Dsinv(5,5)*Dftemp2(5)
 
     case (6)
-      call mprim_invert6x6MatrixDirectDble(Da,Dsinv)
+      call mprim_invert6x6MatrixDirectDble(Ds,Dsinv)
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
                   + Dsinv(1,5)*Dftemp2(5) + Dsinv(1,6)*Dftemp2(6)
@@ -2945,7 +2945,7 @@ contains
     case default
       ! Use LAPACK routine for general NxN system, where N > 6
       Ipiv=0
-      call DGESV(ndimC,1,Dsinv,ndimC,Ipiv,Dftemp2,ndimC,info)
+      call DGESV(ndimC,1,Ds,ndimC,Ipiv,Dftemp2,ndimC,info)
       Du(ndimA+1:ndimA+ndimC) = Dftemp2(1:ndimC)
       
     end select
