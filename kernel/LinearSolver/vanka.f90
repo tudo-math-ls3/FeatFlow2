@@ -176,6 +176,7 @@ module vanka
   use spatialdiscretisation
   use dofmapping
   use mprimitives
+  use quicksolver
   
   use vanka_navst2d
   use vanka_bouss2d
@@ -6772,7 +6773,7 @@ contains
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       !call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      call mprim_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC)
+      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC)
       
       ! Ok, we got the update vector in UU. Incorporate this now into our
       ! solution vector with the update formula

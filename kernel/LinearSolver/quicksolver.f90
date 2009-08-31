@@ -43,6 +43,14 @@
 !#         Supported Matrix types: Format-9 CSR
 !#         Working memory: none
 !#
+!# 20.) qsol_solveDiagSchurComp
+!#      -> Solves a 2x2 block system with diagonal diagonal blocks
+!#         using a Schur complement approach.
+!#
+!# 21.) qsol_solveTridiag
+!#      -> Solves a general tridiagonal systems with an extended Thomas
+!#         algorithm.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -52,6 +60,7 @@ module quicksolver
   use genoutput
   use linearalgebra
   use linearsystemscalar
+  use mprimitives
 
   implicit none
 
@@ -72,6 +81,9 @@ module quicksolver
   public :: qsol_precSSOR
   public :: qsol_precSSOR_lsyssc
   public :: qsol_precSSOR_double
+
+  public :: qsol_solveDiagSchurComp
+  public :: qsol_solveTridiag
 
 !<constants>
 
@@ -1210,4 +1222,422 @@ contains
 
   end subroutine
   
+  ! ************************************************************************
+
+!<subroutine>
+
+  pure subroutine qsol_solveDiagSchurComp (ndimA,ndimC,Du,Df,Da,Db,Dd,Dc)
+  
+!<description>
+  ! This routine applies a Schur Complement decomposition to a 2x2 saddle point
+  ! matrix where only entries on the diagonals of the diagonal blocks exist.
+  !
+  ! <!--
+  !
+  ! The system that is to be solved here is assumed to have the following shape:
+  !
+  !   (  A             +----------+  ) ( U ) = ( F )
+  !   (       ..       |    B     |  ) ( U )   ( F )
+  !   (             A  +----------+  ) ( U )   ( F )
+  !   (  +----------+  C             ) ( U )   ( F )
+  !   (  |    D     |       ..       ) ( U )   ( F )
+  !   (  +----------+             C  ) ( U )   ( F )
+  !
+  ! or in short:
+  !
+  !   ( A B ) = (U) = (F)
+  !   ( D C )   (U)   (F)
+  !
+  ! -->
+!</description>
+
+!<input>
+  ! Dimension of the A-matrix
+  integer, intent(in) :: ndimA
+  
+  ! Dimension of the C-matrix
+  integer, intent(in) :: ndimC
+
+  ! Submatrix A, only diagonal entries.
+  real(DP), dimension(*), intent(in) :: Da
+  
+  ! Entries in the submatrix B.
+  real(DP), dimension(ndimA,*), intent(in) :: Db
+
+  ! Entries in the submatrix D.
+  real(DP), dimension(ndimC,*), intent(in) :: Dd
+
+  ! Diagonal elements of the local system matrix C
+  real(DP), dimension(*), intent(in) :: Dc
+
+  ! Local RHS vector.
+  real(DP), dimension(*), intent(in) :: Df
+!</input>
+
+!<output>
+  ! SOlution vector.
+  real(DP), dimension(*), intent(out) :: Du
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,j,k,info
+    integer, dimension(ndimC) :: Ipiv
+    
+    ! A^-1
+    real(DP), dimension(ndimA) :: Dainv
+    
+    ! DA^-1, saved transposed for efficiency reasons
+    real(DP), dimension(ndimA,ndimC) :: Ddainv
+    
+    ! S and S^-1
+    real(DP), dimension(ndimC,ndimC) :: Ds, Dsinv
+    
+    ! Temporary RHS vector
+    real(DP), dimension(ndimA) :: Dftemp1
+    real(DP), dimension(ndimC) :: Dftemp2
+
+    interface 
+      pure subroutine DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
+      use fsystem
+      integer, intent(in) :: N,LDA,LDB,NRHS
+      integer, intent(inout) :: INFO
+      integer, dimension(*), intent(inout) :: IPIV
+      real(dp), dimension( LDA, * ), intent(inout) :: A
+      real(dp), dimension( LDB, * ), intent(inout) :: B
+      end subroutine
+    end interface
+
+    ! The system can be written as:
+    !   ( A  B ) = (u) = (f)
+    !   ( D  C )   (p)   (g)
+    
+    ! To solve with the Schur Complement, we have to solve in two steps.
+    !
+    ! 1.) Solve:  (C - D A^-1 B) p = g - D A^-1 f
+    !         <=>                p = (C - D A^-1 B)^-1 (g - D A^-1 f)
+    !         <=>                p = S^-1 (g - D A^-1 f)
+    !
+    ! 2.) Solve:               A u = f - B p
+    !         <=>                u = A^-1 (f - B p)
+    !
+    ! * Solving A^-1 is easy as A is a diagonal matrix.
+    ! * Solving S^-1 involves an inversion of a full matrix using LAPACK
+    !   or a direct inversion.
+    ! * D A^-1 can be easily computed by scaling D by A.
+    !
+    ! At first, compute A^-1 and copy f to Dftemp.
+    do i=1,ndimA
+      Dainv(i) = 1.0_DP/Da(i)
+    end do
+    
+    do i=1,ndimA
+      Dftemp1(i) = Df(i)
+    end do
+    
+    do i=1,ndimC
+      Dftemp2(i) = Df(ndimA+i)
+    end do
+
+    do i=1,ndimC
+      do j=1,ndimA
+        ! Compute D A^-1.
+        ! D A^-1 is saved transposed for efficiency reasons!
+        Ddainv(j,i) = Dd(i,j)*Dainv(j)
+
+        ! Compute (g - D A^-1 f)
+        Dftemp2(i) = Dftemp2(i) - Ddainv(j,i) * Df(j)
+      end do
+    end do
+    
+    ! Compute S = (C - D A^-1 B)
+    ! (Order of loops changed for efficiency reasons...)
+    
+    do j=1,ndimC
+      ! Compute (- (D A^-1) B)
+      do i=1,ndimC
+        Ds(i,j) = 0.0_DP
+        do k=1,ndimA
+          Ds(i,j) = Ds(i,j) - Ddainv(k,i) * Db(k,j)
+        end do
+      end do
+    
+      ! Add C; consists only of the diagonal.
+      Ds(j,j) = Ds(j,j) + Dc(j)
+    end do
+    
+    ! Invert S and compute p.
+    !
+    ! call mprim_invertMatrixDble(Ds, &
+    !     Dftemp2,Du(ndimA+1:ndimA+ndimC),ndimC,2)
+
+    select case(ndimC)
+    case (1)
+      Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
+      
+    case (2)
+      call mprim_invert2x2MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2)
+
+    case (3)
+      call mprim_invert3x3MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) + Dsinv(1,3)*Dftemp2(3)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) + Dsinv(2,3)*Dftemp2(3)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) + Dsinv(3,3)*Dftemp2(3)
+
+    case (4)
+      call mprim_invert4x4MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
+    
+    case (5)
+      call mprim_invert5x5MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
+                  + Dsinv(1,5)*Dftemp2(5)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4) &
+                  + Dsinv(2,5)*Dftemp2(5)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4) &
+                  + Dsinv(3,5)*Dftemp2(5)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4) &
+                  + Dsinv(4,5)*Dftemp2(5)
+      Du(ndimA+5) = Dsinv(5,1)*Dftemp2(1) + Dsinv(5,2)*Dftemp2(2) &
+                  + Dsinv(5,3)*Dftemp2(3) + Dsinv(5,4)*Dftemp2(4) &
+                  + Dsinv(5,5)*Dftemp2(5)
+
+    case (6)
+      call mprim_invert6x6MatrixDirectDble(Ds,Dsinv)
+      Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
+                  + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
+                  + Dsinv(1,5)*Dftemp2(5) + Dsinv(1,6)*Dftemp2(6)
+      Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
+                  + Dsinv(2,3)*Dftemp2(3) + Dsinv(2,4)*Dftemp2(4) &
+                  + Dsinv(2,5)*Dftemp2(5) + Dsinv(2,6)*Dftemp2(6)
+      Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) &
+                  + Dsinv(3,3)*Dftemp2(3) + Dsinv(3,4)*Dftemp2(4) &
+                  + Dsinv(3,5)*Dftemp2(5) + Dsinv(3,6)*Dftemp2(6)
+      Du(ndimA+4) = Dsinv(4,1)*Dftemp2(1) + Dsinv(4,2)*Dftemp2(2) &
+                  + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4) &
+                  + Dsinv(4,5)*Dftemp2(5) + Dsinv(4,6)*Dftemp2(6)
+      Du(ndimA+5) = Dsinv(5,1)*Dftemp2(1) + Dsinv(5,2)*Dftemp2(2) &
+                  + Dsinv(5,3)*Dftemp2(3) + Dsinv(5,4)*Dftemp2(4) &
+                  + Dsinv(5,5)*Dftemp2(5) + Dsinv(5,6)*Dftemp2(6)
+      Du(ndimA+6) = Dsinv(6,1)*Dftemp2(1) + Dsinv(6,2)*Dftemp2(2) &
+                  + Dsinv(6,3)*Dftemp2(3) + Dsinv(6,4)*Dftemp2(4) &
+                  + Dsinv(6,5)*Dftemp2(5) + Dsinv(6,6)*Dftemp2(6)
+
+    case default
+      ! Use LAPACK routine for general NxN system, where N > 6
+      Ipiv=0
+      call DGESV(ndimC,1,Ds,ndimC,Ipiv,Dftemp2,ndimC,info)
+      Du(ndimA+1:ndimA+ndimC) = Dftemp2(1:ndimC)
+      
+    end select
+    
+    ! Calculate u = A^-1 (f - B p)
+    do i=1,ndimA
+      do j=1,ndimC
+        Dftemp1(i) = Dftemp1(i) - Db(i,j) * Du(ndimA+j)
+      end do
+      Du(i) = Dainv(i) * Dftemp1(i)
+    end do
+    
+    ! That's it.
+
+  end subroutine
+
+  ! ************************************************************************
+
+!<subroutine>
+
+  pure subroutine qsol_solveTridiag (neq,iidxoffdiag,Dvec,Da,Db,Dd,Dbtemp)
+  
+!<description>
+  ! This routine applies a modified Thomas algorithm to solve
+  ! a tridiagonal system specified as a set of diagonals.
+  ! The algorithm support not only 'simple' tridiagonal
+  ! systems (with the offdiagonals directly above/below the diagonal)
+  ! but also systems with the offdiagonals with some rows/columns
+  ! distance from the diagonal.
+  !
+  ! <!--
+  !
+  ! The system that is to be solved here is assumed to have the following shape:
+  !
+  !   (  A      B         ) ( U ) = ( F )
+  !   (     ..     ..     ) ( U )   ( F )
+  !   (  D      A      B  ) ( U )   ( F )
+  !   (     ..     ..     ) ( U )   ( F )
+  !   (         D      A  ) ( U )   ( F )
+  !
+  ! The basic algorithm used here can be found e.g. at
+  !   [ http://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm ]
+  !
+  ! -->
+!</description>
+
+!<input>
+  ! Dimension of the matrix
+  integer, intent(in) :: neq
+  
+  ! Index of the offdiagonal B/D matrix, i.e. the difference in the row/column
+  ! number between the start of A and B/D. E.g.: An index of 1 indicates a
+  ! trisiagonal matrix with B/D being the 1st offdiagonal. An index of 0 is
+  ! not allowed as this would result in a diagonal matrix with vanishing B/D.
+  integer, intent(in) :: iidxoffdiag
+
+  ! Entries in the diagonal A.
+  ! real(DP), dimension(neq), intent(inout) :: Da
+  real(DP), dimension(:), intent(inout) :: Da
+  
+  ! Entries in the diagonal B.
+  ! real(DP), dimension(neq-iidxoffdiag), intent(inout) :: Db
+  real(DP), dimension(:), intent(inout) :: Db
+
+  ! Entries in the diagonal D.
+  ! real(DP), dimension(neq-iidxoffdiag), intent(inout) :: Dd
+  real(DP), dimension(:), intent(inout) :: Dd
+!</input>
+
+!<inputoutput>
+  ! Temporary vector of size 2*neq.
+  ! real(DP), dimension(2*neq), intent(inout) :: Dbtemp
+  real(DP), dimension(:), intent(inout) :: Dbtemp
+
+  ! On Entry: RHS vector.
+  ! On exit: Solution vector.
+  ! real(DP), dimension(neq), intent(out) :: Dvec
+  real(DP), dimension(:), intent(out) :: Dvec
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    real(DP) :: dx
+    
+    ! Forward sweep. Modify the coefficients to factorise the matrix.
+    !
+    ! We have e.g.
+    !
+    !  ( a1          b1             | f1 )    ( a1                  b1     | f1 )
+    !  (     a2          b2         | f2 )    (     a2                  b2 | f2 )
+    !  (         a3          b3     | f3 )    (         a3                 | f3 )
+    !  ( d1          a4          b4 | f4 ) or (             a4             | f4 )
+    !  (     d2          a5         | f5 )    (                 a5         | f5 )
+    !  (         d3          a6     | f6 )    ( d1                  a6     | f6 )
+    !  (             d4          a7 | f7 )    (     d2                  a7 | f7 )
+    !
+    ! a) Divide down the B-matrix.
+    do i=1,min(iidxoffdiag,neq-iidxoffdiag)
+      Dbtemp(i) = Db(i) / Da(i)
+      Dbtemp(neq+i) = Dvec(i) / Da(i)
+    end do
+    
+    ! Now we have in the first rows:
+    !
+    !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
+    !  (     1           c2         | g2 )    (     1                   c2 | g2 )
+    !  (         1           c3     | g3 )    (         a3                 | f3 )
+    !  ( d1          a4          b4 | f4 ) or (             a4             | f4 )
+    !  (     d2          a5         | f5 )    (                 a5         | f5 )
+    !  (         d3          a6     | f6 )    ( d1                  a6     | f6 )
+    !  (             d4          a7 | f7 )    (     d2                  a7 | f7 )
+
+    ! There may be some entries left that are not touched by the offdiagonal.
+    do i=min(iidxoffdiag,neq-iidxoffdiag)+1,iidxoffdiag
+      Dbtemp(neq+i) = Dvec(i) / Da(i)
+    end do
+    
+    ! leading to:
+    !
+    !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
+    !  (     1           c2         | g2 )    (     1                   c2 | g2 )
+    !  (         1           c3     | g3 )    (         1                  | g3 )
+    !  ( d1          a4          b4 | f4 ) or (             1              | g4 )
+    !  (     d2          a5         | f5 )    (                 1          | g5 )
+    !  (         d3          a6     | f6 )    ( d1                  a6     | f6 )
+    !  (             d4          a7 | f7 )    (     d2                  a7 | f7 )
+    !
+    ! b) Factorise the B matrix and eliminate D.
+    do i = iidxoffdiag+1,neq-iidxoffdiag
+      ! Calc redundant factor
+      dx = Da(i) - Dd(i-iidxoffdiag) * Dbtemp(i-iidxoffdiag)
+      
+      ! Factorise B, result is written to Dbtemp(1..neq-iidxoffdiag)
+      Dbtemp(i) = Db(i) / dx
+      
+      ! Modify the RHS appropriately. Result is written to
+      ! Dbtemp(neq+1..2*neq)
+      Dbtemp(neq+i) = &
+          (Dvec(i) - Dd(i-iidxoffdiag) * Dbtemp(neq+i-iidxoffdiag)) / dx
+    end do
+    
+    ! So we have:
+    !
+    !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
+    !  (     1           c2         | g2 )    (     1                   c2 | g2 )
+    !  (         1           c3     | g3 )    (         1                  | g3 )
+    !  ( 0           1           c4 | g4 ) or (             1              | g4 )
+    !  (     d2          a5         | f5 )    (                 1          | g5 )
+    !  (         d3          a6     | f6 )    ( 0                   1      | g6 )
+    !  (             d4          a7 | f7 )    (     0                   1  | g7 )
+    !
+    ! We have to continue the modification of the RHS for the remaining
+    ! entries of D.
+    do i = max(iidxoffdiag,neq-iidxoffdiag)+1,neq
+      ! Calc redundant factor
+      dx = Da(i) - Dd(i-iidxoffdiag) * Dbtemp(i-iidxoffdiag)
+      
+      ! Modify the RHS appropriately. Result is written to
+      ! Dbtemp(neq+1..2*neq)
+      Dbtemp(neq+i) = &
+          (Dvec(i) - Dd(i-iidxoffdiag) * Dbtemp(neq+i-iidxoffdiag)) / dx
+    end do
+    
+    ! So the matrix we have now is:
+    !
+    !  ( 1           c1             | g1 )    ( 1                   c1     | g1 )
+    !  (     1           c2         | g2 )    (     1                   c2 | g2 )
+    !  (         1           c3     | g3 )    (         1                  | g3 )
+    !  ( 0           1           c4 | g4 ) or (             1              | g4 )
+    !  (     0           1          | g5 )    (                 1          | g5 )
+    !  (         0           1      | g6 )    ( 0                   1      | g6 )
+    !  (             0           1  | g7 )    (     0                   1  | g7 )
+
+    ! c) Back substitution to canculate the solution.
+    ! At first take those elements of the factorised RHS which are
+    ! already computed.
+    do i=neq-iidxoffdiag+1,neq
+      Dvec(i) = Dbtemp(neq+i)
+    end do
+
+    ! That means on the example:
+    !
+    !  ( 1           c1             | g1      )    ( 1                   c1     | g1      )
+    !  (     1           c2         | g2      )    (     1                   c2 | g2      )
+    !  (         1           c3     | g3      )    (         1                  | g3 = x3 )
+    !  ( 0           1           c4 | g4      ) or (             1              | g4 = x4 )
+    !  (     0           1          | g5 = x5 )    (                 1          | g5 = x5 )
+    !  (         0           1      | g6 = x6 )    ( 0                   1      | g6 = x6 )
+    !  (             0           1  | g7 = x7 )    (     0                   1  | g7 = x7 )
+    
+    ! Now do the back-substitution for the remaining entries.
+    do i = neq-iidxoffdiag,1,-1
+      Dvec(i) = Dbtemp(neq+i) - Dbtemp(i)*Dvec(i+iidxoffdiag)
+    end do
+
+  end subroutine
+
 end module
