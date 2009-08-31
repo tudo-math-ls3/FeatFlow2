@@ -6389,7 +6389,7 @@ contains
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
-    real(DP), dimension(nnld) :: AA
+    real(DP), dimension(2*nnvel) :: AA
     real(DP), dimension(nnpressure,2*nnvel) :: DD
     real(DP), dimension(2*nnvel,nnpressure) :: BB
     real(DP), dimension(nnpressure) :: CC
