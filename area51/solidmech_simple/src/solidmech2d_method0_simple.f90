@@ -974,6 +974,9 @@ contains
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
 
+    ! set last 3 residuals for asymptotic rate of convergence
+    p_rsolverNode%niteAsymptoticCVR = 3
+
     ! We will allow the solver to perform 200 iterations
     p_rsolverNode%nmaxIterations = rproblem%niterations
 
@@ -1020,6 +1023,10 @@ contains
 
     ! Rate of convergence
     call output_line ('Rate of Convergence: ' // sys_sdEL(p_rsolverNode%dconvergenceRate,10) )
+
+    ! Rate of asymptotic convergence
+    call output_line ('Rate of Asymptotic Convergence: ' // &
+                      sys_sdEL(p_rsolverNode%dasymptoticConvergenceRate,10) )
 
     ! Calculate sol.U1(x,y) & U2(x,y) on a point (x,y) and their
     ! derivatives U1_x(x,y), U1_y(x,y) & U2_x(x,y), U2_y(x,y)

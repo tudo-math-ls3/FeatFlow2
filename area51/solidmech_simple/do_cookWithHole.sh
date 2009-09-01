@@ -4,14 +4,14 @@
 grid="cookWithHole"
 
 # choose shear modulus
-mus="0.5"
+mus="80.194"
 
 # choose Poisson ratio
 nus="0.3"
 
 # choose MG levels
-#mgs="02 03 04 05 06 07 08 09"
-mgs="02 03 04 05 06 07 08"
+mgs="03 04 05 06 07 08 09"
+#mgs="02 03 04 05 06 07 08"
 
 #-----------------------------
 
@@ -29,6 +29,9 @@ for nu in ${nus}; do
 # loop over all MG levels
 for mg in ${mgs}; do
 
+#nlmin=2
+nlmin=$(expr ${mg} - 1)
+
 # create the temporary dat file
 cat > dat/${datFile}.dat <<END_OF_DATA
 # PRM-file of the domain
@@ -38,7 +41,7 @@ sgridFilePRM = './pre/${grid}.prm'
 sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
-selementType = Q2
+selementType = Q1
 
 # boundaries
 nboundaries= 2
@@ -63,7 +66,7 @@ N
 N
 
 # Minimum level of the discretisation
-NLMIN = 2
+NLMIN = ${nlmin}
 
 # Maximum level of the discretisation
 NLMAX = ${mg}
@@ -90,7 +93,7 @@ refSolU1 = -20.648992
 refSolU2 = 27.642747
 
 # max number of iterations
-niterations = 30000
+niterations = 1000
 
 # type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
 ctypeOfSolver = MG_SOLVER
@@ -102,10 +105,10 @@ ctypeOfSmoother = JACOBI
 ccycle = 1
 
 # number of smoothing steps
-nsmoothingSteps = 1
+nsmoothingSteps = 128
 
 # damping parameter
-ddamp = 0.7
+ddamp = 0.45
 
 # tolerance
 dtolerance = 1E-10
@@ -113,7 +116,6 @@ dtolerance = 1E-10
 # material parameters (Poisson ratio nu and shear modulus mu and damping damp)
 dnu = ${nu}
 dmu = ${mu}
-ddamp = 0.7
 
 # set constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
 drhsVol1   = 0

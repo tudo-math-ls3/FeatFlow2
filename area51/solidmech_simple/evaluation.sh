@@ -56,6 +56,10 @@ echo "Rate of Convergence"
 grep "Rate of Convergence" $* | awk '{print $(NF)}'
 echo "--------------------------------"
 
+echo "Rate of Asymptotic Convergence"
+grep "Rate of Asymptotic Convergence:" $* | awk '{print $(NF)}'
+echo "--------------------------------"
+
 grep "Solution diverging!" $*
 echo "--------------------------------"
 

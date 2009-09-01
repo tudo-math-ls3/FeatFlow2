@@ -7,11 +7,11 @@ grid="cook"
 mus="80.194"
 
 # choose Poisson ratio
-nus="0.3"
+nus="0.499"
 
 # choose MG levels
-mgs="02 03 04 05 06 07 08 09 10"
-#mgs="02 03 04 05 06 07 08 09"
+#mgs="02 03 04 05 06 07 08 09 10"
+mgs="02 03 04 05 06 07 08 09"
 
 #-----------------------------
 
@@ -38,7 +38,7 @@ sgridFilePRM = './pre/${grid}.prm'
 sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
-selementType = Q1
+selementType = Q2
 
 # boundaries
 nboundaries= 1
