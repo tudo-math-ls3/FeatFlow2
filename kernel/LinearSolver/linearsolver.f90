@@ -1019,6 +1019,18 @@ module linearsolver
     
 !</constantblock>
 
+! *****************************************************************************
+
+!<constantblock description="Private constants">
+
+  ! Length of the residual queue in iterative solvers.
+  ! This defines how many residuals are saved and can be used for
+  ! output, e.g. for the asymptotic convergence rate and for printing
+  ! the residual queue in case of errors.
+  integer, parameter :: LINSOL_NRESQUEUELENGTH                 = 32
+  
+!</constantblock>
+
 !</constants>
 
 ! *****************************************************************************
@@ -3757,7 +3769,7 @@ contains
   real(DP) :: domega
 
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -3794,8 +3806,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -3905,11 +3916,8 @@ contains
         dfr = lsysbl_vectorNorm (p_rdef,rsolverNode%iresNorm)
      
         ! Shift the queue with the last residuals and add the new
-        ! residual to it. Check length of ireslength to be larger than
-        ! 0 as some compilers might produce Floating exceptions
-        ! otherwise! (stupid pgf95)
-        if (ireslength .gt. 0) &
-          dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dfr)
+        ! residual to it. 
+        Dresqueue = eoshift(Dresqueue,1,dres)
 
         rsolverNode%dfinalDefect = dfr
 
@@ -3984,10 +3992,11 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if (niteAsymptoticCVR .ne. 0) then
-        I = max(33-ite,33-niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
+          (rsolverNode%dfinalDefect / &
+            dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
       end if
 
       ! If the initial defect was zero, the solver immediately
@@ -8364,7 +8373,7 @@ contains
   integer :: ireslength,ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -8403,8 +8412,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -8571,11 +8579,8 @@ contains
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
      
         ! Shift the queue with the last residuals and add the new
-        ! residual to it. Check length of ireslength to be larger than
-        ! 0 as some compilers might produce Floating exceptions
-        ! otherwise! (stupid pgf95)
-        if (ireslength .gt. 0) &
-          dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dfr)
+        ! residual to it. 
+        Dresqueue = eoshift(Dresqueue,1,dres)
 
         rsolverNode%dfinalDefect = dfr
 
@@ -8692,10 +8697,11 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if (niteAsymptoticCVR .ne. 0) then
-        I = max(33-ite,33-niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
+          (rsolverNode%dfinalDefect / &
+            dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
       end if
 
       ! If the initial defect was zero, the solver immediately
@@ -9262,7 +9268,7 @@ contains
   integer :: ireslength,ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -9301,8 +9307,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -9493,11 +9498,8 @@ contains
         dfr = lsysbl_vectorNorm (p_DR,rsolverNode%iresNorm)
      
         ! Shift the queue with the last residuals and add the new
-        ! residual to it. Check length of ireslength to be larger than
-        ! 0 as some compilers might produce Floating exceptions
-        ! otherwise! (stupid pgf95)
-        if (ireslength .gt. 0) &
-          dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dfr)
+        ! residual to it. 
+        Dresqueue = eoshift(Dresqueue,1,dres)
 
         rsolverNode%dfinalDefect = dfr
 
@@ -9573,10 +9575,11 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if (niteAsymptoticCVR .ne. 0) then
-        I = max(33-ite,33-niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
+          (rsolverNode%dfinalDefect / &
+            dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
       end if
 
       ! If the initial defect was zero, the solver immediately
@@ -10259,7 +10262,7 @@ contains
   real(DP), dimension(:,:), pointer :: p_Dh
 
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -10301,8 +10304,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -10639,11 +10641,8 @@ contains
         ! Test for convergence, divergence and write some output now
         
         ! Shift the queue with the last residuals and add the new
-        ! residual to it. Check length of ireslength to be larger than
-        ! 0 as some compilers might produce Floating exceptions
-        ! otherwise! (stupid pgf95)
-        if (ireslength .gt. 0) &
-          dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dfr)
+        ! residual to it. 
+        Dresqueue = eoshift(Dresqueue,1,dres)
 
         rsolverNode%dfinalDefect = dfr
 
@@ -10731,10 +10730,11 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if (niteAsymptoticCVR .ne. 0) then
-        I = max(33-ite,33-niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
+          (rsolverNode%dfinalDefect / &
+            dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
       end if
 
       ! If the initial defect was zero, the solver immediately
@@ -13207,7 +13207,7 @@ contains
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix on the current level
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -13256,8 +13256,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum/maximum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -13860,11 +13859,8 @@ contains
                     (dres .le. 1E99_DP))) dres = 0.0_DP
           
           ! Shift the queue with the last residuals and add the new
-          ! residual to it. Check length of ireslength to be larger than
-          ! 0 as some compilers might produce Floating exceptions
-          ! otherwise! (stupid pgf95)
-          if (ireslength .gt. 0) &
-            dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dres)
+          ! residual to it. 
+          Dresqueue = eoshift(Dresqueue,1,dres)
 
           rsolverNode%dfinalDefect = dres
           
@@ -13942,11 +13938,12 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-      if (niteAsymptoticCVR .ne. 0) then
-        I = max(33-ite,33-niteAsymptoticCVR)
-        rsolverNode%dasymptoticConvergenceRate = &
-          (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
-      end if
+        if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+          I = min(ite,niteAsymptoticCVR)
+          rsolverNode%dasymptoticConvergenceRate = &
+            (rsolverNode%dfinalDefect / &
+              dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
+        end if
 
         ! If the initial defect was zero, the solver immediately
         ! exits - and so the final residuum is zero and we performed
@@ -15306,7 +15303,7 @@ contains
   type(t_filterChain), dimension(:), pointer :: p_RfilterChain
   
   ! The queue saves the current residual and the two previous residuals.
-  real(DP), dimension(32) :: Dresqueue
+  real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
   
   ! The system matrix on the current level
   type(t_matrixBlock), pointer :: p_rmatrix
@@ -15356,8 +15353,7 @@ contains
 
     ! Length of the queue of last residuals for the computation of
     ! the asymptotic convergence rate
-    ireslength = 32 !MAX(0,MIN(32,rsolverNode%niteAsymptoticCVR))
-    niteAsymptoticCVR = max(0,min(32,rsolverNode%niteAsymptoticCVR))
+    niteAsymptoticCVR = max(0,min(LINSOL_NRESQUEUELENGTH-1,rsolverNode%niteAsymptoticCVR))
 
     ! Minimum/maximum number of iterations
     nminIterations = max(rsolverNode%nminIterations,0)
@@ -15960,11 +15956,8 @@ contains
                     (dres .le. 1E99_DP))) dres = 0.0_DP
           
           ! Shift the queue with the last residuals and add the new
-          ! residual to it. Check length of ireslength to be larger than
-          ! 0 as some compilers might produce Floating exceptions
-          ! otherwise! (stupid pgf95)
-          if (ireslength .gt. 0) &
-            dresqueue(1:ireslength) = eoshift(dresqueue(1:ireslength),1,dres)
+          ! residual to it. 
+          Dresqueue = eoshift(Dresqueue,1,dres)
 
           rsolverNode%dfinalDefect = dres
           
@@ -16045,10 +16038,11 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-        if (niteAsymptoticCVR .ne. 0) then
-          I = max(33-ite,33-niteAsymptoticCVR)
+        if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+          I = min(ite,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
-            (rsolverNode%dfinalDefect / dresqueue(1))**(1.0_DP/real(33-I,DP))
+            (rsolverNode%dfinalDefect / &
+              dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
         end if
 
         ! If the initial defect was zero, the solver immediately
