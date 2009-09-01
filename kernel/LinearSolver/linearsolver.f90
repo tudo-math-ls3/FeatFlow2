@@ -3992,7 +3992,7 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
         I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
@@ -8697,7 +8697,7 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
         I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
@@ -9575,7 +9575,7 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
         I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
@@ -10730,7 +10730,7 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
         I = min(ite,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
@@ -13938,7 +13938,7 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-        if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
           I = min(ite,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
@@ -16038,7 +16038,7 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-        if ((niteAsymptoticCVR .ge. 0) .and. (ite .ge. 0)) then
+        if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
           I = min(ite,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
