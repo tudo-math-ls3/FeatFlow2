@@ -71,6 +71,15 @@
 !# 19.) mprim_radToDeg
 !#      -> Converts RAD to DEG
 !#
+!# 20.) mprim_solve2x2DirectDble
+!#      -> Solves a 2x2 matrix directly without pivoting.
+!#
+!# 21.) mprim_solve3x3DirectDble
+!#      -> Solves a 3x3 matrix directly without pivoting.
+!#
+!# 22.) mprim_solve2x2BandDiag
+!#      -> Solves a 2x2 block system containing only diagonal bands
+!#
 !# </purpose>
 !##############################################################################
 
@@ -133,6 +142,9 @@ module mprimitives
   public :: mprim_meanDeviation,mprim_meanDeviationDble
   public :: mprim_meanValue,mprim_meanValueDble
   public :: mprim_degToRad,mprim_radToDeg
+  public :: mprim_solve2x2DirectDble
+  public :: mprim_solve3x3DirectDble
+  public :: mprim_solve2x2BandDiag
 
 contains
 
@@ -2721,5 +2733,198 @@ contains
     d = r * (180._DP / SYS_PI)
 
   end function mprim_radToDeg
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solve2x2DirectDble(Da,Db)
+
+!<description>
+  ! This subroutine directly solves a 2x2 system without any pivoting.
+  ! 'Da' is a 2x2 matrix, Db a 2-tupel with the right hand
+  ! side which is replaced by the solution.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Da and Db are assumed to be 2x2 arrays!
+!</description>
+
+!<input>
+  ! Matrix A.
+  real(DP), dimension(2,2), intent(in) :: Da
+!</input>
+
+!<inputoutput>
+  ! On entry: RHS vector b.
+  ! On exit: Solution x with Ax=b.
+  real(DP), dimension(2), intent(out) :: Db
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ddet,x1,x2
+    
+    ! Explicit formula for 2x2 systems, computed with Maple.
+    ddet = 1.0_DP / (Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1))
+    x1 = Db(1)
+    x2 = Db(2)
+    Db(1) = -(Da(1,2)*x2 - Da(2,2)*x1) * ddet
+    Db(2) =  (Da(1,1)*x2 - Da(2,1)*x1) * ddet
+    
+  end subroutine 
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solve3x3DirectDble(Da,Db)
+
+!<description>
+  ! This subroutine directly solves a 3x3 system without any pivoting.
+  ! 'Da' is a 3x3 matrix, Db a 3-tupel with the right hand
+  ! side which is replaced by the solution.
+  !
+  ! Warning: For speed reasons, there is no array bounds checking
+  ! activated in this routine! Da and Db are assumed to be 2x2 arrays!
+!</description>
+
+!<input>
+  ! Matrix A.
+  real(DP), dimension(3,3), intent(in) :: Da
+!</input>
+
+!<inputoutput>
+  ! On entry: RHS vector b.
+  ! On exit: Solution x with Ax=b.
+  real(DP), dimension(3), intent(inout) :: Db
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ddet,x1,x2,x3
+    
+    ! Explicit formula for 3x3 systems, computed with Maple.
+    ddet = 1.0_DP / &
+        (Da(1,1)*Da(2,2)*Da(3,3) &
+        -Da(1,1)*Da(3,2)*Da(2,3) &
+        -Da(2,1)*Da(1,2)*Da(3,3) &
+        +Da(3,2)*Da(2,1)*Da(1,3) &
+        -Da(2,2)*Da(3,1)*Da(1,3) &
+        +Da(3,1)*Da(1,2)*Da(2,3))
+    x1 = Db(1)
+    x2 = Db(2)
+    x3 = Db(3)
+    Db(1) = ddet * &
+        (Da(1,2)*Da(2,3)*x3 &
+        -Da(1,2)*x2*Da(3,3) &
+        +Da(1,3)*Da(3,2)*x2 &
+        -Da(1,3)*Da(2,2)*x3 &
+        +x1*Da(2,2)*Da(3,3) &
+        -x1*Da(3,2)*Da(2,3))
+    Db(2) = - ddet * &
+        (Da(1,1)*Da(2,3)*x3 &
+        -Da(1,1)*x2*Da(3,3) &
+        -Da(2,1)*Da(1,3)*x3 &
+        -Da(2,3)*Da(3,1)*x1 &
+        +x2*Da(3,1)*Da(1,3) &
+        +Da(2,1)*x1*Da(3,3)) 
+    Db(3) = ddet * &
+        (Da(3,2)*Da(2,1)*x1 &
+        -Da(1,1)*Da(3,2)*x2 &
+        +Da(1,1)*Da(2,2)*x3 &
+        -Da(2,2)*Da(3,1)*x1 &
+        -Da(2,1)*Da(1,2)*x3 &
+        +Da(3,1)*Da(1,2)*x2) 
+    
+  end subroutine 
+
+  ! ************************************************************************
+
+!<subroutine>
+
+  pure subroutine mprim_solve2x2BandDiag (neqA,Da,Db,Dd,Dc,Dvec1,Dvec2)
+  
+!<description>
+  ! This routine solves to a 2x2 block matrix with all blocks consisting 
+  ! of only diagonal bands.
+  !
+  ! <!--
+  !
+  ! The system that is to be solved here is assumed to have the following shape:
+  !
+  !   (  A             B             ) ( U1 ) = ( F1 )
+  !   (       ..            ..       ) ( U1 )   ( F1 )
+  !   (             A             B  ) ( U1 )   ( F1 )
+  !   (  D             C             ) ( U2 )   ( F2 )
+  !   (       ..            ..       ) ( U2 )   ( F2 )
+  !   (             D             C  ) ( U2 )   ( F2 )
+  !
+  ! or in short:
+  !
+  !   ( A B ) = (U) = (F)
+  !   ( D C )   (U)   (F)
+  !
+  ! with all matrices diagonal matrices.
+  !
+  ! -->
+!</description>
+
+!<input>
+  ! Dimension of the matrix blocks
+  integer, intent(in) :: neqA
+  
+  ! Submatrix A, only diagonal entries.
+  real(DP), dimension(*), intent(in) :: Da
+  
+  ! Diagonal entries in the submatrix B.
+  real(DP), dimension(*), intent(in) :: Db
+
+  ! Diagonal entries in the submatrix D.
+  real(DP), dimension(*), intent(in) :: Dd
+
+  ! Diagonal elements of the local system matrix C
+  real(DP), dimension(*), intent(in) :: Dc
+!</input>
+
+!<inputoutput>
+  ! On entry: Right hand side F1.
+  ! On exit: Solution vector U1.
+  real(DP), dimension(*), intent(inout) :: Dvec1
+  
+  ! On entry: Right hand side F2.
+  ! On exit: Solution vector U2.
+  real(DP), dimension(*), intent(inout) :: Dvec2
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    real(DP) :: ddet,a11,a12,a21,a22,x1,x2
+    
+    ! Such a system can be solved by reducing it to neqA*neqA 2x2 systems
+    ! as there is only minimal coupling present between the entries.
+    !
+    ! Loop over the entries of the A matrix.
+    do i=1,neqA
+    
+      ! Fetch a 2x2 system from the big matrix
+      a11 = Da(i)
+      a21 = Dd(i)
+      a12 = Db(i)
+      a22 = Dc(i)
+      x1 = Dvec1(i)
+      x2 = Dvec2(i)
+      
+      ! Solve the system, overwrite the input vector.
+      ddet = 1.0_DP / (a11*a22 - a12*a21)
+      Dvec1(i) = -(a12*x2 - a22*x1) * ddet
+      Dvec2(i) =  (a11*x2 - a21*x1) * ddet
+      
+    end do
+
+  end subroutine
 
 end module mprimitives
