@@ -45,6 +45,9 @@
 !#
 !# 10.) nsets_getElements
 !#      -> Creates a list of all elements in the set.
+!#
+!# 11.) nsets_putElements
+!#      -> Puts elements from a list into the set.
 !# </purpose>
 !##############################################################################
 
@@ -496,6 +499,48 @@ contains
     if (present(nelementsInList)) &
       nelementsInList = ncount
     
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+  subroutine nsets_putElements (rset,Ilist,nelementsInList)
+!<description>
+  ! Puts all elements in the list Ilist into the set rset.
+!</description>
+
+!<input>
+  ! An array with elements for the set.
+  integer, dimension(:), intent(in) :: Ilist
+  
+  ! OPTIONAL: Length of the list Ilist.
+  integer, intent(in), optional :: nelementsInList
+!</input>
+
+!<inputoutput>
+  ! The set to modify.
+  type(t_directAccessIntSet), intent(in) :: rset
+!</inputoutput>
+
+!<returns>
+  ! Number of elements in the set.
+!</returns>
+
+!</subroutine>
+
+    integer :: i,j,ielement
+    
+    j = size(Ilist)
+    if (present(nelementsInList)) j = nelementsInList
+    
+    ! Loop through the elements and put them into the set.
+    do i = 1,j
+      ielement = Ilist(i)
+      rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)) = &
+          ibset(rset%p_Idata(1+ishft(ielement-1,rset%ishiftDivisor)),&
+              iand(ielement-1,rset%ibitmask))
+    end do
+
   end subroutine
 
 end module
