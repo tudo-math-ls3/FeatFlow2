@@ -910,7 +910,16 @@ contains
 
           ! This routine adds limited antidiffusion according to the linearised
           ! FCT limiter
-          call linFctShallowWaterAddLimitedAntidiffusion_syncronized(&
+!           call linFctShallowWaterAddLimitedAntidiffusion_syncronized(&
+!                rarraySol, rarraySolDot, rarrayRhs,&
+!                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
+!                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+!                h_fld1, p_fld1, p_fld2, &
+!                p_Kdiagonal, p_Kedge, NEQ, nedge, &
+!                gravconst, dt, Method, prelimiting, syncromethod, &
+!                rtriangulation)
+               
+          call new_syncronized(&
                rarraySol, rarraySolDot, rarrayRhs,&
                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
                rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &

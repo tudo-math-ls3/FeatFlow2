@@ -9,6 +9,13 @@ module shallowwater2d_routines
   use boundary
 
   implicit none
+  
+  integer :: scalardisstype = 1
+  ! 1 = my
+  ! 2 = rosanov
+  integer :: computescale = 0
+  ! 0 = no scaling of scalar dissipation
+  ! 1 = scaling
 
   type t_array
      ! Pointer to the double-valued matrix or vector data
@@ -620,13 +627,22 @@ contains
        lambda = max(abs(uRoe-cRoe),abs(uRoe+cRoe),abs(vRoe-cRoe),abs(vRoe+cRoe),abs(uRoe),abs(vRoe))
        scalarDissipation = scalefactor*lambda
 
+       select case (scalardisstype)
+       case (1)
        scalarDissipation = &
             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
             abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
+
 
        ! compute Dij
+       if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
        Dij = scalarDissipation*Eye
-
 
        ! Now add the entries of Aij and Dij to their corresponding entries in P
        ! P = M^L - theta*dt*L
@@ -765,11 +781,20 @@ contains
           lambda = max(abs(uRoe-cRoe),abs(uRoe+cRoe),abs(vRoe-cRoe),abs(vRoe+cRoe),abs(uRoe),abs(vRoe))
           scalarDissipation = scalefactor*lambda
 
-          scalarDissipation = &
-               abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
-               abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
 
           ! compute Dij
+          if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
           Dij = scalarDissipation*Eye
        else if ((Method == 2).or.(Method == 5).or.(Method == 7)) then
           ! Here we use tensorial dissipation
@@ -1141,11 +1166,21 @@ contains
           lambda = max(abs(uRoe-cRoe),abs(uRoe+cRoe),abs(vRoe-cRoe),abs(vRoe+cRoe),abs(uRoe),abs(vRoe))
           scalarDissipation = scalefactor*lambda
 
-          scalarDissipation = &
-               abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
-               abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
+
 
           ! compute Dij
+          if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
           Dij = scalarDissipation*Eye
        else if ((Method == 2).or.(Method == 5).or.(Method == 7)) then
           ! Here we use tensorial dissipation
@@ -1498,7 +1533,21 @@ contains
           ! compute Dij
           if (Method == 4) then
              ! Build Dij using scalar dissipation
-             scalarDissipation = maxval(abs(buildEigenvalues(Qroeij,d,gravconst)))
+             
+             
+             
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = maxval(abs(buildEigenvalues(Qroeij,d,gravconst)))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
+             
+             
+             
              Dij = abs(scalefactor)*scalarDissipation*Eye
           else if (Method == 5) then
              ! Build Dij using tensorial dissipation
@@ -1568,7 +1617,15 @@ contains
           ! compute Dij
           if (Method == 4) then
              ! Build Dij using scalar dissipation
-             scalarDissipation = maxval(abs(buildEigenvalues(Qroeij,d,gravconst)))
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = maxval(abs(buildEigenvalues(Qroeij,d,gravconst)))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
              Dij = abs(scalefactor)*scalarDissipation*Eye
           else if (Method == 5) then
              ! Build Dij using tensorial dissipation
@@ -2094,11 +2151,20 @@ end if !dry or wet bed
        ! compute Dij
        if (Method == 6) then
           ! Build Dij using scalar dissipation
-          scalarDissipation = &
-               abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
-               abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
 
           ! compute Dij
+          if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
           Dij = scalarDissipation*Eye
        else if (Method == 7) then
           ! Build Dij using tensorial dissipation
@@ -2170,10 +2236,19 @@ end if !dry or wet bed
        ! compute Dij
        if (Method == 6) then
           ! Build Dij using scalar dissipation
-          scalarDissipation = &
-               abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
-               abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
 
+          if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
           Dij = scalarDissipation*Eye
        else if (Method == 7) then
           ! Build Dij using tensorial dissipation
@@ -2192,12 +2267,12 @@ end if !dry or wet bed
        end do
 
        ! compute deltaFij (73)/(59) linearised fct
-       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
+       !deltaFij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,deltaQij)
+       deltaFij = matmul(Dij,deltaQij)
 
        ! compute deltaGij, the transformed antidiffusive fluxes
-       !deltaGij = matmul(Tij,deltaFij)
-       deltaGij = deltaFij
-
+       deltaGij = matmul(Tij,deltaFij)
+       
        ! Now apply prelimiting, siehe AFCII(70)
        if (prelimiting == 1) then
           do ivar = 1, nvar2d
@@ -2393,8 +2468,358 @@ end if !dry or wet bed
 
 
   end subroutine linFctShallowWaterAddLimitedAntidiffusion_syncronized
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    ! linearised FCT Method for Shallow Water
+  ! adding limited antidiffusion to the low order predictor
+  ! using conservative variables variables and a syncronized limiting factor
+  subroutine new_syncronized(&
+       rarraySol, rarraySolDot, rarrayRhs,&
+       rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
+       rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+       h_fld1, p_fld1, p_fld2, &
+       p_Kdiagonal, p_Kedge, NEQ, nedge, &
+       gravconst, dt, Method, prelimiting, syncromethod, &
+       rtriangulation)
+
+    ! parameter values
+    type(t_array), dimension(nvar2d), intent(INOUT) :: rarraySol, rarraySolDot
+    type(t_array), dimension(nvar2d), intent(IN)    :: rarrayRhs
+    type(t_vectorBlock), intent(INOUT)              :: rdefBlock, rstempBlock
+    type(t_vectorBlock), intent(IN)                 :: rsolBlock
+    type(t_vectorBlock), intent(INOUT)              :: rSolDotBlock
+    type(t_matrixScalar), intent(IN)                :: rmatrixML
+    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+    integer                                         :: h_fld1
+    real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
+    integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
+    integer, dimension(:,:), pointer                :: p_Kedge
+    integer, intent(IN)                             :: NEQ, nedge
+    real(DP), intent(IN)                            :: gravconst, dt
+    integer, intent(IN)                             :: Method, prelimiting, syncromethod
+    type(t_triangulation), intent(IN)               :: rtriangulation
 
 
+    ! variables
+    integer                             :: i, j, l, ii, jj, ij, ji, d, iedge, ivar
+    real(DP), dimension(nvar2d)         :: deltaQij, Qi, Qj, Qroeij
+    real(DP), dimension(nvar2d,nvar2d)  :: JacobixRoeij, JacobiyRoeij
+    real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
+    real(DP), dimension(nvar2d,nvar2d)  :: Aij, Bij, Dij, Eye, Tij, invTij
+    real(DP)                            :: scalarDissipation, scalefactor, lambda
+    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj
+    real(DP)                            :: cRoe, uRoe, vRoe
+    real(DP), dimension(nvar2d)         :: Udoti, Udotj
+    real(DP), dimension(nvar2d)         :: deltaWij, deltaGij, deltaFij
+    real(DP), dimension(nvar2d,nvar2d)  :: Rij, invRij
+    real(DP)                            :: alphaij
+    integer                             :: ibct, nbct, ivbd, ivbdFirst, ivbdLast
+    integer, dimension(:), pointer      :: p_IboundaryCpIdx
+    integer, dimension(:), pointer      :: p_IverticesAtBoundary
+    real(dp), dimension(:,:), allocatable :: lPp, lQp, lRp
+    real(dp), dimension(:,:), allocatable :: lPm, lQm, lRm
+    real(dp), dimension(:,:), allocatable :: deltaF
+    
+    ! unit matrix
+    Eye = 0.0_DP
+    do ivar = 1, 3
+       Eye(ivar,ivar) = 1.0_DP
+    end do
+    
+    !allocate P/Q/R_i^+/-
+    allocate(lPp(3,NEQ),lQp(3,NEQ),lRp(3,NEQ))
+    allocate(lPm(3,NEQ),lQm(3,NEQ),lRm(3,NEQ))
+    
+    ! allocate array for antidiff fluxes
+    allocate(deltaF(3,nedge))
+    
+    lPp = 0
+    lPm = 0
+    lQp = 0
+    lQm = 0
+    lRp = 1
+    lRm = 1
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        ! Clear SolDot
+    call lsysbl_clearVector (rSolDotBlock)
+
+    ! First compute SolDot
+    do iedge = 1, nedge
+       i  = p_Kedge(1, iedge)
+       j  = p_Kedge(2, iedge)
+       ij = p_Kedge(3, iedge)
+       ji = p_Kedge(4, iedge)
+       ii = p_Kdiagonal(i)
+       jj = p_Kdiagonal(j)
+
+       ! get solution values at node i and j
+       do ivar = 1, nvar2d
+          Qi(ivar) = rarraySol(ivar)%Da(i)
+          Qj(ivar) = rarraySol(ivar)%Da(j)
+       end do
+
+       ! compute deltaQij = Qi - Qj
+       deltaQij = Qi - Qj
+
+       ! Compute the Roe-meanvalue for this edge
+       Qroeij = calculateQroe(Qi, Qj)
+
+
+       ! Now we can compute Aij and Bij
+       !Aij = scalefactor*buildJacobi(Qroeij,d,gravconst)
+
+       ! deltaK
+       !deltaKi = -matmul(Aij,deltaQij)
+       !deltaKj = deltaKi
+
+       ! Calculate this alternatively by calculating
+       ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+       ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+       deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
+            -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
+       deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
+            -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+
+       ! Compute the coeffitients for the jacobi matrices
+       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+
+       ! compute Dij
+       if (Method == 6) then
+          ! Build Dij using scalar dissipation
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
+
+          ! compute Dij
+          if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
+          Dij = scalarDissipation*Eye
+       else if (Method == 7) then
+          ! Build Dij using tensorial dissipation
+          Dij = abs(JcoeffxA)*matmul(buildTrafo(Qroeij,1,gravconst),&
+               matmul(buildaLambda(Qroeij,1,gravconst),&
+               buildinvTrafo(Qroeij,1,gravconst))) +&
+               abs(JcoeffyA)*matmul(buildTrafo(Qroeij,2,gravconst),&
+               matmul(buildaLambda(Qroeij,2,gravconst),&
+               buildinvTrafo(Qroeij,2,gravconst)))
+       end if
+
+       ! deltaD
+       deltaDi = matmul(Dij,-deltaQij)
+       deltaDj = -deltaDi
+
+       ! add deltaK and deltaD to SolDot
+       ! SolDot = SolDot + 1/ML*(K*u + D*u)
+       do l = 1, nvar2d
+          rarraySolDot(l)%Da(i) = rarraySolDot(l)%Da(i) &
+               + 1.0_DP/p_MLdata(i)*&
+               (deltaKi(l) + deltaDi(l))
+          rarraySolDot(l)%Da(j) = rarraySolDot(l)%Da(j) &
+               + 1.0_DP/p_MLdata(j)*&
+               (deltaKj(l) + deltaDj(l))
+          ! Save Qroe
+          p_fld2(1+2*(l-1),iedge) = QRoeij(l)
+       end do
+
+    end do
+    ! SolDot fertig!
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    do iedge = 1, nedge
+       i  = p_Kedge(1, iedge)
+       j  = p_Kedge(2, iedge)
+       ij = p_Kedge(3, iedge)
+       ji = p_Kedge(4, iedge)
+       ii = p_Kdiagonal(i)
+       jj = p_Kdiagonal(j)
+       
+       ! get solution values at node i and j
+       Qi = (/rarraySol(1)%Da(i),rarraySol(2)%Da(i),rarraySol(3)%Da(i)/)
+       Qj = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
+       
+       ! Compute the Roe-meanvalue for this edge
+       Qroeij = calculateQroe(Qi, Qj)
+       
+       deltaWij = Qj - Qi
+       
+       
+
+       ! Compute the coeffitients for the jacobi matrices
+       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+
+       
+          ! Build Dij using scalar dissipation
+       select case (scalardisstype)
+       case (1)
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,gravconst))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,gravconst))))
+       case (2)
+       ! Dissipation of Rusanov type
+       scalardissipation = &
+             max(abs(p_CXdata(ij)*Qj(2)/Qj(1)+p_Cydata(ij)*Qj(3)/Qj(1)) + sqrt(gravconst*Qj(1)),&
+                 abs(p_CXdata(ji)*Qi(2)/Qi(1)+p_Cydata(ji)*Qi(3)/Qi(1)) + sqrt(gravconst*Qi(1)) )
+       end select
+               
+       ! compute Dij
+       if (computescale == 1) scalarDissipation = scalarDissipation * sqrt(p_CXdata(ij)**2.0_DP+p_CYdata(ij)**2.0_DP)
+       Dij = scalarDissipation*Eye
+       
+       ! get Udot at node i and j
+       do ivar = 1, 3
+          Udoti(ivar) = rarraySolDot(ivar)%Da(i)
+          Udotj(ivar) = rarraySolDot(ivar)%Da(j)
+       end do
+       
+       ! compute antidiffusive flux
+       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+ matmul(Dij,(Qi-Qj))
+       
+       ! prelimit antidiff flux
+       do ivar = 1, 3
+          if (deltaWij(ivar)*deltaFij(ivar).ge.0) deltaFij(ivar) = 0.0_dp
+       end do
+       
+       ! and save
+       deltaF(:,iedge) = deltaFij
+       
+       do ivar = 1, 3
+       ! Augment the sums of positive/negative fluxes of indicaotr variable
+       lPp(ivar,i) = lPp(ivar,i) + max(0.0_dp,deltaFij(ivar))
+       lPm(ivar,i) = lPm(ivar,i) + min(0.0_dp,deltaFij(ivar))
+       
+       lPp(ivar,j) = lPp(ivar,j) + max(0.0_dp,-deltaFij(ivar))
+       lPm(ivar,j) = lPm(ivar,j) + min(0.0_dp,-deltaFij(ivar))
+       
+       ! Update maximum/minimum admissible increments
+       lQp(ivar,i) = max(lQp(ivar,i), deltaWij(ivar))
+       lQm(ivar,i) = min(lQm(ivar,i), deltaWij(ivar))
+       
+       lQp(ivar,j) = max(lQp(ivar,j), -deltaWij(ivar))
+       lQm(ivar,j) = min(lQm(ivar,j), -deltaWij(ivar))
+       end do
+     end do !iedge
+     
+    
+     
+     ! Compute the Ri+/-
+     do i = 1, NEQ
+     do ivar = 1, 3
+       lRp(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQp(ivar,i)/(lPp(ivar,i)+SYS_EPSREAL))! Ri+
+       lRm(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQm(ivar,i)/(lPm(ivar,i)-SYS_EPSREAL))! Ri-
+     end do
+     end do ! i
+     
+     alphaij = 1.0_dp
+
+     do iedge = 1, nedge
+       i  = p_Kedge(1, iedge)
+       j  = p_Kedge(2, iedge)
+       ij = p_Kedge(3, iedge)
+       ji = p_Kedge(4, iedge)
+       ii = p_Kdiagonal(i)
+       jj = p_Kdiagonal(j)
+       
+       deltaFij = deltaF(:,iedge)
+       
+       select case (syncromethod)
+       case(1)
+       
+       if (deltaFij(1) .ge. 0.0_dp) then
+         alphaij = min(lRp(1,i),lRm(1,j))
+       else
+         alphaij = min(lRp(1,j),lRm(1,i))
+       end if
+       
+       case(2)
+       
+       do ivar = 1, 3
+       if (deltaFij(ivar) .ge. 0.0_dp) then
+         alphaij = min(alphaij,lRp(ivar,i),lRm(ivar,j))
+       else
+         alphaij = min(alphaij,lRp(ivar,j),lRm(ivar,i))
+       end if
+       end do
+       
+       end select
+       
+       deltaFij = alphaij * deltaFij
+       
+       do ivar = 1, 3
+         rarraySol(ivar)%Da(i) = rarraySol(ivar)%Da(i) + deltaFij(ivar)/p_MLdata(i)*dt
+         rarraySol(ivar)%Da(j) = rarraySol(ivar)%Da(j) - deltaFij(ivar)/p_MLdata(j)*dt
+       end do
+    
+     end do ! iedge
+    
+    ! deallocate P/Q/R_i^+/-
+    deallocate(lPp,lQp,lRp)
+    deallocate(lPm,lQm,lRm)
+    
+    ! deallocate array for antidiff fluxes
+    deallocate(deltaF)
+
+  end subroutine
 
 
 end module shallowwater2d_routines
