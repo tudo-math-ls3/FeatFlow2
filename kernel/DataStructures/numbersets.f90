@@ -519,7 +519,7 @@ contains
 
 !<inputoutput>
   ! The set to modify.
-  type(t_directAccessIntSet), intent(in) :: rset
+  type(t_directAccessIntSet), intent(inout) :: rset
 !</inputoutput>
 
 !<returns>
