@@ -110,6 +110,7 @@ module numbersets
   public :: nsets_addAllDASet
   public :: nsets_nelementsInSet
   public :: nsets_getElements
+  public :: nsets_putElements
 
 contains
 
