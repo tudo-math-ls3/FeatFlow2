@@ -283,7 +283,7 @@ contains
         if (associated(revalElementSet%p_DpointsReal)) then
           if (size(revalElementSet%p_DpointsReal) .lt. &
               (ndim*npointsPerElement*nelements)) then
-            if (.not. revalElementSet%bforeignPointsRef) then
+            if (.not. revalElementSet%bforeignPointsReal) then
               deallocate(revalElementSet%p_DpointsReal)
             else
               call output_line ('DpointsReal is too small!', &

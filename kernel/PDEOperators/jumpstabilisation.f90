@@ -79,7 +79,8 @@ contains
 !<subroutine>
 
   subroutine jstab_calcUEOJumpStabilisation (&
-      rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,&
+      InodeList)
 
 !<description>
   ! Edge oriented stabilisation technique. This routine incorporates the
@@ -87,10 +88,10 @@ contains
 !</description>
 
 !<input>
-  ! Stabilisation parameter. Standard=0.01
+  ! Stabilisation parameter. Standard = 0.01
   real(DP), intent(in) :: dgamma
   
-  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  ! 2nd stabilisation parameter. Standard = 0
   real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
@@ -108,6 +109,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+  
+  ! OPTIONAL: List of edges/faces where the operator should be computed.
+  ! If not present, the operator will be computed on all edges/faces.
+  integer, dimension(:), intent(in), optional :: InodeList
 !</input>
 
 !<inputoutput>
@@ -144,7 +149,7 @@ contains
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_ueoJumpStabil2d_m_unidble (&
-          rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
+          rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,InodeList)
 
     case (BGEOM_SHAPE_HEXA)
       ! 3D hexahedron element
@@ -165,7 +170,8 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil2d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation)
+      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,&
+      InodeList)
       
 !<description>
   ! Unified edge oriented jump stabilisation.
@@ -189,7 +195,7 @@ contains
   ! Stabilisation parameter. Standard=0.01
   real(DP), intent(in) :: dgamma
   
-  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  ! 2nd stabilisation parameter. Standard=dgamma=0.0
   real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
@@ -207,6 +213,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: List of edges where the operator should be computed.
+  ! If not present, the operator will be computed on all edges.
+  integer, dimension(:), intent(in), optional :: InodeList
 !</input>
   
 !<inputoutput>
@@ -219,7 +229,7 @@ contains
   ! local variables
   integer :: irow, jcol, idof
   integer :: IMT
-  integer :: ivt1,ivt2,NVT
+  integer :: ivt1,ivt2,NVT,NMT, IMTidx
   integer :: IEL
   integer :: IELcount,IDOFE, JDOFE, i, NVE, iedge
   real(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
@@ -335,6 +345,8 @@ contains
                                   p_DvertexCoords)
                                 
     NVT = p_rtriangulation%NVT
+    NMT = p_rtriangulation%NMT
+    if (present(InodeList)) NMT = size(InodeList)
     
     ! Get KLD, KCol...
     call lsyssc_getbase_Kld (rmatrixScalar,p_KLD)
@@ -379,15 +391,12 @@ contains
       end do
     end do
     
-    ! We have always 2 elements in each patch...
-    IELcount = 2
-      
     ! Get from the trial element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,IELcount))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,2))
 
     ! Allocate arrays saving the local matrices for all elements
     ! in an element set. We allocate the arrays large enough...
@@ -428,21 +437,34 @@ contains
     Bder(DER_DERIV_X) = .true.
     Bder(DER_DERIV_Y) = .true.
 
-      ! Fill the basis function arrays with 0. Essential, as only parts
-      ! of them are overwritten later.
-      Dbas = 0.0_DP
+    ! Fill the basis function arrays with 0. Essential, as only parts
+    ! of them are overwritten later.
+    Dbas = 0.0_DP
       
     ! We loop through all edges
-    do IMT = 1,p_rtriangulation%NMT
+    do IMTidx = 1,NMT
+      
+      ! Either process all edges or the specified ones.
+      if (present(InodeList)) then
+        IMT = InodeList (IMTidx)
+      else
+        IMT = IMTidx
+      end if
     
-      ! Check if we have 1 or 2 elements on the current edge
-      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
-      
-        ! This only happens if we have a boundary edge.
-        ! The boundary handling is... doing nothing! So we can skip
-        ! the handling of that edge completely!
-        cycle
-      
+!      ! Check if we have 1 or 2 elements on the current edge
+!      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
+!      
+!        ! This only happens if we have a boundary edge.
+!        ! The boundary handling is... doing nothing! So we can skip
+!        ! the handling of that edge completely!
+!        cycle
+!      
+!      end if
+
+      ! Check how many elements we have on that edge.
+      IELcount = 1
+      if (p_IelementsAtEdge (2,IMT) .ne. 0) then
+        IELcount = 2
       end if
       
       ! On an example, we now show the relationship between all the DOF`s
@@ -496,33 +518,51 @@ contains
       ! skipping all DOF`s we already have and setting up the renumbering strategy
       ! of local DOF`s on element IEL2 to patch DOF`s.
       
-      skiploop: do IDOFE = 1,indofPerElement
+      if (IELcount .gt. 1) then
+      
+        ! Collect all the DOF's.
+        skiploop: do IDOFE = 1,indofPerElement
+          
+          ! Do we have the DOF? 
+          idof = IdofsTempl(IDOFE,IELcount)
+          do JDOFE=1,ndof
+            if (Idofs(JDOFE) .eq. idof) then
+              ! Yes, we have it.
+              ! That means, the local DOF idof has to be mapped to the
+              ! local patch dof...
+              IlocalDofRenum (IDOFE) = JDOFE
+              
+              ! Proceed with the next one.
+              cycle skiploop
+            end if
+          end do
+          
+          ! We do not have that DOF! Append it to Idofs.
+          ndof = ndof+1
+          Idofs(ndof) = idof
+          IlocalDofRenum (IDOFE) = ndof
+          
+          ! Save also the number of the local DOF.
+          ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+          ! belong to the local DOF`s 1..indofPerElement -- in that order!
+          IlocalDofs(ndof) = IDOFE
+          
+        end do skiploop
         
-        ! Do we have the DOF? 
-        idof = IdofsTempl(IDOFE,IELcount)
-        do JDOFE=1,ndof
-          if (Idofs(JDOFE) .eq. idof) then
-            ! Yes, we have it.
-            ! That means, the local DOF idof has to be mapped to the
-            ! local patch dof...
-            IlocalDofRenum (IDOFE) = JDOFE
-            
-            ! Proceed with the next one.
-            cycle skiploop
-          end if
+      else
+      
+        ! Copy the DOF's.
+        ndof = indofPerElement
+        do IDOFE = 1,ndof
+          
+          ! We do not have that DOF! Append it to Idofs.
+          Idofs(IDOFE) = IdofsTempl(IDOFE,1)
+          IlocalDofRenum(IDOFE) = 0
+          IlocalDofs(IDOFE) = IDOFE
+          
         end do
-        
-        ! We do not have that DOF! Append it to Idofs.
-        ndof = ndof+1
-        Idofs(ndof) = idof
-        IlocalDofRenum (IDOFE) = ndof
-        
-        ! Save also the number of the local DOF.
-        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF`s 1..indofPerElement -- in that order!
-        IlocalDofs(ndof) = IDOFE
-        
-      end do skiploop
+      
+      end if
         
       ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofsTest*ndofsTrial matrix.
@@ -636,8 +676,12 @@ contains
       ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
-      Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
-        = Dbas (1:indofPerElement,:,:,2)
+      if (IELcount .eq. 2) then
+        ! DOF values are not transferred if there is no neighbour element.
+        ! In this case, the DOF values stay =0.
+        Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
+          = Dbas (1:indofPerElement,:,:,2)
+      end if
       
       ! What do we have now? When looking at the example, we have:
       !
@@ -664,8 +708,8 @@ contains
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = & !max(dgammastar * dnu * dedgelength, &
-                   dgamma * dedgelength**2 !)
+      dcoeff = max(dgammastar * dnu * dedgelength, &
+                   dgamma * dedgelength**2 )
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.
@@ -744,7 +788,7 @@ contains
       
       ! Proceed with next edge
     
-    end do ! IMT
+    end do ! IMTidx
 
     ! Clean up allocated arrays and memory.
     deallocate(DcubPtsRefOnAllEdges)
@@ -758,7 +802,7 @@ contains
     deallocate(Dentry)
 
     deallocate(IdofsTempl) 
-
+    
   end subroutine
   
   ! ***************************************************************************
@@ -956,7 +1000,7 @@ contains
   ! Stabilisation parameter. Standard=0.01
   real(DP), intent(in) :: dgamma
   
-  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  ! 2nd stabilisation parameter. Standard=dgamma=0.01
   real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
@@ -1349,7 +1393,7 @@ contains
   ! Stabilisation parameter. Standard=0.01
   real(DP), intent(in) :: dgamma
   
-  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  ! 2nd stabilisation parameter. Standard=dgamma=0.01
   real(DP), intent(in) :: dgammastar
   
   ! Multiplication factor for the stabilisation matrix when adding
@@ -1643,8 +1687,9 @@ contains
 !<subroutine>
 
   subroutine jstab_matvecUEOJumpStabilBlk2d ( &
-                  dgamma,dgammastar,ccubType,dnu,&
-                  rtemplateMat,rx,ry,cx,cy,rdiscretisation)
+      dgamma,dgammastar,ccubType,dnu,&
+      rtemplateMat,rx,ry,cx,cy,rdiscretisation,&
+      InodeList)
 !<description>
   ! Unified edge oriented jump stabilisation.
   !
@@ -1669,7 +1714,7 @@ contains
   ! Stabilisation parameter. Standard=0.01
   real(DP), intent(in) :: dgamma
   
-  ! 2nd stabilisation parametr. Standard=dgamma=0.01
+  ! 2nd stabilisation parameter. Standard=dgamma=0.0
   real(DP), intent(in) :: dgammastar
   
   ! 1D cubature formula to use for line integration
@@ -1696,6 +1741,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), target, optional :: rdiscretisation
+
+  ! OPTIONAL: List of edges where the operator should be computed.
+  ! If not present, the operator will be computed on all edges.
+  integer, dimension(:), intent(in), optional :: InodeList
 !</input>
 
 !<inputoutput>
@@ -1710,7 +1759,7 @@ contains
   ! local variables
   integer :: irow, jcol, idof
   integer :: IMT
-  integer :: ivt1,ivt2,NVT
+  integer :: ivt1,ivt2,NVT,NMT,IMTidx
   integer :: IEL
   integer :: IELcount,IDOFE, JDOFE, i, NVE, iedge
   real(DP) :: dval,dedgelength,dedgeweight,dphidx,dphidy,dpsidx,dpsidy,dcoeff
@@ -1822,6 +1871,8 @@ contains
                                   p_DvertexCoords)
                                 
     NVT = p_rtriangulation%NVT
+    NMT = p_rtriangulation%NMT
+    if (present(InodeList)) NMT = size(InodeList)
     
     ! If necessary, scale y in-advance, so we can just calculate y=cAx+y
     if (cy .eq. 0.0_DP) then
@@ -1878,15 +1929,12 @@ contains
       end do
     end do
     
-    ! We have always 2 elements in each patch...
-    IELcount = 2
-      
     ! Get from the FE element space the type of coordinate system
     ! that is used there:
     ctrafoType = elem_igetTrafoType(p_relementDistribution%celement)
     
     ! Allocate some memory to hold the cubature points on the reference element
-    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,IELcount))
+    allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),ncubp,2))
 
     ! Allocate arrays saving the local matrices for all elements
     ! in an element set. We allocate the arrays large enough...
@@ -1932,16 +1980,29 @@ contains
     Dbas = 0.0_DP
     
     ! We loop through all edges
-    do IMT = 1,p_rtriangulation%NMT
+    do IMTidx = 1,NMT
     
-      ! Check if we have 1 or 2 elements on the current edge
-      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
-      
-        ! This only happens if we have a boundary edge.
-        ! The boundary handling is... doing nothing! So we can skip
-        ! the handling of that edge completely!
-        cycle
-      
+      ! Either process all edges or the specified ones.
+      if (present(InodeList)) then
+        IMT = InodeList (IMTidx)
+      else
+        IMT = IMTidx
+      end if
+    
+!      ! Check if we have 1 or 2 elements on the current edge
+!      if (p_IelementsAtEdge (2,IMT) .eq. 0) then
+!      
+!        ! This only happens if we have a boundary edge.
+!        ! The boundary handling is... doing nothing! So we can skip
+!        ! the handling of that edge completely!
+!        cycle
+!      
+!      end if
+
+      ! Check how many elements we have on that edge.
+      IELcount = 1
+      if (p_IelementsAtEdge (2,IMT) .ne. 0) then
+        IELcount = 2
       end if
       
       ! On an example, we now show the relationship between all the DOF`s
@@ -1990,39 +2051,52 @@ contains
       
       ndof = indofPerElement
       Idofs(1:ndof) = IdofsTempl(1:ndof,1)
+      if (IELcount .gt. 1) then
       
-      ! Furthermore, we read IdofsTempl and store the DOF`s there in Idofs,
-      ! skipping all DOF`s we already have and setting up the renumbering strategy
-      ! of local DOF`s on element IEL2 to patch DOF`s.
-      
-      skiploop: do IDOFE = 1,indofPerElement
+        ! Collect all the DOF's.
+        skiploop: do IDOFE = 1,indofPerElement
+          
+          ! Do we have the DOF? 
+          idof = IdofsTempl(IDOFE,IELcount)
+          do JDOFE=1,ndof
+            if (Idofs(JDOFE) .eq. idof) then
+              ! Yes, we have it.
+              ! That means, the local DOF idof has to be mapped to the
+              ! local patch dof...
+              IlocalDofRenum (IDOFE) = JDOFE
+              
+              ! Proceed with the next one.
+              cycle skiploop
+            end if
+          end do
+          
+          ! We do not have that DOF! Append it to Idofs.
+          ndof = ndof+1
+          Idofs(ndof) = idof
+          IlocalDofRenum (IDOFE) = ndof
+          
+          ! Save also the number of the local DOF.
+          ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
+          ! belong to the local DOF`s 1..indofPerElement -- in that order!
+          IlocalDofs(ndof) = IDOFE
+          
+        end do skiploop
         
-        ! Do we have the DOF? 
-        idof = IdofsTempl(IDOFE,IELcount)
-        do JDOFE=1,ndof
-          if (Idofs(JDOFE) .eq. idof) then
-            ! Yes, we have it.
-            ! That means, the local DOF idof has to be mapped to the
-            ! local patch dof...
-            IlocalDofRenum (IDOFE) = JDOFE
-            
-            ! Proceed with the next one.
-            cycle skiploop
-          end if
+      else
+      
+        ! Copy the DOF's.
+        ndof = indofPerElement
+        do IDOFE = 1,ndof
+          
+          ! We do not have that DOF! Append it to Idofs.
+          Idofs(IDOFE) = IdofsTempl(IDOFE,1)
+          IlocalDofRenum(IDOFE) = 0
+          IlocalDofs(IDOFE) = IDOFE
+          
         end do
         
-        ! We do not have that DOF! Append it to Idofs.
-        ndof = ndof+1
-        Idofs(ndof) = idof
-        IlocalDofRenum (IDOFE) = ndof
-        
-        ! Save also the number of the local DOF.
-        ! Note that the global DOF`s in IdofsTempl(1..indofPerElement)
-        ! belong to the local DOF`s 1..indofPerElement -- in that order!
-        IlocalDofs(ndof) = IDOFE
-        
-      end do skiploop
-        
+      end if
+   
       ! Now we know: Our 'local' matrix (consisting of only these DOF`s we just
       ! calculated) is a ndofs*ndofs matrix.
       !
@@ -2135,8 +2209,12 @@ contains
       ! That space Dbas(:,:,:,3) is unused up to now, initialise by 0.0 and 
       ! partially overwrite with the reordered values of the basis functions.
       Dbas (:,:,:,3) = 0.0_DP
-      Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
-        = Dbas (1:indofPerElement,:,:,2)
+      if (IELcount .eq. 2) then
+        ! DOF values are not transferred if there is no neighbour element.
+        ! In this case, the DOF values stay =0.
+        Dbas (IlocalDofRenum(1:indofPerElement),:,:,3) &
+          = Dbas (1:indofPerElement,:,:,2)
+      end if
       
       ! What do we have now? When looking at the example, we have:
       !
@@ -2163,8 +2241,8 @@ contains
       
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
-      dcoeff = & !max(dgammastar * dnu * dedgelength, &
-                   dgamma * dedgelength**2 !)
+      dcoeff = max(dgammastar * dnu * dedgelength, &
+                   dgamma * dedgelength**2 )
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.

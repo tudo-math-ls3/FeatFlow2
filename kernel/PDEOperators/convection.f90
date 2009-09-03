@@ -337,9 +337,9 @@ module convection
     real(DP)              :: dgamma = 0.01_DP
 
     ! 2nd Relaxation parameter for the Jump stabilisation.
-    ! =0.0: No Jump stabilisation
+    ! =0.0: No Jump stabilisation (Standard)
     ! >0.0: Add Jump stabilisation with relaxation parameter dgammastar
-    real(DP)              :: dgammastar = 0.01_DP
+    real(DP)              :: dgammastar = 0.0_DP
   
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
@@ -10010,7 +10010,7 @@ contains
 !<subroutine>
 
   subroutine conv_JumpStabilisation2d ( &
-      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation)
+      rconfig, cdef, rmatrix, rsolution, rdefect, rdiscretisation,InodeList)
 
 !<description>
   ! Edge oriented stabilisation technique. Wrapper routine.
@@ -10055,6 +10055,10 @@ contains
   ! the jump stabilisaton. This allows to use a different FE pair for
   ! setting up the stabilisation than the matrix itself.
   type(t_spatialDiscretisation), intent(in), optional :: rdiscretisation
+
+  ! OPTIONAL: List of edges/faces where the operator should be computed.
+  ! If not present, the operator will be computed on all edges/faces.
+  integer, dimension(:), intent(in), optional :: InodeList
 !</input>
 
 !<inputoutput>
@@ -10129,7 +10133,7 @@ contains
           call jstab_matvecUEOJumpStabilBlk2d ( &
               rconfig%dgamma,rconfig%dgammastar,rconfig%ccubType,rconfig%dnu,&
               rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
-              rdiscretisation)
+              rdiscretisation,InodeList)
         end if
 
       end if
@@ -10138,7 +10142,7 @@ contains
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
           rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
-          rconfig%ccubType,rconfig%dnu,rdiscretisation)
+          rconfig%ccubType,rconfig%dnu,rdiscretisation,InodeList)
       end if
 
     else if (rconfig%cjump .eq. CONV_JUMP_REACTIVE) then
