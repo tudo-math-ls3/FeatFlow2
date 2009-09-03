@@ -290,10 +290,10 @@ contains
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
     
       ! Release our discrete version of the boundary conditions
-      call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC)
+      call bcasm_clearDiscreteBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC)
       
       ! as well as the discrete version of the BC`s for fictitious boundaries
-      call bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC)
+      call bcasm_clearDiscreteFBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC)
 
       ! Release the Dirichlet edges.      
       if (rproblem%RlevelInfo(i)%rdynamicInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then

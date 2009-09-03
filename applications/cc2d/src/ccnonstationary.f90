@@ -538,7 +538,7 @@ contains
     ! The nonlinear solver configuration
     type(t_nlsolNode) :: rnlSol
 
-    real(DP) :: dtimederivative,dtmp,dtmperror,dtimeratio
+    real(DP) :: dtimederivative,dtmp,dtmperror,dtimeratio,dcpuTime
     
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
@@ -551,6 +551,9 @@ contains
     integer(I32) :: isolverStatus,isolverStatusPredictor
     type(t_timeError) :: rtimeerror
     type(t_timeDerivatives) :: rtimeDerivative
+    
+    ! Timer for the current timestep and the total time.
+    type(t_timer) :: rtimerTimestep,rtimerAllTimesteps
 
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
@@ -602,12 +605,20 @@ contains
     ! Timeloop
     !----------------------------------------------------
     
+    ! Start timers that calculate the current time.
+    call stat_clearTimer(rtimerAllTimesteps)
+    call stat_startTimer(rtimerAllTimesteps)
+    
     do while ((rproblem%rtimedependence%itimeStep .le. &
                rproblem%rtimedependence%niterations) .and. &
               (rproblem%rtimedependence%dtime .lt. &
                rproblem%rtimedependence%dtimemax) .and. &
               (dtimederivative .ge. &
                rproblem%rtimedependence%dminTimeDerivative))
+
+      ! Time counter
+      call stat_clearTimer(rtimerTimestep)
+      call stat_startTimer(rtimerTimestep)
 
       ! The babortTimestep is normally FALSE. If set to TRUE, the computation
       ! of the next time step is aborted because of an error. 
@@ -1081,6 +1092,15 @@ contains
         !    //TRIM(sys_sdEP(dtimeDerivative,9,2)) )
         
       end if
+      
+      call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD)
+      call stat_stopTimer(rtimerTimestep)
+      call output_line ("Time for processing of this timestep: "// &
+        trim(sys_sdL(rtimerTimestep%delapsedReal,10)))
+
+      call stat_sampleTimer(rtimerAllTimesteps,dcpuTime)
+      call output_line ("Time for all timesteps until now:     "// &
+        trim(sys_sdL(dcpuTime,10)))
       
       !----------------------------------------------------
       ! Check if the time step must be repeated
