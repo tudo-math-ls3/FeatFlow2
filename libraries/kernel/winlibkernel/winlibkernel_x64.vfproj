@@ -88,6 +88,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_coefficientVectorSc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_discretebc.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_fbcassembly.inc"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\intf_ufci.inc"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\linearformevaluation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\matrixfilters.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\multileveloperators.f90"/>
@@ -95,6 +96,7 @@
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\sortstrategy.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\spatialdiscretisation.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\trilinearformevaluation.f90"/>
+		<File RelativePath="..\..\..\kernel\DOFMaintenance\ufci.f90"/>
 		<File RelativePath="..\..\..\kernel\DOFMaintenance\vectorfilters.f90"/></Filter>
 		<Filter Name="ElementCubature">
 		<File RelativePath="..\..\..\kernel\ElementCubature\cubature.f90"/>
