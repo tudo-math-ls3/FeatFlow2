@@ -404,7 +404,8 @@ contains
 
     call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
-        rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo)
+        rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
     
     rnonlinearCCMatrix%dalpha = -1.0_DP
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS

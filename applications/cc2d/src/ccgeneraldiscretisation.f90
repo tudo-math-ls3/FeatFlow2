@@ -39,6 +39,13 @@
 !# 9.) cc_writeSolution
 !#     -> Write solution vector as configured in the DAT file.
 !#
+!# 10.) cc_initDynamicLevelInfo
+!#      -> Initialises the dynamic level information structure of one level
+!#         with basic information
+!#
+!# 11.) cc_doneDynamicLevelInfo
+!#      -> Releases the dynamic level information structure of one level
+!#
 !# Auxiliary routines
 !#
 !# 1.) cc_getDiscretisation
@@ -90,6 +97,64 @@ module ccgeneraldiscretisation
   
 contains
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_initDynamicLevelInfo (rdynamicLevelInfo)
+  
+!<description>
+  ! Initialises a dynamic level information structure with basic information.
+!</description>
+
+!<output>
+  ! A dynamic level information structure to be initialised.
+  type(t_dynamicLevelInfo), intent(out), target :: rdynamicLevelInfo
+!</output>
+
+!</subroutine>
+
+    ! Initialise the BC/FBC structures.
+    call bcasm_initDiscreteBC(rdynamicLevelInfo%rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdynamicLevelInfo%rdiscreteFBC)
+    
+    rdynamicLevelInfo%bhasNeumannBoundary = .false.
+    rdynamicLevelInfo%hedgesDirichletBC = ST_NOHANDLE
+    rdynamicLevelInfo%nedgesDirichletBC = 0
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneDynamicLevelInfo (rdynamicLevelInfo)
+  
+!<description>
+  ! Releases a dynamic level information structure.
+!</description>
+
+!<inputoutput>
+  ! A dynamic level information structure to be initialised.
+  type(t_dynamicLevelInfo), intent(inout), target :: rdynamicLevelInfo
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release our discrete version of the boundary conditions
+    call bcasm_releaseDiscreteBC (rdynamicLevelInfo%rdiscreteBC)
+    
+    ! as well as the discrete version of the BC`s for fictitious boundaries
+    call bcasm_releaseDiscreteFBC (rdynamicLevelInfo%rdiscreteFBC)
+
+    ! Release the Dirichlet edges.      
+    if (rdynamicLevelInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then
+      call storage_free (rdynamicLevelInfo%hedgesDirichletBC)
+    end if
+    rdynamicLevelInfo%nedgesDirichletBC = 0
+
+  end subroutine
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -287,6 +352,9 @@ contains
         end if
       
       end if
+      
+      ! Initialise the dynamic level information structure with basic information.
+      call cc_initDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
       
     end do
                                    
@@ -596,6 +664,9 @@ contains
       ! Release the mass matrix discretisation.
       call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass)
       call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure)
+
+      ! Release dynamic level information
+      call cc_doneDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
 
     end do
     
@@ -965,8 +1036,7 @@ contains
       rjumpStabil%dnu = rproblem%dnu
       
       ! Set stabilisation parameter
-      rjumpStabil%dgammastar = rproblem%rstabilisation%dupsam
-      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      rjumpStabil%dgamma = rproblem%rstabilisation%dupsam
       
       ! Matrix weight
       rjumpStabil%dtheta = 1.0_DP
@@ -1619,7 +1689,7 @@ contains
     type(t_vectorBlock), target :: rvector1,rvector2
     type(t_vectorScalar) :: rvectorTemp
     character(LEN=SYS_STRLEN) :: sarray,sfile,sfileString
-    integer :: ilev,ierror,ispace
+    integer :: ilev,ierror
     integer :: NEQ
     type(t_interlevelProjectionBlock) :: rprojection 
     type(t_linearForm) :: rlinform

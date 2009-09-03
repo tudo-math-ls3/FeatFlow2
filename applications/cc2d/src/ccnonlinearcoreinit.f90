@@ -206,7 +206,8 @@ contains
     ! that is enough for the memory allocation.
     
     call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
-        rlevelInfo%rdiscretisation,rlevelInfo%rstaticInfo)
+        rlevelInfo%rdiscretisation,rlevelInfo%rstaticInfo,&
+        rlevelInfo%rdynamicInfo)
     
     call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
         ilev,nlmin,nlmax,rprecSpecials)
@@ -308,6 +309,8 @@ contains
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rstaticInfo => &
         rproblem%RlevelInfo(ilevel)%rstaticInfo
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rdynamicInfo => &
+        rproblem%RlevelInfo(ilevel)%rdynamicInfo
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
         rproblem%RlevelInfo(ilevel)%rtempVector
     end do
@@ -357,7 +360,7 @@ contains
     ! Do we have Neumann boundary?
     !
     ! The bhasNeumannBoundary flag of the higher level decides about that...
-    bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
+    bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
     rnonlinearIteration%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
     if (.not. bneumann) then
       ! Pure Dirichlet problem -- Neumann boundary for the pressure.
@@ -1009,10 +1012,10 @@ contains
               
           ! Attach boundary conditions
           rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBC &
-              => rproblem%RlevelInfo(i)%p_rdiscreteBC
+              => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC
           
           rnonlinearIteration%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBCfict &
-              => rproblem%RlevelInfo(i)%p_rdiscreteFBC
+              => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC
         end if
         
         ! On the current level, set up a global preconditioner matrix.
@@ -1409,11 +1412,11 @@ contains
     ! Check if we have Neumann boundary components. If not, the matrices
     ! may have to be changed, depending on the solver.
     rprecSpecials%bneedPressureDiagonalBlock = &
-      .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
+      .not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
 
     ! If there are no Neumann BC`s, the pressure is indefinite.
     rprecSpecials%bpressureIndefinite = &
-      .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
+      .not. rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%bhasNeumannBoundary
 
   end subroutine
 

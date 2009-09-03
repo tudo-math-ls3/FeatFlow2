@@ -246,6 +246,10 @@ module ccmatvecassembly
     ! Pointer to static/precalculated information on this level.
     type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
 
+    ! Pointer to dynamic information on this level (e.g. boundary conditions).
+    ! This information usually changes with every timestep.
+    type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo => null()
+
   end type
 
 !</typeblock>
@@ -857,6 +861,7 @@ contains
     type(t_jumpStabilisation) :: rjumpStabil
     real(DP) :: dvecWeight
     type(t_collection) :: rcollection
+    integer, dimension(:), pointer :: p_IedgesDirichletBC
     
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
@@ -1134,8 +1139,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1154,6 +1158,27 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
               rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+          end if
+          
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+            end if
           end if
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
@@ -1200,6 +1225,27 @@ contains
                 .false.,.false.,.true.,.true.)
           end if
           
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+            end if
+          end if
+
         case (CCMASM_STAB_EDGEORIENTED2)
           ! Jump stabilisation.
 
@@ -1267,8 +1313,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1287,6 +1332,27 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
               rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+          end if
+
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+            end if
           end if
 
         case default
@@ -1309,8 +1375,7 @@ contains
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1331,6 +1396,27 @@ contains
                 rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
           end if
 
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+            end if
+          end if
+
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
           !
@@ -1341,8 +1427,7 @@ contains
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1360,6 +1445,27 @@ contains
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
+          end if
+
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+
+            if (.not. bshared) then
+              call conv_jumpStabilisation2d (&
+                  rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+            end if
           end if
 
         case default
@@ -1711,6 +1817,7 @@ contains
     type(t_convStreamDiff2) :: rstreamlineDiffusion2
     type(T_jumpStabilisation) :: rjumpStabil
     type(t_collection) :: rcollection
+    integer, dimension(:), pointer :: p_IedgesDirichletBC
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_DdataX,p_DdataD
@@ -1935,8 +2042,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1957,6 +2063,21 @@ contains
                 'Edge oriented stabilisation does not support independent A11/A22!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
             call sys_halt()
+          end if
+          
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+                rsolution=rvector,rdefect=rdefect,&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
           end if
 
         case (CCMASM_STAB_EDGEORIENTED2)
@@ -2048,8 +2169,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -2070,6 +2190,21 @@ contains
                 'Edge oriented stabilisation does not support independent A11/A22!', &
                 OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
             call sys_halt()
+          end if
+
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+                rsolution=rvector,rdefect=rdefect,&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
           end if
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
@@ -2131,6 +2266,21 @@ contains
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+                rsolution=rvector,rdefect=rdefect,&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+          end if
+
         case default
           call output_line ('Don''t know how to set up nonlinearity!?!', &
               OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityDefect')
@@ -2152,8 +2302,7 @@ contains
           rjumpStabil%dnu = rnonlinearCCMatrix%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -2169,6 +2318,21 @@ contains
               rsolution=rvector,rdefect=rdefect,&
               rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
 
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+                rsolution=rvector,rdefect=rdefect,&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+          end if
+
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
           
@@ -2180,6 +2344,21 @@ contains
           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
+
+          ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
+          if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
+            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
+            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
+                p_IedgesDirichletBC)
+            call conv_jumpStabilisation2d (&
+                rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
+                rsolution=rvector,rdefect=rdefect,&
+                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                InodeList=p_IedgesDirichletBC)
+          end if
 
         case default
           ! No stabilisation

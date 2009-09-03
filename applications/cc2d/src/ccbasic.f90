@@ -130,6 +130,34 @@ module ccbasic
 
 !</typeblock>
 
+!<typeblock description="Type block defining dynamic information about a level that change in every timestep">
+
+  type t_dynamicLevelInfo
+  
+    ! A variable describing the discrete boundary conditions fo the velocity.
+    type(t_discreteBC) :: rdiscreteBC
+  
+    ! A structure for discrete fictitious boundary conditions
+    type(t_discreteFBC) :: rdiscreteFBC
+    
+    ! This flag signales whether there are Neumann boundary components
+    ! visible on the boundary of this level or not. If there are no
+    ! Neumann boundary components visible, the equation gets indefinite
+    ! for the pressure.
+    logical :: bhasNeumannBoundary = .false.
+    
+    ! Handle to a list of edges with Dirichlet boundary conditions on one of the
+    ! velocity components. =ST_NOHANDLE if there are no Dirichlet boundary segments.
+    integer :: hedgesDirichletBC = ST_NOHANDLE
+    
+    ! Number of edges with Dirichlet boudary conditions.
+    integer :: nedgesDirichletBC = 0
+    
+  end type
+  
+!</typeblock>
+
+
 !<typeblock description="Type block defining all information about one level">
 
   type t_problem_lvl
@@ -149,22 +177,11 @@ module ccbasic
     ! Temporary vector in the size of the RHS/solution vector on that level.
     type(t_vectorBlock) :: rtempVector
 
-    ! A variable describing the discrete boundary conditions fo the velocity.
-    ! Points to NULL until the BC`s are discretised for the first time.
-    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
-  
-    ! A structure for discrete fictitious boundary conditions
-    ! Points to NULL until the BC`s are discretised for the first time.
-    type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
-    
-    ! This flag signales whether there are Neumann boundary components
-    ! visible on the boundary of this level or not. If there are no
-    ! Neumann boundary components visible, the equation gets indefinite
-    ! for the pressure.
-    logical :: bhasNeumannBoundary
-    
     ! A structure containing all static information about this level.
     type(t_staticLevelInfo) :: rstaticInfo
+
+    ! A structure containing all dynamic information about this level.
+    type(t_dynamicLevelInfo) :: rdynamicInfo
     
   end type
   

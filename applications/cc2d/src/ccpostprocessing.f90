@@ -905,9 +905,8 @@ contains
     ! A discretisation structure for Q1
     type(t_blockDiscretisation) :: rprjDiscretisation
     
-    ! Discrete boundary conditions for the output vector
-    type(t_discreteBC), target :: rdiscreteBC
-    type(t_discreteFBC), target :: rdiscreteFBC
+    ! A dynamic level information structure containing the BC's.
+    type(t_dynamicLevelInfo), target :: rdynamicInfo
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -988,22 +987,21 @@ contains
     ! simulation is nonstationary.
     call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
-    ! Initialise the discrete BC structure
-    call bcasm_initDiscreteBC(rdiscreteBC)
+    ! Initialise the dynamic level information structure
+    call cc_initDynamicLevelInfo (rdynamicInfo)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
-        rdiscreteBC,rproblem%rcollection,.true.)
+        rdynamicInfo,rproblem%rcollection,.true.)
                             
     ! Connect the vector to the BC`s
-    rprjVector%p_rdiscreteBC => rdiscreteBC
+    rprjVector%p_rdiscreteBC => rdynamicInfo%rdiscreteBC
     
     ! The same way, discretise boundary conditions of fictitious boundary components.
-    call bcasm_initDiscreteFBC(rdiscreteFBC)
     call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
-        rdiscreteFBC,rproblem%rcollection)
-    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
+        rdynamicInfo,rproblem%rcollection)
+    rprjVector%p_rdiscreteBCfict => rdynamicInfo%rdiscreteFBC
     
     ! Filter the solution vector to implement discrete BC`s.
     call vecfil_discreteBCsol (rprjVector)
@@ -1141,9 +1139,9 @@ contains
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
-    ! Throw away the discrete BC`s - not used anymore.
-    call bcasm_releaseDiscreteBC (rdiscreteBC)
-    call bcasm_releaseDiscreteFBC (rdiscreteFBC)
+    ! Release the dynamic level information structure including the
+    ! discretised BC`s, not used anymore.
+    call cc_doneDynamicLevelInfo (rdynamicInfo)
     
     ! Clean up the collection (as we are done with the assembly, that is it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)

@@ -86,31 +86,16 @@ contains
     ! local variables
     integer :: i
 
-    ! A pointer to the system matrix and the RHS vector as well as 
-    ! the discretisation
-    type(t_blockDiscretisation), pointer :: p_rdiscretisation
-
     ! Pointer to structure for saving discrete BC`s:
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_discreteFBC), pointer :: p_rdiscreteFBC
     
     do i=rproblem%NLMIN,rproblem%NLMAX
     
-      ! From the matrix or the RHS we have access to the discretisation and the
-      ! analytic boundary conditions.
-      p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
-      
-      ! Initialise the BC/FBC structures.
-      allocate(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      call bcasm_initDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      
-      allocate(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      call bcasm_initDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      
       ! Hang the pointer into the the matrix. That way, these
       ! boundary conditions are always connected to that matrix and that
       ! vector.
-      p_rdiscreteBC => rproblem%RlevelInfo(i)%p_rdiscreteBC
+      p_rdiscreteBC => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC
 
       ! Also hang in the boundary conditions into the temporary vector that is
       ! used for the creation of solutions on lower levels.
@@ -118,7 +103,7 @@ contains
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBC => p_rdiscreteBC
       
       ! The same for the fictitious boundary boundary conditions.
-      p_rdiscreteFBC => rproblem%RlevelInfo(i)%p_rdiscreteFBC
+      p_rdiscreteFBC => rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC
       rproblem%RlevelInfo(i)%rtempVector%p_rdiscreteBCfict => p_rdiscreteFBC
       
     end do
@@ -126,13 +111,13 @@ contains
     ! On the finest level, attach the discrete BC also
     ! to the solution and RHS vector. They need it to be compatible
     ! to the matrix on the finest level.
-    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscreteBC
+    p_rdiscreteBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%rdiscreteBC
     
     rrhs%p_rdiscreteBC => p_rdiscreteBC
     rvector%p_rdiscreteBC => p_rdiscreteBC
 
     ! The same with the fictitious boundary BC`s
-    p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%p_rdiscreteFBC
+    p_rdiscreteFBC => rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo%rdiscreteFBC
     rrhs%p_rdiscreteBCfict => p_rdiscreteFBC
     rvector%p_rdiscreteBCfict => p_rdiscreteFBC
     
@@ -178,16 +163,16 @@ contains
       p_rdiscretisation => rproblem%RlevelInfo(i)%rdiscretisation
       
       ! Clear the last discretised BC`s. We are reassembling them.
-      call bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      call bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
+      call bcasm_clearDiscreteBC(rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC)
+      call bcasm_clearDiscreteFBC(rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC)
       
       ! Assemble boundary conditions
       call cc_assembleBDconditions (rproblem,p_rdiscretisation,&
-          rproblem%RlevelInfo(i)%p_rdiscreteBC,rproblem%rcollection)
+          rproblem%RlevelInfo(i)%rdynamicInfo,rproblem%rcollection)
       
       ! Assemble the boundary conditions of fictitious boundary components
       call cc_assembleFBDconditions (rproblem,p_rdiscretisation,&
-          rproblem%RlevelInfo(i)%p_rdiscreteFBC,rproblem%rcollection)
+          rproblem%RlevelInfo(i)%rdynamicInfo,rproblem%rcollection)
 
     end do
 
@@ -305,17 +290,16 @@ contains
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
     
       ! Release our discrete version of the boundary conditions
-      if (associated(rproblem%RlevelInfo(i)%p_rdiscreteBC)) then
-        call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%p_rdiscreteBC)
-        deallocate(rproblem%RlevelInfo(i)%p_rdiscreteBC)
-      end if
+      call bcasm_releaseDiscreteBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteBC)
       
       ! as well as the discrete version of the BC`s for fictitious boundaries
-      if (associated(rproblem%RlevelInfo(i)%p_rdiscreteFBC)) then
-        call bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-        deallocate(rproblem%RlevelInfo(i)%p_rdiscreteFBC)
-      end if
+      call bcasm_releaseDiscreteFBC (rproblem%RlevelInfo(i)%rdynamicInfo%rdiscreteFBC)
 
+      ! Release the Dirichlet edges.      
+      if (rproblem%RlevelInfo(i)%rdynamicInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then
+        call storage_free (rproblem%RlevelInfo(i)%rdynamicInfo%hedgesDirichletBC)
+      end if
+      
     end do
     
   end subroutine
