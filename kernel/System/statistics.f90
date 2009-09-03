@@ -18,19 +18,25 @@
 !#  2.) stat_startTimer
 !#      -> starts the timer object
 !#
-!#  3.) stat_stopTimer
-!#      -> stops the timer object and calculates the time that has elapsed since it was started
+!#  3.) stat_sampleTimer
+!#      -> calculates the time that has elapsed since it was started without 
+!#         stopping the timer
 !#
-!#  4.) stat_sgetTime_byTimer
+!#  4.) stat_stopTimer
+!#      -> stops the timer object and calculates the time that has elapsed 
+!#         since it was started
+!#
+!#  5.) stat_sgetTime_byTimer
 !#      -> Returns a string containing both CPU and real elapsed time
 !#
-!#  5.) stat_addTimers
+!#  6.) stat_addTimers
 !#      -> Computes the sum of the elapsed times the given timers hold
 !#
-!#  6.) stat_subTimers
-!#      -> Computes the difference of the elapsed times (rtimer2 - rtimer1) the given timers hold.
+!#  7.) stat_subTimers
+!#      -> Computes the difference of the elapsed times (rtimer2 - rtimer1) 
+!#         the given timers hold.
 !#
-!#  7.) stat_rcloneTimer
+!#  8.) stat_rcloneTimer
 !#      -> Clones the given timer
 !#
 !# Auxiliary routines:
@@ -199,6 +205,7 @@ module statistics
   public :: stat_subTimers
   public :: stat_rcloneTimer
   public :: stat_calender_to_julian
+  public :: stat_sampleTimer
   
 contains
 
@@ -471,6 +478,101 @@ contains
   end subroutine stat_stopTimer
   
 ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine stat_sampleTimer(rtimer,delapsedTime)
+  
+!<description>
+  ! This routine calculates the wallclock time from starting the timer with
+  ! stat_startTimer until now but does not stop the timer.
+!</description>
+
+!<input>
+    ! The timer to stop.
+    type (t_timer), intent(inout) :: rtimer
+!</input>
+
+!<output>
+    ! Elapsed time since last start of the timer.
+    real(DP), intent(out) :: delapsedTime
+!</output>
+
+!</subroutine>
+
+    real(DP), parameter :: dsecPerDay = 24.0_DP*60.0_DP*60.0_DP
+
+    integer :: icount, irate, icmax, icpudate,icputime
+    real(DP) :: dcurrentReal, dtmp
+    integer, dimension(8) :: itimeLong
+
+    if (rtimer%ctype .eq. STAT_TIMERNOTRUNNING) then
+      call output_line ('Timer not running!', &
+                        OU_CLASS_WARNING,OU_MODE_STD,'stat_stoptimer')
+      return
+    end if
+
+    delapsedTime = 0.0_DP
+
+    ! Is that a short-term timer?
+    if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
+
+      ! Ask the system clock
+      call system_clock(icount, irate, icmax)
+      dCurrentReal = real(icount, DP) / real(irate, DP)
+      dtmp = dcurrentReal - rtimer%dstartReal
+
+      if (icount .lt. rtimer%istartCount) then
+        ! Add the maximum measurable timespan to that negative number to
+        ! get the correct timespan.
+        dtmp = dtmp + real(icmax,DP)/real(irate,DP)
+      endif
+      
+      ! Save the wall clock time. This may be modified below...
+      delapsedTime = max(dtmp, 0.0_DP)
+    end if
+    
+    ! Is that a long-term timer?  
+    if (iand(rtimer%ctype,STAT_TIMERLONG) .ne. 0) then
+    
+      call date_and_time(values=itimeLong)
+      
+      ! Get the Julian date
+      iCPUdate = &
+          stat_calender_to_julian(itimeLong(1), itimeLong(2), itimeLong(3))
+          
+      ! Get the time since 0:00:00 in ms.
+      iCPUtime = itimeLong(5) * 60 * 60 * 1000 + &
+                             itimeLong(6) * 60 * 1000 + &
+                             itimeLong(7) * 1000 + &
+                             itimeLong(8)
+                             
+      ! Calculate the actual time since the last start_timer:
+      dtmp = real(iCPUdate - rtimer%istartCPUdate,dp) * dsecPerDay + &
+             real(iCPUtime - rtimer%istartCPUtime,dp) * 0.001_DP
+             
+      ! If both, short- and long-term timer, are activated, take the
+      ! wall time that better suits the correct time.
+      if (iand(rtimer%ctype,STAT_TIMERSHORT) .ne. 0) then
+      
+        ! If the difference is more that let us say 100 sec, take
+        ! the approximated time. This should also be the case if the
+        ! timer from system_clock gets more than one overflow...
+        ! If the difference is less, take the exact time.
+        if (abs(dtmp-delapsedTime) .gt. 100.0_DP) then
+          delapsedTime = max(dtmp, 0.0_DP)
+        end if
+      
+      else
+        ! That is our wall clock time.
+        delapsedTime = max(dtmp, 0.0_DP)
+      end if
+      
+    end if
+    
+  end subroutine stat_sampleTimer
+  
+  ! ***************************************************************************
 
 !<function>
   function stat_sgetTime_byTimer(rtimer) result (stime)
