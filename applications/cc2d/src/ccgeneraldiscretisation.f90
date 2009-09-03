@@ -1056,19 +1056,8 @@ contains
           rjumpStabil, CONV_MODMATRIX, rstaticInfo%rmatrixStabil,&
           rdiscretisation=rstaticInfo%rdiscretisationStabil)
           
-!      call matio_writeMatrixHR (rstaticInfo%rmatrixStabil, "matrix",&
-!          .true., 0, "matrixstabil.txt", "(E12.2)")
-!      call matio_spyMatrix("matrixstabilmatlab.txt","matrix",rstaticInfo%rmatrixStabil,.true.,&
-!          dthreshold = 0.0_DP)
-      
     end if
 
-!    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
-!                rstaticInfo%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-!    call lsyssc_clearMatrix (rstaticInfo%rmatrixStabil)
-!    call matio_spyMatrix("matrixstabilmatlab.txt","matrix",rstaticInfo%rmatrixStabil,.true.,&
-!        dthreshold = 0.0_DP)
-                                
     ! -----------------------------------------------------------------------
     ! Mass matrices. They are used in so many cases, it is better we always
     ! have them available.
