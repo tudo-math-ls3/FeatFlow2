@@ -93,7 +93,7 @@ refSolU1 = -20.648992
 refSolU2 = 27.642747
 
 # max number of iterations
-niterations = 1000
+niterations = 2000
 
 # type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
 ctypeOfSolver = MG_SOLVER

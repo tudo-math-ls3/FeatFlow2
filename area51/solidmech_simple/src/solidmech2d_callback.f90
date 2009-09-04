@@ -99,9 +99,11 @@ module solidmech2d_callback
 
   integer, parameter :: SIMUL_REAL       = 1
   integer, parameter :: SIMUL_ANALYTICAL = 2
-  integer, parameter :: Y = 392
-  integer, parameter :: N = 104
-  integer, parameter :: DIRECT_SOLVER = 4
+  integer, parameter :: POISSON = 3
+  integer, parameter :: ELASTICITY = 4
+  integer, parameter :: Y = 5
+  integer, parameter :: N = 6
+  integer, parameter :: DIRECT_SOLVER = 7
   integer, parameter :: BICGSTAB_SOLVER = 8
   integer, parameter :: MG_SOLVER = 14
   integer, parameter :: CG_MG_SOLVER = 17
@@ -157,6 +159,9 @@ module solidmech2d_callback
 
     !    Number of smoothing steps
     integer :: niterations = 5000
+
+    !     kind of equation (possible values: POISSON, ELASTICITY)
+    integer :: ctypeOfEquation = ELASTICITY
 
     !     kind of configuration (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
     integer :: ctypeOfSimulation = SIMUL_REAL

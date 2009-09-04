@@ -10,7 +10,8 @@ mus="0.5"
 nus="0.3"
 
 # choose MG levels
-mgs="02 03 04 05 06 07 08 09 10"
+mgs="06"
+#mgs="03 04 05 06 07 08 09 10"
 #mgs="02 03 04 05 06 07 08 09"
 
 #-----------------------------
@@ -29,6 +30,9 @@ for nu in ${nus}; do
 # loop over all MG levels
 for mg in ${mgs}; do
 
+#nlmin=2
+nlmin=$(expr ${mg} - 1)
+
 # create the temporary dat file
 cat > dat/${datFile}.dat <<END_OF_DATA
 # PRM-file of the domain
@@ -39,6 +43,9 @@ sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
 selementType = Q1
+
+# type of equation (possible values: POISSON, ELASTICITY)
+ctypeOfEquation = POISSON
 
 # boundaries
 nboundaries= 1
@@ -55,7 +62,7 @@ D
 D
 
 # Minimum level of the discretisation
-NLMIN = 2
+NLMIN = ${nlmin}
 
 # Maximum level of the discretisation
 NLMAX = ${mg}
@@ -88,7 +95,7 @@ niterations = 50000
 ctypeOfSolver = MG_SOLVER
 
 # type of smoother (possible values: JACOBI, ILU)
-ctypeOfSmoother = ILU
+ctypeOfSmoother = JACOBI
 
 # Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
 ccycle = 1

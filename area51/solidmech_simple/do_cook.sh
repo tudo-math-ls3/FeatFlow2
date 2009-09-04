@@ -10,7 +10,7 @@ mus="80.194"
 nus="0.499"
 
 # choose MG levels
-#mgs="02 03 04 05 06 07 08 09 10"
+#mgs="03 04 05 06 07 08 09 10"
 mgs="02 03 04 05 06 07 08 09"
 
 #-----------------------------
@@ -78,17 +78,17 @@ inquirePointX = 48.0
 inquirePointY = 60.0
 
 # Reference sol to calculate error (only needed in case of inquirePoint .eq. Y)
-refSolU1 = -1.4629247E+01     
-refSolU2 = 2.0221734E+01
+refSolU1 = -2.0646184E+01     
+refSolU2 = 2.7640611E+01
 
 # max number of iterations
 niterations = 90000
 
 # type of solver (possible values: #DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER,CG_SOlVER,CG_MG_SOLVER,MG_CG_SOLVER,MG_BICG_SOLVER)
-ctypeOfSolver = MG_BICG_SOLVER
+ctypeOfSolver = MG_CG_SOLVER
 
 # type of smoother (possible values: JACOBI, ILU)
-ctypeOfSmoother = ILU
+ctypeOfSmoother = JACOBI
 
 # Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
 ccycle = 1
