@@ -257,7 +257,7 @@ module collection
   use io
   use genoutput
   use paramlist, only: t_parlist
-  use boundary, only: t_boundary
+  use boundary, only: t_boundary, t_boundaryRegion
   use boundarycondition, only: t_boundaryConditions
   use triangulation, only: t_triangulation
   use spatialdiscretisation, only: t_spatialDiscretisation, &
@@ -416,9 +416,11 @@ module collection
   ! Graph structure
   integer, parameter, public :: COLLCT_GRAPH        = 32
 
-  ! Particles structure
-  integer, parameter, public :: COLLCT_PARTICLES    = 33
+  ! Boundary region
+  integer, parameter, public :: COLLCT_BDREGION     = 33
 
+  ! Particles structure
+  integer, parameter, public :: COLLCT_PARTICLES    = 34
 
 !</constantblock>
 
@@ -485,6 +487,9 @@ module collection
 
     ! Pointer to a domain
     type(t_boundary), pointer                   :: p_rboundary => null()
+
+    ! Pointer to a boundary region
+    type(t_boundaryRegion), pointer             :: p_rboundaryRegion => null()
 
     ! Pointer to a geometry object
     type(t_geometryObject), pointer             :: p_rgeometry => null()
@@ -718,7 +723,8 @@ module collection
   public :: collct_setvalue_discr 
   public :: collct_setvalue_bldiscr 
   public :: collct_setvalue_tria 
-  public :: collct_setvalue_domain 
+  public :: collct_setvalue_bdry 
+  public :: collct_setvalue_bdreg
   public :: collct_setvalue_bc 
   public :: collct_setvalue_vecsca 
   public :: collct_setvalue_matsca 
@@ -753,7 +759,8 @@ module collection
   public :: collct_getvalue_discr 
   public :: collct_getvalue_bldiscr 
   public :: collct_getvalue_tria 
-  public :: collct_getvalue_domain 
+  public :: collct_getvalue_bdry 
+  public :: collct_getvalue_bdreg
   public :: collct_getvalue_bc 
   public :: collct_getvalue_vecsca 
   public :: collct_getvalue_matsca 
@@ -3002,10 +3009,10 @@ contains
   
 !<function>
 
-  function collct_getvalue_domain (rcollection, sparameter, &
-                                   ilevel, ssectionName, bexists) result(value)
+  function collct_getvalue_bdry (rcollection, sparameter, &
+                                 ilevel, ssectionName, bexists) result(value)
 !<description>
-  ! Returns the the parameter sparameter as pointer to a triangulation 
+  ! Returns the the parameter sparameter as pointer to a boundary 
   ! structure.
   ! An error is thrown if the value is of the wrong type.
 !</description>  
@@ -3060,7 +3067,71 @@ contains
       nullify(value)
     end if
     
-  end function collct_getvalue_domain
+  end function collct_getvalue_bdry
+
+  ! ***************************************************************************
+  
+!<function>
+
+  function collct_getvalue_bdreg (rcollection, sparameter, &
+                                   ilevel, ssectionName, bexists) result(value)
+!<description>
+  ! Returns the the parameter sparameter as pointer to a boundary region 
+  ! structure.
+  ! An error is thrown if the value is of the wrong type.
+!</description>  
+  
+!<result>
+
+  ! The value of the parameter.
+  ! A standard value if the value does not exist.
+    type(t_boundaryRegion), pointer :: value
+
+!</result>
+
+!<input>
+    
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+  ! The parameter name to search for.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!<output>
+
+  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
+  ! There is no error thrown if a variable does not exist.
+  logical, intent(out), optional :: bexists
+
+!</output>
+
+!</function>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    
+    ! Get the pointer to the parameter
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BDREGION,&
+                                .false.,p_rvalue, ilevel, bexists, ssectionName)
+
+    ! Return the quantity
+    if (associated(p_rvalue)) then
+      value => p_rvalue%p_rboundaryRegion
+    else
+      nullify(value)
+    end if
+    
+  end function collct_getvalue_bdreg
 
   ! ***************************************************************************
   
@@ -5033,7 +5104,7 @@ contains
   
 !<subroutine>
 
-  subroutine collct_setvalue_domain (rcollection, sparameter, value, badd, &
+  subroutine collct_setvalue_bdry (rcollection, sparameter, value, badd, &
                                      ilevel, ssectionName) 
 !<description>
   ! Stores a pointer to 'value' using the parameter name 'sparameter'.
@@ -5088,7 +5159,68 @@ contains
     ! Set the value
     p_rvalue%p_rboundary => value
     
-  end subroutine collct_setvalue_domain
+  end subroutine collct_setvalue_bdry
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine collct_setvalue_bdreg (rcollection, sparameter, value, badd, &
+                                    ilevel, ssectionName) 
+!<description>
+  ! Stores a pointer to 'value' using the parameter name 'sparameter'.
+  ! If the parameter does not exist, the behaviour depends on the 
+  ! parameter badd:
+  !  badd=false: an error is thrown,
+  !  badd=true : the parameter is created at the position defined by
+  !              ilevel and ssectionName (if given). When the position
+  !              defined by these variables does not exist, an error is thrown
+!</description>  
+  
+!<inputoutput>
+  
+  ! The parameter list.
+  type(t_collection), intent(inout) :: rcollection
+  
+!</inputoutput>
+
+!<input>
+    
+  ! The parameter name.
+  character(LEN=*), intent(in) :: sparameter
+  
+  ! The value of the parameter.
+  type(t_boundaryRegion), intent(in), target :: value
+  
+  ! Whether to add the variable if it does not exist.
+  ! =false: do not add the variable, throw an error
+  ! =true : add the variable
+  logical, intent(in) :: badd
+
+  ! OPTIONAL: The level where to search.
+  ! If =0 or not given, the search is in the level-independent parameter block.
+  integer, intent(in), optional :: ilevel
+
+  ! OPTIONAL: The section name where to search.
+  ! If ='' or not given, the search is in the unnamed section.
+  character(LEN=*), intent(in), optional :: ssectionName
+
+!</input>
+  
+!</subroutine>
+
+    ! local variables
+    type(t_collctValue), pointer :: p_rvalue
+    logical :: bexists
+    
+    ! Get the pointer to the parameter. Add the parameter if necessary
+    call collct_getvalue_struc (rcollection, sparameter, COLLCT_BDREGION,&
+                                badd,p_rvalue, ilevel, bexists, ssectionName)
+    
+    ! Set the value
+    p_rvalue%p_rboundaryRegion => value
+    
+  end subroutine collct_setvalue_bdreg
 
   ! ***************************************************************************
   

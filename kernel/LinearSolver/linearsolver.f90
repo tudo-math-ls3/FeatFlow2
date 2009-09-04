@@ -13938,8 +13938,8 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-        if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-          I = min(ite,niteAsymptoticCVR)
+        if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+          I = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
               dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -16038,8 +16038,8 @@ contains
       
         ! Calculate asymptotic convergence rate
       
-        if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-          I = min(ite,niteAsymptoticCVR)
+        if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+          I = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
               dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
