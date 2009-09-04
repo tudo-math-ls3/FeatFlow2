@@ -3925,7 +3925,7 @@ contains
         if (linsol_testDivergence(rsolverNode,dfr)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('DefCorr: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -3954,7 +3954,7 @@ contains
 
       end do
 
-      ! Set ITE to rsolverNode%nmaxIterations to prevent printing 
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing 
       ! of "rsolverNode%nmaxIterations+1" if the loop was completed.
 
       if (ite .gt. rsolverNode%nmaxIterations) then
@@ -3972,10 +3972,10 @@ contains
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
         call output_line ('DefCorr: Iteration '// &
-            trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+            trim(sys_siL(ite,10))//',  !!RES!! = '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -3992,8 +3992,8 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-        I = min(ite,niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+        i = min(rsolverNode%iiterations,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
             dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -8588,7 +8588,7 @@ contains
         if (linsol_testDivergence(rsolverNode,dfr)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('CG: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -8612,7 +8612,7 @@ contains
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
           call output_line ('CG: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
@@ -8659,7 +8659,7 @@ contains
         ! That is it - next iteration!
       end do
 
-      ! Set ITE to rsolverNode%nmaxIterations to prevent printing of 
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing of 
       ! "rsolverNode%nmaxIterations+1" of the loop was completed
       if (ite .gt. rsolverNode%nmaxIterations) then
         ! Warning if we did not reach the convergence criterion.
@@ -8676,10 +8676,10 @@ contains
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
         call output_line ('CG: Iteration '// &
-            trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+            trim(sys_siL(ite,10))//',  !!RES!! = '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -8697,8 +8697,8 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-        I = min(ite,niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+        i = min(rsolverNode%iiterations,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
             dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -9422,7 +9422,7 @@ contains
 
           ! Some tuning for the output, then cancel.
           rsolverNode%iresult = -1
-          rsolverNode%iiterations = ITE-1
+          rsolverNode%iiterations = ite-1
           exit
           
         end if
@@ -9507,7 +9507,7 @@ contains
         if (linsol_testDivergence(rsolverNode,dfr)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('BiCGStab: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -9531,13 +9531,13 @@ contains
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
             (mod(ite,niteResOutput).eq.0)) then
           call output_line ('BiCGStab: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
       end do
 
-      ! Set ITE to rsolverNode%nmaxIterations to prevent printing of
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing of
       ! "rsolverNode%nmaxIterations+1" of the loop was completed
       if (ite .gt. rsolverNode%nmaxIterations) then
         ! Warning if we did not reach the convergence criterion.
@@ -9554,10 +9554,10 @@ contains
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
         call output_line ('BiCGStab: Iteration '// &
-            trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+            trim(sys_siL(ite,10))//',  !!RES!! = '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -9575,8 +9575,8 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-        I = min(ite,niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+        i = min(rsolverNode%iiterations,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
             dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -10549,7 +10549,7 @@ contains
             (mod(ite,niteResOutput).eq.0)) then
             call output_line ('GMRES('//&
               trim(sys_siL(idim,10))//'): Iteration '//&
-              trim(sys_siL(ITE,10))//',  !q(i+1)! = '//&
+              trim(sys_siL(ite,10))//',  !q(i+1)! = '//&
               trim(sys_sdEL(dpseudores,15)) )
           end if
 
@@ -10650,7 +10650,7 @@ contains
         if (linsol_testDivergence(rsolverNode,dfr)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('GMRES: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -10682,7 +10682,7 @@ contains
             (mod(ite,niteResOutput).eq.0)) then
           call output_line ('GMRES('// trim(sys_siL(idim,10))//&
             '): Iteration '//&
-            trim(sys_siL(ITE,10))//',  !!RES!!  = '//&
+            trim(sys_siL(ite,10))//',  !!RES!!  = '//&
             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
 
@@ -10691,7 +10691,7 @@ contains
       ! -= End of Outer Loop
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-      ! Set ITE to rsolverNode%nmaxIterations to prevent printing of
+      ! Set ite to rsolverNode%nmaxIterations to prevent printing of
       ! "rsolverNode%nmaxIterations+1" of the loop was completed
       if (ite .gt. rsolverNode%nmaxIterations) then
         ! Warning if we did not reach the convergence criterion.
@@ -10708,11 +10708,11 @@ contains
       ! Finish - either with an error or if converged.
       ! Print the last residuum.
       if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
+          (ite .ge. 1) .and. (ite .lt. rsolverNode%nmaxIterations) .and. &
           (rsolverNode%iresult .ge. 0)) then
         call output_line ('GMRES('// trim(sys_siL(idim,10))//&
           '): Iteration '//&
-          trim(sys_siL(ITE,10))//',  !!RES!!  = '//&
+          trim(sys_siL(ite,10))//',  !!RES!!  = '//&
           trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
       end if
 
@@ -10730,8 +10730,8 @@ contains
     if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
     
       ! Calculate asymptotic convergence rate
-      if ((niteAsymptoticCVR .gt. 0) .and. (ite .gt. 0)) then
-        I = min(ite,niteAsymptoticCVR)
+      if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
+        i = min(rsolverNode%iiterations,niteAsymptoticCVR)
         rsolverNode%dasymptoticConvergenceRate = &
           (rsolverNode%dfinalDefect / &
             dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -13868,7 +13868,7 @@ contains
           if (linsol_testDivergence(rsolverNode,dres)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('Multigrid: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -13892,7 +13892,7 @@ contains
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
               (mod(ite,niteResOutput).eq.0)) then
             call output_line ('Multigrid: Iteration '// &
-                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+                trim(sys_siL(ite,10))//',  !!RES!! = '//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
           
@@ -13902,14 +13902,14 @@ contains
         ! Print the last residuum.
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-            (ite .ge. 1) .and. (ITE .le. rsolverNode%nmaxIterations) .and. &
+            (ite .ge. 1) .and. (ite .le. rsolverNode%nmaxIterations) .and. &
             (rsolverNode%iresult .ge. 0)) then
           call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
-        ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+        ! Set ite to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
         if (ite .gt. rsolverNode%nmaxIterations) then
@@ -13939,7 +13939,7 @@ contains
         ! Calculate asymptotic convergence rate
       
         if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
-          I = min(rsolverNode%iiterations,niteAsymptoticCVR)
+          i = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
               dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
@@ -15965,7 +15965,7 @@ contains
           if (linsol_testDivergence(rsolverNode,dres)) then
           if (rsolverNode%ioutputLevel .lt. 2) then
             do i=max(1,size(Dresqueue)-ite-1+1),size(Dresqueue)
-              j = ITE-max(1,size(Dresqueue)-ite+1)+i
+              j = ite-max(1,size(Dresqueue)-ite+1)+i
               call output_line ('Multigrid: Iteration '// &
                   trim(sys_siL(j,10))//',  !!RES!! = '//&
                   trim(sys_sdEL(Dresqueue(i),15)) )
@@ -15989,7 +15989,7 @@ contains
           if ((rsolverNode%ioutputLevel .ge. 2) .and. &
               (mod(ite,niteResOutput).eq.0)) then
             call output_line ('Multigrid: Iteration '// &
-                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+                trim(sys_siL(ite,10))//',  !!RES!! = '//&
                 trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
           end if
           
@@ -15999,14 +15999,14 @@ contains
         ! Print the last residuum.
 
         if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-            (ite .ge. 1) .and. (ITE .le. rsolverNode%nmaxIterations) .and. &
+            (ite .ge. 1) .and. (ite .le. rsolverNode%nmaxIterations) .and. &
             (rsolverNode%iresult .ge. 0)) then
           call output_line ('Multigrid: Iteration '// &
-              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_siL(ite,10))//',  !!RES!! = '//&
               trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
         end if
         
-        ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+        ! Set ite to NIT to prevent printing of "NIT+1" of the loop was
         ! completed
 
         if (ite .gt. rsolverNode%nmaxIterations) then
@@ -16039,7 +16039,7 @@ contains
         ! Calculate asymptotic convergence rate
       
         if ((niteAsymptoticCVR .gt. 0) .and. (rsolverNode%iiterations .gt. 0)) then
-          I = min(rsolverNode%iiterations,niteAsymptoticCVR)
+          i = min(rsolverNode%iiterations,niteAsymptoticCVR)
           rsolverNode%dasymptoticConvergenceRate = &
             (rsolverNode%dfinalDefect / &
               dresqueue(LINSOL_NRESQUEUELENGTH-i))**(1.0_DP/real(I,DP))
