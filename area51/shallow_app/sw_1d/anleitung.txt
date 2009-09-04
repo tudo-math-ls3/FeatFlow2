@@ -1,0 +1,3 @@
+1d shallowwater with source term.
+Attention: If executed under windows, the output files are found in
+/console1/console1
