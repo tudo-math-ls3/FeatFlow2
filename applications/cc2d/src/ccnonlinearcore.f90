@@ -1552,6 +1552,7 @@ contains
 
       ! Calculate norms of the solution/defect vector
       call cc_getDefectNorm (rx,rb,rd,Dresiduals)
+      
       Dresiduals(3) = sqrt(Dresiduals(1)**2 + Dresiduals(2)**2)
 
       ! In the first iteration (initial defect), print the norm of the defect
@@ -1583,11 +1584,20 @@ contains
         dresOld = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                        rnonlinearIteration%DresidualOld(2)**2)
         
+        ! Initial defect
+        dresINIT = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
+                        rnonlinearIteration%DresidualInit(2)**2)
+                        
+        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
+        ! But to prevent a check against "something<=0" in this case below,
+        ! set dresInit to something <> 0.
+        if (dresINIT .eq. 0.0_DP) dresINIT = 1.0_DP
+
         ! Replace the 'old' residual by the current one
         rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
 
         ! Nonlinear convergence rate
-        drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/real(ite,DP))
+        drhoNL = (Dresiduals(3)/dresINIT) ** (1.0_DP/real(ite,DP))
         
         ! Calculate norms of the solution/defect vector, calculated above
         dresU   = Dresiduals(1)
@@ -1631,14 +1641,6 @@ contains
         !        
         ! Get the stopping criteria from the parameters.
         ! Use the DepsNL data according to the initialisation above.
-        dresINIT = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
-                        rnonlinearIteration%DresidualInit(2)**2)
-                        
-        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
-        ! But to prevent a check against "something<=0" in this case below,
-        ! set dresInit to something <> 0.
-        if (dresINIT .eq. 0.0_DP) dresINIT = 1.0_DP
-
         depsD   = rnonlinearIteration%DepsNL(1)
         depsDiv = rnonlinearIteration%DepsNL(2)
         depsUR  = rnonlinearIteration%DepsNL(3)
