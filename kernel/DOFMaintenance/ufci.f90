@@ -13,7 +13,6 @@
 module ufci
 
 use fsystem
-use triangulation
 
 implicit none
 
@@ -57,21 +56,28 @@ public :: t_ufciData
     ! IN: Total number of functions which are to be evaluated.
     integer :: nfunctions = 0
 
-    ! IN: user-defined ID of the functions which are to be called
+    ! IN: user-defined ID of the functions which are to be called, where
+    !     IfunctionIDs(i) = user-defined ID of the i-th function that is to be
+    !                       evaluated
     integer, dimension(UFCI_MAX_SIM) :: IfunctionIDs = 0
     
     ! ---------- ENTRIES FOR EVALUATION TASK ----------
 
-    ! IN: The total number of points.
+    ! IN: The number of points per element.
     integer :: npoints = 0
+    
+    ! IN: The number of elements.
+    integer :: nelements = 0
 
     ! IN: The points in which the functions are to be evaluated, given in real
-    !     coordinates.
-    real(DP), dimension(:,:), pointer :: p_Dpoints => null()
+    !     coordinates, where
+    !     p_Dpoints(i,j,k) = coordinate i of point j on element k
+    real(DP), dimension(:,:,:), pointer :: p_Dpoints => null()
 
     ! OUT: The values of the evaluated functions, where
-    !      p_Dvalues(i,j) = function value of function j in point i
-    real(DP), dimension(:,:), pointer :: p_Dvalues => null()
+    !      p_Dvalues(i,j,k) = function value of function k on element j
+    !                         in point i
+    real(DP), dimension(:,:,:), pointer :: p_Dvalues => null()
    
   end type
 
