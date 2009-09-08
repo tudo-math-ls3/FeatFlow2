@@ -1230,12 +1230,12 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
 POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
 POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 3
 BDR_PARPROFILEMAX = 1.5
 # Modify the smoother damping parameter, otherwise EOJ will not work!
 SMOOTHER_DOMEGA = 0.5
 NONLINEAR_ITYPEPRECONDITIONING = 2
 LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
-POSTPROCESSING_ICALCBODYFORCES = 3
 
 TIMEDISCRETISATION_DTIMESTEP = 0.04
 
@@ -1390,3 +1390,374 @@ testid   = CC2D_275_6
 mglevels = 6
 
 #####
+
+##########
+# Test 280
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.04, Crank-Nicolson
+# Body force evaluation using volume integration
+##########
+
+testid   = CC2D_280_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.2
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 32.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 3
+BDR_PARPROFILEMAX = 1.5
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+POSTPROCESSING_ICALCBODYFORCES = 3
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_280_3
+mglevels = 3
+
+testid   = CC2D_280_4
+mglevels = 4
+
+testid   = CC2D_280_5
+mglevels = 5
+
+testid   = CC2D_280_6
+mglevels = 6
+
+
+##########
+# Test 281
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.02, Crank-Nicolson
+##########
+
+testid   = CC2D_281_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+
+testid   = CC2D_281_3
+mglevels = 3
+
+testid   = CC2D_281_4
+mglevels = 4
+
+testid   = CC2D_281_5
+mglevels = 5
+
+testid   = CC2D_281_6
+mglevels = 6
+
+
+##########
+# Test 282
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.01, Crank-Nicolson
+##########
+
+testid   = CC2D_282_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+testid   = CC2D_282_3
+mglevels = 3
+
+testid   = CC2D_282_4
+mglevels = 4
+
+testid   = CC2D_282_5
+mglevels = 5
+
+testid   = CC2D_282_6
+mglevels = 6
+
+
+##########
+# Test 283
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.005, Crank-Nicolson
+##########
+
+testid   = CC2D_283_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+
+testid   = CC2D_283_3
+mglevels = 3
+
+testid   = CC2D_283_4
+mglevels = 4
+
+testid   = CC2D_283_5
+mglevels = 5
+
+testid   = CC2D_283_6
+mglevels = 6
+
+##########
+# Test 284
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.0025, Crank-Nicolson
+##########
+
+testid   = CC2D_284_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+
+testid   = CC2D_284_3
+mglevels = 3
+
+testid   = CC2D_284_4
+mglevels = 4
+
+testid   = CC2D_284_5
+mglevels = 5
+
+testid   = CC2D_284_6
+mglevels = 6
+
+##########
+# Test 285
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.00125, Crank-Nicolson
+##########
+
+testid   = CC2D_285_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+
+testid   = CC2D_285_3
+mglevels = 3
+
+testid   = CC2D_285_4
+mglevels = 4
+
+testid   = CC2D_285_5
+mglevels = 5
+
+testid   = CC2D_285_6
+mglevels = 6
+
+#####
+
+##########
+# Test 290
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.04, Crank-Nicolson
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_290_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.2
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 32.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+POSTPROCESSING_ICALCBODYFORCES = 3
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_290_3
+mglevels = 3
+
+testid   = CC2D_290_4
+mglevels = 4
+
+testid   = CC2D_290_5
+mglevels = 5
+
+testid   = CC2D_290_6
+mglevels = 6
+
+
+##########
+# Test 291
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.02, Crank-Nicolson
+##########
+
+testid   = CC2D_291_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+
+testid   = CC2D_291_3
+mglevels = 3
+
+testid   = CC2D_291_4
+mglevels = 4
+
+testid   = CC2D_291_5
+mglevels = 5
+
+testid   = CC2D_291_6
+mglevels = 6
+
+
+##########
+# Test 292
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.01, Crank-Nicolson
+##########
+
+testid   = CC2D_292_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+testid   = CC2D_292_3
+mglevels = 3
+
+testid   = CC2D_292_4
+mglevels = 4
+
+testid   = CC2D_292_5
+mglevels = 5
+
+testid   = CC2D_292_6
+mglevels = 6
+
+
+##########
+# Test 293
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.005, Crank-Nicolson
+##########
+
+testid   = CC2D_293_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+
+testid   = CC2D_293_3
+mglevels = 3
+
+testid   = CC2D_293_4
+mglevels = 4
+
+testid   = CC2D_293_5
+mglevels = 5
+
+testid   = CC2D_293_6
+mglevels = 6
+
+##########
+# Test 294
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.0025, Crank-Nicolson
+##########
+
+testid   = CC2D_294_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+
+testid   = CC2D_294_3
+mglevels = 3
+
+testid   = CC2D_294_4
+mglevels = 4
+
+testid   = CC2D_294_5
+mglevels = 5
+
+testid   = CC2D_294_6
+mglevels = 6
+
+##########
+# Test 295
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element, EOJ(0.2)
+# 32 seconds with timestep 0.00125, Crank-Nicolson
+##########
+
+testid   = CC2D_295_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
+datfile  = ./data/apps_cc2d/master.dat
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+
+testid   = CC2D_295_3
+mglevels = 3
+
+testid   = CC2D_295_4
+mglevels = 4
+
+testid   = CC2D_295_5
+mglevels = 5
+
+testid   = CC2D_295_6
+mglevels = 6
+
