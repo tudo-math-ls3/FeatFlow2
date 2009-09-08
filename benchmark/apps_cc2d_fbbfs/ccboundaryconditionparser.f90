@@ -109,7 +109,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleBDconditions (rproblem,rdiscretisation,rdiscreteBC,&
+  subroutine cc_assembleBDconditions (rproblem,rdiscretisation,rdynamicLevelInfo,&
     rcollection,bforPostprocessing)
 
 !<description>
@@ -141,10 +141,10 @@ contains
   ! Collection structure to be passed to callback routines
   type(t_collection), intent(inout), target :: rcollection
   
-  ! A t_discreteBC structure that receives a discretised version
-  ! of the boundary boundary conditions. The structure should
+  ! A t_dynamicLevelInfo structure that receives a discretised version
+  ! of the boundary boundary conditions. The BC substructure should
   ! be empty; new BC`s are simply added to the structure.
-  type(t_discreteBC), intent(inout) :: rdiscreteBC
+  type(t_dynamicLevelInfo), intent(inout) :: rdynamicLevelInfo
 !</inputoutput>
 
 !</subroutine>
@@ -158,7 +158,6 @@ contains
     character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
     character(LEN=PARLST_MLNAME) :: cname
     integer, dimension(NDIM2D) :: IvelEqns
-    type(t_collection) :: rlocalCollection
     integer(I32) :: casmComplexity
     integer :: imovingFrame
     
@@ -189,10 +188,10 @@ contains
     endif
     
     ! Get the domain from the problem structure
-    p_rboundary => rproblem%rboundary
+    p_rboundary => rdiscretisation%p_rboundary
     
     ! Get the triangulation on the highest level
-    p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation
+    p_rtriangulation => rdiscretisation%p_rtriangulation
     
     ! For implementing boundary conditions, we use a `filter technique with
     ! discretised boundary conditions`. This means, we first have to calculate
@@ -417,7 +416,7 @@ contains
               
                 ! Assemble the BC`s.
                 call bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,1,rboundaryRegion,rdiscreteBC,&
+                    rdiscretisation,1,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)
                     
               end if
@@ -453,7 +452,7 @@ contains
               
                 ! Assemble the BC`s.
                 call bcasm_newDirichletBConRealBD (&
-                    rdiscretisation,2,rboundaryRegion,rdiscreteBC,&
+                    rdiscretisation,2,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)
 
               end if
@@ -525,7 +524,7 @@ contains
               
                 IvelEqns = (/1,2/)
                 call bcasm_newPdropBConRealBd (&
-                    rdiscretisation,IvelEqns,rboundaryRegion,rdiscreteBC,&
+                    rdiscretisation,IvelEqns,rboundaryRegion,rdynamicLevelInfo%rdiscreteBC,&
                     cc_getBDconditions,rcoll,casmComplexity)     
               end if
               
@@ -536,7 +535,7 @@ contains
               IvelEqns = (/1,2/)
               call bcasm_newSlipBConRealBd (&
                   rdiscretisation,IvelEqns(1:NDIM2D),rboundaryRegion,&
-                  rdiscreteBC,casmComplexity)
+                  rdynamicLevelInfo%rdiscreteBC,casmComplexity)
             
             case DEFAULT
               call output_line ('Unknown boundary condition!', &
@@ -592,9 +591,171 @@ contains
     ! We just initialise it here according to whether there are analytically
     ! visible or not. This is still a lack in the design and has to be
     ! somehow fixed later!
-    rproblem%RlevelInfo(rproblem%NLMIN:rproblem%NLMAX)%bhasNeumannBoundary = &
-        bNeumann
+    rdynamicLevelInfo%bhasNeumannBoundary = bNeumann
+    
+    ! Determine the edges with Dirichlet boundary conditions.
+    ! These may be used for stabilisation or other operators that work
+    ! on Dirichlet boundary parts differently than on Neumann boundary
+    ! parts.
+    if (rdynamicLevelInfo%hedgesDirichletBC .ne. ST_NOHANDLE) then
+      call storage_free (rdynamicLevelInfo%hedgesDirichletBC)
+    end if
+    call cc_getDirichletEdges (rproblem,p_rtriangulation,0,&
+        rdynamicLevelInfo%hedgesDirichletBC,rdynamicLevelInfo%nedgesDirichletBC)
         
+  end subroutine  
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getDirichletEdges (rproblem,rtriangulation,icomponent,hedges,ncount)
+
+!<description>
+  ! Calculates all edges in equation icomponent which are marked as Dirichlet
+  ! boundary edges.
+!</description>
+  
+!<input>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(inout), target :: rproblem
+  
+  ! Underlying triangulation.
+  type(t_triangulation), intent(in), target :: rtriangulation
+  
+  ! Number of the component where the edges should be computed for.
+  ! =0: Any velocity component, =1: X-velocity, =2: Y-velocity
+  integer, intent(in) :: icomponent
+!</input>
+
+!<output>
+  ! Handle that identifies a memory block with all the edge numbers
+  ! or =ST_NOHANDLE if no edges were found.
+  integer, intent(out) :: hedges
+  
+  ! Number of edges with Dirichlet boundary attached.
+  integer, intent(out) :: ncount
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Iedges, p_IedgesLocal
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: i, j, icount, hedgeslocal
+    integer :: ibdComponent,isegment,iintervalEnds
+    integer :: ibctyp
+    real(DP) :: dvalue,dpar1,dpar2
+    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
+    
+    ! A set of variables describing the analytic boundary conditions.    
+    type(t_boundaryRegion) :: rboundaryRegion
+    
+    ! A pointer to the domain
+    type(t_boundary), pointer :: p_rboundary
+    
+    ! A pointer to the section with the expressions and the boundary conditions
+    type(t_parlstSection), pointer :: p_rbdcond
+    
+    ! Get the domain from the problem structure
+    p_rboundary => rproblem%rboundary
+    
+    call storage_getbase_int2d(rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+
+    ! Allocate memory for the edges. We have at most as many edges as
+    ! there are on the boudary.
+    call storage_new ('cc_getDirichletEdges','hedges',rtriangulation%NMBD,&
+        ST_INT,hedges,ST_NEWBLOCK_NOINIT)
+    ncount = 0
+    call storage_getbase_int (hedges, p_Iedges)
+
+    ! Allocate another array for local edge numbers.
+    call storage_new ('cc_getDirichletEdges','hedgeslocal',rtriangulation%NMBD,&
+        ST_INT,hedgeslocal,ST_NEWBLOCK_NOINIT)
+    ncount = 0
+    call storage_getbase_int (hedgeslocal, p_Iedgeslocal)
+    
+    ! Get the section describing the BC's.
+    call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
+    
+    ! Loop through all boundary components we have.
+    do ibdComponent = 1,boundary_igetNBoundComp(p_rboundary)
+      
+      ! Parse the parameter 'bdComponentX'
+      write (cexpr,'(I10)') ibdComponent
+      cstr = 'bdComponent' // adjustl(cexpr)
+      
+      ! We start at parameter value 0.0.
+      dpar1 = 0.0_DP
+      
+      i = parlst_queryvalue (p_rbdcond, cstr)
+      if (i .ne. 0) then
+        ! Parameter exists. Get the values in there.
+        do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
+          
+          call parlst_getvalue_string (p_rbdcond, i, cstr, isubstring=isegment)
+          
+          ! Read the segment parameters
+          read(cstr,*) dpar2,iintervalEnds,ibctyp
+          
+          ! Form a boundary condition segment that covers that boundary part
+          if (dpar2 .ge. dpar1) then
+            
+            ! Now, which type of BC is to be created?
+            select case (ibctyp)
+            
+            case (1)
+              ! Simple Dirichlet boundary
+              ! Read the line again, get the expressions for X- and Y-velocity
+              read(cstr,*) dvalue,iintervalEnds,ibctyp,sbdex1,sbdex2
+              
+              ! If the type is a double precision value, set the DquickAccess(4)
+              ! to that value so it can quickly be accessed.
+              if (((icomponent .eq. 0) .and. ((sbdex1 .ne. '') .or. (sbdex2 .ne. ''))) .or. &
+                  ((icomponent .eq. 1) .and. (sbdex1 .ne. '')) .or. &
+                  ((icomponent .eq. 2) .and. (sbdex2 .ne. ''))) then
+              
+                ! Add the edges.
+                !
+                ! Get the element numbers + the local edge numbers and compute the
+                ! actual edge numbers.
+                rboundaryRegion%dminParam = dpar1
+                rboundaryRegion%dmaxParam = dpar2
+                rboundaryRegion%iboundCompIdx = ibdComponent
+                rboundaryRegion%dmaxParamBC = &
+                  boundary_dgetMaxParVal(p_rboundary, ibdComponent)
+                rboundaryRegion%iproperties = iintervalEnds
+                
+                call bcasm_getElementsInBCregion (rtriangulation,rboundaryRegion, icount, &
+                    IelList=p_Iedges(ncount+1:),IedgeLocal=p_Iedgeslocal)
+                do j=1,icount
+                  p_Iedges(ncount+j) = p_IedgesAtElement(p_Iedgeslocal(j),p_Iedges(ncount+j))
+                end do
+                ncount = ncount + icount
+                
+              end if
+
+            end select
+            
+            ! Move on to the next parameter value
+            dpar1 = dpar2
+            
+          end if
+                                            
+        end do
+      
+      end if
+      
+    end do
+    
+    ! Release unused memory
+    call storage_free (hedgeslocal)
+    if (ncount .gt. 0) then
+      call storage_realloc ("cc_getDirichletEdges", ncount, hedges, ST_NEWBLOCK_NOINIT, .true.)
+    else
+      call storage_free (hedges)
+    end if
+
   end subroutine  
   
   ! ***************************************************************************
@@ -939,7 +1100,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleFBDconditions (rproblem,rdiscretisation,rdiscreteFBC,rcollection)
+  subroutine cc_assembleFBDconditions (rproblem,rdiscretisation,rdynamicLevelInfo,rcollection)
 
 !<description>
   ! This parses the boundary conditions for fictitious boundary
@@ -959,10 +1120,10 @@ contains
   ! Collection structure to be passed to callback routines
   type(t_collection), intent(inout), target :: rcollection
   
-  ! A t_discreteFBC structure that receives a discretised version
-  ! of the fictitious boundary boundary conditions. The structure should
+  ! A t_dynamicLevelInfo structure that receives a discretised version
+  ! of the boundary boundary conditions. The BC substructure should
   ! be empty; new BC`s are simply added to the structure.
-  type(t_discreteFBC), intent(inout) :: rdiscreteFBC
+  type(t_dynamicLevelInfo), intent(inout) :: rdynamicLevelInfo
 !</inputoutput>
 
 !</subroutine>
@@ -976,8 +1137,8 @@ contains
     ! We use the default initialisation of rfictBoundaryRegion and only
     ! change the name of the component.
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
-    call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
-         getBoundaryValuesFBC,rcollection)
+    CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
+        rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
 
   end subroutine  
 
