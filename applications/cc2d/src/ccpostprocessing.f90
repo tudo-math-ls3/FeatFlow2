@@ -83,6 +83,8 @@ module ccpostprocessing
   use ccbasic
   use cccallback
   
+  use analyticprojection
+  
   implicit none
   
 !<types>
@@ -667,6 +669,7 @@ contains
     integer :: iunit
     integer :: cflag
     logical :: bfileExists
+    type(t_vectorScalar) :: rcharfct
     
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'icalcBodyForces', icalcBodyForces, 1)
@@ -760,8 +763,70 @@ contains
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else
           call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco,rcollection)
+        end if
+        
+      case (3)
+        ! Old implementation:
+        call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G4_2D,&
+            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+
+      case (4)
+    
+        ! Create a characteristic function of the boundary segment
+        call lsyssc_createVecByDiscr (&
+            rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation%RspatialDiscr(1),&
+            rcharfct,.true.)
+            
+        call anprj_charFctRealBdComp (rregion,rcharfct)
+        
+        ! Select the tensor formulation to use.
+        select case (ibodyForcesFormulation)
+        case (0)
+          cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+        case (1)
+          cformulation = PPNAVST_GRADIENTTENSOR
+        case (2)
+          cformulation = PPNAVST_DEFORMATIONTENSOR
+        case default
+          ! Automatic mode.
+          ! Use the deformation tensor formulation for the forces if
+          ! we are in the deformation tensor formulation
+          cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
+          if (rproblem%isubequation .eq. 1) &
+            cformulation = PPNAVST_DEFORMATIONTENSOR
+        end select
+          
+        ! Prepare a collection structure in the form necessary for
+        ! the computation of a nonconstant viscosity<
+        !
+        ! IquickAccess(1) = cviscoModel
+        rcollection%IquickAccess(1) = rproblem%cviscoModel
+        
+        ! IquickAccess(2) = type of the tensor
+        rcollection%IquickAccess(2) = rproblem%isubequation
+        
+        ! DquickAccess(1) = nu
+        rcollection%DquickAccess(1) = rproblem%dnu
+        
+        ! DquickAccess(2) = dviscoexponent
+        ! DquickAccess(3) = dviscoEps
+        rcollection%DquickAccess(2) = rproblem%dviscoexponent
+        rcollection%DquickAccess(3) = rproblem%dviscoEps
+        
+        ! The first quick access array specifies the evaluation point
+        ! of the velocity -- if it exists.
+        rcollection%p_rvectorQuickAccess1 => rsolution
+          
+        if (rproblem%cviscoModel .eq. 0) then
+          call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
+              dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+        else
+          call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation,ffunctionBDForcesVisco ,rcollection)
         end if
+        
+        call lsyssc_releaseVector(rcharfct)
         
       end select
 
@@ -1452,6 +1517,5 @@ contains
     call spdiscr_releaseDiscr(rpostprocessing%rdiscrConstant)
   
   end subroutine
-
 
 end module
