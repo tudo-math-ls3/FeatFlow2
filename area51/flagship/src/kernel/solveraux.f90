@@ -6017,7 +6017,7 @@ contains
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol
       integer, dimension(:), pointer :: p_Kdiagonal
-      integer(I32) :: isize
+      integer :: isize
 
       
       ! Set pointer
