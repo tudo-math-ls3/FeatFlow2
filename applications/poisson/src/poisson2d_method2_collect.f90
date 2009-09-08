@@ -105,7 +105,7 @@ contains
     !
     ! *What* we need later is the definition of the boundary and the
     ! triangulation. Save these to the collection.
-    call collct_setvalue_domain(rcollection,'DOMAIN',p_rboundary,.true.)
+    call collct_setvalue_bdry(rcollection,'DOMAIN',p_rboundary,.true.)
     call collct_setvalue_tria(rcollection,'TRIA',p_rtriangulation,.true.)
     
   end subroutine
@@ -142,7 +142,7 @@ contains
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    rboundary => collct_getvalue_domain(rcollection,'DOMAIN')
+    rboundary => collct_getvalue_bdry(rcollection,'DOMAIN')
     p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
     
     ! Now we can start to initialise the discretisation. At first, set up
@@ -745,7 +745,7 @@ contains
 
     ! Ask the collection to give us the boundary and triangulation.
     ! We need it for the discretisation.
-    p_rboundary => collct_getvalue_domain(rcollection,'DOMAIN')
+    p_rboundary => collct_getvalue_bdry(rcollection,'DOMAIN')
     p_rtriangulation => collct_getvalue_tria(rcollection,'TRIA')
     
     ! Release the triangulation.
