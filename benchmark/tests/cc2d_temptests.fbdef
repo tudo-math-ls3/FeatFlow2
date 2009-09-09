@@ -2108,7 +2108,7 @@ mglevels = 6
 ##########
 # Test 313
 #
-# 6 seconds with timestep 0.01, Crank-Nicolson, SD(0.0)
+# 6 seconds with timestep 0.005, Crank-Nicolson, SD(0.0)
 ##########
 
 testid   = CC2D_313_2
@@ -2131,7 +2131,7 @@ mglevels = 6
 ##########
 # Test 314
 #
-# 6 seconds with timestep 0.01, Crank-Nicolson, SD(0.0)
+# 6 seconds with timestep 0.0025, Crank-Nicolson, SD(0.0)
 ##########
 
 testid   = CC2D_314_2
@@ -2149,4 +2149,50 @@ testid   = CC2D_314_5
 mglevels = 5
 
 testid   = CC2D_314_6
+mglevels = 6
+
+##########
+# Test 315
+#
+# 6 seconds with timestep 0.00125, Crank-Nicolson, SD(0.0)
+##########
+
+testid   = CC2D_315_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+mglevels = 2
+
+testid   = CC2D_315_3
+mglevels = 3
+
+testid   = CC2D_315_4
+mglevels = 4
+
+testid   = CC2D_315_5
+mglevels = 5
+
+testid   = CC2D_315_6
+mglevels = 6
+
+##########
+# Test 316
+#
+# 6 seconds with timestep 0.000625, Crank-Nicolson, SD(0.0)
+##########
+
+testid   = CC2D_316_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 2
+
+testid   = CC2D_316_3
+mglevels = 3
+
+testid   = CC2D_316_4
+mglevels = 4
+
+testid   = CC2D_316_5
+mglevels = 5
+
+testid   = CC2D_316_6
 mglevels = 6
