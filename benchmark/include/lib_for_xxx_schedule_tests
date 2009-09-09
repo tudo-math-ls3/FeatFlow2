@@ -110,7 +110,7 @@ fb_readargs() {
 	      shift
 	      ;;
 
-	  --afterjob|-a*)  # wallclock time address
+	  --afterjob|-a*)  # job after completition of another job
 	      AFTERJOB="$2"
 	      shift
 	      shift
