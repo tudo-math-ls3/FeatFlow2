@@ -2041,7 +2041,7 @@ DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_301_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
 # Modify the smoother damping parameter, otherwise EOJ will not work!
-LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ISMOOTHERTYPE = 4
 SMOOTHER_DOMEGA = 0.5
 NONLINEAR_ITYPEPRECONDITIONING = 2
 LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
@@ -2234,7 +2234,7 @@ DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
 # Modify the smoother damping parameter, otherwise EOJ will not work!
-LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ISMOOTHERTYPE = 4
 SMOOTHER_DOMEGA = 0.5
 NONLINEAR_ITYPEPRECONDITIONING = 2
 LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
@@ -2249,6 +2249,8 @@ mglevels = 4
 
 testid   = CC2D_360_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_360_6
 mglevels = 6
@@ -2263,6 +2265,8 @@ testid   = CC2D_361_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.02, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_361_3
 mglevels = 3
@@ -2272,6 +2276,8 @@ mglevels = 4
 
 testid   = CC2D_361_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_361_6
 mglevels = 6
@@ -2286,6 +2292,9 @@ testid   = CC2D_362_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.01, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 mglevels = 2
+LINEARSOLVER_ISMOOTHERTYPE = 3
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_362_3
 mglevels = 3
@@ -2295,9 +2304,14 @@ mglevels = 4
 
 testid   = CC2D_362_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_362_6
 mglevels = 6
+
+testid   = CC2D_362_7
+mglevels = 7
 
 ##########
 # Test 363
@@ -2309,6 +2323,8 @@ testid   = CC2D_363_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.005, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_363_3
 mglevels = 3
@@ -2318,6 +2334,8 @@ mglevels = 4
 
 testid   = CC2D_363_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_363_6
 mglevels = 6
@@ -2332,6 +2350,8 @@ testid   = CC2D_364_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.0025, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_364_3
 mglevels = 3
@@ -2341,6 +2361,8 @@ mglevels = 4
 
 testid   = CC2D_364_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_364_6
 mglevels = 6
@@ -2355,6 +2377,8 @@ testid   = CC2D_365_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.0025, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_365_3
 mglevels = 3
@@ -2364,6 +2388,8 @@ mglevels = 4
 
 testid   = CC2D_365_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_365_6
 mglevels = 6
@@ -2377,9 +2403,9 @@ mglevels = 6
 testid   = CC2D_366_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.0), 6 seconds CN, dt=0.0025, lv 2-6.
 TIMEDISCRETISATION_DTIMESTEP = 0.000625
-DISCRETISATION_IUPWIND = 0
-DISCRETISATION_DUPSAM = 0.0
 mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
 
 testid   = CC2D_366_3
 mglevels = 3
@@ -2389,6 +2415,868 @@ mglevels = 4
 
 testid   = CC2D_366_5
 mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
 
 testid   = CC2D_366_6
+mglevels = 6
+
+##########
+# Test 370
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element
+# 6 seconds with timestep 0.04, Crank-Nicolson, EOJ(0.001)
+# Simulation starts at a fully developed solution from Test 30x
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_370_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.04, lv 2-6.
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.001
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+LINEARSOLVER_ISMOOTHERTYPE = 4
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_370_3
+mglevels = 3
+
+testid   = CC2D_370_4
+mglevels = 4
+
+testid   = CC2D_370_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_370_6
+mglevels = 6
+
+##########
+# Test 371
+#
+# 6 seconds with timestep 0.02, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_371_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.02, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_371_3
+mglevels = 3
+
+testid   = CC2D_371_4
+mglevels = 4
+
+testid   = CC2D_371_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_371_6
+mglevels = 6
+
+##########
+# Test 372
+#
+# 6 seconds with timestep 0.01, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_372_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.01, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+mglevels = 2
+LINEARSOLVER_ISMOOTHERTYPE = 3
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_372_3
+mglevels = 3
+
+testid   = CC2D_372_4
+mglevels = 4
+
+testid   = CC2D_372_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_372_6
+mglevels = 6
+
+##########
+# Test 373
+#
+# 6 seconds with timestep 0.005, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_373_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.005, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_373_3
+mglevels = 3
+
+testid   = CC2D_373_4
+mglevels = 4
+
+testid   = CC2D_373_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_373_6
+mglevels = 6
+
+##########
+# Test 374
+#
+# 6 seconds with timestep 0.0025, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_374_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_374_3
+mglevels = 3
+
+testid   = CC2D_374_4
+mglevels = 4
+
+testid   = CC2D_374_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_374_6
+mglevels = 6
+
+##########
+# Test 375
+#
+# 6 seconds with timestep 0.00125, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_375_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_375_3
+mglevels = 3
+
+testid   = CC2D_375_4
+mglevels = 4
+
+testid   = CC2D_375_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_375_6
+mglevels = 6
+
+##########
+# Test 376
+#
+# 6 seconds with timestep 0.000625, Crank-Nicolson, EOJ(0.001)
+##########
+
+testid   = CC2D_376_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.001), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_376_3
+mglevels = 3
+
+testid   = CC2D_376_4
+mglevels = 4
+
+testid   = CC2D_376_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_376_6
+mglevels = 6
+
+##########
+# Test 380
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element
+# 6 seconds with timestep 0.04, Crank-Nicolson, EOJ(0.01)
+# Simulation starts at a fully developed solution from Test 30x
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_380_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.04, lv 2-6.
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.01
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+LINEARSOLVER_ISMOOTHERTYPE = 4
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_380_3
+mglevels = 3
+
+testid   = CC2D_380_4
+mglevels = 4
+
+testid   = CC2D_380_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_380_6
+mglevels = 6
+
+##########
+# Test 381
+#
+# 6 seconds with timestep 0.02, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_381_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.02, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_381_3
+mglevels = 3
+
+testid   = CC2D_381_4
+mglevels = 4
+
+testid   = CC2D_381_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_381_6
+mglevels = 6
+
+##########
+# Test 382
+#
+# 6 seconds with timestep 0.01, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_382_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.01, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+mglevels = 2
+LINEARSOLVER_ISMOOTHERTYPE = 3
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_382_3
+mglevels = 3
+
+testid   = CC2D_382_4
+mglevels = 4
+
+testid   = CC2D_382_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_382_6
+mglevels = 6
+
+##########
+# Test 383
+#
+# 6 seconds with timestep 0.005, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_383_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.005, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_383_3
+mglevels = 3
+
+testid   = CC2D_383_4
+mglevels = 4
+
+testid   = CC2D_383_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_383_6
+mglevels = 6
+
+##########
+# Test 384
+#
+# 6 seconds with timestep 0.0025, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_384_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_384_3
+mglevels = 3
+
+testid   = CC2D_384_4
+mglevels = 4
+
+testid   = CC2D_384_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_384_6
+mglevels = 6
+
+##########
+# Test 385
+#
+# 6 seconds with timestep 0.00125, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_385_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_385_3
+mglevels = 3
+
+testid   = CC2D_385_4
+mglevels = 4
+
+testid   = CC2D_385_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_385_6
+mglevels = 6
+
+##########
+# Test 386
+#
+# 6 seconds with timestep 0.000625, Crank-Nicolson, EOJ(0.01)
+##########
+
+testid   = CC2D_386_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_386_3
+mglevels = 3
+
+testid   = CC2D_386_4
+mglevels = 4
+
+testid   = CC2D_386_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_386_6
+mglevels = 6
+
+##########
+# Test 390
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element
+# 6 seconds with timestep 0.04, Crank-Nicolson, EOJ0.05)
+# Simulation starts at a fully developed solution from Test 30x
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_390_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.04, lv 2-6.
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.05
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+LINEARSOLVER_ISMOOTHERTYPE = 4
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_390_3
+mglevels = 3
+
+testid   = CC2D_390_4
+mglevels = 4
+
+testid   = CC2D_390_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_390_6
+mglevels = 6
+
+##########
+# Test 391
+#
+# 6 seconds with timestep 0.02, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_391_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.02, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_391_3
+mglevels = 3
+
+testid   = CC2D_391_4
+mglevels = 4
+
+testid   = CC2D_391_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_391_6
+mglevels = 6
+
+##########
+# Test 392
+#
+# 6 seconds with timestep 0.01, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_392_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.01, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+mglevels = 2
+LINEARSOLVER_ISMOOTHERTYPE = 3
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_392_3
+mglevels = 3
+
+testid   = CC2D_392_4
+mglevels = 4
+
+testid   = CC2D_392_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_392_6
+mglevels = 6
+
+##########
+# Test 393
+#
+# 6 seconds with timestep 0.005, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_393_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.005, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_393_3
+mglevels = 3
+
+testid   = CC2D_393_4
+mglevels = 4
+
+testid   = CC2D_393_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_393_6
+mglevels = 6
+
+##########
+# Test 394
+#
+# 6 seconds with timestep 0.0025, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_394_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_394_3
+mglevels = 3
+
+testid   = CC2D_394_4
+mglevels = 4
+
+testid   = CC2D_394_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_394_6
+mglevels = 6
+
+##########
+# Test 395
+#
+# 6 seconds with timestep 0.00125, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_395_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_395_3
+mglevels = 3
+
+testid   = CC2D_395_4
+mglevels = 4
+
+testid   = CC2D_395_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_395_6
+mglevels = 6
+
+##########
+# Test 396
+#
+# 6 seconds with timestep 0.000625, Crank-Nicolson, EOJ0.05)
+##########
+
+testid   = CC2D_396_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ0.05), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_396_3
+mglevels = 3
+
+testid   = CC2D_396_4
+mglevels = 4
+
+testid   = CC2D_396_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_396_6
+mglevels = 6
+
+##########
+# Test 400
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q1~ element
+# 6 seconds with timestep 0.04, Crank-Nicolson, EOJ(0.1)
+# Simulation starts at a fully developed solution from Test 30x
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_400_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.04, lv 2-6.
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 3
+DISCRETISATION_DUPSAM = 0.1
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+LINEARSOLVER_ISMOOTHERTYPE = 4
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.04
+
+testid   = CC2D_400_3
+mglevels = 3
+
+testid   = CC2D_400_4
+mglevels = 4
+
+testid   = CC2D_400_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_400_6
+mglevels = 6
+
+##########
+# Test 401
+#
+# 6 seconds with timestep 0.02, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_401_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.02, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.02
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_401_3
+mglevels = 3
+
+testid   = CC2D_401_4
+mglevels = 4
+
+testid   = CC2D_401_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_401_6
+mglevels = 6
+
+##########
+# Test 402
+#
+# 6 seconds with timestep 0.01, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_402_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.01, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+mglevels = 2
+LINEARSOLVER_ISMOOTHERTYPE = 3
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_402_3
+mglevels = 3
+
+testid   = CC2D_402_4
+mglevels = 4
+
+testid   = CC2D_402_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_402_6
+mglevels = 6
+
+##########
+# Test 403
+#
+# 6 seconds with timestep 0.005, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_403_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.005, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_403_3
+mglevels = 3
+
+testid   = CC2D_403_4
+mglevels = 4
+
+testid   = CC2D_403_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_403_6
+mglevels = 6
+
+##########
+# Test 404
+#
+# 6 seconds with timestep 0.0025, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_404_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_404_3
+mglevels = 3
+
+testid   = CC2D_404_4
+mglevels = 4
+
+testid   = CC2D_404_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_404_6
+mglevels = 6
+
+##########
+# Test 405
+#
+# 6 seconds with timestep 0.00125, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_405_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.00125
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_405_3
+mglevels = 3
+
+testid   = CC2D_405_4
+mglevels = 4
+
+testid   = CC2D_405_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_405_6
+mglevels = 6
+
+##########
+# Test 406
+#
+# 6 seconds with timestep 0.000625, Crank-Nicolson, EOJ(0.1)
+##########
+
+testid   = CC2D_406_2
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.0025, lv 2-6.
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 2
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+
+testid   = CC2D_406_3
+mglevels = 3
+
+testid   = CC2D_406_4
+mglevels = 4
+
+testid   = CC2D_406_5
+mglevels = 5
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_351_4/solution_lv4'
+
+testid   = CC2D_406_6
 mglevels = 6
