@@ -217,7 +217,7 @@ sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
 # with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
 # der=derivative quantifier. Here:
 #   type=1: x-velocity, =2: y-velocity, =3: pressure
-#   der =0: function values, =1: x-derivative, =2: y-derivative
+#   der =0: function value, =1: x-derivative, =2: y-derivative
 #
 # Example: Don't evaluate anything:
 #   cevaluatePointValues(0) =
