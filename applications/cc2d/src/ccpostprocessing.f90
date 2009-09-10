@@ -40,6 +40,9 @@
 !# 5.) cc_writeFilm
 !#     -> Write film output (=raw solution vectors).
 !#
+!# 5.) cc_evaluatePoints
+!#     -> Evaluates the solution in a number of points.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -182,6 +185,9 @@ contains
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,rproblem)
     
+    ! Calculate point values
+    call cc_evaluatePoints (rvector,rproblem)
+    
     ! Calculate the divergence
     call cc_calculateDivergence (rvector,rproblem)
     
@@ -253,6 +259,9 @@ contains
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,rproblem)
     
+    ! Calculate point values
+    call cc_evaluatePoints (rvector,rproblem)
+
     ! Calculate the divergence
     call cc_calculateDivergence (rvector,rproblem)
 
@@ -923,6 +932,134 @@ contains
     
   end subroutine
 
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine cc_evaluatePoints (rsolution,rproblem)
+
+!<description>
+  ! Evaluates the solution in a number of points as configured in the DAT file.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  type(t_vectorBlock), intent(in), target :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  type(t_problem), intent(inout) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: npoints,i,iunit,iwritePointValues
+    integer :: iderType, cflag
+    logical :: bfileExists
+    real(dp), dimension(:), allocatable :: Dvalues
+    real(dp), dimension(:,:), allocatable :: Dcoords
+    integer, dimension(:), allocatable :: Itypes
+    integer, dimension(:), allocatable :: Ider
+    character(LEN=SYS_STRLEN) :: sparam
+    character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues
+    character(LEN=10), dimension(3,3), parameter :: Sfctnames = RESHAPE (&
+      (/ "       u1 ","     u1_x ","     u1_y " , &
+         "       u2 ","     u2_x ","     u2_y " , &
+         "        p ","      p_x ","      p_y " /) ,&
+       (/ 3,3 /) )
+
+    ! Get the number of points to evaluate
+    npoints = parlst_querysubstrings (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'CEVALUATEPOINTVALUES')
+        
+    if (npoints .eq. 0) return
+    
+    ! Allocate memory for the values
+    allocate(Dvalues(npoints))
+    allocate(Dcoords(NDIM2D,npoints))
+    allocate(Itypes(npoints))
+    allocate(Ider(npoints))
+    
+    ! Read the points
+    do i=1,npoints
+      call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+          "CEVALUATEPOINTVALUES", sparam, "", i)
+      read (sparam,*) Dcoords(1,i),Dcoords(2,i),Itypes(i),Ider(i)
+    end do
+    
+    ! Evaluate the function in these points.
+    do i=1,npoints
+      select case (Ider(i))
+      case (0)
+        iderType = DER_FUNC2D
+      case (1)
+        iderType = DER_DERIV2D_X
+      case (2)
+        iderType = DER_DERIV2D_Y
+      case default
+        iderType = DER_FUNC2D
+      end select
+      
+      call fevl_evaluate (iderType, Dvalues(i:i), rsolution%RvectorBlock(Itypes(i)), &
+          Dcoords(:,i:i),cnonmeshPoints=FEVL_NONMESHPTS_ZERO)
+    end do
+    
+    ! Print the values to the terminal
+    call output_lbrk()
+    call output_line ('Point values')
+    call output_line ('------------')
+    do i=1,npoints
+      write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+Ider(i),Itypes(i)),&
+          "(",Dcoords(1,i),",",Dcoords(2,i),") = ",Dvalues(i)
+      call output_line(TRIM(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+    end do
+    
+    ! Get information about writing the stuff into a DAT file.
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEPOINTVALUES', iwritePointValues, 0)
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEPOINTVALUES', sstr, '''''')
+    read(sstr,*) sfilenamePointValues
+    if (sfilenamePointValues .eq. "") iwritePointValues = 0
+    
+    ! When writing to a file is enabled, delete the file in the first timestep.
+    cflag = SYS_APPEND
+    if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
+    
+    if (iwritePointValues .ne. 0) then
+      ! Write the result to a text file.
+      ! Format: timestep current-time value value value ...
+      call io_openFileForWriting(sfilenamePointValues, iunit, &
+          cflag, bfileExists,.true.)
+      if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+        ! Write a headline
+        write (iunit,'(A)') &
+          '# timestep time x y type deriv value x y type deriv value ...'
+      end if
+      write (iunit,ADVANCE='NO',FMT='(A)') &
+          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
+          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+      do i=1,npoints
+        write (iunit,ADVANCE='NO',FMT='(A)') ' ' //&
+            trim(sys_sdEL(Dcoords(1,i),5)) // ' ' // &
+            trim(sys_sdEL(Dcoords(2,i),5)) // ' ' // &
+            trim(sys_siL(Itypes(i),2)) // ' ' // &
+            trim(sys_siL(Ider(i),2)) // ' ' // &
+            trim(sys_sdEL(Dvalues(i),10))
+      end do
+      write (iunit,ADVANCE='YES',FMT='(A)') ""
+      close (iunit)
+    end if
+    
+    deallocate(Ider)
+    deallocate(Itypes)
+    deallocate(Dcoords)
+    deallocate(Dvalues)
+
+  end subroutine
+    
 !******************************************************************************
 
 !<subroutine>
