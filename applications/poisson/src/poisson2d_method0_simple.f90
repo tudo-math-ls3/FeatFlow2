@@ -29,6 +29,7 @@ module poisson2d_method0_simple
   use triangulation
   use spatialdiscretisation
   use scalarpde
+  use element
   use ucd
   use pprocerror
   use genoutput
@@ -113,7 +114,7 @@ contains
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror    
+    integer :: ierror
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -170,7 +171,7 @@ contains
     ! we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
     ! scalar system matrix in 2D.
-    
+
     rform%itermCount = 2
     rform%Idescriptors(1,1) = DER_DERIV_X
     rform%Idescriptors(2,1) = DER_DERIV_X
@@ -190,11 +191,11 @@ contains
     ! the framework will call the callback routine to get analytical
     ! data.
     call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace_2D)
-    
+
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC
+    rlinform%Idescriptors(1) = DER_FUNC2D
     
     ! ... and then discretise the RHS to get a discrete version of it.
     ! Again we simply create a scalar vector based on the one and only
@@ -285,7 +286,7 @@ contains
     call vecfil_discreteBCrhs (rrhsBlock)
     call vecfil_discreteBCsol (rvectorBlock)
     call matfil_discreteBC (rmatrixBlock)
-    
+
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
     ! does not work with the actual solution vectors but with

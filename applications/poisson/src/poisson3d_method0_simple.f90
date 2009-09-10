@@ -21,9 +21,9 @@ module poisson3d_method0_simple
   use bilinearformevaluation
   use linearformevaluation
   use cubature
+  use filtersupport
   use linearsystemscalar
   use linearsystemblock
-  use filtersupport
   use matrixfilters
   use vectorfilters
   use discretebc
@@ -35,7 +35,6 @@ module poisson3d_method0_simple
   use ucd
   use pprocerror
   use genoutput
-  use matrixio
   use meshregion
     
   use poisson3d_callback
@@ -72,12 +71,9 @@ contains
     !
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
-    
+
     ! Path to the mesh
     character(len=SYS_STRLEN) :: spredir
-
-    ! An object for saving the boundary mesh region
-    type(t_meshregion) :: rmeshRegion
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
@@ -96,6 +92,9 @@ contains
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+
+    ! An object for saving the boundary mesh region
+    type(t_meshregion) :: rmeshRegion
 
     ! A variable describing the discrete boundary conditions.    
     type(t_discreteBC), target :: rdiscreteBC
@@ -125,7 +124,7 @@ contains
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
-    
+
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
@@ -148,7 +147,8 @@ contains
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rtriangulation)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
@@ -168,6 +168,7 @@ contains
     ! we need a bilinear form, which first has to be set up manually.
     ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
     ! scalar system matrix in 3D.
+
     rform%itermCount = 3
     rform%Idescriptors(1,1) = DER_DERIV3D_X
     rform%Idescriptors(2,1) = DER_DERIV3D_X
@@ -190,7 +191,7 @@ contains
     ! the framework will call the callback routine to get analytical
     ! data.
     call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace_3D)
-                                  
+
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinform%itermCount = 1
@@ -306,7 +307,6 @@ contains
     
     ! That is it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
-
     !
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
