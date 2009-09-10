@@ -52,6 +52,18 @@ dmaxTimeUCD = 1.0E100
 
 dtimeDifferenceUCD = 0.0
 
+# For a nonstationary simulation if dtimeDifferenceUCD>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceUCD.
+# =0: Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Standard. Interpolate the solution linearly to get an equidistant 
+#     timestepping for the UCD export. (May lead to slight time interpolation
+#     errors due to linear time interpolation.)
+# If dtimeDifferenceUCD=0, the solutions are written out as they come.
+
+iinterpolateSolutionUCD = 1
+
 # Start number for file suffix when writing UCD files (1='.0001',...).
 # Whether this is used or not depends on the type of output
 # (e.g. GMV uses this)
@@ -97,6 +109,18 @@ dmaxTimeFilm = 1.0E100
 
 dtimeDifferenceFilm = 0.0
 
+# For a nonstationary simulation if dtimeDifferenceFilm>0: Interpolate the 
+# solution of subsequent timesteps to match the time scale defined by
+# dtimeDifferenceFilm.
+# =0: Standard. Postprocess the solution at the current time. (May lead to
+#     non-equidistant timesteps in the UCD export)
+# =1: Interpolate the solution linearly to get an equidistant timestepping
+#     for the film export. (May lead to slight time interpolation errors
+#     due to linear time interpolation.)
+# If dtimeDifferenceFilm=0, the solutions are written out as they come.
+
+iinterpolateSolutionFilm = 0
+
 # Start number for file suffix when writing Film files (1='.0001',...).
 
 istartSuffixFilm = 0
@@ -139,8 +163,13 @@ sfilenameKineticEnergy = '%{ssolutiondirectory}/energy'
 
 # Calculate the body forces
 # =0: Don't calculate
-# =1: Calculate with standard FEAT-1 method
-# =2: Calculate with extended method, supporting mixed meshes and general elements (standard)
+# =1: Calculate with standard FEAT-1 method. Constant viscosity.
+# =2: Calculate with extended method, supporting mixed meshes,
+#     general elements and nonlinear viscosity (standard)
+# =3: Calculate using volume forces, standard FEAT-1 method. 
+#     Constant viscosity.
+# =4: Calculate using volume forces with extended method, supporting mixed
+#     meshes, general elements and nonlinear viscosity.
 
 icalcBodyForces = 2
 
@@ -164,7 +193,8 @@ ibodyForcesBdComponent = 2
 
 # 2nd coefficient in the boundary integral of the drag coefficient.
 # If this is commented out, 0.004 is assumed (corresonds to flow 
-# around cylinder with RE=1000)
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
 
 # dbdForcesCoeff2 = 0.004
 
@@ -175,3 +205,34 @@ iwriteBodyForces = 0
 # Filename for the body forces
 
 sfilenameBodyForces = '%{ssolutiondirectory}/bdforces'
+
+# ------------------------------------------------------------------------
+# Point values
+
+# Calculate the value of different quantities in a number of points
+# y evaluating the solution. The number in braces "(n)" defines the number
+# of points to evaluate. Afterwards follows a list of points in the
+# format
+#   "x y type der"
+# with x=x-coordinate, y=y-coordinate, type=type of quantity to evaluate,
+# der=derivative quantifier. Here:
+#   type=1: x-velocity, =2: y-velocity, =3: pressure
+#   der =0: function value, =1: x-derivative, =2: y-derivative
+#
+# Example: Don't evaluate anything:
+#   cevaluatePointValues(0) =
+#
+# Example: Evaluate the pressure in (0.15,0.2) and (0.25,0.2)
+#   cevaluatePointValues(2) =
+#     0.15 0.2 3 0
+#     0.25 0.2 3 0
+
+cevaluatePointValues(0) =
+
+# Whether to write the point values to a file
+
+iwritePointValues = 0
+
+# Filename for the point values
+
+sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'

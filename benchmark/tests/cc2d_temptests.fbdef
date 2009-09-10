@@ -109,7 +109,7 @@ POSTPROCESSING_ICALCBODYFORCES=2
 
 testid   = CC2D_210
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.00125, lv 6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 6
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 4
@@ -135,7 +135,7 @@ BDR_PARPROFILEMAX = 1.5
 
 testid   = CC2D_211
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.04, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4
 TIMEDISCRETISATION_DTIMESTEP = 0.04
 
@@ -143,7 +143,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.04
 
 testid   = CC2D_211_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.04, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 5
 
 ##########
@@ -157,7 +157,7 @@ mglevels = 5
 
 testid   = CC2D_212
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.02, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -165,7 +165,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.02
 
 testid   = CC2D_212_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.02, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 5
 
 ##########
@@ -179,7 +179,7 @@ mglevels = 5
 
 testid   = CC2D_213
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.01, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -187,7 +187,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.01
 
 testid   = CC2D_213_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.01, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 4
 
 ##########
@@ -201,7 +201,7 @@ mglevels = 4
 
 testid   = CC2D_214
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -209,7 +209,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.005
 
 testid   = CC2D_214_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 4
 
 ##########
@@ -223,7 +223,7 @@ mglevels = 4
 
 testid   = CC2D_215
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -231,7 +231,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
 testid   = CC2D_215_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 3
 
 ##########
@@ -245,7 +245,7 @@ mglevels = 3
 
 testid   = CC2D_216
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -253,7 +253,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
 testid   = CC2D_216_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 3
 
 ##########
@@ -267,7 +267,7 @@ mglevels = 3
 
 testid   = CC2D_217
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.04, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.04
 DISCRETISATION_IELEMENTTYPE = 3
@@ -283,7 +283,7 @@ DISCRETISATION_IELEMENTTYPE = 3
 
 testid   = CC2D_218
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.02, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -298,7 +298,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.02
 
 testid   = CC2D_219
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.01, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -313,7 +313,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.01
 
 testid   = CC2D_220
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -321,7 +321,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.005
 
 testid   = CC2D_220_1
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 6
 
 ##########
@@ -335,7 +335,7 @@ mglevels = 6
 
 testid   = CC2D_2201
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.0025, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -350,7 +350,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
 testid   = CC2D_222
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.00125, lv 2,3,4,5.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2,3,4,5
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -367,7 +367,7 @@ TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
 testid   = CC2D_230_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 4
@@ -408,7 +408,7 @@ mglevels = 5
 
 testid   = CC2D_231_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -432,7 +432,7 @@ mglevels = 5
 
 testid   = CC2D_232_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -457,7 +457,7 @@ mglevels = 5
 
 testid   = CC2D_233_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -482,7 +482,7 @@ mglevels = 5
 
 testid   = CC2D_234_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -506,7 +506,7 @@ mglevels = 5
 
 testid   = CC2D_235_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -533,7 +533,7 @@ mglevels = 5
 
 testid   = CC2D_240_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -577,7 +577,7 @@ mglevels = 6
 
 testid   = CC2D_241_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -605,7 +605,7 @@ mglevels = 6
 
 testid   = CC2D_242_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -633,7 +633,7 @@ mglevels = 6
 
 testid   = CC2D_243_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -660,7 +660,7 @@ mglevels = 6
 
 testid   = CC2D_244_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -687,7 +687,7 @@ mglevels = 6
 
 testid   = CC2D_245_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -718,7 +718,7 @@ mglevels = 6
 
 testid   = CC2D_250_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -762,7 +762,7 @@ mglevels = 6
 
 testid   = CC2D_251_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -790,7 +790,7 @@ mglevels = 6
 
 testid   = CC2D_252_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -818,7 +818,7 @@ mglevels = 6
 
 testid   = CC2D_253_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -845,7 +845,7 @@ mglevels = 6
 
 testid   = CC2D_254_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -872,7 +872,7 @@ mglevels = 6
 
 testid   = CC2D_255_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, SD(0.5), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -899,7 +899,7 @@ mglevels = 6
 
 testid   = CC2D_260_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -943,7 +943,7 @@ mglevels = 6
 
 testid   = CC2D_261_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -971,7 +971,7 @@ mglevels = 6
 
 testid   = CC2D_262_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -999,7 +999,7 @@ mglevels = 6
 
 testid   = CC2D_263_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -1026,7 +1026,7 @@ mglevels = 6
 
 testid   = CC2D_264_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -1053,7 +1053,7 @@ mglevels = 6
 
 testid   = CC2D_265_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -1083,7 +1083,7 @@ mglevels = 6
 
 testid   = CC2D_270_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -1128,7 +1128,7 @@ mglevels = 6
 
 testid   = CC2D_271_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -1156,7 +1156,7 @@ mglevels = 6
 
 testid   = CC2D_272_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -1184,7 +1184,7 @@ mglevels = 6
 
 testid   = CC2D_273_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -1211,7 +1211,7 @@ mglevels = 6
 
 testid   = CC2D_274_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -1238,7 +1238,7 @@ mglevels = 6
 
 testid   = CC2D_275_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -1268,7 +1268,7 @@ mglevels = 6
 
 testid   = CC2D_280_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -1314,7 +1314,7 @@ mglevels = 6
 
 testid   = CC2D_281_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -1342,7 +1342,7 @@ mglevels = 6
 
 testid   = CC2D_282_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -1370,7 +1370,7 @@ mglevels = 6
 
 testid   = CC2D_283_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -1397,7 +1397,7 @@ mglevels = 6
 
 testid   = CC2D_284_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -1424,7 +1424,7 @@ mglevels = 6
 
 testid   = CC2D_285_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -1454,7 +1454,7 @@ mglevels = 6
 
 testid   = CC2D_290_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
@@ -1499,7 +1499,7 @@ mglevels = 6
 
 testid   = CC2D_291_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.02, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.02
 
@@ -1527,7 +1527,7 @@ mglevels = 6
 
 testid   = CC2D_292_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.01, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
@@ -1555,7 +1555,7 @@ mglevels = 6
 
 testid   = CC2D_293_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.005, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.005
 
@@ -1582,7 +1582,7 @@ mglevels = 6
 
 testid   = CC2D_294_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.0025, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.0025
 
@@ -1609,7 +1609,7 @@ mglevels = 6
 
 testid   = CC2D_295_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.01), 32 seconds CN, dt=0.00125, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 TIMEDISCRETISATION_DTIMESTEP = 0.00125
 
@@ -1639,7 +1639,7 @@ mglevels = 6
 
 testid   = CC2D_340_2
 descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q1~, EOJ(0.1), 6 seconds CN, dt=0.04, lv 2-6.
-datfile  = ./data/apps_cc2d/master.dat
+datfile  = ./data/apps_cc2d/master_bench.dat
 mglevels = 2
 DISCRETISATION_IEQUATION = 0
 DISCRETISATION_IELEMENTTYPE = 3
