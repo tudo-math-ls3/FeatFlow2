@@ -1,0 +1,21 @@
+./bin/lido_schedule_tests CC2D_390_3 -w "02:00:00"
+./bin/lido_schedule_tests CC2D_390_4 -w "08:00:00"
+./bin/lido_schedule_tests CC2D_390_5 -w "24:00:00"
+
+./bin/lido_schedule_tests CC2D_391_3 -w "04:00:00"
+./bin/lido_schedule_tests CC2D_391_4 -w "12:00:00"
+./bin/lido_schedule_tests CC2D_391_5 -w "48:00:00"
+
+./bin/lido_schedule_tests CC2D_392_3 -w "08:00:00"
+./bin/lido_schedule_tests CC2D_392_4 -w "24:00:00"
+./bin/lido_schedule_tests CC2D_392_5 -w "96:00:00"
+
+./bin/lido_schedule_tests CC2D_393_3 -w "16:00:00"
+./bin/lido_schedule_tests CC2D_393_4 -w "48:00:00"
+./bin/lido_schedule_tests CC2D_393_5 -w "192:00:00"
+
+./bin/lido_schedule_tests CC2D_394_3 -w "07:00:00"
+./bin/lido_schedule_tests CC2D_394_4 -w "30:00:00"
+./bin/lido_schedule_tests CC2D_394_5 -w "128:00:00"
+
+./bin/lido_schedule_tests CC2D_394_6 -w "512:00:00"
