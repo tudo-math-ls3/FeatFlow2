@@ -101,7 +101,7 @@ cevaluatePointValues(2) =
   0.15 0.2 3 0
   0.25 0.2 3 0
 iwritePointValues = $POSTPROCESSING_IWRITEPOINTVALUES
-sfilenamePointValues = $POSTPROCESSING_SFILENAMEPOINTVALUES
+sfilenamePointValues = '$POSTPROCESSING_SFILENAMEPOINTVALUES'
 
 [BDEXPRESSIONS]
 bdExpressions(3) =
