@@ -1,0 +1,17 @@
+Coarse mesh created with DeViSoR.Grid PRM/TRI exporter.
+Parameterization PARXC, PARYC, TMAXC
+1 4 0 4 1    NEL NVT NMT NVE NBCT
+DCORVG
+0.0 0
+1.0 0
+2.0 0
+3.0 0
+KVERT
+1 2 3 4
+KNPR
+1
+1
+1
+1
+KMM
+0.0 3.0
