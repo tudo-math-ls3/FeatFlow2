@@ -5903,18 +5903,18 @@ contains
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
-    real(DP), dimension(:), pointer             :: p_DA
+    real(DP), dimension(:), pointer :: p_DA
     integer, dimension(:), pointer :: p_KcolB
     integer, dimension(:), pointer :: p_KldB
-    real(DP), dimension(:), pointer             :: p_DB1
-    real(DP), dimension(:), pointer             :: p_DB2
-    real(DP), dimension(:), pointer             :: p_DD1
-    real(DP), dimension(:), pointer             :: p_DD2
+    real(DP), dimension(:), pointer :: p_DB1
+    real(DP), dimension(:), pointer :: p_DB2
+    real(DP), dimension(:), pointer :: p_DD1
+    real(DP), dimension(:), pointer :: p_DD2
     
     ! Triangulation information
     integer :: NEL
-    integer   :: NVT
-    integer    :: NMT
+    integer :: NVT
+    integer :: NMT
     integer, dimension(:,:), pointer :: p_IedgesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     real(DP), dimension(:), pointer :: p_Drhs,p_Dvector
@@ -5924,14 +5924,14 @@ contains
     integer, parameter :: nnpressure = 3 ! QP1 = 3 DOF`s per pressure
     integer, parameter :: nnld = 2*nnvel+nnpressure   ! Q2/Q2/P1 = 9+9+3 = 21 DOF`s per element
     integer, dimension(nnvel) :: IdofGlobal
-    real(DP), dimension(nnld,nnld) :: AA
-    real(DP), dimension(nnld) :: FF
-    
-    ! LAPACK temporary space
-    integer :: Ipiv(nnld),ilapackInfo
+    real(DP), dimension(2*nnvel) :: AA
+    real(DP), dimension(nnpressure,2*nnvel) :: DD
+    real(DP), dimension(2*nnvel,nnpressure) :: BB
+    real(DP), dimension(nnpressure) :: CC
+    real(DP), dimension(nnld) :: FF,UU
     
     ! offset information in arrays
-    integer     :: ioffsetv,ioffsetp
+    integer :: ioffsetv,ioffsetp
     integer :: ia1,ia2,ib1,ib2,ia,ib,j,isubdof
     integer, parameter :: lofsv = nnvel
     integer, parameter :: lofsp = 2*nnvel
@@ -5950,7 +5950,7 @@ contains
     p_DB2 => rvanka%p_DB2
     p_DD1 => rvanka%p_DD1
     p_DD2 => rvanka%p_DD2
-    
+
     ! Get pointers to the vectors, RHS, get triangulation information
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
     NMT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NMT
@@ -5965,6 +5965,9 @@ contains
     ! Get the relative offsets of the 2nd and 3rd solution of the component
     ioffsetv = rvector%RvectorBlock(1)%NEQ
     ioffsetp = ioffsetv+rvector%RvectorBlock(2)%NEQ
+    
+    ! Currently no C supported.
+    CC(:) = 0
     
     !=======================================================================
     !     Block Gauss-Seidel on Schur Complement
@@ -6032,10 +6035,14 @@ contains
     
       ! Get the element number which is to be processed.
       iel = IelementList(ielidx)
-    
-      ! Clear the 'local system matrix'.
-      AA(:,:) = 0.0_DP
       
+      ! Clear the B and D-matrices.
+      ! Note: THis is not necessary as all entries of BB and DD
+      ! will be overwritten later! Reason: Because of the FEM
+      ! coupling, all entries are affected. 
+      ! BB(:,:) = 0.0_DP
+      ! DD(:,:) = 0.0_DP
+    
       ! We now have the element
       !                                               
       ! +---------+                       4----7----3
@@ -6068,8 +6075,8 @@ contains
 
         ! Put on AA(.) the diagonal entry of matrix A -- the 1st and the
         ! 2nd block
-        AA(inode,inode) = p_DA(p_KdiagonalA(idof))
-        AA(inode+nnvel,inode+nnvel) = p_DA(p_KdiagonalA(idof))
+        AA(inode) = p_DA(p_KdiagonalA(idof))
+        AA(inode+nnvel) = p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
         ! side vector that belongs to our current DOF corresponding
@@ -6162,9 +6169,8 @@ contains
         ia2 = p_KldA(idof+1)-1
         do ia = ia1,ia2
           J = p_KcolA(ia)
-          daux = p_DA(ia)
-          FF(inode)       = FF(inode)      -daux*p_Dvector(J)
-          FF(inode+lofsv) = FF(inode+lofsv)-daux*p_Dvector(J+ioffsetv)
+          FF(inode)       = FF(inode)      -p_DA(ia)*p_Dvector(J)
+          FF(inode+lofsv) = FF(inode+lofsv)-p_DA(ia)*p_Dvector(J+ioffsetv)
         end do
         
         ! Then subtract B*p: f_i = (f_i-Aui) - Bi pi
@@ -6221,23 +6227,23 @@ contains
           J = p_KcolB(ib)
           
           ! Get the entries in the B-matrices
-          AA(inode,      2*nnvel+isubdof) = p_DB1(ib)
-          AA(inode+nnvel,2*nnvel+isubdof) = p_DB2(ib)
+          BB(inode,      isubdof) = p_DB1(ib)
+          BB(inode+nnvel,isubdof) = p_DB2(ib)
 
           ! The same way, get DD1 and DD2.
           ! Note that DDi has exacty the same matrix structrure as BBi and is noted
           ! as 'transposed matrix' only because of the transposed-flag.
           ! So we can use "ib" as index here to access the entry of DDi:
-          AA(2*nnvel+isubdof,inode)       = p_DD1(ib)
-          AA(2*nnvel+isubdof,inode+nnvel) = p_DD2(ib)
+          DD(isubdof,inode)       = p_DD1(ib)
+          DD(isubdof,inode+nnvel) = p_DD2(ib)
 
           ! Build the pressure entry in the local defect vector:
           !   f_i = (f_i-Aui) - D_i pi
           ! or more precisely (as D is roughly B^T):
           !   f_i = (f_i-Aui) - (B^T)_i pi
           FF(isubdof+lofsp) = FF(isubdof+lofsp) &
-                      - AA(2*nnvel+isubdof,inode)*p_Dvector(idof) &
-                      - AA(2*nnvel+isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
+                      - DD(isubdof,inode)*p_Dvector(idof) &
+                      - DD(isubdof,inode+nnvel)*p_Dvector(idof+ioffsetv)
         end do ! ib
         
       end do ! inode
@@ -6280,41 +6286,28 @@ contains
       !CALL DGETRS('N', nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo )
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
-      call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      !call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
+      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC)
       
-      if (ilapackInfo .eq. 0) then
+      ! Ok, we got the update vector in UU. Incorporate this now into our
+      ! solution vector with the update formula
+      !
+      !  x_{n+1} = x_n + domega * y!
       
-        ! Ok, we got the update vector in FF. Incorporate this now into our
-        ! solution vector with the update formula
-        !
-        !  x_{n+1} = x_n + domega * y!
-        
-        do inode=1,nnvel
-          p_Dvector(idofGlobal(inode)) &
-            = p_Dvector(idofGlobal(inode)) + domega * FF(inode)
-          p_Dvector(idofGlobal(inode)+ioffsetv) &
-            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * FF(inode+lofsv)
-        end do
-        
-        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                  domega * FF(1+lofsp)
-        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                      domega * FF(2+lofsp)
-        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                        domega * FF(3+lofsp)
+      do inode=1,nnvel
+        p_Dvector(idofGlobal(inode)) &
+          = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
+        p_Dvector(idofGlobal(inode)+ioffsetv) &
+          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
+      end do
+      
+      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                domega * UU(1+lofsp)
+      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                    domega * UU(2+lofsp)
+      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                      domega * UU(3+lofsp)
                                         
-      else if (ilapackInfo .lt. 0) then
-        
-        call output_line (&
-            'LAPACK(DGESV) solver failed! Error code: '//sys_siL(ilapackInfo,10),&
-            OU_CLASS_ERROR,OU_MODE_STD,'vanka_2DSPQ2QP1simpleConf')
-        
-      end if
-
-      ! (ilapackInfo > 0) May happen in rare cases, e.g. if there is one element on the
-      ! coarse grid with all boundaries = Dirichlet.
-      ! In this case, nothing must be changed in the vector!
-    
     end do ! iel
 
   end subroutine
@@ -6358,7 +6351,7 @@ contains
 
 !</subroutine>
 
-!    ! local vairables
+    ! local vairables
     integer :: iel,ielidx
     integer :: inode,idof
     
