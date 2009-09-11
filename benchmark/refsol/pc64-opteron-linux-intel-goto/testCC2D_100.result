@@ -1,5 +1,7 @@
 Body forces real bd., bdc/horiz/vert
  2 /    0.000000E+00 /    0.000000E+00
+        p (   0.1500,   0.2000) = 0.0000000000E+00
+        p (   0.2500,   0.2000) = 0.0000000000E+00
 Divergence =    2.986403E-04
 ||u||^2_L2         =    2.802130E-04
 
@@ -28,6 +30,8 @@ Accuracy notice: Nonlinear solver did not reach the convergence criterion!
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    3.731472E+02 /   -6.406604E-01
+        p (   0.1500,   0.2000) = 0.1474492344E+03
+        p (   0.2500,   0.2000) = 0.1250396387E+03
 Divergence =    4.659480E-11
 ||u||^2_L2         =    2.528321E-01
 -------------------------------------------------------------------------------
@@ -60,6 +64,8 @@ Accuracy notice: Nonlinear solver did not reach the convergence criterion!
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    4.655552E+01 /   -4.227029E-02
+        p (   0.1500,   0.2000) = 0.3494339601E+02
+        p (   0.2500,   0.2000) = 0.3257735875E+02
 Divergence =    2.002952E-13
 ||u||^2_L2         =    3.418531E-01
 -------------------------------------------------------------------------------
@@ -92,6 +98,8 @@ Accuracy notice: Nonlinear solver did not reach the convergence criterion!
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.812777E+01 /   -6.868960E-02
+        p (   0.1500,   0.2000) = 0.1822521066E+02
+        p (   0.2500,   0.2000) = 0.1682486144E+02
 Divergence =    2.634564E-12
 ||u||^2_L2         =    3.920076E-01
 -------------------------------------------------------------------------------
@@ -124,6 +132,8 @@ Accuracy notice: Nonlinear solver did not reach the convergence criterion!
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.453479E+01 /   -6.741642E-02
+        p (   0.1500,   0.2000) = 0.1101717727E+02
+        p (   0.2500,   0.2000) = 0.9713931724E+01
 Divergence =    8.343851E-12
 ||u||^2_L2         =    4.232234E-01
 -------------------------------------------------------------------------------
@@ -156,6 +166,8 @@ Accuracy notice: Nonlinear solver did not reach the convergence criterion!
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.360818E+01 /   -6.837879E-02
+        p (   0.1500,   0.2000) = 0.7228704586E+01
+        p (   0.2500,   0.2000) = 0.5884419245E+01
 Divergence =    4.140937E-12
 ||u||^2_L2         =    4.432633E-01
 -------------------------------------------------------------------------------
@@ -182,6 +194,8 @@ Time-Step 6 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.355968E+01 /   -7.526272E-02
+        p (   0.1500,   0.2000) = 0.5091068285E+01
+        p (   0.2500,   0.2000) = 0.3666542624E+01
 Divergence =    1.136603E-13
 ||u||^2_L2         =    4.562893E-01
 -------------------------------------------------------------------------------

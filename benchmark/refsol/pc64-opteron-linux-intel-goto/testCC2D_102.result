@@ -1,5 +1,7 @@
 Body forces real bd., bdc/horiz/vert
  2 /    0.000000E+00 /    0.000000E+00
+        p (   0.1500,   0.2000) = 0.0000000000E+00
+        p (   0.2500,   0.2000) = 0.0000000000E+00
 ||u||^2_L2         =    9.856482E-04
 
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -22,6 +24,8 @@ Time-Step 1 (Repetition = 0, Substep = 1 of 1) at time = 0.01000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    3.934533E+02 /   -6.736629E-01
+        p (   0.1500,   0.2000) = 0.2192998486E+03
+        p (   0.2500,   0.2000) = 0.1952391420E+03
 ||u||^2_L2         =    4.697706E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
@@ -47,6 +51,8 @@ Time-Step 2 (Repetition = 0, Substep = 1 of 1) at time = 0.02000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    3.042228E+01 /   -1.410253E-02
+        p (   0.1500,   0.2000) = 0.2487421381E+01
+        p (   0.2500,   0.2000) = 0.1117436428E+01
 ||u||^2_L2         =    4.713597E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
@@ -72,6 +78,8 @@ Time-Step 3 (Repetition = 0, Substep = 1 of 1) at time = 0.03000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.581512E+01 /   -2.719282E-02
+        p (   0.1500,   0.2000) = 0.2248934984E+01
+        p (   0.2500,   0.2000) = 0.9458285824E+00
 ||u||^2_L2         =    4.729344E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
@@ -98,6 +106,8 @@ Time-Step 4 (Repetition = 0, Substep = 1 of 1) at time = 0.04000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.417683E+01 /   -3.877593E-02
+        p (   0.1500,   0.2000) = 0.2138830813E+01
+        p (   0.2500,   0.2000) = 0.8032115133E+00
 ||u||^2_L2         =    4.744901E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
@@ -124,6 +134,8 @@ Time-Step 5 (Repetition = 0, Substep = 1 of 1) at time = 0.05000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.370624E+01 /   -5.168509E-02
+        p (   0.1500,   0.2000) = 0.2086914959E+01
+        p (   0.2500,   0.2000) = 0.6798131266E+00
 ||u||^2_L2         =    4.760267E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...
@@ -150,6 +162,8 @@ Time-Step 6 (Repetition = 0, Substep = 1 of 1) at time = 0.06000 finished.
 Starting postprocessing of the time step...
 Body forces real bd., bdc/horiz/vert
  2 /    2.380226E+01 /   -6.386204E-02
+        p (   0.1500,   0.2000) = 0.2066598209E+01
+        p (   0.2500,   0.2000) = 0.5705081231E+00
 ||u||^2_L2         =    4.775458E-01
 -------------------------------------------------------------------------------
 Analysing time derivative...

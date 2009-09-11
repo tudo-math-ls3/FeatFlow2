@@ -11,7 +11,7 @@
 ./bin/lido_schedule_tests CC2D_382_5 -w "96:00:00"
 
 ./bin/lido_schedule_tests CC2D_383_3 -w "03:00:00"
-./bin/lido_schedule_tests CC2D_383_4 -w "12:00:00"
+./bin/lido_schedule_tests CC2D_383_4 -w "13:00:00"
 ./bin/lido_schedule_tests CC2D_383_5 -w "48:00:00"
 
 ./bin/lido_schedule_tests CC2D_384_3 -w "07:00:00"
