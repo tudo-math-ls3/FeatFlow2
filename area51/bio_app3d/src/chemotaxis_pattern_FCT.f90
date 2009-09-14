@@ -40,7 +40,7 @@
 !#
 !#	[M + dt*L - dt*M_2] u_{n+1} 	= [ M ] u_{n}
 !#
-!#      [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} - dt* M u_n
+!#   [M + dt*L + dt*M] c_{n+1} 		= [ M ] c_{n} + dt* M u_n
 !#	
 !#
 !# The whole solution process is divided into serveral subroutines, using 
@@ -169,6 +169,40 @@ contains
     ! error analysis
     real(DP) :: uerror, cerror, tol
 
+    
+    !!!!! triangulation variables !!!!! 
+    ! maximum level of refinment
+    ! 
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation) :: rtriangulation
+    !
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+    !
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    type(t_blockDiscretisation) :: rdiscretisation
+
+
+    !!!!! solution + rhs + def vectors !!!!!
+    type(t_vectorScalar) :: ranalyticcells , ranalyticchemo, rcold, ruold
+    !A pointer to the entries of vector rchemoattract				
+    real(DP), dimension(:), pointer ::  p_analyticcells, p_analyticchemo, p_cold, p_uold    
+    real(DP), dimension(:), pointer ::  p_vectordata, p_chemodata
+    !
+    ! cell and chemoattractant solution vectors
+    type(t_vectorScalar)  :: rchemoattract, rrhschemo, rcell, rrhscell
+    !
+    ! defect vectors
+    type(t_vectorScalar)  :: rdef
+    !
+        
+    
+    !!!!! matrices !!!!!
+    type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
+    
+    
+    
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! Ok, let's start. !!!!!
@@ -227,7 +261,83 @@ contains
     call parlst_getvalue_double (rparams, 'ERROR', 'TOL', tol, 0.0001_DP)
     
     
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Reading the mesh file + triangulation !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './tri'
+
+    ! At first, read in the basic triangulation.
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/cCube3.tri')
+   
+    ! Refine it.
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
     
+    ! And create information about adjacencies and everything one needs from
+    ! a triangulation.
+    call tria_initStandardMeshFromRaw (rtriangulation)
+    
+    ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
+
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+                                   EL_Q1_3D,CUB_G3_3D,rtriangulation)
+    
+    !!!!! Missed the boundary conditions ??? !!!!!
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Creating matrices !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    call chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
+                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation )    
+        
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Working with initial and boundary conditions !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Get some pointers  for the errorctrl
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
+    call lsyssc_getbase_double(rcold,p_cold) 
+    call lsyssc_getbase_double(ruold,p_uold)
+    
+    
+    
+
+
+
+
+    
+    
+    
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Releasing data  !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! releasing old vectors
+    call lsyssc_releaseVector (rcold)
+    call lsyssc_releaseVector (ruold)
+
+    ! releasing matrices and vectors
+     call chemo_releasematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
+                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef)    
+
+    ! Release parameterlist
+     call parlst_done (rparams)
+
+    ! Release the discretisation structure and all spatial discretisation
+    ! structures in it.
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
+    
+    ! Release the triangulation. 
+    call tria_done (rtriangulation)
     
     
     ! Definitions of variables.
@@ -236,5 +346,78 @@ contains
     
   end subroutine
   !!! end of chemotaxispatternFCT !!!
+
+
+
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!! Auxiliary subroutines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+    ! In this subroutine the basic matrices and vectors are initialized
+    subroutine chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
+                                                        rchemoattract , rrhschemo , rcell , rrhscell , rdef , rdiscretisation )
+
+    ! This is where the matrices shoiuld be stored
+    type(t_matrixScalar) , intent(INOUT)  ::rmassmatrix, rsysmatrix, rlaplace , rmatrixchemo
+
+    ! This are the vectors
+    type(t_vectorScalar) , intent(INOUT) :: rchemoattract, rcell, rdef ,rrhschemo , rrhscell
+
+    ! The underlying discretisation
+    type(t_blockDiscretisation) , intent (IN) :: rdiscretisation
+
+
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                    LSYSSC_MATRIX9,rmassmatrix)
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                    LSYSSC_MATRIX9,rsysmatrix)
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                    LSYSSC_MATRIX9,rlaplace)
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                    LSYSSC_MATRIX9,rmatrixchemo)
+    
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rchemoattract,.true.)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rrhschemo, .true.)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcell,.true.)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rrhscell,.true.) 
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rdef,.true.)
+
+    end subroutine
+
+
+
+
+
+
+
+
+    ! In this subroutine the basic matrices and vectors are initialized
+    subroutine chemo_releasematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
+                                                        rchemoattract , rrhschemo , rcell , rrhscell , rdef)
+
+    ! This is where the matrices shoiuld be stored
+    type(t_matrixScalar) , intent(INOUT)  ::rmassmatrix, rsysmatrix, rlaplace , rmatrixchemo
+
+    ! This are the vectors
+    type(t_vectorScalar) , intent(INOUT) :: rchemoattract, rcell, rdef ,rrhschemo , rrhscell
+
+
+    ! Release the preallocated matrix and the solution vector.
+    call lsyssc_releaseMatrix (rmassmatrix)
+    call lsyssc_releaseMatrix (rsysmatrix)
+    call lsyssc_releaseMatrix (rlaplace)
+    call lsyssc_releaseMatrix (rmatrixchemo)
+
+    call lsyssc_releaseVector (rchemoattract)
+    call lsyssc_releaseVector (rrhschemo)
+    call lsyssc_releaseVector (rcell)
+    call lsyssc_releaseVector (rrhscell)
+    call lsyssc_releaseVector (rdef)
+
+    end subroutine
+
 
 end module
