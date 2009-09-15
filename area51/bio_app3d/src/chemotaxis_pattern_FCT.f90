@@ -542,7 +542,6 @@ contains
 
 
 
-
     ! In this subroutine the basic matrices and vectors are initialized
     subroutine chemo_releasematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
                                                         rchemoattract , rrhschemo , rcell , rrhscell , rdef)
@@ -567,6 +566,7 @@ contains
     call lsyssc_releaseVector (rdef)
 
     end subroutine
+
 
 
   !<subroutine>
@@ -641,11 +641,10 @@ contains
       ! Evaluate copmponent icomponent
       icomponent = rcollection%IquickAccess(1)
       
-      ! call fevl_evaluate_sim (&
-      call coeff_anprj_ic_cells (&
+      call fevl_evaluate_sim (&      
           rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
           rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
   
     end subroutine
-
+  
 end module

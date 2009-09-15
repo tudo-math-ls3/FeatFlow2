@@ -150,7 +150,7 @@ contains
             if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then 
                 CALL RANDOM_NUMBER (random_num)
                 !f_result = random_num
-		f_result = 0.2_DP
+		        f_result = 0.2_DP
                 !f_result = rand(0) !1.1 * cos ( 4 * ( PI * sqrt ( (x-8)**2 + (y-8)**2 ) ) / 4 ) **2
             else
                 f_result = 0.0_DP
@@ -1235,7 +1235,7 @@ END IF
     ! This cb fct is used for the analytic projection of the exponential test fct
     ! E.g. this is used for every test file, which does not use a analytic given fct as
     ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
-    subroutine coeff_anprj_ic_pattern (cderivative,rdiscretisation, &
+    subroutine coeff_anprj_ic_cells (cderivative,rdiscretisation, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
                   Dvalues,rcollection)
@@ -1312,7 +1312,9 @@ END IF
 
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
-            Dvalues( icub, iel ) =  1.0_DP + ic_pattern  ( Dpoints ( 1, icub, iel ), Dpoints ( 2, icub, iel ) )
+            Dvalues( icub, iel ) = userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
+                                                           Dpoints ( 2, icub, iel ), & 
+                                                           Dpoints ( 1, icub, iel ))
         END DO
     END DO
 
@@ -6288,6 +6290,26 @@ END IF
   end subroutine
 
   ! ***************************************************************************
+  
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! User prescribed function for setting initial conditions for cells !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	function userPresc_cellsInitCond(x,y,z) result (func_result)		
+	    !
+	    ! coordinates
+	    real(DP) :: x, y, z
+	    !
+	    ! function value
+		real(DP) :: func_result
+
+        ! part of a user code: prescribe initial conditions for cells
+        if( x<0 ) then
+            func_result = 100_DP 
+        else
+            func_result = 0_DP     
+        endif 		
+	end function userPresc_cellsInitCond
+
 
 end module
 
