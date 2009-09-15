@@ -84,7 +84,7 @@ module chemotaxis_pattern_FCT
   use paramlist    
   use linearalgebra
   use analyticprojection
-
+    
   use chemotaxis_callback
   
   implicit none
@@ -195,12 +195,15 @@ contains
     !
     ! defect vectors
     type(t_vectorScalar)  :: rdef
-    !
-        
+    !    
+    ! block vectors
+    type(t_vectorBlock) :: rcellBlock, rchemoattractBlock, rdefBlock   
+       
     
     !!!!! matrices !!!!!
     type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
-    
+    !
+    ! block matrices 
     
     
 
@@ -313,7 +316,13 @@ contains
     call lsyssc_getbase_double(rcold,p_cold) 
     call lsyssc_getbase_double(ruold,p_uold)
     !
-    
+    ! introducing vector blocks
+    call lsysbl_createVecFromScalar (rcell,rcellBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rchemoattract,rchemoattractBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rdef,rdefBlock,rdiscretisation)
+    !
+    ! setting the initial conditions for the two solution vectors  rcell and chemoattract.
+    call chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
     
 
 
@@ -337,6 +346,11 @@ contains
 
     ! Release parameterlist
      call parlst_done (rparams)
+
+    ! releasing block vectors
+    call lsysbl_releaseVector (rcellBlock)
+    call lsysbl_releaseVector (rchemoattractBlock)    
+    call lsysbl_releaseVector (rdefBlock)    
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
@@ -460,7 +474,71 @@ contains
     end subroutine
 
 
+    ! This is called to implement the initial conditions, e.g. to set the initial sol vectors
+    subroutine chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
 
+    ! sol vectors
+    type(t_vectorBlock), intent (INOUT) :: rcellBlock, rchemoattractBlock 
+
+    ! mass matrix
+    type(t_matrixScalar), intent (IN) :: rmassmatrix 
+
+    ! Underlying discretisation
+    type(t_blockDiscretisation) , intent (IN) :: rdiscretisation
+    ! Underlying triangulation to derive vector-coords
+    type(t_triangulation) , intent (IN) :: rtriangulation
+    
+    ! initial solution vector
+    type(t_vectorScalar) :: rinitSolVector
+    type(t_vectorBlock), target :: rinitSolVectorBlock
+
+    ! A local collection
+    type(t_collection) :: rcollection 
+    
+    ! Some pointers
+    real(DP) , dimension(:,:) , pointer :: p_DvertexCoords
+    real(DP), dimension(:) , pointer :: p_vectordata
+
+    ! integer loop
+    integer :: i
+
+
+    !AS, remarks: the simplified version of the initial boundary conditions (no L2PROJ and INITSOL are used)
+        ! Now we're setting up our collection
+        call collct_init (rcollection)
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! setting the initial conditions for cells !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1), rinitSolVector,.true.)
+        !
+        ! user defined subroutine for initial conditions
+        call lsyssc_getbase_double(rinitSolVector, p_vectordata) 
+        ! get coordinates
+        call storage_getbase_double2D(rtriangulation%h_DvertexCoords,p_DvertexCoords)
+        ! prescribe initial conditions
+        do i=1,rtriangulation%NVT
+           p_vectordata(i) = userPresc_cellsInitCond(p_DvertexCoords(1,i),p_DvertexCoords(2,i),p_DvertexCoords(3,i))
+        end do   
+        
+        !!!!! perform projection !!!!!            
+        ! create initSolVectorBlock (block structure)
+        call lsysbl_createVecFromScalar (rinitSolVector,rinitSolVectorBlock,rdiscretisation)        
+        ! we put the initial_condition vector to the collection (needed in fcoeff_solCells)
+        rcollection%p_rvectorQuickAccess1 => rinitSolVectorBlock
+        ! setting the initial conditions for cells
+        rcollection%IquickAccess(1) = 1
+        call anprj_analytL2projectionByMass (rcellBlock%RvectorBlock(1), rmassmatrix, &
+                                             fcoeff_solCells, rcollection)
+                                             
+        !release rinitSolVector and rinitSolVectorBlock
+        call lsyssc_releaseVector (rinitSolVector)        
+        call lsysbl_releaseVector (rinitSolVectorBlock)
+
+        ! Releasing the collection
+        call collct_done (rcollection)
+
+    end subroutine
 
 
 
@@ -490,5 +568,84 @@ contains
 
     end subroutine
 
+
+  !<subroutine>
+  ! initial condition for cells
+  !<subroutine/>
+    subroutine fcoeff_solCells (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, &
+                  IdofsTest, rdomainIntSubset, &
+                  Dcoefficients, rcollection)
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! Called when the initial solution has to be projected into another FEM
+    ! space. Evaluated the current initial solution in cubature points.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+  
+      integer :: icomponent
+
+      ! Evaluate copmponent icomponent
+      icomponent = rcollection%IquickAccess(1)
+      
+      ! call fevl_evaluate_sim (&
+      call coeff_anprj_ic_cells (&
+          rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
+          rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+  
+    end subroutine
 
 end module
