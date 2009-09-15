@@ -230,7 +230,7 @@ contains
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'ALPHA', ALPHA, 1.0_DP)
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'R', R, 1.0_DP)
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'D_1', D_1, 1.0_DP)
-    D_1 = 0.0625_DP ! This is the diffusioncoefficient in the paper
+    ! Robert_4_2: D_1 = 0.0625_DP ! This is the diffusioncoefficient in the paper
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'PHI', PHI, 1.0_DP)
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'GAMMA', GAMMA, 1.0_DP)
     call parlst_getvalue_double (rparams, 'COEFFICIENTS', 'N', N, 1.0_DP)
@@ -292,11 +292,17 @@ contains
     
     !!!!! Missed the boundary conditions ??? !!!!!
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!  Creating matrices !!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Creating and initializing matrices !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
     call chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
-                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation )    
+                                             rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation)    
+  
+    ! We construct some matrices in advance, so the actual loop computations
+    ! will be much faster
+    ! This routine is defined in this file
+    call chemo_initmat ( rmassmatrix, rsysmatrix, rlaplace , dtstep , D_1 , D_2 )
+
         
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Working with initial and boundary conditions !!!!!
@@ -387,6 +393,71 @@ contains
 
     end subroutine
 
+
+
+    ! Here we assemble the matrices in advance ( to save computation time )
+    subroutine chemo_initmat (rmassmatrix, rsysmatrix, rlaplace , dtstep , D_1 , D_2)
+
+    ! This is where the matrices shoiuld be stored
+    type(t_matrixScalar), intent(INOUT):: rmassmatrix , rlaplace , rsysmatrix
+
+    real(DP) , intent (INOUT) :: dtstep , D_1 , D_2
+    ! local bilinearform to construct the matrices
+    type(t_bilinearForm) :: rform
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    rform%Dcoefficients(1)  = 1.0 
+    call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
+
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV_X
+    rform%Idescriptors(2,1) = DER_DERIV_X
+    rform%Idescriptors(1,2) = DER_DERIV_Y
+    rform%Idescriptors(2,2) = DER_DERIV_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    !rform%Dcoefficients(1)  = dtstep * D_1
+    rform%Dcoefficients(1)  = 1.0
+    !rform%Dcoefficients(2)  = dtstep * D_1
+    rform%Dcoefficients(2)  = 1.0
+    !rform%Dcoefficients(2)  = dtstep * D_1
+    rform%Dcoefficients(3)  = 1.0 
+    call bilf_buildMatrixScalar (rform,.true.,rlaplace)
+    
+    call lsyssc_copymatrix(rmassmatrix,rsysmatrix)
+
+    ! Since we want to save time, we use already constructed matrices
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    ! Robert_4_2:  rform%Dcoefficients(1)  = dtstep * 32.0_DP  ! This is the coefficient in the paper
+    rform%Dcoefficients(1)  = dtstep
+    call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
+    
+    ! Since we want to save time, we use already constructed matrices
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV_X
+    rform%Idescriptors(2,1) = DER_DERIV_X
+    rform%Idescriptors(1,2) = DER_DERIV_Y
+    rform%Idescriptors(2,2) = DER_DERIV_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    rform%Dcoefficients(1)  = dtstep * D_2
+    rform%Dcoefficients(2)  = dtstep * D_2
+    rform%Dcoefficients(3)  = dtstep * D_2
+    call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
+
+    end subroutine
 
 
 
