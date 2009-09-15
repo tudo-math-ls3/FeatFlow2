@@ -1009,8 +1009,7 @@ contains
       rjumpStabil%dnu = rproblem%dnu
       
       ! Set stabilisation parameter
-      rjumpStabil%dgammastar = dupsam1
-      rjumpStabil%dgamma = rjumpStabil%dgammastar
+      rjumpStabil%dgamma = dupsam1
       
       ! Matrix weight
       rjumpStabil%dtheta = 1.0_DP
@@ -1042,8 +1041,7 @@ contains
         rjumpStabil%dnu = rproblem%dnu
         
         ! Set stabilisation parameter
-        rjumpStabil%dgammastar = dupsam2
-        rjumpStabil%dgamma = rjumpStabil%dgammastar
+        rjumpStabil%dgamma = dupsam2
         
         ! Matrix weight
         rjumpStabil%dtheta = 1.0_DP

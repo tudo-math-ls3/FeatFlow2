@@ -2046,8 +2046,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = dgamma
@@ -2117,8 +2116,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = dgamma
@@ -2217,8 +2215,7 @@ contains
             rjumpStabil%dnu = rnonlinearSpatialMatrix%dnu
             
             ! Set stabilisation parameter
-            rjumpStabil%dgammastar = rstabilisation%dupsam
-            rjumpStabil%dgamma = rjumpStabil%dgammastar
+            rjumpStabil%dgamma = rstabilisation%dupsam
             
             ! Matrix weight
             rjumpStabil%dtheta = dgamma
@@ -5080,8 +5077,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = dcx*dgamma
@@ -5130,8 +5126,7 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgammastar = rstabilisation%dupsam
-          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          rjumpStabil%dgamma = rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = dcx*dgamma
@@ -5203,8 +5198,7 @@ contains
             rjumpStabil%dnu = rnonlinearSpatialMatrix%dnu
             
             ! Set stabilisation parameter
-            rjumpStabil%dgammastar = rstabilisation%dupsam
-            rjumpStabil%dgamma = rjumpStabil%dgammastar
+            rjumpStabil%dgamma = rstabilisation%dupsam
             
             ! Matrix weight
             rjumpStabil%dtheta = dcx*dgamma
