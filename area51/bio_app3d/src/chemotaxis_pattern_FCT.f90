@@ -84,6 +84,7 @@ module chemotaxis_pattern_FCT
   use paramlist    
   use linearalgebra
   use analyticprojection
+  use feevaluation
     
   use chemotaxis_callback
   
@@ -329,6 +330,8 @@ contains
 
 
     
+    
+    ! gmv output: now is done only for test
     
     
     
