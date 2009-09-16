@@ -205,7 +205,12 @@ contains
     type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
     !
     ! block matrices 
+ 
     
+    ! Output block for UCD output to GMV file
+    type(t_ucdExport) :: rexport
+    real(DP), dimension(:), pointer :: p_Ddata
+
     
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -325,15 +330,21 @@ contains
     ! setting the initial conditions for the two solution vectors  rcell and chemoattract.
     call chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
     
-
-
-
-
     
     
-    ! gmv output: now is done only for test
+        
     
-    
+    ! printing out the initial conditions into a gmv_file
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+            'gmvcpld/solution_init.gmv.pattern')
+    call lsyssc_getbase_double (rcell,p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rchemoattract,p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'chemoattractant',UCD_VAR_STANDARD, p_Ddata)
+    ! Write the file to disc, that's it.
+    call ucd_write (rexport)
+    call ucd_release (rexport)
+         
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Releasing data  !!!!!
@@ -524,15 +535,19 @@ contains
            p_vectordata(i) = userPresc_cellsInitCond(p_DvertexCoords(1,i),p_DvertexCoords(2,i),p_DvertexCoords(3,i))
         end do   
         
+
+        call lsyssc_copyVector (rinitSolVector,rcellBlock%RvectorBlock(1))
+
         !!!!! perform projection !!!!!            
         ! create initSolVectorBlock (block structure)
-        call lsysbl_createVecFromScalar (rinitSolVector,rinitSolVectorBlock,rdiscretisation)        
+        !>>>call lsysbl_createVecFromScalar (rinitSolVector,rinitSolVectorBlock,rdiscretisation)        
         ! we put the initial_condition vector to the collection (needed in fcoeff_solCells)
-        rcollection%p_rvectorQuickAccess1 => rinitSolVectorBlock
+        !>>>rcollection%p_rvectorQuickAccess1 => rinitSolVectorBlock
         ! setting the initial conditions for cells
-        rcollection%IquickAccess(1) = 1
-        call anprj_analytL2projectionByMass (rcellBlock%RvectorBlock(1), rmassmatrix, &
-                                             fcoeff_solCells, rcollection)
+        !>>>rcollection%IquickAccess(1) = 1
+        !>>>call anprj_analytL2projectionByMass (rcellBlock%RvectorBlock(1), rmassmatrix, &
+        !>>>                                     fcoeff_solCells, rcollection)
+                
                                              
         !release rinitSolVector and rinitSolVectorBlock
         call lsyssc_releaseVector (rinitSolVector)        
@@ -639,15 +654,47 @@ contains
     
   !</subroutine>
   
-      integer :: icomponent
+    integer :: icomponent
 
-      ! Evaluate copmponent icomponent
-      icomponent = rcollection%IquickAccess(1)
-      
-      call fevl_evaluate_sim (&      
-          rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
-          rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+    ! loop-indices
+    integer :: icub, iel
+
+    !DO iel = 1, nelements
+    !  DO icub = 1, npointsPerElement
+    !     Dcoefficients( 1, icub, iel ) = userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
+    !                                                       Dpoints ( 2, icub, iel ), & 
+    !                                                       Dpoints ( 3, icub, iel ))
+    !    END DO
+    !END DO
+
+    ! Evaluate copmponent icomponent
+    icomponent = rcollection%IquickAccess(1)
+     
+    call fevl_evaluate_sim (&      
+        rcollection%p_rvectorQuickAccess1%RvectorBlock(icomponent), &
+        rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
   
     end subroutine
+
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! User prescribed function for setting initial conditions for cells !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	function userPresc_cellsInitCond(x,y,z) result (func_result)		
+	    !
+	    ! coordinates
+	    real(DP) :: x, y, z
+	    !
+	    ! function value
+		real(DP) :: func_result
+
+        ! part of a user code: prescribe initial conditions for cells
+        if( ((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 20.25 ) then
+            func_result = 100_DP 
+        else
+            func_result = 0_DP     
+        endif 		
+	end function userPresc_cellsInitCond
   
 end module

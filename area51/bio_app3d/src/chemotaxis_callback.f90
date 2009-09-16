@@ -1231,11 +1231,11 @@ END IF
  ! ***************************************************************************
 
 
-!<subroutine>
+    !<subroutine>
     ! This cb fct is used for the analytic projection of the exponential test fct
     ! E.g. this is used for every test file, which does not use a analytic given fct as
     ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
-    subroutine coeff_anprj_ic_cells (cderivative,rdiscretisation, &
+    subroutine coeff_anprj_ic_pattern (cderivative,rdiscretisation, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
                   Dvalues,rcollection)
@@ -1247,7 +1247,7 @@ END IF
     use spatialdiscretisation
     use collection
     
-  !<description>
+    !<description>
     ! This subroutine is called during the calculation of errors. It has to compute
     ! the (analytical) values of a function in a couple of points on a couple
     ! of elements. These values are compared to those of a computed FE function
@@ -1312,9 +1312,10 @@ END IF
 
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
-            Dvalues( icub, iel ) = userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
-                                                           Dpoints ( 2, icub, iel ), & 
-                                                           Dpoints ( 1, icub, iel ))
+            Dvalues( icub, iel ) = 1_DP
+            !userPresc_cellsInitCond(Dpoints ( 1, icub, iel ), & 
+            !                                               Dpoints ( 2, icub, iel ), & 
+            !                                               Dpoints ( 1, icub, iel ))
         END DO
     END DO
 
@@ -6290,26 +6291,6 @@ END IF
   end subroutine
 
   ! ***************************************************************************
-  
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!! User prescribed function for setting initial conditions for cells !!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	function userPresc_cellsInitCond(x,y,z) result (func_result)		
-	    !
-	    ! coordinates
-	    real(DP) :: x, y, z
-	    !
-	    ! function value
-		real(DP) :: func_result
-
-        ! part of a user code: prescribe initial conditions for cells
-        if( x<0 ) then
-            func_result = 100_DP 
-        else
-            func_result = 0_DP     
-        endif 		
-	end function userPresc_cellsInitCond
-
 
 end module
 
