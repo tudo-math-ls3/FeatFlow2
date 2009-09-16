@@ -198,19 +198,39 @@ contains
     type(t_vectorScalar)  :: rdef
     !    
     ! block vectors
-    type(t_vectorBlock) :: rcellBlock, rchemoattractBlock, rdefBlock   
-       
+    type(t_vectorBlock) :: rchemoattractBlock, rdefBlock, rrhsBlockchemo   
+    type(t_vectorBlock) :: rcellBlock
     
     !!!!! matrices !!!!!
     type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
     !
     ! block matrices 
+    type(t_matrixBlock) :: rmatrixBlockchemo 
+    !
  
-    
+    !!!!! boundary conditions !!!!!   
+    ! A variable describing the discrete boundary conditions.    
+    type(t_discreteBC), target :: rdiscreteBC, rdiscreteBCchemo 
+
+    !!!!! Filter chains !!!!!
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+
+    !!!!! solver stuff !!!!!
+    ! A solver node that accepts parameters for the linear solver    
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner,p_rsolverNode_cells,p_rpreconditioner_cells
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    type(t_matrixBlock), dimension(1) :: Rmatrices
+
+    !!!!! GMV output !!!!!
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     real(DP), dimension(:), pointer :: p_Ddata
 
+    !!!!! Error indicators !!!!!!
+    ! Error indicator during initialisation of the solver 
+    integer :: ierror 
     
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -299,8 +319,6 @@ contains
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_Q1_3D,CUB_G3_3D,rtriangulation)
     
-    !!!!! Missed the boundary conditions ??? !!!!!
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Creating and initializing matrices !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
@@ -313,9 +331,9 @@ contains
     call chemo_initmat ( rmassmatrix, rsysmatrix, rlaplace , dtstep , D_1 , D_2 )
 
         
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !!!!!  Working with initial and boundary conditions !!!!!
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Working with initial  conditions !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Get some pointers  for the errorctrl
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
     call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
@@ -324,17 +342,74 @@ contains
     !
     ! introducing vector blocks
     call lsysbl_createVecFromScalar (rcell,rcellBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rchemoattract,rchemoattractBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rchemoattract,rchemoattractBlock,rdiscretisation)    
     call lsysbl_createVecFromScalar (rdef,rdefBlock,rdiscretisation)
-    !
+    ! introducing matrix blocks
+    call lsysbl_createMatFromScalar (rsysmatrix,rmatrixBlockchemo,rdiscretisation)
+
+    !!!!! initial conditions !!!!! 
     ! setting the initial conditions for the two solution vectors  rcell and chemoattract.
     call chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
-    
-    
-    
         
-    
-    ! printing out the initial conditions into a gmv_file
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!  Working with boundary conditions                 !!!!!
+    !!!!!  1) ~~~ chemoattractant (+solver preparation) ~~~ !!!!!
+    !!!!!  2) ~~~ cells                                 ~~~ !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !~~~~~ chemoattractant preparation for the time loop ~~~~~!    
+    !!!!! Missed the boundary conditions ??? !!!!!
+    ! Create a t_discreteBC structure for the chemoattractant (where we store all discretised boundary conditions)
+    call chemo_initBC ( rdiscreteBCchemo )      
+
+    !!!!! solver/filter preparations for the chemoattract !!!!!
+    ! Hang the pointer into the vector and matrix. That way, these
+    ! boundary conditions are always connected to that matrix and that
+    ! vector.
+    rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
+    rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
+    rchemoattractBlock%p_rdiscreteBC => rdiscreteBCchemo
+
+    ! The discrete boundary conditions are already attached to the
+    ! vectors/matrix. Call the appropriate vector/matrix filter that
+    ! modifies the vectors/matrix according to the boundary conditions.
+    call matfil_discreteBC (rmatrixBlockchemo)
+    ! Set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    ! Create a BiCGStab-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    p_RfilterChain => RfilterChain
+    nullify(p_rpreconditioner)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+      
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 0
+      
+    ! Attach the system matrix to the solver.
+    Rmatrices = (/rmatrixBlockchemo/)
+    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+      
+    ! Initialise structure/data of the solver. 
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop    
+    !~~~~~ end: with chemoattractant preparation for the time loop is done ~~~~~!    
+        
+
+    !~~~~~ cell preparation for the time loop ~~~~~!    
+    !!!!! Missed the boundary conditions ??? !!!!!
+    ! Create a t_discreteBC structure for the chemoattractant (where we store all discretised boundary conditions)
+    call chemo_initBC ( rdiscreteBC )
+
+    rcellBlock%p_rdiscreteBC => rdiscreteBC
+    rdefBlock%p_rdiscreteBC => rdiscreteBC
+    !~~~~~ cell preparation for the time loop ~~~~~!    
+        
+        
+    !!!!! printing out the initial conditions into a gmv_file !!!!!
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
             'gmvcpld/solution_init.gmv.pattern')
     call lsyssc_getbase_double (rcell,p_Ddata)
@@ -345,6 +420,15 @@ contains
     call ucd_write (rexport)
     call ucd_release (rexport)
          
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! now the time loop !!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        
+    !!!!! end: now the time loop !!!!
+    
+    
+    
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Releasing data  !!!!!
@@ -365,6 +449,8 @@ contains
     call lsysbl_releaseVector (rcellBlock)
     call lsysbl_releaseVector (rchemoattractBlock)    
     call lsysbl_releaseVector (rdefBlock)    
+    ! releasing block matrices
+    call lsysbl_releaseMatrix (rmatrixBlockchemo)
 
     ! Release the discretisation structure and all spatial discretisation
     ! structures in it.
@@ -536,7 +622,7 @@ contains
         end do   
         
 
-        call lsyssc_copyVector (rinitSolVector,rcellBlock%RvectorBlock(1))
+        call lsyssc_copyVector (rinitSolVector,rchemoattractBlock%RvectorBlock(1))
 
         !!!!! perform projection !!!!!            
         ! create initSolVectorBlock (block structure)
@@ -547,7 +633,12 @@ contains
         !>>>rcollection%IquickAccess(1) = 1
         !>>>call anprj_analytL2projectionByMass (rcellBlock%RvectorBlock(1), rmassmatrix, &
         !>>>                                     fcoeff_solCells, rcollection)
+
                 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!!!! setting the initial conditions for chemoattractant !!!!!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !call lsyssc_clearVector(rvector)
                                              
         !release rinitSolVector and rinitSolVectorBlock
         call lsyssc_releaseVector (rinitSolVector)        
@@ -582,6 +673,17 @@ contains
     call lsyssc_releaseVector (rcell)
     call lsyssc_releaseVector (rrhscell)
     call lsyssc_releaseVector (rdef)
+
+    end subroutine
+
+
+    ! Initialize the boundary conditions (used for both, the cell density sol and the chemoattractant sol)
+    subroutine chemo_initBC (rdiscreteBC)
+
+    ! The BC_type which should be initialized
+    type(t_discreteBC) , intent (INOUT) ::rdiscreteBC
+
+    call bcasm_initDiscreteBC(rdiscreteBC) 
 
     end subroutine
 
