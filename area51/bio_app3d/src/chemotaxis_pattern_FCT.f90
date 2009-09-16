@@ -156,9 +156,10 @@ contains
     real(DP) :: dtstep
     integer :: ntimesteps, steps
     !
-    ! Time and time step counter
+    ! Time variables and counters
     real(DP) :: dtime
     integer :: itimestep
+    real(DP):: time_start
     !
     ! maximal iterations for the defect correction . Since we allow possible nonlinearities
     integer :: maxiterationdef
@@ -424,11 +425,29 @@ contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! now the time loop !!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+    ! Start the timeloop
+    timeloop : do itimestep=1,ntimesteps
+
+      ! time stats
+      call cpu_time(time_start)
+
+      ! Next time step.
+      dtime = dtime + dtstep
+                            
+      ! Store the old sols for the errorctrl
+      call lsyssc_getbase_double ( rcell, p_vectordata )
+      call lsyssc_getbase_double ( rchemoattract, p_chemodata)
+      call lalg_copyVectorDble ( p_vectordata, p_uold )
+      call lalg_copyVectorDble ( p_chemodata, p_cold )
+                
+      ! STEP 1.1: Form the right hand side for c:  
+      ! It consists of M c_n +dt * ( u_{n} , phi )
+      call chemo_initrhsC (rchemoattract, rrhschemo, rcell, rdiscretisation, rmassmatrix, dtstep, PHI)
+                
+
+    end do timeloop        
     !!!!! end: now the time loop !!!!
-    
-    
-    
+        
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!!  Releasing data  !!!!!
@@ -573,7 +592,9 @@ contains
 
     end subroutine
 
-
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! Initial conditions for cells and chemoattractant !!!!!
+     
     ! This is called to implement the initial conditions, e.g. to set the initial sol vectors
     subroutine chemo_initIC ( rcellBlock, rchemoattractBlock, rmassmatrix, rdiscretisation, rtriangulation )
 
@@ -646,6 +667,53 @@ contains
 
         ! Releasing the collection
         call collct_done (rcollection)
+
+    end subroutine
+
+
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !!!!! Construction of the RHS for the chemoattractant !!!!!
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   
+    subroutine chemo_initrhsC (rchemoattract, rhschemo, rcell, &
+                                                 rdiscretisation, rmassmatrix, dtstep,  PHI)
+
+    type(t_vectorScalar) , intent(IN) :: rchemoattract , rcell
+
+    type(t_matrixScalar) , intent(IN) :: rmassmatrix
+
+    type(t_vectorScalar) , intent(INOUT) :: rhschemo
+
+    type(t_Blockdiscretisation) , intent(IN) :: rdiscretisation
+
+    ! param
+    real(DP) ,intent (IN) :: dtstep, PHI
+
+    ! local linform
+    type(t_linearForm) :: rlinform
+
+    ! local collection
+    type(t_collection) :: rcollection
+
+
+    call collct_init (rcollection)
+    call collct_setvalue_vecsca (rcollection, 'cbvector', rcell, .true.) 
+    rcollection%DquickAccess(1) = PHI
+    ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
+                                rlinform, .true., rhschemo, coeff_hillenX_RHS_c, rcollection)
+    ! remark: subroutine coeff_hillenX_RHS_c sets M u^n into rhschemo                                 
+
+    ! Since we approx. the 1st deriv. by the backward euler, there's still one component 
+    !missing in the RHS:
+    ! rmassmatrix* c_{old}
+    ! The corressponding massmatrix is already built ( just before the loop starts )
+    call lsyssc_scalarMatVec(rmassmatrix,rchemoattract,rhschemo,1.0_DP,dtstep)
+    ! rhschemo=1*rmassmatrix*rchemoattractant + dstep*rhschemo
+      
+    ! Release the collection structure
+    call collct_done(rcollection)
 
     end subroutine
 
