@@ -134,6 +134,17 @@ module bcassembly
 
 !</constantblock>
 
+!<constantblock description="Additional options for assembling boundary conditions">
+
+  ! Integral mean values (e.g. for Q1) are computed exactly by the callback routine. 
+  ! Without this option, integral mean values are computed by a proper cubature formula.
+  integer(I32), parameter, public :: BCASM_DISCOPT_INTBYCB = 2**0
+
+  ! Standard setting of the options during the assembly.
+  integer(I32), parameter, public :: BCASM_DISCOPT_STD = 0_I32
+
+!</constantblock>
+
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of entries to handle simultaneously (-> number of points or edges,
@@ -1369,7 +1380,7 @@ contains
 
   subroutine bcasm_newDirichletBConRealBd (rblockDiscretisation, &
       iequation, rboundaryRegion, rdiscreteBC, &
-      fgetBoundaryValues,rcollection, ccomplexity)
+      fgetBoundaryValues,rcollection, ccomplexity, coptions)
   
 !<description>
   ! Creates a discrete version of Dirichlet boundary conditions.
@@ -1407,6 +1418,10 @@ contains
   ! If not specified, BCASM_DISCFORALL is assumed, i.e. the resulting
   ! boundary conditions can be used for everything.
   integer(I32), intent(in), optional :: ccomplexity
+  
+  ! Optional: A field specifying additional options for the assembly.
+  ! If not specified, BCASM_DISCOPT_STD is assumed.
+  integer(I32), intent(in), optional :: coptions
 !</input>  
 
 !<inputoutput>
@@ -1456,10 +1471,13 @@ contains
     ! List of element distributions in the discretisation structure
     type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
 
-    integer(I32) :: casmComplexity
+    integer(I32) :: casmComplexity, cmyoptions
     
     casmComplexity = BCASM_DISCFORALL
     if (present(ccomplexity)) casmComplexity = ccomplexity
+    
+    cmyoptions = BCASM_DISCOPT_STD
+    if (present(coptions)) cmyoptions = coptions
     
     if ((iequation .lt. 1) .or. &
         (iequation .gt. size(rblockDiscretisation%RspatialDiscr))) then
@@ -1906,31 +1924,127 @@ contains
         if (iand(celement,int(2**16,I32)) .ne. 0) then
         
           ! Integral mean value based element.
-          !
+          
           ! Edge inside? -> Calculate integral mean value over the edge
           if ( iedge .ne. 0 ) then
-            ! If parameter values are available, get the parameter value.
-            ! Otherwise, take the standard value from above!
-            if (associated(p_DedgeParameterValue)) &
-              dpar = p_DedgeParameterValue(I)
+          
+            if (iand(cmyoptions,BCASM_DISCOPT_INTBYCB) .ne. 0) then
+              ! Callback routine calculates the exact integral mean value.
+              !
+              ! If parameter values are available, get the parameter value.
+              ! Otherwise, take the standard value from above!
+              if (associated(p_DedgeParameterValue)) &
+                dpar = p_DedgeParameterValue(I)
 
-            call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
-                                    rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
-                                    iedge,dpar, Dvalues,rcollection)
-                                      
-            if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
-              ! Save the computed function value
-              DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+              call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                      rboundaryRegion,ielement, DISCBC_NEEDINTMEAN,&
+                                      iedge,dpar, Dvalues,rcollection)
+
+              if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+                ! Save the computed function value
+                DdofValue(ilocalEdge,ielidx) = Dvalues(1) 
+              end if
+              
+              ! A value of SYS_INFINITY indicates a do-nothing node inside of
+              ! Dirichlet boundary.
+              if (Dvalues(1) .ne. SYS_INFINITY) then
+                ! Set the DOF number < 0 to indicate that it is Dirichlet
+                Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+              end if
+              
+            else
+              ! Use a 2-point Gauss cubature formula to compute the integral
+              ! mean value.
+              !
+              ! Ok, that's a little bit more tricky. Get the parameter values
+              ! of the points at first.
+              !
+              ! We neet to set up two values for each edge E: On one hand the
+              ! integral mean value as for Q1T (with x:[-1,1]->E):
+              !             1/|E| int_[-1,1] v(x(t)) dt
+              ! which is called '0th moment', on the other hand the '1st moment',
+              ! which is the integral mean value:
+              !             1/|E| int_[-1,1] v(x(t)) * t dt
+              ! We do this by a 2-point gauss formula by asking the callback routine
+              ! for function values in the Gauss points.
+              !
+              ! Prepare the calculation of the parameter value of the point where
+              ! we evaluate the boundary.
+              !
+              ! 1st Gauss point
+              if (associated(p_DvertexParameterValue)) then
+
+                ! Number of vertices on the current boundary component?
+                nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
+                        p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx)
+                        
+                ! Get the start- and end-parameter value of the vertices on the edge.
+                dpar1 = p_DvertexParameterValue(I)
+                if (I+1 .lt. p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1)) then
+                  dpar2 = p_DvertexParameterValue(I+1)
+                else
+                  dpar2 = boundary_dgetMaxParVal(p_rspatialDiscr%p_rboundary,&
+                      rboundaryRegion%iboundCompIdx)
+                end if
+
+                ! Calculate the position of the first Gauss point on that edge.
+                call mprim_linearRescale(Q2G1,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+              else
+                ! Dummy; hopefully this is never used...
+                dpar = Q2G1
+              end if
+              
+              ! Get the value in the Gauss point
+              call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                      rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                      iedge,dpar, Dvalues,rcollection)
+              dval1 = Dvalues(1)
+              
+              ! 2nd Gauss point
+              if (associated(p_DvertexParameterValue)) then
+
+                ! Calculate the position of the 2nd Gauss point on that edge.
+                call mprim_linearRescale(Q2G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
+              else
+                ! Dummy; hopefully this is never used...
+                dpar = Q2G2
+              end if
+              
+              ! Get the value in the Gauss point
+              call fgetBoundaryValues (Icomponents,p_rspatialDiscr,&
+                                      rboundaryRegion,ielement, DISCBC_NEEDFUNC,&
+                                      iedge,dpar, Dvalues,rcollection)
+              dval2 = Dvalues(1)
+              
+              ! Calculate the integral.
+              !
+              ! A value of SYS_INFINITY indicates a do-nothing node inside of
+              ! Dirichlet boundary.
+              if ((dval1 .ne. SYS_INFINITY) .and. (dval2 .ne. SYS_INFINITY)) then
+              
+                ! Compute the integral mean value of the 0th moment -- that
+                ! is:  1/|E| int_E v dx ~ 1/2 * (v(g1)+v(g2))
+                ! This is the same value as for Q1T, but we do the integration
+                ! manually by using Gauss.
+                dval = ( dval1 + dval2 ) * 0.5_DP
+              
+                if (iand(casmComplexity,not(BCASM_DISCFORDEFMAT)) .ne. 0) then
+                  ! Save the computed function value
+                  DdofValue(ilocalEdge,ielidx) = dval
+                end if
+                
+                ! A value of SYS_INFINITY indicates a do-nothing node inside of
+                ! Dirichlet boundary.
+                if (Dvalues(1) .ne. SYS_INFINITY) then
+                  ! Set the DOF number < 0 to indicate that it is Dirichlet
+                  Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
+                end if
+              end if
+
             end if
             
-            ! A value of SYS_INFINITY indicates a do-nothing node inside of
-            ! Dirichlet boundary.
-            if (Dvalues(1) .ne. SYS_INFINITY) then
-              ! Set the DOF number < 0 to indicate that it is Dirichlet
-              Idofs(ilocalEdge,ielidx) = -abs(Idofs(ilocalEdge,ielidx))
-            end if
           end if
-
+                                      
         else
           
           ! Edge midpoint based element.
@@ -1984,7 +2098,7 @@ contains
           ! we evaluate the boundary.
           !
           ! 1st Gauss point
-          if (associated(p_DedgeParameterValue)) then
+          if (associated(p_DvertexParameterValue)) then
 
             ! Number of vertices on the current boundary component?
             nvbd = p_IboundaryCpIdx(rboundaryRegion%iboundCompIdx+1) - &
@@ -2013,7 +2127,7 @@ contains
           dval1 = Dvalues(1)
           
           ! 2nd Gauss point
-          if (associated(p_DedgeParameterValue)) then
+          if (associated(p_DvertexParameterValue)) then
 
             ! Calculate the position of the 2nd Gauss point on that edge.
             call mprim_linearRescale(Q2G2,-1.0_DP,1.0_DP,dpar1,dpar2,dpar)
