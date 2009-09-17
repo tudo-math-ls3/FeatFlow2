@@ -95,7 +95,7 @@ module mprimitives
   interface mprim_signum
     module procedure mprim_signum_dble
     module procedure mprim_signum_real
-    module procedure mprim_signum_int32
+    module procedure mprim_signum_int
   end interface
 
   interface mprim_SVD_backsubst
@@ -249,7 +249,7 @@ contains
 
 !<function>
   
-  elemental integer(I32) function mprim_signum_int32 (ival)
+  elemental integer function mprim_signum_int (ival)
   
 !<description>
   ! Signum function.
@@ -268,11 +268,11 @@ contains
     ! Result: Value of the parbolic profile on position dpos on the line segment
     select case (ival)
       case (:-1)
-        mprim_signum_int32 = -1_I32
+        mprim_signum_int = -1
       case (0)
-        mprim_signum_int32 = 0_I32
+        mprim_signum_int = 0
       case default
-        mprim_signum_int32 = 1_I32
+        mprim_signum_int = 1
     end select
 
   end function
