@@ -201,6 +201,7 @@ contains
     ! block vectors
     type(t_vectorBlock) :: rchemoattractBlock, rdefBlock, rrhsBlockchemo   
     type(t_vectorBlock) :: rcellBlock
+    type(t_vectorBlock) :: rtempBlock
     
     !!!!! matrices !!!!!
     type(t_matrixScalar)  :: rmassmatrix, rsysmatrix, rlaplace, rmatrixchemo, rtemp
@@ -409,7 +410,6 @@ contains
     rdefBlock%p_rdiscreteBC => rdiscreteBC
     !~~~~~ cell preparation for the time loop ~~~~~!    
         
-        
     !!!!! printing out the initial conditions into a gmv_file !!!!!
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
             'gmvcpld/solution_init.gmv.pattern')
@@ -443,7 +443,31 @@ contains
       ! STEP 1.1: Form the right hand side for c:  
       ! It consists of M c_n +dt * ( u_{n} , phi )
       call chemo_initrhsC (rchemoattract, rrhschemo, rcell, rdiscretisation, rmassmatrix, dtstep, PHI)
-                
+                 
+      call lsysbl_createVecFromScalar (rrhschemo, rrhsBlockchemo, rdiscretisation)
+      ! Next step is to implement boundary conditions into the RHS, solution and matrix. 
+      call vecfil_discreteBCrhs (rrhsBlockchemo)
+      call vecfil_discreteBCsol (rchemoattractBlock)
+
+      ! STEP 6: Solve the system
+      !
+      ! Now we have block vectors for the RHS and the matrix. What we
+      ! need additionally is a block vector for the solution and temporary data.
+      call lsysbl_createVecBlockIndirect (rrhsBlockchemo, rtempBlock, .false.)
+      ! Finally solve the system. As we want to solve Ax=b with
+      ! b being the real RHS and x being the real solution vector,
+      ! we use linsol_solveAdaptively. If b is a defect
+      ! RHS and x a defect update to be added to a solution vector,
+      call linsol_solveAdaptively (p_rsolverNode,rchemoattractBlock,rrhsBlockchemo,rtempBlock)
+
+     ! Store the iterationstats FINISHED HERE!!!!
+     if ( p_rsolverNode%iiterations >=  iteration_c_max ) then
+        iteration_c_max = p_rsolverNode%iiterations
+     end if
+     if ( p_rsolverNode%iiterations <= iteration_c_min ) then
+        iteration_c_min = p_rsolverNode%iiterations
+     end if
+     iteration_c_average = iteration_c_average + p_rsolverNode%iiterations
 
     end do timeloop        
     !!!!! end: now the time loop !!!!
