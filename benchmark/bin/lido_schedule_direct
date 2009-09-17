@@ -1,24 +1,40 @@
 #!/bin/sh
-#
-# Schedule script on the LIDO cluster.
-#
-# Directly schedules a serial application on the cluster for execution.
-# The application must be present as executable.
-#
-# Call of this script:
-#
-#   lido_schedule_direct [jobname] [wallclock] [EMail] [executable] [params]
-#
-# The following parameters must be present:
-#   [jobname]    : is a user defined name for the job
-#   [wallclock]  : Maximum time the executable is allowed to run.
-#                  A string like "08:00:00".
-#   [EMail]      : EMail address of the user that invokes the job
-#
-# The following parameters are optional.
-#   [executable] : Name of the executable to schedule.
-#                  If not present, an interactive session will be started.
-#   [params]     : Optional parameters to pass to the executable
+
+fb_call() {
+    echo
+    echo "Schedule script on the LIDO cluster."
+    echo "------------------------------------"
+    echo "Directly schedules a serial application on the cluster for execution."
+    echo "The application must be present as executable."
+    echo
+    echo "Call of this script:"
+    echo
+    echo "  lido_schedule_direct [wallclock] [jobname] [email] [executable] [params]"
+    echo
+    echo "The following parameters must be present:"
+    echo "  [jobname]    : is a user defined name for the job"
+    echo "  [wallclock]  : Maximum time the executable is allowed to run."
+    echo "                 A string like "08:00:00"."
+    echo "  [email]      : EMail address of the user that invokes the job."
+    echo
+    echo "The following parameters are optional."
+    echo "  [executable] : Name of the executable to schedule."
+    echo "                 If not present, an interactive session will be started."
+    echo "  [params]     : Optional parameters to pass to the executable"
+    echo
+    echo " If no executable is present, an interactive job is started!"
+    echo
+    echo
+    echo "Examples:"
+    echo
+    echo " Start cc2d, allow at most 8 hours of computation:"
+    echo "  lido_schedule_direct \"08:00:00\" mycc2d featflow@featflow.de cc2d"
+    echo    
+    echo " Start an interactive session for 30 minutes:"
+    echo "  lido_schedule_direct \"00:30:00\" mycomandline featflow@featflow.de"
+    echo
+}
+
 
 ########################################################################
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
@@ -157,30 +173,40 @@ fb_determineQueue() {
 ########################################################################
 ########################################################################
 
+echo
+
 if test "$1" = ""; then
-  echo "No jobname given!"
+  fb_call
+  echo
+  echo "No wallclock given!"
   exit 1
 fi
 
-jobname=$1
+wallclock=$1
 
 if test "$2" = ""; then
-  echo "No Email address given!"
+  fb_call
+  echo
+  echo "No jobname given!"
   exit 2
 fi
 
-emailaddress=$2
+jobname=$2
 
 if test "$3" = ""; then
-  echo "No wallclock given!"
+  fb_call
+  echo
+  echo "No Email address given!"
   exit 3
 fi
 
-wallclock=$3
+emailaddress=$3
 
 # Get the correct queue from lido
 fb_queryPBSLiDO
 pbsOptionQueue=`fb_determineQueue "1" "${wallclock}" "_eth"`
+
+echo Scheduling job \"$jobname\" on queue \"$pbsOptionQueue\" for \"$wallclock\"
 
 if [ $# -gt 3 ]; then
 
@@ -209,6 +235,8 @@ EOF
 qsub ${jobname}.job
 
 else
+
+echo Invoking interactive job...
 
 # Write a job file
 cat <<EOF > ${jobname}.job
