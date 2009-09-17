@@ -64,6 +64,7 @@ module main_program
   use stationaryoptcsolver
   
   use externalstorage
+  use paramlist
   
   implicit none
   
@@ -1109,7 +1110,7 @@ contains
     ! A structure for the solution vector and the RHS vector of the problem.
     type(t_vectorBlock) :: rvector,rrhs
     
-    integer :: i
+    integer :: i,ipropagateStartVector
     
     ! Ok, let's start. 
     !
@@ -1207,6 +1208,9 @@ contains
       
       ! Don't read the target flow, this is done in 
       ! cc_solveNonstationaryDirect!
+
+      call parlst_getvalue_int (p_rproblem%rparamList,'CC-DISCRETISATION',&
+                                'ipropagateStartVector',ipropagateStartVector,0)
 
       ! Call the nonstationary solver to solve the problem.
       call cc_solveNonstationaryDirect (p_rproblem,rvector)

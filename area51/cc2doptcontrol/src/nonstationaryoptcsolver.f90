@@ -115,7 +115,7 @@ contains
   
 !<subroutine>
 
-  subroutine cc_solveNonstationaryDirect (rproblem,rvector)
+  subroutine cc_solveNonstationaryDirect (rproblem,rvector,ipropagateStartVector)
   
 !<description>
   ! Solve the nonstationary optimal control problem. This allocates
@@ -128,6 +128,10 @@ contains
 !<input>
   ! OPTIONAL: A block vector that serves as stationary initial condition.
   type(t_vectorBlock), intent(IN), optional :: rvector
+  
+  ! OPTIONAL: If a start vector is present, this specifies if the start vector
+  ! is propagated to all timesteps.
+  integer, intent(in), optional :: ipropagateStartVector
 !</input>
 
 !<inputoutput>
@@ -176,10 +180,14 @@ contains
         
     ! If a start vector is given, propagate it to all timesteps.
     if (present(rvector)) then
-      call output_line ('Propagating start vector...')
-      do istep = 1,rx%NEQtime
-        call sptivec_setTimestepData(rx,istep,rvector)
-      end do
+      if (present(ipropagateStartVector)) then
+        if (ipropagateStartVector .gt. 0) then
+          call output_line ('Propagating start vector...')
+          do istep = 1,rx%NEQtime
+            call sptivec_setTimestepData(rx,istep,rvector)
+          end do
+        end if
+      end if
     end if
 
     call output_line ('Reading target flow...')

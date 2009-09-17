@@ -19,6 +19,12 @@
 
 isolutionStart     = 0
 
+# Whether to propagate the start vector to all time steps.
+# =0: All timesteps are initialised with zero except the 1st one.
+# =1: The start vector is propagated to all timesteps.
+
+ipropagateStartVector = 0
+
 # Level of the solution file when isolutionstart=1,2.
 # =1,2,3: directly defines the level.
 # =0,-1,-2,-3,...: Solution is given at level NLMAX-|isolutionlevel|
