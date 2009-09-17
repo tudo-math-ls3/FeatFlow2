@@ -5170,15 +5170,15 @@ contains
                               
           ! Just do some mat-vec's to compute the defect.
           !
-          ! We must take the abs-value of dgamma as we always *add* the
-          ! stabilisation and only want to take care of a possible weight <> 1.
+          ! The stabilisation parameter is already incorporated into
+          ! the matrix -- only its sign is not incorporated, so we do that here.
           call lsyssc_scalarMatVec(rstabilisation%p_rmatrixEOJ,&
               rx%RvectorBlock(1),rb%RvectorBlock(1),&
-              -dcx*dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),1.0_DP)
+              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
           call lsyssc_scalarMatVec(rstabilisation%p_rmatrixEOJ,&
               rx%RvectorBlock(2),rb%RvectorBlock(2),&
-              -dcx*dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),1.0_DP)
+              -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
         case default
           print *,'Don''t know how to set up nonlinearity!?!'
@@ -5221,13 +5221,15 @@ contains
             ! Jump stabilisation, precomputed matrix.
             !
             ! Just do some mat-vec's to compute the defect.
+            ! The stabilisation parameter is already incorporated into
+            ! the matrix -- only its sign is not incorporated, so we do that here.
             call lsyssc_scalarMatVec(rstabilisation%p_rmatrixEOJ,&
                 rx%RvectorBlock(1),rb%RvectorBlock(1),&
-                -dcx*dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),1.0_DP)
+                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
             call lsyssc_scalarMatVec(rstabilisation%p_rmatrixEOJ,&
                 rx%RvectorBlock(2),rb%RvectorBlock(2),&
-                -dcx*dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),1.0_DP)
+                -dcx*dgamma*mprim_signum(rstabilisation%dupsam),1.0_DP)
 
           case default
             ! No stabilisation
