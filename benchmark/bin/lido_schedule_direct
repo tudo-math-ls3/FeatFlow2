@@ -1,0 +1,231 @@
+#!/bin/sh
+#
+# Schedule script on the LIDO cluster.
+#
+# Directly schedules a serial application on the cluster for execution.
+# The application must be present as executable.
+#
+# Call of this script:
+#
+#   lido_schedule_direct [jobname] [wallclock] [EMail] [executable] [params]
+#
+# The following parameters must be present:
+#   [jobname]    : is a user defined name for the job
+#   [wallclock]  : Maximum time the executable is allowed to run.
+#                  A string like "08:00:00".
+#   [EMail]      : EMail address of the user that invokes the job
+#
+# The following parameters are optional.
+#   [executable] : Name of the executable to schedule.
+#                  If not present, an interactive session will be started.
+#   [params]     : Optional parameters to pass to the executable
+
+########################################################################
+#  Function: Query PBS to find out about available nodes and maximum walltime per queue
+########################################################################
+fb_queryPBSLiDO() {
+    eth[0]="short_eth"
+    eth[1]="med_eth"
+    eth[2]="long_eth"
+    eth[3]="neternal_eth"
+    ib[0]="short_ib"
+    ib[1]="med_ib"
+    ib[2]="long_ib"
+
+    # Create temporary file (with unique file name)
+    qmgr=`mktemp`
+    if [ $? -ne 0 ]; then
+	cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+	exit 2
+    fi
+
+    # Query PBS queue manager and store result in temporary file
+    qmgr -c 'list queue @master' > ${qmgr}
+    if [ $? -ne 0 ]; then
+	cat <<EOF 1>&2
+$0: Error: Could not query PBS manager for available resources. Script cancelled.
+EOF
+	exit 3
+    fi
+
+    # Create temporary file (with unique file name)
+    sedFileSuppressOfflineNodes="`mktemp`"".sed"
+    if [ $? -ne 0 ]; then
+	cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+	exit 4
+    fi
+
+    # Query PBS for offline nodes, transform the output into sed instructions
+    # (that remove any occurrence of offline nodes from input strings) and
+    # store it to a temporary file
+    pbsnodes -l | grep offline | sed 's/^\([^ ]*\).*$/s\/\1+*\/\/;/' > ${sedFileSuppressOfflineNodes}
+    if [ $? -ne 0 ]; then
+	cat <<EOF 1>&2
+$0: Error: Could not query PBS for offline nodes. Script cancelled.
+EOF
+	exit 5
+    fi
+
+    # Define a smaller helper routine for code repeatedly needed
+    fb_getSettingsForQueue() {
+	queue="$1"  # IN
+        egrep "^(Queue |[[:space:]]+acl_hosts|[[:space:]]+[^=]+\.lidocluster\.hp|[[:space:]]+resources_max.walltime)" ${qmgr} | \
+ 		# (Sed:) Unwrap acl_hosts list.
+		sed ':x; /,$/ { N; s/\n[ ]*//; tx}' | \
+ 		# Turn output into one line per queue
+ 		grep -v "^Queue default" | \
+ 		sed 'N; N; s/\n//g;' | \
+		# Suppress offline nodes
+		sed -f ${sedFileSuppressOfflineNodes} | \
+		# Extract current queue
+		grep ${queue}
+    }
+
+    # eth queue
+    for i in 0 1 2 3; do
+	queue=${eth[$i]};
+	# Determine maximum wall clock time
+	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum number of nodes available
+	eth_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+    done
+
+    # ib queue
+    for i in 0 1 2; do
+	queue=${ib[$i]};
+	# Determine maximum wall clock time
+	ib_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum number of nodes available
+	ib_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+    done
+
+    rm -f ${qmgr} ${sedFileSuppressOfflineNodes}
+}
+
+
+########################################################################
+#  Function: Determine most suitable queue depending on node, walltime and interconnect requirements
+########################################################################
+fb_determineQueue() {
+    nodes="$1"      # IN (format: integer)
+    queuetype="$3"  # IN (valid: "_eth" or "_ib")
+
+    walltimeseconds="`echo $2 | awk -F: '{print $1*3600+$2*60+$3}'`"   # IN (format: hh:mm:ss)
+
+
+    # Check ethernet queues
+    if test "${queuetype}" = "_eth"; then 
+	for i in 0 1 2 3; do
+	    queue=${eth[$i]};
+	    # Check whether enough nodes in queue available
+	    if test ${nodes} -le ${eth_maxavailnodes[$i]}; then
+		# Check whether wall time limits are not exceeded
+		if test ${walltimeseconds} -le ${eth_wallclockseconds[$i]}; then
+		    echo ${queue};
+		    return;
+		fi
+	    fi
+	done
+    fi
+
+
+    # Check infiniband queues
+    if test "${queuetype}" = "_ib"; then 
+	for i in 0 1 2; do
+	    queue=${ib[$i]};
+	    # Check whether enough nodes in queue available
+	    if test ${nodes} -le ${ib_maxavailnodes[$i]}; then
+		# Check whether wall time limits are not exceeded
+		if test ${walltimeseconds} -le ${ib_wallclockseconds[$i]}; then
+		    echo ${queue};
+		    return;
+		fi
+	    fi
+	done
+    fi
+}
+
+########################################################################
+########################################################################
+########################################################################
+# Actual script
+########################################################################
+########################################################################
+########################################################################
+
+if test "$1" = ""; then
+  echo "No jobname given!"
+  exit 1
+fi
+
+jobname=$1
+
+if test "$2" = ""; then
+  echo "No Email address given!"
+  exit 2
+fi
+
+emailaddress=$2
+
+if test "$3" = ""; then
+  echo "No wallclock given!"
+  exit 3
+fi
+
+wallclock=$3
+
+# Get the correct queue from lido
+fb_queryPBSLiDO
+pbsOptionQueue=`fb_determineQueue "1" "${wallclock}" "_eth"`
+
+if [ $# -gt 3 ]; then
+
+executable=$4
+
+# Shift the parameters, so the remaining parameters are passed
+# to the application by "$@" !
+shift 4
+
+# Write a job file
+cat <<EOF > ${jobname}.job
+#!/bin/sh
+
+#PBS -l walltime="${wallclock}",nodes=1
+#PBS -M $emailaddress
+#PBS -b bae
+#PBS -q $pbsOptionQueue
+#PBS -j oe
+#PBS -N ${jobname}
+#PBS -o ${jobname}.output
+
+cd $PWD
+./$executable $@
+EOF
+
+qsub ${jobname}.job
+
+else
+
+# Write a job file
+cat <<EOF > ${jobname}.job
+#!/bin/sh
+
+#PBS -l walltime="${wallclock}",nodes=1
+#PBS -M $emailaddress
+#PBS -b bae
+#PBS -q $pbsOptionQueue
+#PBS -j oe
+#PBS -N ${jobname}
+#PBS -o ${jobname}.output
+
+cd $PWD
+EOF
+
+# Start an interactive job
+qsub -I ${jobname}.job
+
+fi
