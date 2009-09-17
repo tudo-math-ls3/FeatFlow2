@@ -2184,14 +2184,14 @@ contains
           ! We use the precomputed EOJ matrix and sum it up to the
           ! existing matrix.
           call lsyssc_matrixLinearComb(rstabilisation%p_rmatrixEOJ,&
-              dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),&
+              dgamma*mprim_signum(rstabilisation%dupsam),&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
           if (.not. bshared) then
             ! Also for the Y-velocity.
             call lsyssc_matrixLinearComb(rstabilisation%p_rmatrixEOJ,&
-                dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),&
+                dgamma*mprim_signum(rstabilisation%dupsam),&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
           end if
@@ -2238,14 +2238,14 @@ contains
             ! We use the precomputed EOJ matrix and sum it up to the
             ! existing matrix.
             call lsyssc_matrixLinearComb(rstabilisation%p_rmatrixEOJ,&
-                dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),&
+                dgamma*mprim_signum(rstabilisation%dupsam),&
                 rmatrix%RmatrixBlock(1,1),1.0_DP,&
                 rmatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             if (.not. bshared) then
               ! Also for the Y-velocity.
               call lsyssc_matrixLinearComb(rstabilisation%p_rmatrixEOJ,&
-                  dgamma*rstabilisation%dupsam/abs(rstabilisation%dupsam),&
+                  dgamma*mprim_signum(rstabilisation%dupsam),&
                   rmatrix%RmatrixBlock(2,2),1.0_DP,&
                   rmatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
             end if
