@@ -7,7 +7,7 @@
 [GENERAL]
 
 # Level where to solve. >= NLMIN !
-NLMAX = 6
+NLMAX = 5
 # Output level. 
 # =2 export the last solution vectors only
 # =1 export data to gmv files
@@ -94,7 +94,7 @@ SCALE_U = 2.0
 
 # Maximum number of time steps.
 # Time iteration stops if #iterations >= niterations or time >= dtimemax.
-ntimesteps = 10000
+ntimesteps = 1000
 
 # If != 0 the sim will run at this amount of steps neglecting loop ctrl , e.g. error ctrl
 steps = 1000
