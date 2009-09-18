@@ -141,24 +141,8 @@ contains
             f_result = 1.0_DP! / ( 1.0_DP + PHI * u )
         end function g
 
-                      
-        ! This should realize a small pertubation at the center of the domain
-        function ic_pattern (x,y) result(f_result)
-            implicit none
-            intrinsic RANDOM_NUMBER 
-            real(DP) :: x, y, f_result, random_num
-            if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then 
-                CALL RANDOM_NUMBER (random_num)
-                !f_result = random_num
-		f_result = 0.2_DP
-                !f_result = rand(0) !1.1 * cos ( 4 * ( PI * sqrt ( (x-8)**2 + (y-8)**2 ) ) / 4 ) **2
-            else
-                f_result = 0.0_DP
-            end if
-        end function ic_pattern
-
-
-        ! This function is used to describe a pattern forming IC for u
+ 
+         ! This function is used to describe a pattern forming IC for u
         function ic_cos( x, y ) result (f_result)
             implicit none
             real(DP) :: x, y, f_result
@@ -1217,12 +1201,16 @@ END IF
     
   !</subroutine>
 
-    ! local variables given by the collection
-    real(DP) :: CONST
+    ! loop-indices
+    integer :: icub, iel
 
-    CONST = rcollection%DquickAccess(1)
-
-    Dvalues(:,:) =  CONST
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement             
+            Dvalues( icub, iel ) = userPresc_chemoattrInitCond(Dpoints(1,icub,iel), &
+                                                               Dpoints(2,icub,iel), & 
+                                                               Dpoints(3,icub,iel))
+        END DO
+    END DO
   end subroutine
 
   ! ***************************************************************************
@@ -1312,7 +1300,8 @@ END IF
 
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
-            Dvalues( icub, iel ) =  1.0_DP + ic_pattern  ( Dpoints ( 1, icub, iel ), Dpoints ( 2, icub, iel ) )
+            !2D Dvalues( icub, iel ) =  1.0_DP + ic_pattern  ( Dpoints ( 1, icub, iel ), Dpoints ( 2, icub, iel ) )
+            Dvalues( icub, iel ) = userPresc_cellsInitCond(Dpoints(1,icub,iel), Dpoints(2,icub,iel), Dpoints(3,icub,iel))
         END DO
     END DO
 
@@ -6289,5 +6278,60 @@ END IF
 
   ! ***************************************************************************
 
+       ! This should realize a small pertubation at the center of the domain
+        function ic_pattern (x,y) result(f_result)
+            implicit none
+            intrinsic RANDOM_NUMBER 
+            real(DP) :: x, y, f_result, random_num
+            if ( sqrt ( (x-8)**2 + (y-8)**2) <= 1.5_DP ) then 
+                CALL RANDOM_NUMBER (random_num)
+                !f_result = random_num
+		f_result = 0.2_DP
+                !f_result = rand(0) !1.1 * cos ( 4 * ( PI * sqrt ( (x-8)**2 + (y-8)**2 ) ) / 4 ) **2
+            else
+                f_result = 0.0_DP
+            end if
+        end function ic_pattern
+        
+        
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! User prescribed functions !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! User prescribed function for setting initial conditions for cells !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	function userPresc_cellsInitCond(x,y,z) result (func_result)		
+	    !
+	    ! coordinates
+	    real(DP) :: x, y, z
+	    !
+	    ! function value
+		real(DP) :: func_result
+
+        ! part of a user code: prescribe initial conditions for cells
+        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
+            func_result = 1.0_DP + 0.2_DP
+        else
+            func_result = 1.0_DP + 0_DP     
+        endif 		
+	end function userPresc_cellsInitCond
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! User prescribed function for setting initial conditions for cells !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	function userPresc_chemoattrInitCond(x,y,z) result (func_result)		
+	    !
+	    ! coordinates
+	    real(DP) :: x, y, z
+	    !
+	    ! function value
+		real(DP) :: func_result
+
+        func_result = 1.0_DP / 32.0_DP
+        
+	end function userPresc_chemoattrInitCond 
+   
+  
 end module
 

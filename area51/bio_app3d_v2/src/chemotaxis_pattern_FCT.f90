@@ -138,6 +138,9 @@ contains
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
+    ! Path to the mesh
+    character(len=SYS_STRLEN) :: spredir
+
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
     type(t_blockDiscretisation) :: rdiscretisation
@@ -273,7 +276,7 @@ contains
     !
     call parlst_init(rparams)
 
-     call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
+    call parlst_readfromfile(rparams, 'data/chemotaxis.dat')
 
     ! Getting some general params for the pb
     call parlst_getvalue_int (rparams, 'GENERAL', 'NLMAX', NLMAX, 7) 
@@ -327,40 +330,55 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, './pre/patternQUAD.prm')
+    !2D call boundary_read_prm(rboundary, './pre/patternQUAD.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/patternQUAD.tri', rboundary)
+    !2D call tria_readTriFile2D (rtriangulation, './pre/patternQUAD.tri', rboundary)
+    
+    
+        ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
+    ! from. If that does not exist, write to the directory "./pre".
+    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+
+    ! At first, read in the basic triangulation.
+    call tria_readTriFile3D (rtriangulation, trim(spredir)//'/cCube3.tri')
     
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)		
+    !2D call tria_quickRefine2LevelOrdering (NLMAX,rtriangulation,rboundary)		
+    ! Refine it.
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
-    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    !2D call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    call tria_initStandardMeshFromRaw (rtriangulation)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
     ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation,1,&
-                                   rtriangulation, rboundary)
+    !2D call spdiscr_initBlockDiscr (rdiscretisation,1,&
+    !2D                               rtriangulation, rboundary)
+    call spdiscr_initBlockDiscr (rdiscretisation,1,rtriangulation)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
+    !2D call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+    !2D                               EL_E011,CUB_G2X2,rtriangulation, rboundary)
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   EL_E011,CUB_G2X2,rtriangulation, rboundary)
-                                   
+                                   EL_Q1_3D,CUB_G3_3D,rtriangulation)
+    
+   
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix 
     ! We create the matrices and vectors for the pb
                  
     ! Get some pointers  for the errorctrl
-      call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
-      call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
-      call lsyssc_getbase_double(rcold,p_cold) 
-      call lsyssc_getbase_double(ruold,p_uold)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),ruold,.true.)
+    call lsyssc_createVecByDiscr(rdiscretisation%RspatialDiscr(1),rcold,.true.)
+    call lsyssc_getbase_double(rcold,p_cold) 
+    call lsyssc_getbase_double(ruold,p_uold)
                    
     call chemo_creatematvec ( rmassmatrix , rsysmatrix, rlaplace , rmatrixchemo ,&
                                              rchemoattract ,rrhschemo , rcell , rrhscell , rdef , rdiscretisation )
@@ -1090,18 +1108,20 @@ contains
     type(t_bilinearForm) :: rform
 
     rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
+    rform%Idescriptors(1,1) = DER_FUNC3D
+    rform%Idescriptors(2,1) = DER_FUNC3D
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = 1.0 
     call bilf_buildMatrixScalar (rform,.true.,rmassmatrix)
-
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+         
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV3D_X
+    rform%Idescriptors(2,1) = DER_DERIV3D_X
+    rform%Idescriptors(1,2) = DER_DERIV3D_Y
+    rform%Idescriptors(2,2) = DER_DERIV3D_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     !rform%Dcoefficients(1)  = dtstep * D_1
@@ -1114,18 +1134,20 @@ contains
 
     ! Since we want to save time, we use already constructed matrices
     rform%itermCount = 1
-    rform%Idescriptors(1,1) = DER_FUNC
-    rform%Idescriptors(2,1) = DER_FUNC
+    rform%Idescriptors(1,1) = DER_FUNC3D
+    rform%Idescriptors(2,1) = DER_FUNC3D
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dtstep * 32.0_DP  ! This is the coefficient in the paper
     call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
     ! Since we want to save time, we use already constructed matrices
-    rform%itermCount = 2
-    rform%Idescriptors(1,1) = DER_DERIV_X
-    rform%Idescriptors(2,1) = DER_DERIV_X
-    rform%Idescriptors(1,2) = DER_DERIV_Y
-    rform%Idescriptors(2,2) = DER_DERIV_Y
+    rform%itermCount = 3
+    rform%Idescriptors(1,1) = DER_DERIV3D_X
+    rform%Idescriptors(2,1) = DER_DERIV3D_X
+    rform%Idescriptors(1,2) = DER_DERIV3D_Y
+    rform%Idescriptors(2,2) = DER_DERIV3D_Y
+    rform%Idescriptors(1,3) = DER_DERIV3D_Z
+    rform%Idescriptors(2,3) = DER_DERIV3D_Z
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dtstep * D_2
