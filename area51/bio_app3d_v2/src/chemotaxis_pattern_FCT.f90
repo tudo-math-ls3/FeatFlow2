@@ -642,7 +642,7 @@ contains
 
 
 
-    
+    go to 10
 
 
 
@@ -704,10 +704,12 @@ contains
 
 
     
+    
       ! STEP 2.7: Postprocessing
       !
       ! That's it, rcellBlock now contains our solution. We can now
       ! start the postprocessing. 
+    10 print *,''  
     if(OUTPUT .eq. 1) then
       ! Start UCD export to GMV file:
     select case (gmvfolder)
@@ -1126,6 +1128,7 @@ contains
     rform%Dcoefficients(1)  = 1.0
     !rform%Dcoefficients(2)  = dtstep * D_1
     rform%Dcoefficients(2)  = 1.0
+    rform%Dcoefficients(3)  = 1.0
     call bilf_buildMatrixScalar (rform,.true.,rlaplace)
     
     call lsyssc_copymatrix(rmassmatrix,rsysmatrix)
@@ -1137,6 +1140,7 @@ contains
     rform%ballCoeffConstant = .true.
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dtstep * 32.0_DP  ! This is the coefficient in the paper
+    !test rform%Dcoefficients(1)  = 0.0_DP
     call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
     ! Since we want to save time, we use already constructed matrices
     rform%itermCount = 3
@@ -1150,6 +1154,7 @@ contains
     rform%BconstantCoeff = .true.
     rform%Dcoefficients(1)  = dtstep * D_2
     rform%Dcoefficients(2)  = dtstep * D_2
+    rform%Dcoefficients(3)  = dtstep * D_2
     call bilf_buildMatrixScalar (rform,.false.,rsysmatrix)
 
     end subroutine

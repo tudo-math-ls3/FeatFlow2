@@ -6310,11 +6310,14 @@ END IF
 		real(DP) :: func_result
 
         ! part of a user code: prescribe initial conditions for cells
-        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
-            func_result = 1.0_DP + 0.2_DP
-        else
-            func_result = 1.0_DP + 0_DP     
-        endif 		
+        !rb if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
+        !rb    func_result = 1.0_DP + 0.2_DP
+        !rb else
+        !rb     func_result = 1.0_DP + 0_DP     
+        !rb endif 		
+        
+        func_result = 0.0_DP 
+        
 	end function userPresc_cellsInitCond
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -6328,7 +6331,13 @@ END IF
 	    ! function value
 		real(DP) :: func_result
 
-        func_result = 1.0_DP / 32.0_DP
+        !rb func_result = 1.0_DP / 32.0_DP
+        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
+            func_result = 1.0_DP + 0.2_DP
+        else
+             func_result = 1.0_DP + 0_DP     
+        endif 		
+
         
 	end function userPresc_chemoattrInitCond 
    
