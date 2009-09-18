@@ -180,10 +180,14 @@ contains
         
     ! If a start vector is given, propagate it to all timesteps.
     if (present(rvector)) then
+      ! Initialise the solution at timestep 1.
+      call sptivec_setTimestepData(rx,1,rvector)
+      
+      ! Eventually propagate the initial solution to all timesteps.
       if (present(ipropagateStartVector)) then
         if (ipropagateStartVector .gt. 0) then
           call output_line ('Propagating start vector...')
-          do istep = 1,rx%NEQtime
+          do istep = 2,rx%NEQtime
             call sptivec_setTimestepData(rx,istep,rvector)
           end do
         end if
