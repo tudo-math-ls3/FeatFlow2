@@ -407,8 +407,6 @@ contains
     call chemo_initBC ( rdiscreteBCchemo , rboundary , rdiscretisation , C_0 , U_0 , INITSOL)
 
 
-
-
     ! Setting the Blockvectors
 
     ! The linear solver only works for block matrices/vectors - but above,
@@ -424,8 +422,6 @@ contains
     rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
     rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
     rvectorBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
-
-      
 
 
     ! Next step is to implement boundary conditions into the RHS,
@@ -488,10 +484,10 @@ contains
       !
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
-    call chemo_initBC ( rdiscreteBC , rboundary , rdiscretisation , C_0 , U_0 , INITSOL)
+    call chemo_initBC ( rdiscreteBC, rboundary, rdiscretisation, C_0, U_0, INITSOL)
 
 
-      rcellBlock%p_rdiscreteBC => rdiscreteBC
+    rcellBlock%p_rdiscreteBC => rdiscreteBC
     rdefBlock%p_rdiscreteBC => rdiscreteBC
 
     ! printing out the initial conditions into a gmv_file
@@ -568,9 +564,9 @@ contains
     call lalg_copyVectorDble (p_vectordata,p_uold)
     call lalg_copyVectorDble (p_chemodata,p_cold)
                    
-      ! STEP 1.1: Form the right hand side for c:  
-      ! It consists of M c_n +dt * ( u_{n} , phi )
-        call chemo_initrhsC (rrhsBlockchemo , rchemoattract ,rrhschemo , rcell , rdiscretisation , rmassmatrix , dtstep, PHI )
+    ! STEP 1.1: Form the right hand side for c:  
+    ! It consists of M c_n +dt * ( u_{n} , phi )
+    call chemo_initrhsC (rrhsBlockchemo , rchemoattract ,rrhschemo , rcell , rdiscretisation , rmassmatrix , dtstep, PHI )
 
     call lsysbl_createVecFromScalar (rrhschemo,rrhsBlockchemo,rdiscretisation)
       ! Next step is to implement boundary conditions into the RHS,
@@ -1321,11 +1317,11 @@ contains
       ! and whether the endpoints are inside the region or not.
 !     if(INITSOL .eq. 0) then
     
-    call collct_init(rcollection)
-        rcollection%DquickAccess(1) = 0.0_DP
-        rcollection%DquickAccess(2) = 0.0_DP
+    !2D call collct_init(rcollection)
+    !2D rcollection%DquickAccess(1) = 0.0_DP
+    !2D rcollection%DquickAccess(2) = 0.0_DP
       
-      call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+    !2D call boundary_createRegion(rboundary,1,1,rboundaryRegion)
       ! We use this boundary region and specify that we want to have Dirichlet
       ! boundary there. The following call does the following:
       ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
@@ -1340,23 +1336,23 @@ contains
 !                                        getBoundaryValues_constC,rcollection)
                                
       ! Now to the edge 2 of boundary component 1 the domain.
-      call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    !2D call boundary_createRegion(rboundary,1,2,rboundaryRegion)
 !       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                       rboundaryRegion,rdiscreteBC,&		
 !                                       getBoundaryValues_constC,rcollection)
                                									
       ! Edge 3 of boundary component 1.
-      call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+    !2D call boundary_createRegion(rboundary,1,3,rboundaryRegion)
 !       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                        rboundaryRegion,rdiscreteBC,&
 !                                        getBoundaryValues_constC,rcollection)
       
       ! Edge 4 of boundary component 1. That's it.
-      call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    !2D call boundary_createRegion(rboundary,1,4,rboundaryRegion)
 !       call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
 !                                        rboundaryRegion,rdiscreteBC,&
 !                                        getBoundaryValues_constC,rcollection)
-    call collct_done(rcollection)
+    !2D call collct_done(rcollection)
 !     end if
 
     end subroutine
@@ -1393,6 +1389,7 @@ contains
     rcollection%DquickAccess(1) = PHI
     ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
     rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC3D
     rlinform%Idescriptors(1) = DER_FUNC
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
                                 rlinform, .true., rhschemo, coeff_hillenX_RHS_c, rcollection)

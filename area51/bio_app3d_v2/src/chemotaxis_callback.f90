@@ -135,11 +135,11 @@ contains
         !producing chemoattractants, even if the cell population blows-up. 
         ! If = 1 / ( 1 + PHI * u ) "this would prevent excessive chemoattractant production as 
         !the cell density increases" ( Hillen, Painter paper )
-        function g ( u, PHI ) result (f_result)
+        function func_g ( u, PHI ) result (f_result)
             implicit none
             real(DP) :: u, PHI, f_result
             f_result = 1.0_DP! / ( 1.0_DP + PHI * u )
-        end function g
+        end function func_g
 
  
          ! This function is used to describe a pattern forming IC for u
@@ -3098,7 +3098,7 @@ END IF
 
     DO icub = 1, npointsPerElement
         DO iel = 1, nelements
-            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) *  g ( DvaluesFevl(1,icub,iel), PHI )
+            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) *  func_g(DvaluesFevl(1,icub,iel), PHI)
         END DO
     END DO
 
