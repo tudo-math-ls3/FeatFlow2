@@ -642,7 +642,7 @@ contains
 
 
 
-
+    
 
 
 
@@ -902,7 +902,9 @@ contains
         EXIT
     end if
     end do timeloop
-    ! If we want to export just the last vectors
+    !!!end of the time loop
+    
+    ! If we want to export just the last vectors    
     if ( OUTPUT .eq. 2 ) then
         select case (gmvfolder)
 
@@ -1499,16 +1501,17 @@ contains
             rcollection%DquickAccess(2) = CHI 
             rcollection%DquickAccess(3) = GAMMA
             rcollection%DquickAccess(4) = ALPHA
-            rform%itermCount = 2
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_DERIV_X
-            rform%Idescriptors(1,2) = DER_FUNC
-            rform%Idescriptors(2,2) = DER_DERIV_Y
+            rform%itermCount = 3
+            rform%Idescriptors(1,1) = DER_FUNC3D
+            rform%Idescriptors(2,1) = DER_DERIV3D_X
+            rform%Idescriptors(1,2) = DER_FUNC3D
+            rform%Idescriptors(2,2) = DER_DERIV3D_Y
+            rform%Idescriptors(1,3) = DER_FUNC3D
+            rform%Idescriptors(2,3) = DER_DERIV3D_Z            
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
             call bilf_buildMatrixScalar (rform,.true.,rK, coeff_hillenX, rcollection)
-
 
 
             if(k.eq.1) then
@@ -1542,8 +1545,8 @@ contains
             ! In this case (not commented) the construction of the RHS_u should be modified
              rcollection%DquickAccess(1) = dtstep
             rform%itermCount = 1
-            rform%Idescriptors(1,1) = DER_FUNC
-            rform%Idescriptors(2,1) = DER_FUNC
+            rform%Idescriptors(1,1) = DER_FUNC3D
+            rform%Idescriptors(2,1) = DER_FUNC3D
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             call bilf_buildMatrixScalar (rform,.false.,rK, coeff_pattern_growthterm, rcollection)
@@ -1560,22 +1563,22 @@ contains
             ! we use the callback function coeff_hillen_laplace
             rcollection%DquickAccess(2) = D_1
             rcollection%DquickAccess(3) = N
-            rform%itermCount = 2
-            rform%Idescriptors(1,1) = DER_DERIV_X
-            rform%Idescriptors(2,1) = DER_DERIV_X
-            rform%Idescriptors(1,2) = DER_DERIV_Y
-            rform%Idescriptors(2,2) = DER_DERIV_Y
+            rform%itermCount = 3
+            rform%Idescriptors(1,1) = DER_DERIV3D_X
+            rform%Idescriptors(2,1) = DER_DERIV3D_X
+            rform%Idescriptors(1,2) = DER_DERIV3D_Y
+            rform%Idescriptors(2,2) = DER_DERIV3D_Y
+            rform%Idescriptors(1,2) = DER_DERIV3D_Z
+            rform%Idescriptors(2,2) = DER_DERIV3D_Z
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
             call bilf_buildMatrixScalar (rform,.false.,rmatrix, coeff_hillen_laplace, rcollection)
 
-
             ! Now rmatrix is our systemmatrix
 
             ! Releasing the collection
             call collct_done(rcollection)
-
                 
             ! STEP 2.3: Create block vectors and boundary conditions.
             !      
@@ -1683,7 +1686,7 @@ contains
             ! we use linsol_solveAdaptively. If b is a defect
             ! RHS and x a defect update to be added to a solution vector,
             ! we would have to use linsol_precondDefect instead.
-!             call linsol_solveAdaptively (p_rsolverNode_cells,rcellBlock,rrhsBlock,rtempBlock)
+            ! call linsol_solveAdaptively (p_rsolverNode_cells,rcellBlock,rrhsBlock,rtempBlock)
 
             ! Set the output level of the solver to 2 for some output
             p_rsolverNode_cells%ioutputLevel = 0

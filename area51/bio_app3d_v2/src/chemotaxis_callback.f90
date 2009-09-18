@@ -104,22 +104,22 @@ contains
         ! This determines the density-dependent sensitivity.
         ! If = 1 there's no strong density-dependency
         ! If = ( 1 - u/GAMMA ) it simulates, that "...occupation ( by cells )of an area limits other cells from penetrating it ..." ( Hillen, Painter paper ) 
-        function A( u, GAMMA ) result (f_result)
+        function func_A ( u, GAMMA ) result (f_result)
             implicit none
             real(DP) :: u, GAMMA, f_result
-            f_result = 1.0_DP!( 1.0_DP - u/GAMMA )
-        end function A
+            f_result = 1.0_DP !( 1.0_DP - u/GAMMA )
+        end function func_A
 
         ! This functional determines a signal-dependent sensitivity. (ref. Hillen, Painter paper)
         ! If = CHI there's no signal dependencies, e.g. the cell density continues to grow.
         ! If = CHI / ( 1 + ALPHA* c )**2 (or likewise) it simulates the competition-condition of
         ! chemoattractant molecules binding on corresponding receptors on the cell surface.
         ! (which happens to invoke the chemotaxis)
-        function B( c, CHI, ALPHA ) result (f_result)
+        function func_B( c, CHI, ALPHA ) result (f_result)
             implicit none
             real(DP) :: c, CHI, ALPHA, f_result
-            f_result = CHI!1.0_DP!CHI / ( 1.0_DP + ALPHA* c )**2
-        end function B
+            f_result = CHI !1.0_DP!CHI / ( 1.0_DP + ALPHA* c )**2
+        end function func_B
 
         ! This functional is corresponding to te generic functional f ( . ) in the Hillen, Painter paper
         ! It determines the kinetics of the cells. If = 0 then there's no kinetics
@@ -5249,26 +5249,26 @@ END IF
 
     ! Fetching the values of rvector_c in the cubature pts.
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_X, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_Y, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
 
 
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) =   A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
-                                                    B ( DvaluesFevl(4,icub,iel), CHI, ALPHA ) * &
+            Dcoefficients(1,icub,iel) =   func_A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
+                                                    func_B ( DvaluesFevl(4,icub,iel), CHI, ALPHA ) * &
                                                     DvaluesFevl(1,icub,iel) 
             ! second term
-            Dcoefficients(2,icub,iel) =   A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
-                                                    B ( DvaluesFevl(4,icub,iel), CHI, ALPHA )  * &
+            Dcoefficients(2,icub,iel) =   func_A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
+                                                    func_B ( DvaluesFevl(4,icub,iel), CHI, ALPHA )  * &
                                                     DvaluesFevl(2,icub,iel) 
         END DO
     END DO
