@@ -635,18 +635,8 @@ contains
 !     print*,"cerror/dtstep = ", cerror/dtstep
                 
       ! Release the block matrix/vectors
-      call lsysbl_releaseVector (rtempBlock)
+    call lsysbl_releaseVector (rtempBlock)
     call lsyssc_releaseVector (rrhschemo)
-
-
-
-
-
-    go to 10
-
-
-
-
 
 
 
@@ -708,8 +698,7 @@ contains
       ! STEP 2.7: Postprocessing
       !
       ! That's it, rcellBlock now contains our solution. We can now
-      ! start the postprocessing. 
-    10 print *,''  
+      ! start the postprocessing.     
     if(OUTPUT .eq. 1) then
       ! Start UCD export to GMV file:
     select case (gmvfolder)
@@ -1397,7 +1386,6 @@ contains
     ! To assemble the RHS , set up the corresponding linear  form (u*g(u),Phi_j):
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC3D
-    rlinform%Idescriptors(1) = DER_FUNC
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
                                 rlinform, .true., rhschemo, coeff_hillenX_RHS_c, rcollection)
 
@@ -1492,7 +1480,7 @@ contains
             ! Since the CHI is free to be nonlinear it should be implemented directly
             ! in the cb fct. we ' ll invoke in assembling the matrix
  
-            call  lsyssc_lumpMatrixScalar (rmatrix,LSYSSC_LUMP_DIAG,.false.)
+            call lsyssc_lumpMatrixScalar (rmatrix,LSYSSC_LUMP_DIAG,.false.)
             call lsyssc_copyMatrix ( rmatrix, rlumpedmass )
 
             ! Initialize the collection structure
@@ -1516,6 +1504,7 @@ contains
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
+            rform%BconstantCoeff(3) = .false.
             call bilf_buildMatrixScalar (rform,.true.,rK, coeff_hillenX, rcollection)
 
 
@@ -1578,6 +1567,7 @@ contains
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
+            rform%BconstantCoeff(3) = .false.
             call bilf_buildMatrixScalar (rform,.false.,rmatrix, coeff_hillen_laplace, rcollection)
 
             ! Now rmatrix is our systemmatrix

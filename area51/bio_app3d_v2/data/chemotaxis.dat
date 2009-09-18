@@ -7,7 +7,7 @@
 [GENERAL]
 
 # Level where to solve. >= NLMIN !
-NLMAX = 5
+NLMAX = 3
 # Output level. 
 # =2 export the last solution vectors only
 # =1 export data to gmv files

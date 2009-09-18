@@ -138,7 +138,7 @@ contains
         function func_g ( u, PHI ) result (f_result)
             implicit none
             real(DP) :: u, PHI, f_result
-            f_result = 1.0_DP! / ( 1.0_DP + PHI * u )
+            f_result = 1.0_DP ! / ( 1.0_DP + PHI * u )
         end function func_g
 
  
@@ -558,7 +558,7 @@ contains
 END IF
 ! assign the corresponding vectorentry of uvector to the needed callback coefficient
    
-  call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+  call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC3D, Dcoefficients, 1)
 ! 	uvector => null()		# to release the pointer !?!?
 	
   end subroutine
@@ -651,7 +651,7 @@ END IF
                    call output_line ("**********COLLECTION FAILED*********")
                    call output_lbrk ()
             END IF
-            call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+            call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC3D, Dcoefficients, 1)
       else
             Dcoefficients = 0.002_DP ! = BETA*dtime*u
             print *,"**************SHOULD NOT APPEAR***************"
@@ -1301,7 +1301,9 @@ END IF
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             !2D Dvalues( icub, iel ) =  1.0_DP + ic_pattern  ( Dpoints ( 1, icub, iel ), Dpoints ( 2, icub, iel ) )
-            Dvalues( icub, iel ) = userPresc_cellsInitCond(Dpoints(1,icub,iel), Dpoints(2,icub,iel), Dpoints(3,icub,iel))
+            Dvalues( icub, iel ) = userPresc_cellsInitCond(Dpoints(1,icub,iel), & 
+                                                           Dpoints(2,icub,iel), & 
+                                                           Dpoints(3,icub,iel))
         END DO
     END DO
 
@@ -2973,7 +2975,7 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
     ! chertock kurganov example
@@ -3094,11 +3096,11 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     DO icub = 1, npointsPerElement
         DO iel = 1, nelements
-            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) *  func_g(DvaluesFevl(1,icub,iel), PHI)
+            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) 
         END DO
     END DO
 
@@ -3211,7 +3213,7 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rcell, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     DO icub = 1, npointsPerElement
         DO iel = 1, nelements
@@ -3334,7 +3336,7 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
     ! chertock kurganov example
@@ -3457,7 +3459,7 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
     ! chertock kurganov example
@@ -3578,9 +3580,9 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_star, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 2)
 
     ! calculate the term w*u_n^2/(SIGMA+u_n^2) for the RHS of c of the third 
     ! chertock kurganov example
@@ -3700,9 +3702,9 @@ END IF
 
     ! Fetching the values of rvector in the cubature pts.
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC2D, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC2D, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 2)
 !     call fevl_evaluate_sim4(rvector_c, &
 !                                  rdomainIntSubset, DER_DERIV_X, DvaluesFevl, 3)
 !     call fevl_evaluate_sim4(rvector_c, &
@@ -4952,15 +4954,15 @@ END IF
 
     ! Fetching the values of rvector_c in the cubature pts.
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_X, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_Y, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
 
     ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
     ! LHS of u_n+1 of the third chertock kurganov example
@@ -5101,15 +5103,15 @@ END IF
 
     ! Fetching the values of rvector_c in the cubature pts.
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_X, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_Y, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
 
     ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
     ! LHS of u_n+1 of the third chertock kurganov example
@@ -5235,7 +5237,7 @@ END IF
 
 
     ! allocate some memory for the calls of Fevl
-    allocate (DvaluesFevl(4,npointsPerElement,nelements))
+    allocate (DvaluesFevl(3,npointsPerElement,nelements))
     ! Fetching the vector
 
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
@@ -5252,24 +5254,24 @@ END IF
                                  rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
                                  rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
+    call fevl_evaluate_sim4(rvector_c, &
+                                 rdomainIntSubset, DER_DERIV3D_Z, DvaluesFevl, 3)
 
     ! These calls are neccessary to fit the signature of f_CHI
-    call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
-    call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
+    !call fevl_evaluate_sim4(rvector_u, &
+    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
+    !call fevl_evaluate_sim4(rvector_c, &
+    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 5)
 
 
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) =   func_A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
-                                                    func_B ( DvaluesFevl(4,icub,iel), CHI, ALPHA ) * &
-                                                    DvaluesFevl(1,icub,iel) 
+            Dcoefficients(1,icub,iel) =   CHI*DvaluesFevl(1,icub,iel) 
             ! second term
-            Dcoefficients(2,icub,iel) =   func_A ( DvaluesFevl(3,icub,iel), GAMMA ) * &
-                                                    func_B ( DvaluesFevl(4,icub,iel), CHI, ALPHA )  * &
-                                                    DvaluesFevl(2,icub,iel) 
+            Dcoefficients(2,icub,iel) =   CHI*DvaluesFevl(2,icub,iel) 
+            ! third term
+            Dcoefficients(3,icub,iel) =   CHI*DvaluesFevl(3,icub,iel)             
         END DO
     END DO
 
@@ -5395,15 +5397,15 @@ END IF
 
     ! Fetching the values of rvector_c in the cubature pts.
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_X, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV_Y, DvaluesFevl, 2)
+                                 rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 4)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 4)
 
 
     DO iel = 1,nelements
@@ -5523,7 +5525,7 @@ END IF
 
 
     ! allocate some memory for the calls of Fevl
-    allocate (DvaluesFevl(2,npointsPerElement,nelements))
+    allocate (DvaluesFevl(1,npointsPerElement,nelements))
 
     ! Fetching the vector
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
@@ -5536,7 +5538,7 @@ END IF
     ! For the sake of simplicity, we' re now only considering a const CHI 
 
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
     ! LHS of u_n+1 of the third chertock kurganov example
@@ -5544,9 +5546,11 @@ END IF
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) = dtstep * D ( DvaluesFevl(1,icub,iel), D_1, N )
+            Dcoefficients(1,icub,iel) = dtstep * D_1
             ! second term
-            Dcoefficients(2,icub,iel) = dtstep * D ( DvaluesFevl(1,icub,iel), D_1, N )
+            Dcoefficients(2,icub,iel) = dtstep * D_1
+            ! third term
+            Dcoefficients(3,icub,iel) = dtstep * D_1
         END DO
     END DO
 
@@ -5658,7 +5662,7 @@ END IF
 
 
     ! allocate some memory for the calls of Fevl
-    allocate (DvaluesFevl(2,npointsPerElement,nelements))
+    allocate (DvaluesFevl(1,npointsPerElement,nelements))
 
     ! Fetching the vector
     rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
@@ -5669,7 +5673,7 @@ END IF
     ! For the sake of simplicity, we' re now only considering a const CHI 
 
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 1)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
     ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
     ! LHS of u_n+1 of the third chertock kurganov example
@@ -5801,7 +5805,7 @@ END IF
 
     ! These calls are neccessary to fit the signature of f_CHI
     call fevl_evaluate_sim4(rvector_u, &
-                                 rdomainIntSubset, DER_FUNC, DvaluesFevl, 3)
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     ! calculate the term u_n / (1+c_{n+1})^2   * c_{n+1}_x  (resp. c_{n+1}_y ) for the 
     ! LHS of u_n+1 of the third chertock kurganov example
 
@@ -6310,13 +6314,13 @@ END IF
 		real(DP) :: func_result
 
         ! part of a user code: prescribe initial conditions for cells
-        !rb if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
-        !rb    func_result = 1.0_DP + 0.2_DP
-        !rb else
-        !rb     func_result = 1.0_DP + 0_DP     
-        !rb endif 		
+        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 1.5_DP ) then
+           func_result = 1.0_DP + 0.2_DP
+        else
+           func_result = 1.0_DP + 0_DP     
+        endif 		
         
-        func_result = 0.0_DP 
+        !func_result = 0.0_DP 
         
 	end function userPresc_cellsInitCond
 
@@ -6331,12 +6335,12 @@ END IF
 	    ! function value
 		real(DP) :: func_result
 
-        !rb func_result = 1.0_DP / 32.0_DP
-        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
-            func_result = 1.0_DP + 0.2_DP
-        else
-             func_result = 1.0_DP + 0_DP     
-        endif 		
+        func_result = 1.0_DP / 32.0_DP
+        !if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
+        !    func_result = 1.0_DP + 0.2_DP
+        !else
+        !     func_result = 1.0_DP + 0_DP     
+        !endif 		
 
         
 	end function userPresc_chemoattrInitCond 
