@@ -8,7 +8,8 @@
 
 ifneq ($(strip $(ACMLHOME)),)
 # Split up string if multiple directories are given
-LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(ACMLHOME))
+# Note: Do not put whitespace between comma and the environment variable!
+LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(ACMLHOME))
 endif
 
 LIBS     := $(LIBS) -lacml

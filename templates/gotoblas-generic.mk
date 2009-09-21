@@ -10,7 +10,8 @@ BUILDLIB := $(BUILDLIB) lapack
 
 ifneq ($(strip $(GOTOBLAS_LIB)),)
 # Split up string if multiple directories are given
-LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(GOTOBLAS_LIB))
+# Note: Do not put whitespace between comma and the environment variable!
+LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(GOTOBLAS_LIB))
 endif
 
 LIBS     := $(LIBS) -llapack -lgoto

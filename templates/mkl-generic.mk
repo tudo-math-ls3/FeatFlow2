@@ -8,7 +8,8 @@
 
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
-LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(INTEL_MKL_LIB))
+# Note: Do not put whitespace between comma and the environment variable!
+LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
 endif
 
 LIBS     := $(LIBS) -lmkl -lguide -lpthread
