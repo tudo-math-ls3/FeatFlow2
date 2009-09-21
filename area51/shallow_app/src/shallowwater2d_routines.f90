@@ -2731,21 +2731,19 @@ end if !dry or wet bed
       bx=0
       by=0
     
-      if ((p_dVertexCoords(1,ieq)>10).and.(p_dVertexCoords(1,ieq)<30)) then
-        bx=1
-        by=0 
-      end if
+!       if ((p_dVertexCoords(1,ieq)>5).and.(p_dVertexCoords(1,ieq)<7)) then
+!         bx=1
+!       end if
     
       rarraySol(2)%Da(ieq)=rarraySol(2)%Da(ieq)-dt*gravconst*rarraySol(1)%Da(ieq)*bx
       rarraySol(3)%Da(ieq)=rarraySol(3)%Da(ieq)-dt*gravconst*rarraySol(1)%Da(ieq)*by
     end do
 
-
   end subroutine
   
   
   
-  ! Add bottom ürofiöe before writing the solution
+  ! Add bottom profile before writing the solution
   subroutine AddBottomBeforeWrite(rarraySol,neq,h_DvertexCoords)
 
     type(t_array), dimension(nvar2d), intent(inout)    :: rarraySol
@@ -2775,13 +2773,13 @@ end if !dry or wet bed
     
     b=0
     
-      if ((p_dVertexCoords(1,ieq)>10).and.(p_dVertexCoords(1,ieq)<30)) then
-        b= p_dVertexCoords(1,ieq)-10
-      end if
-      
-      if (p_dVertexCoords(1,ieq)>30) then
-        b = 20
-      end if
+!       if ((p_dVertexCoords(1,ieq)>5).and.(p_dVertexCoords(1,ieq)<7)) then
+!         b= p_dVertexCoords(1,ieq)-5
+!       end if
+!       
+!       if (p_dVertexCoords(1,ieq).ge.7) then
+!         b = 2
+!       end if
     
       rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)+ b !bottom heigth
       
@@ -2790,8 +2788,8 @@ end if !dry or wet bed
 
   end subroutine
   
-  ! Substract bottom ürofiöe before writing the solution
-  subroutine SubstractBottomBeforeWrite(rarraySol,neq,h_DvertexCoords)
+  ! Substract bottom profile after writing the solution
+  subroutine SubstractBottomAfterWrite(rarraySol,neq,h_DvertexCoords)
 
     type(t_array), dimension(nvar2d), intent(inout)    :: rarraySol
     
@@ -2820,15 +2818,15 @@ end if !dry or wet bed
     
     b=0
     
-      if ((p_dVertexCoords(1,ieq)>10).and.(p_dVertexCoords(1,ieq)<30)) then
-        b= p_dVertexCoords(1,ieq)-10
-      end if
-      
-      if (p_dVertexCoords(1,ieq)>30) then
-        b = 20
-      end if
+!       if ((p_dVertexCoords(1,ieq)>5).and.(p_dVertexCoords(1,ieq)<7)) then
+!         b= p_dVertexCoords(1,ieq)-5
+!       end if
+!       
+!       if (p_dVertexCoords(1,ieq).ge.7) then
+!         b = 2
+!       end if
     
-      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)+ b !bottom heigth
+      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)- b !bottom heigth
       
     end do
 

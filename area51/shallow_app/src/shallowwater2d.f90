@@ -684,7 +684,7 @@ contains
 
 
     ! Bevor we start the timestepping we should set the initial values
-
+    
     ! get Pointer to the vertex coordinates
     call storage_getbase_double2d(rtriangulation%h_DvertexCoords, p_dVertexCoords)
 
@@ -722,6 +722,10 @@ contains
        ! Start UCD export to GMV file:
        call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
             'gmv/video1.gmv')
+            
+       ! Before writing add the bottom profile
+       call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+
 
        call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
        call ucd_addVariableVertexBased (rexport,'sol_h',UCD_VAR_STANDARD, p_Ddata)
@@ -734,6 +738,9 @@ contains
        ! Write the file to disc
        call ucd_write (rexport)
        call ucd_release (rexport)
+       
+       ! After writing substract the bottom profile
+       call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
 
        videotime = videotimestep
        ! Number of first video file
@@ -945,6 +952,9 @@ contains
        ! As we now have a simple dry bed handling, we clip all height variables
        ! smaller than 1e-6
        call ClipHeight (rarraySol, neq)
+       
+       ! Add Sourceterm explicitely
+       call AddExplicitSourceTerm(rarraySol,dt,neq,rtriangulation%h_DvertexCoords,gravconst)
 
 
        ! That's it. RvectorBlock now contains our solution at the current time
@@ -960,7 +970,10 @@ contains
 
           write(sfilenumber,'(i0)') ifilenumber
           videotime = videotime + videotimestep
-
+          
+          ! Before writing add the bottom profile
+          call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+          
           call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                'gmv/video' // trim(sfilenumber) // '.gmv')
 
@@ -975,6 +988,9 @@ contains
           ! Write the file to disc, that's it.
           call ucd_write (rexport)
           call ucd_release (rexport)
+          
+          ! After writing substract the bottom profile
+          call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
        end if
 
        ! Go on to the next time step
@@ -1005,6 +1021,10 @@ contains
     write(*,*)
     write(*,*) 'Writing Solution at final time',ttime,'to File'
     write(*,*)
+    
+    ! Before writing add the bottom profile
+    call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+    
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
          ofile)
 
@@ -1025,6 +1045,9 @@ contains
     ! Write the file to disc, that's it.
     call ucd_write (rexport)
     call ucd_release (rexport)
+    
+    ! After writing substract the bottom profile
+    call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
 
 
     ! Now release all memory
