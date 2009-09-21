@@ -84,6 +84,7 @@ module scalarpde
     
     ! Only for use with UFCI: Function IDs for non-constant coefficients.
     integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
+    
   end type
   
   public :: t_bilinearForm
@@ -152,6 +153,10 @@ module scalarpde
     ! each additive terms in the bilinear form.
     ! Otherwise: Not used.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+    
+    ! Only for use with UFCI: Function IDs for non-constant coefficients.
+    integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
+
   end type
   
   public :: t_trilinearForm
@@ -193,6 +198,9 @@ module scalarpde
     ! used by the main program to pass parameters from the main program to
     ! callback routines.
     real(DP), dimension(SCPDE_NNAB)  :: Dcoefficients = 0.0_DP
+    
+    ! Only for use with UFCI: Function IDs for non-constant coefficients.
+    integer, dimension(SCPDE_NNAB)   :: IfunctionIDs = 0
     
   end type
   
