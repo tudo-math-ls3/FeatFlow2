@@ -638,6 +638,8 @@ contains
     call lsysbl_releaseVector (rtempBlock)
     call lsyssc_releaseVector (rrhschemo)
 
+   
+
 
 
             ! STEP 2.1: Form the right hand side for c:  @@@@@!!!!M u_{old}!!!!!@@@@@
@@ -687,6 +689,8 @@ contains
     print*,"----------------"
     print*,"timestep : ", itimestep
     print*,"----------------"
+    
+
     call  chemo_defcorr(  rcell, rchemoattract, rcellBlock, rmassmatrix, rlaplace, &
                        rrhscell, rdiscretisation, rdiscreteBC, dtstep, D_1, CHI, ALPHA, r, GAMMA, N, maxiterationdef, defectTol ,&
                         iteration_u_max, iteration_u_min, iteration_u_average, iteration_defcorr_max, &
@@ -1562,8 +1566,8 @@ contains
             rform%Idescriptors(2,1) = DER_DERIV3D_X
             rform%Idescriptors(1,2) = DER_DERIV3D_Y
             rform%Idescriptors(2,2) = DER_DERIV3D_Y
-            rform%Idescriptors(1,2) = DER_DERIV3D_Z
-            rform%Idescriptors(2,2) = DER_DERIV3D_Z
+            rform%Idescriptors(1,3) = DER_DERIV3D_Z
+            rform%Idescriptors(2,3) = DER_DERIV3D_Z
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
@@ -1571,7 +1575,6 @@ contains
             call bilf_buildMatrixScalar (rform,.false.,rmatrix, coeff_hillen_laplace, rcollection)
 
             ! Now rmatrix is our systemmatrix
-
             ! Releasing the collection
             call collct_done(rcollection)
                 
