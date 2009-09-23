@@ -99,7 +99,7 @@ contains
 
     ! Scalar matrices
     ! (consistent and lumped mass matrix,
-    type(t_matrixScalar) :: rmatrixMC, rmatrixML, rmatrixCX, rmatrixCY
+    type(t_matrixScalar) :: rmatrixMC, rmatrixML, rmatrixCX, rmatrixCY, rmatrixBX, rmatrixBY
 
     ! Array with pointers to the datas of the diagonal blocks of P,
     ! the preconditioner of the outer defect correction loop
@@ -147,16 +147,17 @@ contains
     ! They are needed to apply upwind diffusion for example
     ! Kedge is an array, which saves the corresponding grid-points
     ! for each edge
-    integer, dimension(:), pointer		    :: p_Kld, p_Kcol, p_Kdiagonal
+    integer, dimension(:), pointer     :: p_Kld, p_Kcol, p_Kdiagonal
     integer, dimension(:), pointer     :: p_Ksep
     integer, dimension(:,:), pointer   :: p_Kedge
-    real(dp), dimension(:), pointer	        :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+    real(dp), dimension(:), pointer	   :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+    real(dp), dimension(:), pointer    :: p_BXdata, p_BYdata, P_Bottom
 
     ! Size of the 2D-array Kedge
     integer, dimension(2)              :: iSize
 
     ! Number of edges of the grid
-    integer                                 :: nedge
+    integer                            :: nedge
 
     ! some variables needed to apply upwind diffusion
     integer							:: ieq, ild, icol, ios, icount, icount2, iedge
@@ -174,7 +175,7 @@ contains
     real(DP)						:: theta
 
     ! Handles
-    integer                         :: h_Sep, h_Kedge
+    integer                         :: h_Sep, h_Kedge, h_Bottom
 
     ! For the defect correction loop
     ! number of iterations and maximum number of iterations
@@ -450,9 +451,7 @@ contains
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
     call stdop_assembleSimpleMatrix(rmatrixCY, DER_DERIV_Y, DER_FUNC)
-
-
-
+    
     ! Now get all the needed pointers to the datas of the matrices
     call lsyssc_getbase_double(rmatrixCX,p_CXdata)
     call lsyssc_getbase_double(rmatrixCY,p_CYdata)
@@ -506,7 +505,7 @@ contains
           p_Kedge(4,iedge)=ji    ! ji
        end do
     end do
-
+    
 
     ! For the application of the TVD correction we will need the
     ! temporary arrays fld1+2
@@ -569,6 +568,14 @@ contains
     do ivar = 1, nvar2d
        Eye(ivar,ivar) = 1.0_DP
     end do
+    
+    
+    ! Make vector with bottom heigth values
+    call storage_new ('Bottom Profile', 'Bottom Vector', neq, ST_DOUBLE, h_bottom, &
+         ST_NEWBLOCK_ZERO)
+
+    ! and get Pointer to bottom vector
+    call storage_getbase_double (h_bottom, p_bottom)
 
 
     ! Now create all needed scalar and block vectors
@@ -683,36 +690,70 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    ! Bevor we start the timestepping we should set the initial values
+    ! Bevor we start the timestepping we should set the initial values and read in the bottom profile
     
     ! get Pointer to the vertex coordinates
     call storage_getbase_double2d(rtriangulation%h_DvertexCoords, p_dVertexCoords)
 
     ! Initialise function parser
     call fparser_init()
-    call fparser_create(rfparser, 3)
+    call fparser_create(rfparser, 4)
 
-    ! Get function, that descrbes the startvalues of h
+    ! Get function, that describes the startvalues of h
     call parlst_getvalue_string (rparlist, 'PROBLEM', 'hstart', sstring);
     call fparser_parseFunction(rfparser, 1, trim(adjustl(sstring)), cvariables)
 
-    ! Get function, that descrbes the startvalues of hu
+    ! Get function, that describes the startvalues of hu
     call parlst_getvalue_string (rparlist, 'PROBLEM', 'hustart', sstring);
     call fparser_parseFunction(rfparser, 2, trim(adjustl(sstring)), cvariables)
 
-    ! Get function, that descrbes the startvalues of h
+    ! Get function, that describes the startvalues of h
     call parlst_getvalue_string (rparlist, 'PROBLEM', 'hvstart', sstring);
     call fparser_parseFunction(rfparser, 3, trim(adjustl(sstring)), cvariables)
+    
+    ! Get function, that describes the bottom profile
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'bottom', sstring);
+    call fparser_parseFunction(rfparser, 4, trim(adjustl(sstring)), cvariables)
 
-    ! Fill in initialconditions for h, hu, hv
+    ! Fill in initialconditions for h, hu, hv and bottom
     do ieq = 1, rmatrixMC%neq
        call fparser_evalFunction(rfparser, 1, p_DvertexCoords(:,ieq), rarraySol(1)%Da(ieq))
        call fparser_evalFunction(rfparser, 2, p_DvertexCoords(:,ieq), rarraySol(2)%Da(ieq))
        call fparser_evalFunction(rfparser, 3, p_DvertexCoords(:,ieq), rarraySol(3)%Da(ieq))
+       call fparser_evalFunction(rfparser, 4, p_DvertexCoords(:,ieq), p_bottom(ieq))
     end do
 
     ! Release the function parser
     call fparser_release(rfparser)
+    
+    
+    ! Now create bottom matrices
+    
+    ! First create the structures
+    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixBX,&
+         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixBY,&
+         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+         
+    call lsyssc_getbase_double(rmatrixBX,p_BXdata)
+    call lsyssc_getbase_double(rmatrixBY,p_BYdata)
+    
+    ! Now fill the entries
+    do iedge = 1, nedge
+       i  = p_Kedge(1, iedge)
+       j  = p_Kedge(2, iedge)
+       ij = p_Kedge(3, iedge)
+       ji = p_Kedge(4, iedge)
+       ii = p_Kdiagonal(i)
+       jj = p_Kdiagonal(j)
+
+       p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
+       p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
+       
+       p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
+       p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
+
+    end do
 
 
 
@@ -724,7 +765,7 @@ contains
             'gmv/video1.gmv')
             
        ! Before writing add the bottom profile
-       call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+       call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
 
 
        call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
@@ -740,7 +781,7 @@ contains
        call ucd_release (rexport)
        
        ! After writing substract the bottom profile
-       call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+       call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
 
        videotime = videotimestep
        ! Number of first video file
@@ -801,7 +842,7 @@ contains
        ! Now assemble RHS
        call BuildShallowWaterRHS (&
             rarrayRhs, rarraySol, rrhsBlock, rsolBlock, &
-            rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+            rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
             h_fld1, p_fld1, p_fld2, &
             p_Kdiagonal, p_Kedge, NEQ, nedge, &
             theta, dt, gravconst, Method, limiter)
@@ -822,7 +863,7 @@ contains
           call BuildShallowWaterDefect (&
                rdefBlock, rstempBlock, rrhsBlock, rsolBlock, &
                rarrayRhs, rarraySol, rarrayRstemp, &
-               rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+               rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                theta, dt, gravconst, Method, limiter)
@@ -953,8 +994,8 @@ contains
        ! smaller than 1e-6
        call ClipHeight (rarraySol, neq)
        
-       ! Add Sourceterm explicitely
-       call AddExplicitSourceTerm(rarraySol,dt,neq,rtriangulation%h_DvertexCoords,gravconst)
+!       ! Add Sourceterm explicitely
+!       call AddExplicitSourceTerm(rarraySol,dt,neq,rtriangulation%h_DvertexCoords,gravconst)
 
 
        ! That's it. RvectorBlock now contains our solution at the current time
@@ -972,7 +1013,7 @@ contains
           videotime = videotime + videotimestep
           
           ! Before writing add the bottom profile
-          call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+          call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
           
           call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                'gmv/video' // trim(sfilenumber) // '.gmv')
@@ -990,7 +1031,7 @@ contains
           call ucd_release (rexport)
           
           ! After writing substract the bottom profile
-          call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+          call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
        end if
 
        ! Go on to the next time step
@@ -1023,7 +1064,7 @@ contains
     write(*,*)
     
     ! Before writing add the bottom profile
-    call AddBottomBeforeWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+    call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
     
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
          ofile)
@@ -1047,7 +1088,7 @@ contains
     call ucd_release (rexport)
     
     ! After writing substract the bottom profile
-    call SubstractBottomAfterWrite(rarraySol,neq,rtriangulation%h_DvertexCoords)
+    call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
 
 
     ! Now release all memory
@@ -1071,8 +1112,11 @@ contains
     call storage_free (h_Kedge)
     call storage_free (h_fld1)
     call storage_free (h_fld2)
+    call storage_free (h_bottom)
     call lsyssc_releaseMatrix (rmatrixCX)
     call lsyssc_releaseMatrix (rmatrixCY)
+    call lsyssc_releaseMatrix (rmatrixBX)
+    call lsyssc_releaseMatrix (rmatrixBY)
     call lsyssc_releaseMatrix (rmatrixMC)
     call lsyssc_releaseMatrix (rmatrixML)
 

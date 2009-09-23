@@ -585,12 +585,6 @@ contains
     integer                             :: i
 
 
-    ! Assemble the preconditioner rmatrixBlockP: P = ML - theta*dt*L
-    ! As we use the block jacobi method, we only need the main diagonal blocks
-
-
-
-    ! First set all matrix blocks on the main diagonal of P equal to ML
 
     do i = 1, NEQ
        if(rarraySol(1)%Da(i)<1e-6) rarraySol(1)%Da(i) = 0
@@ -694,7 +688,7 @@ contains
   ! This routine builds the RHS for the shallow water system
   subroutine BuildShallowWaterRHS (&
        rarrayRhs, rarraySol, rrhsBlock, rsolBlock, &
-       rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+       rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
        theta, dt, gravconst, Method, limiter)
@@ -707,7 +701,7 @@ contains
     type(t_matrixScalar), intent(IN)                :: rmatrixML
     integer                                         :: h_fld1
     real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
-    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata
+    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata
     integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
     integer, dimension(:,:), pointer                :: p_Kedge
     integer, intent(IN)                             :: NEQ,	nedge
@@ -722,7 +716,7 @@ contains
     real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
     real(DP), dimension(nvar2d,nvar2d)  :: Aij, Bij, Dij
     real(DP)                            :: scalarDissipation, scalefactor, lambda
-    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj
+    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj, deltaBi, deltaBj
     real(DP)                            :: cRoe, uRoe, vRoe
     ! for TVD
     real(DP), dimension(nvar2d,nvar2d)  :: invRij, Rij
@@ -806,13 +800,17 @@ contains
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
 
-       ! add deltaK and deltaD to rhs
-       ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u
+       ! Now we take care of the bottom profile
+       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+
+       ! add deltaK, deltaD and deltaB to rhs
+       ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
        do l = 1, nvar2d
           rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaKi(l) &
-               + (1-theta)*dt*deltaDi(l) 
+               + (1-theta)*dt*deltaDi(l) + (1-theta)*dt*deltaBi(l)
           rarrayRhs(l)%Da(j) = rarrayRhs(l)%Da(j) + (1-theta)*dt*deltaKj(l) &
-               + (1-theta)*dt*deltaDj(l)
+               + (1-theta)*dt*deltaDj(l) + (1-theta)*dt*deltaBj(l)
        end do
 
     end do
@@ -1037,7 +1035,7 @@ contains
   subroutine BuildShallowWaterDefect (&
        rdefBlock, rstempBlock, rrhsBlock, rsolBlock, &
        rarrayRhs, rarraySol, rarrayRstemp, &
-       rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+       rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
        theta, dt, gravconst, Method, limiter)
@@ -1048,7 +1046,7 @@ contains
     type(t_vectorBlock), intent(INOUT)              :: rdefBlock, rstempBlock
     type(t_vectorBlock), intent(IN)                 :: rsolBlock, rrhsBlock
     type(t_matrixScalar), intent(IN)                :: rmatrixML
-    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata
+    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata
     integer                                         :: h_fld1
     real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
     integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
@@ -1064,7 +1062,7 @@ contains
     real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
     real(DP), dimension(nvar2d,nvar2d)  :: Aij, Bij, Dij
     real(DP)                            :: scalarDissipation, scalefactor, lambda
-    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj
+    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj, deltaBi, deltaBj
     real(DP)                            :: cRoe, uRoe, vRoe
     ! for TVD
     real(DP), dimension(nvar2d,nvar2d)  :: invRij, Rij
@@ -1157,14 +1155,18 @@ contains
        ! deltaD       
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
+       
+       ! Now we take care of the bottom profile
+       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
 
-       ! add deltaK and deltaD to rstemp
-       ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u
+       ! add deltaK, deltaD and deltaB to rstemp
+       ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u - theta*dt*B
        do l = 1, nvar2d
           rarrayRstemp(l)%Da(i) = rarrayRstemp(l)%Da(i) - theta*dt*deltaKi(l) &
-               - theta*dt*deltaDi(l)
+               - theta*dt*deltaDi(l) - theta*dt*deltaBi(l)
           rarrayRstemp(l)%Da(j) = rarrayRstemp(l)%Da(j) - theta*dt*deltaKj(l) &
-               - theta*dt*deltaDj(l)
+               - theta*dt*deltaDj(l) - theta*dt*deltaBj(l)
        end do
 
     end do
@@ -2744,89 +2746,62 @@ end if !dry or wet bed
   
   
   ! Add bottom profile before writing the solution
-  subroutine AddBottomBeforeWrite(rarraySol,neq,h_DvertexCoords)
+  subroutine AddBottomBeforeWrite(rarraySol,neq,h_bottom)
 
     type(t_array), dimension(nvar2d), intent(inout)    :: rarraySol
     
     
-    integer(I32), intent(in) :: h_DvertexCoords
+    integer(I32), intent(in) :: h_bottom
     
     integer, intent(in) :: neq
   
   ! Local variables
   
   ! Pointer to vertex coordinates
-    real(DP), dimension(:,:), pointer   :: p_dVertexCoords
-    
-    ! bottom height
-    real(DP) :: b
+    real(DP), dimension(:), pointer   :: p_bottom
     
     integer :: ieq
   
   
-  
-    ! get Pointer to the vertex coordinates
-    call storage_getbase_double2d(h_DvertexCoords, p_dVertexCoords)
-
+    ! get Pointer to the bottom profile
+    call storage_getbase_double(h_bottom, p_bottom)
+    
     ! walk over all edges and add the source
     do ieq = 1, neq
     
-    b=0
-    
-!       if ((p_dVertexCoords(1,ieq)>5).and.(p_dVertexCoords(1,ieq)<7)) then
-!         b= p_dVertexCoords(1,ieq)-5
-!       end if
-!       
-!       if (p_dVertexCoords(1,ieq).ge.7) then
-!         b = 2
-!       end if
-    
-      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)+ b !bottom heigth
+      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)+ p_bottom(ieq) !bottom heigth
       
     end do
 
 
   end subroutine
   
+  
   ! Substract bottom profile after writing the solution
-  subroutine SubstractBottomAfterWrite(rarraySol,neq,h_DvertexCoords)
+  subroutine SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
 
     type(t_array), dimension(nvar2d), intent(inout)    :: rarraySol
     
     
-    integer(I32), intent(in) :: h_DvertexCoords
+    integer(I32), intent(in) :: h_bottom
     
     integer, intent(in) :: neq
   
   ! Local variables
   
   ! Pointer to vertex coordinates
-    real(DP), dimension(:,:), pointer   :: p_dVertexCoords
-    
-    ! bottom height
-    real(DP) :: b
+    real(DP), dimension(:), pointer   :: p_bottom
     
     integer :: ieq
   
   
-  
-    ! get Pointer to the vertex coordinates
-    call storage_getbase_double2d(h_DvertexCoords, p_dVertexCoords)
+    ! get Pointer to the bottom profile
+    call storage_getbase_double(h_bottom, p_bottom)
     
     ! walk over all edges and add the source
     do ieq = 1, neq
     
-    b=0
-    
-!       if ((p_dVertexCoords(1,ieq)>5).and.(p_dVertexCoords(1,ieq)<7)) then
-!         b= p_dVertexCoords(1,ieq)-5
-!       end if
-!       
-!       if (p_dVertexCoords(1,ieq).ge.7) then
-!         b = 2
-!       end if
-    
-      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)- b !bottom heigth
+      rarraySol(1)%Da(ieq)=rarraySol(1)%Da(ieq)- p_bottom(ieq) !bottom heigth
       
     end do
 
