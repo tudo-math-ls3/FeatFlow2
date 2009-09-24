@@ -80,7 +80,7 @@
 !# node of the tree is a quantor (union or intersection) and every leaf of the
 !# tree is an analytic geometry object.
 !#
-!# Let us take a look at a simple example:
+!# Let's take a look at a simple example:
 !#
 !#        +------+    +------+
 !#        |      |    |      |
@@ -127,7 +127,7 @@
 !# order, i.e. you first create the analytic geometry objects and connect them
 !# using composed objects using the geom_composed_addNode routine.
 !#
-!# Here is the code for the creation of the tree above:
+!# Here's the code for the creation of the tree above:
 !#
 !# <code>
 !#  1. TYPE(t_geometryObject) :: S, R, SR, S_SR
@@ -184,7 +184,7 @@
 !# inside-outside-test is cheap to calculate before the sub-objects for which
 !# it is expensive to calculate.
 !#
-!# Here is a small list for all analytic geometry objects and a rating of how
+!# Here's a small list for all analytic geometry objects and a rating of how
 !# expensive the inside-outside-test routines are (++ = cheap, -- = expensive): 
 !# Circle..........: ++
 !# Ellipse.........:  +
@@ -199,7 +199,7 @@
 !# --------------------------
 !# Unlike other analytic geometry objects (e.g. circles, squares, etc.)
 !# the boundary of a composed object is described by a set of points, which are
-!# an approximation of the composed object`s boundary.
+!# an approximation of the composed object's boundary.
 !# These points are used for the distance calculation and boundary projection
 !# of a composed object.
 !# The boundary approximation is calculated at the first call of a distance
@@ -215,7 +215,7 @@
 !# used as a default parameter. When using a custom tolerance, it is
 !# recommended to set the tolerance parameter between 10e-5 and 10e-2.
 !# Choosing a small tolerance will result in a better approximation of the
-!# composed object`s boundary, however, it will also increase the number of
+!# composed object's boundary, however, it will also increase the number of
 !# points used for the approximation which results in higher memory cost and
 !# longer calculation time for distance calculation and boundary projection.
 !#
@@ -236,6 +236,7 @@ module geometry
   use basicgeometry
   use storage
   use genoutput
+  use linearsystemscalar
   implicit none
   
   private
@@ -446,10 +447,10 @@ module geometry
   ! This structure realises the subnode for the polygon object.
   type t_geometryPolygon
 
-    ! The polygon`s type. One of the GEOM_POLYGON_XXXX constants defined above.
+    ! The polygon's type. One of the GEOM_POLYGON_XXXX constants defined above.
     integer :: npolyType = GEOM_POLYGON_GENERAL
 
-    ! A pointer to the polygon`s vertices
+    ! A pointer to the polygon's vertices
     real(DP), dimension(:,:), pointer :: p_Dvertices => null()
 
   end type
@@ -485,7 +486,7 @@ module geometry
     logical                    :: binverted = .false.
     
     ! Structure for the composed geometry object.
-    ! Note: This is a pointer as Intel 11.1 crashes if it is not a pointer --
+    ! Note: This is a pointer as Intel 11.1 crashes if it's not a pointer --
     ! because of a circular dependency of the t_geometryObject type!
     type(t_geometryComposed), pointer   :: p_rcomposed
     
@@ -539,6 +540,36 @@ module geometry
     
     ! density of the particle
     real(dp) :: drho    
+
+    ! the translational x-velocity of the particle
+    real(dp) :: dtransVelX     = 0.0_dp  
+
+    ! the translational y-velocity of the particle
+    real(dp) :: dtransVelY     = 0.0_dp  
+    
+    ! the angular of the particle
+    real(dp) :: dangVelocity   = 0.0_dp  
+    
+    ! A particle is considered a fictitious boundary object
+    ! these FBOs are described by a 01-Vector. If we have
+    ! a Q1-discretisation for example this 01-Vector has
+    ! the length #Nodes. If the i-th node is inside the i-th
+    ! vector entry will be 1. For other discretisation this
+    ! concept works similarly.
+    ! Finally the vector rvectorScalarFB holds these values
+    ! for the particle under consideration
+    type(t_vectorScalar) :: rvectorScalarFB
+    
+    ! In a particulate flow simulation we calculate the
+    ! hydrodynamic forces that act on a particle, these
+    ! forces are saved in the following arrays
+    ! rResForceX and rResForceY store the x and y
+    ! components of these forces.
+    ! dTorque stores the torque forces of the
+    ! current time step and of the previous time step
+    real(dp), dimension(6) :: rResForceX = 0
+    real(dp), dimension(6) :: rResForceY = 0
+    real(dp), dimension(2) :: dTorque = 0
   
   end type
 
@@ -566,6 +597,40 @@ module geometry
 
 ! *****************************************************************************  
   
+!<typeblock> 
+  ! In a particulate flow simulation the user may want to
+  ! define a group of particles for use in the simulation.
+  ! The particles have different parameters like starting position,
+  ! density etc... When a particleCollection structure is initialized
+  ! the user needs to provide the initialzation routine with this
+  ! information. So he can set up a t_particleDescriptor to define
+  ! the particles he wants to have them.
+  type t_particleDescriptor
+  
+    ! this routines initializes a Particle collection
+    ! according to the parameters given in pparameters
+    ! pparameters is a double array of size [4,iparticles]
+    ! The structure of this array is as follows:
+    !           
+    !       [1,i]:= initial x position of the i-th particle
+    !       [2,i]:= initial y position of the i-th particle
+    !       [3,i]:= the radius of a circle that circumferes the i-th particle
+    !               in later versions we want this to be the radius
+    !               of the smallest circumfering circle...
+    !       [4,i]:= the density of the i-th particle
+    
+    ! the particle data
+    real(DP), dimension(:,:), pointer :: pparameters
+    
+    ! the number of particles that will take part in the simulation
+    integer :: iparticles = 0
+    
+  end type
+!</typeblock>
+
+! *****************************************************************************  
+  
+  public :: t_particleDescriptor
   public :: t_particle
   public :: t_particleCollection
   public :: t_geometryObject
@@ -703,7 +768,7 @@ contains
   ! Allocate boundary approximation structure
   allocate(rgeomObject%p_rcomposed%p_rboundaryApprox)
   
-  ! That is it
+  ! That's it
   
 end subroutine
 
@@ -753,7 +818,7 @@ end subroutine
     ! Reset the sub-node
     rsubObject%ctype = GEOM_NONE
     
-    ! That is it
+    ! That's it
 
   end subroutine
   
@@ -800,7 +865,7 @@ end subroutine
     ! Go through all sub-objects
     if (rgeomObject%p_rcomposed%ccomposedType .eq. GEOM_COMP_TYPE_AND) then
     
-      ! Let us assume that the point is inside
+      ! Let's assume that the point is inside
       iisInObject = 1
       
       do i=1, rgeomObject%p_rcomposed%nsubObjects
@@ -818,7 +883,7 @@ end subroutine
       
     else
     
-      ! Let us assume the point is outside
+      ! Let's assume the point is outside
       iisInObject = 0
     
       do i=1, rgeomObject%p_rcomposed%nsubObjects
@@ -841,7 +906,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
   
-    ! That is it
+    ! That's it
 
   end subroutine
 
@@ -950,7 +1015,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the object`s boundary.
+  ! The shortest signed distance between the point and the object's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -1021,7 +1086,7 @@ end subroutine
   
 !<description>
   ! Calculates the number of vertices needed to approximate the composed
-  ! object`s boundary with a desired tolerance.
+  ! object's boundary with a desired tolerance.
 !</description>
 
 !<input>
@@ -1080,7 +1145,7 @@ end subroutine
     
     end do
     
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -1143,7 +1208,7 @@ end subroutine
     
     end if
   
-    ! Get composed object`s type
+    ! Get composed object's type
     ctype = rgeomObject%p_rcomposed%ccomposedType
   
     ! Get number of vertices
@@ -1167,7 +1232,7 @@ end subroutine
       call geom_getBoundaryApprox(p_rsubObject, dsubtol, &
                                   Dverts(:, nverts+1:), nsubverts)
       
-      ! A-priori all vertices of this object belong to the composed object`s
+      ! A-priori all vertices of this object belong to the composed object's
       ! boundary
       do j = nverts + 1, nverts + nsubverts
         ! A-priori this vertice belongs to our boundary
@@ -1253,7 +1318,7 @@ end subroutine
     ! Deallocate integer array
     deallocate(Iinout)
     
-    ! That is it
+    ! That's it
   
   end subroutine
   
@@ -1340,7 +1405,7 @@ end subroutine
     ! Get the vertice vector
     call storage_getbase_double2D(h_Dverts, p_rbndApprox%p_Dverts)
     
-    ! Get the object`s boundary approximation
+    ! Get the object's boundary approximation
     call geom_composed_getBndApprox(rgeomObject, dTol, p_rbndApprox%p_Dverts, &
                                     nvertsUsed)
     
@@ -1361,7 +1426,7 @@ end subroutine
       
     end if
     
-    ! That is it
+    ! That's it
     
   end subroutine
     
@@ -1420,7 +1485,7 @@ end subroutine
     ! Store the radius of the circle
     rgeomObject%rcircle%dradius = dradius
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -1485,7 +1550,7 @@ end subroutine
     ! Store the radius of the circle
     rgeomObject%rcircle%dradius = dradius
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -1529,7 +1594,7 @@ end subroutine
     ! of a point around a circle ^_^ ).
     
     ! First we need to calculate the (squared) distance of the coordinate
-    ! system`s origin and the given point.
+    ! system's origin and the given point.
     ddistance = ((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
               + ((Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2))**2)
     
@@ -1550,7 +1615,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
         
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -1591,16 +1656,16 @@ end subroutine
     drad = rgeomObject%rcoord2D%dscalingFactor * rgeomObject%rcircle%dradius
   
     ! Set the projection (temporarily) to the vector bewteen the origin of the
-    ! circle and the point we are given.
+    ! circle and the point we're given.
     Dproj(1) = Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1)
     Dproj(2) = Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2)
     
     ! Calculate the length of the vector
     dlen = sqrt(Dproj(1)**2 + Dproj(2)**2)
     
-    ! If the length is 0, then the given point is the circle`s midpoint.
+    ! If the length is 0, then the given point is the circle's midpoint.
     if (dlen == 0.0_DP) then
-      ! Any point on the circle`s boundary is okay
+      ! Any point on the circle's boundary is okay
       Dproj(1) = rgeomObject%rcoord2D%Dorigin(1) + drad
       Dproj(2) = rgeomObject%rcoord2D%Dorigin(2)
 
@@ -1611,7 +1676,7 @@ end subroutine
 
     end if
     
-    ! That is it
+    ! That's it
   end subroutine
 
   ! ***************************************************************************
@@ -1634,7 +1699,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the circle`s boundary.
+  ! The shortest signed distance between the point and the circle's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -1643,7 +1708,7 @@ end subroutine
     ! Once again, we will not call the bgeom_transformBackPoint2D routine,
     ! but we will will calculate the signed distance by hand.
     
-    ! Calculate the distance of the coordinate system`s origin and the given
+    ! Calculate the distance of the coordinate system's origin and the given
     ! point and subtract the scaled radius.
     ddistance = sqrt(((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
                    + ((Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2))**2)) &
@@ -1655,7 +1720,7 @@ end subroutine
       ddistance = -ddistance
     end if
         
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -1737,7 +1802,7 @@ end subroutine
   pure subroutine geom_circle_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
-  ! Calculates the number of vertices needed to approximate the circle`s
+  ! Calculates the number of vertices needed to approximate the circle's
   ! boundary with a desired tolerance.
 !</description>
 
@@ -1821,7 +1886,7 @@ end subroutine
       
     end do
     
-    ! That is it
+    ! That's it
   
   end subroutine
 
@@ -1880,7 +1945,7 @@ end subroutine
     ! Store the edge length of the square.
     rgeomObject%rsquare%dlength = dlength
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -1945,7 +2010,7 @@ end subroutine
     ! Store the edge length of the square.
     rgeomObject%rsquare%dlength = dlength
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -1984,7 +2049,7 @@ end subroutine
   ! And an array for the transformed X- and Y-coordinates of our point
   real(DP), dimension(2) :: DrelCoords
 
-    ! First transfrom the point`s coordinates into the square`s local
+    ! First transfrom the point's coordinates into the square's local
     ! coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
     
@@ -2005,7 +2070,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
 
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -2016,7 +2081,7 @@ end subroutine
   subroutine geom_square_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
-  ! This routine calculates the projection of a point onto a 2D square`s
+  ! This routine calculates the projection of a point onto a 2D square's
   ! boundary.
   !
   ! For a detailed description of the method used here, take a look at
@@ -2044,7 +2109,7 @@ end subroutine
 
 !</subroutine>
 
-  ! Square`s half edge length
+  ! Square's half edge length
   real(DP) :: dlen
   
   ! Temporary coords in reference coordinate system
@@ -2053,10 +2118,10 @@ end subroutine
   ! mirroring factors
   real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
   
-    ! Get square`s half egde length
+    ! Get square's half egde length
     dlen = (rgeomObject%rsquare%dlength * 0.5_DP)
   
-    ! First we need to transform the point`s coordinates into the square`s
+    ! First we need to transform the point's coordinates into the square's
     ! local coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
@@ -2074,12 +2139,12 @@ end subroutine
       DcoordsRef(2) = -DcoordsRef(2)
     end if
     
-    ! If both coordinates are greater than half of the square`s egde length,
-    ! then the projection is the square`s corner.
+    ! If both coordinates are greater than half of the square's egde length,
+    ! then the projection is the square's corner.
     
     if ((DcoordsRef(1) .ge. dlen) .and. (DcoordsRef(2) .ge. dlen)) then
     
-      ! Save square`s corner
+      ! Save square's corner
       DcoordsRef(1) = dlen
       DcoordsRef(2) = dlen
     
@@ -2088,7 +2153,7 @@ end subroutine
       ! Now find out which coordinate is greater.
       if (DcoordsRef(1) .ge. DcoordsRef(2)) then
         ! The X-coordinate is greater than the Y-coordinate.
-        ! Now we need to set the X-coordinate to half of the square`s edge
+        ! Now we need to set the X-coordinate to half of the square's edge
         ! length and then we have our projection.
         DcoordsRef(1) = dlen
       
@@ -2108,7 +2173,7 @@ end subroutine
     ! And transform the projection back into world coordinates
     call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
-    ! That is it
+    ! That's it
 
   end subroutine
   
@@ -2120,7 +2185,7 @@ end subroutine
   
 !<description>
   ! This routine calculates the shortest signed distance between a point and
-  ! a square`s boundary.
+  ! a square's boundary.
 !</description>
 
 !<input>
@@ -2133,7 +2198,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the square`s boundary.
+  ! The shortest signed distance between the point and the square's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -2146,20 +2211,20 @@ end subroutine
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Now we are going to use some nasty tricks to calculate the shortest
     ! distance, namely: calculating the distance without calculating a
-    ! projection of the point onto the square`s boundary.
+    ! projection of the point onto the square's boundary.
     !
     ! These are the steps we are going to make:
-    ! 1. Transform the point into the square`s local coordinate system.
+    ! 1. Transform the point into the square's local coordinate system.
     ! 2. "Rotating" the whole coordinate system by a multiple of 90°, such
     !    that the resulting point has non-negative coordinates.
     !   (In fact, we will not "rotate" the point, but simply get the
     !    absolute values of its coordinates, since the square is symmetrical
     !    in respect to his own local coordinate system axes and therefore we
     !    do not need to rotate the whole coordinate system.)
-    ! 3. Subtracting the square`s vertice with positive coordinates from
+    ! 3. Subtracting the square's vertice with positive coordinates from
     !    the "rotated" point.
     ! 4. Checking whether the resulting point has positive coordinates.
-    !    If yes, the projection of our original point onto the square`s
+    !    If yes, the projection of our original point onto the square's
     !    boundary is a vertice - so the distance is simply the length of
     !    our "rotated" vertice.
     !    If no, then the projection of our original point lies on an edge
@@ -2173,16 +2238,16 @@ end subroutine
     !      The shortest distance is equal to the non-negative coordinate in
     !      this case, or in other words: the maximum of the "rotated"
     !      coordinates.
-    ! 5. Scale the calculated distance by the scaling factor of the square`s
+    ! 5. Scale the calculated distance by the scaling factor of the square's
     !    local coordinate system scaling factor.
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   
-    ! We are now going to transform our point into the square`s local
+    ! We are now going to transform our point into the square's local
     ! coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Now get the absolute values of the relative coords, and subtract one
-    ! half of the square`s edge length
+    ! half of the square's edge length
     DrelCoords(1) = abs(DrelCoords(1)) - (rgeomObject%rsquare%dlength * 0.5_DP)
     DrelCoords(2) = abs(DrelCoords(2)) - (rgeomObject%rsquare%dlength * 0.5_DP)
   
@@ -2198,11 +2263,11 @@ end subroutine
       ddistance = -ddistance
     end if
     
-    ! Make sure to scale the distance by the square`s coordinate system`s
+    ! Make sure to scale the distance by the square's coordinate system's
     ! scaling factor
     ddistance = ddistance * rgeomObject%rcoord2D%dscalingFactor
     
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -2266,7 +2331,7 @@ end subroutine
   pure subroutine geom_square_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
-  ! Calculates the number of vertices needed to approximate the square`s
+  ! Calculates the number of vertices needed to approximate the square's
   ! boundary with a desired tolerance.
 !</description>
 
@@ -2329,13 +2394,13 @@ end subroutine
   real(DP) :: dedge
   integer :: i, nvpe
   
-    ! Get square`s edge length
+    ! Get square's edge length
     dedge = rgeomObject%rsquare%dlength
     
     ! Calculate number of vertices per edge
     nvpe = int(dedge / dtolerance)
     
-    ! Get half of square`s edge length
+    ! Get half of square's edge length
     dedge = 0.5_DP * dedge
 
     ! Edge 1
@@ -2365,7 +2430,7 @@ end subroutine
     ! Store number of vertices written
     nverts = 4 * nvpe
     
-    ! That is it
+    ! That's it
   
   end subroutine
   
@@ -2424,7 +2489,7 @@ end subroutine
     ! Store the X- and Y-radii of the ellipse
     rgeomObject%rellipse%Dradii = Dradii(1:2)
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -2489,7 +2554,7 @@ end subroutine
     ! Store the X- and Y-radius of the ellipse
     rgeomObject%rellipse%Dradii = Dradii(1:2)
     
-    ! That is it!
+    ! That's it!
   
 
   end subroutine
@@ -2527,7 +2592,7 @@ end subroutine
   ! An array for the transformed X- and Y-coordinates of our point
   real(DP), dimension(2) :: DrelCoords
   
-    ! First transfrom the point`s coordinates into the ellipse`s local
+    ! First transfrom the point's coordinates into the ellipse's local
     ! coordinate system
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
 
@@ -2538,7 +2603,7 @@ end subroutine
     
     ! Now check the length of our resulting point
     if ((DrelCoords(1)**2 + DrelCoords(2)**2) .le. 1.0_DP) then
-      ! We are inside the ellipse
+      ! We're inside the ellipse
       iisInObject = 1
       
     else
@@ -2552,7 +2617,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
     
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -2563,7 +2628,7 @@ end subroutine
   subroutine geom_ellipse_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
-  ! This routine calculates the projection of a point onto an ellipse`s
+  ! This routine calculates the projection of a point onto an ellipse's
   ! boundary.
   !
   ! This is probably the most complicated routine in this module ^_^
@@ -2612,11 +2677,11 @@ end subroutine
   ! mirroring factors
   real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
 
-    ! Get the ellipse`s X- and Y-radii
+    ! Get the ellipse's X- and Y-radii
     dradX = rgeomObject%rellipse%Dradii(1)
     dradY = rgeomObject%rellipse%Dradii(2)
   
-    ! First we need to transform the point`s coordinates into the ellipse`s
+    ! First we need to transform the point's coordinates into the ellipse's
     ! local coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
@@ -2627,7 +2692,7 @@ end subroutine
       ! Maybe the ellipse is even a point?
       if (dradX .le. 0.0_DP) then
         ! Special case: point
-        ! The projection is the ellipse`s midpoint
+        ! The projection is the ellipse's midpoint
         DcoordsRef = Dcoords - rgeomObject%rcoord2D%Dorigin
         
       else
@@ -2635,7 +2700,7 @@ end subroutine
         ! So we can set the Y-coordinate of the projection to 0.
         DcoordsRef(2) = 0.0_DP
         
-        ! Where is the point`s X-coordinate in respect to the line?
+        ! Where is the point's X-coordinate in respect to the line?
         if (DcoordsRef(1) .le. -dradX) then
           ! Left of the line
           DcoordsRef(1) = -dradX
@@ -2661,7 +2726,7 @@ end subroutine
       ! So we can set the X-coordinate of the projection to 0.
       DcoordsRef(1) = 0.0_DP
         
-      ! Where is the point`s Y-coordinate in respect to the line?
+      ! Where is the point's Y-coordinate in respect to the line?
       if (DcoordsRef(2) .le. -dradY) then
         ! Below of the line
         DcoordsRef(2) = -dradY
@@ -2683,15 +2748,15 @@ end subroutine
     
     ! One more special case: The ellipse is a circle.
     if (dradX == dradY) then
-      ! Get vector between circle`s midpoint and point
+      ! Get vector between circle's midpoint and point
       Dproj = Dcoords - rgeomObject%rcoord2D%Dorigin
       
       ! Get length of vector
       dT = sqrt(Dproj(1)**2 + Dproj(2)**2)
       
-      ! Is the point equal to the circle`s midpoint?
+      ! Is the point equal to the circle's midpoint?
       if (dT == 0.0_DP) then
-        ! Then the projection is the circle`s midpoint
+        ! Then the projection is the circle's midpoint
         Dproj = Dcoords
         
         return
@@ -2822,7 +2887,7 @@ end subroutine
     ! And transform the projection back into world coordinates
     call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
-    ! That is it
+    ! That's it
       
   end subroutine
   
@@ -2846,7 +2911,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the ellipse`s boundary.
+  ! The shortest signed distance between the point and the ellipse's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -2862,7 +2927,7 @@ end subroutine
   real(DP), dimension(2) :: Dprojection
 
     
-    ! Project the point onto the ellipse`s boundary.
+    ! Project the point onto the ellipse's boundary.
     call geom_ellipse_prjToBoundary(rgeomObject, DCoords, Dprojection)
     
     ! Now subtract the projection from our point
@@ -2880,7 +2945,7 @@ end subroutine
       ddistance = -ddistance
     end if
 
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -2964,7 +3029,7 @@ end subroutine
                                       dcircumference)
   
 !<description>
-  ! Calculates the number of vertices needed to approximate the ellipse`s
+  ! Calculates the number of vertices needed to approximate the ellipse's
   ! boundary with a desired tolerance.
 !</description>
 
@@ -2980,7 +3045,7 @@ end subroutine
   ! The number of vertices needed.
   integer, intent(out) :: nverts
   
-  ! OPTIONAL: An approximation of the ellipse`s circumference.
+  ! OPTIONAL: An approximation of the ellipse's circumference.
   real(DP), optional, intent(out) :: dcircumference
 !</output>
 
@@ -3063,7 +3128,7 @@ end subroutine
   real(DP) :: dangle, dradX, dradY, dcf, ds, dc
   integer :: i
   
-    ! Get elipse`s radii
+    ! Get elipse's radii
     dradX = rgeomObject%rellipse%Dradii(1)
     dradY = rgeomObject%rellipse%Dradii(2)
     
@@ -3092,7 +3157,7 @@ end subroutine
     
     end do
 
-    ! That is it
+    ! That's it
   
   end subroutine
 
@@ -3151,7 +3216,7 @@ end subroutine
     ! Store the edge lengths of the rectangle.
     rgeomObject%rrectangle%Dlength = Dlength(1:2)
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -3216,7 +3281,7 @@ end subroutine
     ! Store the edge length of the rectangle.
     rgeomObject%rrectangle%Dlength = Dlength(1:2)
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
   
@@ -3253,7 +3318,7 @@ end subroutine
   ! And an array for the transformed X- and Y-coordinates of our point
   real(DP), dimension(2) :: DrelCoords
 
-    ! First transfrom the point`s coordinates into the rectangle`s local
+    ! First transfrom the point's coordinates into the rectangle's local
     ! coordinate system
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
     
@@ -3279,7 +3344,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
 
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -3290,7 +3355,7 @@ end subroutine
   subroutine geom_rect_prjToBoundary (rgeomObject, Dcoords, Dproj)
 
 !<description>
-  ! This routine calculates the projection of a point onto a 2D rectangle`s
+  ! This routine calculates the projection of a point onto a 2D rectangle's
   ! boundary.
   !
   ! This routine is nearly identical to the geom_square_prjToBoundary
@@ -3318,7 +3383,7 @@ end subroutine
 
 !</subroutine>
 
-  ! Rectangle`s half edge lengths
+  ! Rectangle's half edge lengths
   real(DP), dimension(2) :: Dlen
   
   ! Temporary coords in reference coordinate system
@@ -3327,10 +3392,10 @@ end subroutine
   ! mirroring factors
   real(DP), dimension(2) :: Dmirror = (/ 1.0_DP, 1.0_DP /)
   
-    ! Get rectangle`s half egde lengths
+    ! Get rectangle's half egde lengths
     Dlen = rgeomObject%rrectangle%Dlength * 0.5_DP
   
-    ! First we need to transform the point`s coordinates into the square`s
+    ! First we need to transform the point's coordinates into the square's
     ! local coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
     
@@ -3353,10 +3418,10 @@ end subroutine
     end if
     
     ! If both coordinates are greater than half of the correspoding
-    ! rectangle`s egde length, then the projection is the rectangle`s corner.
+    ! rectangle's egde length, then the projection is the rectangle's corner.
     if ((DcoordsRef(1) .ge. 0.0_DP) .and. (DcoordsRef(2) .ge. 0.0_DP)) then
     
-      ! Save square`s corner
+      ! Save square's corner
       DcoordsRef = 0.0_DP
     
     else
@@ -3382,7 +3447,7 @@ end subroutine
     ! And transform the projection back into world coordinates
     call bgeom_transformPoint2D(rgeomObject%rcoord2D, DcoordsRef, Dproj)
     
-    ! That is it
+    ! That's it
 
   end subroutine
 
@@ -3394,7 +3459,7 @@ end subroutine
   
 !<description>
   ! This routine calculates the shortest signed distance between a point and
-  ! a rectangle`s boundary.
+  ! a rectangle's boundary.
 !</description>
 
 !<input>
@@ -3407,7 +3472,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the rectangle`s boundary.
+  ! The shortest signed distance between the point and the rectangle's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -3419,12 +3484,12 @@ end subroutine
   
     ! We are going to use the same trick as in the routine for the square.
   
-    ! We are now going to transform our point into the rectangle`s local
+    ! We are now going to transform our point into the rectangle's local
     ! coordinate system.
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
   
     ! Now get the absolute values of the relative coords, and subtract one
-    ! half of the rectangle`s edge length
+    ! half of the rectangle's edge length
     DrelCoords(1) = abs(DrelCoords(1)) - &
                     (rgeomObject%rrectangle%Dlength(1) * 0.5_DP)
     DrelCoords(2) = abs(DrelCoords(2)) - &
@@ -3442,11 +3507,11 @@ end subroutine
       ddistance = -ddistance
     end if
     
-    ! Make sure to scale the distance by the rectangle`s coordinate system`s
+    ! Make sure to scale the distance by the rectangle's coordinate system's
     ! scaling factor
     ddistance = ddistance * rgeomObject%rcoord2D%dscalingFactor
     
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -3511,7 +3576,7 @@ end subroutine
   pure subroutine geom_rect_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
-  ! Calculates the number of vertices needed to approximate the rectangle`s
+  ! Calculates the number of vertices needed to approximate the rectangle's
   ! boundary with a desired tolerance.
 !</description>
 
@@ -3575,7 +3640,7 @@ end subroutine
   real(DP) :: dedgeX, dedgeY
   integer :: i, nvpeX, nvpeY, off
   
-    ! Get rectangle`s edge lengths
+    ! Get rectangle's edge lengths
     dedgeX = rgeomObject%rrectangle%Dlength(1)
     dedgeY = rgeomObject%rrectangle%Dlength(2)
     
@@ -3583,7 +3648,7 @@ end subroutine
     nvpeX = int(dedgeX / dtolerance)
     nvpeY = int(dedgeY / dtolerance)
     
-    ! Get half of rectangle`s edge lengths
+    ! Get half of rectangle's edge lengths
     dedgeX = 0.5_DP * dedgeX
     dedgeY = 0.5_DP * dedgeY
 
@@ -3616,7 +3681,7 @@ end subroutine
     ! Store number of vertices written
     nverts = 2 * (nvpeX + nvpeY)
     
-    ! That is it
+    ! That's it
   
   end subroutine
 
@@ -3686,7 +3751,7 @@ end subroutine
       rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
     end if
     
-    ! That is it!
+    ! That's it!
     
   end subroutine
 
@@ -3763,7 +3828,7 @@ end subroutine
       rgeomObject%rpolygon%npolyType = GEOM_POLYGON_GENERAL
     end if
     
-    ! That is it!
+    ! That's it!
     
   end subroutine
 
@@ -3832,7 +3897,7 @@ end subroutine
       
     end select
     
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -3877,10 +3942,10 @@ end subroutine
   ! an edge and a ray
   real(DP), dimension(2) :: DcoordsRef, Dedge, Dray
   
-    ! Let us assume that the point is outside the polygon
+    ! Let's assume that the point is outside the polygon
     iisInObject = 0
   
-    ! First we are going to transform the point into the local reference
+    ! First we're going to transform the point into the local reference
     ! coordinate system
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
   
@@ -3898,8 +3963,8 @@ end subroutine
     ! clockwise direction, we will simply loop through all edges of the polygon
     ! and calculate the scalar product of the edge and a ray vector.
     ! The ray vector is the clockwise normal vector of the vector from the
-    ! edge`s start-vertice to the point that is to be checked (transformed into
-    ! the polygon`s local coordinate system, of course).
+    ! edge's start-vertice to the point that is to be checked (transformed into
+    ! the polygon's local coordinate system, of course).
     ! If all the scalar products of all edges and their corresponding ray
     ! vectors are non-negative, then the point is inside the polygon.
     
@@ -3913,7 +3978,7 @@ end subroutine
       ! Calculate ray vector
       Dray = DcoordsRef - p_Dvertices(1:2, i)
       
-      ! Calculate scalar product of ray vector`s normal and the edge
+      ! Calculate scalar product of ray vector's normal and the edge
       if (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .lt. 0.0_DP) then
         
         ! The point is outside
@@ -3928,7 +3993,7 @@ end subroutine
     ! Calculate ray vector
     Dray = DcoordsRef - p_Dvertices(1:2, ub)
     
-    ! Calculate scalar product of ray vector`s normal and the edge
+    ! Calculate scalar product of ray vector's normal and the edge
     if (((Dray(2) * Dedge(1)) - (Dray(1) * Dedge(2))) .ge. 0.0_DP) then
         
       ! All scalar products are non-negative - so the point is inside the poly
@@ -3943,7 +4008,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
   
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -3955,7 +4020,7 @@ end subroutine
                                      bisInside)
 
 !<description>
-  ! This routine calculates the projection of a point onto a 2D polygon`s
+  ! This routine calculates the projection of a point onto a 2D polygon's
   ! boundary.
 !</description>
 
@@ -4000,12 +4065,12 @@ end subroutine
   real(DP), dimension(2) :: DcoordsRef, Dedge, Dray1, Dray2
   real(DP), dimension(2) :: DprojMin, DprojCur
   
-  ! The shortest squared distance from the point to the polygon`s vertices
+  ! The shortest squared distance from the point to the polygon's vertices
   real(DP) :: ddistMin, ddistCur
   real(DP) :: dalpha, dbeta, dgamma, ddelta
   logical :: binsideMin, binsideCur
   
-    ! First we are going to transform the point into the local reference
+    ! First we're going to transform the point into the local reference
     ! coordinate system
     call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DcoordsRef)
   
@@ -4173,7 +4238,7 @@ end subroutine
       end if
     end if
   
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -4201,7 +4266,7 @@ end subroutine
 !</input>
 
 !<output>
-  ! The shortest signed distance between the point and the circle`s boundary.
+  ! The shortest signed distance between the point and the circle's boundary.
   real(DP),               intent(out) :: ddistance
 !</output>
 
@@ -4221,7 +4286,7 @@ end subroutine
       ddistance = -ddistance
     end if
   
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -4287,7 +4352,7 @@ end subroutine
   pure subroutine geom_polygon_getNAV(rgeomObject, dtolerance, nverts)
   
 !<description>
-  ! Calculates the number of vertices needed to approximate the polygon`s
+  ! Calculates the number of vertices needed to approximate the polygon's
   ! boundary with a desired tolerance.
 !</description>
 
@@ -4312,10 +4377,10 @@ end subroutine
   ! The bounds of the polygon
   integer :: lb, ub, i
   
-  ! The polygon`s vertices
+  ! The polygon's vertices
   real(DP), dimension(2) :: Dedge
   
-    ! Get the polygon`s bounds  
+    ! Get the polygon's bounds  
     lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
     ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
@@ -4323,7 +4388,7 @@ end subroutine
     Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, lb) &
           - rgeomObject%rpolygon%p_Dvertices(1:2, ub)
     
-    ! Add edge`s length
+    ! Add edge's length
     dboundLen = sqrt(Dedge(1)**2 + Dedge(2)**2)
     
     ! Go through all other edges
@@ -4333,7 +4398,7 @@ end subroutine
       Dedge = rgeomObject%rpolygon%p_Dvertices(1:2, i+1) &
             - rgeomObject%rpolygon%p_Dvertices(1:2, i)
             
-      ! Add edge`s length
+      ! Add edge's length
       dboundLen = dboundLen + sqrt(Dedge(1)**2 + Dedge(2)**2)
       
     end do
@@ -4378,7 +4443,7 @@ end subroutine
   real(DP), dimension(2) :: Dedge, DlastVert
   integer :: i, j, nvpe, lb, ub
   
-    ! Get the polygon`s bounds  
+    ! Get the polygon's bounds  
     lb = lbound(rgeomObject%rpolygon%p_Dvertices, 2)
     ub = ubound(rgeomObject%rpolygon%p_Dvertices, 2);
     
@@ -4389,13 +4454,13 @@ end subroutine
     ! Get last vertice
     DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, ub)
 
-    ! Get edge`s length
+    ! Get edge's length
     dlen = sqrt(Dedge(1)**2 + Dedge(2)**2)
     
     ! Calculate number of vertices for this edge
     nvpe = int(dlen / dtolerance)
     
-    ! Loop through this edge`s vertices
+    ! Loop through this edge's vertices
     do j = 1, nvpe
     
       ! Calculate interpolation factor
@@ -4419,13 +4484,13 @@ end subroutine
       ! Get last vertice
       DlastVert = rgeomObject%rpolygon%p_Dvertices(1:2, i)
 
-      ! Get edge`s length
+      ! Get edge's length
       dlen = sqrt(Dedge(1)**2 + Dedge(2)**2)
       
       ! Calculate number of vertices for this edge
       nvpe = int(dlen / dtolerance)
       
-      ! Loop through this edge`s vertices
+      ! Loop through this edge's vertices
       do j = 1, nvpe
       
         ! Calculate interpolation factor
@@ -4441,7 +4506,7 @@ end subroutine
       
     end do
 
-    ! That is it
+    ! That's it
   
   end subroutine
 
@@ -4453,7 +4518,7 @@ end subroutine
   
 !<description>
   ! This subroutine moves a given geometry object (2D or 3D) to a new origin
-  ! by simply overwriting the coordinate system`s old origin.
+  ! by simply overwriting the coordinate system's old origin.
   !
   ! If the geometry object is a 2D object, this routine expects DnewOrigin to
   ! be an array with at least 2 entries, if it is a 3D object,  DnewOrigin has
@@ -4483,7 +4548,7 @@ end subroutine
       !rgeomObject%rcoord3D%Dorigin = DnewOrigin(1 : 3)
     end select
     
-    ! That is it
+    ! That's it
     
   end subroutine
 
@@ -4516,7 +4581,7 @@ end subroutine
 !</subroutine>
 
     ! *************************************************************************
-    ! * We do not check the geometry object`s dimension - we assume that the  *
+    ! * We do not check the geometry object's dimension - we assume that the  *
     ! * caller calls this routine only for 2D objects.                        *
     ! *************************************************************************
     
@@ -4532,7 +4597,7 @@ end subroutine
       rgeomObject%rcoord2D%dscalingFactor = dscalingFactor
     end if
     
-    ! That is it!
+    ! That's it!
     
   end subroutine
 
@@ -4546,12 +4611,12 @@ end subroutine
   ! This routine is a wrapper for the geom_****_isInGeometry routines.
   !
   ! The return value iisInObject holds the number of objects where the given
-  ! point is inside the object`s geometry.
-  ! The returned integer is 0, if the point is outside of the object`s
-  ! geometry. It is 1 if the point is inside of a (simple) object`s geometry,
+  ! point is inside the object's geometry.
+  ! The returned integer is 0, if the point is outside of the object's
+  ! geometry. It is 1 if the point is inside of a (simple) object's geometry,
   ! and may be > 1 if the object is a composed geometry object.
   ! For composed objects, iisInObject holds the number of subobjects, where
-  ! the point is inside the subobject`s geometry.
+  ! the point is inside the subobject's geometry.
 !</description>
 
 !<input>
@@ -4567,13 +4632,13 @@ end subroutine
 
 !<output>
   ! An integer storing the number of objects where the point is inside
-  ! the object`s geometry.
+  ! the object's geometry.
   integer,           intent(out) :: iisInObject
 !</output>
 
 !</subroutine>
 
-    ! Check what type of object we have and call the object`s corresponding
+    ! Check what type of object we have and call the object's corresponding
     ! subroutine.
     select case(rgeomObject%ctype)
     case (GEOM_COMPOSED)
@@ -4592,7 +4657,7 @@ end subroutine
       iisInObject = 0
     end select
     
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -4619,7 +4684,7 @@ end subroutine
 
 !<output>
   ! An array of integers storing the number of objects where the point is inside
-  ! the object`s geometry.
+  ! the object's geometry.
   ! The lower and upper bounds of the array are assumed to be the same as the ones
   ! for the coordinate array.
   integer, dimension(:), intent(out) :: IisInObject
@@ -4640,7 +4705,7 @@ end subroutine
 
     end do
     
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -4675,7 +4740,7 @@ end subroutine
 
 !</subroutine>
 
-   ! Check what type of object we have and call the object`s corresponding
+   ! Check what type of object we have and call the object's corresponding
    ! subroutine.
    select case(rgeomObject%ctype)
    case (GEOM_COMPOSED)
@@ -4692,7 +4757,7 @@ end subroutine
      call geom_polygon_projector(rgeomObject, Dcoords, Dproj)
    end select
    
-   ! That is it!
+   ! That's it!
    
  end subroutine
  
@@ -4730,7 +4795,7 @@ end subroutine
 
 !</subroutine>
 
-   ! Check what type of object we have and call the object`s corresponding
+   ! Check what type of object we have and call the object's corresponding
    ! subroutine.
    select case(rgeomObject%ctype)
    case (GEOM_COMPOSED)
@@ -4749,7 +4814,7 @@ end subroutine
      ddistance = 0.0_DP
    end select
    
-   ! That is it!
+   ! That's it!
    
  end subroutine
 
@@ -4795,7 +4860,7 @@ end subroutine
 
     end do
     
-    ! That is it
+    ! That's it
    
  end subroutine
 
@@ -4832,7 +4897,7 @@ end subroutine
   type(t_geometryObject), intent(in)  :: rgeomObject
   
   ! OPTIONAL: Decides whether the coordinates of the polygon should be world
-  ! coordinates or coordinates relative to the geometry object`s local
+  ! coordinates or coordinates relative to the geometry object's local
   ! coordinate system. If not given, the coordinates are given in world
   ! coordinates.
   logical, optional, intent(in) :: bconvertToWorld
@@ -4856,7 +4921,7 @@ end subroutine
   ! Desired vertice count and other temporary variables
   integer :: ndVC, i, ub, lb
   
-  ! The polygon`s vertices
+  ! The polygon's vertices
   real(DP), dimension(:,:), pointer :: p_Dvertices
   
   ! A temporary vertice
@@ -4895,7 +4960,7 @@ end subroutine
       return
     end if
     
-    ! Do not we need to convert them to world coordinates?
+    ! Don't we need to convert them to world coordinates?
     if (present(bconvertToWorld)) then
       if (.not. bconvertToWorld) return
     end if
@@ -4918,7 +4983,7 @@ end subroutine
 
     end do
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -4972,10 +5037,10 @@ end subroutine
       
     end if
 
-    ! Reset the object`s type
+    ! Reset the object's type
     rgeomObject%ctype = GEOM_NONE
     
-    ! That is it
+    ! That's it
   
   end subroutine
 
@@ -4987,7 +5052,7 @@ end subroutine
   
 !<description>
   ! This routine calculates the number of vertices needed to approximate the
-  ! object`s boundary at a desired tolerance.
+  ! object's boundary at a desired tolerance.
   
   ! This routine is just a wrapper for the geom_XXXX_getNAV routines.
 !</description>
@@ -5129,7 +5194,7 @@ end subroutine
     ! Store the radius of the sphere
     rgeomObject%rsphere%dradius = dradius
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -5194,7 +5259,7 @@ end subroutine
     ! Store the radius of the sphere
     rgeomObject%rsphere%dradius = dradius
     
-    ! That is it!
+    ! That's it!
   
   end subroutine
 
@@ -5238,7 +5303,7 @@ end subroutine
     ! of a point around a circle ^_^ ).
     
     ! First we need to calculate the (squared) distance of the coordinate
-    ! system`s origin and the given point.
+    ! system's origin and the given point.
     ddistance = ((Dcoords(1) - rgeomObject%rcoord2D%Dorigin(1))**2) &
               + ((Dcoords(2) - rgeomObject%rcoord2D%Dorigin(2))**2)
     
@@ -5259,7 +5324,7 @@ end subroutine
       iisInObject = 1 - iisInObject
     end if
         
-    ! That is it
+    ! That's it
     
   end subroutine
   
@@ -5344,22 +5409,14 @@ end subroutine
 
 !<subroutine>
 
-  subroutine geom_initParticleCollection(rparticleCollection,iparticles,pparameters)
+  subroutine geom_initParticleCollection(rparticleCollection,rparticleDescriptor)
   
 !<description>
   ! this routines initializes a Particle collection
-  ! according to the parameters given in pparameters
-  ! pparameters is a double array of size [4,iparticles]
-  ! The structure of this array is as follows:
-  !           
-  !       [1,i]:= initial x position of the i-th particle
-  !       [2,i]:= initial y position of the i-th particle
-  !       [3,i]:= the radius of a circle that circumferes the i-th particle
-  !               in later versions we want this to be the radius
-  !               of the smallest circumfering circle...
-  !       [4,i]:= the density of the i-th particle
-  !
-  !
+  ! according to the parameters given in rparticleDescriptor
+  ! As we see in the moment only circles are initialized, we
+  ! will change this later when we are able to handle 
+  ! other geometries...
 !</description>
   
 !<inputoutput>
@@ -5368,10 +5425,8 @@ end subroutine
 !</inputoutput>
 
 !<input>
+  type(t_particleDescriptor), intent(in) :: rparticleDescriptor
   ! the number of particles that will take part in the simulation
-  integer, intent(IN) :: iparticles
-  ! the particle data
-  real(DP), dimension(:,:), intent(in) :: pparameters
 !</input>
 
 !</subroutine>
@@ -5379,22 +5434,24 @@ end subroutine
   integer :: i1
 
   ! set the number of particles in the collection
-  rparticleCollection%nparticles = iparticles
+  rparticleCollection%nparticles = rparticleDescriptor%iparticles
 
   ! allocate memory for the number of particles that we want to use
-  allocate(rparticleCollection%p_rParticles(iparticles))
+  allocate(rparticleCollection%p_rParticles(rparticleCollection%nparticles))
     
   ! loop to initialize the particles
-  do i1=1,iparticles
-    dx    = pparameters(1,i1)
-    dy    = pparameters(2,i1)
-    drad  = pparameters(3,i1)
-    drho  = pparameters(4,i1)
+  do i1=1,rparticleCollection%nparticles
+    dx    = rparticleDescriptor%pparameters(1,i1)
+    dy    = rparticleDescriptor%pparameters(2,i1)
+    drad  = rparticleDescriptor%pparameters(3,i1)
+    drho  = rparticleDescriptor%pparameters(4,i1)
     ! call the routine to initialize the particle
     call geom_initParticle(rparticleCollection%p_rParticles(i1),GEOM_CIRCLE,&
-                         dx,dy,drad,drho)    
+                         dx,dy,drad,drho)
+!    pparameters(2,1) = pparameters(2,1) + 0.5_dp
+!    pparameters(1,1) = pparameters(1,1) + 1.0_dp
   end do
-    
+  
   end subroutine ! end geom_initParticleCollection
   
 ! ***************************************************************************
