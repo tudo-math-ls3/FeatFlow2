@@ -1069,7 +1069,7 @@ contains
 
         rproblemLevel%Rafcstab(inviscidAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(inviscidAFC)%iSpec,&
-            not(AFCSTAB_SUBDIAGONALEDGES))
+            not(AFCSTAB_OFFDIAGONALEDGES))
       end if
     end if
     
