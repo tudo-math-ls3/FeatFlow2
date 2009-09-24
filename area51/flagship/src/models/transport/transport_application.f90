@@ -2126,9 +2126,10 @@ contains
       
       select case(itargetfunctype)
       case (TFUNC_ZERO)
-        print *, "Not implemented yet"
-        stop
-        
+        call output_line('Zero target functional is not implemented yet!',&
+                         OU_CLASS_ERROR,OU_MODE_STD,'transp_estimateTargetFuncError')
+        call sys_halt()
+
 
       case(TFUNC_VOLINTG)
         ! Get function parser from collection structure
@@ -2167,8 +2168,8 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetError,&
-              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic&
-              , rcollection, ffunctionWeight=transp_weightFuncAnalytic)
+              rsolutionPrimal%RvectorBlock(1), transp_refFuncAnalytic,&
+              rcollection, ffunctionWeight=transp_weightFuncAnalytic)
           
           ! Compute the exact value of the quantity of interest
           call pperr_scalar(PPERR_MEANERROR, dexactTargetFunc,&
@@ -2231,8 +2232,8 @@ contains
         else
           
           ! Compute the exact error of the quantity of interest
-          call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError&
-              , ffunctionReference=transp_errorBdrInt2D, rcollection&
+          call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
+              ffunctionReference=transp_errorBdrInt2D, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
               =transp_weightFuncBdrInt2D)
