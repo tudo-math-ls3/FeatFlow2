@@ -41,7 +41,7 @@
 !# 9.) afcstab_generateVerticesAtEdge
 !#     -> Generates the standard edge data structure
 !#
-!# 10.) afcstab_generateSubdiagEdges
+!# 10.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
 !# 11.) afcstab_generateExtSparsity
@@ -72,7 +72,7 @@ module afcstabilisation
   public :: afcstab_getbase_IsubdiagEdge
   public :: afcstab_getbase_DcoeffsAtEdge
   public :: afcstab_generateVerticesAtEdge
-  public :: afcstab_generateSubdiagEdges
+  public :: afcstab_generateOffdiagEdges
   public :: afcstab_generateExtSparsity
   public :: afcstab_limit
  
@@ -143,7 +143,7 @@ module afcstabilisation
   integer, parameter, public :: AFCSTAB_FLUXES            = 2**8
   
   ! Subdiagonal edge-based structure generated
-  integer, parameter, public :: AFCSTAB_SUBDIAGONALEDGES  = 2**9
+  integer, parameter, public :: AFCSTAB_OFFDIAGONALEDGES  = 2**9
 !</constantblock>
 
 !</constants>
@@ -193,19 +193,19 @@ module afcstabilisation
     integer :: h_IverticesAtEdge = ST_NOHANDLE
 
     ! Handle to index pointer for superdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsuperdiagonalEdgesIdx
-    ! The numbers IsuperdiagonalEdgesIdx(i):IsuperdiagonalEdgesIdx(i+1)-1
+    ! integer, DIMENSION(:), POINTER :: IsuperdiagEdgesIdx
+    ! The numbers IsuperdiagEdgesIdx(i):IsuperdiagEdgesIdx(i+1)-1
     ! denote the edge numbers of the ith vertex which are located in
     ! the upper right triangular matrix.
-    integer :: h_IsuperdiagonalEdgesIdx = ST_NOHANDLE
+    integer :: h_IsuperdiagEdgesIdx = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdgesIdx
-    integer :: h_IsubdiagonalEdgesIdx = ST_NOHANDLE
+    ! integer, DIMENSION(:), POINTER :: IsubdiagEdgesIdx
+    integer :: h_IsubdiagEdgesIdx = ST_NOHANDLE
 
     ! Handle to the subdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsubdiagonalEdges
-    integer :: h_IsubdiagonalEdges = ST_NOHANDLE
+    ! integer, DIMENSION(:), POINTER :: IsubdiagEdges
+    integer :: h_IsubdiagEdges = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
     integer :: h_DcoefficientsAtEdge = ST_NOHANDLE
@@ -370,14 +370,14 @@ contains
     integer :: i
 
     ! Free storage
-    if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
+    if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsuperdiagEdgesIdx)
     if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
         call storage_free(rafcstab%h_IverticesAtEdge)
-    if (rafcstab%h_IsubdiagonalEdgesIdx .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsubdiagonalEdgesIdx)
-    if (rafcstab%h_IsubdiagonalEdges .ne. ST_NOHANDLE)&
-        call storage_free(rafcstab%h_IsubdiagonalEdges)
+    if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsubdiagEdgesIdx)
+    if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE)&
+        call storage_free(rafcstab%h_IsubdiagEdges)
     if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
         call storage_free(rafcstab%h_DcoefficientsAtEdge)
     
@@ -458,16 +458,16 @@ contains
       rafcstab%NEQ = neq
       
       ! Resize edge index vector
-      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE) then
+      if (rafcstab%h_IsuperdiagEdgesIdx .ne. ST_NOHANDLE) then
         call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ+1, rafcstab%h_IsuperdiagonalEdgesIdx,&
+            rafcstab%NEQ+1, rafcstab%h_IsuperdiagEdgesIdx,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
       
       ! Resize subdiagonal edge index vector
-      if (rafcstab%h_IsubdiagonalEdgesIdx .ne. ST_NOHANDLE) then
+      if (rafcstab%h_IsubdiagEdgesIdx .ne. ST_NOHANDLE) then
         call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEQ+1, rafcstab%h_IsubdiagonalEdgesIdx,&
+            rafcstab%NEQ+1, rafcstab%h_IsubdiagEdgesIdx,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
@@ -505,9 +505,9 @@ contains
       end if
 
       ! Resize array of subdiagonal edges
-      if (rafcstab%h_IsubdiagonalEdges .ne. ST_NOHANDLE) then
+      if (rafcstab%h_IsubdiagEdges .ne. ST_NOHANDLE) then
         call storage_realloc('afcstab_resizeStabDirect',&
-            rafcstab%NEDGE, rafcstab%h_IsubdiagonalEdges,&
+            rafcstab%NEDGE, rafcstab%h_IsubdiagEdges,&
             ST_NEWBLOCK_NOINIT, .false.)
       end if
 
@@ -627,7 +627,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
+  subroutine afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for vertices at edge structure
@@ -641,20 +641,20 @@ contains
 !<output>
     ! Pointer to the index pointer for superdiagonal edge numbers.
     ! NULL() if the discrete operator does not provide it.
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    if ((rafcstab%h_IsuperdiagonalEdgesIdx .eq. ST_NOHANDLE) .or.&
-        (rafcstab%NEQ                  .eq. 0)) then
-      nullify(p_IsuperdiagonalEdgesIdx)
+    if ((rafcstab%h_IsuperdiagEdgesIdx .eq. ST_NOHANDLE) .or.&
+        (rafcstab%NEQ .eq. 0)) then
+      nullify(p_IsuperdiagEdgesIdx)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int(rafcstab%h_IsuperdiagonalEdgesIdx,&
-        p_IsuperdiagonalEdgesIdx,rafcstab%NEQ+1)
+    call storage_getbase_int(rafcstab%h_IsuperdiagEdgesIdx,&
+        p_IsuperdiagEdgesIdx,rafcstab%NEQ+1)
 
   end subroutine afcstab_getbase_IsupdiagEdgeIdx
 
@@ -697,7 +697,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+  subroutine afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
 
 !<description>
     ! Returns a pointer to the index pointer for 
@@ -713,20 +713,20 @@ contains
     ! Pointer to the index pointer for 
     ! subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    if ((rafcstab%h_IsubdiagonalEdgesIdx .eq. ST_NOHANDLE) .or.&
+    if ((rafcstab%h_IsubdiagEdgesIdx .eq. ST_NOHANDLE) .or.&
         (rafcstab%NEQ                    .eq. 0)) then
-      nullify(p_IsubdiagonalEdgesIdx)
+      nullify(p_IsubdiagEdgesIdx)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int(rafcstab%h_IsubdiagonalEdgesIdx,&
-        p_IsubdiagonalEdgesIdx,rafcstab%NEQ+1)
+    call storage_getbase_int(rafcstab%h_IsubdiagEdgesIdx,&
+        p_IsubdiagEdgesIdx,rafcstab%NEQ+1)
 
   end subroutine afcstab_getbase_IsubdiagEdgeIdx
 
@@ -734,7 +734,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
+  subroutine afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagEdges)
 
 !<description>
     ! Returns a pointer to the subdiagonal edge number
@@ -748,20 +748,20 @@ contains
 !<output>
     ! Pointer to the subdiagonal edge numbers
     ! NULL() if the discrete operator does not provide it.
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdges
 !</output>
 !</subroutine>
 
     ! Do we have an edge separator at all?
-    if ((rafcstab%h_IsubdiagonalEdges .eq. ST_NOHANDLE) .or.&
+    if ((rafcstab%h_IsubdiagEdges .eq. ST_NOHANDLE) .or.&
         (rafcstab%NEDGE               .eq. 0)) then
-      nullify(p_IsubdiagonalEdges)
+      nullify(p_IsubdiagEdges)
       return
     end if
     
     ! Get the array
-    call storage_getbase_int(rafcstab%h_IsubdiagonalEdges,&
-        p_IsubdiagonalEdges,rafcstab%NEDGE)
+    call storage_getbase_int(rafcstab%h_IsubdiagEdges,&
+        p_IsubdiagEdges,rafcstab%NEDGE)
 
   end subroutine afcstab_getbase_IsubdiagEdge
 
@@ -985,11 +985,12 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_generateSubdiagEdges(rafcstab)
+  subroutine afcstab_generateOffdiagEdges(rafcstab)
 
 !<description>
-    ! This subroutine generates the subdiagonal edge number
-    ! structure based on a given edge data structure.
+    ! This subroutine generates the edge data structure
+    ! (superdiagonal separator and subdiagonal edges)
+    ! based on a given edge data structure.
 !</description>
 
 !<inputoutput>
@@ -1000,9 +1001,9 @@ contains
 
     ! local variables
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer   :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer   :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer   :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer   :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer   :: p_IsubdiagEdges
+    integer, dimension(:), pointer   :: p_IsubdiagEdgesIdx
     integer :: iedge,nedge,istor
     integer :: ieq,jeq,neq
     integer :: isize
@@ -1011,7 +1012,7 @@ contains
     if (iand(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .eq. 0) then
       call output_line('Discrete operator does not provide required ' // &
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
-          'afcstab_generateSubdiagEdge')
+          'afcstab_generateOffdiagEdge')
       call sys_halt()
     end if
 
@@ -1020,102 +1021,115 @@ contains
     nedge = rafcstab%NEDGE
 
     ! Allocate memory (if required)
-    if (rafcstab%h_IsubdiagonalEdgesIdx .eq. ST_NOHANDLE) then
-      call storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdgesIdx',&
-          neq+1,ST_INT,rafcstab%h_IsubdiagonalEdgesIdx,ST_NEWBLOCK_ZERO)
+    if (rafcstab%h_IsuperdiagEdgesIdx .eq. ST_NOHANDLE) then
+      call storage_new('afcstab_generateOffdiagEdges','IsuperdiagEdgesIdx',&
+          neq+1,ST_INT,rafcstab%h_IsuperdiagEdgesIdx,ST_NEWBLOCK_ZERO)
     else
-      call storage_getsize(rafcstab%h_IsubdiagonalEdgesIdx,isize)
+      call storage_getsize(rafcstab%h_IsuperdiagEdgesIdx,isize)
       if (isize < neq+1) then
-        call storage_realloc('afcstab_generateSubdiagEdges',neq+1,&
-            rafcstab%h_IsubdiagonalEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
+        call storage_realloc('afcstab_generateOffdiagEdges',neq+1,&
+            rafcstab%h_IsuperdiagEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
       else
-        call storage_clear(rafcstab%h_IsubdiagonalEdgesIdx)
+        call storage_clear(rafcstab%h_IsuperdiagEdgesIdx)
       end if
     end if
 
-    if (rafcstab%h_IsubdiagonalEdges .eq. ST_NOHANDLE) then
-      call storage_new('afcstab_generateSubdiagEdges','IsubdiagonalEdges',&
-          nedge,ST_INT,rafcstab%h_IsubdiagonalEdges,ST_NEWBLOCK_NOINIT)
+    ! Allocate memory (if required)
+    if (rafcstab%h_IsubdiagEdgesIdx .eq. ST_NOHANDLE) then
+      call storage_new('afcstab_generateOffdiagEdges','IsubdiagEdgesIdx',&
+          neq+1,ST_INT,rafcstab%h_IsubdiagEdgesIdx,ST_NEWBLOCK_ZERO)
     else
-      call storage_getsize(rafcstab%h_IsubdiagonalEdges,isize)
+      call storage_getsize(rafcstab%h_IsubdiagEdgesIdx,isize)
+      if (isize < neq+1) then
+        call storage_realloc('afcstab_generateOffdiagEdges',neq+1,&
+            rafcstab%h_IsubdiagEdgesIdx,ST_NEWBLOCK_ZERO,.false.)
+      else
+        call storage_clear(rafcstab%h_IsubdiagEdgesIdx)
+      end if
+    end if
+
+    ! Allocate memory (if required)
+    if (rafcstab%h_IsubdiagEdges .eq. ST_NOHANDLE) then
+      call storage_new('afcstab_generateOffdiagEdges','IsubdiagEdges',&
+          nedge,ST_INT,rafcstab%h_IsubdiagEdges,ST_NEWBLOCK_NOINIT)
+    else
+      call storage_getsize(rafcstab%h_IsubdiagEdges,isize)
       if (isize < nedge) then
-        call storage_realloc('afcstab_generateSubdiagEdges',nedge,&
-            rafcstab%h_IsubdiagonalEdges,ST_NEWBLOCK_NOINIT,.false.)
+        call storage_realloc('afcstab_generateOffdiagEdges',nedge,&
+            rafcstab%h_IsubdiagEdges,ST_NEWBLOCK_NOINIT,.false.)
       end if
     end if
     
     ! Set pointers
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab,p_IsuperdiagEdgesIdx)
     call afcstab_getbase_IverticesAtEdge(rafcstab,p_IverticesAtEdge)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagonalEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab,p_IsubdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab,p_IsubdiagEdges)
     
-    ! Count number of superdiagonal edges
-    do ieq = 1, neq
-      do iedge = p_IsuperdiagonalEdgesIdx(ieq),&
-                 p_IsuperdiagonalEdgesIdx(ieq+1)-1
+    ! Count the number of edges in each row
+    do iedge = 1, nedge
+      
+       ! Determine the start-point of the current edge
+      ieq = min(p_IverticesAtEdge(1,iedge),&
+                p_IverticesAtEdge(2,iedge))
 
-        ! Determine that end-point of the edge which is not equal to IEQ
-        jeq = p_IverticesAtEdge(1,iedge) + p_IverticesAtEdge(2,iedge) - ieq + 1
+      ! Determine the end-point of the current edge
+      jeq = max(p_IverticesAtEdge(1,iedge),&
+                p_IverticesAtEdge(2,iedge))
 
-        ! Increase number of edges connected to this point by one
-        p_IsubdiagonalEdgesIdx(jeq) = p_IsubdiagonalEdgesIdx(jeq)+1
-      end do
+      ! Increase number of edges connected to these points by one
+      p_IsuperdiagEdgesIdx(ieq+1) = p_IsuperdiagEdgesIdx(ieq+1)+1
+      p_IsubdiagEdgesIdx(jeq+1)   = p_IsubdiagEdgesIdx(jeq+1)+1
     end do
     
-    ! Reshuffle pass 1.
-    do ieq = 2, neq
-      
-      
-      p_IsubdiagonalEdgesIdx(ieq) = p_IsubdiagonalEdgesIdx(ieq) +&
-          p_IsubdiagonalEdgesIdx(ieq-1)
-      
-    end do
-    p_IsubdiagonalEdgesIdx(neq+1) = p_IsubdiagonalEdgesIdx(neq+1) +&
-        p_IsubdiagonalEdgesIdx(neq)
+    ! Reshuffle pass 1
+    rafcstab%NNVEDGE = 0
+    p_IsuperdiagEdgesIdx(1) = 1
+    p_IsubdiagEdgesIdx(1) = 1
     
-    ! Store the subdiagonal edge numbers. In addition, set the maximum
-    ! number of edges adjacent to one vertex. That is, take the maximum
-    ! value of the number of edges to the left of the diagonal plus 
-    ! the number of edges to the right of the diagonal.
-
-    rafcstab%NNVEDGE = 0! p_IsuperdiagonalEdgesIdx(2) - p_IsuperdiagonalEdgesIdx(1)
-
-    do ieq = 1, neq
+    do ieq = 2, neq+1
+      ! Compute the maximum number of edges adjacent to one vertex.
+      rafcstab%NNVEDGE = max(rafcstab%NNVEDGE,&
+          p_IsuperdiagEdgesIdx(ieq)+p_IsubdiagEdgesIdx(ieq))
       
-      ! For each equation, loop over the edges which are located in
-      ! the upper right triangular matrix
-      do iedge = p_IsuperdiagonalEdgesIdx(ieq),&
-                 p_IsuperdiagonalEdgesIdx(ieq+1)-1
+      ! Compute absolute starting positions of edge numbers connected
+      ! to the current node IEQ
+      p_IsuperdiagEdgesIdx(ieq) =&
+          p_IsuperdiagEdgesIdx(ieq) + p_IsuperdiagEdgesIdx(ieq-1)
+      p_IsubdiagEdgesIdx(ieq) =&
+          p_IsubdiagEdgesIdx(ieq) + p_IsubdiagEdgesIdx(ieq-1)
+    end do
+    
+    ! Store the subdiagonal edge numbers
+    do ieq = 1, neq
+      ! Loop over the edges located in the upper right triangular matrix
+      do iedge = p_IsuperdiagEdgesIdx(ieq),&
+                 p_IsuperdiagEdgesIdx(ieq+1)-1
         
-        ! Determine that end-point of the edge which is not equal to IEQ
+        ! Determine the end-point of the edge, i.e. 
+        ! the node which is not equal to IEQ
         jeq = p_IverticesAtEdge(1,iedge) + p_IverticesAtEdge(2,iedge) - ieq
         
-        ! Determine next free position
-        istor = p_IsubdiagonalEdgesIdx(jeq)+1
+        ! Get and update next free position
+        istor = p_IsubdiagEdgesIdx(jeq)
+        p_IsubdiagEdgesIdx(jeq) = istor+1
         
-        p_IsubdiagonalEdgesIdx(jeq) = istor
-        p_IsubdiagonalEdges(istor)  = iedge
-
+        ! Store global edge number
+        p_IsubdiagEdges(istor)  = iedge
       end do
-      
-      ! Compute the maximum number of edges adjacent to one vertex
-      rafcstab%NNVEDGE = max(rafcstab%NNVEDGE,&
-          p_IsuperdiagonalEdgesIdx(ieq+1) - p_IsuperdiagonalEdgesIdx(ieq) +&
-          p_IsubdiagonalEdgesIdx(ieq+1) - p_IsubdiagonalEdgesIdx(ieq))
     end do
     
-    ! Reshuffle pass 2: Adjust the index vector which was tainted in
-    ! the above loop
+    ! Reshuffle pass 2:
+    ! Adjust the index vector which was tainted in the above loop
     do ieq = neq+1, 2, -1
-      p_IsubdiagonalEdgesIdx(ieq) = p_IsubdiagonaledgesIdx(ieq-1)+1
+      p_IsubdiagEdgesIdx(ieq) = p_IsubdiagEdgesIdx(ieq-1)
     end do
-    p_IsubdiagonalEdgesIdx(1) = 1
+    p_IsubdiagEdgesIdx(1) = 1
 
     ! Set specifier for extended edge structure
-    rafcstab%iSpec = ior(rafcstab%iSpec,AFCSTAB_SUBDIAGONALEDGES)
+    rafcstab%iSpec = ior(rafcstab%iSpec,AFCSTAB_OFFDIAGONALEDGES)
 
-  end subroutine afcstab_generateSubdiagEdges
+  end subroutine afcstab_generateOffdiagEdges
   
   !*****************************************************************************
 
