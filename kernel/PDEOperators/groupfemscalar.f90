@@ -291,12 +291,6 @@ contains
           AFCSTAB_FEMGP,&
           AFCSTAB_FEMTVD)
       
-      ! Handle for IsuperdiagonalEdgesIdx
-      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
-      call storage_new('gfsc_initStabilisation', 'IsuperdiagonalEdgesIdx',&
-          rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
-      
       ! Handle for IverticesAtEdge
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -327,12 +321,6 @@ contains
 
 
     case (AFCSTAB_FEMFCT_LINEARIZED)
-      
-      ! Handle for IsuperdiagonalEdgesIdx
-      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
-      call storage_new('gfsc_initStabilisation', 'IsuperdiagonalEdgesIdx',&
-          rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
       
       ! Handle for IverticesAtEdge
       Isize = (/4, rafcstab%NEDGE/)
@@ -365,12 +353,6 @@ contains
 
     case (AFCSTAB_SYMMETRIC)
 
-      ! Handle for IsuperdiagonalEdgesIdx
-      if (rafcstab%h_IsuperdiagonalEdgesIdx .ne. ST_NOHANDLE)&
-          call storage_free(rafcstab%h_IsuperdiagonalEdgesIdx)
-      call storage_new('gfsc_initStabilisation', 'IsuperdiagonalEdgesIdx',&
-          rafcstab%NEQ+1, ST_INT, rafcstab%h_IsuperdiagonalEdgesIdx, ST_NEWBLOCK_NOINIT)
-      
       ! Handle for IverticesAtEdge
       Isize = (/2, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
@@ -6087,9 +6069,9 @@ contains
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm
     real(DP), dimension(:), pointer :: p_Jac,p_u,p_flux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     
     integer :: h_Ksep
@@ -6111,15 +6093,15 @@ contains
       call sys_halt()
     end if
       
-    ! Check if subdiagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if off-diagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
@@ -6154,8 +6136,8 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_TVD(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                               p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -6179,8 +6161,8 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
-      call doJacobianMat79_TVD(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                               p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_TVD(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                               p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -6260,8 +6242,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-TVD,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_TVD(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                   IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_TVD(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                   IsubdiagEdgesIdx, IsubdiagEdges,&
                                    DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                    u, flux, pp, pm, qp, qm, tstep, hstep,&
                                    NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -6270,9 +6252,9 @@ contains
       real(DP), dimension(:), intent(in) :: u,flux,pp,pm,qp,qm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -6300,10 +6282,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
 
           ! Increase local counter
           iloc = iloc+1
@@ -6315,7 +6297,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -6344,10 +6326,10 @@ contains
           l = Kloc(iloc)
 
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -6356,7 +6338,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -6747,9 +6729,9 @@ contains
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
     real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u,p_u0,p_flux,p_flux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer :: h_Ksep
     logical :: bisExtended
@@ -6769,15 +6751,15 @@ contains
       call sys_halt()
     end if
     
-    ! Check if subdiagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if off-diagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
@@ -6817,8 +6799,8 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                              p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_GP(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                              p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                               p_MC, p_u, p_u0, p_flux, p_flux0,&
                               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
@@ -6843,8 +6825,8 @@ contains
       call storage_copy(rjacobianMatrix%h_Kld, h_Ksep)
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       
-      call doJacobianMat79_GP(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                              p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_GP(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                              p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                               p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                               p_MC, p_u, p_u0, p_flux, p_flux0,&
                               p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
@@ -6924,8 +6906,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_GP(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                  IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_GP(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                  IsubdiagEdgesIdx, IsubdiagEdges,&
                                   DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                   MC, u, u0, flux, flux0, pp, pm, qp, qm, rp, rm,&
                                   theta, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
@@ -6935,9 +6917,9 @@ contains
       real(DP), dimension(:), intent(in) :: MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -6965,10 +6947,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -6981,7 +6963,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -7012,10 +6994,10 @@ contains
           l = Kloc(iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                                           rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
@@ -7023,7 +7005,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux, flux0,&
                                           rp, rm, Kloc, rploc, rmloc, fluxloc, fluxloc0,&
@@ -8617,9 +8599,9 @@ contains
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_flux
     real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_Jac,p_u
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer :: h_Ksep,ndim
     logical :: bisExtended
@@ -8642,9 +8624,9 @@ contains
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
@@ -8675,9 +8657,9 @@ contains
       call sys_halt()
     end select
 
-    ! Check if subdiagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if off-diagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
     if (present(bextendedSparsity)) then
@@ -8707,22 +8689,22 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_1D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                     p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                     rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
-        call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_2D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                     p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                     rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
-        call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_3D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                     p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -8751,22 +8733,22 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doJacobianMat79_TVD_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_1D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                     p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                     rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
-        call doJacobianMat79_TVD_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_2D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                     p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                     rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
-        call doJacobianMat79_TVD_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                    p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_TVD_3D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                    p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                     p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                     p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
                                     tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -8847,8 +8829,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-TVD in 1D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_TVD_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_TVD_1D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                      IsubdiagEdgesIdx, IsubdiagEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -8857,9 +8839,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,u,flux,pp,pm,qp,qm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -8888,10 +8870,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -8915,7 +8897,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -8956,10 +8938,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -8968,7 +8950,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -8990,8 +8972,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-TVD in 2D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_TVD_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_TVD_2D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                      IsubdiagEdgesIdx, IsubdiagEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, Cy, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -9000,9 +8982,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,Cy,u,flux,pp,pm,qp,qm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -9031,10 +9013,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -9058,7 +9040,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -9099,10 +9081,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -9111,7 +9093,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -9133,8 +9115,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-TVD in 3D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_TVD_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                      IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_TVD_3D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                      IsubdiagEdgesIdx, IsubdiagEdges,&
                                       DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                       Cx, Cy, Cz, u, flux, pp, pm, qp, qm, tstep, hstep,&
                                       NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -9143,9 +9125,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,u,flux,pp,pm,qp,qm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -9174,10 +9156,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -9201,7 +9183,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -9242,10 +9224,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -9254,7 +9236,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_TVD(IverticesAtEdge, Kdiagonal, flux,&
                                            Kloc, rploc, rmloc, fluxloc,&
@@ -9709,9 +9691,9 @@ contains
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_flux,p_flux0
     real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac,p_u,p_u0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer :: h_Ksep,ndim
     logical :: bisExtended
@@ -9734,9 +9716,9 @@ contains
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
@@ -9772,9 +9754,9 @@ contains
       call sys_halt()
     end select
 
-    ! Check if subdiagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if off-diagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
     if (present(bextendedSparsity)) then
@@ -9804,24 +9786,24 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_1D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                    p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                    rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
-        call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_2D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                    p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                    rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
-        call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_3D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                    p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
@@ -9850,24 +9832,24 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doJacobianMat79_GP_1D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_1D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                    p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                    rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
-        call doJacobianMat79_GP_2D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_2D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                    p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
                                    tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
                                    rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
-        call doJacobianMat79_GP_3D(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                   p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+        call doJacobianMat79_GP_3D(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                   p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                    p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                    p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
                                    p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
@@ -9949,8 +9931,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP in 1D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_GP_1D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                     IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_GP_1D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                     IsubdiagEdgesIdx, IsubdiagEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                      Cx, MC, u, u0, flux, flux0, pp, pm,&
                                      qp, qm, rp, rm, theta, tstep, hstep,&
@@ -9960,9 +9942,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -9991,10 +9973,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -10020,7 +10002,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -10065,10 +10047,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10077,7 +10059,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10099,8 +10081,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP in 2D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_GP_2D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                     IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_GP_2D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                     IsubdiagEdgesIdx, IsubdiagEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                      Cx, Cy, MC, u, u0, flux, flux0, pp, pm,&
                                      qp, qm, rp, rm, theta, tstep, hstep,&
@@ -10110,9 +10092,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,Cy,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -10141,10 +10123,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -10170,7 +10152,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -10215,10 +10197,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10227,7 +10209,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10249,8 +10231,8 @@ contains
     !**************************************************************
     ! Assemble the Jacobian matrix for FEM-GP in 3D,
     ! whereby the matrix can be stored in format 7 or 9.
-    subroutine doJacobianMat79_GP_3D(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                     IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_GP_3D(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                     IsubdiagEdgesIdx, IsubdiagEdges,&
                                      DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                      Cx, Cy, Cz, MC, u, u0, flux, flux0, pp, pm,&
                                      qp, qm, rp, rm, theta, tstep, hstep,&
@@ -10260,9 +10242,9 @@ contains
       real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,MC,u,u0,flux,flux0,pp,pm,qp,qm,rp,rm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -10291,10 +10273,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -10320,7 +10302,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -10365,10 +10347,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
 
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10377,7 +10359,7 @@ contains
           end do
 
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_GP(IverticesAtEdge, Kdiagonal, flux,&
                                           flux0, rp, rm, Kloc, rploc, rmloc,&
@@ -10922,9 +10904,9 @@ contains
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
     real(DP), dimension(:), pointer :: p_flux,p_u,p_Jac
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    integer, dimension(:), pointer :: p_IsuperdiagonalEdgesIdx
-    integer, dimension(:), pointer :: p_IsubdiagonalEdges
-    integer, dimension(:), pointer :: p_IsubdiagonalEdgesIdx
+    integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
+    integer, dimension(:), pointer :: p_IsubdiagEdges
+    integer, dimension(:), pointer :: p_IsubdiagEdgesIdx
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
     integer :: h_Ksep
     logical :: bisExtended
@@ -10944,15 +10926,15 @@ contains
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
     
-    ! Check if subdiagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_SUBDIAGONALEDGES) .eq. 0)&
-        call afcstab_generateSubdiagEdges(rafcstab)
+    ! Check if off-diagonal edges need to be generated
+    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+        call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagonalEdgesIdx)
-    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagonalEdges)
-    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagonalEdgesIdx)
+    call afcstab_getbase_IsupdiagEdgeIdx(rafcstab, p_IsuperdiagEdgesIdx)
+    call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
+    call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
     call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
@@ -10989,8 +10971,8 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_Symm(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
                                 p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
                                 dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -11015,8 +10997,8 @@ contains
       call storage_getbase_int(h_Ksep, p_Ksep, rjacobianMatrix%NEQ+1)
       call lalg_vectorAddScalarInt(p_Ksep, 1)
       
-      call doJacobianMat79_Symm(p_IsuperdiagonalEdgesIdx, p_IverticesAtEdge,&
-                                p_IsubdiagonalEdgesIdx, p_IsubdiagonalEdges,&
+      call doJacobianMat79_Symm(p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
+                                p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
                                 p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
                                 p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
                                 dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
@@ -11095,8 +11077,8 @@ contains
 
     !**************************************************************
     ! Assemble the Jacobian matrix for symmetric flux limiting
-    subroutine doJacobianMat79_Symm(IsuperdiagonalEdgesIdx, IverticesAtEdge,&
-                                    IsubdiagonalEdgesIdx, IsubdiagonalEdges,&
+    subroutine doJacobianMat79_Symm(IsuperdiagEdgesIdx, IverticesAtEdge,&
+                                    IsubdiagEdgesIdx, IsubdiagEdges,&
                                     DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
                                     u, flux, pp, pm, qp, qm, rp, rm, dscale, hstep,&
                                     NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
@@ -11105,9 +11087,9 @@ contains
       real(DP), dimension(:), intent(in) :: u,flux,pp,pm,qp,qm,rp,rm
       real(DP), intent(in) :: dscale,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: IsuperdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdgesIdx
-      integer, dimension(:), intent(in) :: IsubdiagonalEdges
+      integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdgesIdx
+      integer, dimension(:), intent(in) :: IsubdiagEdges
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ,NEDGE,NNVEDGE
       logical, intent(in) :: bisExtended,bisMat7
@@ -11135,10 +11117,10 @@ contains
         iloc = 0
 
         ! Loop over all subdiagonal edges
-        do ild = IsubdiagonalEdgesIdx(k), IsubdiagonalEdgesIdx(k+1)-1
+        do ild = IsubdiagEdgesIdx(k), IsubdiagEdgesIdx(k+1)-1
           
           ! Get edge number
-          iedge = IsubdiagonalEdges(ild)
+          iedge = IsubdiagEdges(ild)
           
           ! Increase local counter
           iloc = iloc+1
@@ -11154,7 +11136,7 @@ contains
         end do
 
         ! Loop over all superdiagonal edges
-        do iedge = IsuperdiagonalEdgesIdx(k), IsuperdiagonalEdgesIdx(k+1)-1
+        do iedge = IsuperdiagEdgesIdx(k), IsuperdiagEdgesIdx(k+1)-1
 
           ! Increase local counter
           iloc = iloc+1
@@ -11189,10 +11171,10 @@ contains
           l = Kloc(1,iloc)
           
           ! Loop over all subdiagonal edges
-          do ild = IsubdiagonalEdgesIdx(l), IsubdiagonalEdgesIdx(l+1)-1
+          do ild = IsubdiagEdgesIdx(l), IsubdiagEdgesIdx(l+1)-1
             
             ! Get edge number
-            iedge = IsubdiagonalEdges(ild)
+            iedge = IsubdiagEdges(ild)
             
             call assembleJacobianMat79_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
                                             Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
@@ -11200,7 +11182,7 @@ contains
           end do
           
           ! Loop over all superdiagonal edges
-          do iedge = IsuperdiagonalEdgesIdx(l), IsuperdiagonalEdgesIdx(l+1)-1
+          do iedge = IsuperdiagEdgesIdx(l), IsuperdiagEdgesIdx(l+1)-1
             
             call assembleJacobianMat79_Symm(IverticesAtEdge, Kld, Kcol, flux, rp, rm,&
                                             Kloc, rploc, rmloc, fluxloc, dscale, hstep,&
