@@ -146,9 +146,6 @@ module transport_basic
   ! mixed volume + surface integral target functional
   integer, parameter, public :: TFUNC_MIXINTG  = 3
 
-  ! analytical value for target functional
-  integer, parameter, public :: TFUNC_ANALYTIC = 4
-
 !</constantblock>
 
 
