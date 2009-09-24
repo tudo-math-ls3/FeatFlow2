@@ -1986,6 +1986,7 @@ contains
     logical, dimension(:), pointer :: p_BisactiveElement
     real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance, daux, dtargetFunc
     integer :: i, icomp, convectionAFC, diffusionAFC
+    integer :: cconvectionStabilisation, cdiffusionStabilisation
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
     integer :: itargetfunctype, iexactsolutiontype
     integer :: iprotectLayer, nprotectLayers, igridindicator
@@ -2009,8 +2010,13 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
     call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
 
-    call parlst_setvalue(rparlist, ssectionName, 'convectionAFC', '0')
-    call parlst_setvalue(rparlist, ssectionName, 'diffusionAFC', '0')
+    cconvectionStabilisation =&
+        rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
+    rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
+    
+    cdiffusionStabilisation =&
+        rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation
+    rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
     
     ! Set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
@@ -2029,16 +2035,11 @@ contains
         rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
         rvector2, 0, rcollection)
 
-    ! HERE WE GO NEXT
-!!$    ! Weakly impose Dirichlet boundary conditions
-!!$    call transp_setBoundary(rproblemLevel, rtimestep, rsolver,&
-!!$        rsolutionPrimal, rsolutionPrimal, rvector, rcollection)
-    
     ! Ok, now we have to switch on all types of stabilization
-    call parlst_setvalue(rparlist, ssectionName,&
-        'convectionAFC', trim(sys_siL(convectionAFC,10)))
-    call parlst_setvalue(rparlist, ssectionName,&
-        'diffusionAFC', trim(sys_siL(convectionAFC,10)))
+    rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation =&
+        cconvectionStabilisation
+    rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation =&
+        cdiffusionStabilisation
 
     ! Again, set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
