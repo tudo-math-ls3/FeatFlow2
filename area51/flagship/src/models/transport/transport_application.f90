@@ -1172,7 +1172,7 @@ contains
 
         rproblemLevel%Rafcstab(convectionAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(convectionAFC)%iSpec,&
-            not(AFCSTAB_SUBDIAGONALEDGES))
+            not(AFCSTAB_OFFDIAGONALEDGES))
       end if
     end if
 
@@ -1191,7 +1191,7 @@ contains
 
         rproblemLevel%Rafcstab(diffusionAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(diffusionAFC)%iSpec,&
-            not(AFCSTAB_SUBDIAGONALEDGES))
+            not(AFCSTAB_OFFDIAGONALEDGES))
       end if
     end if
 
