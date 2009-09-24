@@ -5448,8 +5448,6 @@ end subroutine
     ! call the routine to initialize the particle
     call geom_initParticle(rparticleCollection%p_rParticles(i1),GEOM_CIRCLE,&
                          dx,dy,drad,drho)
-!    pparameters(2,1) = pparameters(2,1) + 0.5_dp
-!    pparameters(1,1) = pparameters(1,1) + 1.0_dp
   end do
   
   end subroutine ! end geom_initParticleCollection
@@ -5471,11 +5469,17 @@ end subroutine
 !</inputoutput>
 
 !</subroutine>
-  
+  integer :: i
   ! check if there are particles for
   ! which memory has been allocated
+  
   if(rparticleCollection%nparticles .gt. 0) then 
+  
+    do i=1,rparticleCollection%nparticles
+      call lsyssc_releaseVector(rparticleCollection%p_rparticles(i)%rvectorScalarFB)
+    end do
     deallocate(rparticleCollection%p_rparticles)
+    
   end if
     
   end subroutine ! end geom_initParticleCollection
