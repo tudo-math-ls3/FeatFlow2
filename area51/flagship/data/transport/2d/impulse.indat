@@ -7,9 +7,23 @@
 #                                                                              #
 ################################################################################
 
+# Specify the 'null-function'
+deffunc: @null = 0 ; x,y,z,t
+
+# Specify the initial solution
+deffunc: @initsol = 0 ; x,y,z,t
+
+# Specify the exact solution
+deffunc: @exactsol = if(x = 0.5, 1, 0) ; x,y,z,t
+
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,z,t
 deffunc: @velocity_y = 0.0 ; x,y,z,t
+
+# Specify the quantity of interest
+deffunc: @weightingFuncInt = if(x = 1, 1, 0) ; x,y,z,t
+
+deffunc: @exactTargetFunc = 0.06044974016448 ; t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 
@@ -44,6 +58,8 @@ NEXPR
 IBCT
 1
 NCOMP
-1
+3
 PARAMETERS
-4.0  T  1   0.0
+2.0  F  0
+3.0  T -1   1.0
+4.0  F  0

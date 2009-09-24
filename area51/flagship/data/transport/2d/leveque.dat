@@ -111,7 +111,6 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
-# 4 = analytical target functional
 itargetfunctype = 0
 
 # section name of target functional
