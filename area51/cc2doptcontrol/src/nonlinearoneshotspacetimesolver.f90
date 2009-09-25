@@ -2518,6 +2518,7 @@ contains
     type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrix
     type(t_vectorBlock) :: rtempVecCoarse,rtempVecFine
     type(t_vectorBlock) :: rinitialCondRHS,rinitialCondSol
+    integer :: ifbSORPartialUpdate
     
     ! A solver node that identifies our solver.
     type(t_sptilsNode), pointer :: p_rprecond,p_rsolverNode
@@ -2708,6 +2709,8 @@ contains
 
         call parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
                                     'domega', domega, 1.0_DP)
+        call parlst_getvalue_int (rproblem%rparamList, 'TIME-COARSEGRIDSOLVER', &
+                                    'ifbSORPartialUpdate', ifbSORPartialUpdate,0)
         call parlst_getvalue_double (rproblem%rparamList, 'TIME-COARSEPRECOND', &
                                     'domega', domegaPrecond, 1.0_DP)
         
@@ -2723,7 +2726,7 @@ contains
         case (1)
           ! Block SOR preconditioner
           call sptils_initBlockFBSOR (rproblem,p_rprecond,domega,&
-              domegaPrecond,RspatialPrecond(ilev))
+              domegaPrecond,RspatialPrecond(ilev),ifbSORPartialUpdate .ne. 0)
 
           ! Defect correction solver
           call sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
@@ -2756,7 +2759,7 @@ contains
         case (5)
           ! Forward backward SOR as preconditioner
           call sptils_initBlockFBSOR (rproblem,p_rprecond,&
-            domegaPrecond,domegaPrecond,RspatialPrecond(ilev))
+            domegaPrecond,domegaPrecond,RspatialPrecond(ilev),ifbSORPartialUpdate .ne. 0)
           !CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
 
           ! BiCGStab solver        
@@ -2773,7 +2776,7 @@ contains
         case (7)
           ! Block SOR solver
           call sptils_initBlockFBSOR (rproblem,p_rcgrSolver,domega,&
-              domegaPrecond,RspatialPrecond(ilev))
+              domegaPrecond,RspatialPrecond(ilev),ifbSORPartialUpdate .ne. 0)
 
         case default
           print *,'Unknown solver: ',ctypeCoarseGridSolver
@@ -2831,6 +2834,8 @@ contains
         call parlst_getvalue_double (rproblem%rparamList, 'TIME-SMOOTHER', &
                                     'domegaPrecond', domegaPrecond, 1.0_DP)
         call parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
+                                    'ifbSORPartialUpdate', ifbSORPartialUpdate, 0)
+        call parlst_getvalue_int (rproblem%rparamList, 'TIME-SMOOTHER', &
             'nsmSteps', nsmSteps, 1)
 
         ! DEBUG!!!
@@ -2848,7 +2853,7 @@ contains
         case (1)
           ! Block SOR
           call sptils_initBlockFBSOR (rproblem,p_rsmoother,&
-            domega,domegaPrecond,RspatialPrecond(ilev))
+            domega,domegaPrecond,RspatialPrecond(ilev),ifbSORPartialUpdate .ne. 0)
         case (2)
           ! Block Forward-Backward Gauss-Seidel
           call sptils_initBlockFBGS (rproblem,p_rsmoother,&

@@ -571,6 +571,9 @@ module linearspacetimesolver
 
     ! SOR-Damping parameter for damping the time dependence
     real(DP) :: domegaSOR
+    
+    ! Only partial update of the primal/dual solution
+    logical  :: bpartialUpdate
 
   end type
   
@@ -2464,6 +2467,9 @@ contains
       call sptivec_getTimestepData (rd, 1+isubstep, rtempVectorD)
 
       ! Set up the matrix weights for the diagonal matrix
+      call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+          p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+          p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
       call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
         isubstep,0,rnonlinearSpatialMatrix)
         
@@ -2499,7 +2505,7 @@ contains
 !<subroutine>
   
   recursive subroutine sptils_initBlockFBSOR (rproblem,p_rsolverNode,&
-      domega,domegaSOR,rspatialPrecond)
+      domega,domegaSOR,rspatialPrecond,bpartialUpdate)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the block 
@@ -2523,6 +2529,10 @@ contains
   ! A pointer to this is noted in p_rsolverNode, so rspatialPrecond
   ! should not be released before the solver is destroyed.
   type(t_ccspatialPreconditioner), intent(IN), target :: rspatialPrecond
+  
+  ! When updating the solution, update only the primal solution on the forward
+  ! and the dual solution on the backward sweep.
+  logical, intent(in) :: bpartialUpdate
 !</input>
   
 !<output>
@@ -2556,6 +2566,9 @@ contains
     ! Attach the preconditioner if given. 
     p_rsolverNode%p_rsubnodeBlockFBSOR%p_rspatialPreconditioner => &
         rspatialPrecond
+    
+    ! Remember if we only have to do a partial update.    
+    p_rsolverNode%p_rsubnodeBlockFBSOR%bpartialUpdate = bpartialUpdate
     
   end subroutine
 
@@ -3044,6 +3057,9 @@ contains
           call sptivec_getTimestepData (p_rx, 1+isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rnonlinearSpatialMatrix)
           
@@ -3056,6 +3072,9 @@ contains
         if (isubstep .lt. p_rspaceTimeDiscr%NEQtime-1) then
           
           ! Create d2 = RHS - omega*Ml3 - (1-omega)*Ml3_old
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rnonlinearSpatialMatrix)
             
@@ -3068,6 +3087,9 @@ contains
         end if
 
         ! Set up the matrix weights for the diagonal matrix
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rnonlinearSpatialMatrix)
           
@@ -3098,8 +3120,17 @@ contains
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
         
         ! Add that defect to the current solution -- damped by domega.
-        call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP)
+        if (.not. rsolverNode%p_rsubnodeBlockFBSOR%bpartialUpdate) then
+          call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
+              rsolverNode%domega,1.0_DP)
+        else
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(4),&
+              rtempVectorX2%RvectorBlock(4),rsolverNode%domega,1.0_DP)
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(5),&
+              rtempVectorX2%RvectorBlock(5),rsolverNode%domega,1.0_DP)
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(6),&
+              rtempVectorX2%RvectorBlock(6),rsolverNode%domega,1.0_DP)
+        end if
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
@@ -3180,6 +3211,9 @@ contains
         if (isubstep .gt. 0) then
         
           ! Create d2 = RHS - omega*Mx1 - (1-omega)*Mx1_old
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rnonlinearSpatialMatrix)
           
@@ -3206,6 +3240,9 @@ contains
           call sptivec_getTimestepData (p_rx, 1+isubstep+1, rtempVectorX3)
         
           ! Create d2 = RHS - Ml3 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rnonlinearSpatialMatrix)
           
@@ -3215,6 +3252,9 @@ contains
         end if
 
         ! Set up the matrix weights for the diagonal matrix
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rnonlinearSpatialMatrix)
           
@@ -3248,8 +3288,17 @@ contains
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
       
         ! Add that defect to the current solution -- damped by domega.
-        call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
-            rsolverNode%domega,1.0_DP)
+        if (.not. rsolverNode%p_rsubnodeBlockFBSOR%bpartialUpdate) then
+          call lsysbl_vectorLinearComb (rtempVectorRHS,rtempVectorX2,&
+              rsolverNode%domega,1.0_DP)
+        else
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(1),&
+              rtempVectorX2%RvectorBlock(1),rsolverNode%domega,1.0_DP)
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(2),&
+              rtempVectorX2%RvectorBlock(2),rsolverNode%domega,1.0_DP)
+          call lsyssc_vectorLinearComb (rtempVectorRHS%RvectorBlock(3),&
+              rtempVectorX2%RvectorBlock(3),rsolverNode%domega,1.0_DP)
+        end if
       
         ! Save the new solution.
         call sptivec_setTimestepData (p_rx, 1+isubstep, rtempVectorX2)
@@ -3857,6 +3906,9 @@ contains
           call sptivec_getTimestepData (p_rx, 1+isubstep-1, rtempVectorX1)
 
           ! Create d2 = RHS - Mx1 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rnonlinearSpatialMatrix)
           
@@ -3869,6 +3921,9 @@ contains
         if (isubstep .lt. p_rspaceTimeDiscr%NEQtime-1) then
           
           ! Create d2 = RHS - Ml3 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rnonlinearSpatialMatrix)
             
@@ -3878,6 +3933,9 @@ contains
         end if
 
         ! Set up the matrix weights for the diagonal matrix
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rnonlinearSpatialMatrix)
           
@@ -3975,6 +4033,9 @@ contains
         if (isubstep .gt. 0) then
         
           ! Create d2 = RHS - Mx1 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,-1,rnonlinearSpatialMatrix)
           
@@ -4003,6 +4064,9 @@ contains
           call sptivec_getTimestepData (p_rx, 1+isubstep+1, rtempVectorX3)
         
           ! Create d2 = RHS - Ml3 
+          call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+              p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
           call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
             isubstep,1,rnonlinearSpatialMatrix)
           
@@ -4013,6 +4077,9 @@ contains
         end if
 
         ! Set up the matrix weights for the diagonal matrix
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            p_rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rsolverNode%p_rproblem,p_rspaceTimeMatrix,dtheta,&
           isubstep,0,rnonlinearSpatialMatrix)
           
@@ -5208,6 +5275,9 @@ contains
       do ix = ileft,iright
       
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rsupermatrix,&
           p_rspaceTimeDiscr%rtimeDiscr%dtheta,isubstep,ix,rnonlinearSpatialMatrix)
           
@@ -6160,6 +6230,11 @@ end subroutine
       ! This is of course an approximation to 
       dresunprec = dres
       dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+      
+      call output_line ('Space-Time-BiCGStab: Iteration '// &
+          trim(sys_siL(0,10))//',  !!RES(unscaled)!! = '//&
+          trim(sys_sdEL(dres,15)) )
+      
       if (.not.((dres .ge. 1E-99_DP) .and. &
                 (dres .le. 1E99_DP))) dres = 1.0_DP
       dresscale = dresunprec / dres

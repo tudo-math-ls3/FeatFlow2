@@ -82,6 +82,8 @@
 !# 3.) cc_projectControlTimestep
 !#     Projects a vector into a range of numbers.
 !#
+!# 4.) cc_initNonlinMatrix
+!#     Initialises a nonlinear-matrix structure with basic parameters.
 !# </purpose>
 !##############################################################################
 
@@ -412,6 +414,75 @@ module spacematvecassembly
 
 contains
   
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+        rdiscretisation,rstaticLevelInfo)
+  
+  !<description>
+    ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
+    ! from the main problem and precalculated information.
+  !</description>
+
+  !<input>
+    ! Global problem structure.
+    type(t_problem), intent(inout) :: rproblem
+    
+    ! Discretisation of the level where the matrix is to be assembled.
+    type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+    
+    ! Core equation structure of one level.
+    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Initialise the matrix assembly structure rnonlinearCCMatrix 
+      ! with basic global information.
+      !
+      ! 1.) Model, stabilisation
+      rnonlinearSpatialMatrix%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+
+      ! Get stabilisation parameters
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'iUpwind1',rnonlinearSpatialMatrix%iupwind1,0)
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                'iUpwind2',rnonlinearSpatialMatrix%iupwind2,0)
+      
+      call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'dUpsam1',rnonlinearSpatialMatrix%dupsam1,0.0_DP)
+      call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                  'dUpsam2',rnonlinearSpatialMatrix%dupsam2,0.0_DP)
+
+      ! Change the sign of dupsam2 for a consistent stabilisation.
+      ! Reason: The stablisation is added to the dual operator by the SD/
+      ! EOJ stabilisation in the following way:
+      !
+      !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
+      !
+      ! We want to *add* the stabilisation, so we have to introduce a "-" sign
+      ! in dupsam2 to get
+      !
+      !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
+      ! <=>
+      !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
+      
+      rnonlinearSpatialMatrix%dupsam2 = -rnonlinearSpatialMatrix%dupsam2
+      
+      ! 2.) Pointers to global precalculated matrices.
+      rnonlinearSpatialMatrix%p_rdiscretisation => rdiscretisation
+      rnonlinearSpatialMatrix%p_rstaticInfo => rstaticLevelInfo
+      
+    end subroutine
+
 ! ***************************************************************************
   !<subroutine>
 

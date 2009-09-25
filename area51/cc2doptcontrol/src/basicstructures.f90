@@ -134,7 +134,8 @@ module basicstructures
     type(t_blockDiscretisation) :: rdiscretisationStabil
 
     ! An object specifying the block discretisation structure only for the
-    ! primal space.
+    ! primal space. This coincides with the discretisation structure of the dual
+    ! space.
     type(t_blockDiscretisation) :: rdiscretisationPrimal
 
     ! Three temp vectors for the full system.

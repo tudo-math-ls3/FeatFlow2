@@ -987,15 +987,10 @@ contains
 
     dtstep = p_rspaceTimeDiscr%rtimeDiscr%dtstep
     
-    ! Basic initialisation of our nonlinear matrix in space.
-    call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
-        rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
-        rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
-    
     ! Loop through the substeps
     
     do ieqTime = 0,p_rspaceTimeDiscr%NEQtime-1
-    
+      
       ! Depending on the time step scheme, initialise the current time.
       select case (p_rspaceTimeDiscr%rtimeDiscr%ctype)
       case (TDISCR_THETA)
@@ -1066,6 +1061,9 @@ contains
         ! The diagonal matrix.
       
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rnonlinearSpatialMatrix)
           
@@ -1080,6 +1078,9 @@ contains
         ! and subtract A12 x2 from rd.
 
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rnonlinearSpatialMatrix)
 
@@ -1111,6 +1112,9 @@ contains
         ! and include that into the global matrix for the primal velocity.
 
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rnonlinearSpatialMatrix)
             
@@ -1130,6 +1134,9 @@ contains
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rnonlinearSpatialMatrix)
 
@@ -1144,6 +1151,9 @@ contains
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,1,rnonlinearSpatialMatrix)
           
@@ -1173,6 +1183,9 @@ contains
         ! and include that into the global matrix for the dual velocity.
 
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,-1,rnonlinearSpatialMatrix)
           
@@ -1189,6 +1202,9 @@ contains
         ! Assemble the nonlinear defect.
       
         ! Set up the matrix weights of that submatrix.
+        call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            rspaceTimeMatrix%p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo)
         call cc_setupMatrixWeights (rproblem,rspaceTimeMatrix,dtheta,&
           ieqTime,0,rnonlinearSpatialMatrix)
 
