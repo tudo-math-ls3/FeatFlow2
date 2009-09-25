@@ -316,6 +316,12 @@ ioutputLevel = 2 2
 slinearSolver        = 'CC-LINEARSOLVER'
 #slinearSolver        = 'CC-PUREVANKASOLVER'
 
+# For FBSOR-Type smoothers: Do a partial update of the solution
+# during the iteration (only primal on forward sweep, only dual
+# on backward sweep).
+
+bfbSORPartialUpdate=0
+
 
 #######################
 [TIME-COARSEGRIDSOLVER]
@@ -380,6 +386,12 @@ istoppingCriterion = 0
 # of the subsolver.
 
 slinearSolver        = 'CC-LINEARSOLVER'
+
+# For FBSOR-Type smoothers: Do a partial update of the solution
+# during the iteration (only primal on forward sweep, only dual
+# on backward sweep).
+
+ifbSORPartialUpdate=0
 
 ####################
 [TIME-COARSEPRECOND]
