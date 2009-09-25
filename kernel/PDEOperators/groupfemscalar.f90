@@ -113,10 +113,10 @@
 !#         simplifies the evaluation of the Jacobian matrix significantly.
 !#         For the second two routines, the velocity can be arbitrary.
 !#
-!# 13.) gfsc_buildJacobianGPD = gfsc_buildJacLinearScalarGP /
-!#                              gfsc_buildJacLinearBlockGP /
-!#                              gfsc_buildJacobianScalarGP /
-!#                              gfsc_buildJacobianBlockGP
+!# 13.) gfsc_buildJacobianGP = gfsc_buildJacLinearScalarGP /
+!#                             gfsc_buildJacLinearBlockGP /
+!#                             gfsc_buildJacobianScalarGP /
+!#                             gfsc_buildJacobianBlockGP
 !#      -> Assembles the Jacobian matrix for the stabilisation part of general purpose limiter; 
 !#         For the first two routines, the velocity is assumed to be linear which
 !#         simplifies the evaluation of the Jacobian matrix significantly.
