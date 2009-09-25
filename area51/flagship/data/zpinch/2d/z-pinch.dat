@@ -36,6 +36,11 @@ ndimension = 2
 # 2 = Cylindrical coordinates (r-z)
 icoords = 1
 
+# type of Lorentz force term treatment
+# 0 = segregated approach
+# 1 = fully-coupled approach
+ilorentzforcetype = 0
+
 # section name of Lorentz force term
 slorentzforcename = @forceterm
 
@@ -384,7 +389,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 1e-4
 
 # initial time step size
 dinitialStep = 1e-4
