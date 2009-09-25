@@ -268,6 +268,12 @@ contains
 
     ! Syncronisation method for FCT limiting
     integer :: syncromethod
+    
+    ! Is the initial value given by absolute or relative value
+    integer :: absrel
+    
+    ! Add bottom profile to putput of h?
+    integer :: addbottomtoout
 
     ! Function parser
     type(t_fparser) :: rfparser
@@ -289,6 +295,12 @@ contains
 
     ! We want to solve our problem on level... Default=1
     call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)
+    
+    ! Is the water height given by absolute or relative value
+    call parlst_getvalue_int(rparlist, 'PROBLEM', 'ABSREL', absrel, 0)
+    
+    ! Add bottom profile to output to get position of the water surface, Default = Yes
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'ADDBOTTOMTOOUT', addbottomtoout, 1)
 
     ! And with timestepsize
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
@@ -754,8 +766,13 @@ contains
        p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
 
     end do
-
-
+    
+    
+    ! If the heigth values are given as relative values, then substract the bottom profile
+    ! to get the relative values, that the algorithm can work with
+    if (absrel==0) then
+      call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+    end if
 
     !  Write first video file (the initial conditions)
     ! if we want to make a video
@@ -765,7 +782,9 @@ contains
             'gmv/video1.gmv')
             
        ! Before writing add the bottom profile
-       call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+       if (addbottomtoout==1) then
+        call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+       end if
 
 
        call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
@@ -781,7 +800,9 @@ contains
        call ucd_release (rexport)
        
        ! After writing substract the bottom profile
-       call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+       if (addbottomtoout==1) then
+        call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+       end if
 
        videotime = videotimestep
        ! Number of first video file
@@ -970,7 +991,7 @@ contains
           call new_syncronized(&
                rarraySol, rarraySolDot, rarrayRhs,&
                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
-               rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+               rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, p_MCdata, &
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                gravconst, dt, Method, prelimiting, syncromethod, &
@@ -1001,7 +1022,7 @@ contains
        ! That's it. RvectorBlock now contains our solution at the current time
 
        ! write gmvfiles for video (if needed)
-       if ((makevideo==1).and.(abs(videotime-ttime)<(dt*0.2_DP))) then
+       if ((makevideo==1).and.(ttime.ge.videotime-0.001_DP*dt)) then
 
           write(*,*)
           write(*,*) 'Writing Videofile'
@@ -1013,7 +1034,9 @@ contains
           videotime = videotime + videotimestep
           
           ! Before writing add the bottom profile
-          call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+          if (addbottomtoout==1) then
+            call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+           end if
           
           call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
                'gmv/video' // trim(sfilenumber) // '.gmv')
@@ -1031,7 +1054,9 @@ contains
           call ucd_release (rexport)
           
           ! After writing substract the bottom profile
-          call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+          if (addbottomtoout==1) then
+            call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+          end if
        end if
 
        ! Go on to the next time step
@@ -1064,7 +1089,9 @@ contains
     write(*,*)
     
     ! Before writing add the bottom profile
-    call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+    if (addbottomtoout==1) then
+      call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+    end if
     
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
          ofile)

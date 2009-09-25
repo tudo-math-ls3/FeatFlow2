@@ -2420,7 +2420,7 @@ end if !dry or wet bed
   subroutine new_syncronized(&
        rarraySol, rarraySolDot, rarrayRhs,&
        rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
-       rmatrixML, p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+       rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, p_MCdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
        gravconst, dt, Method, prelimiting, syncromethod, &
@@ -2433,7 +2433,7 @@ end if !dry or wet bed
     type(t_vectorBlock), intent(IN)                 :: rsolBlock
     type(t_vectorBlock), intent(INOUT)              :: rSolDotBlock
     type(t_matrixScalar), intent(IN)                :: rmatrixML
-    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+    real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, p_MCdata
     integer                                         :: h_fld1
     real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
     integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
@@ -2451,7 +2451,7 @@ end if !dry or wet bed
     real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
     real(DP), dimension(nvar2d,nvar2d)  :: Aij, Bij, Dij, Tij, invTij
     real(DP)                            :: scalarDissipation, scalefactor, lambda
-    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj
+    real(DP), dimension(nvar2d)         :: deltaKi, deltaKj, deltaDi, deltaDj, deltaBi, deltaBj
     real(DP)                            :: cRoe, uRoe, vRoe
     real(DP), dimension(nvar2d)         :: Udoti, Udotj
     real(DP), dimension(nvar2d)         :: deltaWij, deltaGij, deltaFij
@@ -2478,15 +2478,6 @@ end if !dry or wet bed
     lQm = 0
     lRp = 1
     lRm = 1
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
         ! Clear SolDot
     call lsysbl_clearVector (rSolDotBlock)
@@ -2544,15 +2535,19 @@ end if !dry or wet bed
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
 
+       ! Now we take care of the bottom profile
+       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+
        ! add deltaK and deltaD to SolDot
-       ! SolDot = SolDot + 1/ML*(K*u + D*u)
+       ! SolDot = SolDot + 1/ML*(K*u + D*u + Sourceterm(B))
        do l = 1, nvar2d
           rarraySolDot(l)%Da(i) = rarraySolDot(l)%Da(i) &
                + 1.0_DP/p_MLdata(i)*&
-               (deltaKi(l) + deltaDi(l))
+               (deltaKi(l) + deltaDi(l) + DeltaBi(l))
           rarraySolDot(l)%Da(j) = rarraySolDot(l)%Da(j) &
                + 1.0_DP/p_MLdata(j)*&
-               (deltaKj(l) + deltaDj(l))
+               (deltaKj(l) + deltaDj(l) + DeltaBj(l))
           ! Save Qroe
           p_fld2(1+2*(l-1),iedge) = QRoeij(l)
        end do
@@ -2613,7 +2608,7 @@ end if !dry or wet bed
        deltaF(:,iedge) = deltaFij
        
        do ivar = 1, 3
-       ! Augment the sums of positive/negative fluxes of indicaotr variable
+       ! Augment the sums of positive/negative fluxes of indicator variable
        lPp(ivar,i) = lPp(ivar,i) + max(0.0_dp,deltaFij(ivar))
        lPm(ivar,i) = lPm(ivar,i) + min(0.0_dp,deltaFij(ivar))
        
@@ -2639,7 +2634,6 @@ end if !dry or wet bed
      end do
      end do ! i
      
-     alphaij = 1.0_dp
 
      do iedge = 1, nedge
        i  = p_Kedge(1, iedge)
@@ -2661,7 +2655,7 @@ end if !dry or wet bed
        end if
        
        case(2)
-       
+       alphaij = 1.0_dp
        do ivar = 1, 3
        if (deltaFij(ivar) .ge. 0.0_dp) then
          alphaij = min(alphaij,lRp(ivar,i),lRm(ivar,j))
