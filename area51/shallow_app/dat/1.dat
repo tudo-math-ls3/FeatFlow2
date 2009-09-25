@@ -13,7 +13,8 @@ nlmax = 3
 #prmname = ./pre/balken.prm
 #prmname = ./pre/zylinderusefein.prm
 #prmname = ./pre/threezylinderfein.prm
-prmname = ./pre/tentimesone.prm
+#prmname = ./pre/tentimesone.prm
+prmname = ./pre/hundrettimesone.prm
 
 # Name of the triangulation file
 #triname = ./pre/QUAD.tri
@@ -25,7 +26,8 @@ prmname = ./pre/tentimesone.prm
 #triname = ./pre/balken.tri
 #triname =./pre/zylinderusefein.tri
 #triname =./pre/threezylinderfein.tri
-triname = ./pre/tentimesone.tri
+#triname = ./pre/tentimesone.tri
+triname = ./pre/hundrettimesone.tri
 
 # What kind of finite elements do we use?
 # 0: linear conforming triangular FE, P1
@@ -38,10 +40,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.005
+dt = 0.0001
 
 # Final time
-ttfinal = 0.7
+ttfinal = 0.5
 
 # Implicitness parameter
 theta = 0.5
@@ -81,7 +83,7 @@ boundarycorner = 1
 [METHOD]
 
 # What Method to use
-Method = 1
+Method = 6
 # 0: High Order Scheme (No Dissipation)
 # 1: Low Order Scheme (Scalar Dissipation)
 # 2: Low Order Scheme (Tensorial Dissipation)
@@ -114,22 +116,32 @@ syncromethod = 1
 [PROBLEM]
 
 # Gravitation constant
-gravconst = 9.8
+gravconst = 9.81
 
-# Choose the startvalues for h, hu, hv
+# Choose the startvalues for h, hu, hv and give the bottom profile
+# The height can be given as an absolute or relative value,
+# that the program needs can be calculated automattically by substracting
+# the bottom profile. So this should be lower than the water heigth
+# to not create negative heigth values
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-#hstart  = if(x>5,7-(x-5),if(x<3,10,7))
-hstart  = if(x<3,10,7)
-hustart = 0
+hstart  = if(x<50,4,1)
+hustart = if(x<50,-40,-6)
 hvstart = 0
-#bottom  = if(x>5,x-5,0)
-bottom  = 0
+bottom  = if(x<50,0,1)
+absrel  = 1
+# 0 = absolute height value
+# 1 = relative height value
 
 [OUTPUT]
 
 # Name of output file
 ofile = ./gmv/u2d.gmv
+
+# Add bottom profile to output to get the water surface
+# (Otherwise you'll get the relative heigth value over
+# the bottom in your output)
+addbottomtoout = 1
 
 # Create files for video?
 # 0: No
