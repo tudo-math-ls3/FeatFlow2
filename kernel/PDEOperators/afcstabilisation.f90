@@ -62,7 +62,7 @@ module afcstabilisation
   implicit none
   
   private
-  public :: t_afcstab, t_edgeSubset
+  public :: t_afcstab
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
@@ -247,29 +247,6 @@ module afcstabilisation
     ! Auxiliary edge vectors; used internally
     type(t_vectorScalar), dimension(:), pointer :: RedgeVectors => null()
   end type t_afcstab
-!</typeblock>
-
-  ! *****************************************************************************
-
-!<typeblock>
-
-  ! This structure is used by most edge-based routines. It is passed
-  ! to callback routines to inform them, which edges/vertices are
-  ! currently processed, and where to store matrix coefficients.
-  type t_edgeSubset
-
-    ! Maximum number of edges in each edge set.
-    integer :: nedges = 0
-
-    ! Start index of the current edge block. If this is =1, e.g.,
-    ! this is the very first edge block processed by the routine.
-    integer :: iedgeStartIdx = 0
-
-    ! The edge set that is currently processed
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge => null()
-
-  end type t_edgeSubset
-
 !</typeblock>
 
 !</types>
