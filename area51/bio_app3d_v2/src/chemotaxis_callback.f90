@@ -5680,7 +5680,7 @@ END IF
 
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
-            Dcoefficients(1,icub,iel) = dtstep *  DvaluesFevl(1,icub,iel) * ( 1.0_DP - DvaluesFevl(1,icub,iel) )
+            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) * ( 1.0_DP - DvaluesFevl(1,icub,iel) )
         END DO
     END DO
 
