@@ -132,7 +132,8 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
     type(t_vectorBlock) :: rforce
-    real(DP) :: dscale
+    real(DP) :: dscaleLorentzForceTerm
+    integer :: ilorentzForceType
     integer(i32) :: iSpec
     integer :: jacobianMatrix
     
@@ -175,21 +176,26 @@ contains
         ! first and second quick access vector
         p_rsolutionEuler     => rcollection%p_rvectorQuickAccess1
         p_rsolutionTransport => rcollection%p_rvectorQuickAccess2
-        
-        ! Calculate scaling for implicit part of the Lorentz force
-        dscale = -rtimestep%theta * rtimestep%dStep
-        
-        if (dscale .ne. 0.0_DP) then
-          
-          ! Set pointer to parameter list
-          p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
+        ! Set pointer to parameter list
+        p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+        
+        ! Get parameters from parameter list
+        call parlst_getvalue_int(p_rparlist, rcollection&
+            %SquickAccess(2), 'ilorentzforcetype', ilorentzForceType)
+
+        ! Calculate scaling for implicit part of the Lorentz force
+        dscaleLorentzForceTerm = -rtimestep%theta * rtimestep%dStep
+        
+        if ((ilorentzForceType .ne. 0) .and.&
+            (dscaleLorentzForceTerm .ne. 0.0_DP)) then
+          
           ! Compute the implicit part of the Lorentz force
           call zpinch_initLorentzforceTerm(p_rparlist,&
               rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
               rcollection%SquickAccess(4), rproblemLevel,&
               p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime,&
-              dscale, rforce, rcollection)
+              dscaleLorentzForceTerm, rforce, rcollection)
           
           ! Compute the residual including the pre-computed implicit
           ! part of the Lorentz force term
