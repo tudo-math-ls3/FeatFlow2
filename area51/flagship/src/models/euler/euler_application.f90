@@ -2365,7 +2365,7 @@ contains
        
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_solveTransient')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_solveTransientPrimal')
         call sys_halt()
       end select
       
