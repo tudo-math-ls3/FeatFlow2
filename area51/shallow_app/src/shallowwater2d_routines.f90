@@ -205,7 +205,7 @@ contains
         uRoe = Q(2)/Q(1) 
         vRoe = Q(3)/Q(1)
         lambda = sqrt((cxij/scalefactor*uRoe)**2.0_DP+(cyij/scalefactor*vRoe)**2.0_DP)+cRoe
-        scalarDissipation = scalefactor*lambda
+        scalarDissipation = scalefactor*lambda*2.0_dp
 
         Dij=scalarDissipation*Eye
 
@@ -803,6 +803,12 @@ contains
        ! Now we take care of the bottom profile
        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+       
+!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!        
+!        DeltaBi = 0.0_dp
+!        DeltaBj = 0.0_dp
 
        ! add deltaK, deltaD and deltaB to rhs
        ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
@@ -1017,6 +1023,8 @@ contains
 
        end do
     end if
+    
+
 
 
   end subroutine BuildShallowWaterRHS
@@ -1159,7 +1167,15 @@ contains
        ! Now we take care of the bottom profile
        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-
+       
+              
+!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+! 
+!        
+!        DeltaBi = 0.0_dp
+!        DeltaBj = 0.0_dp
+       
        ! add deltaK, deltaD and deltaB to rstemp
        ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u - theta*dt*B
        do l = 1, nvar2d
@@ -2538,6 +2554,14 @@ end if !dry or wet bed
        ! Now we take care of the bottom profile
        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+       
+              
+!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!        
+!               
+!        DeltaBi = 0.0_dp
+!        DeltaBj = 0.0_dp
 
        ! add deltaK and deltaD to SolDot
        ! SolDot = SolDot + 1/ML*(K*u + D*u + Sourceterm(B))
@@ -2801,6 +2825,68 @@ end if !dry or wet bed
 
 
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  ! This routine can be used to add the bottom term to the rhs or the defect vector
+  subroutine addBottomTermToVec(rarraySol, rarrayVec, coefficient, gravconst,&
+                                neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
+  
+  ! Solution
+  type(t_array), dimension(nvar2d), intent(in) :: rarraySol
+  
+  ! Vector that is to be changed, i.e. rhs or defect
+  type(t_array), dimension(nvar2d), intent(inout) :: rarrayVec
+  
+  ! number of equations
+  integer, intent(in) :: neq
+  
+  ! Pointer to the convection operator data
+  real(dp), dimension(:), pointer, intent(in) :: p_CXdata, p_CYdata
+  
+  ! Pointer to the matrix structure data
+  integer, dimension(:), pointer :: p_kld, p_kcol
+  
+  ! Pointer to the bottom heigth
+  real(dp), dimension(:), pointer :: p_bottom
+  
+  ! The coefficient before the source term, i.e. theta*dt
+  real(dp), intent(in) :: coefficient
+  
+  ! The gravitation constant
+  real(dp), intent(in) :: gravconst
+  
+  integer :: i,j,ivar,l
+  
+  real(dp) ,dimension(3) :: Qi, Qj, S_i
+  
+      ! Add bottom term
+    do i = 1, neq
+
+      Qi = (/rarraySol(1)%Da(i),rarraySol(2)%Da(i),rarraySol(3)%Da(i)/)
+      S_i = 0
+
+      do ivar = p_kld(i), p_kld(i+1)-1
+
+        j    = p_kcol(ivar)
+        Qj   = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
+
+        S_i(2) = S_i(2) - gravconst* p_CXdata(ivar)*p_bottom(j)*(Qj(1))
+        S_i(3) = S_i(3) - gravconst* p_CYdata(ivar)*p_bottom(j)*(Qj(1))
+
+      end do ! ivar
+      
+      do l = 1, nvar2d
+          rarrayVec(l)%Da(i) = rarrayVec(l)%Da(i) + coefficient*S_i(l)
+      end do
+      
+    end do !i
+    
+    end subroutine
 
 
 end module shallowwater2d_routines

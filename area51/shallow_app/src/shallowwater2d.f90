@@ -868,6 +868,9 @@ contains
             p_Kdiagonal, p_Kedge, NEQ, nedge, &
             theta, dt, gravconst, Method, limiter)
 
+       !call addBottomTermToVec(rarraySol, rarrayRhs, (1-theta)*dt, gravconst,&
+       !                         neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
+
 
        ! Here starts the defect correction loop
        def_corr: do ite = 1, itemax
@@ -888,6 +891,9 @@ contains
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                theta, dt, gravconst, Method, limiter)
+               
+          !call addBottomTermToVec(rarraySol, rarrayDef, -theta*dt, gravconst,&
+          !                      neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
 
           ! Take care of Boundary Conditions
           call ImplementShallowWaterBCs (&
