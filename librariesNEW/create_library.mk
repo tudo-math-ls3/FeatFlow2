@@ -1,8 +1,12 @@
 # -*- makefile -*-
 
 # Function to create a static library - as a serialised operation
-# using a locking mechanism
-CREATE_LIB=if test -f $(LOCKFILE); then \
+# using a locking mechanism and a random wait time at the beginning
+# (as we don't have another approach yet to catch two processes that
+#  execute these instructions exactly concurrently - which both set
+#  the lock file simultaneously.)
+CREATE_LIB=sleep `echo $${PPID} | sed -e 's/^.*\(.\)$$/\1/'`; \
+	if test -f $(LOCKFILE); then \
 	    loop=0; \
 	    while test -f $(LOCKFILE) -a $${loop} -lt $(RETRIES); do \
 		echo; \
