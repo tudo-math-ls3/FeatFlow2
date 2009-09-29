@@ -3,6 +3,7 @@
 # 'fb_' stands for 'FEAST benchmark'.
 # Variables are written in capital letters if used globally.
 
+
 # Initialisations
 ALLTESTS=
 BENCHMARKRUNSCRIPT=runtests
@@ -21,13 +22,16 @@ case "`hostname -f`" in
 	# that there is only one memory bus per node.
 	CORESPERNODE=4;
 	PPN=":ppn=4";
+	ultralong_queue="ultralong_eth"
 	;;
     *.cvos.cluster)
 	CORESPERNODE=2;
 	PPN=":ppn=2";
+	ultralong_queue="neternal_eth"
 	;;
 esac
 AFTERJOB=""
+
 
 # ==================================================================
 # IMPORTANT
@@ -53,9 +57,9 @@ AFTERJOB=""
 #
 # Names of queues, maximum wallclock times (in seconds) and 
 # maximum number of nodes currently available (= online nodes)
-declare -a eth[2], ib[2]
-declare -a eth_wallclockseconds[2], ib_wallclockseconds[2]
-declare -a eth_maxnodes[2], ib_maxnodes[2]
+declare -a eth[3], ib[2]
+declare -a eth_wallclockseconds[3], ib_wallclockseconds[2]
+declare -a eth_maxnodes[3], ib_maxnodes[2]
 
 
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
@@ -63,7 +67,7 @@ fb_queryPBSLiDO() {
     eth[0]="short_eth"
     eth[1]="med_eth"
     eth[2]="long_eth"
-    eth[3]="neternal_eth"
+    eth[3]=${ultralong_queue}
     ib[0]="short_ib"
     ib[1]="med_ib"
     ib[2]="long_ib"
