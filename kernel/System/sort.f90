@@ -230,12 +230,12 @@ contains
 
 
     subroutine reheap(Iarray, istart, istop, Imapping)
-      integer::istart,istop
-      integer,dimension(1:istop)::Iarray
-      integer,dimension(1:istop), optional:: Imapping
-      integer::t1,t2
+      integer :: istart,istop
+      integer,dimension(1:istop) :: Iarray
+      integer,dimension(1:istop), optional :: Imapping
+      integer :: t1,t2
       integer :: i1, i2
-      integer::i,j
+      integer :: i,j
       !if(istop.eq.start) return ! nothing to correct
 
       if (present(Imapping)) then
@@ -304,9 +304,9 @@ contains
 
 
     subroutine heapsort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t
+      integer :: t
       integer :: t2
       integer :: i,n
       n = ubound(Iarray,1)
@@ -347,14 +347,13 @@ contains
 
 
     recursive subroutine quicksort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t,temp
-
+      integer :: t,temp
       integer :: t2, temp2
-
-      integer::l,u,i,j
+      integer :: l,u,i,j
       real:: r
+
       l=1
       u=ubound(Iarray,1)
 
@@ -403,10 +402,10 @@ contains
 
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Iarray(j+1:u), Imapping(j+1:u))
+            if (j+1.lt.u) call quicksort(Iarray(j+1:u), Imapping(j+1:u))
             u=j-1
           else
-            call quicksort(Iarray(l:j-1), Imapping(l:j-1))
+            if(l.lt.j-1) call quicksort(Iarray(l:j-1), Imapping(l:j-1))
             l=j+1
           endif
         enddo
@@ -442,10 +441,10 @@ contains
 
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Iarray(j+1:u))
+            if (j+1.lt.u) call quicksort(Iarray(j+1:u))
             u=j-1
           else
-            call quicksort(Iarray(l:j-1))
+            if (l.lt.j-1) call quicksort(Iarray(l:j-1))
             l=j+1
           endif
         enddo
@@ -458,11 +457,11 @@ contains
 
 
     subroutine insertsort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t
+      integer :: t
       integer :: t2
-      integer::i,j,k
+      integer :: i,j,k
 
       if (present(Imapping)) then
         do i=2,ubound(Iarray,1)
@@ -506,11 +505,11 @@ contains
 
 
     recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
-      integer,dimension(:)::Iarray
-      integer,dimension(:)::Itemp
+      integer,dimension(:) :: Iarray
+      integer,dimension(:) :: Itemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
-      integer::imid, ilen
-      integer::ilo,iend_lo,istart_hi
+      integer ::imid, ilen
+      integer ::ilo,iend_lo,istart_hi
       integer :: idest
 
       ilen = ubound(Iarray,1)
@@ -714,12 +713,12 @@ contains
     !----------------------------------------------------------------
 
     subroutine reheap(Iarray, istart, istop, Imapping)
-      integer::istart,istop
-      integer,dimension(1:istop)::Iarray
-      integer,dimension(1:istop), optional:: Imapping
-      integer::t1,t2
+      integer :: istart,istop
+      integer,dimension(1:istop) :: Iarray
+      integer,dimension(1:istop), optional :: Imapping
+      integer :: t1,t2
       integer :: i1, i2
-      integer::i,j
+      integer :: i,j
       !if(istop.eq.start) return ! nothing to correct
 
       if (present(Imapping)) then
@@ -787,11 +786,12 @@ contains
 
 
     subroutine heapsort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t
+      integer :: t
       integer :: t2
       integer :: i,n
+
       n=ubound(Iarray,1)
       ! heap creation phase (Maxheap)
 
@@ -830,14 +830,13 @@ contains
 
 
     recursive subroutine quicksort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t,temp
-
+      integer :: t,temp
       integer :: t2, temp2
+      integer :: l,u,i,j
+      real :: r
 
-      integer::l,u,i,j
-      real:: r
       l=1
       u=ubound(Iarray,1)
 
@@ -886,10 +885,10 @@ contains
 
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Iarray(j+1:u), Imapping(j+1:u))
+            if (j+1.lt.u) call quicksort(Iarray(j+1:u), Imapping(j+1:u))
             u=j-1
           else
-            call quicksort(Iarray(l:j-1), Imapping(j+1:u))
+            if (l.lt.j-1) call quicksort(Iarray(l:j-1), Imapping(j+1:u))
             l=j+1
           endif
         enddo
@@ -925,10 +924,10 @@ contains
 
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Iarray(j+1:u))
+            if (j+1.lt.u) call quicksort(Iarray(j+1:u))
             u=j-1
           else
-            call quicksort(Iarray(l:j-1))
+            if (l.lt.j-1) call quicksort(Iarray(l:j-1))
             l=j+1
           endif
         enddo
@@ -941,11 +940,11 @@ contains
 
 
     subroutine insertsort(Iarray, Imapping)
-      integer,dimension(:)::Iarray
+      integer,dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
-      integer::t
+      integer :: t
       integer :: t2
-      integer::i,j
+      integer :: i,j
 
       if (present(Imapping)) then
         do i=2,ubound(Iarray,1)
@@ -984,11 +983,11 @@ contains
 
 
     recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
-      integer,dimension(:)::Iarray
-      integer,dimension(:)::Itemp
+      integer,dimension(:) :: Iarray
+      integer,dimension(:) :: Itemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
-      integer::imid, ilen
-      integer::ilo,iend_lo,istart_hi
+      integer :: imid, ilen
+      integer :: ilo,iend_lo,istart_hi
       integer :: idest
 
       ilen = ubound(Iarray,1)
@@ -1127,14 +1126,18 @@ contains
        select case (csortMethod)
        case(SORT_HEAP)
           call heapsort(Darray)
+
        case(SORT_QUICK)
           call sort_randomSeedOnce
           call quicksort(Darray)
           call insertsort(Darray)
+
        case(SORT_INSERT)
           call insertsort(Darray)
+
        case(SORT_MERGE)
           call mergesort(Darray)
+
        case default
         call output_line ('Unknown sorting algorithm: '//trim(sys_siL(csortMethod,10)), &
             OU_CLASS_ERROR,OU_MODE_STD,'sort_int')        
@@ -1147,10 +1150,10 @@ contains
     !----------------------------------------------------------------
 
     subroutine reheap(Darray, istart, istop)
-      integer::istart,istop
-      real(sp),dimension(1:istop)::Darray
-      real(sp)::t1,t2
-      integer::i,j
+      integer :: istart,istop
+      real(sp),dimension(1:istop) :: Darray
+      real(sp) :: t1,t2
+      integer :: i,j
       !if(istop.eq.istart) return ! nothing to correct
 
       !trace the path of the bigger children
@@ -1184,7 +1187,7 @@ contains
 
     subroutine heapsort(Darray)
       real(sp), dimension(:) :: Darray
-      real(sp)::t
+      real(sp) :: t
       integer :: i,n
       n=ubound(Darray,1)
       ! heap creation phase (maxheap)
@@ -1206,9 +1209,10 @@ contains
 
     recursive subroutine quicksort(Darray)
       real(sp), dimension(:) :: Darray
-      real(sp)::t,temp
-      integer::l,u,i,j
-      real:: r
+      real(sp) :: t,temp
+      integer :: l,u,i,j
+      real :: r
+
       l=1
       u=ubound(Darray,1)
       do while ((u-l)>=SORT_CUTOFF)
@@ -1239,10 +1243,10 @@ contains
         Darray(j)=t
         ! 3.) recursion (intelligent)
         if((j-l).gt.(u-j)) then
-           call quicksort(Darray(j+1:u))
+          if (j+1.lt.u) call quicksort(Darray(j+1:u))
            u=j-1
         else
-           call quicksort(Darray(l:j-1))
+          if (l.lt.j-1) call quicksort(Darray(l:j-1))
            l=j+1
         endif
       enddo
@@ -1254,8 +1258,8 @@ contains
 
     subroutine insertsort(Darray)
       real(sp), dimension(:) :: Darray
-      real(sp)::t
-      integer::i,j
+      real(sp) :: t
+      integer :: i,j
       do i=2,ubound(Darray,1)
         t=Darray(i)
         j=i-1
@@ -1275,8 +1279,8 @@ contains
 
     recursive subroutine mergesort(Darray)
       real(SP), dimension(:) :: Darray
-      integer::imid, ilen
-      integer::ilo,iend_lo,istart_hi
+      integer :: imid, ilen
+      integer :: ilo,iend_lo,istart_hi
 
       ilen = ubound(Darray,1)
       ! Nothing to sort
@@ -1368,7 +1372,6 @@ contains
         call insertsort(Darray, Imapping)
 
       case(SORT_INSERT)
-
         call insertsort(Darray, Imapping)
 
       case (SORT_MERGE,SORT_STABLE)
@@ -1412,12 +1415,12 @@ contains
     !----------------------------------------------------------------
 
     subroutine reheap(Darray, istart, istop, Imapping)
-      integer::istart,istop
-      real(dp),dimension(1:istop)::Darray
-      integer,dimension(1:istop), optional:: Imapping
-      real(dp)::t1,t2
+      integer :: istart,istop
+      real(dp),dimension(1:istop) :: Darray
+      integer,dimension(1:istop), optional :: Imapping
+      real(dp) :: t1,t2
       integer :: i1, i2
-      integer::i,j
+      integer :: i,j
       !if(istop.eq.istart) return ! nothing to correct
 
       if (present(Imapping)) then
@@ -1487,7 +1490,7 @@ contains
     subroutine heapsort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
       integer, dimension(:), optional :: Imapping
-      real(dp)::t
+      real(dp) :: t
       integer :: t2
       integer :: i,n
       n=ubound(Darray,1)
@@ -1530,10 +1533,11 @@ contains
     recursive subroutine quicksort(Darray, Imapping)
       real(dp), dimension(:) :: Darray
       integer, dimension(:), optional :: Imapping
-      real(dp)::t, temp
+      real(dp) :: t, temp
       integer :: t2, temp2
-      integer::l,u,i,j
-      real:: r
+      integer :: l,u,i,j
+      real :: r
+
       l=1
       u=ubound(Darray,1)
 
@@ -1582,10 +1586,10 @@ contains
 
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Darray(j+1:u), Imapping(j+1:u))
+            if (j+1.lt.u) call quicksort(Darray(j+1:u), Imapping(j+1:u))
             u=j-1
           else
-            call quicksort(Darray(l:j-1), Imapping(l:j-1))
+            if (l.lt.j-1) call quicksort(Darray(l:j-1), Imapping(l:j-1))
             l=j+1
           endif
         enddo
@@ -1620,10 +1624,10 @@ contains
           Darray(j)=t
           ! 3.) recursion (intelligent)
           if((j-l).gt.(u-j)) then
-            call quicksort(Darray(j+1:u))
+            if (j+1.lt.u) call quicksort(Darray(j+1:u))
             u=j-1
           else
-            call quicksort(Darray(l:j-1))
+            if (l.lt.j-1) call quicksort(Darray(l:j-1))
             l=j+1
           endif
         enddo
@@ -1639,9 +1643,9 @@ contains
       real(dp), dimension(:) :: Darray
       integer, dimension(:), optional :: Imapping
 
-      real(dp)::t
+      real(dp) :: t
       integer :: t2
-      integer::i,j
+      integer :: i,j
 
       if (present(Imapping)) then
         do i=2, ubound(Darray,1)
@@ -1681,11 +1685,11 @@ contains
 
 
     recursive subroutine mergesort(Darray, Dtemp, Imapping, ImappingTemp)
-      real(DP),dimension(:)::Darray
-      real(DP),dimension(:)::Dtemp
+      real(DP),dimension(:) :: Darray
+      real(DP),dimension(:) :: Dtemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
-      integer::imid, ilen
-      integer::ilo,iend_lo,istart_hi
+      integer :: imid, ilen
+      integer :: ilo,iend_lo,istart_hi
       integer :: idest
 
       ilen = ubound(Darray,1)
@@ -1810,12 +1814,12 @@ contains
     !</description>
 !</subroutine>
     logical, save :: bnotUsed = .true.
-!    print *, "START: bnotUsed=", bnotUsed
+
     if (bnotUsed) then
       call random_seed
       bnotUsed = .false.
     endif
-!    print *, "END: bnotUsed=", bnotUsed
+
   end subroutine sort_randomSeedOnce
 
 !************************************************************************
@@ -1896,11 +1900,11 @@ contains
 
     subroutine reheap(istart, istop)
       integer, intent(in) :: istart, istop
-      integer::ielem1, ielem2
-      integer::i,j, k, idx
+      integer :: ielem1, ielem2
+      integer :: i,j, k, idx
 
       if(istop.eq.istart) return
-      ! Follow patho of bigger children
+      ! Follow path of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
@@ -1981,10 +1985,10 @@ contains
         call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
         if ((j-l) .gt. (u-j)) then
-          call quicksort(j+1,u)
+          if (j+1.lt.u) call quicksort(j+1,u)
           u = j-1
         else
-          call quicksort(l,j-1)
+          if (l.lt.j-1) call quicksort(l,j-1)
           l = j+1
         end if
       end do
@@ -2205,7 +2209,7 @@ contains
       integer :: i,j, k, idx
 
       if(istop.eq.istart) return
-      ! Follow patho of bigger children
+      ! Follow path of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
@@ -2287,10 +2291,10 @@ contains
         call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
         if ((j-l) .gt. (u-j)) then
-          call quicksort(j+1,u)
+          if (j+1.lt.u) call quicksort(j+1,u)
           u = j-1
         else
-          call quicksort(l,j-1)
+          if (l.lt.j-1) call quicksort(l,j-1)
           l = j+1
         end if
       end do
@@ -2513,7 +2517,7 @@ contains
       integer :: i,j, k, idx
 
       if(istop.eq.istart) return
-      ! Follow patho of bigger children
+      ! Follow path of bigger children
       i=istart
       j=ishft(i,1)
       ! While there is a child...
@@ -2595,10 +2599,10 @@ contains
         call swapNode(l,j)
         ! 3.) Rekursion (intelligent)
         if ((j-l) .gt. (u-j)) then
-          call quicksort(j+1,u)
+          if (j+1.lt.u) call quicksort(j+1,u)
           u = j-1
         else
-          call quicksort(l,j-1)
+          if (l.lt.j-1) call quicksort(l,j-1)
           l = j+1
         end if
       end do
