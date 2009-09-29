@@ -141,6 +141,7 @@ case ${id} in
 		15)
 		    case "$model" in
                         5|37) cpu="opteron";;
+                        33) cpu="opteron";;    # in fact it is a k8-64 revision e, but as far as we know only pgi has a special flag for this cpu: -tp k8-64e
                         65) cpu="opteronx2";;
                         72) cpu="turionx2";;
                         *) cpu="athlon64";;
