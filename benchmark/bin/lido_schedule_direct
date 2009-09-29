@@ -40,10 +40,19 @@ fb_call() {
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
 ########################################################################
 fb_queryPBSLiDO() {
+
+    case "`hostname -f`" in
+	*.lidocluster.hp) 
+	    ultralong_queue="ultralong_eth"
+	    ;;
+	*.cvos.cluster)
+	    ultralong_queue="neternal_eth"
+	    ;;
+    esac
     eth[0]="short_eth"
     eth[1]="med_eth"
     eth[2]="long_eth"
-    eth[3]="neternal_eth"
+    eth[3]=${ultralong_queue}
     ib[0]="short_ib"
     ib[1]="med_ib"
     ib[2]="long_ib"
