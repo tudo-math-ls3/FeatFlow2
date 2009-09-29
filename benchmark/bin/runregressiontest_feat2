@@ -379,7 +379,7 @@ fb_customise() {
 		pc64-penryn-linux-pgi-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules pgi/9.0-1"
+		    modules="$modules pgi/9.0-4"
 		    LIDOJOBNAMEPREFIX=fb-pgi
 		    COMPILERNAME="PGI 9.0"
 		    ;;
