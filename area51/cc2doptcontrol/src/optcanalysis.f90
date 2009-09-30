@@ -163,7 +163,7 @@ contains
     
     ! local variables
     integer :: isubstep
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
     real(DP),dimension(2) :: Derr
     
     Derror(1:4) = 0.0_DP
@@ -171,22 +171,19 @@ contains
 
     do isubstep = 0,rsolution%NEQtime-1
       ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + &
-          isubstep*dtstep
-      rproblem%rtimedependence%itimestep = isubstep
+      dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
       ! Get the solution.
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
-      call tmevl_evaluate(rsolution,rproblem%rtimedependence%dtime,rtempVector)
+      call tmevl_evaluate(rsolution,dtime,rtempVector)
 
       ! Initialise the collection for the assembly process with callback routines.
       ! This stores the simulation time in the collection and sets the
       ! current subvector z for the callback routines.
-      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+      call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
       
       ! Compute:
       ! Derror(1) = ||y-z||^2_{L^2}.
@@ -428,7 +425,7 @@ contains
     
     ! local variables
     integer :: isubstep,i
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
     real(DP),dimension(6) :: Derr
     character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
       (/'X    ','Y    ','TIME '/)
@@ -485,19 +482,16 @@ contains
           
     do isubstep = 0,rsolution%NEQtime-1
       ! Current point in time
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + &
-          isubstep*dtstep
-      rproblem%rtimedependence%itimestep = isubstep
+      dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
-      rcollection%DquickAccess(1) = rproblem%rtimedependence%dtime
+      rcollection%DquickAccess(1) = dtime
 
       ! Get the solution.
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
-      call tmevl_evaluate(rsolution,rproblem%rtimedependence%dtime,rtempVector)
+      call tmevl_evaluate(rsolution,dtime,rtempVector)
 
       ! Compute:
       ! Derror(1) = ||y-z||^2_{L^2}.

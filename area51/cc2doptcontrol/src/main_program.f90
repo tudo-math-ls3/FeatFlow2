@@ -1180,14 +1180,8 @@ contains
       call cc_initTargetFlow (p_rproblem)
 
       ! Generate the RHS vector.
-      call cc_generateBasicRHS (p_rproblem,rrhs)
+      call cc_generateBasicRHS (p_rproblem,0.0_DP,rrhs)
       
-      ! Generate discrete boundary conditions
-      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
-
-      ! Implementation of boundary conditions
-      call cc_implementBC (p_rproblem,rvector=rvector,rrhs=rrhs)
-    
       ! Solve the problem
       call cc_solve (p_rproblem,rvector,rrhs)
     
@@ -1200,11 +1194,6 @@ contains
     else
     
       ! Time dependent simulation with explicit time stepping.
-      
-      ! Initialise the boundary conditions for the 0th time step, but 
-      ! don't implement any boundary conditions as the nonstationary solver
-      ! doesn't like this.
-      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
       
       ! Don't read the target flow, this is done in 
       ! cc_solveNonstationaryDirect!
@@ -1222,7 +1211,6 @@ contains
     
     ! Cleanup
     call cc_doneMatVec (p_rproblem,rvector,rrhs)
-    call cc_doneBC (p_rproblem)
     call cc_doneDiscretisation (p_rproblem)
     call cc_doneParamTriang (p_rproblem)
     

@@ -121,7 +121,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_initCollectForAssembly (rproblem,rcollection)
+  subroutine cc_initCollectForAssembly (rproblem,dtime,rcollection)
   
 !<description>
   ! This subroutine is an auxiliary subroutine called by the CC2D framework
@@ -138,6 +138,9 @@ contains
 !<input>
   ! Problem structure with all problem relevant data.
   type(t_problem), intent(INOUT) :: rproblem
+  
+  ! Current simulation time.
+  real(dp), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
@@ -159,7 +162,7 @@ contains
       rcollection%Dquickaccess(2) = 0.0_DP
       rcollection%Dquickaccess(3) = 0.0_DP
     case (1)
-      rcollection%Dquickaccess(1) = rproblem%rtimedependence%dtime
+      rcollection%Dquickaccess(1) = dtime
       rcollection%Dquickaccess(2) = rproblem%rtimedependence%dtimeInit
       rcollection%Dquickaccess(3) = rproblem%rtimedependence%dtimeMax
     end select
@@ -193,8 +196,7 @@ contains
         ! New implementation: Use tmevl_evaluate!
         
         call tmevl_evaluate(rproblem%roptcontrol%rtargetFlowNonstat,&
-            rproblem%rtimedependence%dtime,&
-            rproblem%roptcontrol%rtargetFlow)
+            dtime,rproblem%roptcontrol%rtargetFlow)
             
       end if
       ! Otherwise, there is no vector.

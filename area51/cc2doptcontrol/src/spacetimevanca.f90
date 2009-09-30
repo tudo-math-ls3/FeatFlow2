@@ -1029,7 +1029,7 @@ contains
     
       ! local variables
       integer :: i,j,k,ichunk,NEQtime,ichunkrel
-      real(DP) :: dtheta
+      real(DP) :: dtheta,dtime
       type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
       type(t_vectorBlock), dimension(3) :: rtimeVector
       type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
@@ -1063,16 +1063,15 @@ contains
       do ichunk = ichunkPos, ichunkPos+nblockSize-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
+        dtime = &
             rproblem%rtimedependence%dtimeInit + (ichunk-1)*p_rspaceTimeDiscr%rtimeDiscr%dtstep
-        rproblem%rtimedependence%itimestep = ichunk-1
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+!        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
+!          call cc_updateDiscreteBC (rproblem,dtime)
+!        end if
 
         ! Relative position of the chunk item
         ichunkrel = ichunk-ichunkPos+1
@@ -1096,8 +1095,9 @@ contains
         
           ! Include the boundary conditions into that matrix.
           RsystemMatrix(-1,ichunkrel)%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-          call matfil_discreteBC (RsystemMatrix(-1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
-          call matfil_discreteFBC (RsystemMatrix(-1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
+! not yet finished
+!          call matfil_discreteBC (RsystemMatrix(-1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
+!          call matfil_discreteFBC (RsystemMatrix(-1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
 
           ! Get the pointers to the submatrices.
           if (lsysbl_isSubmatrixPresent (RsystemMatrix(-1,ichunkrel),1,1)) &
@@ -1130,8 +1130,9 @@ contains
             rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
         ! Include the boundary conditions into that matrix.
-        call matfil_discreteBC (RsystemMatrix(0,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
-        call matfil_discreteFBC (RsystemMatrix(0,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
+! not yet finished
+!        call matfil_discreteBC (RsystemMatrix(0,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
+!        call matfil_discreteFBC (RsystemMatrix(0,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
 
         ! Get matrix pointers
         if (lsysbl_isSubmatrixPresent (RsystemMatrix(0,ichunkrel),1,1)) &
@@ -1257,8 +1258,9 @@ contains
         
           ! Include the boundary conditions into that matrix.
           RsystemMatrix(1,ichunkrel)%imatrixSpec = LSYSBS_MSPEC_OFFDIAGSUBMATRIX
-          call matfil_discreteBC (RsystemMatrix(1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
-          call matfil_discreteFBC (RsystemMatrix(1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
+! not yet finished
+!          call matfil_discreteBC (RsystemMatrix(1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
+!          call matfil_discreteFBC (RsystemMatrix(1,ichunkrel),p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
 
           ! Get the pointers to the submatrices
           if (lsysbl_isSubmatrixPresent (RsystemMatrix(1,ichunkrel),4,4)) &

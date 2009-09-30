@@ -117,14 +117,21 @@ contains
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+    call parlst_getvalue_double (rproblem%rparamList,'CC-PHYSICSPRIMAL',&
                                  'RE',dnu,1000.0_DP)
 
     dnu = 1E0_DP/dnu
-    rproblem%dnu = dnu
+    rproblem%rphysicsPrimal%dnu = dnu
     
-    ! Add the (global) viscosity parameter
-    call collct_setvalue_real(rproblem%rcollection,'NU',dnu,.true.)
+    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PHYSICSPRIMAL',&
+                              'iEquation',i1,0)
+    rproblem%rphysicsPrimal%iequation = i1
+
+    ! Type of subproblem (gradient tensor, deformation tensor,...)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-PHYSICSPRIMAL',&
+                              'isubEquation',i1,0)
+    rproblem%rphysicsPrimal%isubEquation = i1
 
     ! Get min/max level from the parameter file.
     !
@@ -147,16 +154,6 @@ contains
     ! Allocate memory for the levels
     allocate(rproblem%RlevelInfo(1:ilvmax))
     
-    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iEquation',i1,0)
-    rproblem%iequation = i1
-
-    ! Type of subproblem (gradient tensor, deformation tensor,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'isubEquation',i1,0)
-    rproblem%isubEquation = i1
-
     ! Specification of the RHS
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
                               'iRHS',i1,0)
@@ -229,9 +226,6 @@ contains
     ! Remove type of problem to discretise
     call collct_deleteValue(rproblem%rcollection,'ISTOKES')
 
-    ! Remove the viscosity parameter
-    call collct_deletevalue(rproblem%rcollection,'NU')
-    
     ! Probably release the parser object for the RHS
     if (rproblem%irhs .eq. -1) then
       call fparser_release(rproblem%rrhsParser)

@@ -1,4 +1,27 @@
+# ========================================================================
+# Physics of the primal equation
+#
+# The following parameters configure tha underlying physics in the primal
+# equation.
 # ------------------------------------------------------------------------
+
+##################
+[CC-PHYSICSPRIMAL]
+##################
+
+# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
+
+iequation = 0
+
+# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
+
+isubEquation = 0
+
+# Viscosity parmeter 1/NU
+
+RE = 400 #1000 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
+
+# ========================================================================
 # Spatial discretization
 #
 # This file contains parameters about the spatial discretization
@@ -30,6 +53,15 @@ ipropagateStartVector = 0
 # =0,-1,-2,-3,...: Solution is given at level NLMAX-|isolutionlevel|
 
 isolutionLevel     = 0
+
+# Element type to use for the initial solution.
+# =-1: The initial solution is given in the same FEM space as specified
+#      by ielementType below
+# >=0: The initial solution is given in the FEM space 
+#      ielementTypeInitialSolution. All FEM spaces that are possible
+#      for ielementType are available here.
+
+ielementTypeInitialSolution = -1
 
 # Name of file with the initial solution if isolutionStart=1,2.
 
@@ -79,18 +111,6 @@ NLMIN              = 1
 NLMAX              = 6
 
 # ------------------------------------------------------------------------
-
-# Type of equation (ISTOKES); 0=Navier Stokes, 1=Stokes calculation
-
-iequation    = 0
-
-# Subtype of the above equation; 0=Gradient tensor, 1=Deformation tensor
-
-isubEquation = 0
-
-# Viscosity parmeter 1/NU
-
-RE                 = 400 #1000 # 0.025 400.0 0.025 1.0 400.0 1000.0 0.0025 1000.0 000.0
 
 # Type of right hand side in the primal equation.
 # =-1: given as analytical expression srhsExpressionX,srhsExpressionY.

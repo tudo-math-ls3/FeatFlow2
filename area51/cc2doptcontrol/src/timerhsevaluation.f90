@@ -348,7 +348,7 @@ contains
 
       ! Implement the boundary conditions into the RHS vector        
       if (bimplementBC) then
-        call tbc_implementSpatialBCtoRHS (rproblem,isubstep,&
+        call tbc_implementSpatialBCtoRHS (rproblem,&
             isubstep*dtstep, rtempVectorRHS)
       end if
       
@@ -481,14 +481,6 @@ contains
     ! DEBUG!!!
     call lsysbl_getbase_double (rrhs,p_Drhs)
 
-    ! Set the time where we are at the moment
-    !rproblem%rtimedependence%dtime = &
-    !    rproblem%rtimedependence%dtimeInit + isubstep*dtstep
-    !rproblem%rtimedependence%itimestep = isubstep
-
-    rproblem%rtimedependence%dtime = dtime
-    rproblem%rtimedependence%itimestep = isubstep
-
     ! Get a pointer to the RHS on the finest level as well as to the
     ! block discretisation structure:
     p_rdiscretisation => rrhs%p_rblockDiscr
@@ -512,7 +504,7 @@ contains
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
     ! Discretise the X-velocity part:
     call linf_buildVectorScalar (&

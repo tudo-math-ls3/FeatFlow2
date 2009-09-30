@@ -77,8 +77,8 @@ module timeboundaryconditions
   use basicstructures
   use user_callback
 
-  use spacepreconditioner
-  use spacepreconditionerinit
+  !use spacepreconditioner
+  !use spacepreconditionerinit
   use timeanalysis
   use spatialbc
   use spacediscretisation
@@ -124,12 +124,22 @@ contains
 !</subroutine>
 
     integer :: isubstep
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
     type(t_vectorBlock) :: rtempVector
-    
+
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
 
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
+    
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+    
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+    
     if (present(rtempVectorX)) then
       call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -138,7 +148,8 @@ contains
       call lsysbl_createVecBlockByDiscr (&
           rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
     end if
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    call lsysbl_assignDiscreteBC(rtempVector,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC(rtempVector,rdiscreteFBC)
 
     call lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
 
@@ -153,22 +164,24 @@ contains
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            isubstep*dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rvector=rtempVector)
+        call vecfil_discreteBCsol (rtempVector)
+        call vecfil_discreteFBCsol (rtempVector)
         
         call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
@@ -180,22 +193,24 @@ contains
       do isubstep = 0,rspaceTimeDiscr%rtimeDiscr%nintervals-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            (real(isubstep,DP)+0.5_DP)*dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP)*dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rvector=rtempVector)
+        call vecfil_discreteBCsol (rtempVector)
+        call vecfil_discreteFBCsol (rtempVector)
         
         call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
@@ -212,6 +227,13 @@ contains
     ! Release the temp vector
     call lsysbl_releaseVector (rtempVector)
 
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+        
   end subroutine
 
   ! ***************************************************************************
@@ -245,12 +267,21 @@ contains
 !</subroutine>
 
     integer :: isubstep
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
     type(t_vectorBlock) :: rtempVector
-    
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
 
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
+    
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+    
     if (present(rtempVectorX)) then
       call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -259,7 +290,8 @@ contains
       call lsysbl_createVecBlockByDiscr (&
           rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
     end if
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    call lsysbl_assignDiscreteBC(rtempVector,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC(rtempVector,rdiscreteFBC)
 
     call lsyssc_getbase_double (rtempVector%RvectorBlock(1),p_Ddata)
 
@@ -274,22 +306,24 @@ contains
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            isubstep*dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rvector=rtempVector)
+        call vecfil_discreteBCrhs (rtempVector)
+        call vecfil_discreteFBCrhs (rtempVector)
         
         call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
@@ -301,28 +335,30 @@ contains
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            (real(isubstep,DP)+0.5_DP) * dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP) * dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rb, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rvector=rtempVector)
+        call vecfil_discreteBCrhs (rtempVector)
+        call vecfil_discreteFBCrhs (rtempVector)
         
         call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
       end do
 
-    case DEFAULT
+    case default
         
       call output_line ('Unsupported time discretisation.', &
                         OU_CLASS_ERROR,OU_MODE_STD,'tbc_implementBCRHS')
@@ -332,6 +368,13 @@ contains
 
     ! Release the temp vector
     call lsysbl_releaseVector (rtempVector)
+
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
 
@@ -365,10 +408,20 @@ contains
 
 !</subroutine>
 
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
     integer :: isubstep
     type(t_vectorBlock) :: rtempVector
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
     
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+
+    ! Create a temp vector with our BC structures attached.
     if (present(rtempVectorX)) then
       call lsysbl_duplicateVector (&
           rtempVectorX,rtempVector,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
@@ -377,10 +430,11 @@ contains
       call lsysbl_createVecBlockByDiscr (&
           rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,rtempVector,.true.)
     end if
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    call lsysbl_assignDiscreteBC(rtempVector,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC(rtempVector,rdiscreteFBC)
 
     dtstep = rspaceTimeDiscr%rtimeDiscr%dtstep
-
+    
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
     select case (rspaceTimeDiscr%rtimeDiscr%ctype)
@@ -390,22 +444,24 @@ contains
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            isubstep*dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
         ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rdefect=rtempVector)
+        call vecfil_discreteBCdef (rtempVector)
+        call vecfil_discreteFBCdef (rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -426,22 +482,25 @@ contains
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
       
         ! Current point in time
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + &
-            (real(isubstep,DP)+0.5_DP) * dtstep
-        rproblem%rtimedependence%itimestep = isubstep
+        dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP) * dtstep
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
         ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-          call cc_updateDiscreteBC (rproblem)
-        end if
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
         
         ! Implement the boundary conditions into the global solution vector.
         call sptivec_getTimestepData(rd, 1+isubstep, rtempVector)
         
-        call cc_implementBC (rproblem,rdefect=rtempVector)
+        call vecfil_discreteBCdef (rtempVector)
+        call vecfil_discreteFBCdef (rtempVector)
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -465,19 +524,33 @@ contains
 
     call lsysbl_releaseVector(rtempVector)
 
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
+
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
   end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine tbc_pressureToL20 (rx,rtempVectorX)
+  subroutine tbc_pressureToL20 (rproblem,rx,rtempVectorX)
 
 !<description>
-  ! Normalises the primal and dual pressure in all time steps to have integral
+  ! Normalises the primal and dual pressure in all time steps where no Neumann
+  ! boundary is present to have integral
   ! mean value = 0. This routine is typically used to filter an indefinite
   ! solution vector (e.g. in the pure-Dirichlet case).
 !</description>
+
+!<input>
+  ! A problem structure that provides information on all
+  ! levels as well as temporary vectors.
+  type(t_problem), intent(INOUT), target :: rproblem
+!</input>
 
 !<inputoutput>
   ! A space-time vector where the pressure vectors whould be normalised.
@@ -492,6 +565,12 @@ contains
 
     integer :: isubstep
     type(t_vectorBlock) :: rtempVector
+    type(t_discreteBC) :: rdiscreteBC
+    logical :: bhasNeumann
+    real(dp) :: dtime
+
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
     
     if (present(rtempVectorX)) then
       call lsysbl_duplicateVector (&
@@ -504,17 +583,35 @@ contains
 
     ! Normalise the primal and dual pressure to zero.
     do isubstep = 0,rx%NEQtime-1
+
+      ! Initialise the collection for the assembly.
+      call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
+      ! Assemble the BC's.
+      call bcasm_clearDiscreteBC(rdiscreteBC)
+      call cc_assembleBDconditions (rproblem,&
+          rx%p_rtimeDiscretisation%dtimeInit + isubstep*rx%p_rtimeDiscretisation%dtstep,&
+          rx%p_rblockDiscretisation,&
+          CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection,bhasNeumann)
     
-      call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
+      if (.not. bhasNeumann) then
+        call sptivec_getTimestepData(rx, 1+isubstep, rtempVector)
+        
+        call vecfil_subvectorToL20 (rtempVectorX,3)
+        call vecfil_subvectorToL20 (rtempVectorX,6)
+        
+        call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
+      end if
       
-      call vecfil_subvectorToL20 (rtempVectorX,3)
-      call vecfil_subvectorToL20 (rtempVectorX,6)
-      
-      call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
-      
+      ! Clean up the collection (as we are done with the assembly, that's it.
+      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
     end do
   
     call lsysbl_releaseVector(rtempVector)
+
+    ! Release the boundary conditions
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
 
   end subroutine
 
@@ -551,9 +648,6 @@ contains
 
 !</subroutine>
 
-    real(DP) :: dtheta
-    real(DP), dimension(:),pointer :: p_Dx, p_Db, p_Dd
-    
     ! Overwrite the primal RHS with the initial primal solution vector.
     ! This realises the inital condition.
     call sptivec_getTimestepData(rb, 1+0, rtempVectorD)
@@ -744,7 +838,7 @@ contains
   
 !<subroutine>
   
-  subroutine tbc_implementSpatialBCtoRHS (rproblem, isubstep, dtime, rvector)
+  subroutine tbc_implementSpatialBCtoRHS (rproblem, dtime, rvector)
   
 !<description>
   ! Implements the spatial boundary conditions into the spatial RHS vector
@@ -755,9 +849,6 @@ contains
   ! Time where the BC's should be implemented.
   ! Must not necessarily coincide with the start/end time of the timestep.
   real(DP), intent(IN) :: dtime
-    
-  ! Number of the substep where to implement the BC.
-  integer, intent(IN) :: isubstep
 !</input>  
 
 !<inputoutput>  
@@ -771,43 +862,50 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Ddata
   
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
+    
     ! DEBUG!!!
     call lsysbl_getbase_double (rvector,p_Ddata)
 
-    ! Set the time where we are at the moment
-    rproblem%rtimedependence%dtime = dtime
-    rproblem%rtimedependence%itimestep = isubstep
-        
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
-    ! Discretise the boundary conditions at the new point in time -- 
-    ! if the boundary conditions are nonconstant in time!
-    if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-      call cc_updateDiscreteBC (rproblem)
-    end if
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+
+    ! Assemble the BC's.
+    call cc_assembleBDconditions (rproblem,dtime,&
+        rvector%p_rblockDiscr,&
+        CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+    call cc_assembleFBDconditions (rproblem,dtime,&
+        rvector%p_rblockDiscr,&
+        CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
 
     ! Implement the boundary conditions into the RHS.
     ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
     ! as Dirichlet values mustn't be multiplied with GAMMA!
-    call vecfil_discreteBCsol (rvector)
-    call vecfil_discreteFBCsol (rvector)      
-  
+    call vecfil_discreteBCrhs (rvector,rdiscreteBC)
+    call vecfil_discreteFBCrhs (rvector,rdiscreteFBC)
+
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
+    
     ! Clean up the collection (as we are done with the assembly, that's it.
     call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-  
+
   end subroutine
 
   ! ***************************************************************************
   
 !<subroutine>
 
-  subroutine tbc_implementSpatialBCdefect (rproblem,isubstep,dtime,rspaceTimeDiscr,rd)
+  subroutine tbc_implementSpatialBCdefect (rproblem,dtime,rspaceTimeDiscr,rd)
 
 !<description>
-  ! Implements the boundary conditions at timestep isubstep into the defect rd.
+  ! Implements the boundary conditions at time dtime into the defect rd.
 !</description>
 
 !<input>
@@ -820,9 +918,6 @@ contains
   ! Time where the BC's should be implemented.
   ! Must not necessarily coincide with the start/end time of the timestep.
   real(DP), intent(IN) :: dtime
-    
-  ! Number of the substep where to implement the BC.
-  integer, intent(IN) :: isubstep
 !</input>
 
 !<inputoutput>
@@ -832,34 +927,43 @@ contains
 
 !</subroutine>
 
-    type(t_vectorBlock) :: rtempVector
+  
+    ! DEBUG!!!
+    real(DP), dimension(:), pointer :: p_Ddata
+  
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
     
-    call lsysbl_duplicateVector(rd,rtempVector,&
-        LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    rtempVector%p_rdiscreteBC => rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rd,p_Ddata)
 
-    ! Current point in time
-    rproblem%rtimedependence%dtime = dtime
-    rproblem%rtimedependence%itimestep = isubstep
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
-    ! -----
-    ! Discretise the boundary conditions at the new point in time -- 
-    ! if the boundary conditions are nonconstant in time!
-    if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-      call cc_updateDiscreteBC (rproblem)
-    end if
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+
+    ! Assemble the BC's.
+    call cc_assembleBDconditions (rproblem,dtime,&
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+    call cc_assembleFBDconditions (rproblem,dtime,&
+        rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+        CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
+
+    ! Implement the boundary conditions into the RHS.
+    ! This is done *after* multiplying -z by GAMMA or dtstep, resp.,
+    ! as Dirichlet values mustn't be multiplied with GAMMA!
+    call vecfil_discreteBCdef (rd,rdiscreteBC)
+    call vecfil_discreteFBCdef (rd,rdiscreteFBC)
+
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
     
-    call cc_implementBC (rproblem,rdefect=rtempVector)
-    
-    ! In the very first time step, we have the initial condition for the
-    ! solution. The defect is =0 there!
-!    IF (isubstep .EQ. 0) THEN
-!      CALL lsyssc_clearVector (rd%RvectorBlock(1))
-!      CALL lsyssc_clearVector (rd%RvectorBlock(2))
-!      CALL lsyssc_clearVector (rd%RvectorBlock(3))
-!    END IF
-    
-    call lsysbl_releaseVector(rtempVector)
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
 

@@ -479,8 +479,6 @@ module linearspacetimesolver
     ! A temporary space-time vector.
     type(t_spacetimeVector)           :: rtempVector2
     
-    ! A temp vector in space.
-    type(t_vectorBlock)               :: rtempVectorSpace
   end type
   
 !</typeblock>
@@ -549,7 +547,7 @@ module linearspacetimesolver
     ! Pointer to a spatial preconditioner structure that defines the
     ! preconditioning in each substep of the global system.
     type(t_ccspatialPreconditioner), pointer :: p_rspatialPreconditioner
-    
+
   end type
   
 !</typeblock>
@@ -1586,7 +1584,7 @@ contains
     if (present(p_rpreconditioner)) then 
       p_rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner => p_rpreconditioner
     end if
-
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1698,15 +1696,6 @@ contains
         p_rspaceTimeDiscr%NEQtime,&
         p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
         
-    ! and memory for a spatial temp vector.
-    call lsysbl_createVecBlockByDiscr (&
-        p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
-        rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
-    rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBC => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%p_rdiscreteBCfict => &
-        p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
     ! We simply pass isubgroup to the subsolvers when calling them.
     ! Inside of this routine, there's not much to do with isubgroup,
     ! as there is no special information (like a factorisation)
@@ -1807,8 +1796,6 @@ contains
       call sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector2)
     if (rsolverNode%p_rsubnodeDefCorr%rtempVector%NEQtime .ne. 0) &
       call sptivec_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVector)
-    if (rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace%NEQ .ne. 0) &
-      call lsysbl_releaseVector(rsolverNode%p_rsubnodeDefCorr%rtempVectorSpace)
 
     ! Call the init routine of the preconditioner.
     if (associated(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)) then
@@ -2352,7 +2339,7 @@ contains
 
     ! local variables
     integer :: isubstep, nlmax
-    real(DP) :: dtheta,dtstep
+    real(DP) :: dtheta,dtstep,dtime
     logical :: bsuccess
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
@@ -2395,17 +2382,6 @@ contains
     call lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rtempVectorX3,.true.)
         
-    ! Attach the boundary conditions to the temp vectors.
-    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorX1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorX2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorX3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorX3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
     ! Basic initialisation of our nonlinear matrix in space - for defect correction
     ! and matrix assembly in order to be used in a spatial preconditioner.
     call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rsolverNode%p_rproblem,&
@@ -2424,22 +2400,19 @@ contains
     do isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
     
       ! Current time step?
-      rsolverNode%p_rproblem%rtimedependence%dtime = &
+      dtime = &
           rsolverNode%p_rproblem%rtimedependence%dtimeInit + isubstep * dtstep
 
       if (rsolverNode%ioutputLevel .ge. 1) then
         call output_line ('Space-Time-Block-Jacobi preconditioning of timestep: '//&
             trim(sys_siL(isubstep,10))//&
-            ', Time: '//trim(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+            ', Time: '//trim(sys_sdL(dtime,10)))
       end if
     
       ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      if (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-          .ne. 0) then
-        call cc_updateDiscreteBC (rsolverNode%p_rproblem)
-      end if
+      ! Update the boundary conditions in the preconditioner
+      call cc_updatePreconditionerBC (rsolverNode%p_rproblem,&
+          rsolverNode%p_rsubnodeBlockJacobi%p_rspatialPreconditioner,dtime)
 
       ! DEBUG!!!      
       call lsysbl_getbase_double (rtempVectorX2,p_Dx)
@@ -2869,26 +2842,6 @@ contains
     call lsysbl_getbase_double (rtempVectorD3,p_Dd3)
     call lsysbl_getbase_double (rtempVectorRHS,p_Dd)
         
-    ! Attach the boundary conditions to the temp vectors.
-    rtempVectorD1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorD2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorD3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorSol(1)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(1)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorSol(2)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(2)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorSol(3)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(3)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorRHS%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorRHS%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
                 (rsolverNode%ioutputLevel .ge. 2)
@@ -3022,21 +2975,15 @@ contains
         ! Current point in time
         dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
-        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
-
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               trim(sys_siL(isubstep,10))//&
-              ', Time: '//trim(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+              ', Time: '//trim(sys_sdL(dtime,10)))
         end if
       
-        ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-            .ne. 0) then
-          call cc_updateDiscreteBC (rsolverNode%p_rproblem)
-        end if
+        ! Update the boundary conditions in the preconditioner
+        call cc_updatePreconditionerBC (rsolverNode%p_rproblem,&
+            rsolverNode%p_rsubnodeBlockFBSOR%p_rspatialPreconditioner,dtime)
 
         ! The RHS which is put into the preconditioner is set up in 
         ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
@@ -3105,7 +3052,7 @@ contains
         end if
 
         call tbc_implementSpatialBCdefect (&
-            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
+            rsolverNode%p_rproblem,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         !
@@ -3187,21 +3134,15 @@ contains
         ! Current point in time
         dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
-        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
-
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               trim(sys_siL(isubstep,10))//&
-              ', Time: '//trim(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+              ', Time: '//trim(sys_sdL(dtime,10)))
         end if
       
-        ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-            .ne. 0) then
-          call cc_updateDiscreteBC (rsolverNode%p_rproblem)
-        end if
+        ! Update the boundary conditions in the preconditioner
+        call cc_updatePreconditionerBC (rsolverNode%p_rproblem,&
+            rsolverNode%p_rsubnodeBlockFBSOR%p_rspatialPreconditioner,dtime)
 
         ! The RHS which is put into the preconditioner is set up in 
         ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
@@ -3270,7 +3211,7 @@ contains
         end if
 
         call tbc_implementSpatialBCdefect (&
-            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
+            rsolverNode%p_rproblem,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         ! Sum up the norm to the norm of the global vector.
@@ -3699,26 +3640,6 @@ contains
     call lsysbl_getbase_double (rtempVectorD3,p_Dd3)
     call lsysbl_getbase_double (rtempVectorRHS,p_Dd)
         
-    ! Attach the boundary conditions to the temp vectors.
-    rtempVectorD1%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD1%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorD2%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD2%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorD3%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD3%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorSol(1)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(1)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorSol(2)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(2)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-    rtempVectorSol(3)%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorSol(3)%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
-    rtempVectorRHS%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorRHS%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
     ! Probably we have to calclate the norm of the residual while calculating...
     bcalcNorm = (rsolverNode%nminIterations .ne. rsolverNode%nmaxIterations) .or.&
                 (rsolverNode%ioutputLevel .ge. 2)
@@ -3871,21 +3792,15 @@ contains
         ! Current point in time
         dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
-        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
-
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               trim(sys_siL(isubstep,10))//&
-              ', Time: '//trim(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+              ', Time: '//trim(sys_sdL(dtime,10)))
         end if
       
-        ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-            .ne. 0) then
-          call cc_updateDiscreteBC (rsolverNode%p_rproblem)
-        end if
+        ! Update the boundary conditions in the preconditioner
+        call cc_updatePreconditionerBC (rsolverNode%p_rproblem,&
+            rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,dtime)
 
         ! The RHS which is put into the preconditioner is set up in 
         ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
@@ -3951,7 +3866,7 @@ contains
         end if
 
         call tbc_implementSpatialBCdefect (&
-            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
+            rsolverNode%p_rproblem,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         !
@@ -4009,21 +3924,15 @@ contains
         ! Current point in time
         dtime = p_rspaceTimeDiscr%rtimeDiscr%dtimeInit + isubstep * dtstep
 
-        rsolverNode%p_rproblem%rtimedependence%dtime = dtime
-
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ('Space-Time-Block-FBGS preconditioning of timestep: '//&
               trim(sys_siL(isubstep,10))//&
-              ', Time: '//trim(sys_sdL(rsolverNode%p_rproblem%rtimedependence%dtime,10)))
+              ', Time: '//trim(sys_sdL(dtime,10)))
         end if
       
-        ! -----
-        ! Discretise the boundary conditions at the new point in time -- 
-        ! if the boundary conditions are nonconstant in time!
-        if (collct_getvalue_int (rsolverNode%p_rproblem%rcollection,'IBOUNDARY') &
-            .ne. 0) then
-          call cc_updateDiscreteBC (rsolverNode%p_rproblem)
-        end if
+        ! Update the boundary conditions in the preconditioner
+        call cc_updatePreconditionerBC (rsolverNode%p_rproblem,&
+            rsolverNode%p_rsubnodeBlockFBGS%p_rspatialPreconditioner,dtime)
 
         ! The RHS which is put into the preconditioner is set up in 
         ! rtempVectorRHS to prevent rtempVectorD2 from getting destroyed.
@@ -4095,7 +4004,7 @@ contains
         end if
 
         call tbc_implementSpatialBCdefect (&
-            rsolverNode%p_rproblem,isubstep,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
+            rsolverNode%p_rproblem,dtime,p_rspaceTimeDiscr,rtempVectorRHS)
         
         ! Ok, we have the local defect.
         ! Sum up the norm to the norm of the global vector.
@@ -4306,10 +4215,6 @@ contains
     call lsysbl_createVecBlockByDiscr (&
         rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rsolverNode%p_rsubnodeCG%rtempVectorSpace)
-    rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rsolverNode%p_rsubnodeCG%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
 
   end subroutine
   
@@ -4437,7 +4342,7 @@ contains
     if (rsolverNode%p_rsubnodeCG%rtempVectorSpace%NEQ .ne. 0) then
       call lsysbl_releaseVector (rsolverNode%p_rsubnodeCG%rtempVectorSpace)
     end if
-      
+    
   end subroutine
   
   ! ***************************************************************************
@@ -5026,8 +4931,8 @@ contains
     ! so the pressure is not uniquely defined. In this case, we fix
     ! the pressure in the first node by writing a unit line into
     ! the global matrix for the first pressure DOF in every timestep.
-    call pressureDirichlet (rsolverNode%p_rproblem,&
-        rsolverNode%rmatrix,rtempMatrix)
+    !call pressureDirichlet (rsolverNode%p_rproblem,&
+    !    rsolverNode%rmatrix,rtempMatrix)
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
     !                               .TRUE., 0, 'matrix.txt', '(E15.5)')
@@ -5146,37 +5051,37 @@ contains
     ! the global space time matrix.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
-      integer, dimension(:), allocatable :: Iidx
-      integer :: ivelSize,ipSize,neq
-      integer :: i
-      type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
-    
-      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
-    
-      ! Nothing to do if there is Nuemann boundary here.
-      if (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) return
-    
-      neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
-      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
-      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
-    
-      ! Create an array containing all the rows where a unit vector is to be
-      ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
-      ! (primal + dual pressure, not the initial condition)
-      allocate(Iidx(0:2*(p_rspaceTimeDiscr%NEQtime-1)))
-      
-      ! Add the row of the first primal/dual pressure DOF to that array.
-      Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
-      do i=1,p_rspaceTimeDiscr%NEQtime-1
-        Iidx(2*i-1) = i*neq+ivelSize+1
-        Iidx(2*i  ) = i*neq+neq-ipSize+1
-      end do
-      
-      ! Filter the matrix, implement the unit vectors.
-      call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
-      
-      ! Release memory, finish.
-      deallocate(Iidx)
+!      integer, dimension(:), allocatable :: Iidx
+!      integer :: ivelSize,ipSize,neq
+!      integer :: i
+!      type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
+!    
+!      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
+!    
+!      ! Nothing to do if there is Nuemann boundary here.
+!      if (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) return
+!    
+!      neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
+!      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
+!      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
+!    
+!      ! Create an array containing all the rows where a unit vector is to be
+!      ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
+!      ! (primal + dual pressure, not the initial condition)
+!      allocate(Iidx(0:2*(p_rspaceTimeDiscr%NEQtime-1)))
+!      
+!      ! Add the row of the first primal/dual pressure DOF to that array.
+!      Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
+!      do i=1,p_rspaceTimeDiscr%NEQtime-1
+!        Iidx(2*i-1) = i*neq+ivelSize+1
+!        Iidx(2*i  ) = i*neq+neq-ipSize+1
+!      end do
+!      
+!      ! Filter the matrix, implement the unit vectors.
+!      call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
+!      
+!      ! Release memory, finish.
+!      deallocate(Iidx)
     
     end subroutine
 
@@ -5209,11 +5114,28 @@ contains
     integer :: idiag
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
     type(t_ccPreconditionerSpecials) :: rprecSpecials
+    real(dp) :: dtime
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
+    logical :: bhasNeumann
+    integer :: ivelSize,ipSize,neq
+    integer, dimension(2) :: Iidx
       
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
     p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
+   
+    neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
+    ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
+    ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
    
     ! Create a global matrix:
     call lsysbl_createEmptyMatrix (rmatrix,6*(p_rspaceTimeDiscr%NEQtime))
+
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
   
     ! Get a temporary system matrix. Use the default preconditioner specials, that's
     ! enough for us.
@@ -5223,8 +5145,8 @@ contains
         rblockTemp)
 
     ! Attach the boundary conditions
-    rblockTemp%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rblockTemp%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    call lsysbl_assignDiscreteBC(rblockTemp,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC(rblockTemp,rdiscreteFBC)
 
     ! Basic initialisation of our nonlinear matrix in space - for defect correction
     ! and matrix assembly in order to be used in a spatial preconditioner.
@@ -5254,16 +5176,19 @@ contains
       end if
     
       ! Current point in time
-      rproblem%rtimedependence%dtime = &
+      dtime = &
           rproblem%rtimedependence%dtimeInit + isubstep*p_rspaceTimeDiscr%rtimeDiscr%dtstep
-      rproblem%rtimedependence%itimestep = isubstep
 
       ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-        call cc_updateDiscreteBC (rproblem)
-      end if
+      ! Discretise the boundary conditions at the new point in time.
+      call bcasm_clearDiscreteBC(rdiscreteBC)
+      call bcasm_clearDiscreteFBC(rdiscreteFBC)
+      call cc_assembleBDconditions (rproblem,dtime,&
+          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+          CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection,bhasNeumann)
+      call cc_assembleFBDconditions (rproblem,dtime,&
+          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+          CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
       
       ! Assemble diagonal blocks as well as the band above and below the diagonal.
       ileft = -1
@@ -5323,8 +5248,8 @@ contains
         end select
 
         ! Include the boundary conditions into that matrix.
-        call matfil_discreteBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC)
-        call matfil_discreteFBC (rblockTemp,p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC)
+        call matfil_discreteBC (rblockTemp,rdiscreteBC)
+        call matfil_discreteFBC (rblockTemp,rdiscreteFBC)
 
         ! Include the current matrix into the global matrix 
         call insertMatrix (rblockTemp,rmatrix,(isubstep+ix)*6+1,isubstep*6+1,.false.)
@@ -5337,14 +5262,7 @@ contains
         
       end do  
 
-      ! Cycle the solution vectors: 1 <- 2 <- 3
-      if (associated(rsupermatrix%p_rsolution)) then
-        call lsysbl_copyVector (rvector2,rvector1)
-        call lsysbl_copyVector (rvector3,rvector2)
-        ! Now rvector3 is free and can take the data of the next timestep.
-      end if
-      
-      if (.not. p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) then
+      if (.not. bhasNeumann) then
         ! Insert a 'point matrix' containing a zero in the pressure block.
         ! This allows the boundary condition implementation routine to
         ! insert a unit vector for the pressure if we have a pure-Dirichlet
@@ -5362,6 +5280,23 @@ contains
               p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixTemplateFEMPressure%NEQ,1)
         end if
         
+        ! Insert a unit vector to force the first pressure DOF to 0.
+        Iidx(1) = isubstep*neq+ivelSize+1
+        Iidx(2) = isubstep*neq+neq-ipSize+1
+        if (isubstep .eq. 0) then
+          ! 0th time step -> only dual pressure because of init. cond.
+          call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx(2:2))
+        else
+          call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
+        end if
+        
+      end if
+      
+      ! Cycle the solution vectors: 1 <- 2 <- 3
+      if (associated(rsupermatrix%p_rsolution)) then
+        call lsysbl_copyVector (rvector2,rvector1)
+        call lsysbl_copyVector (rvector3,rvector2)
+        ! Now rvector3 is free and can take the data of the next timestep.
       end if
       
     end do
@@ -5374,9 +5309,16 @@ contains
     ! Release the temp matrix
     call lsysbl_releaseMatrix (rblockTemp)
 
+    ! Release the boundary conditions
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+
     ! Update structural information of the global matrix.
     call lsysbl_updateMatStrucInfo (rmatrix)
   
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
   contains
 
     ! ---------------------------------------------------------------
@@ -5896,11 +5838,7 @@ end subroutine
     call lsysbl_createVecBlockByDiscr (&
         rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
-    rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBC => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace%p_rdiscreteBCfict => &
-        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
-
+    
   end subroutine
   
   ! ***************************************************************************
@@ -6120,7 +6058,7 @@ end subroutine
   ! local variables
   real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   real(DP) :: drho1,drho0,dfr,dresscale,dresunprec
-  integer :: ite,i
+  integer :: ite
 
   ! The system matrix
   type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
@@ -6701,7 +6639,6 @@ end subroutine
 
     ! local variables
     integer :: ilev,NLMAX,NEQtime
-    integer :: NEQ
     type(t_sptilsMGLevelInfo), pointer :: p_rmgLevel
     
     ! A-priori we have no error...

@@ -25,6 +25,12 @@
 !#     -> Initialise the matrix weights of a submatrix in the global space-time
 !#        matrix.
 !#
+!# 2.) cc_disableSubmatrix
+!#     -> Disables a submatrix by setting the corresponding weights to zero.
+!#
+!# 3.) cc_getFullMatrixDummy
+!#     -> Get a dummy structure of a full matrix
+!#
 !# </purpose>
 !#
 !# The structure t_ccoptSpaceTimeDiscretisation realises in conjunction with
@@ -156,8 +162,8 @@ module spacetimelinearsystem
   use basicstructures
   use user_callback
 
-  use spacepreconditioner
-  use spacepreconditionerinit
+  !use spacepreconditioner
+  !use spacepreconditionerinit
   use timeanalysis
   use spatialbc
   use spacediscretisation
@@ -357,7 +363,7 @@ contains
     ! primal velocity is assembled.
     dnewton = 0.0_DP
     if (rspaceTimeMatrix%cmatrixType .eq. 1) then
-      if (rproblem%iequation .eq. 0) then
+      if (rproblem%rphysicsPrimal%iequation .eq. 0) then
         ! Newton is only to be assembled in Navier-Stokes!
         dnewton = 1.0_DP
       end if
@@ -412,13 +418,13 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              real(1-rproblem%iequation,DP)
+              real(1-rproblem%rphysicsPrimal%iequation,DP)
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - real(1-rproblem%iequation,DP)
+              - real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dnewton
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                real(1-rproblem%iequation,DP)
+                real(1-rproblem%rphysicsPrimal%iequation,DP)
                 
         end if
 
@@ -503,17 +509,17 @@ contains
         if (.not. bconvectionExplicit) then
         
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+              - (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+                (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
         else
 
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
 
         end if
 
@@ -555,7 +561,7 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = &
               (1.0_DP-dtheta) * dnewton
@@ -563,7 +569,7 @@ contains
         else
         
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              dtheta * real(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = &
               dtheta * dnewton
@@ -593,13 +599,13 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              dtheta * real(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
                 
         end if
 
@@ -680,18 +686,18 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+              - (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
               
         else
         
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%iequation,DP)
+              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%iequation,DP)
+                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
         
         end if
 
@@ -745,14 +751,14 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              (1.0_DP-dtheta) * real(1-rproblem%iequation,DP)
+              (1.0_DP-dtheta) * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = (1.0_DP-dtheta) * dnewton
           
         else
         
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              dtheta * real(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
           
@@ -782,13 +788,13 @@ contains
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              dtheta * real(1-rproblem%iequation,DP)
+              dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP)
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rproblem%iequation,DP) 
+              - dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP) 
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dtheta * dnewton
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rproblem%iequation,DP) 
+                dtheta * real(1-rproblem%rphysicsPrimal%iequation,DP) 
                 
         end if        
 
@@ -835,6 +841,105 @@ contains
 
   end subroutine  
   
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine cc_disableSubmatrix (rnonlinearSpatialMatrix,irow,icolumn)
+
+!<description>
+  ! Disables a subbklock in the nonlinear matrix rnonlinearSpatialMatrix.
+  ! All weights of the correspopnding subblock are set to 0.
+!</description>
+
+!<input>
+  ! The row/column of the submatrix to be disabled.
+  integer :: irow,icolumn
+!</input>
+
+!<inputoutput>
+  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
+  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! block matrix system are initialised depending on the position
+  ! specified by isubstep and nsubsteps.
+  !
+  ! The structure must have been initialised with cc_initNonlinMatrix!
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Clear the coefficients
+    rnonlinearSpatialMatrix%Diota(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dalpha(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtheta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgamma(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DnewtonT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Deta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtau(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dkappa(irow,icolumn) = 0.0_DP
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_getFullMatrixDummy(rphysicsPrimal,rnonlinearSpatialMatrix)
+  
+!<description>
+  ! Configures the parameters in rnonlinearSpatialMatrix with dummy 
+  ! coefficients so that the configuration resembles the matrix structure
+  ! in the current situation. This is used during the allocation of memory
+  ! to figure out the matrix structure and allocate necessary submatrices.
+!</description>
+
+!<input>
+  ! Current physics structure of the primal equation
+  type(t_physicsPrimal), intent(in) :: rphysicsPrimal
+!</input>
+
+!<inputoutput>
+  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
+  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! block matrix system are initialised depending on the position
+  ! specified by isubstep and nsubsteps. The coefficients in this
+  ! structure are either set to 1.0 or 0.0 depending on whether a
+  ! submatrix is active or not.
+  !
+  ! The structure must have been initialised with cc_initNonlinMatrix!
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP   ! A velocity block
+    rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP     ! A gradient block
+    rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP     ! A divergence block
+    rnonlinearSpatialMatrix%Dkappa(1,1) = 1.0_DP   ! Pressure block
+    ! A Newton block, if we have Navier-Stokes. For the case
+    ! that we use Newton
+    rnonlinearSpatialMatrix%Dnewton(1,1) = real(1-rphysicsPrimal%iequation,DP)
+    
+    rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP   ! A velocity block
+    rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP     ! A gradient block
+    rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP     ! A divergence block
+    ! A Newton block, if we have Navier-Stokes
+    rnonlinearSpatialMatrix%Dnewton(2,2) = real(1-rphysicsPrimal%iequation,DP)
+    rnonlinearSpatialMatrix%Dkappa(2,2) = 1.0_DP   ! Pressure block
+    
+    rnonlinearSpatialMatrix%Dalpha(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(2,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(1,2) = 1.0_DP
+    rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP
+    rnonlinearSpatialMatrix%Dnewton(2,1) = real(1-rphysicsPrimal%iequation,DP)
+      
+  end subroutine
+
   ! ***************************************************************************
   
 !<subroutine>
@@ -901,7 +1006,9 @@ contains
     type(t_matrixBlock) :: rblockTemp
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
-    real(DP) :: dtstep
+    real(DP) :: dtstep,dtime
+    type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dx3,p_Db
@@ -917,15 +1024,19 @@ contains
     ! =1: implicit Euler.
     ! =0.5: Crank Nicolson
     dtheta = rproblem%rtimedependence%dtimeStepTheta
-    
+   
+    ! Initialise the boundary conditions
+    call bcasm_initDiscreteBC(rdiscreteBC)
+    call bcasm_initDiscreteFBC(rdiscreteFBC)
+
     ! Create a temp vector that contains the part of rd which is to be modified.
     p_rdiscr => p_rspaceTimeDiscr%p_RlevelInfo%rdiscretisation
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVectorD,.false.)
     
     ! The vector will be a defect vector. Assign the boundary conditions so
     ! that we can implement them.
-    rtempVectorD%p_rdiscreteBC => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteBC
-    rtempVectorD%p_rdiscreteBCfict => p_rspaceTimeDiscr%p_rlevelInfo%p_rdiscreteFBC
+    call lsysbl_assignDiscreteBC(rtempVectorD,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC(rtempVectorD,rdiscreteFBC)
     
     ! Create a temp vector for the X-vectors at timestep i-1, i and i+1.
     call lsysbl_createVecBlockByDiscr (p_rdiscr,rtempVector(1),.false.)
@@ -994,13 +1105,11 @@ contains
       ! Depending on the time step scheme, initialise the current time.
       select case (p_rspaceTimeDiscr%rtimeDiscr%ctype)
       case (TDISCR_THETA)
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + ieqTime*dtstep
+        dtime = rproblem%rtimedependence%dtimeInit + ieqTime*dtstep
       case (TDISCR_DG0)
-        rproblem%rtimedependence%dtime = &
-            rproblem%rtimedependence%dtimeInit + (real(ieqTime,DP)+0.5_DP)*dtstep
+        dtime = rproblem%rtimedependence%dtimeInit + (real(ieqTime,DP)+0.5_DP)*dtstep
       end select
-
+      
       ! Get the part of rd which is to be modified.
       if (cy .ne. 0.0_DP) then
         call sptivec_getTimestepData(rd, 1+ieqTime, rtempVectorD)
@@ -1035,13 +1144,6 @@ contains
 
       end if
 
-      ! -----
-      ! Discretise the boundary conditions at the new point in time -- 
-      ! if the boundary conditions are nonconstant in time!
-      if (collct_getvalue_int (rproblem%rcollection,'IBOUNDARY') .ne. 0) then
-        call cc_updateDiscreteBC (rproblem)
-      end if
-      
       ! The first and last substep is a little bit special concerning
       ! the matrix!
       if (ieqTime .eq. 0) then
@@ -1213,8 +1315,20 @@ contains
             1.0_DP,rtempVectorEval(1),rtempVectorEval(2),rtempVectorEval(3))
       
       end if
-      
+
+      ! Implement the BC`s?      
       if (iand(cfilter,SPTID_FILTER_BCDEF) .ne. 0) then
+
+        ! Discretise the boundary conditions at the new point in time.
+        call bcasm_clearDiscreteBC(rdiscreteBC)
+        call bcasm_clearDiscreteFBC(rdiscreteFBC)
+        call cc_assembleBDconditions (rproblem,dtime,&
+            p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
+        call cc_assembleFBDconditions (rproblem,dtime,&
+            p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
+            CCDISCBC_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
+
         ! Implement the boundary conditions into the defect.
         call vecfil_discreteBCdef (rtempVectorD)
         call vecfil_discreteFBCdef (rtempVectorD)      
@@ -1282,6 +1396,10 @@ contains
     call lsysbl_releaseVector (rtempVector(2))
     call lsysbl_releaseVector (rtempVector(1))
     call lsysbl_releaseVector (rtempVectorD)
+    
+    ! Release the BC's again.
+    call bcasm_releaseDiscreteFBC(rdiscreteFBC)
+    call bcasm_releaseDiscreteBC(rdiscreteBC)
     
   end subroutine 
    
@@ -1391,7 +1509,7 @@ contains
     rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
     
     if (.not. bconvectionExplicit) then
-      rnonlinearSpatialMatrix%Dgamma(1,1) = real(1-rproblem%iequation,DP)
+      rnonlinearSpatialMatrix%Dgamma(1,1) = real(1-rproblem%rphysicsPrimal%iequation,DP)
     end if
 
     rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP

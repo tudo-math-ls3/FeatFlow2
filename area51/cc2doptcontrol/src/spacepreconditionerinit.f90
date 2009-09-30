@@ -37,20 +37,8 @@
 !#     -> Auxiliary routine: Set up interlevel projection structure
 !#        with information from INI/DAT files
 !#
-!# Auxiliary routines, not to be called from outside:
-!#
-!# 1.) cc_checkAssembly
-!#     -> Checks if the system matrices are compatible to the preconditioner.
-!#        Set up some situation dependent 'tweak' flags for the assembly
-!#        of the matrices.
-!#
-!# 2.) cc_finaliseMatrices
-!#     -> Makes the system matrices compatible to the preconditioner if
-!#        necessary.
-!#
-!# 3.) cc_unfinaliseMatrices 
-!#     -> Reverts the changes of cc_finaliseMatrices and brings matrices
-!#        into their original form.
+!# 8.) cc_updatePreconditionerBC
+!#     -> Updates the boundary conditions in a preconditioner
 !#
 !# The module works in tight relationship to cc2dmediumm2nonlinearcore.
 !# cc2dmediumm2nonlinearcodeinit provides the routines to initialise
@@ -95,6 +83,7 @@ module spacepreconditionerinit
     
   use basicstructures
   use spacepreconditioner
+  use spacetimelinearsystem
   
   implicit none
   
@@ -194,26 +183,8 @@ contains
     call cc_preparePrecondMatrixAssembly (rnonlinearSpatialMatrix,&
         ilev,nlmin,nlmax,rprecSpecials)
     
-    rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP   ! A velocity block
-    rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP     ! A gradient block
-    rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP     ! A divergence block
-    rnonlinearSpatialMatrix%Dkappa(1,1) = 1.0_DP   ! Pressure block
-    ! A Newton block, if we have Navier-Stokes. For the case
-    ! that we use Newton
-    rnonlinearSpatialMatrix%Dnewton(1,1) = real(1-rproblem%iequation,DP)
-    
-    rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP   ! A velocity block
-    rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP     ! A gradient block
-    rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP     ! A divergence block
-    ! A Newton block, if we have Navier-Stokes
-    rnonlinearSpatialMatrix%Dnewton(2,2) = real(1-rproblem%iequation,DP)
-    rnonlinearSpatialMatrix%Dkappa(2,2) = 1.0_DP   ! Pressure block
-    
-    rnonlinearSpatialMatrix%Dalpha(1,1) = 1.0_DP
-    rnonlinearSpatialMatrix%Dalpha(2,1) = 1.0_DP
-    rnonlinearSpatialMatrix%Dalpha(1,2) = 1.0_DP
-    rnonlinearSpatialMatrix%Dalpha(2,2) = 1.0_DP
-    rnonlinearSpatialMatrix%Dnewton(2,1) = real(1-rproblem%iequation,DP)
+    ! Get a dummy structure for a full matrix.
+    call cc_getFullMatrixDummy(rproblem%rphysicsPrimal,rnonlinearSpatialMatrix)
     
     ! As matrix flag we specify 0 here. This allocates a basic matrix which is
     ! modified later for our needs.
@@ -312,7 +283,7 @@ contains
       nlevels = rpreconditioner%NLMAX - rpreconditioner%NLMIN + 1
       
       call linsol_initMultigrid2 (p_rsolverNode,nlevels,&
-          rpreconditioner%p_RfilterChain)
+          rpreconditioner%RfilterChain)
       
       ! Manually trim the coarse grid correction in Multigrid to multiply the 
       ! pressure equation with -1. This (un)symmetrises the operator and gives
@@ -356,7 +327,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -381,7 +352,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -406,7 +377,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -431,7 +402,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -456,7 +427,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -479,7 +450,7 @@ contains
         
         ! Create the defect correction solver, attach VANKA as preconditioner.
         call linsol_initBiCGStab (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner,&
-            rpreconditioner%p_RfilterChain)
+            rpreconditioner%RfilterChain)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
@@ -540,7 +511,7 @@ contains
           case (6)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rpreconditioner%p_RfilterChain)
+                rpreconditioner%RfilterChain)
 
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
@@ -548,7 +519,7 @@ contains
           case (7)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rpreconditioner%p_RfilterChain)
+                rpreconditioner%RfilterChain)
 
             ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
             rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
@@ -556,7 +527,7 @@ contains
           case (8)
             call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
             call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-                rpreconditioner%p_RfilterChain)
+                rpreconditioner%RfilterChain)
 
           case (9)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
@@ -645,7 +616,7 @@ contains
         case (6)
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-              rpreconditioner%p_RfilterChain)
+              rpreconditioner%RfilterChain)
 
           ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
           rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
@@ -653,7 +624,7 @@ contains
         case (7)
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-              rpreconditioner%p_RfilterChain)
+              rpreconditioner%RfilterChain)
 
           ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
           rpreconditioner%rprecSpecials%bneedVirtTransposedD = .true.
@@ -661,7 +632,7 @@ contains
         case (8)
           call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
           call linsol_initBiCGStab (p_rsmoother,p_rpreconditioner,&
-              rpreconditioner%p_RfilterChain)
+              rpreconditioner%RfilterChain)
 
         case (9)
           call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
@@ -689,9 +660,9 @@ contains
 
       ! Init defect correction, 1-step... with that smoother
       if (isolverType .eq. 2) then
-        call linsol_initDefCorr (p_rsolverNode,p_rsmoother,rpreconditioner%p_RfilterChain)
+        call linsol_initDefCorr (p_rsolverNode,p_rsmoother,rpreconditioner%RfilterChain)
       else
-        call linsol_initBiCGStab (p_rsolverNode,p_rsmoother,rpreconditioner%p_RfilterChain)
+        call linsol_initBiCGStab (p_rsolverNode,p_rsmoother,rpreconditioner%RfilterChain)
       end if
       call linsolinit_initParams (p_rsolverNode,p_rparamList,&
           ssolverSection,LINSOL_ALG_UNDEFINED)
@@ -769,7 +740,6 @@ contains
 
     ! local variables
     integer :: ilevel
-    logical :: bneumann
 
     ! Basic initialisation of the nonlinenar iteration structure.
     call cc_createSpacePreconditioner (rpreconditioner,nlmin,nlmax)    
@@ -781,46 +751,45 @@ contains
       rpreconditioner%RcoreEquation(ilevel)%p_rstaticInfo => &
         rproblem%RlevelInfo(ilevel)%rstaticInfo
 
-      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector1 => &
-        rproblem%RlevelInfo(ilevel)%rtempVector1
+      rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock => &
+        rproblem%RlevelInfo(ilevel)%rdiscretisation
 
-      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector2 => &
-        rproblem%RlevelInfo(ilevel)%rtempVector2
+      ! Create some temp vectors.
+      call lsysbl_createVectorBlock(&
+        rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
+        rpreconditioner%RcoreEquation(ilevel)%rtempVector1,.true.)
 
-      rpreconditioner%RcoreEquation(ilevel)%p_rtempVector3 => &
-        rproblem%RlevelInfo(ilevel)%rtempVector3
+      call lsysbl_createVectorBlock(&
+        rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
+        rpreconditioner%RcoreEquation(ilevel)%rtempVector2,.true.)
 
+      call lsysbl_createVectorBlock(&
+        rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
+        rpreconditioner%RcoreEquation(ilevel)%rtempVector3,.true.)
+
+      ! Initialise basic boundary conditions on all levels
+      call bcasm_initDiscreteBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteBC)
+      call bcasm_initDiscreteFBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteFBC)
+      
     end do
       
     ! Set up a filter that modifies the block vectors/matrix
     ! according to boundary conditions.
-    allocate(rpreconditioner%p_RfilterChain(4))
-    
+    !
     ! Initialise the first filter of the filter chain as boundary
     ! implementation filter for defect vectors:
-    rpreconditioner%p_RfilterChain(1)%ifilterType = &
+    rpreconditioner%RfilterChain(1)%ifilterType = &
         FILTER_DISCBCDEFREAL
 
     ! The second filter filters for boundary conditions of fictitious boundary
     ! components
-    rpreconditioner%p_RfilterChain(2)%ifilterType = &
+    rpreconditioner%RfilterChain(2)%ifilterType = &
         FILTER_DISCBCDEFFICT
-    
-    ! Do we have Neumann boundary?
-    !
-    ! The bhasNeumannBoundary flag of the higher level decides about that...
-    bneumann = rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
-    rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_DONOTHING
-    if (.not. bneumann) then
-      ! Pure Dirichlet problem -- Neumann boundary for the pressure.
-      ! Filter the pressure to avoid indefiniteness.
-      rpreconditioner%p_RfilterChain(3)%ifilterType = FILTER_TOL20
-      rpreconditioner%p_RfilterChain(3)%itoL20component = NDIM2D+1
 
-      rpreconditioner%p_RfilterChain(4)%ifilterType = FILTER_TOL20
-      rpreconditioner%p_RfilterChain(4)%itoL20component = 2*(NDIM2D+1)
-    end if
-      
+    ! By default, no filter at position 3/4. Can be Neumann boundary filter.
+    rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
+    rpreconditioner%RfilterChain(4)%ifilterType = FILTER_DONOTHING
+    
   end subroutine
 
   ! ***************************************************************************
@@ -855,13 +824,20 @@ contains
       ! Release the preconditioner matrix on every level
       do i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
         call lsysbl_releaseMatrix ( &
-          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
-        deallocate(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
+          rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner)
+        
+        call lsysbl_releaseVector (rpreconditioner%RcoreEquation(i)%rtempVector3)
+        call lsysbl_releaseVector (rpreconditioner%RcoreEquation(i)%rtempVector2)
+        call lsysbl_releaseVector (rpreconditioner%RcoreEquation(i)%rtempVector1)
+        
+        ! Release boundary conditions on all levels
+        call bcasm_releaseDiscreteBC(rpreconditioner%RcoreEquation(i)%rdiscreteBC)
+        call bcasm_releaseDiscreteFBC(rpreconditioner%RcoreEquation(i)%rdiscreteFBC)
+        
       end do
       
       ! Release the temporary vector(s)
-      call lsyssc_releaseVector (rpreconditioner%p_rtempVectorSc)
-      deallocate(rpreconditioner%p_rtempVectorSc)
+      call lsyssc_releaseVector (rpreconditioner%rtempVectorSc)
       
       ! Clean up data about the projection etc.
       do i=rpreconditioner%NLMAX,rpreconditioner%NLMIN+1,-1
@@ -874,7 +850,7 @@ contains
       call linsol_doneStructure (rpreconditioner%p_rsolverNode)
       call cc_doneLinearSolver (rpreconditioner)
       
-    case DEFAULT
+    case default
       
       ! Unknown preconditioner
       print *,'Unknown preconditioner for nonlinear iteration!'
@@ -882,12 +858,65 @@ contains
       
     end select
 
-    ! Release the filter chain for the defect vectors.
-    if (associated(rpreconditioner%p_RfilterChain)) &
-      deallocate(rpreconditioner%p_RfilterChain)
-      
     call cc_releaseSpacePreconditioner (rpreconditioner)
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_updatePreconditionerBC (rproblem,rpreconditioner,dtime)
+  
+!<description>
+  ! Updates the boundary conditions in the preconditioner coprresponding to time
+  ! dtime.
+!</description>
+
+!<input>
+  ! A problem structure saving problem-dependent information.
+  type(t_problem), intent(INOUT), target :: rproblem
+  
+  ! Simulation time.
+  real(dp), intent(in) :: dtime
+!</input>
+
+!<inputoutput>
+  ! A spatial preconditioner structure to be initialised.
+  type(t_ccspatialPreconditioner), intent(inout) :: rpreconditioner
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ilevel
+
+    ! Initialise the collection for the assembly.
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
+    ! Update the BC's on every level.
+    do ilevel = rpreconditioner%nlmin,rpreconditioner%nlmax
+    
+      call bcasm_clearDiscreteBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteBC)
+      call bcasm_clearDiscreteFBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteFBC)
+      
+      call cc_assembleBDconditions (rproblem,dtime,&
+          rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
+          CCDISCBC_PRIMALDUAL,rpreconditioner%RcoreEquation(ilevel)%rdiscreteBC,&
+          rproblem%rcollection,rpreconditioner%RcoreEquation(ilevel)%bhasNeumann)
+      call cc_assembleFBDconditions (rproblem,dtime,&
+          rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
+          CCDISCBC_PRIMALDUAL,rpreconditioner%RcoreEquation(ilevel)%rdiscreteFBC,&
+          rproblem%rcollection)
+      
+    end do
+      
+    ! Adjust preconditioner specials (Neumann filter etc.)
+    call cc_adjustPrecSpecials (rproblem,rpreconditioner)
+      
+    ! Clean up the collection (as we are done with the assembly, that's it.
+    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
   end subroutine
 
   ! ***************************************************************************
@@ -994,8 +1023,7 @@ contains
       ! Set up a scalar temporary vector that we need for building up nonlinear
       ! matrices. It must be at least as large as MAXMEM and NEQ(finest level),
       ! as we use it for resorting vectors, too.
-      allocate(rpreconditioner%p_rtempVectorSc)
-      call lsyssc_createVector (rpreconditioner%p_rtempVectorSc,&
+      call lsyssc_createVector (rpreconditioner%rtempVectorSc,&
         max(imaxmem,dof_igetNDofGlobBlock(p_rdiscretisation)),.false.)
       
       ! Initialise the matrices.
@@ -1087,32 +1115,32 @@ contains
       
           ! Prepare the preconditioner matrices level i. This is
           ! basically the system matrix.
-          ! Create an empty matrix structure or clean up the old one.
-          if (.not. associated(rpreconditioner%RcoreEquation(i)%&
-              p_rmatrixPreconditioner)) then
-            allocate(rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
-          else
+          ! Clean up the structure if necessary.
+          if (rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner%NEQ .ne. 0) then
             call lsysbl_releaseMatrix (rpreconditioner%RcoreEquation(i)%&
-                p_rmatrixPreconditioner)
+                rmatrixPreconditioner)
           end if
         
           ! Allocate memory for the basic submatrices.
           call cc_allocPrecSystemMatrix (rproblem,rpreconditioner%rprecSpecials,&
               i,nlmin,nlmax,rproblem%RlevelInfo(i),CCMASM_MTP_AUTOMATIC,&
-              rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner)
+              rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner)
               
           ! Attach boundary conditions
-          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBC &
-              => rproblem%RlevelInfo(i)%p_rdiscreteBC
+          call lsysbl_assignDiscreteBC (&
+              rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner,&
+              rpreconditioner%RcoreEquation(i)%rdiscreteBC)
           
-          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner%p_rdiscreteBCfict &
-              => rproblem%RlevelInfo(i)%p_rdiscreteFBC
+          call lsysbl_assignDiscreteFBC (&
+              rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner,&
+              rpreconditioner%RcoreEquation(i)%rdiscreteFBC)
+              
         end if
         
         ! On the current level, set up a global preconditioner matrix.
       
         p_rmatrixPreconditioner => &
-            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner
+            rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner
         
         if (binit .or. bstructuralUpdate) then
 
@@ -1135,7 +1163,7 @@ contains
             ! do. In the Navier-Stokes case however, we have A12 and A21, so create them!
             ! Furthermore, there is to be a A51 and A42 submatrix allocated for the
             ! reactive coupling mass matrix R!
-            if (rproblem%iequation .eq. 0) then
+            if (rproblem%rphysicsPrimal%iequation .eq. 0) then
             
               if (p_rmatrixPreconditioner%RmatrixBlock(1,2)%cmatrixFormat &
                   .eq. LSYSSC_MATRIXUNDEFINED) then
@@ -1315,7 +1343,7 @@ contains
       ! matrices to Rmatrix.
       do i=NLMIN,NLMAX
         call lsysbl_duplicateMatrix ( &
-          rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+          rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner, &
           Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end do
       
@@ -1495,17 +1523,28 @@ contains
 
 !</subroutine>
 
-    ! Check if we have Neumann boundary components. If not, the matrices
-    ! may have to be changed, depending on the solver.
-    rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock = &
-      .not. rproblem%RlevelInfo(rproblem%NLMAX)%bhasNeumannBoundary
+    ! Do we have Neumann boundary?
+    ! The bneumann flag on the max. level decides upon that.
+    !
+    ! The bhasNeumannBoundary flag of the higher level decides about that...
+    if (rpreconditioner%RcoreEquation(rpreconditioner%nlmax)%bhasNeumann) then
+      rpreconditioner%RfilterChain(3)%ifilterType = FILTER_DONOTHING
+      rpreconditioner%RfilterChain(4)%ifilterType = FILTER_DONOTHING
+      
+      rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock = .false.
+    else
+      ! Pure Dirichlet problem -- Neumann boundary for the pressure.
+      ! Filter the pressure to avoid indefiniteness.
+      rpreconditioner%RfilterChain(3)%ifilterType = FILTER_TOL20
+      rpreconditioner%RfilterChain(3)%itoL20component = NDIM2D+1
+
+      rpreconditioner%RfilterChain(4)%ifilterType = FILTER_TOL20
+      rpreconditioner%RfilterChain(4)%itoL20component = 2*(NDIM2D+1)
+      
+      ! Matrices may have to be changed, depending on the solver.
+      rpreconditioner%rprecSpecials%bneedPressureDiagonalBlock = .true.
+    end if
 
   end subroutine
-
-!Die Projektionsstrukturen sind wohl um ein Level verschoben.
-!Das Programm stürzt zur Zeit komplett ab -- entweder ein Kompilerbug,
-!oder Stack-Fehler oder sonst was. Sieht man daran, dass die Diskretisierungsstruktur
-!auf dem niedrigsten Level kaputt geht, wenn für den linearen Löser
-!das Rmatrices-Array alloziert und sofort wieder dealloziert wird.
 
 end module

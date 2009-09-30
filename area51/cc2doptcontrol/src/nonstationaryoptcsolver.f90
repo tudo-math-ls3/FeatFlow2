@@ -107,7 +107,6 @@ contains
           rproblem%rtimedependence%ctimeStepScheme, 0)
     call parlst_getvalue_double (rparams,ssection,'dtimeStepTheta',    &
         rproblem%rtimedependence%dtimeStepTheta, 1.0_DP)
-    rproblem%rtimedependence%itimeStep = 0
 
   end subroutine  
 
@@ -408,30 +407,25 @@ contains
     integer :: i
     character(SYS_STRLEN) :: stemp,sfileName
     type(t_vectorBlock) :: rvectorTmp
+    real(dp) :: dtime
     
     ! Create a temp vector
     call lsysbl_createVecBlockByDiscr (&
         rspacetimediscr%p_rlevelInfo%rdiscretisation,rvectorTmp,.true.)
 
-    ! Attach the boundary conditions to that vector
-    rvectorTmp%p_rdiscreteBC => rspacetimediscr%p_rlevelInfo%p_rdiscreteBC
-    rvectorTmp%p_rdiscreteBCfict => rspacetimediscr%p_rlevelInfo%p_rdiscreteFBC
-
     ! Postprocessing of all solution vectors.
     do i = 0,tdiscr_igetNDofGlob(rvector%p_rtimeDiscretisation)-1
     
-      rproblem%rtimedependence%dtime = &
-          rvector%p_rtimeDiscretisation%dtimeInit + &
-          i * rvector%p_rtimeDiscretisation%dtstep
-      rproblem%rtimedependence%itimeStep = i
+      dtime = &
+          rvector%p_rtimeDiscretisation%dtimeInit + i * rvector%p_rtimeDiscretisation%dtstep
     
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rx, i, rvectorTmp)
-      call tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
+      call tmevl_evaluate(rvector,dtime,rvectorTmp)
     
-      call cc_postprocessingNonstat (rproblem,rvectorTmp)  
+      call cc_postprocessingNonstat (rproblem,i,dtime,rvectorTmp)  
       
     end do
     

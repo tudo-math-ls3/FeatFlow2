@@ -182,7 +182,7 @@ contains
     
     ! Print out the value of the optimal control functional.
     call output_lbrk ()
-    call cc_printControlFunctionalStat (rproblem,rvector)
+    call cc_printControlFunctionalStat (rproblem,0.0_DP,rvector)
     
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
     if (rvector%p_rblockDiscr%RspatialDiscr(1)% &
@@ -262,16 +262,16 @@ contains
     
     ! Discretise the boundary conditions for this discretisation
     call bcasm_initDiscreteBC(rdiscreteBC)
-    call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+    call cc_assembleBDconditions (rproblem,0.0_DP,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
       rdiscreteBC,rproblem%rcollection)
 
     call bcasm_initDiscreteFBC(rdiscreteFBC)
-    call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+    call cc_assembleFBDconditions (rproblem,0.0_DP,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
       rdiscreteFBC,rproblem%rcollection)
     
     ! Connect the vector with the BC's
-    rprjVector%p_rdiscreteBC => rdiscreteBC
-    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
+    call lsysbl_assignDiscreteBC (rprjVector,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC (rprjVector,rdiscreteFBC)
     
     ! Filter the solution vector to implement discrete BC's.
     call vecfil_discreteBCsol (rprjVector)
@@ -408,7 +408,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_postprocessingNonstat (rproblem,rvector)
+  subroutine cc_postprocessingNonstat (rproblem,itimestep,dtime,rvector)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -423,6 +423,12 @@ contains
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
   type(t_vectorBlock), intent(IN) :: rvector
+  
+  ! Number of the current timestep.
+  integer, intent(in) :: itimestep
+  
+  ! Current simulation time.
+  real(dp), intent(in) :: dtime
 !</input>
 
 !</subroutine>
@@ -564,24 +570,24 @@ contains
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
     
-    call cc_initCollectForAssembly(rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly(rproblem,dtime,rproblem%rcollection)
     
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
     ! Discretise the boundary conditions for this discretisation
     call bcasm_initDiscreteBC(rdiscreteBC)
-    call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+    call cc_assembleBDconditions (rproblem,dtime,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
       rdiscreteBC,rproblem%rcollection)
 
     call bcasm_initDiscreteFBC(rdiscreteFBC)
-    call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+    call cc_assembleFBDconditions (rproblem,dtime,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
       rdiscreteFBC,rproblem%rcollection)
     
     call cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
     
     ! Connect the vector with the BC's
-    rprjVector%p_rdiscreteBC => rdiscreteBC
-    rprjVector%p_rdiscreteBCfict => rdiscreteFBC
+    call lsysbl_assignDiscreteBC (rprjVector,rdiscreteBC)
+    call lsysbl_assignDiscreteFBC (rprjVector,rdiscreteFBC)
     
     ! Filter the solution vector to implement discrete BC's.
     call vecfil_discreteBCsol (rprjVector)
@@ -607,10 +613,10 @@ contains
       ! Start UCD export to GMV file:
       call output_lbrk ()
       call output_line ('Writing GMV file: ' &
-          //trim(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+          //trim(sgmvName)//'.'//sys_si0(itimeStep,5))
       
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-          trim(sgmvName)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+          trim(sgmvName)//'.'//sys_si0(itimeStep,5))
       
       ! Write the configuration of the application as comment block
       ! to the output file.
@@ -728,6 +734,7 @@ contains
     ! local variables
     type(t_vectorBlock) :: rvectorTmp
     integer :: i,ieltype 
+    real(dp) :: dtime
     
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
@@ -754,22 +761,16 @@ contains
         rdiscr%p_rlevelInfo%rdiscretisation,&
         rvectorTmp,.true.)
     
-    ! Attach the boundary conditions to that vector
-    rvectorTmp%p_rdiscreteBC => rdiscr%p_rlevelInfo%p_rdiscreteBC
-    rvectorTmp%p_rdiscreteBCfict => rdiscr%p_rlevelInfo%p_rdiscreteFBC
-      
     ! Postprocessing of all solution vectors.
     do i = 0,rdiscr%rtimeDiscr%nintervals
     
-      rproblem%rtimedependence%dtime = &
-          rproblem%rtimedependence%dtimeInit + i*rdiscr%rtimeDiscr%dtstep
-      rproblem%rtimedependence%itimeStep = i
+      dtime = rproblem%rtimedependence%dtimeInit + i*rdiscr%rtimeDiscr%dtstep
     
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
       !CALL sptivec_getTimestepData (rvector, i, rvectorTmp)
-      call tmevl_evaluate(rvector,rproblem%rtimedependence%dtime,rvectorTmp)
+      call tmevl_evaluate(rvector,dtime,rvectorTmp)
     
       ! The solution vector is probably not in the way, GMV likes it!
       ! GMV for example does not understand Q1~ vectors!
@@ -817,20 +818,20 @@ contains
       ! new discretisation:
       call spdp_projectSolution (rvectorTmp,rprjVector)
       
-      call cc_initCollectForAssembly(rproblem,rproblem%rcollection)
+      call cc_initCollectForAssembly(rproblem,dtime,rproblem%rcollection)
       
       ! Discretise the boundary conditions for this discretisation
       call bcasm_initDiscreteBC(rdiscreteBC)
-      call cc_assembleBDconditions (rproblem,rprjDiscretisation,&
+      call cc_assembleBDconditions (rproblem,dtime,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
         rdiscreteBC,rproblem%rcollection)
 
       call bcasm_initDiscreteFBC(rdiscreteFBC)
-      call cc_assembleFBDconditions (rproblem,rprjDiscretisation,&
+      call cc_assembleFBDconditions (rproblem,dtime,rprjDiscretisation,CCDISCBC_PRIMALDUAL,&
         rdiscreteFBC,rproblem%rcollection)
       
       ! Connect the vector with the BC's
-      rprjVector%p_rdiscreteBC => rdiscreteBC
-      rprjVector%p_rdiscreteBCfict => rdiscreteFBC
+      call lsysbl_assignDiscreteBC (rprjVector,rdiscreteBC)
+      call lsysbl_assignDiscreteFBC (rprjVector,rdiscreteFBC)
       
       call cc_doneCollectForAssembly(rproblem,rproblem%rcollection)
       
@@ -850,10 +851,10 @@ contains
       
       ! Start UCD export to GMV file:
       call output_line ('Writing GMV file: ' &
-          //trim(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+          //trim(sfilename)//'.'//sys_si0(i,5))
       
       call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,&
-          trim(sfilename)//'.'//sys_si0(rproblem%rtimedependence%itimeStep,5))
+          trim(sfilename)//'.'//sys_si0(i,5))
       
       ! Write the configuration of the application as comment block
       ! to the output file.
@@ -1041,7 +1042,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_printControlFunctionalStat (rproblem,rvector)
+  subroutine cc_printControlFunctionalStat (rproblem,dtime,rvector)
   
 !<description>
   ! Calculates and prints the value of the optimal control functional J(y,u) 
@@ -1056,6 +1057,9 @@ contains
 !<input>
   ! The solution vector which is to be evaluated by the postprocessing routines.
   type(t_vectorBlock), intent(IN) :: rvector
+  
+  ! Current simulation time.
+  real(dp), intent(in) :: dtime
 !</input>
 
 !</subroutine>
@@ -1067,7 +1071,7 @@ contains
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
     ! Analyse the deviation from the target velocity field.
     call parlst_getvalue_double (rproblem%rparamList,'OPTIMALCONTROL',&

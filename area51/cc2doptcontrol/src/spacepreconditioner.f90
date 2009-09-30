@@ -218,15 +218,24 @@ module spacepreconditioner
   
     ! The (linearised) system matrix for that specific level. 
     type(t_matrixBlock), pointer :: p_rmatrix => null()
+    
+    ! Reference to the discretisation structure.
+    type(t_blockDiscretisation), pointer :: p_rdiscrBlock => null()
 
     ! Reference to the static matrices on this level (Stokes, B,...)
     type(t_staticLevelInfo), pointer :: p_rstaticInfo
 
     ! Temporary vectors for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
-    type(t_vectorBlock), pointer :: p_rtempVector1 => null()
-    type(t_vectorBlock), pointer :: p_rtempVector2 => null()
-    type(t_vectorBlock), pointer :: p_rtempVector3 => null()
+    type(t_vectorBlock) :: rtempVector1
+    type(t_vectorBlock) :: rtempVector2
+    type(t_vectorBlock) :: rtempVector3
+    
+    ! Bondary conditions
+    type(t_discreteBC) :: rdiscreteBC
+    
+    ! Fictitious boundary conditions
+    type(t_discreteFBC) :: rdiscreteFBC
 
     ! Block matrix, which is used in the defect correction / Newton
     ! algorithm as preconditioner matrix of the correspnding underlying
@@ -234,7 +243,10 @@ module spacepreconditioner
     ! a Newton matrix. This matrix is changed during the
     ! nonlinear iteration and used e.g. if a linear solver (Multigrid) is
     ! used for preconditioning.
-    type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
+    type(t_matrixBlock) :: rmatrixPreconditioner
+    
+    ! Flag that specifies if there are Neumann BC`s on this level.
+    logical :: bhasNeumann
     
   end type
 
@@ -281,11 +293,11 @@ module spacepreconditioner
     
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
-    type(t_vectorScalar), pointer :: p_rtempVectorSc
+    type(t_vectorScalar) :: rtempVectorSc
 
     ! A filter chain that is used for implementing boundary conditions or other
     ! things when invoking the linear solver.
-    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    type(t_filterChain), dimension(4) :: RfilterChain
     
   end type
 
@@ -426,6 +438,10 @@ contains
     ! Defect preconditioning routine. Based on the current iteration 
     ! vector rx, this routine has to perform preconditioning on the defect 
     ! vector rd.
+    !
+    ! Note that no boundary conditions have to be attached to rd, rx1, rx2 and rx3.
+    ! The preconditioner internally applies the global boundary conditions of the 
+    ! problem where necessary.
   !</description>
 
   !<input>
@@ -532,7 +548,7 @@ contains
         ! Attach the system matrix
         do i=rpreconditioner%NLMIN,rpreconditioner%NLMAX
           call lsysbl_duplicateMatrix ( &
-            rpreconditioner%RcoreEquation(i)%p_rmatrixPreconditioner, &
+            rpreconditioner%RcoreEquation(i)%rmatrixPreconditioner, &
             Rmatrices(i), LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
         end do
           
@@ -581,8 +597,7 @@ contains
         
         if (bsuccess) then
           ! Filter the final defect
-          p_RfilterChain => rpreconditioner%p_RfilterChain
-          call filter_applyFilterChainVec (rd, p_RfilterChain)
+          call filter_applyFilterChainVec (rd, rpreconditioner%RfilterChain)
         end if
         
         if (p_rsolverNode%dfinalDefect .gt. p_rsolverNode%dinitialDefect*0.99_DP) then
@@ -610,7 +625,7 @@ contains
 
       ! Spatial preconditioner structure that defines all parameters how to perform
       ! preconditioning.
-      type(t_ccspatialPreconditioner), intent(IN)    :: rpreconditioner
+      type(t_ccspatialPreconditioner), intent(IN),target    :: rpreconditioner
 
       ! Level independent configuration of the core equation
       type(t_nonlinearSpatialMatrix), intent(IN)      :: rnonlinearSpatialMatrix
@@ -646,9 +661,6 @@ contains
       type(t_nonlinearSpatialMatrix) :: rlocalNonlSpatialMatrix
       integer, dimension(1), parameter :: Irows = (/1/)
 
-      ! A filter chain for the linear solver
-      type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-      
       ! DEBUG!!!
       type(t_cccoreEquationOneLevel), pointer :: p_rcore
     !    real(dp), dimension(:), pointer :: p_vec,p_def,p_da
@@ -659,10 +671,7 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rvectorTemp => rpreconditioner%p_rtempVectorSc
-
-        ! Get the filter chain. We need that later to filter the matrices.        
-        p_RfilterChain => rpreconditioner%p_RfilterChain
+        p_rvectorTemp => rpreconditioner%rtempVectorSc
 
         ! Initialise the matrix assembly structure rlocalNonlSpatialMatrix to describe the
         ! matrix we want to have. We have to initialise the adaptivity constants,
@@ -679,7 +688,7 @@ contains
           ! Get the matrix on the current level.
           ! Shift the previous matrix to the pointer of the fine grid matrix.
           p_rmatrixFine => p_rmatrix
-          p_rmatrix => rpreconditioner%RcoreEquation(ilev)%p_rmatrixPreconditioner
+          p_rmatrix => rpreconditioner%RcoreEquation(ilev)%rmatrixPreconditioner
         
           ! On the highest level, we use rx as solution to build the nonlinear
           ! matrix. On lower levels, we have to create a solution
@@ -700,16 +709,16 @@ contains
             
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
-            p_rvectorCoarse1 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector1
-            p_rvectorCoarse2 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector2
-            p_rvectorCoarse3 => rpreconditioner%RcoreEquation(ilev)%p_rtempVector3
+            p_rvectorCoarse1 => rpreconditioner%RcoreEquation(ilev)%rtempVector1
+            p_rvectorCoarse2 => rpreconditioner%RcoreEquation(ilev)%rtempVector2
+            p_rvectorCoarse3 => rpreconditioner%RcoreEquation(ilev)%rtempVector3
             
             ! Get the solution vector on level i+1. This is either the temporary
             ! vector on that level, or the solution vector on the maximum level.
             if (ilev .lt. rpreconditioner%NLMAX-1) then
-              p_rvectorFine1 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector1
-              p_rvectorFine2 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector2
-              p_rvectorFine3 => rpreconditioner%RcoreEquation(ilev+1)%p_rtempVector3
+              p_rvectorFine1 => rpreconditioner%RcoreEquation(ilev+1)%rtempVector1
+              p_rvectorFine2 => rpreconditioner%RcoreEquation(ilev+1)%rtempVector2
+              p_rvectorFine3 => rpreconditioner%RcoreEquation(ilev+1)%rtempVector3
             else
               p_rvectorFine1 => rx1
               p_rvectorFine2 => rx2
@@ -801,7 +810,7 @@ contains
           ! matrix to make the problem definite!
           if (rpreconditioner%rprecSpecials%isolverType .eq. 0) then
             p_rmatrix => rpreconditioner%RcoreEquation(rpreconditioner%NLMAX)%&
-                p_rmatrixPreconditioner
+                rmatrixPreconditioner
             
             ! Include a unit vector to the matrix part of the pressure in
             ! the primal equation -- as long as there is not a full identity
@@ -842,7 +851,7 @@ contains
             ! are always solvers that allow the applicance of a filter chain.
             if (rpreconditioner%rprecSpecials%icoarseGridSolverType .eq. 0) then
               p_rmatrix => rpreconditioner%RcoreEquation(rpreconditioner%NLMIN)%&
-                  p_rmatrixPreconditioner
+                  rmatrixPreconditioner
               
               ! Include a unit vector to the matrix part of the pressure in
               ! the primal equation -- as long as there is not a full identity

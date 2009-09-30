@@ -58,6 +58,7 @@ module spacediscretisation
   use paramlist
   use stdoperators
   use vectorio
+  use multilevelprojection
   
   use collection
   use convection
@@ -65,7 +66,7 @@ module spacediscretisation
     
   use basicstructures
   use user_callback
-  use spacepreconditionerinit
+  use spacematvecassembly
   
   implicit none
   
@@ -623,33 +624,6 @@ contains
             rproblem%RlevelInfo(i-1)%rdiscretisation)
       end if
           
-      ! -----------------------------------------------------------------------
-      ! Temporary vectors
-      !
-      ! Now on all levels except for the maximum one, create a temporary 
-      ! vector on that level, based on the matrix template.
-      ! It's used for building the matrices on lower levels.
-      if (i .lt. rproblem%NLMAX) then
-        call lsysbl_createVecBlockByDiscr (&
-            rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rtempVector1,.true.)
-        call lsysbl_createVecBlockByDiscr (&
-            rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rtempVector2,.true.)
-        call lsysbl_createVecBlockByDiscr (&
-            rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rtempVector3,.true.)
-
-        p_rtempVector => rproblem%RlevelInfo(i)%rtempVector2
-            
-        ! The temp vectors for the primal and dual system share their memory
-        ! with that temp vector.
-        call lsysbl_deriveSubvector(p_rtempVector,&
-            rproblem%RlevelInfo(i)%rtempVectorPrimal,1,3,.true.)
-        call lsysbl_deriveSubvector(p_rtempVector,&
-            rproblem%RlevelInfo(i)%rtempVectorDual,4,6,.true.)
-      end if
-      
     end do
     
     ! (Only) on the finest level, we need to allocate a RHS vector
@@ -729,16 +703,6 @@ contains
 
       ! Release the static matrices.
       call cc_releaseStaticMatrices (rproblem%RlevelInfo(i)%rstaticInfo)
-      
-      ! Remove the temp vector that was used for interpolating the solution
-      ! from higher to lower levels in the nonlinear iteration.
-      if (i .lt. rproblem%NLMAX) then
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorPrimal)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVectorDual)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector3)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector2)
-        call lsysbl_releaseVector(rproblem%RlevelInfo(i)%rtempVector1)
-      end if
       
     end do
 
@@ -946,7 +910,7 @@ contains
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,0.0_DP,rproblem%rcollection)
     
     ! -----------------------------------------------------------------------
     ! Basic (Navier-) Stokes problem
@@ -967,7 +931,8 @@ contains
     ! as well as both B-matrices.
     
     ! Assemble the Stokes operator:
-    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%dnu)
+    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,&
+        rproblem%rphysicsPrimal%dnu)
     
     ! Build the first pressure matrix B1.
     call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB1,&
@@ -1006,7 +971,7 @@ contains
     
       ! Set up the jump stabilisation structure.
       ! There's not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rproblem%dnu
+      rjumpStabil%dnu = rproblem%rphysicsPrimal%dnu
       
       ! Set stabilisation parameter
       rjumpStabil%dgamma = dupsam1
@@ -1038,7 +1003,7 @@ contains
 
         ! Set up the jump stabilisation structure.
         ! There's not much to do, only initialise the viscosity...
-        rjumpStabil%dnu = rproblem%dnu
+        rjumpStabil%dnu = rproblem%rphysicsPrimal%dnu
         
         ! Set stabilisation parameter
         rjumpStabil%dgamma = dupsam2
@@ -1137,7 +1102,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_generateBasicRHS (rproblem,rrhs)
+  subroutine cc_generateBasicRHS (rproblem,dtime,rrhs)
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
@@ -1145,6 +1110,11 @@ contains
   ! the vector.
   ! Memory for the RHS vector must have been allocated in advance.
 !</description>
+
+!<input>
+  ! Current simulation time.
+  real(DP), intent(in) :: dtime
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -1193,7 +1163,7 @@ contains
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
     ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
     ! Discretise the X-velocity part:
     call linf_buildVectorScalar (&

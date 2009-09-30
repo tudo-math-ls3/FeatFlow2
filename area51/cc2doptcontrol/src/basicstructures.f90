@@ -138,30 +138,22 @@ module basicstructures
     ! space.
     type(t_blockDiscretisation) :: rdiscretisationPrimal
 
-    ! Three temp vectors for the full system.
-    type(t_vectorBlock) :: rtempVector1
-    type(t_vectorBlock) :: rtempVector2
-    type(t_vectorBlock) :: rtempVector3
-    
-    ! Reference ro rtempVector(1:3), which corresponds to the primal solution.
-    type(t_vectorBlock) :: rtempVectorPrimal
-
-    ! Reference ro rtempVector(4:6), which corresponds to the dual solution.
-    type(t_vectorBlock) :: rtempVectorDual
-
-    ! A variable describing the discrete boundary conditions for the velocity.
-    ! Points to NULL() until the BC's are discretised for the first time.
-    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
-  
-    ! A structure for discrete fictitious boundary conditions
-    ! Points to NULL() until the BC's are discretised for the first time.
-    type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
-    
+!    ! Three temp vectors for the full system.
+!    type(t_vectorBlock) :: rtempVector1
+!    type(t_vectorBlock) :: rtempVector2
+!    type(t_vectorBlock) :: rtempVector3
+!    
+!    ! Reference ro rtempVector(1:3), which corresponds to the primal solution.
+!    type(t_vectorBlock) :: rtempVectorPrimal
+!
+!    ! Reference ro rtempVector(4:6), which corresponds to the dual solution.
+!    type(t_vectorBlock) :: rtempVectorDual
+!
     ! This flag signales whether there are Neumann boundary components
     ! visible on the boundary of this level or not. If there are no
     ! Neumann boundary components visible, the equation gets indefinite
     ! for the pressure.
-    logical :: bhasNeumannBoundary
+    !logical :: bhasNeumannBoundary
     
     ! A structure containing all static information about this level.
     type(t_staticLevelInfo) :: rstaticInfo
@@ -175,12 +167,6 @@ module basicstructures
   
   ! Application-specific type block for the nonstationary Nav.St. problem
   type t_problem_explTimeStepping
-  
-    ! Number of current time step; changes during the simulation.
-    integer :: itimeStep           = 0
-    
-    ! Current simulation time; changes during the simulation.
-    real(DP) :: dtime              = 0.0_DP
   
     ! Number of time steps; former NITNS
     integer :: niterations         = 0
@@ -335,6 +321,33 @@ module basicstructures
 
 !</typeblock>
 
+!<typeblock>
+
+  ! This type block encapsules all physical constants and configuration
+  ! parameters for the primal equation. This includes e.g. the type of the equation,
+  ! viscosity parameter etc.
+  type t_physicsPrimal
+  
+    ! Viscosity parameter nu = 1/Re
+    real(DP) :: dnu
+    
+    ! Type of problem.
+    ! =0: Navier-Stokes.
+    ! =1: Stokes.
+    integer :: iequation
+    
+    ! Type of subproblem of the main problem. Depending on iequationType.
+    ! If iequationType=0 or =1:
+    ! =0: (Navier-)Stokes with gradient tensor
+    ! =1: (Navier-)Stokes with deformation tensor
+    integer :: isubEquation
+    
+  
+  end type
+
+!</typeblock>
+
+
 
 !<typeblock>
 
@@ -353,19 +366,8 @@ module basicstructures
     ! Maximum refinement level
     integer :: NLMAX
     
-    ! Viscosity parameter nu = 1/Re
-    real(DP) :: dnu
-    
-    ! Type of problem.
-    ! =0: Navier-Stokes.
-    ! =1: Stokes.
-    integer :: iequation
-    
-    ! Type of subproblem of the main problem. Depending on iequationType.
-    ! If iequationType=0 or =1:
-    ! =0: (Navier-)Stokes with gradient tensor
-    ! =1: (Navier-)Stokes with deformation tensor
-    integer :: isubEquation
+    ! Physics of the problem
+    type(t_physicsPrimal) :: rphysicsPrimal
     
     ! Type of right hand side in the primal equation.
     ! =-1: given as analytical expression srhsExpressionX,srhsExpressionY.

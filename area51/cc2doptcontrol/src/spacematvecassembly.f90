@@ -449,7 +449,7 @@ contains
       ! with basic global information.
       !
       ! 1.) Model, stabilisation
-      rnonlinearSpatialMatrix%dnu = collct_getvalue_real (rproblem%rcollection,'NU')
+      rnonlinearSpatialMatrix%dnu = rproblem%rphysicsPrimal%dnu
 
       ! Get stabilisation parameters
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -482,6 +482,36 @@ contains
       rnonlinearSpatialMatrix%p_rstaticInfo => rstaticLevelInfo
       
     end subroutine
+
+!  ! ***************************************************************************
+!
+!  !<subroutine>
+!  
+!    subroutine cc_initMatrixStructure (rnonlinearSpatialMatrix,rmatrix)
+!  
+!  !<description>
+!    ! Analyses the matrix configuration in rnonlinearSpatialMatrix and creates
+!    ! an empty matrix rmatrix with the structure that allows to assemble
+!    ! all operators specified by rnonlinearSpatialMatrix.
+!  !</description>
+!
+!  !<input>
+!    ! Nonlinear matrix structure defining the matrix configuration.
+!    ! Must have been initialised at least with cc_initNonlinMatrix.
+!    type(t_nonlinearSpatialMatrix), intent(i) :: rnonlinearSpatialMatrix
+!  !</input>
+!  
+!  !<inputoutput>
+!    ! Block matrix receiving the structure for all operators.
+!    type(t_matrixBlock), intent(in) :: rmatrix
+!  !</inputoutput>
+!               
+!  !</subroutine>
+!      
+!      
+!
+!      
+!    end subroutine
 
 ! ***************************************************************************
   !<subroutine>
