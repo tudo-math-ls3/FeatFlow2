@@ -220,6 +220,12 @@
 !#
 !# 65.) lsysbl_swapMatrices
 !#      -> Swap two matricess
+!#
+!# 66.) lsysbl_assignDiscreteBC
+!#      -> Assigns discrete boundary conditions to a matrix/vector
+!#
+!# 67.) lsysbl_assignDiscreteFBC
+!#      -> Assigns discrete fictitious boundary conditions to a matrix/vector
 !# </purpose>
 !##############################################################################
 
@@ -439,6 +445,16 @@ module linearsystemblock
     module procedure lsysbl_resizeVecBlockDirectDims
     module procedure lsysbl_resizeVecBlockIndirect
   end interface
+  
+  interface lsysbl_assignDiscreteBC
+    module procedure lsysbl_assignDiscreteBCMat
+    module procedure lsysbl_assignDiscreteBCVec
+  end interface
+
+  interface lsysbl_assignDiscreteFBC
+    module procedure lsysbl_assignDiscreteBCMat
+    module procedure lsysbl_assignDiscreteBCVec
+  end interface
 
   public :: lsysbl_resizeVectorBlock
   public :: lsysbl_resizeVecBlockIndMat
@@ -506,6 +522,8 @@ module linearsystemblock
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
   public :: lsysbl_createscalarfromvec
+  public :: lsysbl_assignDiscreteBC
+  public :: lsysbl_assignDiscreteFBC
   
 contains
 
@@ -7181,6 +7199,130 @@ contains
     
     ! Release the temp vector
     call lsyssc_releaseVector(rvectorVecMagTemp)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_assignDiscreteBCVec (rvectorBlock,rdiscreteBC)
+  
+!<description>
+  ! Assigns discrete boundary conditions to a matrix.
+!</description>
+  
+!<inputoutput>
+  ! Block vector that should receive the BC.
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+!</inputoutput>
+  
+!<input>
+  ! OPTIONAL: Structure with discrete boundary conditions.
+  ! If not present, the BC`s are removed.
+  type(t_discreteBC), intent(in), target, optional :: rdiscreteBC
+!</input>
+  
+!</subroutine>
+  
+    if (present(rdiscreteBC)) then
+      rvectorBlock%p_rdiscreteBC => rdiscreteBC
+    else
+      nullify(rvectorBlock%p_rdiscreteBC)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_assignDiscreteBCMat (rmatrix,rdiscreteBC)
+  
+!<description>
+  ! Assigns discrete boundary conditions to a matrix.
+!</description>
+  
+!<inputoutput>
+  ! Block matrix that should receive the BC.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</inputoutput>
+  
+!<input>
+  ! OPTIONAL: Structure with discrete boundary conditions.
+  ! If not present, the BC`s are removed.
+  type(t_discreteBC), intent(in), target, optional :: rdiscreteBC
+!</input>
+  
+!</subroutine>
+  
+    if (present(rdiscreteBC)) then
+      rmatrix%p_rdiscreteBC => rdiscreteBC
+    else
+      nullify(rmatrix%p_rdiscreteBC)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_assignDiscreteFBCVec (rvectorBlock,rdiscreteFBC)
+  
+!<description>
+  ! Assigns discrete fictitious boundary conditions to a matrix.
+!</description>
+  
+!<inputoutput>
+  ! Block vector that should receive the BC.
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+!</inputoutput>
+  
+!<input>
+  ! OPTIONAL: Structure with discrete boundary conditions.
+  ! If not present, the BC`s are removed.
+  type(t_discreteFBC), intent(in), target, optional :: rdiscreteFBC
+!</input>
+  
+!</subroutine>
+  
+    if (present(rdiscreteFBC)) then
+      rvectorBlock%p_rdiscreteBCfict => rdiscreteFBC
+    else
+      nullify(rvectorBlock%p_rdiscreteBCfict)
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_assignDiscreteFBCMat (rmatrix,rdiscreteFBC)
+  
+!<description>
+  ! Assigns discrete fictitious boundary conditions to a matrix.
+!</description>
+  
+!<inputoutput>
+  ! Block matrix that should receive the BC.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+!</inputoutput>
+  
+!<input>
+  ! OPTIONAL: Structure with discrete boundary conditions.
+  ! If not present, the BC`s are removed.
+  type(t_discreteFBC), intent(in), target, optional :: rdiscreteFBC
+!</input>
+  
+!</subroutine>
+  
+    if (present(rdiscreteFBC)) then
+      rmatrix%p_rdiscreteBCfict => rdiscreteFBC
+    else
+      nullify(rmatrix%p_rdiscreteBCfict)
+    end if
 
   end subroutine
 
