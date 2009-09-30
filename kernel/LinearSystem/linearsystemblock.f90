@@ -452,8 +452,8 @@ module linearsystemblock
   end interface
 
   interface lsysbl_assignDiscreteFBC
-    module procedure lsysbl_assignDiscreteBCMat
-    module procedure lsysbl_assignDiscreteBCVec
+    module procedure lsysbl_assignDiscreteFBCMat
+    module procedure lsysbl_assignDiscreteFBCVec
   end interface
 
   public :: lsysbl_resizeVectorBlock
