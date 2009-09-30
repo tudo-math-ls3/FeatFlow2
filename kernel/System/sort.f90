@@ -231,8 +231,8 @@ contains
 
     subroutine reheap(Iarray, istart, istop, Imapping)
       integer :: istart,istop
-      integer,dimension(1:istop) :: Iarray
-      integer,dimension(1:istop), optional :: Imapping
+      integer, dimension(1:istop) :: Iarray
+      integer, dimension(1:istop), optional :: Imapping
       integer :: t1,t2
       integer :: i1, i2
       integer :: i,j
@@ -304,7 +304,7 @@ contains
 
 
     subroutine heapsort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t
       integer :: t2
@@ -347,7 +347,7 @@ contains
 
 
     recursive subroutine quicksort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t,temp
       integer :: t2, temp2
@@ -457,7 +457,7 @@ contains
 
 
     subroutine insertsort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t
       integer :: t2
@@ -505,8 +505,8 @@ contains
 
 
     recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
-      integer,dimension(:) :: Iarray
-      integer,dimension(:) :: Itemp
+      integer, dimension(:) :: Iarray
+      integer, dimension(:) :: Itemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
       integer ::imid, ilen
       integer ::ilo,iend_lo,istart_hi
@@ -652,7 +652,7 @@ contains
     !<inoutput>
 
     ! integer array to be sorted
-    integer,dimension(:) :: Iarray
+    integer, dimension(:) :: Iarray
 
     !optional mapping vector (if more than 1 vector may be sorted)
     integer, dimension(:), optional :: Imapping
@@ -714,8 +714,8 @@ contains
 
     subroutine reheap(Iarray, istart, istop, Imapping)
       integer :: istart,istop
-      integer,dimension(1:istop) :: Iarray
-      integer,dimension(1:istop), optional :: Imapping
+      integer, dimension(1:istop) :: Iarray
+      integer, dimension(1:istop), optional :: Imapping
       integer :: t1,t2
       integer :: i1, i2
       integer :: i,j
@@ -786,7 +786,7 @@ contains
 
 
     subroutine heapsort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t
       integer :: t2
@@ -830,7 +830,7 @@ contains
 
 
     recursive subroutine quicksort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t,temp
       integer :: t2, temp2
@@ -940,7 +940,7 @@ contains
 
 
     subroutine insertsort(Iarray, Imapping)
-      integer,dimension(:) :: Iarray
+      integer, dimension(:) :: Iarray
       integer, dimension(:), optional :: Imapping
       integer :: t
       integer :: t2
@@ -983,8 +983,8 @@ contains
 
 
     recursive subroutine mergesort(Iarray, Itemp, Imapping, ImappingTemp)
-      integer,dimension(:) :: Iarray
-      integer,dimension(:) :: Itemp
+      integer, dimension(:) :: Iarray
+      integer, dimension(:) :: Itemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
       integer :: imid, ilen
       integer :: ilo,iend_lo,istart_hi
@@ -1151,7 +1151,7 @@ contains
 
     subroutine reheap(Darray, istart, istop)
       integer :: istart,istop
-      real(sp),dimension(1:istop) :: Darray
+      real(sp), dimension(1:istop) :: Darray
       real(sp) :: t1,t2
       integer :: i,j
       !if(istop.eq.istart) return ! nothing to correct
@@ -1416,8 +1416,8 @@ contains
 
     subroutine reheap(Darray, istart, istop, Imapping)
       integer :: istart,istop
-      real(dp),dimension(1:istop) :: Darray
-      integer,dimension(1:istop), optional :: Imapping
+      real(dp), dimension(1:istop) :: Darray
+      integer, dimension(1:istop), optional :: Imapping
       real(dp) :: t1,t2
       integer :: i1, i2
       integer :: i,j
@@ -1685,8 +1685,8 @@ contains
 
 
     recursive subroutine mergesort(Darray, Dtemp, Imapping, ImappingTemp)
-      real(DP),dimension(:) :: Darray
-      real(DP),dimension(:) :: Dtemp
+      real(DP), dimension(:) :: Darray
+      real(DP), dimension(:) :: Dtemp
       integer, dimension(:), optional :: Imapping,ImappingTemp
       integer :: imid, ilen
       integer :: ilo,iend_lo,istart_hi
