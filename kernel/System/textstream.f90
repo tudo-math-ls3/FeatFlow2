@@ -580,63 +580,58 @@ contains
     ! Internal subroutine: Read a line from a text file.
     
     subroutine readlinefromfile (iunit, sdata, ilinelen, ios)
+      
+      ! The unit where to read from; must be connected to a file.
+      integer, intent(in) :: iunit
     
-    ! The unit where to read from; must be connected to a file.
-    integer, intent(in) :: iunit
-    
-    ! The string where to write data to
-    character(len=*), intent(out) :: sdata
-    
-    ! Length of the output
-    integer, intent(out) :: ilinelen
-    
-    ! Status of the reading process. Set to a value <> 0 if the end
-    ! of the file is reached.
-    integer, intent(out) :: ios
-    
+      ! The string where to write data to
+      character(len=*), intent(out) :: sdata
+      
+      ! Length of the output
+      integer, intent(out) :: ilinelen
+      
+      ! Status of the reading process. Set to a value <> 0 if the end
+      ! of the file is reached.
+      integer, intent(out) :: ios
+      
       ! local variables
-      integer :: eol
       character :: c
       
       sdata = ''
       ilinelen = 0
       
       ! Read the data - as long as the line/file does not end.
-      eol = NO
-      ios = 0
-      do while ((ios .eq. 0) .and. (eol .eq. no))
+      do
         
         ! Read a character.
         ! Unfortunately, Fortran forces me to use this dirty GOTO
         ! to decide processor-independently whether the line or
         ! the record ends.
-        read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
-        goto 30
+        read (unit=iunit, fmt='(A1)', iostat=ios, advance='NO',&
+            end do=10, eor=20) c
         
-10      continue
-        ! End of file. 
-        ios = -1
-        goto 30
-        
-20      continue
-        ! End of record = END OF LINE.
-        eol = YES
-
-        ! Set error flag back to 0.
-        ios = 0
-        
-30      continue    
         ! Do not do anything in case of an error
         if (ios .eq. 0) then
-        
+          
           ilinelen = ilinelen + 1
           sdata (ilinelen:ilinelen) = c
-        
+          
         end if
-      
+        
+        ! Proceed to next character
+        cycle
+        
+        ! End of file. 
+10      ios = -1
+        exit
+        
+        ! End of record = END OF LINE.
+20      ios = 0
+        exit
+        
       end do
       
-    end subroutine  
+    end subroutine
 
   end subroutine
 

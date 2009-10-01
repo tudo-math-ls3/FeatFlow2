@@ -2278,46 +2278,40 @@ contains
   integer, intent(out) :: ios
   
   ! local variables
-  integer :: eol,isize
   character :: c
   
   sdata = ''
   ilinelen = 0
-  isize = 0
   
   ! Read the data - as long as the line/file does not end.
-  eol = NO
-  ios = 0
-  do while ((ios .eq. 0) .and. (eol .eq. NO))
+  do
     
     ! Read a character.
     ! Unfortunately, Fortran forces me to use this dirty GOTO
     ! to decide processor-independently whether the line or
     ! the record ends.
-    read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20,size=isize) c
-    goto 30
-    
-10  continue
-    ! End of file. 
-    ios = -1
-    goto 30
-    
-20  continue
-    ! End of record = END OF LINE.
-    eol = YES
+    read (unit=iunit, fmt='(A1)', iostat=ios, advance='NO',&
+          end=10, eor=20) c
 
-    ! Set error flag back to 0.
-    ios = 0
-    
-30  continue    
     ! Do not do anything in case of an error
-    if ((ios .eq. 0) .and. (isize .ge. 1)) then
+    if (ios .eq. 0) then
     
       ilinelen = ilinelen + 1
       sdata (ilinelen:ilinelen) = c
     
     end if
-  
+
+    ! Proceed to next character
+    cycle
+    
+    ! End of file. 
+10  ios = -1
+    exit
+    
+    ! End of record = END OF LINE.
+20  ios = 0
+    exit
+    
   end do
   
   end subroutine
@@ -2382,7 +2376,7 @@ contains
     
     ! Copy the input string - left adjusted - and get the string length
     sbuf = adjustl(sdata)
-    
+print *, sbuf    
     ! Should we parse the line as first line of a parameter or as substring
     ! of a multi-valued parameter?
     if (isubstring .eq. 0) then
