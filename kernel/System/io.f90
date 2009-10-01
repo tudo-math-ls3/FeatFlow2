@@ -291,44 +291,39 @@ contains
 !</subroutine>
     
     ! local variables
-    integer :: eol
     character :: c
     
     sdata = ''
     ilinelen = 0
     
     ! Read the data - as long as the line/file does not end.
-    eol = NO
-    ios = 0
-    do while ((ios .eq. 0) .and. (eol .eq. NO))
+    do
       
       ! Read a character.
       ! Unfortunately, Fortran forces me to use this dirty GOTO
       ! to decide processor-independently whether the line or
       ! the record ends.
-      read (unit=iunit,fmt='(A1)',iostat=ios,advance='NO', end=10, eor=20) c
-      goto 30
-      
-10    continue
-      ! End of file. 
-      ios = -1
-      goto 30
-      
-20    continue
-      ! End of record = END OF LINE.
-      eol = YES
-      
-      ! Set error flag back to 0.
-      ios = 0
-      
-30    continue    
+      read (unit=iunit, fmt='(A1)', iostat=ios, advance='NO',&
+            end=10, eor=20) c
+
       ! Do not do anything in case of an error
       if (ios .eq. 0) then
         
         ilinelen = ilinelen + 1
         sdata (ilinelen:ilinelen) = c
-        
+
       end if
+
+      ! Proceed to next character
+      cycle
+
+      ! End of file. 
+10    ios = -1
+      exit
+
+      ! End of record = END OF LINE.
+20    ios = 0
+      exit
       
     end do
     
@@ -402,7 +397,7 @@ contains
   
   !<result>
     ! Path + filename to a specific file (or directory).
-    character(len=LEN_TRIM(spath)+LEN_TRIM(sfilename)+1) :: sfile
+    character(len=len_trim(spath)+len_trim(sfilename)+1) :: sfile
   !</result>
   
   !</function>
