@@ -1119,7 +1119,7 @@ contains
       call lsyssc_releaseVector (rpostprocessing%rResForceY)
     if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
-    if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
+    if (rpostprocessing%ddata%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%ddata)
       
       
