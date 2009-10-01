@@ -4881,6 +4881,8 @@ contains
     real(DP), dimension(:), pointer :: p_DA
     integer :: ixfirst,ixlast,iyfirst,iylast
     type(t_matrixBlock) :: rsubmatrix,rtempSubmatrix
+    integer, dimension(:), allocatable :: IpureDirichletTimesteps
+    integer :: npureDirichletTimesteps
 
     ! Status variables of UMFPACK4; receives the UMFPACK-specific return code
     ! of a call to the solver routines.
@@ -4888,13 +4890,16 @@ contains
     
     ! A-priori we have no error...
     ierror = SPTILS_ERR_NOERROR
+    
+    allocate(IpureDirichletTimesteps(rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime))
 
     ! We have to create a global matrix first!
     ! Call the assembly routine to assemble the global block matrix.
     ! Afterwards, reshape the data to form a scalar matrix which
     ! can be feed to UMFPACK.
     call assembleGlobalSpaceTimeMatrix (rsolverNode%p_rproblem,&
-        rsolverNode%rmatrix,rmatrixGlobal)
+        rsolverNode%rmatrix,rmatrixGlobal,&
+        IpureDirichletTimesteps,npureDirichletTimesteps)
 
     ! Extract a submatrix for file output?
     if (rsolverNode%p_rsubnodeUMFPACK4%cwriteMatrix .gt. 0) then
@@ -4931,8 +4936,9 @@ contains
     ! so the pressure is not uniquely defined. In this case, we fix
     ! the pressure in the first node by writing a unit line into
     ! the global matrix for the first pressure DOF in every timestep.
-    !call pressureDirichlet (rsolverNode%p_rproblem,&
-    !    rsolverNode%rmatrix,rtempMatrix)
+    call pressureDirichlet (rsolverNode%p_rproblem,&
+        rsolverNode%rmatrix,rtempMatrix,&
+        IpureDirichletTimesteps,npureDirichletTimesteps)
 
     !CALL matio_writeBlockMatrixHR (rtempMatrix, 'matrix',&
     !                               .TRUE., 0, 'matrix.txt', '(E15.5)')
@@ -5030,12 +5036,14 @@ contains
 
     ! Throw away the temporary matrices
     call lsysbl_releaseMatrix (rtempMatrix)
+    
+    deallocate(IpureDirichletTimesteps)
 
   contains
 
     ! ---------------------------------------------------------------
 
-    subroutine pressureDirichlet (rproblem,rsupermatrix,rmatrix)
+    subroutine pressureDirichlet (rproblem,rsupermatrix,rmatrix,Itimesteps,ntimesteps)
     
     ! If we have a Pure-Dirichlet problem, this replaces the row of the first
     ! pressure DOF in every timestep by zero.
@@ -5051,37 +5059,58 @@ contains
     ! the global space time matrix.
     type(t_matrixBlock), intent(INOUT) :: rmatrix
     
-!      integer, dimension(:), allocatable :: Iidx
-!      integer :: ivelSize,ipSize,neq
-!      integer :: i
-!      type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
-!    
-!      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
-!    
-!      ! Nothing to do if there is Nuemann boundary here.
-!      if (p_rspaceTimeDiscr%p_rlevelInfo%bhasNeumannBoundary) return
-!    
-!      neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
-!      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
-!      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
-!    
-!      ! Create an array containing all the rows where a unit vector is to be
-!      ! imposed. Size = 2 * number of timesteps in the supermatrix - 1
-!      ! (primal + dual pressure, not the initial condition)
-!      allocate(Iidx(0:2*(p_rspaceTimeDiscr%NEQtime-1)))
-!      
+    ! List of timesteps which have no Neumann boundary in the BC`s.
+    integer, dimension(:), intent(in) :: Itimesteps
+    
+    ! Number of timesteps in Itimesteps
+    integer, intent(in) :: ntimesteps
+    
+      integer, dimension(:), allocatable :: Iidx
+      integer :: ivelSize,ipSize,neq
+      integer :: i,idof
+      type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
+    
+      ! Nothing to do if there is Neumann boundary here.
+      if (ntimesteps .eq. 0) return
+    
+      p_rspaceTimeDiscr => rsupermatrix%p_rspaceTimeDiscr
+    
+      neq = dof_igetNDofGlobBlock(p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
+      ivelSize = 2 * p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixStokes%NEQ
+      ipSize = p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixB1%NCOLS
+    
+      ! Create an array containing all the rows where a unit vector is to be
+      ! imposed. Size = 2 * number of timesteps
+      ! (primal + dual pressure, not the initial condition)
+      allocate(Iidx(2*ntimesteps))
+      !allocate(Iidx(0:2*(p_rspaceTimeDiscr%NEQtime-1)))
+      
+      do i=1,ntimesteps
+        idof = Itimesteps(i)-1
+        if (idof .eq. 0) then
+          ! 0th time step -> only dual pressure because of init. cond.;
+          ! implement the unit vector twice, so there's no special handling ti
+          ! be done to the array indices.
+          Iidx(2*i-1) = idof*neq+neq-ipSize+1
+          Iidx(2*i  ) = idof*neq+neq-ipSize+1
+        else
+          Iidx(2*i-1) = idof*neq+ivelSize+1
+          Iidx(2*i  ) = idof*neq+neq-ipSize+1
+        end if
+      end do
+      
 !      ! Add the row of the first primal/dual pressure DOF to that array.
 !      Iidx(0) = neq-ipSize+1  ! 0th time step -> only dual pressure because of init. cond.
 !      do i=1,p_rspaceTimeDiscr%NEQtime-1
 !        Iidx(2*i-1) = i*neq+ivelSize+1
 !        Iidx(2*i  ) = i*neq+neq-ipSize+1
 !      end do
-!      
-!      ! Filter the matrix, implement the unit vectors.
-!      call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
-!      
-!      ! Release memory, finish.
-!      deallocate(Iidx)
+      
+      ! Filter the matrix, implement the unit vectors.
+      call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
+      
+      ! Release memory, finish.
+      deallocate(Iidx)
     
     end subroutine
 
@@ -5089,7 +5118,8 @@ contains
 
   ! ***************************************************************************
 
-  subroutine assembleGlobalSpaceTimeMatrix (rproblem,rsupermatrix,rmatrix)
+  subroutine assembleGlobalSpaceTimeMatrix (rproblem,rsupermatrix,rmatrix,&
+      IpureDirichletTimesteps,npureDirichletTimesteps)
   
   ! Assembles a block matrix rmatrix from a space-time matrix rsupermatrix
   ! by plugging together all blocks.
@@ -5104,6 +5134,12 @@ contains
   
   ! The destination block matrix
   type(t_matrixBlock), intent(OUT) :: rmatrix
+  
+  ! Returns a list of all timesteps which have pure Dirichlet BC`s.
+  integer, dimension(:), intent(inout) :: IpureDirichletTimesteps
+  
+  ! Number of timesteps with pure Dirichlet BC`s.
+  integer, intent(out) :: npureDirichletTimesteps
 
     ! local variables  
     type(t_matrixBlock) :: rblockTemp
@@ -5165,6 +5201,8 @@ contains
     if (associated(rsupermatrix%p_rsolution))  then
       call sptivec_getTimestepData (rsupermatrix%p_rsolution, 1, rvector2)
     end if
+    
+    npureDirichletTimesteps = 0
     
     ! Loop through the substeps
     do isubstep = 0,p_rspaceTimeDiscr%NEQtime-1
@@ -5280,15 +5318,9 @@ contains
               p_rspaceTimeDiscr%p_rlevelInfo%rstaticInfo%rmatrixTemplateFEMPressure%NEQ,1)
         end if
         
-        ! Insert a unit vector to force the first pressure DOF to 0.
-        Iidx(1) = isubstep*neq+ivelSize+1
-        Iidx(2) = isubstep*neq+neq-ipSize+1
-        if (isubstep .eq. 0) then
-          ! 0th time step -> only dual pressure because of init. cond.
-          call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx(2:2))
-        else
-          call mmod_replaceLinesByUnit (rmatrix%RmatrixBlock(1,1),Iidx)
-        end if
+        ! Remember this timestep as "pure Dirichlet".
+        npureDirichletTimesteps = npureDirichletTimesteps + 1
+        IpureDirichletTimesteps(npureDirichletTimesteps) = isubstep+1
         
       end if
       
