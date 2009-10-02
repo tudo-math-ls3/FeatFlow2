@@ -930,6 +930,12 @@ contains
     p_rmatrixTransport => rproblemLevel%Rmatrix(transportMatrix)
     p_rafcstabTransport => rproblemLevel%Rafcstab(convectionAFC)
     p_rafcstabEuler => rproblemLevel%Rafcstab(inviscidAFC)
+
+    ! Let us check if the linearized FCT algorithm needs to be applied
+    if ((p_rafcstabTransport%ctypeAFCstabilisation .ne.&
+        AFCSTAB_FEMFCT_LINEARIZED) .or.&
+        (p_rafcstabEuler%ctypeAFCstabilisation .ne.&
+        AFCSTAB_FEMFCT_LINEARIZED)) return
     
     ! Let us check if the edge-based data structure has been generated
     if((iand(p_rafcstabEuler%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
