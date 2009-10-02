@@ -444,6 +444,7 @@ contains
         call transp_outputSolution(rparlist, 'transport', rproblem&
             %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
         
       case ('transient_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -466,17 +467,26 @@ contains
         call transp_outputSolution(rparlist, 'transport', rproblem&
             %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
-
-
-
+        
+        
       case ('pseudotransient_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the pseudo time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        print *, 'Feature is not implemented'
-        stop
+        call parlst_getvalue_string(rparlist, 'transport',&
+            'sdualbdrcondname', sbdrcondName)
+        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
+            '['//trim(sbdrcondName)//']', ndimension)
+        
+        call transp_solvePseudoTransientPrimalDual(rparlist, 'transport',&
+            rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
+            rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
+        call transp_outputSolution(rparlist, 'transport', rproblem&
+            %p_rproblemLevelMax, rsolutionPrimal, rsolutionDual,&
+            rtimestep%dTime)
+        
         
       case ('stationary_primal')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -491,8 +501,7 @@ contains
             %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
-
-
+        
       case ('stationary_primaldual')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for 
@@ -1934,7 +1943,7 @@ contains
     character(LEN=*), intent(in) :: ssectionName
 
     ! time-stepping algorithm
-    type(t_timestep), intent(in) :: rtimestep
+    type(t_timestep), intent(inout) :: rtimestep
 
     ! primal solution vector
     type(t_vectorBlock), intent(in), target :: rsolutionPrimal
@@ -1984,11 +1993,12 @@ contains
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix, p_DtargetError
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     logical, dimension(:), pointer :: p_BisactiveElement
-    real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance, daux, dtargetFunc
-    integer :: i, icomp, convectionAFC, diffusionAFC
+    real(DP) :: dexactTargetError, dexactTargetFunc, dprotectLayerTolerance
+    real(DP) :: daux, dtargetFunc, dStep, theta
+    integer :: i, icomp, convectionAFC, diffusionAFC, NEQ
     integer :: cconvectionStabilisation, cdiffusionStabilisation
     integer :: lumpedMassMatrix, templateMatrix, velocityfield
-    integer :: itargetfunctype, iexactsolutiontype
+    integer :: itargetfunctype, iexactsolutiontype, imasstype
     integer :: iprotectLayer, nprotectLayers, igridindicator
     integer :: h_BisactiveElement
 
@@ -2002,14 +2012,25 @@ contains
     call lsysbl_createVectorBlock(rsolutionPrimal, rvector2, .true., ST_DOUBLE)
 
     ! Ok, this is a little bit tricky. We need to compute the residual
-    ! vector for the standard Galerkin scheme vector for the zeroth
+    ! vector for the steady-state Galerkin scheme for the zeroth
     ! iteration. To this end, we switch off all types of
-    ! stabilization, force the velocity field, and hence, the
-    ! preconditioner to be updated and evaluate the residual vector.
+    ! stabilization, mass matrices, time stepping parameter, etc., and
+    ! force the velocity field, and hence, the preconditioner to be
+    ! updated. Then the steady-state residual vector is evaluated.
     
+    ! Get parameters from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, 'convectionAFC', convectionAFC)
     call parlst_getvalue_int(rparlist, ssectionName, 'diffusionAFC', diffusionAFC)
+    call parlst_getvalue_int(rparlist, ssectionName, 'imasstype', imasstype)
+    
+    ! Set mass type to 'no mass matrix'
+    call parlst_setvalue(rparlist, ssectionName, 'imasstype', '0')
 
+    ! Set time-stepping parameters
+    dStep = rtimestep%dStep; rtimestep%dStep = 1.0_DP
+    theta = rtimestep%theta; rtimestep%theta = 1.0_DP
+
+    ! Set stabilization to standard Galerkin
     cconvectionStabilisation =&
         rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
     rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
@@ -2035,12 +2056,20 @@ contains
         rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
         rvector2, 0, rcollection)
 
-    ! Ok, now we have to switch on all types of stabilization
+    ! Ok, now we have to switch on all types of stabilization again
     rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation =&
         cconvectionStabilisation
     rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation =&
         cdiffusionStabilisation
 
+    ! ... and we reset the mass type 
+    call parlst_setvalue(rparlist, ssectionName, 'imasstype',&
+        trim(sys_si(imasstype, 3)))
+
+    ! ... and the time-stepping structure
+    rtimestep%dStep = dStep
+    rtimestep%theta = theta
+    
     ! Again, set update notification for velocity field/preconditioner
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec, PROBLEV_MSPEC_UPDATE)
     
@@ -2048,11 +2077,13 @@ contains
     ! We need the lumped mass matrix for scaling
     call parlst_getvalue_int(rparlist, ssectionName,&
         'lumpedMassMatrix', lumpedMassMatrix)
+    
     if (lumpedMassMatrix > 0) then
-
       ! Set pointer to the lumped mass matrix
       call lsyssc_getbase_double(rproblemLevel&
           %Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+      NEQ = rproblemLevel%Rmatrix(lumpedMassMatrix)%NEQ
+      
     else
       ! Compute the lumped mass matrix explicitly
       call parlst_getvalue_int(rparlist, ssectionName,&
@@ -2062,16 +2093,17 @@ contains
       call stdop_assembleSimpleMatrix(rmatrix, DER_FUNC, DER_FUNC) 
       call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
       call lsyssc_getbase_double(rmatrix, p_DlumpedMassMatrix)
+      NEQ = rmatrix%NEQ
 
     end if   ! lumpedMassMatrix > 0
 
     ! Set pointers
     call lsysbl_getbase_double(rvector2, p_Dresidual)
     call lsysbl_getbase_double(rsolutionDual, p_DsolutionDual)
-    
+
     ! Now we compute the global error and its nodal contributions
     dtargetError = 0.0_DP
-    do i = 1, rmatrix%NEQ
+    do i = 1, NEQ
       dtargetError   = dtargetError + p_Dresidual(i)*p_DsolutionDual(i)
       p_Dresidual(i) = abs(p_Dresidual(i)*p_DsolutionDual(i))/p_DlumpedMassMatrix(i)
     end do
@@ -3556,11 +3588,11 @@ contains
     p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
 
     ! Initialize the solution vector and impose boundary conditions explicitly
-    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution, .false., ST_DOUBLE)
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolution,&
+        .false., ST_DOUBLE)
     call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
-                             0.0_DP, rsolution, rcollection)
-    call bdrf_filterVectorExplicit(rbdrCond,&
-                                   rsolution, 0.0_DP)
+        0.0_DP, rsolution, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution, 0.0_DP)
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure
@@ -3583,7 +3615,8 @@ contains
             ssectionName, 'templateMatrix', templateMatrix)
         call grph_createGraphFromMatrix(p_rproblemLevel&
             %Rmatrix(templateMatrix), rgraph)
-        call collct_setvalue_graph(rcollection, 'sparsitypattern', rgraph, .true.)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
         
         ! Attach the primal solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolution
@@ -3613,15 +3646,15 @@ contains
 
       ! Calculate the velocity field
       nlmin = solver_getMinimumMultigridlevel(rsolver)
-      call transp_calcVelocityField(rparlist, ssectionName, p_rproblemLevel,&
-                                    0.0_DP, rcollection, nlmin)
-
+      call transp_calcVelocityField(rparlist, ssectionName,&
+          p_rproblemLevel, 0.0_DP, rcollection, nlmin)
+      
       ! Attach the boundary condition
       call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
-
+      
       ! Set primal problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
-
+      
       ! Reset the time-stepping algorithm
       call tstep_resetTimestep(rtimestep, .false.)
       call solver_resetSolver(rsolver, .false.)
@@ -3630,15 +3663,14 @@ contains
       if (irhstype > 0) then
         call lsysbl_createVectorBlock(rsolution, rrhs)
         call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
-                            0.0_DP, rrhs, rcollection)
+            0.0_DP, rrhs, rcollection)
 
         ! Prepare quick access arrays of the collection
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem with non-zero right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, transp_nlsolverCallback,&
-                                         rcollection, rrhs)
+        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback, rcollection, rrhs)
 
         ! Release right-hand side vector
         call lsysbl_releaseVector(rrhs)
@@ -3649,9 +3681,8 @@ contains
         rcollection%SquickAccess(1) = ssectionName
 
         ! Solve the primal problem without right-hand side
-        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep, rsolver,&
-                                         rsolution, transp_nlsolverCallback,&
-                                         rcollection)
+        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+            rsolver, rsolution, transp_nlsolverCallback, rcollection)
       end if
 
       ! Stop time measurement for solution procedure
@@ -3749,6 +3780,399 @@ contains
     end if    
     
   end subroutine transp_solvePseudoTransientPrimal
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine transp_solvePseudoTransientPrimalDual(rparlist, ssectionName,&
+      rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep, rsolver,&
+      rsolutionPrimal, rsolutionDual, rcollection)
+
+!<description>
+    ! This subroutine solves the pseudo-transient primal flow problemproblem
+    !
+    ! $$\frac{\partial u}{\partial \tau}+\nabla\cdot{\bf f}(u)=s(u)$$
+    !
+    ! for a scalar quantity $u$ in the domain $\Omega$ both for the
+    ! primal and the dual formulation and performs goal-oriented
+    ! mesh adaptation if the optional parameter rhadapt is present.
+!</description>
+
+!<input>
+    ! section name in parameter list
+    character(LEN=*), intent(in) :: ssectionName
+
+    ! boundary condition structure for the primal problem
+    type(t_boundaryCondition), intent(in) :: rbdrCondPrimal
+
+    ! boundary condition structure for the dual problem
+    type(t_boundaryCondition), intent(in) :: rbdrCondDual
+!</input>
+
+!<inputoutput>
+    ! parameter list
+    type(t_parlist), intent(inout) :: rparlist
+
+    ! problem structure
+    type(t_problem), intent(inout) :: rproblem
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+
+    ! solver struchture
+    type(t_solver), intent(inout), target :: rsolver
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+
+!<output>
+    ! primal solution vector
+    type(t_vectorBlock), intent(out), target :: rsolutionPrimal
+
+    ! dual solution vector
+    type(t_vectorBlock), intent(out), target :: rsolutionDual
+!</output>
+!</subroutine>
+
+    ! Pointer to the multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! Pointer to the discretisation structure
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation
+
+    ! Vector for the linear target functional and the right-hand side
+    type(t_vectorBlock), target :: rtargetFunc, rrhs
+
+    ! Vector for the element-wise error distribution
+    type(t_vectorScalar) :: relementError
+    
+    ! Structure for h-adaptation
+    type(t_hadapt) :: rhadapt
+
+    ! Structure for the sparsity pattern
+    type(t_graph) :: rgraph
+
+    ! Timer structures
+    type(t_timer), pointer :: p_rtimerPrePostprocess
+    type(t_timer), pointer :: p_rtimerSolution
+    type(t_timer), pointer :: p_rtimerErrorEstimation
+    type(t_timer), pointer :: p_rtimerAdaptation
+    type(t_timer), pointer :: p_rtimerTriangulation
+    type(t_timer), pointer :: p_rtimerAssemblyCoeff
+
+    ! section names
+    character(LEN=SYS_STRLEN) :: sadaptivityName
+
+    ! local variables
+    real(dp) :: derror
+    integer :: templateMatrix, systemMatrix, discretisation
+    integer :: nlmin, iadapt, nadapt, irhstype, ivelocitytype
+
+
+    ! Get timer structures
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+
+    ! Start time measurement for pre-processing
+    call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
+
+    ! Get global parameters
+    call parlst_getvalue_int(rparlist, ssectionName, 'irhstype', irhstype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(rparlist, ssectionName, 'discretisation', discretisation)
+
+    ! Set pointer to maximum problem level
+    p_rproblemLevel   => rproblem%p_rproblemLevelMax
+    p_rdiscretisation => p_rproblemLevel%Rdiscretisation(discretisation)
+
+    ! Initialize the solution vector and impose boundary conditions explicitly
+    call lsysbl_createVectorBlock(p_rdiscretisation, rsolutionPrimal,&
+        .false., ST_DOUBLE)
+    call transp_initSolution(rparlist, ssectionName, p_rproblemLevel,&
+        0.0_DP, rsolutionPrimal, rcollection)
+    call bdrf_filterVectorExplicit(rbdrCondPrimal, rsolutionPrimal, 0.0_DP)
+
+    !---------------------------------------------------------------------------
+    ! Initialize the h-adaptation structure
+    !---------------------------------------------------------------------------
+
+    call parlst_getvalue_string(rparlist, ssectionName, 'adaptivity', sadaptivityName, '')
+    if (trim(adjustl(sadaptivityName)) .ne. '') then
+
+      call parlst_getvalue_int(rparlist, trim(sadaptivityName), 'nadapt', nadapt)
+
+      if (nadapt > 0) then
+        
+        ! Initialize adaptation structure from parameter list
+        call hadapt_initFromParameterlist(rhadapt, rparlist, sadaptivityName)
+
+        ! Generate a dynamic graph for the sparsity pattern and attach
+        ! it to the collection structure which is used to pass this type
+        ! to the callback function for h-adaptation
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'templateMatrix', templateMatrix)
+        call grph_createGraphFromMatrix(p_rproblemLevel&
+            %Rmatrix(templateMatrix), rgraph)
+        call collct_setvalue_graph(rcollection, 'sparsitypattern',&
+            rgraph, .true.)
+        
+        ! Attach the primal solution vector to the collection structure
+        rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
+
+      end if   ! nadapt > 0
+
+    else   
+
+      ! No h-adaptation
+      nadapt = 0
+
+    end if
+    
+    ! Stop time measurement for pre-processing
+    call stat_stopTimer(p_rtimerPrePostprocess)
+    
+    adaptloop: do iadapt = 0, nadapt
+
+      !-------------------------------------------------------------------------
+      ! Compute steady-state solution for the primal problem
+      !-------------------------------------------------------------------------
+      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+      
+      ! Calculate the velocity field
+      nlmin = solver_getMinimumMultigridlevel(rsolver)
+      call transp_calcVelocityField(rparlist, ssectionName,&
+          p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
+      
+      ! Attach the boundary condition
+      call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
+
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
+      
+      ! Reset the time-stepping algorithm
+      call tstep_resetTimestep(rtimestep, .false.)
+      call solver_resetSolver(rsolver, .false.)
+
+      ! Check if right-hand side vector exists
+      if (irhstype > 0) then
+        call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+            0.0_DP, rrhs, rcollection)
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
+        ! Solve the primal problem with non-zero right-hand side
+        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+            rsolver, rsolutionPrimal, transp_nlsolverCallback,&
+            rcollection, rrhs)
+
+        ! Release right-hand side vector
+        call lsysbl_releaseVector(rrhs)
+
+      else
+        
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
+        ! Solve the primal problem without right-hand side
+        call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+            rsolver, rsolutionPrimal, transp_nlsolverCallback,&
+            rcollection)
+      end if
+
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
+      
+      
+      !-------------------------------------------------------------------------
+      ! Compute the right-hand side for the dual problem
+      !-------------------------------------------------------------------------
+
+      ! Start time measurement for error estimation
+      call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
+
+      ! Initialize target functional
+      call lsysbl_createVectorBlock(rsolutionPrimal, rtargetFunc)      
+      call transp_initTargetFunc(rparlist, ssectionName,&
+          p_rproblemLevel, 0.0_DP, rtargetFunc, rcollection)
+      
+      ! Stop time measurement for error estimation
+      call stat_stopTimer(p_rtimerErrorEstimation)
+
+
+      !-------------------------------------------------------------------------
+      ! Compute steady-state solution for the dual problem
+      !-------------------------------------------------------------------------
+
+      ! Start time measurement for solution procedure
+      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+      
+      ! Attach the boundary condition
+      call solver_setBoundaryCondition(rsolver, rbdrCondDual, .true.)
+      
+      ! Set dual problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
+      
+      ! Create dual solution vector initialized by zeros
+      call lsysbl_releaseVector(rsolutionDual)
+      call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
+      
+      ! Reset the time-stepping and solver algorithms
+      call tstep_resetTimestep(rtimestep, .false.)
+      call solver_resetSolver(rsolver, .false.)
+      
+      ! Prepare quick access arrays of the collection
+      rcollection%SquickAccess(1) = ssectionName
+
+      ! Solve the dual problem
+      call tstep_performPseudoStepping(p_rproblemLevel, rtimestep,&
+          rsolver, rsolutionDual, transp_nlsolverCallback,&
+          rcollection, rtargetFunc)
+      
+      ! Release discretized target functional
+      call lsysbl_releaseVector(rtargetFunc)
+      
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerSolution)
+      
+      
+      if (iadapt .eq. nadapt) exit adaptloop
+
+      !-------------------------------------------------------------------------
+      ! Perform goal-oriented error estimation
+      !-------------------------------------------------------------------------
+
+      ! Start time measurement for error estimation
+      call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
+      
+      ! Calculate the velocity field
+      nlmin = solver_getMinimumMultigridlevel(rsolver)
+      call transp_calcVelocityField(rparlist, ssectionName,&
+          p_rproblemLevel, rtimestep%dTime, rcollection, nlmin)
+      
+      ! Attach the boundary condition
+      call solver_setBoundaryCondition(rsolver, rbdrCondPrimal, .true.)
+      
+      ! Set primal problem mode
+      call parlst_addvalue(rparlist, ssectionName, 'mode', 'primal')
+
+      ! Check if right-hand side vector exists
+      if (irhstype > 0) then
+
+        ! Initialize right-hand side vector
+        call lsysbl_createVectorBlock(rsolutionPrimal, rrhs)
+        call transp_initRHS(rparlist, ssectionName, p_rproblemLevel,&
+            0.0_DP, rrhs, rcollection)
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
+        ! Compute the error in the quantity of interest
+        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+            rsolutionDual, rcollection, relementError, derror, rrhs)
+
+        ! Release right-hand side vector
+        call lsysbl_releaseVector(rrhs)
+        
+      else
+
+        ! Prepare quick access arrays of the collection
+        rcollection%SquickAccess(1) = ssectionName
+
+        ! Compute the error in the quantity of interest
+        call transp_estimateTargetFuncError(rparlist, ssectionName,&
+            p_rproblemLevel, rtimestep, rsolver, rsolutionPrimal,&
+            rsolutionDual, rcollection, relementError, derror)
+
+      end if
+
+      ! Stop time measurement for error estimation
+      call stat_stopTimer(p_rtimerErrorEstimation)
+
+
+      !-------------------------------------------------------------------------
+      ! Perform h-adaptation
+      !-------------------------------------------------------------------------
+
+      ! Start time measurement for mesh adaptation
+      call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
+      
+      ! Set the names of the template matrix and the solution vector
+      rcollection%SquickAccess(1) = 'sparsitypattern'
+      
+      ! Attach the primal solution vector to the collection structure
+      rcollection%p_rvectorQuickAccess1 => rsolutionPrimal
+
+      ! Perform h-adaptation and update the triangulation structure
+      call transp_adaptTriangulation(rhadapt, p_rproblemLevel&
+          %rtriangulation, relementError, rcollection)
+
+      ! Update the template matrix according to the sparsity pattern
+      call grph_generateMatrix(rgraph, p_rproblemLevel&
+          %Rmatrix(templateMatrix))
+
+      ! Resize the solution vector accordingly
+      call lsysbl_resizeVectorBlock(rsolutionPrimal, p_rproblemLevel&
+          %Rmatrix(templateMatrix)%NEQ, .false.)
+      
+      ! Release element-wise error distribution
+      call lsyssc_releaseVector(relementError)
+
+      ! Stop time measurement for mesh adaptation
+      call stat_stopTimer(p_rtimerAdaptation)
+
+      
+      !-------------------------------------------------------------------------
+      ! Re-generate the discretization and coefficient matrices
+      !-------------------------------------------------------------------------
+      
+      ! Start time measurement for generation of the triangulation
+      call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
+
+      ! Generate standard mesh from raw mesh
+      call tria_initStandardMeshFromRaw(p_rproblemLevel&
+          %rtriangulation, rproblem%rboundary)
+
+      ! Stop time measurement for generation of the triangulation
+      call stat_stopTimer(p_rtimerTriangulation)
+
+      !-------------------------------------------------------------------
+      
+      ! Start time measurement for generation of constant coefficient matrices
+      call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
+
+      ! Re-initialize all constant coefficient matrices
+      call transp_initProblemLevel(rparlist, ssectionName, p_rproblemLevel, rcollection)
+
+      ! Prepare internal data arrays of the solver structure
+      call parlst_getvalue_int(rparlist, ssectionName, 'systemMatrix', systemMatrix)
+      call flagship_updateSolverMatrix(p_rproblemLevel, rsolver,&
+          systemMatrix, SYSTEM_INTERLEAVEFORMAT, UPDMAT_ALL)
+      call solver_updateStructure(rsolver)
+      
+      ! Stop time measurement for generation of constant coefficient matrices
+      call stat_stopTimer(p_rtimerAssemblyCoeff)
+
+    end do adaptloop
+
+
+    ! Release adaptation structure
+    if (nadapt > 0) then
+      call hadapt_releaseAdaptation(rhadapt)
+      call grph_releaseGraph(rgraph)
+    end if
+
+  end subroutine transp_solvePseudoTransientPrimalDual
 
   !*****************************************************************************
 
