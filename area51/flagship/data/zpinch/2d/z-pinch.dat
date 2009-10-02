@@ -39,7 +39,7 @@ icoords = 1
 # type of Lorentz force term treatment
 # 0 = segregated approach
 # 1 = fully-coupled approach
-ilorentzforcetype = 0
+ilorentzforcetype = 1
 
 # section name of Lorentz force term
 slorentzforcename = @forceterm
@@ -62,10 +62,10 @@ errorestimator = ErrorEstimator
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = gridgen/test.prm
+prmfile = grids/2d/z-pinch_struct_tria.prm
 
 # file which contains the triangulation
-trifile = gridgen/test.tri
+trifile = grids/2d/z-pinch_struct_tria.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
