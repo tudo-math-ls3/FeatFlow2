@@ -22,7 +22,7 @@ CC = cc
 
 # F90 should be set to the name of your favorite Fortran compiler.
 
-F90 = ifort
+F90 = pgf95 
 
 # CSWITCHES is a list of all switches passed to the C compiler.  I strongly
 #   recommend using the best level of optimization.  I also strongly
