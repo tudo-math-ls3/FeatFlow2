@@ -6,13 +6,15 @@
 #                           Z-pinch implosion problem                          #
 ################################################################################
 
+# Definition of user-defined constants
 defconst: width = 0.05
 defconst: r0    = 1.0
+defconst: timp  = 1.0
 
+# Definition of user-defined expressions
 defexpr:  sqr1 = SQRT(x^2+y^2)
 defexpr:  rad  = (1-t^4)
 
-deffunc: @forceterm = -12*(1-t^4)*t^2 ; t
 
 ################################################################################
 #                                                                              #
@@ -30,6 +32,8 @@ deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 #deffunc: @initsol_vel = 0.0 ; x,y,z,t
 #deffunc: @initsol_Etot = 2.5e-6 ; x,y,z,t
 
+# Definition of user-defined functions
+deffunc: @forceterm = if (t <= _timp, -12*(1-t^4)*t^2, 0) ; t
 
 # Specify the boundary conditions for the Euler model
 [bdrcond_euler_primal]
