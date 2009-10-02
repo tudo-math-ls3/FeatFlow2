@@ -2005,8 +2005,7 @@ contains
     real(dp) :: dscaleLorentzForceTerm
     integer :: templateMatrix, systemMatrix, isystemFormat
     integer :: discretisationEuler, discretisationTransport
-    integer :: isize, ipreadapt, npreadapt, ndimension
-    integer :: ilorentzForceType
+    integer :: isize, ipreadapt, npreadapt, ndimension, ilorentzForceType
     integer, external :: signal_SIGINT
 
     real(DP) :: dmassEuler0, dmassEuler
@@ -2346,145 +2345,65 @@ contains
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
 
-      ! Get parameters from parameter list
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'ilorentzforcetype', ilorentzForceType)
-
-      select case(ilorentzForceType)
-
-      case(0)
-
-        !-----------------------------------------------------------------------
-        ! Compute Euler model + scalar tracer in segregated fashion
-        ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
-        !-----------------------------------------------------------------------
-        
-        ! What time-stepping scheme should be used?
-        select case(rtimestep%ctimestepType)
-          
-        case (TSTEP_RK_SCHEME)
-        
-          ! Prepare quick access arrays for Euler model
-          rcollection%SquickAccess(1) = ssectionNameEuler
-          
-          ! Adopt explicit Runge-Kutta scheme
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              p_rsolverEuler, p_rsolutionEuler,&
-              euler_nlsolverCallback, rcollection)
-        
-          ! Calculate velocity field (\rho v)
-          call zpinch_initVelocityField(rparlist,&
-              ssectionNameTransport, p_rproblemLevel,&
-              p_rsolutionEuler, rcollection)
-
-          ! Prepare quick access arrays for scalar transport model
-          rcollection%SquickAccess(1) = ssectionNameTransport
-          
-          ! Adopt explicit Runge-Kutta scheme
-          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-              p_rsolverTransport, p_rsolutionTransport,&
-              transp_nlsolverCallback, rcollection)
-  
-
-        case (TSTEP_THETA_SCHEME)
-          
-          ! Prepare quick access arrays for Euler model
-          rcollection%SquickAccess(1) = ssectionNameEuler
-
-          ! Adopt two-level theta-scheme
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              p_rsolverEuler, p_rsolutionEuler,&
-              euler_nlsolverCallback, rcollection)
-
-          ! Calculate velocity field (\rho v)
-          call zpinch_initVelocityField(rparlist,&
-              ssectionNameTransport, p_rproblemLevel,&
-              p_rsolutionEuler, rcollection)
-          
-          ! Prepare quick access arrays for scalar transport model
-          rcollection%SquickAccess(1) = ssectionNameTransport
-
-          ! Adopt two-level theta-scheme
-          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              p_rsolverTransport, p_rsolutionTransport,&
-              transp_nlsolverCallback, rcollection)
-          
-          
-        case DEFAULT
-          call output_line('Unsupported time-stepping algorithm!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
-          call sys_halt()
-        end select
-        
-        
-      case(1)
-
-        !-----------------------------------------------------------------------
-        ! Compute Euler model + scalar tracer in coupled fashion
-        ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
-        !-----------------------------------------------------------------------
-
-        ! Start time measurement for solution procedure
-        call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-        
-        ! Compute scaling for explicit part of the Lorentz force
-        dscaleLorentzForceTerm = (1.0_DP-rtimestep%theta) * rtimestep%dStep
-        
-        ! Calculate explicit part of the Lorentz force term
-        if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
-          call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
-              ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
-              p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
-              dscaleLorentzForceTerm, rforce(1), rcollection)
-        end if
-        
-        ! Prepare quick access arrays/vectors
-        rcollection%SquickAccess(1) = 'null'
-        rcollection%SquickAccess(2) = ssectionName
-        rcollection%SquickAccess(3) = ssectionNameEuler
-        rcollection%SquickAccess(4) = ssectionNameTransport
-        rcollection%p_rvectorQuickAccess1 => rsolution(1)
-        rcollection%p_rvectorQuickAccess2 => rsolution(2)
-        rcollection%p_rvectorQuickAccess3 => rtimestep%RtempVectors(1)
-        rcollection%p_rvectorQuickAccess4 => rtimestep%RtempVectors(2)
+      !-----------------------------------------------------------------------
+      ! Compute Euler model + scalar tracer in coupled fashion
+      ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
+      !-----------------------------------------------------------------------
       
-        ! What time-stepping scheme should be used?
-        select case(rtimestep%ctimestepType)
-          
-        case (TSTEP_RK_SCHEME)
-          
+      ! Start time measurement for solution procedure
+      call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
+      
+      ! Compute scaling for explicit part of the Lorentz force
+      dscaleLorentzForceTerm = (1.0_DP-rtimestep%theta) * rtimestep%dStep
+      
+      ! Calculate explicit part of the Lorentz force term
+      if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
+        call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+            ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
+            p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
+            dscaleLorentzForceTerm, rforce(1), rcollection)
+      end if
+      
+      ! Prepare quick access arrays/vectors
+      rcollection%SquickAccess(1) = 'null'
+      rcollection%SquickAccess(2) = ssectionName
+      rcollection%SquickAccess(3) = ssectionNameEuler
+      rcollection%SquickAccess(4) = ssectionNameTransport
+      rcollection%p_rvectorQuickAccess1 => rsolution(1)
+      rcollection%p_rvectorQuickAccess2 => rsolution(2)
+      rcollection%p_rvectorQuickAccess3 => rtimestep%RtempVectors(1)
+      rcollection%p_rvectorQuickAccess4 => rtimestep%RtempVectors(2)
+      
+      ! What time-stepping scheme should be used?
+      select case(rtimestep%ctimestepType)
+        
+      case (TSTEP_RK_SCHEME)
+        
 !!$        ! Adopt explicit Runge-Kutta scheme
 !!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
 !!$            rsolver, rsolution, zpinch_nlsolverCallback,&
 !!$            rcollection, rforce)
-          print *, "RK method is not implemented yet"
-          stop
+        print *, "RK method is not implemented yet"
+        stop
+        
+      case (TSTEP_THETA_SCHEME)
+        
+        ! Adopt two-level theta-scheme
+        if (dscaleLorentzForceTerm .ne. 0.0_DP) then
           
-        case (TSTEP_THETA_SCHEME)
-          
-          ! Adopt two-level theta-scheme
-          if (dscaleLorentzForceTerm .ne. 0.0_DP) then
-            
-            ! ... with source term
-            call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-                rsolver, rsolution, zpinch_nlsolverCallback,&
-                rcollection, rforce)
-          else
-            ! ... without source term
-            call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-                rsolver, rsolution, zpinch_nlsolverCallback,&
-                rcollection)
-          end if
-          
-        case DEFAULT
-          call output_line('Unsupported time-stepping algorithm!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
-          call sys_halt()
-        end select
-
-
+          ! ... with source term
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback,&
+              rcollection, rforce)
+        else
+          ! ... without source term
+          call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback,&
+              rcollection)
+        end if
+        
       case DEFAULT
-        call output_line('Unsupported type of source term treatment!',&
+        call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
@@ -2513,6 +2432,9 @@ contains
       ! Apply the Lorentz force term in a post-processing procedure
       !-------------------------------------------------------------------------
 
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'ilorentzForceType', ilorentzForceType)
+      
       if (ilorentzForceType .eq. 0) then
         call zpinch_applyLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameEuler, ssectionNameTransport,&
