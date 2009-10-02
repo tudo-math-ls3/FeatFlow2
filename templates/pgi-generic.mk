@@ -40,6 +40,25 @@ CXXVERSION = $(CXX) -V | head -n 2
 # compiler flags 
 # (including non-architecture specific optimisation flags)
 ##############################################################################
+ifeq ($(strip $(OPT)), EXPENSIVE)
+# Specify -Mipa for all PGI compilers
+CFLAGSF77LIBS := -Mipa $(CFLAGSF77LIBS)
+CFLAGSF77     := -Mipa $(CFLAGSF77)
+CFLAGSF90     := -Mipa $(CFLAGSF90)
+CFLAGSC       := -Mipa $(CFLAGSC)
+CFLAGSCXX     := -Mipa $(CFLAGSCXX)
+LDFLAGS       := -Mipa $(LDFLAGS)
+endif
+
+# Specify -openmp for all PGI compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77LIBS := -mp $(CFLAGSF77LIBS)
+CFLAGSF77     := -mp $(CFLAGSF77)
+CFLAGSF90     := -mp $(CFLAGSF90)
+CFLAGSC       := -mp $(CFLAGSC)
+CFLAGSCXX     := -mp $(CFLAGSCXX)
+LDFLAGS       := -mp $(LDFLAGS)
+endif
 
 # WARNING WARNING WARNING
 # All integer variables in FEAT2 are explicitly typed to either 32 or 64 bits.
