@@ -14,13 +14,10 @@ defconst: y0  = 0.5
 
 # Definition of user-defined expressions
 defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
-defexpr:  area = _pi*_eps*_eps
+defexpr:  area = (_pi*_eps*_eps)
 
 # Specify the 'null-function'
 deffunc: @null = 0 ; x,y,z,t
-
-# Specify the initial solution
-deffunc: @initsol = 0 ; x,y,z,t
 
 # Specify the exact solution
 deffunc: @exactsol = if(x = 0.5, 1, 0) ; x,y,z,t
