@@ -2376,7 +2376,7 @@ contains
     
     ! Copy the input string - left adjusted - and get the string length
     sbuf = adjustl(sdata)
-print *, sbuf    
+
     ! Should we parse the line as first line of a parameter or as substring
     ! of a multi-valued parameter?
     if (isubstring .eq. 0) then
