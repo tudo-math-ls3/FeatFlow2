@@ -1,3 +1,13 @@
+# -*- mode: any-ini; -*-
+# ------------------------------------------------------------------------
+# Boundary condition file
+#
+# This file contains parameters about the boundary conditions
+# of the problem.
+# ------------------------------------------------------------------------
+
+
+
 ###############
 [BDEXPRESSIONS]
 ###############
