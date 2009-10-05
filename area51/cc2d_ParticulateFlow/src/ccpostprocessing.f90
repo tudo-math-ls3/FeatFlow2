@@ -85,6 +85,7 @@ module ccpostprocessing
   use dofmapping
   use ccbasic
   use cccallback
+  use io
   
   implicit none
   
@@ -155,11 +156,8 @@ module ccpostprocessing
     type(t_vectorScalar) :: rResForceX
     
     type(t_vectorScalar) :: rResForceY
-    
-    type(t_vectorScalar) :: ddata
-    
-    integer :: icounter = 1
-    
+   
+   
   end type
 
 !</typeblock>
@@ -1033,7 +1031,6 @@ contains
     
     call lsyssc_createVector(rpostprocessing%rResForceX,6,.true.)
     call lsyssc_createVector(rpostprocessing%rResForceY,6,.true.)
-    call lsyssc_createVector(rpostprocessing%ddata,i,.true.)
     
                                     
   end subroutine
@@ -1119,8 +1116,6 @@ contains
       call lsyssc_releaseVector (rpostprocessing%rResForceY)
     if (rpostprocessing%rvectorScalarFB%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%rvectorScalarFB)
-    if (rpostprocessing%ddata%NEQ .ne. 0) &
-      call lsyssc_releaseVector (rpostprocessing%ddata)
       
       
 
@@ -2157,6 +2152,12 @@ contains
     real(dp), dimension(:), pointer :: p_DforceY  
     real(dp), dimension(:), pointer :: p_DCoefficient
     
+    character(len=SYS_STRLEN) :: sfilenameBodyForces
+    character(len=SYS_STRLEN) :: stemp
+    integer :: iunit
+    integer :: cflag
+    logical :: bfileExists    
+    
     ! Prepare the weighting coefficients
     dpf1 = 1.0_DP
     dpf2 = 2.0_DP
@@ -2166,7 +2167,6 @@ contains
     ! get the work array
     call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
     call lsyssc_getbase_double (rpostprocessing%rResForceY,p_DforceY)
-    call lsyssc_getbase_double (rpostprocessing%ddata,p_DCoefficient)
 
     ! make the l2 projection to get the normal vector
 
@@ -2453,13 +2453,21 @@ contains
       print *,"ForceX: ",Dfx
             
       ! calculate also the drag and lift coefficients
-      Dfx = Dfx * 2.0_dp/dpf2
-      Dfy = Dfy * 2.0_dp/dpf2
-      
-      p_DCoefficient(rpostprocessing%icounter)=rproblem%rtimedependence%dtime
-      p_DCoefficient(rpostprocessing%icounter+1)=Dfx
-      rpostprocessing%icounter=rpostprocessing%icounter+2
-      
+      Dfx = Dfx * 2.0_dp/0.004_dp
+      Dfy = Dfy * 2.0_dp/0.004_dp
+
+
+      sfilenameBodyForces='ns/bdforces'
+      cflag = SYS_APPEND      
+      ! Write the result to a text file.
+      ! Format: timestep current-time value
+      call io_openFileForWriting(sfilenameBodyForces, iunit, &
+          cflag, bfileExists,.true.)
+
+      write (iunit,'(A)')trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+          // trim(sys_sdEL(Dfx,10)) // ' '&
+          // trim(sys_sdEL(Dfy,10))
+      close (iunit)
       
       ! save the coefficients
       rproblem%dCoefficientDrag = Dfx 
@@ -2607,6 +2615,10 @@ contains
       dCenterX = dCenterX + dtimestep * &
       (p_rparticleCollection%p_rParticles(ipart)%rResForceX(6)+0.5_dp*dvelx)
 
+      dCenterX = dCenterX + dtimestep * &
+      (p_rparticleCollection%p_rParticles(ipart)%rResForceX(6)+0.5_dp*dvelx)
+
+
       ! update the position of the geometry object
       p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
 
@@ -2740,9 +2752,16 @@ contains
       dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
 
       ! update the position of the y-center      
-      dCenterX = 1.1_dp + A*sin(2*SYS_PI*f*rproblem%rtimedependence%dtime)
+!      dCenterX = 1.1_dp + A*sin(2*SYS_PI*f*rproblem%rtimedependence%dtime)
+!      ! update the position of the geometry object
+!      p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
+
+      dCenterX = dCenterX + rproblem%rtimedependence%dtimestep * 0.3_dp
       ! update the position of the geometry object
       p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
+
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.0_dp
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.3_dp
       
 !      p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
 !      

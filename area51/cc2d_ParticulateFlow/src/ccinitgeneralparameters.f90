@@ -74,11 +74,11 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   
   rPDescriptor%iparticles=1
   
-  allocate(rPDescriptor%pparameters(4,1))
+  allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
   drad = 0.05_dp
   drho = 1.25_dp
-  dx = 1.1_dp
+  dx = 0.2_dp
   dy = 0.2_dp
   
   do i=1,rPDescriptor%iparticles

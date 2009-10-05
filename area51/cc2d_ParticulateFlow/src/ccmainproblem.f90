@@ -327,8 +327,6 @@ contains
     ! (Probably) write final solution vector
     call cc_writeSolution (p_rproblem,rvector)
     
-    !here
-    call vecio_writeVectorHR(rpostprocessing%ddata,'hans',.false.,0,'vec.txt','(E20.10)')
     ! Cleanup
     call cc_doneMatVec (p_rproblem,rvector,rrhs)
     call cc_doneBC (p_rproblem)

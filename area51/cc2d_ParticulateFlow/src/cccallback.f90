@@ -1583,7 +1583,7 @@ contains
         dycenter = p_rgeometryObject%rcoord2D%Dorigin(2)
       
         dtime=rcollection%Dquickaccess(1)
-        dspeed = (1.0_dp/8.0_dp) * cos(0.5_dp * SYS_PI * dtime)*SYS_PI
+        dspeed = 0.3_dp
         
       if(iin .eq. 1)then 
         ! Denote in the p_Iinside array that we prescribe a value here:
