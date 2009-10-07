@@ -1401,7 +1401,7 @@ contains
   ! that defines for element celement which information have to be prepared
   ! to evaluate it in a set of points.
   !
-  ! If more that one finite element has to be evaluated in the same points,
+  ! If more than one finite element has to be evaluated in the same points,
   ! the evaluation tags of all elements under consideration can be combined
   ! using OR. With the resulting tag, a t_evalElementXXXX structure can be 
   ! set up. This structure allows then to evaluate the element(s).
@@ -1419,9 +1419,14 @@ contains
 !</function>
 
     select case (elem_getPrimaryElement(celement))
-    case (EL_P0_1D, EL_P0, EL_P0_3D)
-      ! No information about Jacobian necessary
-      elem_getEvaluationTag = 0
+
+      ! NOTE: Information about the Jacobian may not be necessary.
+      !       However, some routines simply crash, if, e.g., the
+      !       Jacobian matrix and/or its determinant are not there.
+
+!!$    case (EL_P0_1D, EL_P0, EL_P0_3D)
+!!$      ! No information about Jacobian necessary
+!!$      elem_getEvaluationTag = 0
     case (EL_Q2T, EL_Q2TB, EL_Q2T_3D)
       ! We need the twist indices.
       elem_getEvaluationTag = EL_EVLTAG_REFPOINTS + &
