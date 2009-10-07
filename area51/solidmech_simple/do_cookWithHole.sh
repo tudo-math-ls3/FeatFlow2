@@ -4,13 +4,14 @@
 grid="cookWithHole"
 
 # choose shear modulus
-mus="80.194"
+mus="0.5"
 
 # choose Poisson ratio
 nus="0.3"
 
 # choose MG levels
-mgs="03 04 05 06 07 08 09"
+mgs="04"
+#mgs="03 04 05 06 07 08 09"
 #mgs="02 03 04 05 06 07 08"
 
 #-----------------------------
@@ -42,6 +43,9 @@ sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
 selementType = Q1
+
+# type of equation (possible values: POISSON, ELASTICITY)
+ctypeOfEquation = ELASTICITY
 
 # boundaries
 nboundaries= 2
@@ -96,7 +100,7 @@ refSolU2 = 27.642747
 niterations = 2000
 
 # type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
-ctypeOfSolver = MG_SOLVER
+ctypeOfSolver = DIRECT_SOLVER
 
 # type of smoother (possible values: JACOBI, ILU)
 ctypeOfSmoother = JACOBI
@@ -135,7 +139,7 @@ DrhsBoundx2(4) =
 
 DrhsBoundy1(4) = 
 0.0
-15.625
+0.0
 0.0
 0.0
 

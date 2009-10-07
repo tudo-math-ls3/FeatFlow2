@@ -10,7 +10,7 @@ mus="0.5"
 nus="0.3"
 
 # choose MG levels
-mgs="06"
+mgs="04"
 #mgs="03 04 05 06 07 08 09 10"
 #mgs="02 03 04 05 06 07 08 09"
 
@@ -45,7 +45,7 @@ sgridFileTRI = './pre/${grid}.tri'
 selementType = Q1
 
 # type of equation (possible values: POISSON, ELASTICITY)
-ctypeOfEquation = POISSON
+ctypeOfEquation = ELASTICITY
 
 # boundaries
 nboundaries= 1
@@ -71,7 +71,7 @@ NLMAX = ${mg}
 ctypeOfSimulation = REAL
 
 # set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
-cfuncID_u1 = 53
+cfuncID_u1 = 4
 cfuncID_u2 = 52
 
 # deformation(possible values: Y (YES), N (NO))
@@ -92,7 +92,7 @@ refSolU2 = 27.642747
 niterations = 50000
 
 # type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
-ctypeOfSolver = MG_SOLVER
+ctypeOfSolver = DIRECT_SOLVER
 
 # type of smoother (possible values: JACOBI, ILU)
 ctypeOfSmoother = JACOBI
@@ -116,7 +116,7 @@ dmu = ${mu}
 
 # set constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
 drhsVol1   = 0
-drhsVol2   = -1
+drhsVol2   = 0
 
 DrhsBoundx1(4) =
 0.0

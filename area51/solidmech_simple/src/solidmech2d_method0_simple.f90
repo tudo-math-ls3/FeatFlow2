@@ -243,10 +243,10 @@ contains
 
     if(trim(sstring) .eq. 'POISSON') then
       rproblem%ctypeOfEquation = POISSON
-      print *, 'ANALYTICAL SIMULATION'
+      print *, 'POISSON'
     else if(trim(sstring) .eq. 'ELASTICITY') then
       rproblem%ctypeOfEquation = ELASTICITY
-      print *, 'REAL SIMULATION'
+      print *, 'ELASTICITY'
     else
       print *,'Invalid sstring for equation type:', trim(sstring)
     Stop
@@ -467,7 +467,8 @@ contains
     call tria_readTriFile2D (Rlevels(rproblem%NLMIN)%rtriangulation, rproblem%sgridFileTRI, rboundary)
      
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (rproblem%NLMIN-1,Rlevels(rproblem%NLMIN)%rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering(rproblem%NLMIN-1, &
+                                        Rlevels(rproblem%NLMIN)%rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -566,6 +567,7 @@ contains
       ! the easiest way to set up the vector structure is
       ! to create it by using our matrix as template:
       call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rrhs, .false.)
+      call lsysbl_createVecBlockIndMat (Rlevels(rproblem%NLMAX)%rmatrix,rvector, .false.)
   
       ! The vector structure is ready but the entries are missing. 
       ! So the next thing is to calculate the content of that vector.
@@ -964,14 +966,14 @@ contains
     rrhs%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
     rvector%p_rdiscreteBC => Rlevels(rproblem%NLMAX)%rdiscreteBC
 
-    if (rproblem%ctypeOfEquation .eq. POISSON) then 
-      ! Now we have block vectors for the RHS and the matrix. What we
-      ! need additionally is a block vector for the solution and
-      ! temporary data. Create them using the RHS as template.
-      ! Fill the solution vector with 0:
-      call lsysbl_createVecBlockIndirect (rrhs, rvector, .true.)
-      call lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .false.)
-    end if
+!     if (rproblem%ctypeOfEquation .eq. POISSON) then 
+!       ! Now we have block vectors for the RHS and the matrix. What we
+!       ! need additionally is a block vector for the solution and
+!       ! temporary data. Create them using the RHS as template.
+!       ! Fill the solution vector with 0:
+!       call lsysbl_createVecBlockIndirect (rrhs, rvector, .true.)
+!       call lsysbl_createVecBlockIndirect (rrhs, rtempBlock, .false.)
+!     end if
     
     ! Next step is to implement boundary conditions into the RHS,
     ! solution and matrix. This is done using a vector/matrix filter
@@ -1297,17 +1299,22 @@ contains
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
     ! For Bending in the gmv
-    call storage_getbase_double2D(Rlevels(rproblem%NLMAX)%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_double2D(Rlevels(rproblem%NLMAX)%rtriangulation%h_DvertexCoords, &
+                                  p_DvertexCoords)
 
     ! Write velocity field
     call lsyssc_getbase_double (rVector%RvectorBlock(1),p_Ddata)
-    call lsyssc_getbase_double (rVector%RvectorBlock(2),p_Ddata2)
+    if (rproblem%ctypeOfEquation .eq. ELASTICITY) then
+      call lsyssc_getbase_double (rVector%RvectorBlock(2),p_Ddata2)
+    end if
   
     ! we add sol. vector to coordinates to see the bending
     if (rproblem%DEFORMATION .eq. Y) then
 	    do i = 1,Rlevels(rproblem%NLMAX)%rtriangulation%NVT
 		    p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
-		    p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
+        if (rproblem%ctypeOfEquation .eq. ELASTICITY) then
+  		    p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
+        end if
 	    end do
     end if
 
@@ -1319,8 +1326,11 @@ contains
 
     ! In case we use the VTK exporter, which supports vector output, we will
     ! pass the X- and Y-velocity at once to the ucd module.
-    call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
-
+    if (rproblem%ctypeOfEquation .eq. ELASTICITY) then
+      call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+    else if (rproblem%ctypeOfEquation .eq. POISSON) then
+      call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata)
+    end if
     ! If we use the GMV exporter, we might replace the line above by the
     ! following two lines:
     !CALL ucd_addVariableVertexBased (rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)

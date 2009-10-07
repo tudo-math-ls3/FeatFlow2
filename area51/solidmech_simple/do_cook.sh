@@ -7,7 +7,7 @@ grid="cook"
 mus="80.194"
 
 # choose Poisson ratio
-nus="0.499"
+nus="0.49"
 
 # choose MG levels
 #mgs="03 04 05 06 07 08 09 10"
@@ -39,6 +39,9 @@ sgridFileTRI = './pre/${grid}.tri'
 
 # Element type to use for the discretisation (Q1, Q2)
 selementType = Q2
+
+# type of equation (possible values: POISSON, ELASTICITY)
+ctypeOfEquation = ELASTICITY
 
 # boundaries
 nboundaries= 1
@@ -78,8 +81,8 @@ inquirePointX = 48.0
 inquirePointY = 60.0
 
 # Reference sol to calculate error (only needed in case of inquirePoint .eq. Y)
-refSolU1 = -2.0646184E+01     
-refSolU2 = 2.7640611E+01
+refSolU1 = -1.4909377E+01         
+refSolU2 = 2.0568740E+01
 
 # max number of iterations
 niterations = 90000
