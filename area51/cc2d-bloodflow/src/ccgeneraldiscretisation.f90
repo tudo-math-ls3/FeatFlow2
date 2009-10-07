@@ -386,6 +386,7 @@ contains
   ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
   ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
   ! 20 = Q1        / Q1        / Q1
+  ! 30 = P1~(E020) / P1~(E020) / P0
   integer, intent(in) :: ielementType
   
   ! Boundary structure for the discretisation
@@ -468,6 +469,10 @@ contains
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
 
+    case (30)
+      ieltypeUV = EL_P1T
+      ieltypeP = EL_P0
+
     case default
       call output_line (&
           'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
@@ -539,6 +544,7 @@ contains
   ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
   ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
   ! 20 = Q1        / Q1        / Q1
+  ! 30 = P1~(E020) / P1~(E020) / P0
   integer, intent(in) :: ielementType
 
   ! Block discretisation structure that defines the template discretisation
@@ -610,6 +616,10 @@ contains
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
+
+    case (30)
+      ieltypeUV = EL_P1T
+      ieltypeP = EL_P0
 
     case default
       call output_line (&
