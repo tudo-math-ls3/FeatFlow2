@@ -1550,7 +1550,7 @@ contains
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
     
-    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T,EL_DG_P1_2D)
+    case (EL_P0, EL_P1, EL_P2, EL_P3, EL_P1T, EL_DG_P1_2D)
       ! 2D Triangle
       ishp = BGEOM_SHAPE_TRIA
       
