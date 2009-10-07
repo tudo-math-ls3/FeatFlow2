@@ -281,7 +281,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar)
+  pure subroutine mprim_invertMatrixDble(Da,Df,Dx,ndim,ipar,bsuccess)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -319,6 +319,10 @@ contains
     ! destination vector containing inverted matrix times right-hand
     ! side vector
     real(DP), dimension(ndim), intent(out) :: Dx
+
+    ! TRUE, if successful. FALSE if the system is indefinite.
+    ! If FALSE, Db is undefined.
+    logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
@@ -341,6 +345,8 @@ contains
       real(dp), dimension( LDB, * ), intent(inout) :: B
       end subroutine
     end interface
+
+    bsuccess = .false.
 
     select case (ipar)
     case (0)
@@ -435,23 +441,30 @@ contains
 
       select case(ndim)
       case (1)
-        Dx(1) = Df(1) / Da(1,1)
+        if (Da(1,1) .gt. SYS_EPSREAL) then
+          Dx(1) = Df(1) / Da(1,1)
+        else
+          return
+        end if
         
       case (2)
-        call mprim_invert2x2MatrixDirectDble(Da,Db)
+        call mprim_invert2x2MatrixDirectDble(Da,Db,bsuccess)
+        if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2)
         Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2)
 
       case (3)
-        call mprim_invert3x3MatrixDirectDble(Da,Db)
+        call mprim_invert3x3MatrixDirectDble(Da,Db, bsuccess)
+        if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) + Db(1,3)*Df(3)
         Dx(2) = Db(2,1)*Df(1) + Db(2,2)*Df(2) + Db(2,3)*Df(3)
         Dx(3) = Db(3,1)*Df(1) + Db(3,2)*Df(2) + Db(3,3)*Df(3)
 
       case (4)
-        call mprim_invert4x4MatrixDirectDble(Da,Db)
+        call mprim_invert4x4MatrixDirectDble(Da,Db,bsuccess)
+        if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
               + Db(1,3)*Df(3) + Db(1,4)*Df(4)
@@ -463,7 +476,8 @@ contains
               + Db(4,3)*Df(3) + Db(4,4)*Df(4)
       
       case (5)
-        call mprim_invert5x5MatrixDirectDble(Da,Db)
+        call mprim_invert5x5MatrixDirectDble(Da,Db,bsuccess)
+        if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
               + Db(1,3)*Df(3) + Db(1,4)*Df(4) &
@@ -482,7 +496,8 @@ contains
               + Db(5,5)*Df(5)
 
       case (6)
-        call mprim_invert6x6MatrixDirectDble(Da,Db)
+        call mprim_invert6x6MatrixDirectDble(Da,Db,bsuccess)
+        if (.not. bsuccess) return
         ! Dx=matmul(Db,Df)
         Dx(1) = Db(1,1)*Df(1) + Db(1,2)*Df(2) &
               + Db(1,3)*Df(3) + Db(1,4)*Df(4) &
@@ -508,9 +523,13 @@ contains
         Ipiv=0; Dx=Df
         call DGESV(ndim,1,Da,ndim,Ipiv,Dx,ndim,info)
         
+        if (info .ne. 0) return
+        
       end select
       
     end select
+    
+    bsuccess = .true.
     
   end subroutine mprim_invertMatrixDble
   
@@ -518,7 +537,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invert2x2MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert2x2MatrixDirectDble(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 2x2 system without any pivoting.
@@ -537,6 +556,10 @@ contains
 !<output>
   ! destination square matrix; receives $A^{-1}$.
   real(DP), dimension(2,2), intent(out) :: Db
+  
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
@@ -549,7 +572,12 @@ contains
     Db(1,2)=-Da(1,2)
     Db(2,2)= Da(1,1)
     daux=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-    Db=Db*(1.0_DP/daux)
+    if (abs(daux) .ge. SYS_EPSREAL) then
+      Db=Db*(1.0_DP/daux)
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
     
   end subroutine mprim_invert2x2MatrixDirectDble
 
@@ -557,7 +585,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invert3x3MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert3x3MatrixDirectDble(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 3x3 system without any pivoting.
@@ -576,6 +604,10 @@ contains
 !<output>
   ! destination square matrix; receives $A^{-1}$.
   real(DP), dimension(3,3), intent(out) :: Db
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
@@ -593,10 +625,15 @@ contains
     Db(2,3)=Da(1,3)*Da(2,1)-Da(1,1)*Da(2,3)
     Db(3,3)=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
     daux = Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)+Da(1,3)*Db(3,1)
-    !daux=Da(1,1)*Da(2,2)*Da(3,3)+Da(2,1)*Da(3,2)*Da(1,3)+ Da(3,1)&
-    !    &*Da(1,2)*Da(2,3)-Da(1,1)*Da(3,2)*Da(2,3)- Da(3,1)*Da(2&
-    !    &,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
-    Db=Db*(1.0_DP/daux)
+    if (abs(daux) .ge. SYS_EPSREAL) then
+      !daux=Da(1,1)*Da(2,2)*Da(3,3)+Da(2,1)*Da(3,2)*Da(1,3)+ Da(3,1)&
+      !    &*Da(1,2)*Da(2,3)-Da(1,1)*Da(3,2)*Da(2,3)- Da(3,1)*Da(2&
+      !    &,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
+      Db=Db*(1.0_DP/daux)
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
     
   end subroutine mprim_invert3x3MatrixDirectDble
 
@@ -604,7 +641,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invert4x4MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert4x4MatrixDirectDble(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 4x4 system without any pivoting.
@@ -623,12 +660,16 @@ contains
 !<output>
   ! destination square matrix; receives $A^{-1}$.
   real(DP), dimension(4,4), intent(out) :: Db
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
 
   ! auxiliary variables
-  real(DP) :: det
+  real(DP) :: det,daux
   real(DP), dimension(6) :: W
 
     ! 2x2 determinants of rows 3-4
@@ -643,106 +684,114 @@ contains
     Db(2,1)=-Da(2,1)*W(6)+Da(2,3)*W(3)-Da(2,4)*W(2)
     Db(3,1)= Da(2,1)*W(5)-Da(2,2)*W(3)+Da(2,4)*W(1)
     Db(4,1)=-Da(2,1)*W(4)+Da(2,2)*W(2)-Da(2,3)*W(1)
-    ! calculate determinant of A
-    det = 1.0_DP / (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
+    daux = 1.0_DP / (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
                    +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1))
-    ! update first column of inverse
-    Db(1,1)=Db(1,1)*det
-    Db(2,1)=Db(2,1)*det
-    Db(3,1)=Db(3,1)*det
-    Db(4,1)=Db(4,1)*det
-    ! calculate second column of inverse
-    Db(1,2)=det*(-Da(1,2)*W(6)+Da(1,3)*W(5)-Da(1,4)*W(4))
-    Db(2,2)=det*( Da(1,1)*W(6)-Da(1,3)*W(3)+Da(1,4)*W(2))
-    Db(3,2)=det*(-Da(1,1)*W(5)+Da(1,2)*W(3)-Da(1,4)*W(1))
-    Db(4,2)=det*( Da(1,1)*W(4)-Da(1,2)*W(2)+Da(1,3)*W(1))
-    ! 2x2 determinants of rows 1-2
-    W(1)=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-    W(2)=Da(1,1)*Da(2,3)-Da(1,3)*Da(2,1)
-    W(3)=Da(1,1)*Da(2,4)-Da(1,4)*Da(2,1)
-    W(4)=Da(1,2)*Da(2,3)-Da(1,3)*Da(2,2)
-    W(5)=Da(1,2)*Da(2,4)-Da(1,4)*Da(2,2)
-    W(6)=Da(1,3)*Da(2,4)-Da(1,4)*Da(2,3)
-    ! calculate third column of inverse
-    Db(1,3)=det*( Da(4,2)*W(6)-Da(4,3)*W(5)+Da(4,4)*W(4))
-    Db(2,3)=det*(-Da(4,1)*W(6)+Da(4,3)*W(3)-Da(4,4)*W(2))
-    Db(3,3)=det*( Da(4,1)*W(5)-Da(4,2)*W(3)+Da(4,4)*W(1))
-    Db(4,3)=det*(-Da(4,1)*W(4)+Da(4,2)*W(2)-Da(4,3)*W(1))
-    ! calculate fourth column of inverse
-    Db(1,4)=det*(-Da(3,2)*W(6)+Da(3,3)*W(5)-Da(3,4)*W(4))
-    Db(2,4)=det*( Da(3,1)*W(6)-Da(3,3)*W(3)+Da(3,4)*W(2))
-    Db(3,4)=det*(-Da(3,1)*W(5)+Da(3,2)*W(3)-Da(3,4)*W(1))
-    Db(4,4)=det*( Da(3,1)*W(4)-Da(3,2)*W(2)+Da(3,3)*W(1))
+    if (abs(daux) .ge. SYS_EPSREAL) then
+      ! calculate determinant of A
+      det = 1.0_DP / daux
+      ! update first column of inverse
+      Db(1,1)=Db(1,1)*det
+      Db(2,1)=Db(2,1)*det
+      Db(3,1)=Db(3,1)*det
+      Db(4,1)=Db(4,1)*det
+      ! calculate second column of inverse
+      Db(1,2)=det*(-Da(1,2)*W(6)+Da(1,3)*W(5)-Da(1,4)*W(4))
+      Db(2,2)=det*( Da(1,1)*W(6)-Da(1,3)*W(3)+Da(1,4)*W(2))
+      Db(3,2)=det*(-Da(1,1)*W(5)+Da(1,2)*W(3)-Da(1,4)*W(1))
+      Db(4,2)=det*( Da(1,1)*W(4)-Da(1,2)*W(2)+Da(1,3)*W(1))
+      ! 2x2 determinants of rows 1-2
+      W(1)=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
+      W(2)=Da(1,1)*Da(2,3)-Da(1,3)*Da(2,1)
+      W(3)=Da(1,1)*Da(2,4)-Da(1,4)*Da(2,1)
+      W(4)=Da(1,2)*Da(2,3)-Da(1,3)*Da(2,2)
+      W(5)=Da(1,2)*Da(2,4)-Da(1,4)*Da(2,2)
+      W(6)=Da(1,3)*Da(2,4)-Da(1,4)*Da(2,3)
+      ! calculate third column of inverse
+      Db(1,3)=det*( Da(4,2)*W(6)-Da(4,3)*W(5)+Da(4,4)*W(4))
+      Db(2,3)=det*(-Da(4,1)*W(6)+Da(4,3)*W(3)-Da(4,4)*W(2))
+      Db(3,3)=det*( Da(4,1)*W(5)-Da(4,2)*W(3)+Da(4,4)*W(1))
+      Db(4,3)=det*(-Da(4,1)*W(4)+Da(4,2)*W(2)-Da(4,3)*W(1))
+      ! calculate fourth column of inverse
+      Db(1,4)=det*(-Da(3,2)*W(6)+Da(3,3)*W(5)-Da(3,4)*W(4))
+      Db(2,4)=det*( Da(3,1)*W(6)-Da(3,3)*W(3)+Da(3,4)*W(2))
+      Db(3,4)=det*(-Da(3,1)*W(5)+Da(3,2)*W(3)-Da(3,4)*W(1))
+      Db(4,4)=det*( Da(3,1)*W(4)-Da(3,2)*W(2)+Da(3,3)*W(1))
 
-    ! 'old' implementation follows
-    
-!    real(DP) :: daux
+      ! 'old' implementation follows
+      
+!      real(DP) :: daux
 !
-!      ! Explicit formula for 4x4 system
-!      Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2&
-!          &,4)*Da(3,2)*Da(4,3)- Da(2,2)*Da(3,4)*Da(4,3)-Da(2,3)&
-!          &*Da(3,2)*Da(4,4)-Da(2,4)*Da(3,3)*Da(4,2)
-!      Db(2,1)=Da(2,1)*Da(3,4)*Da(4,3)+Da(2,3)*Da(3,1)*Da(4,4)+Da(2&
-!          &,4)*Da(3,3)*Da(4,1)- Da(2,1)*Da(3,3)*Da(4,4)-Da(2,3)&
-!          &*Da(3,4)*Da(4,1)-Da(2,4)*Da(3,1)*Da(4,3)
-!      Db(3,1)=Da(2,1)*Da(3,2)*Da(4,4)+Da(2,2)*Da(3,4)*Da(4,1)+Da(2&
-!          &,4)*Da(3,1)*Da(4,2)- Da(2,1)*Da(3,4)*Da(4,2)-Da(2,2)&
-!          &*Da(3,1)*Da(4,4)-Da(2,4)*Da(3,2)*Da(4,1)
-!      Db(4,1)=Da(2,1)*Da(3,3)*Da(4,2)+Da(2,2)*Da(3,1)*Da(4,3)+Da(2&
-!          &,3)*Da(3,2)*Da(4,1)- Da(2,1)*Da(3,2)*Da(4,3)-Da(2,2)&
-!          &*Da(3,3)*Da(4,1)-Da(2,3)*Da(3,1)*Da(4,2)
-!      Db(1,2)=Da(1,2)*Da(3,4)*Da(4,3)+Da(1,3)*Da(3,2)*Da(4,4)+Da(1&
-!          &,4)*Da(3,3)*Da(4,2)- Da(1,2)*Da(3,3)*Da(4,4)-Da(1,3)&
-!          &*Da(3,4)*Da(4,2)-Da(1,4)*Da(3,2)*Da(4,3)
-!      Db(2,2)=Da(1,1)*Da(3,3)*Da(4,4)+Da(1,3)*Da(3,4)*Da(4,1)+Da(1&
-!          &,4)*Da(3,1)*Da(4,3)- Da(1,1)*Da(3,4)*Da(4,3)-Da(1,3)&
-!          &*Da(3,1)*Da(4,4)-Da(1,4)*Da(3,3)*Da(4,1)
-!      Db(3,2)=Da(1,1)*Da(3,4)*Da(4,2)+Da(1,2)*Da(3,1)*Da(4,4)+Da(1&
-!          &,4)*Da(3,2)*Da(4,1)- Da(1,1)*Da(3,2)*Da(4,4)-Da(1,2)&
-!          &*Da(3,4)*Da(4,1)-Da(1,4)*Da(3,1)*Da(4,2)
-!      Db(4,2)=Da(1,1)*Da(3,2)*Da(4,3)+Da(1,2)*Da(3,3)*Da(4,1)+Da(1&
-!          &,3)*Da(3,1)*Da(4,2)- Da(1,1)*Da(3,3)*Da(4,2)-Da(1,2)&
-!          &*Da(3,1)*Da(4,3)-Da(1,3)*Da(3,2)*Da(4,1)
-!      Db(1,3)=Da(1,2)*Da(2,3)*Da(4,4)+Da(1,3)*Da(2,4)*Da(4,2)+Da(1&
-!          &,4)*Da(2,2)*Da(4,3)- Da(1,2)*Da(2,4)*Da(4,3)-Da(1,3)&
-!          &*Da(2,2)*Da(4,4)-Da(1,4)*Da(2,3)*Da(4,2)
-!      Db(2,3)=Da(1,1)*Da(2,4)*Da(4,3)+Da(1,3)*Da(2,1)*Da(4,4)+Da(1&
-!          &,4)*Da(2,3)*Da(4,1)- Da(1,1)*Da(2,3)*Da(4,4)-Da(1,3)&
-!          &*Da(2,4)*Da(4,1)-Da(1,4)*Da(2,1)*Da(4,3)
-!      Db(3,3)=Da(1,1)*Da(2,2)*Da(4,4)+Da(1,2)*Da(2,4)*Da(4,1)+Da(1&
-!          &,4)*Da(2,1)*Da(4,2)- Da(1,1)*Da(2,4)*Da(4,2)-Da(1,2)&
-!          &*Da(2,1)*Da(4,4)-Da(1,4)*Da(2,2)*Da(4,1)
-!      Db(4,3)=Da(1,1)*Da(2,3)*Da(4,2)+Da(1,2)*Da(2,1)*Da(4,3)+Da(1&
-!          &,3)*Da(2,2)*Da(4,1)- Da(1,1)*Da(2,2)*Da(4,3)-Da(1,2)&
-!          &*Da(2,3)*Da(4,1)-Da(1,3)*Da(2,1)*Da(4,2)
-!      Db(1,4)=Da(1,2)*Da(2,4)*Da(3,3)+Da(1,3)*Da(2,2)*Da(3,4)+Da(1&
-!          &,4)*Da(2,3)*Da(3,2)- Da(1,2)*Da(2,3)*Da(3,4)-Da(1,3)&
-!          &*Da(2,4)*Da(3,2)-Da(1,4)*Da(2,2)*Da(3,3)
-!      Db(2,4)=Da(1,1)*Da(2,3)*Da(3,4)+Da(1,3)*Da(2,4)*Da(3,1)+Da(1&
-!          &,4)*Da(2,1)*Da(3,3)- Da(1,1)*Da(2,4)*Da(3,3)-Da(1,3)&
-!          &*Da(2,1)*Da(3,4)-Da(1,4)*Da(2,3)*Da(3,1)
-!      Db(3,4)=Da(1,1)*Da(2,4)*Da(3,2)+Da(1,2)*Da(2,1)*Da(3,4)+Da(1&
-!          &,4)*Da(2,2)*Da(3,1)- Da(1,1)*Da(2,2)*Da(3,4)-Da(1,2)&
-!          &*Da(2,4)*Da(3,1)-Da(1,4)*Da(2,1)*Da(3,2)
-!      Db(4,4)=Da(1,1)*Da(2,2)*Da(3,3)+Da(1,2)*Da(2,3)*Da(3,1)+Da(1&
-!          &,3)*Da(2,1)*Da(3,2)- Da(1,1)*Da(2,3)*Da(3,2)-Da(1,2)&
-!          &*Da(2,1)*Da(3,3)-Da(1,3)*Da(2,2)*Da(3,1)
-!      daux=Da(1,1)*Da(2,2)*Da(3,3)*Da(4,4)+Da(1,1)*Da(2,3)*Da(3,4)&
-!          &*Da(4,2)+Da(1,1)*Da(2,4)*Da(3,2)*Da(4,3)+ Da(1,2)*Da(2&
-!          &,1)*Da(3,4)*Da(4,3)+Da(1,2)*Da(2,3)*Da(3,1)*Da(4,4)+Da(1&
-!          &,2)*Da(2,4)*Da(3,3)*Da(4,1)+ Da(1,3)*Da(2,1)*Da(3,2)&
-!          &*Da(4,4)+Da(1,3)*Da(2,2)*Da(3,4)*Da(4,1)+Da(1,3)*Da(2,4)&
-!          &*Da(3,1)*Da(4,2)+ Da(1,4)*Da(2,1)*Da(3,3)*Da(4,2)+Da(1&
-!          &,4)*Da(2,2)*Da(3,1)*Da(4,3)+Da(1,4)*Da(2,3)*Da(3,2)*Da(4&
-!          &,1)- Da(1,1)*Da(2,2)*Da(3,4)*Da(4,3)-Da(1,1)*Da(2,3)&
-!          &*Da(3,2)*Da(4,4)-Da(1,1)*Da(2,4)*Da(3,3)*Da(4,2)- Da(1&
-!          &,2)*Da(2,1)*Da(3,3)*Da(4,4)-Da(1,2)*Da(2,3)*Da(3,4)*Da(4&
-!          &,1)-Da(1,2)*Da(2,4)*Da(3,1)*Da(4,3)- Da(1,3)*Da(2,1)&
-!          &*Da(3,4)*Da(4,2)-Da(1,3)*Da(2,2)*Da(3,1)*Da(4,4)-Da(1,3)&
-!          &*Da(2,4)*Da(3,2)*Da(4,1)- Da(1,4)*Da(2,1)*Da(3,2)*Da(4&
-!          &,3)-Da(1,4)*Da(2,2)*Da(3,3)*Da(4,1)-Da(1,4)*Da(2,3)*Da(3&
-!          &,1)*Da(4,2)
-!      Db=Db*(1.0_DP/daux)
+!        ! Explicit formula for 4x4 system
+!        Db(1,1)=Da(2,2)*Da(3,3)*Da(4,4)+Da(2,3)*Da(3,4)*Da(4,2)+Da(2&
+!            &,4)*Da(3,2)*Da(4,3)- Da(2,2)*Da(3,4)*Da(4,3)-Da(2,3)&
+!            &*Da(3,2)*Da(4,4)-Da(2,4)*Da(3,3)*Da(4,2)
+!        Db(2,1)=Da(2,1)*Da(3,4)*Da(4,3)+Da(2,3)*Da(3,1)*Da(4,4)+Da(2&
+!            &,4)*Da(3,3)*Da(4,1)- Da(2,1)*Da(3,3)*Da(4,4)-Da(2,3)&
+!            &*Da(3,4)*Da(4,1)-Da(2,4)*Da(3,1)*Da(4,3)
+!        Db(3,1)=Da(2,1)*Da(3,2)*Da(4,4)+Da(2,2)*Da(3,4)*Da(4,1)+Da(2&
+!            &,4)*Da(3,1)*Da(4,2)- Da(2,1)*Da(3,4)*Da(4,2)-Da(2,2)&
+!            &*Da(3,1)*Da(4,4)-Da(2,4)*Da(3,2)*Da(4,1)
+!        Db(4,1)=Da(2,1)*Da(3,3)*Da(4,2)+Da(2,2)*Da(3,1)*Da(4,3)+Da(2&
+!            &,3)*Da(3,2)*Da(4,1)- Da(2,1)*Da(3,2)*Da(4,3)-Da(2,2)&
+!            &*Da(3,3)*Da(4,1)-Da(2,3)*Da(3,1)*Da(4,2)
+!        Db(1,2)=Da(1,2)*Da(3,4)*Da(4,3)+Da(1,3)*Da(3,2)*Da(4,4)+Da(1&
+!            &,4)*Da(3,3)*Da(4,2)- Da(1,2)*Da(3,3)*Da(4,4)-Da(1,3)&
+!            &*Da(3,4)*Da(4,2)-Da(1,4)*Da(3,2)*Da(4,3)
+!        Db(2,2)=Da(1,1)*Da(3,3)*Da(4,4)+Da(1,3)*Da(3,4)*Da(4,1)+Da(1&
+!            &,4)*Da(3,1)*Da(4,3)- Da(1,1)*Da(3,4)*Da(4,3)-Da(1,3)&
+!            &*Da(3,1)*Da(4,4)-Da(1,4)*Da(3,3)*Da(4,1)
+!        Db(3,2)=Da(1,1)*Da(3,4)*Da(4,2)+Da(1,2)*Da(3,1)*Da(4,4)+Da(1&
+!            &,4)*Da(3,2)*Da(4,1)- Da(1,1)*Da(3,2)*Da(4,4)-Da(1,2)&
+!            &*Da(3,4)*Da(4,1)-Da(1,4)*Da(3,1)*Da(4,2)
+!        Db(4,2)=Da(1,1)*Da(3,2)*Da(4,3)+Da(1,2)*Da(3,3)*Da(4,1)+Da(1&
+!            &,3)*Da(3,1)*Da(4,2)- Da(1,1)*Da(3,3)*Da(4,2)-Da(1,2)&
+!            &*Da(3,1)*Da(4,3)-Da(1,3)*Da(3,2)*Da(4,1)
+!        Db(1,3)=Da(1,2)*Da(2,3)*Da(4,4)+Da(1,3)*Da(2,4)*Da(4,2)+Da(1&
+!            &,4)*Da(2,2)*Da(4,3)- Da(1,2)*Da(2,4)*Da(4,3)-Da(1,3)&
+!            &*Da(2,2)*Da(4,4)-Da(1,4)*Da(2,3)*Da(4,2)
+!        Db(2,3)=Da(1,1)*Da(2,4)*Da(4,3)+Da(1,3)*Da(2,1)*Da(4,4)+Da(1&
+!            &,4)*Da(2,3)*Da(4,1)- Da(1,1)*Da(2,3)*Da(4,4)-Da(1,3)&
+!            &*Da(2,4)*Da(4,1)-Da(1,4)*Da(2,1)*Da(4,3)
+!        Db(3,3)=Da(1,1)*Da(2,2)*Da(4,4)+Da(1,2)*Da(2,4)*Da(4,1)+Da(1&
+!            &,4)*Da(2,1)*Da(4,2)- Da(1,1)*Da(2,4)*Da(4,2)-Da(1,2)&
+!            &*Da(2,1)*Da(4,4)-Da(1,4)*Da(2,2)*Da(4,1)
+!        Db(4,3)=Da(1,1)*Da(2,3)*Da(4,2)+Da(1,2)*Da(2,1)*Da(4,3)+Da(1&
+!            &,3)*Da(2,2)*Da(4,1)- Da(1,1)*Da(2,2)*Da(4,3)-Da(1,2)&
+!            &*Da(2,3)*Da(4,1)-Da(1,3)*Da(2,1)*Da(4,2)
+!        Db(1,4)=Da(1,2)*Da(2,4)*Da(3,3)+Da(1,3)*Da(2,2)*Da(3,4)+Da(1&
+!            &,4)*Da(2,3)*Da(3,2)- Da(1,2)*Da(2,3)*Da(3,4)-Da(1,3)&
+!            &*Da(2,4)*Da(3,2)-Da(1,4)*Da(2,2)*Da(3,3)
+!        Db(2,4)=Da(1,1)*Da(2,3)*Da(3,4)+Da(1,3)*Da(2,4)*Da(3,1)+Da(1&
+!            &,4)*Da(2,1)*Da(3,3)- Da(1,1)*Da(2,4)*Da(3,3)-Da(1,3)&
+!            &*Da(2,1)*Da(3,4)-Da(1,4)*Da(2,3)*Da(3,1)
+!        Db(3,4)=Da(1,1)*Da(2,4)*Da(3,2)+Da(1,2)*Da(2,1)*Da(3,4)+Da(1&
+!            &,4)*Da(2,2)*Da(3,1)- Da(1,1)*Da(2,2)*Da(3,4)-Da(1,2)&
+!            &*Da(2,4)*Da(3,1)-Da(1,4)*Da(2,1)*Da(3,2)
+!        Db(4,4)=Da(1,1)*Da(2,2)*Da(3,3)+Da(1,2)*Da(2,3)*Da(3,1)+Da(1&
+!            &,3)*Da(2,1)*Da(3,2)- Da(1,1)*Da(2,3)*Da(3,2)-Da(1,2)&
+!            &*Da(2,1)*Da(3,3)-Da(1,3)*Da(2,2)*Da(3,1)
+!        daux=Da(1,1)*Da(2,2)*Da(3,3)*Da(4,4)+Da(1,1)*Da(2,3)*Da(3,4)&
+!            &*Da(4,2)+Da(1,1)*Da(2,4)*Da(3,2)*Da(4,3)+ Da(1,2)*Da(2&
+!            &,1)*Da(3,4)*Da(4,3)+Da(1,2)*Da(2,3)*Da(3,1)*Da(4,4)+Da(1&
+!            &,2)*Da(2,4)*Da(3,3)*Da(4,1)+ Da(1,3)*Da(2,1)*Da(3,2)&
+!            &*Da(4,4)+Da(1,3)*Da(2,2)*Da(3,4)*Da(4,1)+Da(1,3)*Da(2,4)&
+!            &*Da(3,1)*Da(4,2)+ Da(1,4)*Da(2,1)*Da(3,3)*Da(4,2)+Da(1&
+!            &,4)*Da(2,2)*Da(3,1)*Da(4,3)+Da(1,4)*Da(2,3)*Da(3,2)*Da(4&
+!            &,1)- Da(1,1)*Da(2,2)*Da(3,4)*Da(4,3)-Da(1,1)*Da(2,3)&
+!            &*Da(3,2)*Da(4,4)-Da(1,1)*Da(2,4)*Da(3,3)*Da(4,2)- Da(1&
+!            &,2)*Da(2,1)*Da(3,3)*Da(4,4)-Da(1,2)*Da(2,3)*Da(3,4)*Da(4&
+!            &,1)-Da(1,2)*Da(2,4)*Da(3,1)*Da(4,3)- Da(1,3)*Da(2,1)&
+!            &*Da(3,4)*Da(4,2)-Da(1,3)*Da(2,2)*Da(3,1)*Da(4,4)-Da(1,3)&
+!            &*Da(2,4)*Da(3,2)*Da(4,1)- Da(1,4)*Da(2,1)*Da(3,2)*Da(4&
+!            &,3)-Da(1,4)*Da(2,2)*Da(3,3)*Da(4,1)-Da(1,4)*Da(2,3)*Da(3&
+!            &,1)*Da(4,2)
+!        Db=Db*(1.0_DP/daux)
+  
+        bsuccess = .true.
+  
+      else
+        bsuccess = .false.
+      end if
 
   end subroutine mprim_invert4x4MatrixDirectDble
 
@@ -750,7 +799,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invert5x5MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert5x5MatrixDirectDble(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 5x5 system without any pivoting.
@@ -769,12 +818,16 @@ contains
 !<output>
   ! destination square matrix; receives $A^{-1}$.
   real(DP), dimension(5,5), intent(out) :: Db
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
 
   ! auxiliary variables
-  real(DP) :: det
+  real(DP) :: det,daux
   real(DP), dimension(10) :: V,W
   
     ! 2x2 determinants of rows 4-5
@@ -805,72 +858,79 @@ contains
     Db(3,1) = Da(2,1)*W( 9)-Da(2,2)*W( 6)+Da(2,4)*W( 3)-Da(2,5)*W( 2)
     Db(4,1) =-Da(2,1)*W( 8)+Da(2,2)*W( 5)-Da(2,3)*W( 3)+Da(2,5)*W( 1)
     Db(5,1) = Da(2,1)*W( 7)-Da(2,2)*W( 4)+Da(2,3)*W( 2)-Da(2,4)*W( 1)
-    ! calculate determinant of A
-    det = 1.0_DP / (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
-                   +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1))
-    ! update first column of inverse
-    Db(1,1)=Db(1,1)*det
-    Db(2,1)=Db(2,1)*det
-    Db(3,1)=Db(3,1)*det
-    Db(4,1)=Db(4,1)*det
-    Db(5,1)=Db(5,1)*det
-    ! calculate second column of inverse
-    Db(1,2) = det*(-Da(1,2)*W(10)+Da(1,3)*W( 9)-Da(1,4)*W( 8)+Da(1,5)*W( 7))
-    Db(2,2) = det*( Da(1,1)*W(10)-Da(1,3)*W( 6)+Da(1,4)*W( 5)-Da(1,5)*W( 4))
-    Db(3,2) = det*(-Da(1,1)*W( 9)+Da(1,2)*W( 6)-Da(1,4)*W( 3)+Da(1,5)*W( 2))
-    Db(4,2) = det*( Da(1,1)*W( 8)-Da(1,2)*W( 5)+Da(1,3)*W( 3)-Da(1,5)*W( 1))
-    Db(5,2) = det*(-Da(1,1)*W( 7)+Da(1,2)*W( 4)-Da(1,3)*W( 2)+Da(1,4)*W( 1))
-    ! 3x3 determinants of rows 2-4-5
-    W( 1) = Da(2,1)*V( 5)-Da(2,2)*V( 2)+Da(2,3)*V( 1)
-    W( 2) = Da(2,1)*V( 6)-Da(2,2)*V( 3)+Da(2,4)*V( 1)
-    W( 3) = Da(2,1)*V( 7)-Da(2,2)*V( 4)+Da(2,5)*V( 1)
-    W( 4) = Da(2,1)*V( 8)-Da(2,3)*V( 3)+Da(2,4)*V( 2)
-    W( 5) = Da(2,1)*V( 9)-Da(2,3)*V( 4)+Da(2,5)*V( 2)
-    W( 6) = Da(2,1)*V(10)-Da(2,4)*V( 4)+Da(2,5)*V( 3)
-    W( 7) = Da(2,2)*V( 8)-Da(2,3)*V( 6)+Da(2,4)*V( 5)
-    W( 8) = Da(2,2)*V( 9)-Da(2,3)*V( 7)+Da(2,5)*V( 5)
-    W( 9) = Da(2,2)*V(10)-Da(2,4)*V( 7)+Da(2,5)*V( 6)
-    W(10) = Da(2,3)*V(10)-Da(2,4)*V( 9)+Da(2,5)*V( 8)
-    ! calculate third column of inverse
-    Db(1,3) = det*( Da(1,2)*W(10)-Da(1,3)*W( 9)+Da(1,4)*W( 8)-Da(1,5)*W( 7))
-    Db(2,3) = det*(-Da(1,1)*W(10)+Da(1,3)*W( 6)-Da(1,4)*W( 5)+Da(1,5)*W( 4))
-    Db(3,3) = det*( Da(1,1)*W( 9)-Da(1,2)*W( 6)+Da(1,4)*W( 3)-Da(1,5)*W( 2))
-    Db(4,3) = det*(-Da(1,1)*W( 8)+Da(1,2)*W( 5)-Da(1,3)*W( 3)+Da(1,5)*W( 1))
-    Db(5,3) = det*( Da(1,1)*W( 7)-Da(1,2)*W( 4)+Da(1,3)*W( 2)-Da(1,4)*W( 1))
-    ! 2x2 determinants of rows 1-2
-    V( 1) = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-    V( 2) = Da(1,1)*Da(2,3)-Da(1,3)*Da(2,1)
-    V( 3) = Da(1,1)*Da(2,4)-Da(1,4)*Da(2,1)
-    V( 4) = Da(1,1)*Da(2,5)-Da(1,5)*Da(2,1)
-    V( 5) = Da(1,2)*Da(2,3)-Da(1,3)*Da(2,2)
-    V( 6) = Da(1,2)*Da(2,4)-Da(1,4)*Da(2,2)
-    V( 7) = Da(1,2)*Da(2,5)-Da(1,5)*Da(2,2)
-    V( 8) = Da(1,3)*Da(2,4)-Da(1,4)*Da(2,3)
-    V( 9) = Da(1,3)*Da(2,5)-Da(1,5)*Da(2,3)
-    V(10) = Da(1,4)*Da(2,5)-Da(1,5)*Da(2,4)
-    ! 3x3 determinants of rows 1-2-3
-    W( 1) = Da(3,1)*V( 5)-Da(3,2)*V( 2)+Da(3,3)*V( 1)
-    W( 2) = Da(3,1)*V( 6)-Da(3,2)*V( 3)+Da(3,4)*V( 1)
-    W( 3) = Da(3,1)*V( 7)-Da(3,2)*V( 4)+Da(3,5)*V( 1)
-    W( 4) = Da(3,1)*V( 8)-Da(3,3)*V( 3)+Da(3,4)*V( 2)
-    W( 5) = Da(3,1)*V( 9)-Da(3,3)*V( 4)+Da(3,5)*V( 2)
-    W( 6) = Da(3,1)*V(10)-Da(3,4)*V( 4)+Da(3,5)*V( 3)
-    W( 7) = Da(3,2)*V( 8)-Da(3,3)*V( 6)+Da(3,4)*V( 5)
-    W( 8) = Da(3,2)*V( 9)-Da(3,3)*V( 7)+Da(3,5)*V( 5)
-    W( 9) = Da(3,2)*V(10)-Da(3,4)*V( 7)+Da(3,5)*V( 6)
-    W(10) = Da(3,3)*V(10)-Da(3,4)*V( 9)+Da(3,5)*V( 8)
-    ! calculate fourth column of inverse
-    Db(1,4) = det*( Da(5,2)*W(10)-Da(5,3)*W( 9)+Da(5,4)*W( 8)-Da(5,5)*W( 7))
-    Db(2,4) = det*(-Da(5,1)*W(10)+Da(5,3)*W( 6)-Da(5,4)*W( 5)+Da(5,5)*W( 4))
-    Db(3,4) = det*( Da(5,1)*W( 9)-Da(5,2)*W( 6)+Da(5,4)*W( 3)-Da(5,5)*W( 2))
-    Db(4,4) = det*(-Da(5,1)*W( 8)+Da(5,2)*W( 5)-Da(5,3)*W( 3)+Da(5,5)*W( 1))
-    Db(5,4) = det*( Da(5,1)*W( 7)-Da(5,2)*W( 4)+Da(5,3)*W( 2)-Da(5,4)*W( 1))
-    ! calculate fifth column of inverse
-    Db(1,5) = det*(-Da(4,2)*W(10)+Da(4,3)*W( 9)-Da(4,4)*W( 8)+Da(4,5)*W( 7))
-    Db(2,5) = det*( Da(4,1)*W(10)-Da(4,3)*W( 6)+Da(4,4)*W( 5)-Da(4,5)*W( 4))
-    Db(3,5) = det*(-Da(4,1)*W( 9)+Da(4,2)*W( 6)-Da(4,4)*W( 3)+Da(4,5)*W( 2))
-    Db(4,5) = det*( Da(4,1)*W( 8)-Da(4,2)*W( 5)+Da(4,3)*W( 3)-Da(4,5)*W( 1))
-    Db(5,5) = det*(-Da(4,1)*W( 7)+Da(4,2)*W( 4)-Da(4,3)*W( 2)+Da(4,4)*W( 1))
+    daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
+            +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1))
+    if (abs(daux) .ge. SYS_EPSREAL) then
+      ! calculate determinant of A
+      det = 1.0_DP / daux
+      ! update first column of inverse
+      Db(1,1)=Db(1,1)*det
+      Db(2,1)=Db(2,1)*det
+      Db(3,1)=Db(3,1)*det
+      Db(4,1)=Db(4,1)*det
+      Db(5,1)=Db(5,1)*det
+      ! calculate second column of inverse
+      Db(1,2) = det*(-Da(1,2)*W(10)+Da(1,3)*W( 9)-Da(1,4)*W( 8)+Da(1,5)*W( 7))
+      Db(2,2) = det*( Da(1,1)*W(10)-Da(1,3)*W( 6)+Da(1,4)*W( 5)-Da(1,5)*W( 4))
+      Db(3,2) = det*(-Da(1,1)*W( 9)+Da(1,2)*W( 6)-Da(1,4)*W( 3)+Da(1,5)*W( 2))
+      Db(4,2) = det*( Da(1,1)*W( 8)-Da(1,2)*W( 5)+Da(1,3)*W( 3)-Da(1,5)*W( 1))
+      Db(5,2) = det*(-Da(1,1)*W( 7)+Da(1,2)*W( 4)-Da(1,3)*W( 2)+Da(1,4)*W( 1))
+      ! 3x3 determinants of rows 2-4-5
+      W( 1) = Da(2,1)*V( 5)-Da(2,2)*V( 2)+Da(2,3)*V( 1)
+      W( 2) = Da(2,1)*V( 6)-Da(2,2)*V( 3)+Da(2,4)*V( 1)
+      W( 3) = Da(2,1)*V( 7)-Da(2,2)*V( 4)+Da(2,5)*V( 1)
+      W( 4) = Da(2,1)*V( 8)-Da(2,3)*V( 3)+Da(2,4)*V( 2)
+      W( 5) = Da(2,1)*V( 9)-Da(2,3)*V( 4)+Da(2,5)*V( 2)
+      W( 6) = Da(2,1)*V(10)-Da(2,4)*V( 4)+Da(2,5)*V( 3)
+      W( 7) = Da(2,2)*V( 8)-Da(2,3)*V( 6)+Da(2,4)*V( 5)
+      W( 8) = Da(2,2)*V( 9)-Da(2,3)*V( 7)+Da(2,5)*V( 5)
+      W( 9) = Da(2,2)*V(10)-Da(2,4)*V( 7)+Da(2,5)*V( 6)
+      W(10) = Da(2,3)*V(10)-Da(2,4)*V( 9)+Da(2,5)*V( 8)
+      ! calculate third column of inverse
+      Db(1,3) = det*( Da(1,2)*W(10)-Da(1,3)*W( 9)+Da(1,4)*W( 8)-Da(1,5)*W( 7))
+      Db(2,3) = det*(-Da(1,1)*W(10)+Da(1,3)*W( 6)-Da(1,4)*W( 5)+Da(1,5)*W( 4))
+      Db(3,3) = det*( Da(1,1)*W( 9)-Da(1,2)*W( 6)+Da(1,4)*W( 3)-Da(1,5)*W( 2))
+      Db(4,3) = det*(-Da(1,1)*W( 8)+Da(1,2)*W( 5)-Da(1,3)*W( 3)+Da(1,5)*W( 1))
+      Db(5,3) = det*( Da(1,1)*W( 7)-Da(1,2)*W( 4)+Da(1,3)*W( 2)-Da(1,4)*W( 1))
+      ! 2x2 determinants of rows 1-2
+      V( 1) = Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
+      V( 2) = Da(1,1)*Da(2,3)-Da(1,3)*Da(2,1)
+      V( 3) = Da(1,1)*Da(2,4)-Da(1,4)*Da(2,1)
+      V( 4) = Da(1,1)*Da(2,5)-Da(1,5)*Da(2,1)
+      V( 5) = Da(1,2)*Da(2,3)-Da(1,3)*Da(2,2)
+      V( 6) = Da(1,2)*Da(2,4)-Da(1,4)*Da(2,2)
+      V( 7) = Da(1,2)*Da(2,5)-Da(1,5)*Da(2,2)
+      V( 8) = Da(1,3)*Da(2,4)-Da(1,4)*Da(2,3)
+      V( 9) = Da(1,3)*Da(2,5)-Da(1,5)*Da(2,3)
+      V(10) = Da(1,4)*Da(2,5)-Da(1,5)*Da(2,4)
+      ! 3x3 determinants of rows 1-2-3
+      W( 1) = Da(3,1)*V( 5)-Da(3,2)*V( 2)+Da(3,3)*V( 1)
+      W( 2) = Da(3,1)*V( 6)-Da(3,2)*V( 3)+Da(3,4)*V( 1)
+      W( 3) = Da(3,1)*V( 7)-Da(3,2)*V( 4)+Da(3,5)*V( 1)
+      W( 4) = Da(3,1)*V( 8)-Da(3,3)*V( 3)+Da(3,4)*V( 2)
+      W( 5) = Da(3,1)*V( 9)-Da(3,3)*V( 4)+Da(3,5)*V( 2)
+      W( 6) = Da(3,1)*V(10)-Da(3,4)*V( 4)+Da(3,5)*V( 3)
+      W( 7) = Da(3,2)*V( 8)-Da(3,3)*V( 6)+Da(3,4)*V( 5)
+      W( 8) = Da(3,2)*V( 9)-Da(3,3)*V( 7)+Da(3,5)*V( 5)
+      W( 9) = Da(3,2)*V(10)-Da(3,4)*V( 7)+Da(3,5)*V( 6)
+      W(10) = Da(3,3)*V(10)-Da(3,4)*V( 9)+Da(3,5)*V( 8)
+      ! calculate fourth column of inverse
+      Db(1,4) = det*( Da(5,2)*W(10)-Da(5,3)*W( 9)+Da(5,4)*W( 8)-Da(5,5)*W( 7))
+      Db(2,4) = det*(-Da(5,1)*W(10)+Da(5,3)*W( 6)-Da(5,4)*W( 5)+Da(5,5)*W( 4))
+      Db(3,4) = det*( Da(5,1)*W( 9)-Da(5,2)*W( 6)+Da(5,4)*W( 3)-Da(5,5)*W( 2))
+      Db(4,4) = det*(-Da(5,1)*W( 8)+Da(5,2)*W( 5)-Da(5,3)*W( 3)+Da(5,5)*W( 1))
+      Db(5,4) = det*( Da(5,1)*W( 7)-Da(5,2)*W( 4)+Da(5,3)*W( 2)-Da(5,4)*W( 1))
+      ! calculate fifth column of inverse
+      Db(1,5) = det*(-Da(4,2)*W(10)+Da(4,3)*W( 9)-Da(4,4)*W( 8)+Da(4,5)*W( 7))
+      Db(2,5) = det*( Da(4,1)*W(10)-Da(4,3)*W( 6)+Da(4,4)*W( 5)-Da(4,5)*W( 4))
+      Db(3,5) = det*(-Da(4,1)*W( 9)+Da(4,2)*W( 6)-Da(4,4)*W( 3)+Da(4,5)*W( 2))
+      Db(4,5) = det*( Da(4,1)*W( 8)-Da(4,2)*W( 5)+Da(4,3)*W( 3)-Da(4,5)*W( 1))
+      Db(5,5) = det*(-Da(4,1)*W( 7)+Da(4,2)*W( 4)-Da(4,3)*W( 2)+Da(4,4)*W( 1))
+      
+      bsuccess = .true.
+    else
+      bsuccess = .false.
+    end if
 
   end subroutine mprim_invert5x5MatrixDirectDble
 
@@ -878,7 +938,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invert6x6MatrixDirectDble(Da,Db)
+  pure subroutine mprim_invert6x6MatrixDirectDble(Da,Db,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a 6x6 system without any pivoting.
@@ -897,12 +957,16 @@ contains
 !<output>
   ! destination square matrix; receives $A^{-1}$.
   real(DP), dimension(6,6), intent(out) :: Db
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
 
   ! auxiliary variables
-  real(DP) :: det
+  real(DP) :: det,daux
   real(DP), dimension(15) :: U, W
   real(DP), dimension(20) :: V
 
@@ -966,141 +1030,154 @@ contains
     Db(4,1) =-Da(2,1)*W(13)+Da(2,2)*W(9)-Da(2,3)*W(6)+Da(2,5)*W(3)-Da(2,6)*W(2)
     Db(5,1) = Da(2,1)*W(12)-Da(2,2)*W(8)+Da(2,3)*W(5)-Da(2,4)*W(3)+Da(2,6)*W(1)
     Db(6,1) =-Da(2,1)*W(11)+Da(2,2)*W(7)-Da(2,3)*W(4)+Da(2,4)*W(2)-Da(2,5)*W(1)
-    ! calculate determinant of A
-    det = 1.0_DP / (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)+Da(1,3)*Db(3,1)+&
-                    Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1)+Da(1,6)*Db(6,1))
-    ! update first column of inverse
-    Db(1,1) = det*Db(1,1)
-    Db(2,1) = det*Db(2,1)
-    Db(3,1) = det*Db(3,1)
-    Db(4,1) = det*Db(4,1)
-    Db(5,1) = det*Db(5,1)
-    Db(6,1) = det*Db(6,1)
-    ! calculate second column of inverse
-    Db(1,2) = det*(-Da(1,2)*W(15)+Da(1,3)*W(14)-Da(1,4)*W(13)+Da(1,5)*W(12)-Da(1,6)*W(11))
-    Db(2,2) = det*( Da(1,1)*W(15)-Da(1,3)*W(10)+Da(1,4)*W(9)-Da(1,5)*W(8)+Da(1,6)*W(7))
-    Db(3,2) = det*(-Da(1,1)*W(14)+Da(1,2)*W(10)-Da(1,4)*W(6)+Da(1,5)*W(5)-Da(1,6)*W(4))
-    Db(4,2) = det*( Da(1,1)*W(13)-Da(1,2)*W(9)+Da(1,3)*W(6)-Da(1,5)*W(3)+Da(1,6)*W(2))
-    Db(5,2) = det*(-Da(1,1)*W(12)+Da(1,2)*W(8)-Da(1,3)*W(5)+Da(1,4)*W(3)-Da(1,6)*W(1))
-    Db(6,2) = det*( Da(1,1)*W(11)-Da(1,2)*W(7)+Da(1,3)*W(4)-Da(1,4)*W(2)+Da(1,5)*W(1))
-    ! 3x3 determinants of rows 2-5-6
-    V(1) = Da(2,1)*U(6)-Da(2,2)*U(2)+Da(2,3)*U(1)
-    V(2) = Da(2,1)*U(7)-Da(2,2)*U(3)+Da(2,4)*U(1)
-    V(3) = Da(2,1)*U(8)-Da(2,2)*U(4)+Da(2,5)*U(1)
-    V(4) = Da(2,1)*U(9)-Da(2,2)*U(5)+Da(2,6)*U(1)
-    V(5) = Da(2,1)*U(10)-Da(2,3)*U(3)+Da(2,4)*U(2)
-    V(6) = Da(2,1)*U(11)-Da(2,3)*U(4)+Da(2,5)*U(2)
-    V(7) = Da(2,1)*U(12)-Da(2,3)*U(5)+Da(2,6)*U(2)
-    V(8) = Da(2,1)*U(13)-Da(2,4)*U(4)+Da(2,5)*U(3)
-    V(9) = Da(2,1)*U(14)-Da(2,4)*U(5)+Da(2,6)*U(3)
-    V(10) = Da(2,1)*U(15)-Da(2,5)*U(5)+Da(2,6)*U(4)
-    V(11) = Da(2,2)*U(10)-Da(2,3)*U(7)+Da(2,4)*U(6)
-    V(12) = Da(2,2)*U(11)-Da(2,3)*U(8)+Da(2,5)*U(6)
-    V(13) = Da(2,2)*U(12)-Da(2,3)*U(9)+Da(2,6)*U(6)
-    V(14) = Da(2,2)*U(13)-Da(2,4)*U(8)+Da(2,5)*U(7)
-    V(15) = Da(2,2)*U(14)-Da(2,4)*U(9)+Da(2,6)*U(7)
-    V(16) = Da(2,2)*U(15)-Da(2,5)*U(9)+Da(2,6)*U(8)
-    V(17) = Da(2,3)*U(13)-Da(2,4)*U(11)+Da(2,5)*U(10)
-    V(18) = Da(2,3)*U(14)-Da(2,4)*U(12)+Da(2,6)*U(10)
-    V(19) = Da(2,3)*U(15)-Da(2,5)*U(12)+Da(2,6)*U(11)
-    V(20) = Da(2,4)*U(15)-Da(2,5)*U(14)+Da(2,6)*U(13)
-    ! 4x4 determinants of rows 1-2-5-6
-    W(1) = Da(1,1)*V(11)-Da(1,2)*V(5)+Da(1,3)*V(2)-Da(1,4)*V(1)
-    W(2) = Da(1,1)*V(12)-Da(1,2)*V(6)+Da(1,3)*V(3)-Da(1,5)*V(1)
-    W(3) = Da(1,1)*V(13)-Da(1,2)*V(7)+Da(1,3)*V(4)-Da(1,6)*V(1)
-    W(4) = Da(1,1)*V(14)-Da(1,2)*V(8)+Da(1,4)*V(3)-Da(1,5)*V(2)
-    W(5) = Da(1,1)*V(15)-Da(1,2)*V(9)+Da(1,4)*V(4)-Da(1,6)*V(2)
-    W(6) = Da(1,1)*V(16)-Da(1,2)*V(10)+Da(1,5)*V(4)-Da(1,6)*V(3)
-    W(7) = Da(1,1)*V(17)-Da(1,3)*V(8)+Da(1,4)*V(6)-Da(1,5)*V(5)
-    W(8) = Da(1,1)*V(18)-Da(1,3)*V(9)+Da(1,4)*V(7)-Da(1,6)*V(5)
-    W(9) = Da(1,1)*V(19)-Da(1,3)*V(10)+Da(1,5)*V(7)-Da(1,6)*V(6)
-    W(10) = Da(1,1)*V(20)-Da(1,4)*V(10)+Da(1,5)*V(9)-Da(1,6)*V(8)
-    W(11) = Da(1,2)*V(17)-Da(1,3)*V(14)+Da(1,4)*V(12)-Da(1,5)*V(11)
-    W(12) = Da(1,2)*V(18)-Da(1,3)*V(15)+Da(1,4)*V(13)-Da(1,6)*V(11)
-    W(13) = Da(1,2)*V(19)-Da(1,3)*V(16)+Da(1,5)*V(13)-Da(1,6)*V(12)
-    W(14) = Da(1,2)*V(20)-Da(1,4)*V(16)+Da(1,5)*V(15)-Da(1,6)*V(14)
-    W(15) = Da(1,3)*V(20)-Da(1,4)*V(19)+Da(1,5)*V(18)-Da(1,6)*V(17)
-    ! calculate third column of inverse
-    Db(1,3) = det*( Da(4,2)*W(15)-Da(4,3)*W(14)+Da(4,4)*W(13)-Da(4,5)*W(12)+Da(4,6)*W(11))
-    Db(2,3) = det*(-Da(4,1)*W(15)+Da(4,3)*W(10)-Da(4,4)*W(9)+Da(4,5)*W(8)-Da(4,6)*W(7))
-    Db(3,3) = det*( Da(4,1)*W(14)-Da(4,2)*W(10)+Da(4,4)*W(6)-Da(4,5)*W(5)+Da(4,6)*W(4))
-    Db(4,3) = det*(-Da(4,1)*W(13)+Da(4,2)*W(9)-Da(4,3)*W(6)+Da(4,5)*W(3)-Da(4,6)*W(2))
-    Db(5,3) = det*( Da(4,1)*W(12)-Da(4,2)*W(8)+Da(4,3)*W(5)-Da(4,4)*W(3)+Da(4,6)*W(1))
-    Db(6,3) = det*(-Da(4,1)*W(11)+Da(4,2)*W(7)-Da(4,3)*W(4)+Da(4,4)*W(2)-Da(4,5)*W(1))
-    ! calculate fourth column of inverse
-    Db(1,4) = det*(-Da(3,2)*W(15)+Da(3,3)*W(14)-Da(3,4)*W(13)+Da(3,5)*W(12)-Da(3,6)*W(11))
-    Db(2,4) = det*( Da(3,1)*W(15)-Da(3,3)*W(10)+Da(3,4)*W(9)-Da(3,5)*W(8)+Da(3,6)*W(7))
-    Db(3,4) = det*(-Da(3,1)*W(14)+Da(3,2)*W(10)-Da(3,4)*W(6)+Da(3,5)*W(5)-Da(3,6)*W(4))
-    Db(4,4) = det*( Da(3,1)*W(13)-Da(3,2)*W(9)+Da(3,3)*W(6)-Da(3,5)*W(3)+Da(3,6)*W(2))
-    Db(5,4) = det*(-Da(3,1)*W(12)+Da(3,2)*W(8)-Da(3,3)*W(5)+Da(3,4)*W(3)-Da(3,6)*W(1))
-    Db(6,4) = det*( Da(3,1)*W(11)-Da(3,2)*W(7)+Da(3,3)*W(4)-Da(3,4)*W(2)+Da(3,5)*W(1))
-    ! 2x2 determinants of rows 3-4
-    U(1) = Da(3,1)*Da(4,2)-Da(3,2)*Da(4,1)
-    U(2) = Da(3,1)*Da(4,3)-Da(3,3)*Da(4,1)
-    U(3) = Da(3,1)*Da(4,4)-Da(3,4)*Da(4,1)
-    U(4) = Da(3,1)*Da(4,5)-Da(3,5)*Da(4,1)
-    U(5) = Da(3,1)*Da(4,6)-Da(3,6)*Da(4,1)
-    U(6) = Da(3,2)*Da(4,3)-Da(3,3)*Da(4,2)
-    U(7) = Da(3,2)*Da(4,4)-Da(3,4)*Da(4,2)
-    U(8) = Da(3,2)*Da(4,5)-Da(3,5)*Da(4,2)
-    U(9) = Da(3,2)*Da(4,6)-Da(3,6)*Da(4,2)
-    U(10) = Da(3,3)*Da(4,4)-Da(3,4)*Da(4,3)
-    U(11) = Da(3,3)*Da(4,5)-Da(3,5)*Da(4,3)
-    U(12) = Da(3,3)*Da(4,6)-Da(3,6)*Da(4,3)
-    U(13) = Da(3,4)*Da(4,5)-Da(3,5)*Da(4,4)
-    U(14) = Da(3,4)*Da(4,6)-Da(3,6)*Da(4,4)
-    U(15) = Da(3,5)*Da(4,6)-Da(3,6)*Da(4,5)
-    ! 3x3 determinants of rows 2-3-4
-    V(1) = Da(2,1)*U(6)-Da(2,2)*U(2)+Da(2,3)*U(1)
-    V(2) = Da(2,1)*U(7)-Da(2,2)*U(3)+Da(2,4)*U(1)
-    V(3) = Da(2,1)*U(8)-Da(2,2)*U(4)+Da(2,5)*U(1)
-    V(4) = Da(2,1)*U(9)-Da(2,2)*U(5)+Da(2,6)*U(1)
-    V(5) = Da(2,1)*U(10)-Da(2,3)*U(3)+Da(2,4)*U(2)
-    V(6) = Da(2,1)*U(11)-Da(2,3)*U(4)+Da(2,5)*U(2)
-    V(7) = Da(2,1)*U(12)-Da(2,3)*U(5)+Da(2,6)*U(2)
-    V(8) = Da(2,1)*U(13)-Da(2,4)*U(4)+Da(2,5)*U(3)
-    V(9) = Da(2,1)*U(14)-Da(2,4)*U(5)+Da(2,6)*U(3)
-    V(10) = Da(2,1)*U(15)-Da(2,5)*U(5)+Da(2,6)*U(4)
-    V(11) = Da(2,2)*U(10)-Da(2,3)*U(7)+Da(2,4)*U(6)
-    V(12) = Da(2,2)*U(11)-Da(2,3)*U(8)+Da(2,5)*U(6)
-    V(13) = Da(2,2)*U(12)-Da(2,3)*U(9)+Da(2,6)*U(6)
-    V(14) = Da(2,2)*U(13)-Da(2,4)*U(8)+Da(2,5)*U(7)
-    V(15) = Da(2,2)*U(14)-Da(2,4)*U(9)+Da(2,6)*U(7)
-    V(16) = Da(2,2)*U(15)-Da(2,5)*U(9)+Da(2,6)*U(8)
-    V(17) = Da(2,3)*U(13)-Da(2,4)*U(11)+Da(2,5)*U(10)
-    V(18) = Da(2,3)*U(14)-Da(2,4)*U(12)+Da(2,6)*U(10)
-    V(19) = Da(2,3)*U(15)-Da(2,5)*U(12)+Da(2,6)*U(11)
-    V(20) = Da(2,4)*U(15)-Da(2,5)*U(14)+Da(2,6)*U(13)
-    ! 4x4 determinants of rows 1-2-3-4
-    W(1) = Da(1,1)*V(11)-Da(1,2)*V(5)+Da(1,3)*V(2)-Da(1,4)*V(1)
-    W(2) = Da(1,1)*V(12)-Da(1,2)*V(6)+Da(1,3)*V(3)-Da(1,5)*V(1)
-    W(3) = Da(1,1)*V(13)-Da(1,2)*V(7)+Da(1,3)*V(4)-Da(1,6)*V(1)
-    W(4) = Da(1,1)*V(14)-Da(1,2)*V(8)+Da(1,4)*V(3)-Da(1,5)*V(2)
-    W(5) = Da(1,1)*V(15)-Da(1,2)*V(9)+Da(1,4)*V(4)-Da(1,6)*V(2)
-    W(6) = Da(1,1)*V(16)-Da(1,2)*V(10)+Da(1,5)*V(4)-Da(1,6)*V(3)
-    W(7) = Da(1,1)*V(17)-Da(1,3)*V(8)+Da(1,4)*V(6)-Da(1,5)*V(5)
-    W(8) = Da(1,1)*V(18)-Da(1,3)*V(9)+Da(1,4)*V(7)-Da(1,6)*V(5)
-    W(9) = Da(1,1)*V(19)-Da(1,3)*V(10)+Da(1,5)*V(7)-Da(1,6)*V(6)
-    W(10) = Da(1,1)*V(20)-Da(1,4)*V(10)+Da(1,5)*V(9)-Da(1,6)*V(8)
-    W(11) = Da(1,2)*V(17)-Da(1,3)*V(14)+Da(1,4)*V(12)-Da(1,5)*V(11)
-    W(12) = Da(1,2)*V(18)-Da(1,3)*V(15)+Da(1,4)*V(13)-Da(1,6)*V(11)
-    W(13) = Da(1,2)*V(19)-Da(1,3)*V(16)+Da(1,5)*V(13)-Da(1,6)*V(12)
-    W(14) = Da(1,2)*V(20)-Da(1,4)*V(16)+Da(1,5)*V(15)-Da(1,6)*V(14)
-    W(15) = Da(1,3)*V(20)-Da(1,4)*V(19)+Da(1,5)*V(18)-Da(1,6)*V(17)
-    ! calculate fifth column of inverse
-    Db(1,5) = det*( Da(6,2)*W(15)-Da(6,3)*W(14)+Da(6,4)*W(13)-Da(6,5)*W(12)+Da(6,6)*W(11))
-    Db(2,5) = det*(-Da(6,1)*W(15)+Da(6,3)*W(10)-Da(6,4)*W(9)+Da(6,5)*W(8)-Da(6,6)*W(7))
-    Db(3,5) = det*( Da(6,1)*W(14)-Da(6,2)*W(10)+Da(6,4)*W(6)-Da(6,5)*W(5)+Da(6,6)*W(4))
-    Db(4,5) = det*(-Da(6,1)*W(13)+Da(6,2)*W(9)-Da(6,3)*W(6)+Da(6,5)*W(3)-Da(6,6)*W(2))
-    Db(5,5) = det*( Da(6,1)*W(12)-Da(6,2)*W(8)+Da(6,3)*W(5)-Da(6,4)*W(3)+Da(6,6)*W(1))
-    Db(6,5) = det*(-Da(6,1)*W(11)+Da(6,2)*W(7)-Da(6,3)*W(4)+Da(6,4)*W(2)-Da(6,5)*W(1))
-    ! calculate sixth column of inverse
-    Db(1,6) = det*(-Da(5,2)*W(15)+Da(5,3)*W(14)-Da(5,4)*W(13)+Da(5,5)*W(12)-Da(5,6)*W(11))
-    Db(2,6) = det*( Da(5,1)*W(15)-Da(5,3)*W(10)+Da(5,4)*W(9)-Da(5,5)*W(8)+Da(5,6)*W(7))
-    Db(3,6) = det*(-Da(5,1)*W(14)+Da(5,2)*W(10)-Da(5,4)*W(6)+Da(5,5)*W(5)-Da(5,6)*W(4))
-    Db(4,6) = det*( Da(5,1)*W(13)-Da(5,2)*W(9)+Da(5,3)*W(6)-Da(5,5)*W(3)+Da(5,6)*W(2))
-    Db(5,6) = det*(-Da(5,1)*W(12)+Da(5,2)*W(8)-Da(5,3)*W(5)+Da(5,4)*W(3)-Da(5,6)*W(1))
-    Db(6,6) = det*( Da(5,1)*W(11)-Da(5,2)*W(7)+Da(5,3)*W(4)-Da(5,4)*W(2)+Da(5,5)*W(1))
+
+    daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)+Da(1,3)*Db(3,1)+&
+            Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1)+Da(1,6)*Db(6,1))
+
+    if (abs(daux) .ge. SYS_EPSREAL) then
+
+      ! calculate determinant of A
+      det = 1.0_DP / daux
+      ! update first column of inverse
+      Db(1,1) = det*Db(1,1)
+      Db(2,1) = det*Db(2,1)
+      Db(3,1) = det*Db(3,1)
+      Db(4,1) = det*Db(4,1)
+      Db(5,1) = det*Db(5,1)
+      Db(6,1) = det*Db(6,1)
+      ! calculate second column of inverse
+      Db(1,2) = det*(-Da(1,2)*W(15)+Da(1,3)*W(14)-Da(1,4)*W(13)+Da(1,5)*W(12)-Da(1,6)*W(11))
+      Db(2,2) = det*( Da(1,1)*W(15)-Da(1,3)*W(10)+Da(1,4)*W(9)-Da(1,5)*W(8)+Da(1,6)*W(7))
+      Db(3,2) = det*(-Da(1,1)*W(14)+Da(1,2)*W(10)-Da(1,4)*W(6)+Da(1,5)*W(5)-Da(1,6)*W(4))
+      Db(4,2) = det*( Da(1,1)*W(13)-Da(1,2)*W(9)+Da(1,3)*W(6)-Da(1,5)*W(3)+Da(1,6)*W(2))
+      Db(5,2) = det*(-Da(1,1)*W(12)+Da(1,2)*W(8)-Da(1,3)*W(5)+Da(1,4)*W(3)-Da(1,6)*W(1))
+      Db(6,2) = det*( Da(1,1)*W(11)-Da(1,2)*W(7)+Da(1,3)*W(4)-Da(1,4)*W(2)+Da(1,5)*W(1))
+      ! 3x3 determinants of rows 2-5-6
+      V(1) = Da(2,1)*U(6)-Da(2,2)*U(2)+Da(2,3)*U(1)
+      V(2) = Da(2,1)*U(7)-Da(2,2)*U(3)+Da(2,4)*U(1)
+      V(3) = Da(2,1)*U(8)-Da(2,2)*U(4)+Da(2,5)*U(1)
+      V(4) = Da(2,1)*U(9)-Da(2,2)*U(5)+Da(2,6)*U(1)
+      V(5) = Da(2,1)*U(10)-Da(2,3)*U(3)+Da(2,4)*U(2)
+      V(6) = Da(2,1)*U(11)-Da(2,3)*U(4)+Da(2,5)*U(2)
+      V(7) = Da(2,1)*U(12)-Da(2,3)*U(5)+Da(2,6)*U(2)
+      V(8) = Da(2,1)*U(13)-Da(2,4)*U(4)+Da(2,5)*U(3)
+      V(9) = Da(2,1)*U(14)-Da(2,4)*U(5)+Da(2,6)*U(3)
+      V(10) = Da(2,1)*U(15)-Da(2,5)*U(5)+Da(2,6)*U(4)
+      V(11) = Da(2,2)*U(10)-Da(2,3)*U(7)+Da(2,4)*U(6)
+      V(12) = Da(2,2)*U(11)-Da(2,3)*U(8)+Da(2,5)*U(6)
+      V(13) = Da(2,2)*U(12)-Da(2,3)*U(9)+Da(2,6)*U(6)
+      V(14) = Da(2,2)*U(13)-Da(2,4)*U(8)+Da(2,5)*U(7)
+      V(15) = Da(2,2)*U(14)-Da(2,4)*U(9)+Da(2,6)*U(7)
+      V(16) = Da(2,2)*U(15)-Da(2,5)*U(9)+Da(2,6)*U(8)
+      V(17) = Da(2,3)*U(13)-Da(2,4)*U(11)+Da(2,5)*U(10)
+      V(18) = Da(2,3)*U(14)-Da(2,4)*U(12)+Da(2,6)*U(10)
+      V(19) = Da(2,3)*U(15)-Da(2,5)*U(12)+Da(2,6)*U(11)
+      V(20) = Da(2,4)*U(15)-Da(2,5)*U(14)+Da(2,6)*U(13)
+      ! 4x4 determinants of rows 1-2-5-6
+      W(1) = Da(1,1)*V(11)-Da(1,2)*V(5)+Da(1,3)*V(2)-Da(1,4)*V(1)
+      W(2) = Da(1,1)*V(12)-Da(1,2)*V(6)+Da(1,3)*V(3)-Da(1,5)*V(1)
+      W(3) = Da(1,1)*V(13)-Da(1,2)*V(7)+Da(1,3)*V(4)-Da(1,6)*V(1)
+      W(4) = Da(1,1)*V(14)-Da(1,2)*V(8)+Da(1,4)*V(3)-Da(1,5)*V(2)
+      W(5) = Da(1,1)*V(15)-Da(1,2)*V(9)+Da(1,4)*V(4)-Da(1,6)*V(2)
+      W(6) = Da(1,1)*V(16)-Da(1,2)*V(10)+Da(1,5)*V(4)-Da(1,6)*V(3)
+      W(7) = Da(1,1)*V(17)-Da(1,3)*V(8)+Da(1,4)*V(6)-Da(1,5)*V(5)
+      W(8) = Da(1,1)*V(18)-Da(1,3)*V(9)+Da(1,4)*V(7)-Da(1,6)*V(5)
+      W(9) = Da(1,1)*V(19)-Da(1,3)*V(10)+Da(1,5)*V(7)-Da(1,6)*V(6)
+      W(10) = Da(1,1)*V(20)-Da(1,4)*V(10)+Da(1,5)*V(9)-Da(1,6)*V(8)
+      W(11) = Da(1,2)*V(17)-Da(1,3)*V(14)+Da(1,4)*V(12)-Da(1,5)*V(11)
+      W(12) = Da(1,2)*V(18)-Da(1,3)*V(15)+Da(1,4)*V(13)-Da(1,6)*V(11)
+      W(13) = Da(1,2)*V(19)-Da(1,3)*V(16)+Da(1,5)*V(13)-Da(1,6)*V(12)
+      W(14) = Da(1,2)*V(20)-Da(1,4)*V(16)+Da(1,5)*V(15)-Da(1,6)*V(14)
+      W(15) = Da(1,3)*V(20)-Da(1,4)*V(19)+Da(1,5)*V(18)-Da(1,6)*V(17)
+      ! calculate third column of inverse
+      Db(1,3) = det*( Da(4,2)*W(15)-Da(4,3)*W(14)+Da(4,4)*W(13)-Da(4,5)*W(12)+Da(4,6)*W(11))
+      Db(2,3) = det*(-Da(4,1)*W(15)+Da(4,3)*W(10)-Da(4,4)*W(9)+Da(4,5)*W(8)-Da(4,6)*W(7))
+      Db(3,3) = det*( Da(4,1)*W(14)-Da(4,2)*W(10)+Da(4,4)*W(6)-Da(4,5)*W(5)+Da(4,6)*W(4))
+      Db(4,3) = det*(-Da(4,1)*W(13)+Da(4,2)*W(9)-Da(4,3)*W(6)+Da(4,5)*W(3)-Da(4,6)*W(2))
+      Db(5,3) = det*( Da(4,1)*W(12)-Da(4,2)*W(8)+Da(4,3)*W(5)-Da(4,4)*W(3)+Da(4,6)*W(1))
+      Db(6,3) = det*(-Da(4,1)*W(11)+Da(4,2)*W(7)-Da(4,3)*W(4)+Da(4,4)*W(2)-Da(4,5)*W(1))
+      ! calculate fourth column of inverse
+      Db(1,4) = det*(-Da(3,2)*W(15)+Da(3,3)*W(14)-Da(3,4)*W(13)+Da(3,5)*W(12)-Da(3,6)*W(11))
+      Db(2,4) = det*( Da(3,1)*W(15)-Da(3,3)*W(10)+Da(3,4)*W(9)-Da(3,5)*W(8)+Da(3,6)*W(7))
+      Db(3,4) = det*(-Da(3,1)*W(14)+Da(3,2)*W(10)-Da(3,4)*W(6)+Da(3,5)*W(5)-Da(3,6)*W(4))
+      Db(4,4) = det*( Da(3,1)*W(13)-Da(3,2)*W(9)+Da(3,3)*W(6)-Da(3,5)*W(3)+Da(3,6)*W(2))
+      Db(5,4) = det*(-Da(3,1)*W(12)+Da(3,2)*W(8)-Da(3,3)*W(5)+Da(3,4)*W(3)-Da(3,6)*W(1))
+      Db(6,4) = det*( Da(3,1)*W(11)-Da(3,2)*W(7)+Da(3,3)*W(4)-Da(3,4)*W(2)+Da(3,5)*W(1))
+      ! 2x2 determinants of rows 3-4
+      U(1) = Da(3,1)*Da(4,2)-Da(3,2)*Da(4,1)
+      U(2) = Da(3,1)*Da(4,3)-Da(3,3)*Da(4,1)
+      U(3) = Da(3,1)*Da(4,4)-Da(3,4)*Da(4,1)
+      U(4) = Da(3,1)*Da(4,5)-Da(3,5)*Da(4,1)
+      U(5) = Da(3,1)*Da(4,6)-Da(3,6)*Da(4,1)
+      U(6) = Da(3,2)*Da(4,3)-Da(3,3)*Da(4,2)
+      U(7) = Da(3,2)*Da(4,4)-Da(3,4)*Da(4,2)
+      U(8) = Da(3,2)*Da(4,5)-Da(3,5)*Da(4,2)
+      U(9) = Da(3,2)*Da(4,6)-Da(3,6)*Da(4,2)
+      U(10) = Da(3,3)*Da(4,4)-Da(3,4)*Da(4,3)
+      U(11) = Da(3,3)*Da(4,5)-Da(3,5)*Da(4,3)
+      U(12) = Da(3,3)*Da(4,6)-Da(3,6)*Da(4,3)
+      U(13) = Da(3,4)*Da(4,5)-Da(3,5)*Da(4,4)
+      U(14) = Da(3,4)*Da(4,6)-Da(3,6)*Da(4,4)
+      U(15) = Da(3,5)*Da(4,6)-Da(3,6)*Da(4,5)
+      ! 3x3 determinants of rows 2-3-4
+      V(1) = Da(2,1)*U(6)-Da(2,2)*U(2)+Da(2,3)*U(1)
+      V(2) = Da(2,1)*U(7)-Da(2,2)*U(3)+Da(2,4)*U(1)
+      V(3) = Da(2,1)*U(8)-Da(2,2)*U(4)+Da(2,5)*U(1)
+      V(4) = Da(2,1)*U(9)-Da(2,2)*U(5)+Da(2,6)*U(1)
+      V(5) = Da(2,1)*U(10)-Da(2,3)*U(3)+Da(2,4)*U(2)
+      V(6) = Da(2,1)*U(11)-Da(2,3)*U(4)+Da(2,5)*U(2)
+      V(7) = Da(2,1)*U(12)-Da(2,3)*U(5)+Da(2,6)*U(2)
+      V(8) = Da(2,1)*U(13)-Da(2,4)*U(4)+Da(2,5)*U(3)
+      V(9) = Da(2,1)*U(14)-Da(2,4)*U(5)+Da(2,6)*U(3)
+      V(10) = Da(2,1)*U(15)-Da(2,5)*U(5)+Da(2,6)*U(4)
+      V(11) = Da(2,2)*U(10)-Da(2,3)*U(7)+Da(2,4)*U(6)
+      V(12) = Da(2,2)*U(11)-Da(2,3)*U(8)+Da(2,5)*U(6)
+      V(13) = Da(2,2)*U(12)-Da(2,3)*U(9)+Da(2,6)*U(6)
+      V(14) = Da(2,2)*U(13)-Da(2,4)*U(8)+Da(2,5)*U(7)
+      V(15) = Da(2,2)*U(14)-Da(2,4)*U(9)+Da(2,6)*U(7)
+      V(16) = Da(2,2)*U(15)-Da(2,5)*U(9)+Da(2,6)*U(8)
+      V(17) = Da(2,3)*U(13)-Da(2,4)*U(11)+Da(2,5)*U(10)
+      V(18) = Da(2,3)*U(14)-Da(2,4)*U(12)+Da(2,6)*U(10)
+      V(19) = Da(2,3)*U(15)-Da(2,5)*U(12)+Da(2,6)*U(11)
+      V(20) = Da(2,4)*U(15)-Da(2,5)*U(14)+Da(2,6)*U(13)
+      ! 4x4 determinants of rows 1-2-3-4
+      W(1) = Da(1,1)*V(11)-Da(1,2)*V(5)+Da(1,3)*V(2)-Da(1,4)*V(1)
+      W(2) = Da(1,1)*V(12)-Da(1,2)*V(6)+Da(1,3)*V(3)-Da(1,5)*V(1)
+      W(3) = Da(1,1)*V(13)-Da(1,2)*V(7)+Da(1,3)*V(4)-Da(1,6)*V(1)
+      W(4) = Da(1,1)*V(14)-Da(1,2)*V(8)+Da(1,4)*V(3)-Da(1,5)*V(2)
+      W(5) = Da(1,1)*V(15)-Da(1,2)*V(9)+Da(1,4)*V(4)-Da(1,6)*V(2)
+      W(6) = Da(1,1)*V(16)-Da(1,2)*V(10)+Da(1,5)*V(4)-Da(1,6)*V(3)
+      W(7) = Da(1,1)*V(17)-Da(1,3)*V(8)+Da(1,4)*V(6)-Da(1,5)*V(5)
+      W(8) = Da(1,1)*V(18)-Da(1,3)*V(9)+Da(1,4)*V(7)-Da(1,6)*V(5)
+      W(9) = Da(1,1)*V(19)-Da(1,3)*V(10)+Da(1,5)*V(7)-Da(1,6)*V(6)
+      W(10) = Da(1,1)*V(20)-Da(1,4)*V(10)+Da(1,5)*V(9)-Da(1,6)*V(8)
+      W(11) = Da(1,2)*V(17)-Da(1,3)*V(14)+Da(1,4)*V(12)-Da(1,5)*V(11)
+      W(12) = Da(1,2)*V(18)-Da(1,3)*V(15)+Da(1,4)*V(13)-Da(1,6)*V(11)
+      W(13) = Da(1,2)*V(19)-Da(1,3)*V(16)+Da(1,5)*V(13)-Da(1,6)*V(12)
+      W(14) = Da(1,2)*V(20)-Da(1,4)*V(16)+Da(1,5)*V(15)-Da(1,6)*V(14)
+      W(15) = Da(1,3)*V(20)-Da(1,4)*V(19)+Da(1,5)*V(18)-Da(1,6)*V(17)
+      ! calculate fifth column of inverse
+      Db(1,5) = det*( Da(6,2)*W(15)-Da(6,3)*W(14)+Da(6,4)*W(13)-Da(6,5)*W(12)+Da(6,6)*W(11))
+      Db(2,5) = det*(-Da(6,1)*W(15)+Da(6,3)*W(10)-Da(6,4)*W(9)+Da(6,5)*W(8)-Da(6,6)*W(7))
+      Db(3,5) = det*( Da(6,1)*W(14)-Da(6,2)*W(10)+Da(6,4)*W(6)-Da(6,5)*W(5)+Da(6,6)*W(4))
+      Db(4,5) = det*(-Da(6,1)*W(13)+Da(6,2)*W(9)-Da(6,3)*W(6)+Da(6,5)*W(3)-Da(6,6)*W(2))
+      Db(5,5) = det*( Da(6,1)*W(12)-Da(6,2)*W(8)+Da(6,3)*W(5)-Da(6,4)*W(3)+Da(6,6)*W(1))
+      Db(6,5) = det*(-Da(6,1)*W(11)+Da(6,2)*W(7)-Da(6,3)*W(4)+Da(6,4)*W(2)-Da(6,5)*W(1))
+      ! calculate sixth column of inverse
+      Db(1,6) = det*(-Da(5,2)*W(15)+Da(5,3)*W(14)-Da(5,4)*W(13)+Da(5,5)*W(12)-Da(5,6)*W(11))
+      Db(2,6) = det*( Da(5,1)*W(15)-Da(5,3)*W(10)+Da(5,4)*W(9)-Da(5,5)*W(8)+Da(5,6)*W(7))
+      Db(3,6) = det*(-Da(5,1)*W(14)+Da(5,2)*W(10)-Da(5,4)*W(6)+Da(5,5)*W(5)-Da(5,6)*W(4))
+      Db(4,6) = det*( Da(5,1)*W(13)-Da(5,2)*W(9)+Da(5,3)*W(6)-Da(5,5)*W(3)+Da(5,6)*W(2))
+      Db(5,6) = det*(-Da(5,1)*W(12)+Da(5,2)*W(8)-Da(5,3)*W(5)+Da(5,4)*W(3)-Da(5,6)*W(1))
+      Db(6,6) = det*( Da(5,1)*W(11)-Da(5,2)*W(7)+Da(5,3)*W(4)-Da(5,4)*W(2)+Da(5,5)*W(1))
+      
+      bsuccess = .true.
+      
+    else
+    
+      bsuccess = .false.
+    
+    end if
 
   end subroutine mprim_invert6x6MatrixDirectDble
 
@@ -1108,7 +1185,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine mprim_invertMatrixPivotDble(Da,ndim)
+  pure subroutine mprim_invertMatrixPivotDble(Da,ndim,bsuccess)
 
 !<description>
   ! This subroutine directly inverts a (ndim x ndim) system with pivoting.
@@ -1124,6 +1201,10 @@ contains
 !<inputoutput>
   ! source square matrix to be inverted
   real(DP), dimension(ndim,ndim), intent(inout) :: Da
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Db is undefined.
+  logical, intent(out) :: bsuccess
 !</inputoutput>
 
 !</subroutine>
@@ -1135,6 +1216,8 @@ contains
     integer :: idim1,idim2,ix,iy,indx,indy
 
     ! Perform factorization of matrix Da
+
+    bsuccess = .false.
 
     ! Initialization
     Kindx=0
@@ -1157,7 +1240,7 @@ contains
       end do
 
       ! Return if pivotal element is zero
-      if (abs(dpivot) .le. 0._DP) return
+      if (abs(dpivot) .le. SYS_EPSREAL) return
 
       Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP&
           &/dpivot
@@ -1210,6 +1293,8 @@ contains
       
       Kindy(iy)=Kindy(ix);  Kindy(ix)=ix
     end do
+    
+    bsuccess = .true.
 
   end subroutine mprim_invertMatrixPivotDble
 
@@ -1217,7 +1302,7 @@ contains
 
 !<subroutine>
 
-  subroutine mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar)
+  subroutine mprim_invertMatrixSngl(Fa,Ff,Fx,ndim,ipar,bsuccess)
 
 !<description>
     ! This subroutine performs the direct inversion of a NxN system.
@@ -1255,6 +1340,10 @@ contains
     ! destination vector containing inverted matrix times right-hand
     ! side vector
     real(SP), dimension(ndim), intent(out) :: Fx
+
+    ! TRUE, if successful. FALSE if the system is indefinite.
+    ! If FALSE, Db is undefined.
+    logical, intent(out) :: bsuccess
 !</output>
 !</subroutine>
 
@@ -1265,6 +1354,8 @@ contains
 
     real(SP) :: fpivot,faux
     integer :: idim1,idim2,ix,iy,indx,indy,info
+
+    bsuccess = .false.
 
     select case (ipar)
     case (0)
@@ -1290,7 +1381,7 @@ contains
         end do
 
         ! Return if pivotal element is zero
-        if (abs(fpivot) .le. 0._DP) return
+        if (abs(fpivot) .le. SYS_EPSREAL) return
 
         Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
             &/fpivot
@@ -1365,6 +1456,9 @@ contains
         Fb(1,2)=-Fa(1,2)
         Fb(2,2)= Fa(1,1)
         faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
+            
+        if (faux .le. SYS_EPSREAL) return    
+        
         Fx=matmul(Fb,Ff)/faux
 
       case (3)
@@ -1381,6 +1475,9 @@ contains
         faux=Fa(1,1)*Fa(2,2)*Fa(3,3)+Fa(2,1)*Fa(3,2)*Fa(1,3)+ Fa(3,1)&
             &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
             &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
+            
+        if (faux .le. SYS_EPSREAL) return    
+        
         Fx=matmul(Fb,Ff)/faux
 
       case (4)
@@ -1448,6 +1545,9 @@ contains
             &*Fa(2,4)*Fa(3,2)*Fa(4,1)- Fa(1,4)*Fa(2,1)*Fa(3,2)*Fa(4&
             &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
             &,1)*Fa(4,2)
+            
+        if (faux .le. SYS_EPSREAL) return    
+        
         Fx=matmul(Fb,Ff)/faux
 
       case default
@@ -1455,8 +1555,13 @@ contains
         Fpiv=0; Fx=Ff
         call SGESV(ndim,1,Fa,ndim,Fpiv,Fx,ndim,info)
         
+        if (info .ne. 0) return
+        
       end select
     end select
+    
+    bsuccess = .true.
+    
   end subroutine mprim_invertMatrixSngl
   
   ! ***************************************************************************

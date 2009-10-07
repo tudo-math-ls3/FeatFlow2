@@ -1408,6 +1408,7 @@ contains
   integer :: i,j,iel,ielidx,i1,i2,k,l
   real(DP) :: daux, daux1, daux2
   logical :: bHaveC, bHaveM, bHaveK
+  logical :: bsuccess1, bsuccess2, bsuccess3
 
     ! Get pointers to the  triangulation information
     call storage_getbase_int2d (rvector%RvectorBlock(1)%p_rspatialDiscr% &
@@ -1672,112 +1673,116 @@ contains
         end do
 
         ! Invert A1, A2 and N
-        call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-        call mprim_invert4x4MatrixDirectDble(Da2, Di2)
-        call mprim_invert4x4MatrixDirectDble(Dn, Dj)
+        call mprim_invert4x4MatrixDirectDble(Da1, Di1, bsuccess1)
+        call mprim_invert4x4MatrixDirectDble(Da2, Di2, bsuccess2)
+        call mprim_invert4x4MatrixDirectDble(Dn, Dj, bsuccess3)
 
-        ! Calculate temperature
-        ! t := N^-1 * f_t
-        do i = 1, ndofT
-          Dut(i) = 0.0_DP
-          do j = 1, ndofT
-            Dut(i) = Dut(i) + Dj(i,j)*Dft(j)
-          end do
-        end do
-        
-        ! Calculate new RHS 
-        ! f_u := f_u - M1*t
-        ! f_v := f_v - M2*t
-        do i = 1, ndofV
-          do j = 1, ndofT
-            Df1(i) = Df1(i) - Dm1(i,j)*Dut(j)
-            Df2(i) = Df2(i) - Dm2(i,j)*Dut(j)
-          end do
-        end do
-        
-        ! Precalculate D * A^-1
-        do i = 1, ndofV
-          do j = 1, ndofP
-            Dt1(j,i) = 0.0_DP
-            Dt2(j,i) = 0.0_DP
-            do k = 1, ndofV
-              Dt1(j,i) = Dt1(j,i) + Dd1(j,k)*Di1(k,i)
-              Dt2(j,i) = Dt2(j,i) + Dd2(j,k)*Di2(k,i)
+        if (bsuccess1 .and. bsuccess2 .and. bsuccess3) then
+
+          ! Calculate temperature
+          ! t := N^-1 * f_t
+          do i = 1, ndofT
+            Dut(i) = 0.0_DP
+            do j = 1, ndofT
+              Dut(i) = Dut(i) + Dj(i,j)*Dft(j)
             end do
           end do
-        end do
-        
-        ! Calculate Schur-Complement of A
-        ! S := -C + D * A^-1 * B 
-        do j = 1, ndofP
-          do k = 1, ndofP
-            Ds(j,k) = -Dc(j,k)
-            do i = 1, ndofV
-              Ds(j,k) = Ds(j,k) + Dt1(j,i)*Db1(i,k) &
-                                + Dt2(j,i)*Db2(i,k)
-            end do
-          end do
-        end do
-        
-        ! Invert S
-        Dsi(1,1) = 1.0_DP / Ds(1,1)
-        
-        ! Update pressure RHS
-        do j = 1, ndofP
-          daux = -Dfp(j)
+          
+          ! Calculate new RHS 
+          ! f_u := f_u - M1*t
+          ! f_v := f_v - M2*t
           do i = 1, ndofV
-            daux = daux + Dt1(j,i)*Df1(i) &
-                        + Dt2(j,i)*Df2(i)
+            do j = 1, ndofT
+              Df1(i) = Df1(i) - Dm1(i,j)*Dut(j)
+              Df2(i) = Df2(i) - Dm2(i,j)*Dut(j)
+            end do
+          end do
+          
+          ! Precalculate D * A^-1
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Dt1(j,i) = 0.0_DP
+              Dt2(j,i) = 0.0_DP
+              do k = 1, ndofV
+                Dt1(j,i) = Dt1(j,i) + Dd1(j,k)*Di1(k,i)
+                Dt2(j,i) = Dt2(j,i) + Dd2(j,k)*Di2(k,i)
+              end do
+            end do
+          end do
+          
+          ! Calculate Schur-Complement of A
+          ! S := -C + D * A^-1 * B 
+          do j = 1, ndofP
+            do k = 1, ndofP
+              Ds(j,k) = -Dc(j,k)
+              do i = 1, ndofV
+                Ds(j,k) = Ds(j,k) + Dt1(j,i)*Db1(i,k) &
+                                  + Dt2(j,i)*Db2(i,k)
+              end do
+            end do
+          end do
+          
+          ! Invert S
+          Dsi(1,1) = 1.0_DP / Ds(1,1)
+          
+          ! Update pressure RHS
+          do j = 1, ndofP
+            daux = -Dfp(j)
+            do i = 1, ndofV
+              daux = daux + Dt1(j,i)*Df1(i) &
+                          + Dt2(j,i)*Df2(i)
+            end do
+            do i = 1, ndofT
+              daux = daux + Dk(j,i)*Dut(i)
+            end do
+            Dfp(j) = daux
+          end do
+            
+          ! Calculate pressure
+          ! p := S^-1 * f_p
+          do j = 1, ndofP
+            Dup(j) = 0.0_DP
+            do i = 1, ndofP
+              Dup(j) = Dup(j) + Dsi(j,i)*Dfp(i)
+            end do
+          end do
+
+          ! Update velocity RHS
+          ! f_u := f_u - B * p
+          do i = 1, ndofV
+            do j = 1, ndofP
+              Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
+              Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
+            end do
+          end do
+          
+          ! Calculate X- and Y-velocity
+          ! u := A^-1 * f_u
+          do i = 1, ndofV
+            Du1(i) = 0.0_DP
+            Du2(i) = 0.0_DP
+            do j = 1, ndofV
+              Du1(i) = Du1(i) + Di1(i,j)*Df1(j)
+              Du2(i) = Du2(i) + Di2(i,j)*Df2(j)
+            end do
+          end do
+          
+          ! Incorporate our local solution into the global one.
+          do i = 1, ndofV
+            j = IdofV(i)
+            p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+            p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
+          end do
+          do i = 1, ndofP
+            j = IdofP(i)
+            p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
           end do
           do i = 1, ndofT
-            daux = daux + Dk(j,i)*Dut(i)
+            j = IdofT(i)
+            p_DvecT(j) = p_DvecT(j) + domega * Dut(i)
           end do
-          Dfp(j) = daux
-        end do
           
-        ! Calculate pressure
-        ! p := S^-1 * f_p
-        do j = 1, ndofP
-          Dup(j) = 0.0_DP
-          do i = 1, ndofP
-            Dup(j) = Dup(j) + Dsi(j,i)*Dfp(i)
-          end do
-        end do
-
-        ! Update velocity RHS
-        ! f_u := f_u - B * p
-        do i = 1, ndofV
-          do j = 1, ndofP
-            Df1(i) = Df1(i) - Db1(i,j)*Dup(j)
-            Df2(i) = Df2(i) - Db2(i,j)*Dup(j)
-          end do
-        end do
-        
-        ! Calculate X- and Y-velocity
-        ! u := A^-1 * f_u
-        do i = 1, ndofV
-          Du1(i) = 0.0_DP
-          Du2(i) = 0.0_DP
-          do j = 1, ndofV
-            Du1(i) = Du1(i) + Di1(i,j)*Df1(j)
-            Du2(i) = Du2(i) + Di2(i,j)*Df2(j)
-          end do
-        end do
-        
-        ! Incorporate our local solution into the global one.
-        do i = 1, ndofV
-          j = IdofV(i)
-          p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
-          p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
-        end do
-        do i = 1, ndofP
-          j = IdofP(i)
-          p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
-        end do
-        do i = 1, ndofT
-          j = IdofT(i)
-          p_DvecT(j) = p_DvecT(j) + domega * Dut(i)
-        end do
+        end if
       
       end do ! ielidx
     !end if

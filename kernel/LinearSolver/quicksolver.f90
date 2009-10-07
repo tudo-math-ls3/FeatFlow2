@@ -1226,7 +1226,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine qsol_solveDiagSchurComp (ndimA,ndimC,Du,Df,Da,Db,Dd,Dc)
+  pure subroutine qsol_solveDiagSchurComp (ndimA,ndimC,Du,Df,Da,Db,Dd,Dc,bsuccess)
   
 !<description>
   ! This routine applies a Schur Complement decomposition to a 2x2 saddle point
@@ -1277,6 +1277,10 @@ contains
 !<output>
   ! SOlution vector.
   real(DP), dimension(*), intent(out) :: Du
+
+  ! TRUE, if successful. FALSE if the system is indefinite.
+  ! If FALSE, Du is undefined.
+  logical, intent(out) :: bsuccess
 !</output>
 
 !</subroutine>
@@ -1308,6 +1312,8 @@ contains
       real(dp), dimension( LDB, * ), intent(inout) :: B
       end subroutine
     end interface
+
+    bsuccess = .false.
 
     ! The system can be written as:
     !   ( A  B ) = (u) = (f)
@@ -1374,21 +1380,25 @@ contains
 
     select case(ndimC)
     case (1)
+      if (Ds(1,1) .le. SYS_EPSREAL) return
       Du(ndimA+1) = Dftemp2(1) / Ds(1,1)
       
     case (2)
-      call mprim_invert2x2MatrixDirectDble(Ds,Dsinv)
+      call mprim_invert2x2MatrixDirectDble(Ds,Dsinv,bsuccess)
+      if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2)
 
     case (3)
-      call mprim_invert3x3MatrixDirectDble(Ds,Dsinv)
+      call mprim_invert3x3MatrixDirectDble(Ds,Dsinv,bsuccess)
+      if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) + Dsinv(1,3)*Dftemp2(3)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) + Dsinv(2,3)*Dftemp2(3)
       Du(ndimA+3) = Dsinv(3,1)*Dftemp2(1) + Dsinv(3,2)*Dftemp2(2) + Dsinv(3,3)*Dftemp2(3)
 
     case (4)
-      call mprim_invert4x4MatrixDirectDble(Ds,Dsinv)
+      call mprim_invert4x4MatrixDirectDble(Ds,Dsinv,bsuccess)
+      if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4)
       Du(ndimA+2) = Dsinv(2,1)*Dftemp2(1) + Dsinv(2,2)*Dftemp2(2) &
@@ -1399,7 +1409,8 @@ contains
                   + Dsinv(4,3)*Dftemp2(3) + Dsinv(4,4)*Dftemp2(4)
     
     case (5)
-      call mprim_invert5x5MatrixDirectDble(Ds,Dsinv)
+      call mprim_invert5x5MatrixDirectDble(Ds,Dsinv,bsuccess)
+      if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
                   + Dsinv(1,5)*Dftemp2(5)
@@ -1417,7 +1428,8 @@ contains
                   + Dsinv(5,5)*Dftemp2(5)
 
     case (6)
-      call mprim_invert6x6MatrixDirectDble(Ds,Dsinv)
+      call mprim_invert6x6MatrixDirectDble(Ds,Dsinv,bsuccess)
+      if (.not. bsuccess) return
       Du(ndimA+1) = Dsinv(1,1)*Dftemp2(1) + Dsinv(1,2)*Dftemp2(2) &
                   + Dsinv(1,3)*Dftemp2(3) + Dsinv(1,4)*Dftemp2(4) &
                   + Dsinv(1,5)*Dftemp2(5) + Dsinv(1,6)*Dftemp2(6)
@@ -1441,6 +1453,7 @@ contains
       ! Use LAPACK routine for general NxN system, where N > 6
       Ipiv=0
       call DGESV(ndimC,1,Ds,ndimC,Ipiv,Dftemp2,ndimC,info)
+      if (info .ne. 0) return
       Du(ndimA+1:ndimA+ndimC) = Dftemp2(1:ndimC)
       
     end select
@@ -1454,6 +1467,8 @@ contains
     end do
     
     ! That's it.
+    
+    bsuccess = .true.
 
   end subroutine
 

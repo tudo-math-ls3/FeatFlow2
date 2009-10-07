@@ -50,7 +50,28 @@
 !# 8.) mlprj_initMatrixProjection
 !#     -> Directly sets the prolongation (and thus implicitly also the
 !#        restriction) matrix that is to be used.
+!#
+!# 9.) mlprj_initPrjHierarchy
+!#     -> Creates a projection hierarchy containing a set of levels.
+!#
+!# 10.) mlprj_initPrjHierarchyLevel
+!#      -> Initialises a level in a projection hierarchy
+!#
+!# 11.) mlprj_commitPrjHierarchy
+!#      -> Prepares a projection hierarchy for use
+!#
+!# 12.) mlprj_releasePrjHierarchy
+!#      -> Releases a projection hierarchy
+!#
+!# 13.) mlprj_performProlongationHier
+!#      -> Performs a prolongation using a projection hierarchy
 !# 
+!# 14.) mlprj_performRestrictionHier
+!#      -> Performs a restriction using a projection hierarchy
+!# 
+!# 15.) mlprj_performInterpolationHier
+!#      -> Performs an interpolöation using a projection hierarchy
+!#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# --> Some notes on the L2-Projection grid transfer <--
 !# -----------------------------------------------------
@@ -109,6 +130,39 @@
 !# want to restrict a solution vector using a matrix you will need to do it
 !# by yourself ^_^
 !#
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# --> Some notes on the projection hierarchy <--
+!# ----------------------------------------------
+!#
+!# The projection hierarchy can be used to maintain the projection
+!# between a set of levels. For its use, one has to prepare the structure
+!# with a set of commands like this:
+!#
+!#   type(t_interlevelProjectionHier) :: rprjHierarchy
+!#
+!#   call mlprj_initPrjHierarchy(rprjHierarchy,nlmin,nlmax)
+!#   do ilevel = nlmin,nlmax
+!#     call mlprj_initPrjHierarchyLevel(rprjHierarchy,ilevel,Rdiscretisation(ilevel))
+!#   end do
+!#   ...
+!#   ... do something else with rprjHierarchy if necessary, e.g. preparing
+!#   ... rprjHierarchy%p_Rprojection(ilevel) with special parameters
+!#   ...
+!#   call mlprj_commitPrjHierarchy (rprjHierarchy)
+!#
+!# The above code initialises the hierarchy for levels nlmin..nlmax,
+!# attaches the discretisation structures of these levels and
+!# "commits" the structure. Afterwards it can he used with 
+!# mlprj_performProlongationHier/mlprj_performRestrictionHier/
+!# mlprj_performInterpolationHier to projection solution/RHS vectors between
+!# adjacent levels. These routines accept a coarse grid/fine grid vector
+!# and the number of the level corresponding to the fine grid vector.
+!#
+!# When the computation is finished, the whole structure must be released
+!# with
+!#
+!#   call mlprj_releasePrjHierarchy (rprjHierarchy)
+!#
 !# </purpose>
 !##############################################################################
 
@@ -131,8 +185,10 @@ module multilevelprojection
   
   private
   
+  public :: t_interlevelProjectionDiscrPtr
   public :: t_interlevelProjectionScalar
   public :: t_interlevelProjectionBlock
+  public :: t_interlevelProjectionHier
   public :: mlprj_initProjectionDirect
   public :: mlprj_initProjectionDiscr
   public :: mlprj_initProjectionVec
@@ -147,6 +203,14 @@ module multilevelprojection
   public :: mlprj_performProlongation
   public :: mlprj_performRestriction
   public :: mlprj_performInterpolation
+  public :: mlprj_initPrjHierarchy
+  public :: mlprj_initPrjHierarchyLevel
+  public :: mlprj_commitPrjHierarchy
+  public :: mlprj_releasePrjHierarchy
+  public :: mlprj_performProlongationHier
+  public :: mlprj_performRestrictionHier
+  public :: mlprj_performInterpolationHier
+
 
 !<constants>
 
@@ -373,7 +437,52 @@ module multilevelprojection
   
   end type
   
-  !</typeblock>
+!</typeblock>
+
+!<typeblock>
+
+  ! A type encapsuling a pointer to a discretisation structure. Private.
+  type t_interlevelProjectionDiscrPtr
+  
+    private
+  
+    ! Pointer to a discretisation
+    type(t_blockDiscretisation), pointer :: p_rdiscretisation  
+    
+  end type
+
+!</typeblock>
+
+!<typeblock>
+
+  ! This structure defines a hierarchy of projection structures
+  ! for a hierarchy of refinement levels. It can be used to project
+  ! FEM functions given as block vectors from one level to another.
+  type t_interlevelProjectionHier
+  
+    ! Minimum level in the hierarchy. Corresponds to index 1 in 
+    ! p_Rprojection and p_RdiscrPointer.
+    integer :: nlmin = 0
+    
+    ! Maximum level in the hierarchy
+    integer :: nlmax = 0
+    
+    ! An array of interlevel projection structures for all the levels.
+    ! Note 1: This array is allocated as 1:nlmax-nlmin+1.
+    ! Note 2: The projection structure for the coarse level p_Rprojection(1)
+    !   is not used and not needed!
+    type(t_interlevelProjectionBlock), dimension(:), pointer :: p_Rprojection
+
+    ! An array of discretisation structures for all the levels
+    type(t_interlevelProjectionDiscrPtr), dimension(:), pointer :: p_RdiscrPointer
+  
+    ! Temporary memory for the projection
+    type(t_vectorScalar) :: rtempVector
+  
+  end type
+
+!</typeblock>
+
 
 !</types>
 
@@ -9817,6 +9926,271 @@ contains
     
     ! That is it
   
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mlprj_initPrjHierarchy (rprjHierarchy,nlmin,nlmax)
+
+!<description>
+  ! Initialises a projection hierarchy for projection between levels NLMIN
+  ! and NLMAX.
+!</description>
+
+!<input>
+  ! Minimum level in the hierarchy.
+  integer, intent(in) :: nlmin
+  
+  ! Maximum level in the hierarchy.
+  integer, intent(in) :: nlmax
+!</input>
+
+!<output>
+  ! Projection hierarchy structure to initialise.
+  type(t_interlevelProjectionHier), intent(out) :: rprjHierarchy
+!</output>
+
+!</subroutine>
+
+    ! Basic initialisation of the structure.
+    rprjHierarchy%nlmin = nlmin
+    rprjHierarchy%nlmax = nlmax
+    
+    allocate(rprjHierarchy%p_Rprojection(nlmax-nlmin+1))
+    allocate(rprjHierarchy%p_RdiscrPointer(nlmax-nlmin+1))
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mlprj_initPrjHierarchyLevel (rprjHierarchy,ilevel,rdiscretisation)
+
+!<description>
+  ! Initialises level ilevel of the projection hierarchy using the block
+  ! discretisation rdiscretisation.
+  ! After the initialisation of all levels, the routine 
+  ! mlprj_commitProjectionHierarchy must be called!
+!</description>
+
+!<input>
+  ! Number of the level to initialise
+  integer, intent(in) :: ilevel
+  
+  ! Block discretisation of this level. A pointer to this structure
+  ! is written to rprjHierarchy, so the structure must persist until
+  ! the hierarchy is released. 
+  type(t_blockDiscretisation), intent(in),target :: rdiscretisation
+!</input>
+
+!<inputoutput>
+  ! Projection hierarchy structure.
+  type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    ! Initialise all levels except for the coarse one, this does not need 
+    ! initialisation.
+    if (ilevel .gt. rprjHierarchy%nlmin) then
+      call mlprj_initProjectionDiscr (&
+          rprjHierarchy%p_Rprojection(ilevel-rprjHierarchy%nlmin+1),rdiscretisation)
+    end if
+        
+    ! Remember the discretisation
+    rprjHierarchy%p_RdiscrPointer(ilevel-rprjHierarchy%nlmin+1)%p_rdiscretisation => &
+        rdiscretisation
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mlprj_commitPrjHierarchy (rprjHierarchy)
+
+!<description>
+  ! Commits a level hierarchy. This routine must be called after the 
+  ! initialisation of all levels using mlprj_initHierarchyLevel.
+  ! It does some final changes to rprjHierarchy to make it ready to use.
+!</description>
+
+!<inputoutput>
+  ! Projection hierarchy structure.
+  type(t_interlevelProjectionHier), intent(inout), target :: rprjHierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,imaxmem
+    type(t_blockDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
+
+    ! Calculate the amount of temp memory needed for the projection
+    ! and allocate a temp vector with that size.
+                 
+    imaxmem = 1
+    do i=rprjHierarchy%nlmin+1,rprjHierarchy%nlmax
+      ! Pass the system metrices on the coarse/fine grid to 
+      ! mlprj_getTempMemoryDirect to specify the discretisation structures
+      ! of all equations in the PDE there.
+      ! This calculates the overall size of the temp vector needed for the
+      ! projection between an arbitrary pair of consecutive levels.
+      p_rdiscrCoarse => &
+          rprjHierarchy%p_RdiscrPointer(i-rprjHierarchy%nlmin)%p_rdiscretisation
+      p_rdiscrFine => &
+          rprjHierarchy%p_RdiscrPointer(i-rprjHierarchy%nlmin+1)%p_rdiscretisation
+      imaxmem = max(imaxmem,mlprj_getTempMemoryDirect (&
+          rprjHierarchy%p_Rprojection(i),&
+          p_rdiscrCoarse%RspatialDiscr(1:p_rdiscrCoarse%ncomponents),&
+          p_rdiscrFine%RspatialDiscr(1:p_rdiscrFine%ncomponents)))
+    end do
+
+    ! Set up a scalar temporary vector for the projection.
+    if (rprjHierarchy%rtempVector%NEQ .ne. 0) then
+      call lsyssc_releaseVector (rprjHierarchy%rtempVector)
+    end if
+    call lsyssc_createVector (rprjHierarchy%rtempVector,imaxmem,.false.)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine mlprj_releasePrjHierarchy (rprjHierarchy)
+
+!<description>
+  ! Releases a projection hierarchy.
+!</description>
+
+!<inputoutput>
+  ! Projection hierarchy structure to clean up.
+  type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    if (associated(rprjHierarchy%p_Rprojection)) then
+      call lsyssc_releaseVector(rprjHierarchy%rtempVector)
+      deallocate(rprjHierarchy%p_Rprojection)
+      nullify(rprjHierarchy%p_Rprojection)
+    end if
+  
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mlprj_performProlongationHier (rprjHierarchy,&
+      ifineLevel,rcoarseVector,rfineVector)
+  
+!<description>
+  ! Performs a prolongation for a given block vector (i.e. a projection
+  ! in the primal space where the solution lives) based on a projection
+  ! hierarchy.
+!</description>
+  
+!<input>
+  ! Underlying projection hierarchy structure.
+  type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
+
+  ! Coarse grid vector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
+  
+  ! Level of the fine grid vector.
+  integer, intent(in) :: ifineLevel
+!</input>
+  
+!<output>
+  ! Fine grid vector
+  type(t_vectorBlock), intent(inout) :: rfineVector
+!</output>
+  
+!</subroutine>
+
+    call mlprj_performProlongation (&
+        rprjHierarchy%P_Rprojection(ifineLevel-rprjHierarchy%nlmin+1),&
+        rcoarseVector,rfineVector,rprjHierarchy%rtempVector)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mlprj_performRestrictionHier (rprjHierarchy,&
+      ifineLevel,rcoarseVector,rfineVector)
+  
+!<description>
+  ! Performs a restriction for a given block vector (i.e. a projection
+  ! in the dual space where the RHS vector lives) based on a projection
+  ! hierarchy.
+!</description>
+  
+!<input>
+  ! Underlying projection hierarchy structure.
+  type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
+
+  ! Fine grid vector
+  type(t_vectorBlock), intent(inout) :: rfineVector
+  
+  ! Level of the fine grid vector.
+  integer, intent(in) :: ifineLevel
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
+!</output>
+  
+!</subroutine>
+
+    call mlprj_performRestriction (&
+        rprjHierarchy%P_Rprojection(ifineLevel-rprjHierarchy%nlmin+1),&
+        rcoarseVector,rfineVector,rprjHierarchy%rtempVector)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine mlprj_performInterpolationHier (rprjHierarchy,&
+      ifineLevel,rcoarseVector,rfineVector)
+  
+!<description>
+  ! Performs an interpolation for a given block vector (i.e. a projection
+  ! in the primal space where the solution vector lives) based on a projection
+  ! hierarchy.
+!</description>
+  
+!<input>
+  ! Underlying projection hierarchy structure.
+  type(t_interlevelProjectionHier), intent(inout) :: rprjHierarchy
+
+  ! Fine grid vector
+  type(t_vectorBlock), intent(inout) :: rfineVector
+  
+  ! Level of the fine grid vector.
+  integer, intent(in) :: ifineLevel
+!</input>
+  
+!<output>
+  ! Coarse grid vector
+  type(t_vectorBlock), intent(inout) :: rcoarseVector
+!</output>
+  
+!</subroutine>
+
+    call mlprj_performInterpolation (&
+        rprjHierarchy%P_Rprojection(ifineLevel-rprjHierarchy%nlmin+1),&
+        rcoarseVector,rfineVector,rprjHierarchy%rtempVector)
+
   end subroutine
 
 end module

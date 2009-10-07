@@ -1276,6 +1276,7 @@ contains
   logical :: bHaveC
   real(DP) :: dc,daux1,daux2
   integer :: idofp,idofu,i,j1,j2,k,id1,id2
+  logical :: bsuccess1,bsuccess2
 
     ! Let us assume we do not have the optional matrices
     bHaveC = .false.
@@ -1377,27 +1378,31 @@ contains
       end do ! id1
       
       ! Invert the A matrices
-      call mprim_invert4x4MatrixDirectDble(DA1, DI1)
-      call mprim_invert4x4MatrixDirectDble(DA2, DI2)
+      call mprim_invert4x4MatrixDirectDble(DA1, DI1,bsuccess1)
+      call mprim_invert4x4MatrixDirectDble(DA2, DI2,bsuccess2)
       
-      ! Calculate A^{-1} * B
-      DIB1 = matmul(DI1, DB1)
-      DIB2 = matmul(DI2, DB2)
+      if (bsuccess1 .and. bsuccess2) then
       
-      ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
-      daux1 = 0.0_DP
-      daux2 = 0.0_DP
-      k = 1
-      do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
-        daux1 = daux1 + p_DD1(id1)*DIB1(k)
-        daux2 = daux2 + p_DD2(id1)*DIB2(k)
-        k = k+1
-      end do
-      dc = dc - dsfD1*daux1 - dsfD2*daux2
-      
-      ! Now if the Schur-complement matrix is regular, we will store the inverse
-      ! in the corresponding entry in p_DS.
-      if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+        ! Calculate A^{-1} * B
+        DIB1 = matmul(DI1, DB1)
+        DIB2 = matmul(DI2, DB2)
+        
+        ! Okay, let us calculate the Schur-complement dc = C - D * A^-1 * B
+        daux1 = 0.0_DP
+        daux2 = 0.0_DP
+        k = 1
+        do id1 = p_KldD(idofp), p_KldD(idofp+1)-1
+          daux1 = daux1 + p_DD1(id1)*DIB1(k)
+          daux2 = daux2 + p_DD2(id1)*DIB2(k)
+          k = k+1
+        end do
+        dc = dc - dsfD1*daux1 - dsfD2*daux2
+        
+        ! Now if the Schur-complement matrix is regular, we will store the inverse
+        ! in the corresponding entry in p_DS.
+        if(abs(dc) .gt. SYS_EPSREAL) p_DS(idofp) = 1.0_DP / dc
+        
+      end if
       
     end do ! idofp
     

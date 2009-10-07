@@ -2141,6 +2141,7 @@ contains
   real(DP) :: CA1,CA2,CA3,CB1,CB2,CB3,CC3
   real(DP),dimension(4,6) :: COB
   real(DP) :: dx, dy
+  logical :: bsuccess
   
   ! Clear the output array
   !Dbas = 0.0_DP
@@ -2213,7 +2214,7 @@ contains
   ! Invert that matrix V to get the matrix of the coefficients of the
   ! four polynomials. The matix A (=V) is replaced by the inverse.
   !CALL INVERT(A,F,CKH,0)
-  call mprim_invertMatrixPivotDble(A,4)
+  call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
   ! Ok, the coefficients ai, bi, ci, di are calculated.
   ! The next point is: We want to evaluate the polynoms Pi(r(.))
@@ -2365,6 +2366,7 @@ contains
   integer, parameter :: NVE = 4
 
   ! auxiliary variables  
+  logical :: bsuccess
   integer :: IVE,IA,IK,i
   real(DP) :: PXL,PYL,PXU,PYU, D1,D2
   real(DP),dimension(4) :: DXM,DYM,DLX,DLY
@@ -2408,7 +2410,7 @@ contains
   end do
   
   !CALL INVERT(A,F,CKH,0)
-  call mprim_invertMatrixPivotDble(A,4)
+  call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
   do IK=1,4
     COB(IK,1) = A(IK,4)*CA3
@@ -2587,6 +2589,7 @@ contains
   integer, parameter :: NVE = 4
 
   ! auxiliary variables  
+  logical :: bsuccess
   integer :: IVE,IA,IK,i,j
   real(DP) :: PXL,PYL,PXU,PYU, D1,D2
   real(DP),dimension(4) :: DXM,DYM,DLX,DLY
@@ -2657,7 +2660,7 @@ contains
         
         ! Invert the matrix in-place.
         !CALL INVERT(A,F,CKH,0)
-        call mprim_invertMatrixPivotDble(A,4)
+        call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
         ! In comparison to the standard EM30 routine above, we use the
         ! COB-array transposed!:
@@ -2790,7 +2793,7 @@ contains
         
         ! Invert the matrix in-place.
         !CALL INVERT(A,F,CKH,0)
-        call mprim_invertMatrixPivotDble(A,4)
+        call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
         ! In comparison to the standard EM30 routine above, we use the
         ! COB-array transposed!:
@@ -2926,7 +2929,7 @@ contains
         
         ! Invert the matrix to get the coefficients.
         ! Use direct inversion and save the result to CK directly.
-        call mprim_invert4x4MatrixDirectDble(A,CK)
+        call mprim_invert4x4MatrixDirectDble(A,CK,bsuccess)
 
         ! In comparison to the standard EM30 routine above, we use the
         ! COB-array transposed!:
@@ -3056,7 +3059,7 @@ contains
         
         ! Invert the matrix to get the coefficients.
         ! Use direct inversion and save the result to CK directly.
-        call mprim_invert4x4MatrixDirectDble(A,CK)
+        call mprim_invert4x4MatrixDirectDble(A,CK,bsuccess)
 
         ! In comparison to the standard EM30 routine above, we use the
         ! COB-array transposed!:
@@ -4263,6 +4266,7 @@ contains
   integer, parameter :: NVE = 4
 
   ! auxiliary variables  
+  logical :: bsuccess
   integer :: IVE,IA,IK
   real(DP) :: D1,D2
   real(DP),dimension(4) :: DXM,DYM,DLX,DLY
@@ -4330,7 +4334,7 @@ contains
   ! Invert that matrix V to get the matrix of the coefficients of the
   ! four polynomials. The matix A (=V) is replaced by the inverse.
   !CALL INVERT(A,F,CKH,0)
-  call mprim_invertMatrixPivotDble(A,4)
+  call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
   ! Ok, the coefficients ai, bi, ci, di are calculated.
   ! The next point is: We want to evaluate the polynoms Pi(r(.))
@@ -4482,6 +4486,7 @@ contains
   integer, parameter :: NVE = 4
 
   ! auxiliary variables  
+  logical :: bsuccess
   integer :: IVE,IA,IK,i
   real(DP) :: D1,D2
   real(DP),dimension(4) :: DXM,DYM,DLX,DLY
@@ -4517,7 +4522,7 @@ contains
   end do
   
   !CALL INVERT(A,F,CKH,0)
-  call mprim_invertMatrixPivotDble(A,4)
+  call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
   do IK=1,4
     COB(IK,1) = A(IK,4)*CA3
@@ -4696,6 +4701,7 @@ contains
   integer, parameter :: NVE = 4
 
   ! auxiliary variables  
+  logical :: bsuccess
   integer :: IVE,IA,IK,i,j
   real(DP) :: D1,D2
   real(DP),dimension(4) :: DXM,DYM,DLX,DLY
@@ -4752,7 +4758,7 @@ contains
       
       ! Invert the matrix in-place.
       !CALL INVERT(A,F,CKH,0)
-      call mprim_invertMatrixPivotDble(A,4)
+      call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
       ! In comparison to the standard EM30 routine above, we use the
       ! COB-array transposed!:
@@ -4874,7 +4880,7 @@ contains
       
       ! Invert the matrix to get the coefficients.
       ! Use direct inversion and save the result to CK directly.
-      call mprim_invert4x4MatrixDirectDble(A,CK)
+      call mprim_invert4x4MatrixDirectDble(A,CK,bsuccess)
 
       ! In comparison to the standard EM31 routine above, we use the
       ! COB-array transposed!:
@@ -7179,6 +7185,7 @@ contains
   real(DP) :: ddets
 
   ! other local variables
+  logical :: bsuccess
   integer :: i,iel,ipt
   real(DP), dimension(NBAS,NBAS) :: Da, Dc
   real(DP) :: dx,dy,derx,dery
@@ -7234,7 +7241,7 @@ contains
       ! Step 4: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Call the 'direct' inversion routine for 4x4 systems
-      call mprim_invert4x4MatrixDirectDble(Da, Dc)
+      call mprim_invert4x4MatrixDirectDble(Da, Dc,bsuccess)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 5: Evaluate function values
@@ -8226,6 +8233,7 @@ contains
   real(DP) :: ddets
 
   ! other local variables
+  logical :: bsuccess
   integer :: i,j,iel,ipt
   real(DP), dimension(NBAS,NBAS) :: Da, Dc
   real(DP) :: dx,dy,dt,derx,dery
@@ -8337,7 +8345,7 @@ contains
       ! Step 6: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Call the 'direct' inversion routine for 4x4 systems
-      call mprim_invert4x4MatrixDirectDble(Da, Dc)
+      call mprim_invert4x4MatrixDirectDble(Da, Dc,bsuccess)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 7: Evaluate function values
@@ -9026,6 +9034,7 @@ contains
   real(DP) :: ddets
 
   ! other local variables
+  logical :: bsuccess
   integer(I32) :: itwist
   integer :: i,j,k,iel, ipt
   real(DP), dimension(NBAS,NBAS) :: Da
@@ -9254,7 +9263,7 @@ contains
       ! Step 7: Invert coefficient matrix
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-      call mprim_invertMatrixPivotDble(Da, NBAS)
+      call mprim_invertMatrixPivotDble(Da, NBAS,bsuccess)
       
       ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
       ! Step 8: Evaluate function values

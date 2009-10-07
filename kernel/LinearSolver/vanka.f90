@@ -5900,6 +5900,7 @@ contains
     ! local vairables
     integer :: iel,ielidx
     integer :: inode,idof
+    logical :: bsuccess
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
@@ -6287,26 +6288,30 @@ contains
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       !call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC)
+      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC,bsuccess)
       
-      ! Ok, we got the update vector in UU. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      if (bsuccess) then
       
-      do inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
-      end do
-      
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * UU(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * UU(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * UU(3+lofsp)
+        ! Ok, we got the update vector in UU. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        do inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
+        end do
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * UU(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * UU(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * UU(3+lofsp)
+                                        
+      end if
                                         
     end do ! iel
 
@@ -6354,6 +6359,7 @@ contains
     ! local vairables
     integer :: iel,ielidx
     integer :: inode,idof
+    logical :: bsuccess
     
     integer, dimension(:), pointer :: p_KcolA
     integer, dimension(:), pointer :: p_KldA,p_KdiagonalA
@@ -6761,27 +6767,30 @@ contains
       !IF(ilapackInfo.ne.0) PRINT *,'ERROR: LAPACK(DGETRS) back substitution'
       
       !call DGESV (nnld, 1, AA, nnld, Ipiv, FF, nnld, ilapackInfo)
-      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC)
+      call qsol_solveDiagSchurComp (2*nnvel,nnpressure,UU,FF,AA,BB,DD,CC,bsuccess)
       
-      ! Ok, we got the update vector in UU. Incorporate this now into our
-      ! solution vector with the update formula
-      !
-      !  x_{n+1} = x_n + domega * y!
+      if (bsuccess) then
       
-      do inode=1,nnvel
-        p_Dvector(idofGlobal(inode)) &
-          = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
-        p_Dvector(idofGlobal(inode)+ioffsetv) &
-          = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
-      end do
+        ! Ok, we got the update vector in UU. Incorporate this now into our
+        ! solution vector with the update formula
+        !
+        !  x_{n+1} = x_n + domega * y!
+        
+        do inode=1,nnvel
+          p_Dvector(idofGlobal(inode)) &
+            = p_Dvector(idofGlobal(inode)) + domega * UU(inode)
+          p_Dvector(idofGlobal(inode)+ioffsetv) &
+            = p_Dvector(idofGlobal(inode)+ioffsetv) + domega * UU(inode+lofsv)
+        end do
+        
+        p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
+                                  domega * UU(1+lofsp)
+        p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
+                                      domega * UU(2+lofsp)
+        p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
+                                        domega * UU(3+lofsp)
+      end if
       
-      p_Dvector(iel+ioffsetp) = p_Dvector(iel+ioffsetp) + &
-                                domega * UU(1+lofsp)
-      p_Dvector(iel+NEL+ioffsetp) = p_Dvector(iel+NEL+ioffsetp) + &
-                                    domega * UU(2+lofsp)
-      p_Dvector(iel+2*NEL+ioffsetp) = p_Dvector(iel+2*NEL+ioffsetp) + &
-                                      domega * UU(3+lofsp)
-                                        
     end do ! iel
 
   end subroutine

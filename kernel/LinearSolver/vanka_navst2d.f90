@@ -1070,6 +1070,7 @@ contains
   integer :: i,j,iel,ielidx,i1,i2,k,l,iter
   real(DP) :: daux,daux1,daux2
   logical :: bHaveC
+  logical :: bsuccess1,bsuccess2
 
     ! Get the arrays from the triangulation
     p_rtria => rvanka%p_rspatialDiscrV%p_rtriangulation
@@ -1235,63 +1236,67 @@ contains
           end do
 
           ! Invert A1 and A2
-          call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-          call mprim_invert4x4MatrixDirectDble(Da2, Di2)
+          call mprim_invert4x4MatrixDirectDble(Da1, Di1,bsuccess1)
+          call mprim_invert4x4MatrixDirectDble(Da2, Di2,bsuccess2)
           
-          ! Precalculate D * A^-1
-          Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-          Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-          Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-          Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-          Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-          Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-          Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-          Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+          if (bsuccess1 .and. bsuccess2) then
           
-          ! Calculate Schur-Complement of A
-          ! S := -C + D * A^-1 * B 
-          Ds(1,1) = -Dc(1,1) &
-                  + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-                  + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-          
-          ! Calculate pressure
-          ! p := S^-1 * (D * A^-1 * f_u - f_p)
-          Dup(1) = (-Dfp(1) &
-                 + Dt1(1)*Df1(1)+Dt1(2)*Df1(2)+Dt1(3)*Df1(3)+Dt1(4)*Df1(4) &
-                 + Dt2(1)*Df2(1)+Dt2(2)*Df2(2)+Dt2(3)*Df2(3)+Dt2(4)*Df2(4)) / Ds(1,1)
+            ! Precalculate D * A^-1
+            Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
+            Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
+            Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
+            Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
+            Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
+            Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
+            Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
+            Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+            
+            ! Calculate Schur-Complement of A
+            ! S := -C + D * A^-1 * B 
+            Ds(1,1) = -Dc(1,1) &
+                    + Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
+                    + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+            
+            ! Calculate pressure
+            ! p := S^-1 * (D * A^-1 * f_u - f_p)
+            Dup(1) = (-Dfp(1) &
+                  + Dt1(1)*Df1(1)+Dt1(2)*Df1(2)+Dt1(3)*Df1(3)+Dt1(4)*Df1(4) &
+                  + Dt2(1)*Df2(1)+Dt2(2)*Df2(2)+Dt2(3)*Df2(3)+Dt2(4)*Df2(4)) / Ds(1,1)
 
-          ! Update RHS
-          ! f_u := f_u - B * p
-          Df1(1) = Df1(1) - Db1(1,1)*Dup(1)
-          Df1(2) = Df1(2) - Db1(2,1)*Dup(1)
-          Df1(3) = Df1(3) - Db1(3,1)*Dup(1)
-          Df1(4) = Df1(4) - Db1(4,1)*Dup(1)
-          Df2(1) = Df2(1) - Db2(1,1)*Dup(1)
-          Df2(2) = Df2(2) - Db2(2,1)*Dup(1)
-          Df2(3) = Df2(3) - Db2(3,1)*Dup(1)
-          Df2(4) = Df2(4) - Db2(4,1)*Dup(1)
-          
-          ! Calculate X- and Y-velocity
-          ! u := A^-1 * f_u
-          Du1(1) = Di1(1,1)*Df1(1)+Di1(1,2)*Df1(2)+Di1(1,3)*Df1(3)+Di1(1,4)*Df1(4)
-          Du1(2) = Di1(2,1)*Df1(1)+Di1(2,2)*Df1(2)+Di1(2,3)*Df1(3)+Di1(2,4)*Df1(4)
-          Du1(3) = Di1(3,1)*Df1(1)+Di1(3,2)*Df1(2)+Di1(3,3)*Df1(3)+Di1(3,4)*Df1(4)
-          Du1(4) = Di1(4,1)*Df1(1)+Di1(4,2)*Df1(2)+Di1(4,3)*Df1(3)+Di1(4,4)*Df1(4)
-          Du2(1) = Di2(1,1)*Df2(1)+Di2(1,2)*Df2(2)+Di2(1,3)*Df2(3)+Di2(1,4)*Df2(4)
-          Du2(2) = Di2(2,1)*Df2(1)+Di2(2,2)*Df2(2)+Di2(2,3)*Df2(3)+Di2(2,4)*Df2(4)
-          Du2(3) = Di2(3,1)*Df2(1)+Di2(3,2)*Df2(2)+Di2(3,3)*Df2(3)+Di2(3,4)*Df2(4)
-          Du2(4) = Di2(4,1)*Df2(1)+Di2(4,2)*Df2(2)+Di2(4,3)*Df2(3)+Di2(4,4)*Df2(4)
-          
-          ! Incorporate our local solution into the global one.
-          do i = 1, ndofV
-            j = IdofV(i)
-            p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
-            p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
-          end do
-          do i = 1, ndofP
-            j = IdofP(i)
-            p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
-          end do
+            ! Update RHS
+            ! f_u := f_u - B * p
+            Df1(1) = Df1(1) - Db1(1,1)*Dup(1)
+            Df1(2) = Df1(2) - Db1(2,1)*Dup(1)
+            Df1(3) = Df1(3) - Db1(3,1)*Dup(1)
+            Df1(4) = Df1(4) - Db1(4,1)*Dup(1)
+            Df2(1) = Df2(1) - Db2(1,1)*Dup(1)
+            Df2(2) = Df2(2) - Db2(2,1)*Dup(1)
+            Df2(3) = Df2(3) - Db2(3,1)*Dup(1)
+            Df2(4) = Df2(4) - Db2(4,1)*Dup(1)
+            
+            ! Calculate X- and Y-velocity
+            ! u := A^-1 * f_u
+            Du1(1) = Di1(1,1)*Df1(1)+Di1(1,2)*Df1(2)+Di1(1,3)*Df1(3)+Di1(1,4)*Df1(4)
+            Du1(2) = Di1(2,1)*Df1(1)+Di1(2,2)*Df1(2)+Di1(2,3)*Df1(3)+Di1(2,4)*Df1(4)
+            Du1(3) = Di1(3,1)*Df1(1)+Di1(3,2)*Df1(2)+Di1(3,3)*Df1(3)+Di1(3,4)*Df1(4)
+            Du1(4) = Di1(4,1)*Df1(1)+Di1(4,2)*Df1(2)+Di1(4,3)*Df1(3)+Di1(4,4)*Df1(4)
+            Du2(1) = Di2(1,1)*Df2(1)+Di2(1,2)*Df2(2)+Di2(1,3)*Df2(3)+Di2(1,4)*Df2(4)
+            Du2(2) = Di2(2,1)*Df2(1)+Di2(2,2)*Df2(2)+Di2(2,3)*Df2(3)+Di2(2,4)*Df2(4)
+            Du2(3) = Di2(3,1)*Df2(1)+Di2(3,2)*Df2(2)+Di2(3,3)*Df2(3)+Di2(3,4)*Df2(4)
+            Du2(4) = Di2(4,1)*Df2(1)+Di2(4,2)*Df2(2)+Di2(4,3)*Df2(3)+Di2(4,4)*Df2(4)
+            
+            ! Incorporate our local solution into the global one.
+            do i = 1, ndofV
+              j = IdofV(i)
+              p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+              p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
+            end do
+            do i = 1, ndofP
+              j = IdofP(i)
+              p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
+            end do
+            
+          end if
         
         end do ! ielidx
        
@@ -1394,62 +1399,66 @@ contains
           end do
 
           ! Invert A1 and A2
-          call mprim_invert4x4MatrixDirectDble(Da1, Di1)
-          call mprim_invert4x4MatrixDirectDble(Da2, Di2)
+          call mprim_invert4x4MatrixDirectDble(Da1, Di1,bsuccess1)
+          call mprim_invert4x4MatrixDirectDble(Da2, Di2,bsuccess2)
           
-          ! Precalculate D * A^-1
-          Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
-          Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
-          Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
-          Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
-          Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
-          Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
-          Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
-          Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+          if (bsuccess1 .and. bsuccess2) then
           
-          ! Calculate Schur-Complement of A
-          ! S := D * A^-1 * B 
-          Ds(1,1) = Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
-                  + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
-          
-          ! Calculate pressure
-          ! p := S^-1 * (D * A^-1 * f_u - f_p)
-          Dup(1) = (-Dfp(1) &
-                 + Dt1(1)*Df1(1)+Dt1(2)*Df1(2)+Dt1(3)*Df1(3)+Dt1(4)*Df1(4) &
-                 + Dt2(1)*Df2(1)+Dt2(2)*Df2(2)+Dt2(3)*Df2(3)+Dt2(4)*Df2(4)) / Ds(1,1)
+            ! Precalculate D * A^-1
+            Dt1(1) = Dd1(1,1)*Di1(1,1)+Dd1(1,2)*Di1(2,1)+Dd1(1,3)*Di1(3,1)+Dd1(1,4)*Di1(4,1)
+            Dt1(2) = Dd1(1,1)*Di1(1,2)+Dd1(1,2)*Di1(2,2)+Dd1(1,3)*Di1(3,2)+Dd1(1,4)*Di1(4,2)
+            Dt1(3) = Dd1(1,1)*Di1(1,3)+Dd1(1,2)*Di1(2,3)+Dd1(1,3)*Di1(3,3)+Dd1(1,4)*Di1(4,3)
+            Dt1(4) = Dd1(1,1)*Di1(1,4)+Dd1(1,2)*Di1(2,4)+Dd1(1,3)*Di1(3,4)+Dd1(1,4)*Di1(4,4)
+            Dt2(1) = Dd2(1,1)*Di2(1,1)+Dd2(1,2)*Di2(2,1)+Dd2(1,3)*Di2(3,1)+Dd2(1,4)*Di2(4,1)
+            Dt2(2) = Dd2(1,1)*Di2(1,2)+Dd2(1,2)*Di2(2,2)+Dd2(1,3)*Di2(3,2)+Dd2(1,4)*Di2(4,2)
+            Dt2(3) = Dd2(1,1)*Di2(1,3)+Dd2(1,2)*Di2(2,3)+Dd2(1,3)*Di2(3,3)+Dd2(1,4)*Di2(4,3)
+            Dt2(4) = Dd2(1,1)*Di2(1,4)+Dd2(1,2)*Di2(2,4)+Dd2(1,3)*Di2(3,4)+Dd2(1,4)*Di2(4,4)
+            
+            ! Calculate Schur-Complement of A
+            ! S := D * A^-1 * B 
+            Ds(1,1) = Dt1(1)*Db1(1,1)+Dt1(2)*Db1(2,1)+Dt1(3)*Db1(3,1)+Dt1(4)*Db1(4,1)&
+                    + Dt2(1)*Db2(1,1)+Dt2(2)*Db2(2,1)+Dt2(3)*Db2(3,1)+Dt2(4)*Db2(4,1)
+            
+            ! Calculate pressure
+            ! p := S^-1 * (D * A^-1 * f_u - f_p)
+            Dup(1) = (-Dfp(1) &
+                  + Dt1(1)*Df1(1)+Dt1(2)*Df1(2)+Dt1(3)*Df1(3)+Dt1(4)*Df1(4) &
+                  + Dt2(1)*Df2(1)+Dt2(2)*Df2(2)+Dt2(3)*Df2(3)+Dt2(4)*Df2(4)) / Ds(1,1)
 
-          ! Update RHS
-          ! f_u := f_u - B * p
-          Df1(1) = Df1(1) - Db1(1,1)*Dup(1)
-          Df1(2) = Df1(2) - Db1(2,1)*Dup(1)
-          Df1(3) = Df1(3) - Db1(3,1)*Dup(1)
-          Df1(4) = Df1(4) - Db1(4,1)*Dup(1)
-          Df2(1) = Df2(1) - Db2(1,1)*Dup(1)
-          Df2(2) = Df2(2) - Db2(2,1)*Dup(1)
-          Df2(3) = Df2(3) - Db2(3,1)*Dup(1)
-          Df2(4) = Df2(4) - Db2(4,1)*Dup(1)
-          
-          ! Calculate X- and Y-velocity
-          ! u := A^-1 * f_u
-          Du1(1) = Di1(1,1)*Df1(1)+Di1(1,2)*Df1(2)+Di1(1,3)*Df1(3)+Di1(1,4)*Df1(4)
-          Du1(2) = Di1(2,1)*Df1(1)+Di1(2,2)*Df1(2)+Di1(2,3)*Df1(3)+Di1(2,4)*Df1(4)
-          Du1(3) = Di1(3,1)*Df1(1)+Di1(3,2)*Df1(2)+Di1(3,3)*Df1(3)+Di1(3,4)*Df1(4)
-          Du1(4) = Di1(4,1)*Df1(1)+Di1(4,2)*Df1(2)+Di1(4,3)*Df1(3)+Di1(4,4)*Df1(4)
-          Du2(1) = Di2(1,1)*Df2(1)+Di2(1,2)*Df2(2)+Di2(1,3)*Df2(3)+Di2(1,4)*Df2(4)
-          Du2(2) = Di2(2,1)*Df2(1)+Di2(2,2)*Df2(2)+Di2(2,3)*Df2(3)+Di2(2,4)*Df2(4)
-          Du2(3) = Di2(3,1)*Df2(1)+Di2(3,2)*Df2(2)+Di2(3,3)*Df2(3)+Di2(3,4)*Df2(4)
-          Du2(4) = Di2(4,1)*Df2(1)+Di2(4,2)*Df2(2)+Di2(4,3)*Df2(3)+Di2(4,4)*Df2(4)
-          
-          ! Incorporate our local solution into the global one.
-          do i = 1, ndofV
-            j = IdofV(i)
-            p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
-            p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
-          end do
-          do i = 1, ndofP
-            j = IdofP(i)
-            p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
-          end do
+            ! Update RHS
+            ! f_u := f_u - B * p
+            Df1(1) = Df1(1) - Db1(1,1)*Dup(1)
+            Df1(2) = Df1(2) - Db1(2,1)*Dup(1)
+            Df1(3) = Df1(3) - Db1(3,1)*Dup(1)
+            Df1(4) = Df1(4) - Db1(4,1)*Dup(1)
+            Df2(1) = Df2(1) - Db2(1,1)*Dup(1)
+            Df2(2) = Df2(2) - Db2(2,1)*Dup(1)
+            Df2(3) = Df2(3) - Db2(3,1)*Dup(1)
+            Df2(4) = Df2(4) - Db2(4,1)*Dup(1)
+            
+            ! Calculate X- and Y-velocity
+            ! u := A^-1 * f_u
+            Du1(1) = Di1(1,1)*Df1(1)+Di1(1,2)*Df1(2)+Di1(1,3)*Df1(3)+Di1(1,4)*Df1(4)
+            Du1(2) = Di1(2,1)*Df1(1)+Di1(2,2)*Df1(2)+Di1(2,3)*Df1(3)+Di1(2,4)*Df1(4)
+            Du1(3) = Di1(3,1)*Df1(1)+Di1(3,2)*Df1(2)+Di1(3,3)*Df1(3)+Di1(3,4)*Df1(4)
+            Du1(4) = Di1(4,1)*Df1(1)+Di1(4,2)*Df1(2)+Di1(4,3)*Df1(3)+Di1(4,4)*Df1(4)
+            Du2(1) = Di2(1,1)*Df2(1)+Di2(1,2)*Df2(2)+Di2(1,3)*Df2(3)+Di2(1,4)*Df2(4)
+            Du2(2) = Di2(2,1)*Df2(1)+Di2(2,2)*Df2(2)+Di2(2,3)*Df2(3)+Di2(2,4)*Df2(4)
+            Du2(3) = Di2(3,1)*Df2(1)+Di2(3,2)*Df2(2)+Di2(3,3)*Df2(3)+Di2(3,4)*Df2(4)
+            Du2(4) = Di2(4,1)*Df2(1)+Di2(4,2)*Df2(2)+Di2(4,3)*Df2(3)+Di2(4,4)*Df2(4)
+            
+            ! Incorporate our local solution into the global one.
+            do i = 1, ndofV
+              j = IdofV(i)
+              p_DvecU(j) = p_DvecU(j) + domega * Du1(i)
+              p_DvecV(j) = p_DvecV(j) + domega * Du2(i)
+            end do
+            do i = 1, ndofP
+              j = IdofP(i)
+              p_DvecP(j) = p_DvecP(j) + domega * Dup(i)
+            end do
+            
+          end if
         
         end do ! ielidx
       
