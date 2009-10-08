@@ -413,9 +413,6 @@ contains
 
 !</subroutine>
 
-  ! Number of equations in our problem. velocity+velocity+pressure = 3
-  integer, parameter :: nequations = 3
-  
   ! local variables
   integer(I32) :: ieltypeUV, ieltypeP
   
@@ -484,7 +481,7 @@ contains
     ! a block discretisation structure that specifies 3 blocks in the
     ! solution vector.
     call spdiscr_initBlockDiscr (&
-        rdiscretisation,nequations,rtriangulation,rboundary)
+        rdiscretisation,3,rtriangulation,rboundary)
 
     ! rdiscretisation%RspatialDiscr is a list of scalar 
     ! discretisation structures for every component of the solution vector.
@@ -561,9 +558,6 @@ contains
 
 !</subroutine>
 
-  ! Number of equations in our problem. velocity+velocity+pressure = 3
-  integer, parameter :: nequations = 3
-  
   ! local variables
   integer(I32) :: ieltypeUV, ieltypeP
   
