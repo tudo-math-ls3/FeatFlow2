@@ -684,8 +684,8 @@ contains
     Db(2,1)=-Da(2,1)*W(6)+Da(2,3)*W(3)-Da(2,4)*W(2)
     Db(3,1)= Da(2,1)*W(5)-Da(2,2)*W(3)+Da(2,4)*W(1)
     Db(4,1)=-Da(2,1)*W(4)+Da(2,2)*W(2)-Da(2,3)*W(1)
-    daux = 1.0_DP / (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
-                   +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1))
+    daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
+            +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1))
     if (abs(daux) .ge. SYS_EPSREAL) then
       ! calculate determinant of A
       det = 1.0_DP / daux
