@@ -72,6 +72,15 @@
 !# 10.) cc_nonlinearSolver
 !#      -> The actual nonlinear solver; similar to NSDEF in old CC versions.
 !#
+!# Auxiliary routines:
+!#
+!# 1.) cc_initNonlinMatrix
+!#     -> Initialise the basic structure of a nonlinear matrix.
+!#
+!# 2.) cc_prepareNonlinMatrixAssembly
+!#     -> Prepare a nonlinear matrix for the assembly in order to be
+!#        used in a preconditioner.
+!#
 !# To solve a system with the core equation, one has to deal with two
 !# main structures. On one hand, one has a nonlinear iteration structure 
 !# t_nlsolNode from the kernel; this is initialised by cc_getNonlinearSolver.
@@ -87,7 +96,7 @@
 !#
 !#  c) Initialise further parameters in the core equation structure manually
 !#     (e.g. preconditioner, pointer to matrices, ...).
-!#     It's important, that the 'outer' application initialises pointers to
+!#     It is important, that the 'outer' application initialises pointers to
 !#     matrices, otherwise nothing will work!
 !#     This all has to be done with the nonlinear-iteration-structure directly.
 !#
@@ -111,25 +120,25 @@ module ccnonlinearcore
 
   use fsystem
   use storage
+  use linearsolver
   use boundary
+  use linearalgebra
   use cubature
   use matrixfilters
   use vectorfilters
   use discretebc
   use bcassembly
-  use linearalgebra
   use triangulation
   use spatialdiscretisation
   use coarsegridcorrection
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolverautoinitialise
   use multilevelprojection
   use filtersupport
-  use linearsolver
+  use linearsolverautoinitialise
+  use bilinearformevaluation
+  use linearformevaluation
   use matrixrestriction
   use matrixmodification
   use trilinearformevaluation
@@ -140,7 +149,7 @@ module ccnonlinearcore
   
   use ccmatvecassembly
     
-  use cccallback  
+  use cccallback
   
   implicit none
   
@@ -256,9 +265,6 @@ module ccnonlinearcore
     ! to the coarse grid solver. Otherwise, the pointer is not associated.
     type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
     
-    ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
-    
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
@@ -278,9 +284,9 @@ module ccnonlinearcore
 !<typeblock>
 
   ! This type is used to save some situation specific assembly information
-  ! during the setup phase of the nonlinear solver. Here it's noted, if
+  ! during the setup phase of the nonlinear solver. Here it is noted, if
   ! and whose matrices exist and/or must be assmebled transposed to be
-  ! compatible with the preconditioner and more. It's more or less
+  ! compatible with the preconditioner and more. It is more or less
   ! a collection if different flags.
   type t_ccPreconditionerSpecials
   
@@ -324,10 +330,22 @@ module ccnonlinearcore
     ! =2: BiCGStab with diagonal VANCA preconditioning
     integer :: icoarseGridSolverType = 1
         
+    ! This flag is set to .TRUE. the formulation needs an additional
+    ! C-block instead of the 0-block.
+    logical :: bneedPressureDiagonalBlock = .false.
+
     ! This flag is set to .TRUE. if there are no Neumann boundary
     ! components. In that case, the pressure matrices of direct
     ! solvers must be changed.
-    logical :: bpressureGloballyIndefinite = .false.
+    logical :: bpressureIndefinite = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on all levels except for the coarse mesh.
+    logical :: bneedVirtTransposedD = .false.
+    
+    ! Set to TRUE if the preconditioner needs virtually transposed B matrices
+    ! as D matrices on the coarse mesh.
+    logical :: bneedVirtTransposedDonCoarse = .false.
     
   end type
 
@@ -343,22 +361,12 @@ module ccnonlinearcore
     ! Pointer to the discretisation structure of that level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to the discretisation structure of the stabilisation
-    ! on that level
-    type(t_blockDiscretisation), pointer :: p_rdiscretisationStabil => null()
+    ! Pointer to static/precalculated information on this level.
+    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
 
-    ! Stokes matrix for that specific level (=nu*Laplace)
-    type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
+    ! Pointer to dynamic information on this level.
+    type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo => null()
 
-    ! B1-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
-
-    ! B2-matrix for that specific level. 
-    type(t_matrixScalar), pointer :: p_rmatrixB2 => null()
-
-    ! Mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixMass => null()
-    
     ! Temporary vector for the interpolation of a solution to a lower level.
     ! Exists only on levels NLMIN..NLMAX-1 !
     type(t_vectorBlock), pointer :: p_rtempVector => null()
@@ -371,31 +379,8 @@ module ccnonlinearcore
     ! used for preconditioning.
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
   
-    ! Velocity coupling matrix $A_{12}$.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    type(t_matrixScalar), pointer :: p_rmatrixVelocityCoupling12 => null()
-
-    ! Velocity coupling matrix $A_{21}$.
-    ! Exists only of deformation tensor or Newton iteration is used in the
-    ! nonlinear iteration.
-    type(t_matrixScalar), pointer :: p_rmatrixVelocityCoupling21 => null()
-    
-    ! Divergence matrix D1. This usually coincides with B1^T.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar) :: rmatrixD1
-
-    ! Divergence matrix D2. This usually coincides with B2^T.
-    !
-    ! Note: This information is automatically created when the preconditioner
-    ! is initialised! The main application does not have to initialise it!
-    type(t_matrixScalar) :: rmatrixD2
-    
-    ! Pointer to the Jump stabilisation matrix. 
-    ! Only active if iupwind=CCMASM_STAB_FASTEDGEORIENTED, otherwise not associated
-    type(t_matrixScalar), pointer :: p_rmatrixStabil => NULL()
+    ! An interlevel projection structure for changing levels
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
 
   end type
 
@@ -429,7 +414,6 @@ module ccnonlinearcore
     
     ! TAU-parameter that switch the B^T-term on/off
     real(DP) :: dtau = 0.0_DP
-    
     
     ! Minimum allowed damping parameter; OMGMIN
     real(DP) :: domegaMin = 0.0_DP
@@ -496,12 +480,121 @@ module ccnonlinearcore
 contains
   
   ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rdiscretisation,rstaticLevelInfo,rdynamicLevelInfo)
+  
+  !<description>
+    ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
+    ! from the main problem and precalculated information.
+  !</description>
+
+  !<input>
+    ! Global problem structure.
+    type(t_problem), intent(in) :: rproblem
+    
+    ! Discretisation of the level where the matrix is to be assembled.
+    type(t_blockDiscretisation), intent(in), target :: rdiscretisation
+    
+    ! Static structures on this level.
+    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+
+    ! Dynamic structures on this level. Usually change in every timestep.
+    type(t_dynamicLevelInfo), intent(in), target :: rdynamicLevelInfo
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearCCMatrix), intent(inout) :: rnonlinearCCMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Initialise the matrix assembly structure rnonlinearCCMatrix 
+      ! with basic global information.
+      !
+      ! 1.) Model, stabilisation
+      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
+      rnonlinearCCMatrix%isubequation = rproblem%isubequation
+      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
+      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
+      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
+      rnonlinearCCMatrix%dnu = rproblem%dnu
+      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
+      rnonlinearCCMatrix%ccubEOJ = rproblem%rstabilisation%ccubEOJ
+      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
+      
+      ! 2.) Pointers to global precalculated matrices.
+      rnonlinearCCMatrix%p_rdiscretisation => rdiscretisation
+      rnonlinearCCMatrix%p_rstaticInfo => rstaticLevelInfo
+      rnonlinearCCMatrix%p_rdynamicInfo => rdynamicLevelInfo
+      
+    end subroutine
+
+  ! ***************************************************************************
+
+  !<subroutine>
+  
+    subroutine cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+        ilev,nlmin,nlmax,rprecSpecials)
+  
+  !<description>
+    ! Prepares a rnonlinearCCMatrix structure for the assembly according
+    ! to a preconditioner. rprecSpecials specifies a couple of preconditioner
+    ! flags that configure the shape of the system matrix that the preconditioner
+    ! needs.
+    !
+    ! cc_initNonlinMatrix must have been called prior to this routine to
+    ! initialise the basic matrix. cc_prepareNonlinMatrixAssembly will then
+    ! add assembly-specific parameters of the preconditioner.
+  !</description>
+
+  !<input>
+    ! Current assembly level.
+    integer, intent(in) :: ilev
+    
+    ! Minimum assembly level.
+    integer, intent(in) :: nlmin
+    
+    ! Maximum assembly level.
+    integer, intent(in) :: nlmax
+  
+    ! Structure with assembly-specific parameters of the preconditioner.
+    type(t_ccPreconditionerSpecials), intent(in) :: rprecSpecials
+  !</input>
+  
+  !<inputoutput>
+    ! Nonlinear matrix structure.
+    ! Basic parameters in this structure are filled with data.
+    type(t_nonlinearCCMatrix), intent(inout) :: rnonlinearCCMatrix
+  !</inputoutput>
+               
+  !</subroutine>
+      
+      ! Parameters for adaptive matrices for Q1~ with anisotropic elements
+      rnonlinearCCMatrix%iadaptiveMatrices = rprecSpecials%iadaptiveMatrices
+      rnonlinearCCMatrix%dadmatthreshold = rprecSpecials%dadmatthreshold
+      
+      ! Depending on the level, we have to set up information about
+      ! transposing B-matrices.
+      if (ilev .eq. nlmin) then
+        rnonlinearCCMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedDonCoarse
+      else
+        rnonlinearCCMatrix%bvirtualTransposedD = rprecSpecials%bneedVirtTransposedD
+      end if
+      
+    end subroutine
+
+  ! ***************************************************************************
   ! Callback routines for the nonlinear solver
   ! ***************************************************************************
 
   !<subroutine>
   
-    subroutine cc_getDefect (rproblem,rnonlinearIteration,ite,rx,rb,rd)
+    subroutine cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,ite,rx,rb,rd)
   
     use linearsystemblock
     use collection
@@ -516,25 +609,28 @@ contains
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN),target        :: rx
+    type(t_vectorBlock), intent(in),target        :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
   !</input>
                
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(inout)              :: rsolverNode
 
     ! Defect vector b-A(x)x. This must be filled with data by the callback routine.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
   !</inputoutput>
   
   !</subroutine>
@@ -564,33 +660,17 @@ contains
           
       ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
       ! matrix we want to have.
+      call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
+
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%p_rdiscretisation => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
-      rnonlinearCCMatrix%p_rdiscretisationStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
-      rnonlinearCCMatrix%p_rmatrixStokes => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
-      rnonlinearCCMatrix%p_rmatrixB1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
-      rnonlinearCCMatrix%p_rmatrixB2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
-      rnonlinearCCMatrix%p_rmatrixD1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
-      rnonlinearCCMatrix%p_rmatrixD2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
-      rnonlinearCCMatrix%p_rmatrixMass => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-      rnonlinearCCMatrix%p_rmatrixStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
-          
+      
       call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
@@ -611,8 +691,8 @@ contains
 
   !<subroutine>
 
-    subroutine cc_getOptimalDamping (rproblem,rnonlinearIteration,rd,rx,rb,&
-        rtemp1,rtemp2,domega)
+    subroutine cc_getOptimalDamping (rproblem,rnonlinearIteration,rsolverNode,&
+        rd,rx,rb,rtemp1,rtemp2,domega)
   
   !<description>
     ! This subroutine is called inside of the nonlinear loop, to be precise,
@@ -635,33 +715,36 @@ contains
 
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN)               :: rx
+    type(t_vectorBlock), intent(in)               :: rx
 
     ! Current RHS vector of the nonlinear equation
-    type(t_vectorBlock), intent(IN)               :: rb
+    type(t_vectorBlock), intent(in)               :: rb
 
     ! Defect vector b-A(x)x. 
-    type(t_vectorBlock), intent(IN)               :: rd
+    type(t_vectorBlock), intent(in)               :: rd
   !</input>
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(inout)              :: rsolverNode
 
     ! A temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp1
+    type(t_vectorBlock), intent(inout)            :: rtemp1
 
     ! A 2nd temporary vector in the structure of rx
-    type(t_vectorBlock), intent(INOUT)            :: rtemp2
+    type(t_vectorBlock), intent(inout)            :: rtemp2
 
     ! Damping parameter. On entry: an initial value given e.g. by the
     ! previous step.
     ! On return: The new damping parameter.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
   !</inputoutput>
   
   !</subroutine>
@@ -707,12 +790,12 @@ contains
       !       u_(n+1)  =  u_n  +  OMEGA * C * ( f - T(u_n)u_n )
       !                =  u_n  +  OMEGA * d_n
       !
-      ! with an appropriate preconditioner C, which we don't care here.
+      ! with an appropriate preconditioner C, which we do not care here.
       ! In our case, this iteration system can be written as:
       !
       ! (u1)     (u1)                     ( (f1)   [ A         B1] (u1) )
       ! (u2)  := (u2)  + OMEGA * C^{-1} * ( (f2) - [      A    B2] (u2) )
-      ! (p )     (p )                     ( (fp)   [ B1^T B2^T 0 ] (p ) )
+      ! (p )     (p )                     ( (fp)   [ D1   D2   0 ] (p ) )
       !
       !                                   |------------------------------|
       !                                              = d_n
@@ -724,7 +807,7 @@ contains
       !
       !                  [ A         B1 ]
       !    C = T(u_n) =  [      A    B2 ]
-      !                  [ B1^T B2^T 0  ]
+      !                  [ D1   D2   0  ]
       !
       ! The parameter OMEGA is calculated as the result of the 1D
       ! minimisation problem:
@@ -736,7 +819,7 @@ contains
       !              < T(u^l+omegaold*Y)Y , T(u^l+omegaold*Y)Y >
       !
       ! when choosing omegaold=previous omega, which is a good choice
-      ! as one can see by linearisation (see p. 170, Turek's book).
+      ! as one can see by linearisation (see p. 170, Turek`s book).
       !
       ! Here, ||.||_E denotes the the Euclidian norm to the Euclidian 
       ! scalar product <.,.>.
@@ -761,42 +844,28 @@ contains
       ! Re-assemble the nonlinear system matrix on the maximum level.
       ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
       ! matrix we want to have.
+ 
+      call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
+        
+      call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+        rnonlinearIteration%NLMAX,&
+        rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX,&
+        rnonlinearIteration%rprecSpecials)
+        
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
       rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
       rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%iadaptiveMatrices = &
-          rnonlinearIteration%rprecSpecials%iadaptiveMatrices
-      rnonlinearCCMatrix%dadmatthreshold = &
-          rnonlinearIteration%rprecSpecials%dadmatthreshold
-      rnonlinearCCMatrix%p_rdiscretisation => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation
-      rnonlinearCCMatrix%p_rdiscretisationStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisationStabil
-      rnonlinearCCMatrix%p_rmatrixStokes => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStokes
-      rnonlinearCCMatrix%p_rmatrixB1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB1
-      rnonlinearCCMatrix%p_rmatrixB2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixB2
-      rnonlinearCCMatrix%p_rmatrixD1 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD1
-      rnonlinearCCMatrix%p_rmatrixD2 => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%rmatrixD2
-      rnonlinearCCMatrix%p_rmatrixMass => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixMass
-      rnonlinearCCMatrix%p_rmatrixStabil => &
-          rnonlinearIteration%RcoreEquation(ilvmax)%p_rmatrixStabil
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
           rmatrix,rnonlinearCCMatrix,rtemp1)
       
-      ! We don't have to implement any boundary conditions into the matrix
+      ! We do not have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
       ! each matrix-vector-multiplication below!
       
@@ -851,11 +920,11 @@ contains
       
       if (dskv2 .lt. 1.0E-40_DP) then
         call output_line ('dskv2 nearly zero. Optimal damping parameter singular.', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call output_line ('Is the triangulation ok??? .tri-file destroyed?', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call output_line ('Boundary conditions set up properly?', &
-            OU_CLASS_ERROR,OU_MODE_STD,'cc_getOptimalDamping')
+            OU_CLASS_ERROR,rsolverNode%coutputMode,'cc_getOptimalDamping')
         call sys_halt()
         stop
       end if
@@ -865,12 +934,12 @@ contains
       
       domega = dskv1 / dskv2
       
-      ! And make sure it's in the allowed range:
+      ! And make sure it is in the allowed range:
       
       domega = max(rnonlinearIteration%domegamin, &
                    min(rnonlinearIteration%domegamax,domega))
       
-      ! That's it, we have our new Omega.
+      ! That is it, we have our new Omega.
 
       ! Gather statistics
       call stat_stopTimer(rtimer)
@@ -883,7 +952,7 @@ contains
 
   !<subroutine>
 
-    subroutine cc_precondDefect (rproblem,rnonlinearIteration,&
+    subroutine cc_precondDefect (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rd,rx,rb,domega,bsuccess)
   
     use linearsystemblock
@@ -898,17 +967,20 @@ contains
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT), target   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout), target   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(inout)              :: rsolverNode
 
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT)            :: rd
+    type(t_vectorBlock), intent(inout)            :: rd
 
     ! Damping parameter. Is set to rsolverNode%domega (usually = 1.0_DP)
     ! on the first call to the callback routine.
@@ -916,22 +988,22 @@ contains
     ! algorithm to calculate an 'optimal damping' parameter. The nonlinear loop
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
-    ! domega will stay at this value until it's changed again.
-    real(DP), intent(INOUT)                       :: domega
+    ! domega will stay at this value until it is changed again.
+    real(DP), intent(inout)                       :: domega
 
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    logical, intent(INOUT)                        :: bsuccess
+    logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
   
   !</subroutine>
@@ -1071,9 +1143,7 @@ contains
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                           rnonlinearIteration%DresidualOld(2)**2)
             
-            if(dres .ne. 0.0_dp) then
-              dtempdef = dres / dresInit
-            end if
+            dtempdef = dres / dresInit
             
             if (bassembleNewton) then
               p_rsolverNode%depsAbs = &
@@ -1153,7 +1223,7 @@ contains
         rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
 
         ! Release the numeric factorisation of the matrix.
-        ! We don't release the symbolic factorisation, as we can use them
+        ! We do not release the symbolic factorisation, as we can use them
         ! for the next iteration.
         call linsol_doneData (p_rsolverNode)
         
@@ -1183,7 +1253,7 @@ contains
         call lsysbl_enforceStructure (rb,rtemp2)
 
         ! Calculate the omega
-        call cc_getOptimalDamping (rproblem,rnonlinearIteration,&
+        call cc_getOptimalDamping (rproblem,rnonlinearIteration,rsolverNode,&
             rd,rx,rb,rtemp1,rtemp2,domega)
 
         ! Remember damping parameter for output
@@ -1229,30 +1299,30 @@ contains
 
       ! Reference to a collection structure that contains all parameters of the
       ! discretisation (for nonlinearity, etc.).
-      type(t_collection), intent(INOUT)                :: rcollection
+      type(t_collection), intent(inout)                :: rcollection
 
       ! Nonlinear iteration structure where to write the linearised system matrix to.
-      type(t_ccnonlinearIteration), intent(INOUT)      :: rnonlinearIteration
+      type(t_ccnonlinearIteration), intent(inout)      :: rnonlinearIteration
 
       ! TRUE  = Assemble the Newton preconditioner.
       ! FALSE = Assemble the standard defect correction preconditioner
       !         (i.e. the linearised system matrix).
-      logical, intent(IN) :: bassembleNewton
+      logical, intent(in) :: bassembleNewton
       
       ! Minimum level of the preconditioner that is to be initialised.
-      integer, intent(IN)                              :: NLMIN
+      integer, intent(in)                              :: NLMIN
       
       ! Maximum level of the preconditioner that is to be initialised.
       ! This must corresponds to the last matrix in Rmatrices.
-      integer, intent(IN)                              :: NLMAX
+      integer, intent(in)                              :: NLMAX
       
       ! Current iteration vector. 
-      type(t_vectorBlock), intent(IN), target          :: rx
+      type(t_vectorBlock), intent(in), target          :: rx
 
       ! local variables
       real(DP) :: dnewton
       integer :: ilev,icol
-      integer(PREC_MATIDX), dimension(1) :: Irows = (/1/)
+      integer, dimension(1) :: Irows = (/1/)
       type(t_matrixBlock), pointer :: p_rmatrix,p_rmatrixFine
       type(t_vectorScalar), pointer :: p_rvectorTemp
       type(t_vectorBlock), pointer :: p_rvectorFine,p_rvectorCoarse
@@ -1271,7 +1341,6 @@ contains
         ! from the collection.
         ! Our 'parent' prepared there how to interpolate the solution on the
         ! fine grid to coarser grids.
-        p_rprojection => rnonlinearIteration%rpreconditioner%p_rprojection
         p_rvectorTemp => rnonlinearIteration%rpreconditioner%p_rtempVectorSc
 
         ! Get the filter chain. We need tghat later to filter the matrices.        
@@ -1300,6 +1369,9 @@ contains
           else
             ! We have to discretise a level hierarchy and are on a level < NLMAX.
             
+            ! Get the projection structure for this level.
+            p_rprojection => rnonlinearIteration%RcoreEquation(ilev+1)%p_rprojection
+
             ! Get the temporary vector on level i. Will receive the solution
             ! vector on that level. 
             p_rvectorCoarse => rnonlinearIteration%RcoreEquation(ilev)%p_rtempVector
@@ -1329,37 +1401,21 @@ contains
 
           ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
           ! matrix we want to have.
+          
+          call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rstaticInfo,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rdynamicInfo)
+            
+          call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
+            ilev,nlmin,nlmax,rnonlinearIteration%rprecSpecials)
+          
           rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
           rnonlinearCCMatrix%dtheta = rnonlinearIteration%dtheta
           rnonlinearCCMatrix%dgamma = rnonlinearIteration%dgamma
           if (bassembleNewton) rnonlinearCCMatrix%dnewton = rnonlinearIteration%dgamma
           rnonlinearCCMatrix%deta = 1.0_DP
           rnonlinearCCMatrix%dtau = 1.0_DP
-          rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-          rnonlinearCCMatrix%dnu = rproblem%dnu
-          rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-          rnonlinearCCMatrix%iadaptiveMatrices = &
-              rnonlinearIteration%rprecSpecials%iadaptiveMatrices
-          rnonlinearCCMatrix%dadmatthreshold = &
-              rnonlinearIteration%rprecSpecials%dadmatthreshold
-          rnonlinearCCMatrix%p_rdiscretisation => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation
-          rnonlinearCCMatrix%p_rdiscretisationStabil => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisationStabil
-          rnonlinearCCMatrix%p_rmatrixStokes => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStokes
-          rnonlinearCCMatrix%p_rmatrixB1 => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB1
-          rnonlinearCCMatrix%p_rmatrixB2 => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixB2
-          rnonlinearCCMatrix%p_rmatrixD1 => &
-              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD1
-          rnonlinearCCMatrix%p_rmatrixD2 => &
-              rnonlinearIteration%RcoreEquation(ilev)%rmatrixD2
-          rnonlinearCCMatrix%p_rmatrixMass => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixMass
-          rnonlinearCCMatrix%p_rmatrixStabil => &
-              rnonlinearIteration%RcoreEquation(ilev)%p_rmatrixStabil
 
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
@@ -1381,7 +1437,7 @@ contains
             ! into the system matrix.
             call filter_applyFilterChainMat (p_rmatrix, p_RfilterChain)
           else
-            ! Call the matrix filter for the boundary conditions to include the BC's
+            ! Call the matrix filter for the boundary conditions to include the BC`s
             ! into the matrix.
             call matfil_discreteBC (p_rmatrix)
             call matfil_discreteFBC (p_rmatrix)
@@ -1395,7 +1451,7 @@ contains
             
         end do
         
-        if (rnonlinearIteration%rprecSpecials%bpressureGloballyIndefinite) then
+        if (rnonlinearIteration%rprecSpecials%bpressureIndefinite) then
           
           ! The 3,3-matrix must exist! This is ensured by the initialisation routine.
           !
@@ -1404,36 +1460,28 @@ contains
           ! In this case, we have to include a unit vector to the pressure
           ! matrix to make the problem definite!
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 0) then
-            p_rmatrix => rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner
-            
             ! Include a unit vector
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-            call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-            call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-            
+            call mmod_replaceLinesByUnitBlk (&
+                rnonlinearIteration%RcoreEquation(NLMAX)%p_rmatrixPreconditioner,3,Irows)
           end if
           
           if (rnonlinearIteration%rprecSpecials%isolverType .eq. 1) then
           
             ! If we have a MG solver, We also check the coarse grid solver for 
             ! the same thing!
-            ! What we don't check is the smoother, thus we assume that smoothers
+            ! What we do not check is the smoother, thus we assume that smoothers
             ! are always solvers that allow the applicance of a filter chain.
             if (rnonlinearIteration%rprecSpecials%icoarseGridSolverType .eq. 0) then
-              p_rmatrix => rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner
-              
               ! Include a unit vector
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,1),Irows)
-              call mmod_replaceLinesByZero(p_rmatrix%RmatrixBlock(3,2),Irows)
-              call mmod_replaceLinesByUnit(p_rmatrix%RmatrixBlock(3,3),Irows)
-              
+              call mmod_replaceLinesByUnitBlk (&
+                  rnonlinearIteration%RcoreEquation(NLMIN)%p_rmatrixPreconditioner,3,Irows)
             end if
             
           end if
             
         else
           
-          ! The 3,3-block must be a zero-matrix. So if it's present, clear it.
+          ! The 3,3-block must be a zero-matrix. So if it is present, clear it.
           if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
             call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
           
@@ -1445,7 +1493,7 @@ contains
 
   ! ***************************************************************************
 
-    subroutine cc_resNormCheck (rproblem,rnonlinearIteration,&
+    subroutine cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rx,rb,rd,bconvergence,bdivergence)
   
     use linearsystemblock
@@ -1460,37 +1508,40 @@ contains
 
   !<inputoutput>
     ! The problem structure characterising the whole problem.
-    type(t_problem), intent(INOUT)                :: rproblem
+    type(t_problem), intent(inout)                :: rproblem
 
     ! Reference to the nonlinear iteration structure that configures the
     ! main nonlinear equation. Intermediate data is changed during the iteration.
-    type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+    type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
+
+    ! The nonlinear solver node that configures the solution process.
+    type(t_nlsolNode), intent(inout)              :: rsolverNode
 
     ! Number of current iteration. Is set to 0 when the callback routine
     ! is called the first time. In this situation, rd describes the initial
     ! defect vector.
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
   
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
 
     ! Defect vector b-A(x)x.
-    type(t_vectorBlock), intent(IN), target       :: rd
+    type(t_vectorBlock), intent(in), target       :: rd
   !</inputoutput>
   
   !<output>
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is within a desired tolerance, so that the solver should treat
     ! the iteration as 'converged'.
-    logical, intent(OUT)                        :: bconvergence
+    logical, intent(out)                        :: bconvergence
   
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is out of a desired tolerance, so that the solver should treat
     ! the iteration as 'diverged'.
-    logical, intent(OUT)                        :: bdivergence
+    logical, intent(out)                        :: bdivergence
   !</output>
 
       ! local variables
@@ -1501,21 +1552,23 @@ contains
 
       ! Calculate norms of the solution/defect vector
       call cc_getDefectNorm (rx,rb,rd,Dresiduals)
+      
       Dresiduals(3) = sqrt(Dresiduals(1)**2 + Dresiduals(2)**2)
 
       ! In the first iteration (initial defect), print the norm of the defect
       ! and save the norm of the initial residuum to the structure
       if (ite .eq. 0) then
       
-        call output_separator (OU_SEP_MINUS)     
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)
         call output_line (' IT  RELU     RELP     DEF-U    DEF-DIV'// &
-                          '  DEF-TOT  RHONL    OMEGNL   RHOMG')
-        call output_separator (OU_SEP_MINUS)     
+                          '  DEF-TOT  RHONL    OMEGNL   RHOMG',&
+                          coutputMode=rsolverNode%coutputMode)
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)     
         call output_line ('  0                   '// &
             trim(sys_sdEP(Dresiduals(1),9,2))//&
             trim(sys_sdEP(Dresiduals(2),9,2))//&
-            trim(sys_sdEP(Dresiduals(3),9,2)))
-        call output_separator (OU_SEP_MINUS)     
+            trim(sys_sdEP(Dresiduals(3),9,2)),coutputMode=rsolverNode%coutputMode)
+        call output_separator (OU_SEP_MINUS,coutputMode=rsolverNode%coutputMode)     
 
         rnonlinearIteration%DresidualInit (1:2) = Dresiduals(1:2)
         rnonlinearIteration%DresidualOld (1:2) = Dresiduals(1:2)
@@ -1531,11 +1584,20 @@ contains
         dresOld = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                        rnonlinearIteration%DresidualOld(2)**2)
         
+        ! Initial defect
+        dresINIT = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
+                        rnonlinearIteration%DresidualInit(2)**2)
+                        
+        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
+        ! But to prevent a check against "something<=0" in this case below,
+        ! set dresInit to something <> 0.
+        if (dresINIT .eq. 0.0_DP) dresINIT = 1.0_DP
+
         ! Replace the 'old' residual by the current one
         rnonlinearIteration%DresidualOld(1:2) = Dresiduals(1:2)
 
         ! Nonlinear convergence rate
-        drhoNL = (Dresiduals(3)/dresOld) ** (1.0_DP/real(ite,DP))
+        drhoNL = (Dresiduals(3)/dresINIT) ** (1.0_DP/real(ite,DP))
         
         ! Calculate norms of the solution/defect vector, calculated above
         dresU   = Dresiduals(1)
@@ -1579,23 +1641,15 @@ contains
         !        
         ! Get the stopping criteria from the parameters.
         ! Use the DepsNL data according to the initialisation above.
-        dresINIT = sqrt(rnonlinearIteration%DresidualInit(1)**2 + &
-                        rnonlinearIteration%DresidualInit(2)**2)
-                        
-        ! dresInit=0 may hardly occur -- except when we expect 'no flow'.
-        ! But to prevent a check against "something<=0" in this case below,
-        ! set dresInit to something <> 0.
-        if (dresINIT .eq. 0.0_DP) dresINIT = 1.0_DP
-
         depsD   = rnonlinearIteration%DepsNL(1)
         depsDiv = rnonlinearIteration%DepsNL(2)
         depsUR  = rnonlinearIteration%DepsNL(3)
         depsPR  = rnonlinearIteration%DepsNL(4)
-        depsRES = rnonlinearIteration%DepsNL(5)*dresINIT
+        depsRES = rnonlinearIteration%DepsNL(5)*dresINIT ! -> ddampingD
         
         ! All residual information calculated.
         ! Check for divergence; use a 'NOT' for better NaN handling.
-        bdivergence = .not. (dres/dresOld .lt. 1E2)
+        bdivergence = .not. (dres/dresINIT .lt. 1E5)
         
         ! Check for convergence
         if((ddelU .le. depsUR).and.(ddelP .le. depsPR)   .and. &
@@ -1622,8 +1676,8 @@ contains
             trim(sys_sdEP(dres,9,2))// &
             trim(sys_sdEP(drhoNL,9,2))// &
             trim(sys_sdEP(rnonlinearIteration%domegaNL,9,2))// &
-            trim(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)) &
-            )
+            trim(sys_sdEP(rnonlinearIteration%drhoLinearSolver,9,2)), &
+            coutputMode=rsolverNode%coutputMode)
         
       end if
       
@@ -1643,20 +1697,20 @@ contains
 
 !<input>
   ! The solution vector which is modified later during the nonlinear iteration.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(in) :: rvector
 
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
   
   ! A defect vector calculated with rvector and rrhs
-  type(t_vectorBlock), intent(IN) :: rdefect
+  type(t_vectorBlock), intent(in) :: rdefect
 !</input>
 
 !<output>
   ! An array receiving different defect norms calculated by the above vectors.
   ! Dresiduals(1) = RESU   = ||defect_u|| / ||rhs|| = velocity residual
   ! Dresiduals(2) = RESDIV = ||p|| / ||u||          = divergence residual
-  real(DP), dimension(:), intent(OUT) :: Dresiduals
+  real(DP), dimension(:), intent(out) :: Dresiduals
 !</output>
 
 !</subroutine>
@@ -1716,18 +1770,18 @@ contains
 
 !<input>
   ! Parameter list that contains the parameters from the INI/DAT file(s).
-  type(t_parlist), intent(IN) :: rparamList
+  type(t_parlist), intent(in) :: rparamList
   
   ! Name of the section in the parameter list containing the parameters
   ! of the nonlinear solver.
-  character(LEN=*), intent(IN) :: sname
+  character(LEN=*), intent(in) :: sname
 !</input>
 
 !<output>
   ! A t_nlsolNode structure that contains the configuration of the nonlinear
   ! solver. The parameters are initialised according to the information
   ! in the section sname of the parameter list rparamList
-  type(t_nlsolNode) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
 !</output>
 
 !</subroutine>
@@ -1777,6 +1831,10 @@ contains
     call parlst_getvalue_double (p_rsection, 'domegaIni', &
                                  rnlSolver%domega, rnlSolver%domega)
 
+    ! We write out the data of the nonlinear solver to the benchmark
+    ! log file as well.
+    rnlSolver%coutputMode = OU_MODE_STD+OU_MODE_BENCHLOG
+
   end subroutine
 
   ! ***************************************************************************
@@ -1790,7 +1848,7 @@ contains
   ! This routine invokes the nonlinear defect correction iteration
   !     $$  x_{n+1}  =  x_n  +  J^{-1} ( b - A(x_n) x_n )  $$
   !
-  ! It's a modification of the routine nlsol_performSolve in the kernel
+  ! It is a modification of the routine nlsol_performSolve in the kernel
   ! to allow passing the problem structure to the different callback routines.
   !
   ! The defect correction loop is split into three tasks:
@@ -1826,33 +1884,32 @@ contains
 
 !<inputoutput>
   ! The problem structure characterising the whole problem.
-  type(t_problem), intent(INOUT)                :: rproblem
+  type(t_problem), intent(inout)                :: rproblem
 
   ! Reference to the nonlinear iteration structure that configures the
   ! main nonlinear equation. Intermediate data is changed during the iteration.
-  type(t_ccnonlinearIteration), intent(INOUT)   :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout)   :: rnonlinearIteration
 
   ! The nonlinear solver node that configures the solution process.
-  type(t_nlsolNode), intent(INOUT)              :: rsolverNode
+  type(t_nlsolNode), intent(inout)              :: rsolverNode
   
   ! INPUT: Initial solution vector.
   ! OUTPUT: Final iteration vector.
-  type(t_vectorBlock), intent(INOUT)            :: rx
+  type(t_vectorBlock), intent(inout)            :: rx
              
   ! Temporary vector. Must be of the same size/type as rx/rb.
-  type(t_vectorBlock), intent(INOUT)            :: rd
+  type(t_vectorBlock), intent(inout)            :: rd
 !</inputoutput>
   
 !<input>
   ! Right hand side vector of the equation.
-  type(t_vectorBlock), intent(IN)               :: rb
+  type(t_vectorBlock), intent(in)               :: rb
 !</input>
 
 !</subroutine>
 
   ! local variables
   integer :: ite
-  real(DP), dimension(NLSOL_MAXEQUATIONSERROR) :: DvecNorm
   type(t_vectorBlock) :: rtemp
   real(DP) :: domega
   integer :: nblocks
@@ -1869,7 +1926,7 @@ contains
     rsolverNode%iresult = 0
     
     ! Calculate the initial nonlinear defect to rd:   d = b-A(x)x
-    call cc_getDefect (rproblem,rnonlinearIteration,0,rx,rb,rd)
+    call cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,0,rx,rb,rd)
     
     ite = 0
     rsolverNode%icurrentIteration = ite
@@ -1879,7 +1936,7 @@ contains
     nblocks = min(rb%nblocks,NLSOL_MAXEQUATIONSERROR)
     
     ! Initial test for convergence/divergence.
-    call cc_resNormCheck (rproblem,rnonlinearIteration,&
+    call cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
         ite,rx,rb,rd,bconvergence,bdivergence)
         
     ! Get the initial residuum; cc_resNormCheck saved that to DresidualOld.
@@ -1895,7 +1952,7 @@ contains
       
     if ((.not. bconvergence) .and. (.not. bdivergence)) then
     
-      ! Let's do the nonlinear loop...
+      ! Let us do the nonlinear loop...
       !
       ! Initialise the domega-value for the damping of the correction
       ! as prescribed by the parameters of the solver.
@@ -1913,13 +1970,16 @@ contains
         ! The routine is allowed to change domega during the
         ! iteration if necessary. The nonlinear solver here does not touch
         ! domega anymore, so the callback routine is the only one changing it.
-        call cc_precondDefect (rproblem,rnonlinearIteration,&
+        call cc_precondDefect (rproblem,rnonlinearIteration,rsolverNode,&
             ite,rd,rx,rb,domega,bsuccess)
         
         ! If bsuccess=false, the preconditioner had an error.
         if (.not. bsuccess) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as the preconditioner went down!')
+          if (rsolverNode%ioutputLevel .ge. 0) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as the preconditioner went down!',&
+                coutputMode=rsolverNode%coutputMode)
+          end if
           rsolverNode%iresult = 3
           exit
         end if
@@ -1927,10 +1987,13 @@ contains
         ! If domega=0.0, the solution vector would stay unchanged. In this
         ! case, the nonlinear solver would not proceed at all, and the next
         ! iteration would behave exactly as before!
-        ! So in this case, there's nothing to do, we can stop the iteration.
+        ! So in this case, there is nothing to do, we can stop the iteration.
         if (domega .eq. 0.0_DP) then
-          call output_line ('NLSOL: Iteration '//&
-              trim(sys_siL(ite,10))//' canceled as there is no progress anymore!')
+          if (rsolverNode%ioutputLevel .ge. 1) then
+            call output_line ('NLSOL: Iteration '//&
+                trim(sys_siL(ite,10))//' canceled as there is no progress anymore!',&
+                coutputMode=rsolverNode%coutputMode)
+          end if
           exit
         else
           ! Add the correction vector in rd to rx;
@@ -1938,10 +2001,10 @@ contains
           call lsysbl_vectorLinearComb (rd,rx,domega,1.0_DP)
           
           ! Calculate the new nonlinear defect to rd:  d = b-A(x)x
-          call cc_getDefect (rproblem,rnonlinearIteration,ite,rx,rb,rd)
+          call cc_getDefect (rproblem,rnonlinearIteration,rsolverNode,ite,rx,rb,rd)
 
           ! Check the defect for convergence.
-          call cc_resNormCheck (rproblem,rnonlinearIteration,&
+          call cc_resNormCheck (rproblem,rnonlinearIteration,rsolverNode,&
               ite,rx,rb,rd,bconvergence,bdivergence)
               
           ! Get the new residual; cc_resNormCheck saved that to DresidualOld.
@@ -1956,6 +2019,11 @@ contains
         
           ! Check for divergence
           if (bdivergence) then
+            if (rsolverNode%ioutputLevel .ge. 0) then
+              call output_line ('NLSOL: Iteration '//&
+                  trim(sys_siL(ite,10))//' canceled, divergence detected!',&
+                  coutputMode=rsolverNode%coutputMode)
+            end if
             rsolverNode%iresult = 1
             exit
           end if
@@ -2002,28 +2070,28 @@ contains
 
 !<input>
   ! The right-hand-side vector to use in the equation.
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 !</input>
   
 !<inputoutput>
   ! The problem structure characterising the whole problem.
-  type(t_problem), intent(INOUT)                :: rproblem
+  type(t_problem), intent(inout)                :: rproblem
 
   ! A nonlinear-iteration structure that configures the core equation to solve.
   ! Can be initialised e.g. by cc_createNonlinearLoop + manual setup of
   ! the coefficients of the terms.
-  type(t_ccNonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccNonlinearIteration), intent(inout) :: rnonlinearIteration
 
   ! A nonlinear solver configuration.
   ! Can be initialised e.g. by using cc_getNonlinearSolver.
-  type(t_nlsolNode), intent(INOUT) :: rnlSolver
+  type(t_nlsolNode), intent(inout) :: rnlSolver
   
   ! Initial solution vector. Is replaced by the new solution vector.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! A temporary block vector for the nonlinear iteration.
   ! OPTIONAL: If not specified, a temporary vector is automatically allocated.
-  type(t_vectorBlock), intent(INOUT), target, optional :: rtempBlock
+  type(t_vectorBlock), intent(inout), target, optional :: rtempBlock
   
 !</inputoutput>
 

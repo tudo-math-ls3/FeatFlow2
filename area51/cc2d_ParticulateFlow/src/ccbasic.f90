@@ -24,38 +24,31 @@ module ccbasic
   use bcassembly
   use triangulation
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
   use coarsegridcorrection
   use spdiscprojection
-  use bilinearformevaluation
-  use linearformevaluation
-  use linearsolver
   use nonlinearsolver
   use paramlist
+  use timestepping
   use discretebc
   use discretefbc
-  use timestepping  
-  use collection
+  use linearsystemscalar
+  use linearsystemblock
   use geometry
-  use adaptivetimestep
-  use basicgeometry
+  use collection
   
+  use adaptivetimestep
+    
   implicit none
   
 !<types>
+
+!<typeblock>
+
+  ! A type block specifying all 'static' information which are depending
+  ! on a discretisation and a triangulation. Such static information can be
+  ! precalculated and is valid until the mesh or the FE spaces change.
+  type t_staticLevelInfo
   
-!<typeblock description="Type block defining all information about one level">
-
-  type t_problem_lvl
-  
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-
-    ! An object specifying the block discretisation
-    ! (size of subvectors in the solution vector, trial/test functions,...)
-    type(t_blockDiscretisation) :: rdiscretisation
-
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateFEM
@@ -68,39 +61,34 @@ module ccbasic
     ! matrices (B1/B2). The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateGradient
 
-    ! Stokes matrix for that specific level (=nu*Laplace)
+    ! A template FEM matrix that defines the structure of divergence
+    ! matrices (D1/D2). The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateDivergence
+
+    ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
-    ! B1-matrix for that specific level. 
+    ! Precalculated B1-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB1
 
-    ! B2-matrix for that specific level. 
+    ! Precalculated B2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB2
     
-    ! D1-matrix for that specific level. This usually coincides with B1^T.
-    ! Note that this matrix is saved 'virtually transposed'!
+    ! Precalculated D1-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixD1
 
-    ! B2^T-matrix for that specific level. This usually coincides with B2^T.
-    ! Note that this matrix is saved 'virtually transposed'!
+    ! Precalculated D2-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixD2
 
-    ! Temporary vector in the size of the RHS/solution vector on that level.
-    type(t_vectorBlock) :: rtempVector
+    ! Precalculated D1^T-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
+    ! or describes an independent D1 matrix.
+    type(t_matrixScalar) :: rmatrixD1T
 
-    ! A variable describing the discrete boundary conditions fo the velocity.
-    ! Points to NULL until the BC's are discretised for the first time.
-    type(t_discreteBC), pointer :: p_rdiscreteBC => null()
-  
-    ! A structure for discrete fictitious boundary conditions
-    ! Points to NULL until the BC's are discretised for the first time.
-    type(t_discreteFBC), pointer :: p_rdiscreteFBC => null()
-    
-    ! Mass matrix for the velocity.
-    type(t_matrixScalar) :: rmatrixMass
-
-    ! Mass matrix for the pressure.
-    type(t_matrixScalar) :: rmatrixMassPressure
+    ! Precalculated D2-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
+    ! or describes an independent D2 matrix.
+    type(t_matrixScalar) :: rmatrixD2T
 
     ! A scalar discretisation structure that specifies how to generate 
     ! the mass matrix in the velocity FEM space.
@@ -110,20 +98,90 @@ module ccbasic
     ! the mass matrix in the pressure FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMassPressure
 
-    ! This flag signales whether there are Neumann boundary components
-    ! visible on the boundary of this level or not. If there are no
-    ! Neumann boundary components visible, the equation gets indefinite
-    ! for the pressure.
-    logical :: bhasNeumannBoundary
-    
-    ! An object specifying the block discretisation to be used for (edge)
-    ! stabilisation. Only used if edge stabilisation is activated, otherwise
-    ! this coincides with rdiscretisation.
-    type(t_blockDiscretisation) :: rdiscretisationStabil
+    ! Precalculated mass matrix for the velocity space.
+    type(t_matrixScalar) :: rmatrixMass
+
+    ! Precalculated mass matrix for the pressure space.
+    type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! An object specifying the discretisation in the velocity space
+    ! to be used for (edge) stabilisation. Only used if edge stabilisation 
+    ! is activated, otherwise this coincides with the default discretisation
+    ! of the velocity space.
+    type(t_spatialDiscretisation) :: rdiscretisationStabil
     
     ! Precomputed matrix for edge stabilisation. Only active if
     ! iupwind = CCMASM_STAB_FASTEDGEORIENTED.
     type(t_matrixScalar) :: rmatrixStabil
+    
+    ! A prolongation matrix for the velocity.
+    type(t_matrixScalar) :: rmatrixProlVelocity
+    
+    ! A prolongation matrix for the pressure.
+    type(t_matrixScalar) :: rmatrixProlPressure
+    
+    ! An interpolation matrix for the velocity.
+    type(t_matrixScalar) :: rmatrixInterpVelocity
+    
+    ! An interpolation matrix for the pressure.
+    type(t_matrixScalar) :: rmatrixInterpPressure
+    
+  end type
+
+!</typeblock>
+
+!<typeblock description="Type block defining dynamic information about a level that change in every timestep">
+
+  type t_dynamicLevelInfo
+  
+    ! A variable describing the discrete boundary conditions fo the velocity.
+    type(t_discreteBC) :: rdiscreteBC
+  
+    ! A structure for discrete fictitious boundary conditions
+    type(t_discreteFBC) :: rdiscreteFBC
+    
+    ! This flag signales whether there are Neumann boundary components
+    ! visible on the boundary of this level or not. If there are no
+    ! Neumann boundary components visible, the equation gets indefinite
+    ! for the pressure.
+    logical :: bhasNeumannBoundary = .false.
+    
+    ! Handle to a list of edges with Dirichlet boundary conditions on one of the
+    ! velocity components. =ST_NOHANDLE if there are no Dirichlet boundary segments.
+    integer :: hedgesDirichletBC = ST_NOHANDLE
+    
+    ! Number of edges with Dirichlet boudary conditions.
+    integer :: nedgesDirichletBC = 0
+    
+  end type
+  
+!</typeblock>
+
+
+!<typeblock description="Type block defining all information about one level">
+
+  type t_problem_lvl
+  
+    ! An object for saving the triangulation of the domain
+    type(t_triangulation) :: rtriangulation
+
+    ! An object specifying the block discretisation
+    ! (size of subvectors in the solution vector, trial/test functions,...)
+    type(t_blockDiscretisation) :: rdiscretisation
+
+    ! An object specifying the block discretisation to be used for (edge)
+    ! stabilisation. Only used if edge stabilisation is activated, otherwise
+    ! this coincides with rdiscretisation.
+    type(t_blockDiscretisation) :: rdiscretisationStabil
+
+    ! Temporary vector in the size of the RHS/solution vector on that level.
+    type(t_vectorBlock) :: rtempVector
+
+    ! A structure containing all static information about this level.
+    type(t_staticLevelInfo) :: rstaticInfo
+
+    ! A structure containing all dynamic information about this level.
+    type(t_dynamicLevelInfo) :: rdynamicInfo
     
   end type
   
@@ -171,9 +229,15 @@ module ccbasic
     ! Type of stabilisation. =0: Streamline diffusion. =1: Upwind, 2=edge oriented.
     integer :: iupwind = 0
     
+    ! Cubature formula for the EOJ stabilisation.
+    integer(I32) :: ccubEOJ
+    
     ! Stabilisation parameter for the nonlinearity.
     ! Standard values: Streamline diffusion: 1.0. Upwind: 0.1. Edge oriented: 0.01.
     real(DP) :: dupsam = 1.0_DP
+    
+    ! Calculation of local H for streamline diffusion
+    integer :: clocalH = 0
     
   end type
 
@@ -249,16 +313,6 @@ module ccbasic
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
-    real(dp) :: dx
-    
-    real(dp) :: dy
-    
-    real(dp) :: drad
-    
-    real(dp) :: drho2    
-    
-    integer  :: iParticles
-    
     ! Type of problem.
     ! =0: Stokes.
     ! =1: Navier-Stokes.
@@ -269,7 +323,18 @@ module ccbasic
     ! =0: (Navier-)Stokes with gradient tensor
     ! =1: (Navier-)Stokes with deformation tensor
     integer :: isubEquation
+    
+    ! Model for the viscosity.
+    ! =0: Constant viscosity.
+    ! =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+    integer :: cviscoModel 
         
+    ! Exponent parameter for the viscosity model
+    real(DP) :: dviscoexponent
+
+    ! Epsilon regularisation for the viscosity model
+    real(DP) :: dviscoEps
+
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
@@ -315,6 +380,16 @@ module ccbasic
     ! simulation.
     type(t_cc_statistics)                 :: rstatistics
     
+    real(dp) :: dx
+    
+    real(dp) :: dy
+    
+    real(dp) :: drad
+    
+    real(dp) :: drho2    
+    
+    integer  :: iParticles
+    
     real(dp),dimension(2) :: DResForceX
     
     real(dp),dimension(2) :: DResForceY
@@ -336,6 +411,7 @@ module ccbasic
     real(dp) :: dFrameVel = 0.0_dp
     
     type(t_particleCollection) :: rparticleCollection
+    
 
   end type
 
@@ -364,7 +440,7 @@ module ccbasic
 !    - Matrices and
 !    - Temporary vectors
 ! This problem structure is available only in the top-level routines of
-! the CC2D module; it's not available in any callback routines.
+! the CC2D module; it is not available in any callback routines.
 ! Parameters for callback routines are passed through the collection
 ! structure rcollection, which is part of the problem structure.
 !
@@ -385,6 +461,5 @@ module ccbasic
 !   collection%DquickAccess(1)   = current simulation time
 !   collection%DquickAccess(2)   = minimum simulation time
 !   collection%DquickAccess(3)   = maximum simulation time
-
 
 end module

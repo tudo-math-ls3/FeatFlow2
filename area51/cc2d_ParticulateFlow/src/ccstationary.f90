@@ -68,16 +68,16 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 
   ! The solution vector which is to be used as initial vector for the nonlinear
   ! iteration. After the iteration, this is replaced by the new solution vector.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 !</inputoutput>
 
 !<input>
   ! The right-hand-side vector to use in the equation
-  type(t_vectorBlock), intent(IN) :: rrhs
+  type(t_vectorBlock), intent(in) :: rrhs
 !</input>
 
 !</subroutine>
@@ -121,11 +121,14 @@ contains
     call cc_doneNonlinearLoop (rnonlinearIteration)
              
     call output_lbrk()
-    call output_line ('Nonlinear solver statistics')
-    call output_line ('---------------------------')
-    call output_line ('Intial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)))
-    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)))
-    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)))
+    call output_line ('Nonlinear solver statistics',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('---------------------------',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Initial defect: '//trim(sys_sdEL(rnlSol%DinitialDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('Final defect:  '//trim(sys_sdEL(rnlSol%DfinalDefect(1),15)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+    call output_line ('#Iterations:   '//trim(sys_siL(rnlSol%iiterations,10)),&
+        coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
     
   end subroutine
 

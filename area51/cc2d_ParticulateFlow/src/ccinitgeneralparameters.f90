@@ -43,7 +43,7 @@ module ccinitgeneralparameters
   
   use collection
   use convection
-  use geometry
+  use geometry  
   use ccbasic
   use ccnonstationary
   
@@ -92,11 +92,11 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   
 end subroutine ! end cc_initParticleDescriptor
 
-  ! ***************************************************************************
+! ***************************************************************************
 
 !<subroutine>
 
-  subroutine cc_getLogFiles (slogfile,serrorfile)
+  subroutine cc_getLogFiles (slogfile,serrorfile,sbenchlogfile)
   
 !<description>
   ! Temporarily reads the output DAT file to get the names of the output
@@ -105,31 +105,50 @@ end subroutine ! end cc_initParticleDescriptor
 
 !<output>
   ! Name of the message log file.
-  character(LEN=*), intent(OUT) :: slogfile
+  character(LEN=*), intent(out) :: slogfile
   
   ! Name of the error log file.
-  character(LEN=*), intent(OUT) :: serrorfile
+  character(LEN=*), intent(out) :: serrorfile
+
+  ! Name of the benchmark log file.
+  character(LEN=*), intent(out) :: sbenchlogfile
 !</output>
 
 !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: sstring
+    character(LEN=SYS_STRLEN) :: sstring,smaster
+    logical :: bexists
 
     ! Init parameter list that accepts parameters for output files
     call parlst_init (rparlist)
+    
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
 
     ! Read parameters that configure the output
-    call parlst_readfromfile (rparlist, './data/output.dat')
+    inquire(file=smaster, exist=bexists)
+    
+    if (bexists) then
+      ! Read the master file. That either one contains all parameters or
+      ! contains references to subfiles with data.
+      call parlst_readfromfile (rparlist, smaster)
+    else
+      call parlst_readfromfile (rparlist, './data/output.dat')
+    end if
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'')
+                                'smsgLog',sstring,'''''')
     read(sstring,*) slogfile
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',sstring,'')
+                                'serrorLog',sstring,'''''')
     read(sstring,*) serrorfile
+
+    call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
+                                'sbenchLog',sstring,'''''')
+    read(sstring,*) sbenchlogfile
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -150,22 +169,26 @@ end subroutine ! end cc_initParticleDescriptor
   ! The parameter list where the values of the DAT files should be stored.
   ! The structure must have been initialised, the parameters are just added
   ! to the list.
-  type(t_parlist), intent(INOUT) :: rparamList
+  type(t_parlist), intent(inout) :: rparamList
 !</inputoutput>
 
 !</subroutine>
 
     logical :: bexists
+    character(LEN=SYS_STRLEN) :: smaster
     
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
-    inquire(file='./data/master.dat', exist=bexists)
+    inquire(file=smaster, exist=bexists)
     
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
       ! contains references to subfiles with data.
-      call parlst_readfromfile (rparamList, './data/master.dat','./data')
+      call parlst_readfromfile (rparamList, smaster)
     else
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
@@ -193,7 +216,7 @@ end subroutine ! end cc_initParticleDescriptor
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -225,12 +248,12 @@ end subroutine ! end cc_initParticleDescriptor
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
 
-    real(DP) :: dnu,dx,dy,drad,drho2
+    real(DP) :: dnu
     integer :: ilvmin,ilvmax,i1
 
     ! Get the output level for the whole application -- during the
@@ -241,34 +264,23 @@ end subroutine ! end cc_initParticleDescriptor
     call parlst_getvalue_int (rproblem%rparamList,'GENERALOUTPUT',&
                               'MT_OutputLevel',rproblem%MT_OutputLevel,2)
 
+    ! Get the viscosity model
+    ! Standard = 0 = constant viscosity
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'cviscoModel',rproblem%cviscoModel,0)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'dviscoexponent',rproblem%dviscoexponent,2.0_DP)
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'dviscoEps',rproblem%dviscoEps,0.01_DP)
+
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
     ! Note that the parameter in the DAT file is 1/nu !
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'RE',dnu,1000.0_DP)
 
-    dnu = 1E0_DP/dnu
+    dnu = 1.0_DP/dnu
     rproblem%dnu = dnu
-    
-     ! get x,y coordinate and the radius
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pX',dx,0.5_DP)
-                                 
-    rproblem%dx = dx
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pY',dy,0.5_DP)
-    rproblem%dy = dy
-
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'pRad',drad,0.15_DP)
-    
-    rproblem%drad = drad
-    
-    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
-                                 'rho2',drho2,1.25_DP)
-
-    rproblem%drho2 = drho2
     
     ! Get min/max level from the parameter file.
     !
@@ -327,7 +339,7 @@ end subroutine ! end cc_initParticleDescriptor
   
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -336,8 +348,5 @@ end subroutine ! end cc_initParticleDescriptor
     deallocate(rproblem%RlevelInfo)
 
   end subroutine
-
-
-  ! ***************************************************************************
 
 end module

@@ -32,6 +32,7 @@ module ccmainproblem
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -40,10 +41,11 @@ module ccmainproblem
   use nonlinearsolver
   use paramlist
   use statistics
-  use geometry
+  use dofmapping
+  
   use collection
   use convection
-    
+  use geometry
   use ccbasic
   use ccinitgeneralparameters
   use ccinitparamtriang
@@ -101,11 +103,11 @@ contains
     type(t_timer) :: rtimerGridGeneration
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
-    type(t_ParticleDescriptor) :: rParticleDescriptor
+    type(t_ParticleDescriptor) :: rParticleDescriptor    
     
     integer :: i
     
-    ! Ok, let's start. 
+    ! Ok, let us start. 
     
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
@@ -116,11 +118,8 @@ contains
     ! Start the timer
     call stat_startTimer(rtimerTotal)
     
-    ! Allocate memory fo rthe problem structure -- it's rather large!
+    ! Allocate memory fo rthe problem structure -- it is rather large!
     allocate (p_rproblem)
-        
-    p_rproblem%DAngVel(:) = 0.0_dp
-    p_rproblem%DTrqForce(:) = 0.0_dp
     
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
@@ -160,6 +159,7 @@ contains
     call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
                                    p_rproblem%rparticleCollection,.true.)
     end if
+    
     
     ! So now the different steps - one after the other.
     !
@@ -238,7 +238,7 @@ contains
       call output_separator (OU_SEP_MINUS)
       call output_line('Generating basic matrices...')
     end if
-    call cc_generateBasicMatrices (p_rproblem)
+    call cc_generateBasicMat (p_rproblem)
 
     ! Create the solution vector -- zero or read from file.
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -297,8 +297,8 @@ contains
       call cc_generateBasicRHS (p_rproblem,rrhs)
       
       ! Initialise the boundary conditions, but 
-      ! don't implement any boundary conditions as the nonstationary solver
-      ! doesn't like this.
+      ! do not implement any boundary conditions as the nonstationary solver
+      ! does not like this.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating discrete boundary conditions of first time step...')
@@ -324,7 +324,7 @@ contains
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
     
-    ! (Probably) write final solution vector
+    ! (Probably) write (final) solution vector
     call cc_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
@@ -343,6 +343,7 @@ contains
     call collct_deletevalue (p_rproblem%rcollection, 'mini')
     call collct_deletevalue (p_rproblem%rcollection, 'particles')
     call geom_releaseParticleCollection(p_rproblem%rparticleCollection)
+    
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
@@ -408,8 +409,9 @@ contains
     call output_line ("Total number of calculated timesteps:   "//&
       trim(sys_siL(p_rproblem%rstatistics%ntimesteps,10)))
 
-    ! That's it.    
+    ! That is it.    
     deallocate(p_rproblem)
+    
   end subroutine
 
 end module

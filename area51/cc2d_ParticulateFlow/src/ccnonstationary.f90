@@ -38,6 +38,7 @@ module ccnonstationary
   use cubature
   use matrixfilters
   use vectorfilters
+  use discretebc
   use bcassembly
   use triangulation
   use spatialdiscretisation
@@ -118,21 +119,21 @@ contains
 !<input>
   ! A parameter list from a DAT file containing parameters that configure the
   ! time dependence.
-  type(t_parlist), intent(IN) :: rparams
+  type(t_parlist), intent(in) :: rparams
   
   ! The name of the section in the parameter list containing the parameters
   ! for the time dependent simulation.
-  character(LEN=*), intent(IN) :: ssection
+  character(LEN=*), intent(in) :: ssection
 !</input>
 
 !<inputoutput>
   ! The problem structure to be initialised.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
   
 !</subroutine>
 
-    ! Fetch the parameters. Initialise with standard settings if they don't 
+    ! Fetch the parameters. Initialise with standard settings if they do not 
     ! exist.
     call parlst_getvalue_int (rparams,ssection,'itimedependence',  &
         rproblem%itimedependence, 0)
@@ -164,24 +165,24 @@ contains
 
 !<description>
   ! Makes a backup of the current flow configuration into rsnapshot.
-  ! If there is any previous data in rsnapshot, it's overwritten/updated.
+  ! If there is any previous data in rsnapshot, it is overwritten/updated.
 !</description>
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
   
   ! The problem structure with all information about the current problem.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   
   ! A time stepping structure that configures the current time step.
-  type(t_explicitTimeStepping), intent(INOUT), optional :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout), optional :: rtimeStepping
   
   ! Right hand side at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rrhs
+  type(t_vectorBlock), intent(inout), optional :: rrhs
   
   ! Solution vector at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rsolution
+  type(t_vectorBlock), intent(inout), optional :: rsolution
 !</inputoutput>
 
 !</subroutine>
@@ -214,19 +215,19 @@ contains
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
   
   ! The problem structure with all information about the current problem.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
   
   ! A time stepping structure that configures the current time step.
-  type(t_explicitTimeStepping), intent(INOUT), optional :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout), optional :: rtimeStepping
   
   ! Right hand side at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rrhs
+  type(t_vectorBlock), intent(inout), optional :: rrhs
   
   ! Solution vector at the current point in time
-  type(t_vectorBlock), intent(INOUT), optional :: rsolution
+  type(t_vectorBlock), intent(inout), optional :: rsolution
   
 !</inputoutput>
 
@@ -259,7 +260,7 @@ contains
 
 !<inputoutput>
   ! A snapshop structure that receives the snapshot.
-  type(t_timestepSnapshot), intent(INOUT) :: rsnapshot
+  type(t_timestepSnapshot), intent(inout) :: rsnapshot
 !</inputoutput>
 
 !</subroutine>
@@ -285,12 +286,12 @@ contains
 !<input>
   ! A parameter list from a DAT file containing parameters that configure the
   ! time dependence.
-  type(t_parlist), intent(IN) :: rparams
+  type(t_parlist), intent(in) :: rparams
 !</input>
 
 !<inputoutput>
   ! The time stepping scheme structure to be initialised.
-  type(t_explicitTimeStepping), intent(INOUT) :: rtimeStepping
+  type(t_explicitTimeStepping), intent(inout) :: rtimeStepping
 !</inputoutput>
 
 !</subroutine>
@@ -332,26 +333,26 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT), target :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
   
   ! The current solution vector at time $t^n$. Is replaced by the
   ! solution vector at time $t^{n+1}.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
 
   ! The RHS vector at time $t^n$. Is replaced by the RHS at time $t^{n+1}$.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
   
   ! Configuration block of the time stepping scheme.
   type(t_explicitTimeStepping)        :: rtimestepping
 
   ! Structure for the nonlinear iteration for solving the core equation.
-  type(t_ccnonlinearIteration), intent(INOUT) :: rnonlinearIteration
+  type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
   
   ! A configuration stucture for the nonlinear solver
   type(t_nlsolNode) :: rnlSolver
   
   ! Temporary vectors for the nonlinear solver
-  type(t_vectorBlock), intent(INOUT) :: rtempVector,rtempVectorRhs
+  type(t_vectorBlock), intent(inout) :: rtempVector,rtempVectorRhs
 !</inputoutput>
 
 !</subroutine>
@@ -395,43 +396,23 @@ contains
     ! For setting up M(u_n) + w_2*N(u_n), switch the sign of w_2 and call the method
     ! to calculate the Convection/Diffusion part of the nonlinear defect. This builds 
     ! rtempVectorRhs = rtempVectorRhs - (-Mass)*u - (-w_2) (nu*Laplace*u + grad(u)u).
-    ! Switch off the B-matrices as we don't need them for this defect.
+    ! Switch off the B-matrices as we do not need them for this defect.
     !
-    ! Don't implement any boundary conditions when assembling this -- it's not
+    ! Do not implement any boundary conditions when assembling this -- it is not
     ! a defect vector!
-    ! The BC's are implemented at the end when the full RHS is finished...
-    
-    rnonlinearIterationTmp = rnonlinearIteration
+    ! The BC`s are implemented at the end when the full RHS is finished...
 
-    ! Initialise the matrix assembly structure rnonlinearCCMatrix to describe the
-    ! matrix we want to have.
+    call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rdynamicInfo)
+    
     rnonlinearCCMatrix%dalpha = -1.0_DP
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
-    rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-    rnonlinearCCMatrix%dnu = rproblem%dnu
-    rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-    rnonlinearCCMatrix%p_rdiscretisation => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
-    rnonlinearCCMatrix%p_rdiscretisationStabil => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisationStabil
-    rnonlinearCCMatrix%p_rmatrixStokes => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStokes
-    rnonlinearCCMatrix%p_rmatrixB1 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB1
-    rnonlinearCCMatrix%p_rmatrixB2 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixB2
-    rnonlinearCCMatrix%p_rmatrixD1 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD1
-    rnonlinearCCMatrix%p_rmatrixD2 => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixD2
-    rnonlinearCCMatrix%p_rmatrixMass => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMass    
-    rnonlinearCCMatrix%p_rmatrixStabil => &
-        rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixStabil
-        
+    
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP)
 
     ! -------------------------------------------    
@@ -447,7 +428,7 @@ contains
     ! -------------------------------------------    
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
-    ! Don't implement any BC's! We need the "raw" RHS for the next timestep.
+    ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
     call cc_generateBasicRHS (rproblem,rrhs)
     
     ! Add w_3*f_{n+1} to the current RHS.     
@@ -458,7 +439,7 @@ contains
     ! into the matrices; the latter is done during the nonlinear iteration.
     call cc_implementBC (rproblem,rvector,rtempVectorRhs,.true.,.true.)
 
-    ! That's it for the RHS and solution vector.
+    ! That is it for the RHS and solution vector.
     !    
     ! The LHS is "u_{n+1} + w_1*N(u_n+1)" which results in the system matrix
     ! "M + w_1 N(.)" for the next linear system to solve. 
@@ -528,19 +509,19 @@ contains
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(INOUT) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 
   ! The initial solution vector. Is replaced by the final solution vector.
   ! Must be unsorted.
-  type(t_vectorBlock), intent(INOUT) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! The initial RHS vector. Is replaced by the final RHS vector.
   ! Boundary conditions must not be implemented into that vector, this is done
   ! internally depending on the time.
-  type(t_vectorBlock), intent(INOUT) :: rrhs
+  type(t_vectorBlock), intent(inout) :: rrhs
 
   ! Postprocessing structure. Defines what to do with solution vectors.
-  type(t_c2d2postprocessing), intent(INOUT) :: rpostprocessing
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
   
 !</inputoutput>
 
@@ -557,11 +538,12 @@ contains
     ! The nonlinear solver configuration
     type(t_nlsolNode) :: rnlSol
 
-    real(DP) :: dtimederivative,dtmp,dtmperror,dtimeratio
+    real(DP) :: dtimederivative,dtmp,dtmperror,dtimeratio,dcpuTime
     
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
     type(t_vectorBlock) :: rpredictedSolution,roldSolution
+    real(dp) :: doldtime
     
     logical :: babortTimestep
     
@@ -569,6 +551,9 @@ contains
     integer(I32) :: isolverStatus,isolverStatusPredictor
     type(t_timeError) :: rtimeerror
     type(t_timeDerivatives) :: rtimeDerivative
+    
+    ! Timer for the current timestep and the total time.
+    type(t_timer) :: rtimerTimestep,rtimerAllTimesteps
 
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
@@ -597,14 +582,16 @@ contains
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
 
     ! Implement the initial boundary conditions into the solution vector.
-    ! Don't implement anything to matrices or RHS vector as these are
+    ! Do not implement anything to matrices or RHS vector as these are
     ! maintained in the timeloop.
     ! Afterwards, we can start the timeloop.
     call cc_implementBC (rproblem,rvector,rrhs,.true.,.false.)
 
     ! Postprocessing. Write out the initial solution.
     call output_line ('Starting postprocessing of initial solution...')
-    call cc_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+    call cc_postprocessingNonstat (rproblem,&
+        rvector,rproblem%rtimedependence%dtimeInit,&
+        rvector,rproblem%rtimedependence%dtimeInit,rpostprocessing)
 
     ! First time step
     rproblem%rtimedependence%itimeStep = 1
@@ -618,12 +605,20 @@ contains
     ! Timeloop
     !----------------------------------------------------
     
+    ! Start timers that calculate the current time.
+    call stat_clearTimer(rtimerAllTimesteps)
+    call stat_startTimer(rtimerAllTimesteps)
+    
     do while ((rproblem%rtimedependence%itimeStep .le. &
                rproblem%rtimedependence%niterations) .and. &
               (rproblem%rtimedependence%dtime .lt. &
                rproblem%rtimedependence%dtimemax) .and. &
               (dtimederivative .ge. &
                rproblem%rtimedependence%dminTimeDerivative))
+
+      ! Time counter
+      call stat_clearTimer(rtimerTimestep)
+      call stat_startTimer(rtimerTimestep)
 
       ! The babortTimestep is normally FALSE. If set to TRUE, the computation
       ! of the next time step is aborted because of an error. 
@@ -671,15 +666,16 @@ contains
                 rproblem%rtimedependence%dtime, &
                 3.0_DP*rtimestepping%dtstepFixed, 1.0_DP)
 
-          call output_lbrk ()
-          call output_separator(OU_SEP_EQUAL)
+          call output_lbrk (coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          call output_separator(OU_SEP_EQUAL,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           call output_line ('Predictor-Step at Time-Step '// &
               trim(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
               ', Time = '// &
               trim(sys_sdL(rproblem%rtimedependence%dtime,5))// &
               ', Stepsize: DT1 = '// &
-              trim(sys_sdL(rtimesteppingPredictor%dtstep,5)) )
-          call output_separator(OU_SEP_EQUAL)
+              trim(sys_sdL(rtimesteppingPredictor%dtstep,5)),&
+              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+          call output_separator(OU_SEP_EQUAL,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           !CALL output_line (&
           !  'Macro step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
           !  '      Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
@@ -735,7 +731,7 @@ contains
                 isolverStatus,irepetition) 
                 
             ! Tell the user that we have a new time step size.
-            call output_separator(OU_SEP_AT)
+            call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             call output_line ('Timestepping by '&
                 //trim(sys_siL(irepetition,2)) &
                 //' (' &
@@ -743,8 +739,9 @@ contains
                 //'), New Stepsize = ' &
                 //trim(sys_sdEP(dtmp,9,2)) &
                 //', Old Stepsize = ' &
-                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
-            call output_separator(OU_SEP_AT)
+                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+            call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
             ! Accept the new step size
             call timstp_setBaseSteplength (rtimeStepping, dtmp)
@@ -754,8 +751,8 @@ contains
           else
 
             ! Restore the flow situation to the beginning of the macrostep.
-            ! We didn't change the solution vector and the time stepping structure,
-            ! so we don't have to restore them.
+            ! We did not change the solution vector and the time stepping structure,
+            ! so we do not have to restore them.
             call cc_restoreTimestep (rsnapshotLastMacrostep,rproblem,rrhs=rrhs)
             call cc_copyPostprocessing (rpostprocessingBackup,rpostprocessing)
 
@@ -777,19 +774,21 @@ contains
         !  'Time step '//TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
         !  '     Time '//TRIM(sys_sdL(rproblem%rtimedependence%dtime,5)) // &
         !  '     Step size '//TRIM(sys_sdL(rtimestepping%dtstep,5)))
-        call output_lbrk ()
-        call output_separator(OU_SEP_AT)
+        call output_lbrk (coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+        call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Time-Step '// &
             trim(sys_siL(rproblem%rtimedependence%itimeStep,6))// &
             ', Time = '// &
             trim(sys_sdL(rproblem%rtimedependence%dtime,5))// &
             ', Stepsize: DT3 = '// &
-            trim(sys_sdL(rtimestepping%dtstep,5)) )
-        call output_separator(OU_SEP_AT)
+            trim(sys_sdL(rtimestepping%dtstep,5)),&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+        call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         
         ! Snapshot the current solution for the later calculation of the
         ! time derivative.
         call lsysbl_copyVector (rvector,roldSolution)
+        doldtime = rproblem%rtimedependence%dtime
         
         ! Proceed the next time step -- if we are allowed to.
         call cc_performTimestep (rproblem,rvector,rrhs,&
@@ -810,7 +809,7 @@ contains
           j = 3
         end select
         
-        call output_separator(OU_SEP_AT)
+        call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Time-Step ' &
             //trim(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
             //' (Repetition = '//trim(sys_siL(irepetition,2)) &
@@ -818,12 +817,13 @@ contains
             //trim(sys_siL(i,6))//' of '//trim(sys_siL(j,6)) &
             //') at time = ' &
             //trim(sys_sdL(rproblem%rtimedependence%dtime,5)) &
-            //' finished. ' )
+            //' finished. ',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
 
         ! Did the solver break down?
         if (rnlSol%iresult .lt. 0) then
           call output_line ('Accuracy notice: Nonlinear solver did not reach '// &
-                            'the convergence criterion!')
+                            'the convergence criterion!',&
+                            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         else if (rnlSol%iresult .gt. 0) then
           ! Oops, not really good. 
           babortTimestep = .true.
@@ -831,16 +831,18 @@ contains
           ! Do we have a time stepping algorithm that allowes recomputation?          
           select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
           case (TADTS_FIXED,TADTS_PREDICTION)
-            ! That's bad. Our solution is garbage!
-            ! We don't do anything in this case. The repetition technique will
+            ! That is bad. Our solution is garbage!
+            ! We do not do anything in this case. The repetition technique will
             ! later decide on whether to repeat the step or to stop the 
             ! computation.
-            call output_line ('Nonlinear solver broke down. Solution probably garbage!')
+            call output_line ('Nonlinear solver broke down. Solution probably garbage!',&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             
           case (TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
             ! Yes, we have. 
             call output_line ('Nonlinear solver broke down. '// &
-                              'Calculating new time step size...')
+                              'Calculating new time step size...',&
+                              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             
             ! Calculate a new time step size.
             select case (rnlSol%iresult)
@@ -881,8 +883,9 @@ contains
             call output_line ('New Stepsize = ' &
                 //trim(sys_sdEP(dtmp,9,2)) &
                 //', Old Stepsize = ' &
-                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
-            call output_separator(OU_SEP_AT)
+                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+            call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
             ! Accept the new step size
             call timstp_setBaseSteplength (rtimeStepping, dtmp)
@@ -914,9 +917,10 @@ contains
           
           if (mod(rproblem%rtimedependence%itimeStep,3) .eq. 0) then
           
-            call output_separator (OU_SEP_MINUS)
+            call output_separator (OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             call output_line ('Macrostep completed. Analysing time error and '// &
-                              'computing new time step size...')
+                              'computing new time step size...',&
+                              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           
             ! Calculate the new time step size.
             ! This is based on the solution, the predicted solution, the order
@@ -1005,13 +1009,15 @@ contains
                 //'  P(L2)=' &
                 //trim(sys_sdEP(rtimeError%drelPL2/real(i,DP),8,2)) &
                 //'  P(MX)=' &
-                //trim(sys_sdEP(rtimeError%drelPmax/real(i,DP),8,2)) )
+                //trim(sys_sdEP(rtimeError%drelPmax/real(i,DP),8,2)),&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             
             ! Tell the user that we have a new time step size.
             call output_line ('New Stepsize = ' &
                 //trim(sys_sdEP(dtmp,9,2)) &
                 //', Old Stepsize = ' &
-                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
+                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             !CALL output_line ('Timestepping by '&
             !    //TRIM(sys_siL(irepetition,2)) &
             !    //' (' &
@@ -1037,14 +1043,19 @@ contains
         ! Ok, everything worked fine, we have a valid solution of 
         ! our current substep.
         
-        call output_separator(OU_SEP_MINUS)
-        call output_line ('Starting postprocessing of the time step...')
+        call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+        call output_line ('Starting postprocessing of the time step...',&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         
         ! Postprocessing. Write out the solution if it was calculated successfully.
-        call cc_postprocessingNonstat (rproblem,rvector,rpostprocessing)
+        call cc_postprocessingNonstat (rproblem,&
+            roldSolution,doldtime,&
+            rvector,rproblem%rtimedependence%dtime,&
+            rpostprocessing)
         
-        call output_separator(OU_SEP_MINUS)
-        call output_line ('Analysing time derivative...')
+        call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+        call output_line ('Analysing time derivative...',&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         
         ! Calculate the norm of the time derivative. This allowes the DO-loop
         ! above to check if the solution got stationary.
@@ -1060,10 +1071,12 @@ contains
             //'  RELP(L2)=' &
             //trim(sys_sdEP(rtimeDerivative%drelPL2,9,2)) &
             //'  REL=' &
-            //trim(sys_sdEP(dtimeDerivative,9,2)) )
+            //trim(sys_sdEP(dtimeDerivative,9,2)),&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             
         if (dtimederivative .lt. rproblem%rtimedependence%dminTimeDerivative) then
-          call output_line ('Solution reached stationary status. Stopping simulation...')
+          call output_line ('Solution reached stationary status. Stopping simulation...',&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         end if
         !CALL output_line ('#'&
         !    //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6))&
@@ -1080,12 +1093,21 @@ contains
         
       end if
       
+      call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD)
+      call stat_stopTimer(rtimerTimestep)
+      call output_line ("Time for processing of this timestep: "// &
+        trim(sys_sdL(rtimerTimestep%delapsedReal,10)))
+
+      call stat_sampleTimer(rtimerAllTimesteps,dcpuTime)
+      call output_line ("Time for all timesteps until now:     "// &
+        trim(sys_sdL(dcpuTime,10)))
+      
       !----------------------------------------------------
       ! Check if the time step must be repeated
       !----------------------------------------------------
       if (babortTimestep) then
       
-        ! Uh, oh, something went wrong. Let's hope we can repeat the timestep!
+        ! Uh, oh, something went wrong. Let us hope we can repeat the timestep!
         !
         ! We have to repeat the time step if
         !  a) we have repetitions left and
@@ -1093,16 +1115,18 @@ contains
         !  c1) the parameters force us to repeat a step or
         !  c2) the solver for the nonlinear iteration (predictor
         !      or corrector step) broke down
-        ! c2) is an exception to the rule that we don't repeat
+        ! c2) is an exception to the rule that we do not repeat
         ! time steps in adaptive time stepping technique 1!
         
         ! Do we have a time stepping algorithm that allowes recomputation?          
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
         case (TADTS_FIXED) 
-          ! That's bad. Our solution is most probably garbage!
-          ! We cancel the timeloop, it doesn't make any sense to continue.
-          call output_line ('Solution garbage! Stopping simulation.')
-          call output_separator(OU_SEP_AT)
+          ! That is bad. Our solution is most probably garbage!
+          ! We cancel the timeloop, it does not make any sense to continue.
+          call output_line ('Solution garbage! Stopping simulation.',&
+              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          call output_separator(OU_SEP_AT,&
+              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
           exit
           
         case (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
@@ -1126,8 +1150,9 @@ contains
             call timstp_setBaseSteplength (rtimeStepping, dtmp)
             
             call output_line ('Repeating macrostep. Returning to timestep ' &
-                //trim(sys_siL(rproblem%rtimedependence%itimeStep,6))//'.')
-            call output_separator(OU_SEP_AT)
+                //trim(sys_siL(rproblem%rtimedependence%itimeStep,6))//'.',&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+            call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             
             ! Repeat the time step            
             cycle
@@ -1140,7 +1165,8 @@ contains
             irepetition = 0
             
             call output_line ('No repetitions left. Cannot repeat macrostep. ' &
-                //'Continuing with the next one...')
+                //'Continuing with the next one...',&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
             
           end if
           
@@ -1159,7 +1185,7 @@ contains
            
       rproblem%rtimedependence%itimeStep = rproblem%rtimedependence%itimeStep + 1
 
-      call output_separator(OU_SEP_AT)
+      call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
 
     end do
 
