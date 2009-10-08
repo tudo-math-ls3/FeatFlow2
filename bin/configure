@@ -3155,7 +3155,7 @@ sub create_feastAppMakefile {
         ".PHONY: tags\n" .
         "tags: \$(SRCF77) \$(SRCF90) \$(SRCEXTRA)\n" .
         "\trm -f TAGS\n" .
-        "\tetags \$(filter %.c %.f %.f90,\$^)\n\n" .
+        "\tctags -e \$(filter %.c %.f %.f90,\$^)\n\n" .
 
 
     # print help message
