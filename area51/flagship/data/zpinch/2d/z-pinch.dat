@@ -62,10 +62,12 @@ errorestimator = ErrorEstimator
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/z-pinch_struct_tria.prm
+#prmfile = grids/2d/z-pinch_struct_tria.prm
+prmfile = gridgen/grid.prm
 
 # file which contains the triangulation
-trifile = grids/2d/z-pinch_struct_tria.tri
+#trifile = grids/2d/z-pinch_struct_tria.tri
+trifile = gridgen/grid.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -180,7 +182,7 @@ inviscid = Inviscid
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 
 ################################################################################
@@ -341,10 +343,10 @@ istabilisation = 12
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.005
 
 # file for UCD output of solution
-ucdsolution = out/zpinch_CNFCT1_aniso
+ucdsolution = out/zpinch
 
 # file for UCD import of solution
 ucdimport = 
@@ -389,7 +391,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-4
+dfinalTime = 1.5
 
 # initial time step size
 dinitialStep = 1e-4
