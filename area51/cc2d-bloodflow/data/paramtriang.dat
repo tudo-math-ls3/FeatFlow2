@@ -9,7 +9,7 @@
 [PARAMTRIANG]
 
 # Filename of the parametrisation of the domain
-sParametrisation = '%{spredirectory}/bench1.prm'
+sParametrisation = '%{spredirectory}/bench3.prm'
 
 # Filename of the coarse grid mesh
-sMesh = '%{spredirectory}/bench1.tri'
+sMesh = '%{spredirectory}/bench3.tri'
