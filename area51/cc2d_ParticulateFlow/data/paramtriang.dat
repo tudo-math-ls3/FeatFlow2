@@ -1,3 +1,19 @@
+<<<<<<< .mine
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+[PARAMTRIANG]
+
+# Filename of the parametrisation of the domain
+sParametrisation = '%{spredirectory}/chan1.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/chan1.tri'
+=======
 # ------------------------------------------------------------------------
 # Parametrization and triangulation
 #
@@ -12,3 +28,4 @@ sParametrisation = './pre/chan2.prm'
 
 # Filename of the coarse grid mesh
 sMesh = './pre/chan2.tri'
+>>>>>>> .r6277
