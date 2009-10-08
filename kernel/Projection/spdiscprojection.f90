@@ -123,11 +123,17 @@ contains
       call sys_halt()
     end if
     
-    ! We need to comment this out for 1D/3D projections :(
-!    IF (.NOT. ASSOCIATED(p_rsourceDiscr%p_rboundary, p_rdestDiscr%p_rboundary)) THEN
-!      PRINT *,'spdp_projectSolutionScalar: Different domains'
-!      CALL sys_halt()
-!    END IF
+    if (associated(p_rsourceDiscr%p_rboundary) .and.&
+        associated(p_rdestDiscr%p_rboundary)) then
+
+      if (.not. associated(p_rsourceDiscr%p_rboundary,&
+                           p_rdestDiscr%p_rboundary)) then
+        call output_line ('Different boundaries!', &
+                          OU_CLASS_ERROR,OU_MODE_STD,&
+                          'spdp_projectSolutionScalar')  
+        call sys_halt()
+      end if
+    end if
     
     if (.not. associated(p_rsourceDiscr%p_rtriangulation,&
                          p_rdestDiscr%p_rtriangulation)) then
@@ -154,6 +160,7 @@ contains
     end if
     
     ! Ok, now we have a chance that we can convert.
+    
     ! If the spaces are identical, we can simply copy the vector
     if (p_rsourceDiscr%RelementDistr(1)%celement .eq. &
         p_rdestDiscr%RelementDistr(1)%celement) then
@@ -180,13 +187,12 @@ contains
     call lsyssc_clearVector (rdestVector)
     
     ! What is the destination space?
-    ! Remark: Currently only 2D / 3D Q1 supported...
     select case (elem_getPrimaryElement(p_rdestDiscr%RelementDistr(1)%&
                                         celement))
-    case (EL_Q0)
+    case (EL_Q0, EL_P0)
       select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
                                           celement))
-      case (EL_Q1)
+      case (EL_Q1, EL_P1)
         ! Get geometric information from the triangulation.
         p_rtriangulation => p_rsourceDiscr%p_rtriangulation
         call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
@@ -197,14 +203,15 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
         
         ! Call the conversion routine
-        call spdp_Q1toQ0_dble (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
-                               p_IverticesAtElement)
+        call spdp_Q1P1toQ0P0_dble (p_Dsource, p_Ddest, p_rtriangulation%NEL, &
+                                   p_IverticesAtElement)
       case default
         ! Fallback to projection into the cells.
         call lsyssc_getbase_double (rdestVector,p_Ddest)
         call spdp_projectToCells (rsourceVector, p_Ddest)
-        
+
       end select
+
     case (EL_Q1)
       ! So we should convert the source vector into a Q1 destination vector.
       ! Which element is used in the trial space?
@@ -212,7 +219,6 @@ contains
                                           celement))
       case (EL_Q0)
         ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
-        !
         !
         ! Get geometric information from the triangulation.
         p_rtriangulation => p_rsourceDiscr%p_rtriangulation
@@ -226,8 +232,9 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
         
         ! Call the conversion routine
-        call spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
-                               p_IelementsAtVertexIdx,p_IelementsAtVertex)
+        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
+
       case (EL_Q1T,EL_Q1TB,EL_Q2T,EL_Q2TB)
         ! That is a little bit harder. We have to convert an FE space with DOF`s
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
@@ -254,7 +261,7 @@ contains
                                  p_IelementsAtVertexIdx)
                           
       case (EL_Q2)
-        ! Rather easy. Take the forst NVT elements of the Q2-vector
+        ! Rather easy. Take the first NVT elements of the Q2-vector
         ! as values in the corners of Q1.
         call lsyssc_getbase_double (rsourceVector,p_Dsource)
         call lsyssc_getbase_double (rdestVector,p_Ddest)
@@ -287,6 +294,61 @@ contains
 
       end select
     
+    case (EL_P1)
+      ! So we should convert the source vector into a P1 destination vector.
+      ! Which element is used in the trial space?
+      select case (elem_getPrimaryElement(p_rsourceDiscr%RelementDistr(1)%&
+                                          celement))
+      case (EL_P0)
+        ! Not too hard. Basically, take the mean of all elements adjacent to a vertex.
+        !
+        ! Get geometric information from the triangulation.
+        p_rtriangulation => p_rsourceDiscr%p_rtriangulation
+        call storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                                   p_IelementsAtVertexIdx)
+        call storage_getbase_int (p_rtriangulation%h_IelementsAtVertex,&
+                                                   p_IelementsAtVertex)
+                                                     
+        ! Get the vector data
+        call lsyssc_getbase_double (rsourceVector,p_Dsource)
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        
+        ! Call the conversion routine
+        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
+
+      case (EL_P1T)
+        ! That is a little bit harder. We have to convert an FE space with DOF`s
+        ! in the midpoints to P1. (For simplicity, the integral mean value variant
+        ! is treated as if the DOF`s were in the edge midpoints. The error
+        ! is negligible.
+        !
+        ! Get geometric information from the triangulation.
+        p_rtriangulation => p_rsourceDiscr%p_rtriangulation
+        call storage_getbase_int (p_rtriangulation%h_IelementsAtVertexIdx,&
+                                                   p_IelementsAtVertexIdx)
+        call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
+                                                     p_IverticesAtElement)
+        call storage_getbase_int2d (p_rtriangulation%h_IedgesAtElement,&
+                                                     p_IedgesAtElement)
+                                                     
+        ! Get the vector data
+        call lsyssc_getbase_double (rsourceVector,p_Dsource)
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        
+        ! Call the conversion routine
+        call spdp_E020toP1_dble (p_Dsource, p_Ddest, &
+                                 p_rtriangulation%NVT, p_rtriangulation%NEL, &
+                                 p_IverticesAtElement,p_IedgesAtElement,&
+                                 p_IelementsAtVertexIdx)
+
+      case default
+        ! Fallback to projection into the vertices.
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        call spdp_projectToVertices (rsourceVector, p_Ddest)
+        
+      end select
+
     case (EL_Q1_3D)
         ! So we should convert the source vector into a 3D Q1 destination vector.
       ! Which element is used in the trial space?
@@ -308,8 +370,8 @@ contains
         call lsyssc_getbase_double (rdestVector,p_Ddest)
         
         ! Call the conversion routine - we can use the 2D version here...
-        call spdp_Q0toQ1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
-                                  p_IelementsAtVertexIdx,p_IelementsAtVertex)
+        call spdp_Q0P0toQ1P1_dble (p_Dsource, p_Ddest, p_rtriangulation%NVT, &
+                                   p_IelementsAtVertexIdx,p_IelementsAtVertex)
       case (EL_Q1T_3D)
         ! That is a little bit harder. We have to convert an FE space with DOF`s
         ! in the midpoints to Q1. (For simplicity, the integral mean value variant
@@ -354,13 +416,13 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine spdp_Q0toQ1_dble (Dsource, Ddest, NVT, &
-                               IelementsAtVertexIdx,IelementsAtVertex)
+  subroutine spdp_Q0P0toQ1P1_dble (Dsource, Ddest, NVT, &
+                                   IelementsAtVertexIdx,IelementsAtVertex)
   
 !<description>
   ! AUXILIARY ROUTINE.
-  ! Convert a solution vector based on a uniform discretisation with Q0
-  ! to a solution vector based on the Q1 element.
+  ! Convert a solution vector based on a uniform discretisation with
+  !  Q0/P0 to a solution vector based on the Q1/P1 element.
 !</description>
 
 !<input>
@@ -409,12 +471,12 @@ contains
   ! ***************************************************************************
   
 !<subroutine>
-  subroutine spdp_Q1toQ0_dble (Dsource, Ddest, NEL, IverticesAtElement)
+  subroutine spdp_Q1P1toQ0P0_dble (Dsource, Ddest, NEL, IverticesAtElement)
   
 !<description>
   ! AUXILIARY ROUTINE.
-  ! Convert a solution vector based on a uniform discretisation with Q1
-  ! to a solution vector based on the Q0 element.
+  ! Convert a solution vector based on a uniform discretisation with
+  ! Q1/P1 to a solution vector based on the Q0/P0 element.
 !</description>
 
 !<input>
@@ -436,7 +498,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iel,iv
+    integer :: iel,iv,NVE
 
     ! Loop through the elements   
     do iel=1,NEL
@@ -444,12 +506,13 @@ contains
       ! On each element, loop through the vertices to get the mean value on 
       ! the element
       Ddest(iel) = 0.0_DP
-      do iv = 1,ubound(IverticesAtElement,1)
+      NVE = tria_getNVE(IverticesAtElement,iel)
+      do iv = 1, NVE
         Ddest(iel) = Ddest(iel) + Dsource(IverticesAtElement(iv,iel))
       end do
 
       ! Divide by the number of vertices
-      Ddest(iel) = Ddest(iel) / real(ubound(IverticesAtElement,1),DP)
+      Ddest(iel) = Ddest(iel) / real(NVE,DP)
     end do
 
   end subroutine
@@ -805,6 +868,92 @@ contains
   end subroutine
 
   ! ***************************************************************************
+  
+!<subroutine>
+  subroutine spdp_E020toP1_dble (Dsource, Ddest, NVT, NEL, &
+                                 IverticesAtElement,IedgesAtElement,&
+                                 IelementsAtVertexIdx)
+  
+!<description>
+  ! AUXILIARY ROUTINE.
+  ! Convert a solution vector based on a uniform discretisation with E020
+  ! to a solution vector based on the P1 element.
+!</description>
+
+!<input>
+  ! Source vector to be converted
+  real(DP), dimension(:), intent(in) :: Dsource
+  
+  ! Number of vertices in the triangulation
+  integer, intent(in) :: NVT
+  
+  ! Number of elements in the triangulation
+  integer, intent(in) :: NEL
+  
+  ! IelementsAtVertexIdx array of the triangulation
+  integer, dimension(:), intent(in) :: IelementsAtVertexIdx 
+  
+  ! IverticesAtElement array of the triangulation (old KVERT)
+  integer, dimension(:,:), intent(in) :: IverticesAtElement
+
+  ! IedgesAtElement array of the triangulation (old KMID)
+  integer, dimension(:,:), intent(in) :: IedgesAtElement
+!</input>
+  
+!<output>
+  ! Destination vector of size NVT; receives the interpolated solution
+  real(DP), dimension(:), intent(out) :: Ddest
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: iv
+    integer :: iel
+    integer :: IM1,IM2,IM3
+    integer :: IV1,IV2,IV3
+    real(DP) :: DUH1,DUH2,DUH3
+    integer :: nadj
+    
+    ! Clear the output array
+    call lalg_clearVectorDble (Ddest)
+    
+    ! Loop through the elements
+    do iel=1,NEL
+    
+      ! Get the global DOF`s on the current element in the E020 space
+      IM1 = IedgesAtElement(1,iel)
+      IM2 = IedgesAtElement(2,iel)
+      IM3 = IedgesAtElement(3,iel)
+      
+      ! Get the global DOF`s on the current element in the P1 space
+      IV1 = IverticesAtElement(1,iel)
+      IV2 = IverticesAtElement(2,iel)
+      IV3 = IverticesAtElement(3,iel)
+      
+      ! Get the values of the DOF`s in the E020 space
+      DUH1 = Dsource(IM1)
+      DUH2 = Dsource(IM2)
+      DUH3 = Dsource(IM3)
+      
+      ! Linear interpolation gives what we have to add to the
+      ! value in each corner:
+      Ddest(IV1) = Ddest(IV1) + DUH1 - DUH2 + DUH3
+      Ddest(IV2) = Ddest(IV2) + DUH1 + DUH2 - DUH3
+      Ddest(IV3) = Ddest(IV3) - DUH1 + DUH2 + DUH3 
+      
+    end do
+
+    ! Divide by the number of adjacent elements, this results
+    ! in the interpolated solution.
+    do iv=1,NVT
+      nadj = IelementsAtVertexIdx(iv+1) - IelementsAtVertexIdx(iv)
+      Ddest(iv) = Ddest(iv) / real(nadj,DP)
+    end do
+
+  end subroutine
+
+  ! ***************************************************************************
 
 !<subroutine>
   subroutine spdp_projectSolution (rsourceVector,rdestVector)
@@ -979,7 +1128,7 @@ contains
   integer, dimension(:,:), allocatable :: Idofs
   real(DP), dimension(:), pointer :: p_Dx
   real(DP) :: dt
-  integer :: ider
+  integer :: ider,nadj
   
     ! Which derivative?
     ider = DER_FUNC
@@ -1130,12 +1279,12 @@ contains
     do ivt = 1, NVT
     
       ! Calculate the number of elements adjacent to this vertice
-      j = p_IelemAtVertIdx(ivt+1) - p_IelemAtVertIdx(ivt)
+      nadj = p_IelemAtVertIdx(ivt+1) - p_IelemAtVertIdx(ivt)
       
       ! And divide the value in this vertice by the number of elements adjacent
       ! to this vertice.
-      if(j .gt. 1) then
-        p_Dvalues(ivt) = p_Dvalues(ivt) / real(j,DP)
+      if(nadj .gt. 1) then
+        p_Dvalues(ivt) = p_Dvalues(ivt) / real(nadj,DP)
       end if
     
     end do
