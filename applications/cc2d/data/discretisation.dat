@@ -174,10 +174,12 @@ imovingFrame = 0
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
+# 30 = P1~(E020) / P1~(E020) / P0 
 
 # (EM30 = nonparametric, nonconformal Rannacher-Turek element)
 # (EB30 = parametric, nonconformal Rannacher-Turek element with bubble)
 # (QP1  = Quadrilateral discontinuous P1 element)
+# (E020 = non-conforming Crouzeix-Raviart element)
 
 ielementType       = 3
 

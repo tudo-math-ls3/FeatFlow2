@@ -964,7 +964,7 @@ contains
     integer, dimension(:), allocatable :: Ider
     character(LEN=SYS_STRLEN) :: sparam
     character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues
-    character(LEN=10), dimension(3,3), parameter :: Sfctnames = RESHAPE (&
+    character(LEN=10), dimension(3,3), parameter :: Sfctnames = reshape (&
       (/ "       u1 ","     u1_x ","     u1_y " , &
          "       u2 ","     u2_x ","     u2_y " , &
          "        p ","      p_x ","      p_y " /) ,&
@@ -1013,7 +1013,7 @@ contains
     do i=1,npoints
       write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") Sfctnames(1+Ider(i),Itypes(i)),&
           "(",Dcoords(1,i),",",Dcoords(2,i),") = ",Dvalues(i)
-      call output_line(TRIM(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
     end do
     
     ! Get information about writing the stuff into a DAT file.
@@ -1143,29 +1143,29 @@ contains
     ! GMV for example does not understand Q1~ vectors!
     ! Therefore, we first have to convert the vector to a form that
     ! GMV understands.
-    ! GMV understands only Q1 solutions! So the task is now to create
-    ! a Q1 solution from rvector and write that out.
+    ! GMV understands only Q1/P1 solutions! So the task is now to
+    ! create a Q1/P1 solution from rvector and write that out.
     !
     ! For this purpose, first create a 'derived' simple discretisation
-    ! structure based on Q1 by copying the main guiding block discretisation
-    ! structure and modifying the discretisation structures of the
-    ! two velocity subvectors:
+    ! structure based on Q1/P1 by copying the main guiding block 
+    ! discretisation structure and modifying the discretisation
+    ! structures of the two velocity subvectors:
     
     call spdiscr_duplicateBlockDiscr(rvector%p_rblockDiscr,rprjDiscretisation)
     
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(1), &
-                 EL_Q1, CUB_G2X2, &
+                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(1))
 
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(2), &
-                 EL_Q1, CUB_G2X2, &
+                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(2))
 
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(3), &
-                 EL_Q0, CUB_G2X2, &
+                 EL_P0, EL_Q0, CUB_TRZ_T, CUB_G2X2, &
                  rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
@@ -1179,7 +1179,7 @@ contains
     call spdp_projectSolution (rvector,rprjVector)
 
     if (present(dtime)) then
-      ! Only for the postprocessing, weitch to time dtime.
+      ! Only for the postprocessing, switch to time dtime.
       dtimebackup = rproblem%rtimedependence%dtime
       rproblem%rtimedependence%dtime = dtime
     end if
