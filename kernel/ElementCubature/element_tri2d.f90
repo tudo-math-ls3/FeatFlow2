@@ -1305,7 +1305,7 @@ contains
 !    if (el_bder(DER_DERIV_X)) then
       Dbas(1,DER_DERIV_X) =  2E0_DP*Djac(2)*dxj
       Dbas(2,DER_DERIV_X) =  2E0_DP*(Djac(4)-Djac(2))*dxj
-      Dbas(3,DER_DERIV_X) = -2E0_DP*Djac(2)*dxj
+      Dbas(3,DER_DERIV_X) = -2E0_DP*Djac(4)*dxj
 !    endif
     
     !y-derivatives on current element
@@ -1421,7 +1421,7 @@ contains
       do i=1,npoints
         Dbas(1,DER_DERIV_X,i) =  2E0_DP*Djac(2,i)*dxj(i)
         Dbas(2,DER_DERIV_X,i) =  2E0_DP*(Djac(4,i)-Djac(2,i))*dxj(i)
-        Dbas(3,DER_DERIV_X,i) = -2E0_DP*Djac(2,i)*dxj(i)
+        Dbas(3,DER_DERIV_X,i) = -2E0_DP*Djac(4,i)*dxj(i)
 !      END DO
 !    ENDIF
     
@@ -1560,7 +1560,7 @@ contains
         do i=1,npoints
           Dbas(1,DER_DERIV_X,i,j) =  2E0_DP*Djac(2,i,j)*dxj(i)
           Dbas(2,DER_DERIV_X,i,j) =  2E0_DP*(Djac(4,i,j)-Djac(2,i,j))*dxj(i)
-          Dbas(3,DER_DERIV_X,i,j) = -2E0_DP*Djac(2,i,j)*dxj(i)
+          Dbas(3,DER_DERIV_X,i,j) = -2E0_DP*Djac(4,i,j)*dxj(i)
 !        end do
 !      ENDIF
       
