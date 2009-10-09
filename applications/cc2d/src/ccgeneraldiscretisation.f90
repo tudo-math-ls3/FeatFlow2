@@ -198,7 +198,7 @@ contains
                                  'scubStokes',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubStokes',icubA,int(CUB_G2X2))
+                                'icubStokes',icubA,int(SPDISC_CUB_AUTOMATIC))
     else
       icubA = cub_igetID(sstr)
     end if
@@ -207,7 +207,7 @@ contains
                                 'scubB',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubB',icubB,int(CUB_G2X2))
+                                'icubB',icubB,int(SPDISC_CUB_AUTOMATIC))
     else
       icubB = cub_igetID(sstr)
     end if
@@ -216,7 +216,7 @@ contains
                                  'scubF',sstr,'')
     if (sstr .eq. '') then
       call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                'icubF',icubF,int(CUB_G2X2))
+                                'icubF',icubF,int(SPDISC_CUB_AUTOMATIC))
     else
       icubF = cub_igetID(sstr)
     end if
@@ -302,16 +302,18 @@ contains
                                   'scubMass',sstr,'')
       if (sstr .eq. '') then
         call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'icubM',icubM,int(CUB_G3X3))
+                                  'icubM',icubM,int(SPDISC_CUB_AUTOMATIC))
       else
         icubM = cub_igetID(sstr)
       end if
-
-      ! Initialise the cubature formula appropriately.
-      do k = 1,p_rdiscretisationMass%inumFESpaces
-        p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
-        p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
-      end do
+      
+      if (icubM .ne. SPDISC_CUB_AUTOMATIC) then
+        ! Initialise the cubature formula appropriately.
+        do k = 1,p_rdiscretisationMass%inumFESpaces
+          p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
+          p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
+        end do
+      end if
 
       ! Should we do mass lumping?
       call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
@@ -418,67 +420,93 @@ contains
   
   ! local variables
   integer(I32) :: ieltypeUV, ieltypeP
+  logical :: btriallowed, bquadallowed
+  
+    btriallowed  = .false.
+    bquadallowed = .false.
   
     ! Initialise the element type identifiers according to ielementType
     select case (ielementType)
     case (0)
       ieltypeUV = EL_E031
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (1)
       ieltypeUV = EL_E030
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (2)
       ieltypeUV = EL_EM31
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (3)
       ieltypeUV = EL_EM30
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (4)
       ieltypeUV = EL_Q2
       ieltypeP = EL_QP1
+      bquadallowed = .true.
                   
     case (5)
       ieltypeUV = EL_EM30_UNPIVOTED
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (6)
       ieltypeUV = EL_EM30_UNSCALED
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (7)
       ieltypeUV = EL_EM30_NEW
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (8)
       ieltypeUV = EL_EB30
       ieltypeP = EL_Q0
+      bquadallowed = .true.
 
     case (10)
       ieltypeUV = EL_EB50
       ieltypeP = EL_QP1
+      bquadallowed = .true.
 
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
+      bquadallowed = .true.
 
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
+      bquadallowed = .true.
 
     case (30)
       ieltypeUV = EL_P1T
       ieltypeP = EL_P0
+      btriallowed  = .true.
 
     case default
       call output_line (&
           'Unknown discretisation: iElementType = '//sys_siL(ielementType,10), &
-          OU_CLASS_ERROR,OU_MODE_STD,'cc_initDiscretisation')
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_getDiscretisation')
       call sys_halt()
     end select
+    
+    ! Check the mesh to ensure that the discretisation is compatible.
+    if ( ((rtriangulation%InelOfType(TRIA_NVETRI2D) .ne. 0) .and. .not. btriallowed) .or. &
+         ((rtriangulation%InelOfType(TRIA_NVEQUAD2D) .ne. 0) .and. .not. bquadallowed)) then
+      call output_line (&
+          "Discretisation does not support the current mesh!", &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_getDiscretisation')
+      call sys_halt()
+    end if
   
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies 3 blocks in the
@@ -500,8 +528,10 @@ contains
                 
     ! Manually set the cubature formula for the RHS as the above routine
     ! uses the same for matrix and vectors.
-    rdiscretisation%RspatialDiscr(1)% &
-      RelementDistr(1)%ccubTypeLinForm = icubF
+    if (icubF .ne. SPDISC_CUB_AUTOMATIC) then
+      rdiscretisation%RspatialDiscr(1)% &
+        RelementDistr(1)%ccubTypeLinForm = icubF
+    end if
                 
     ! ...and copy this structure also to the discretisation structure
     ! of the 2nd component (Y-velocity). This needs no additional memory, 

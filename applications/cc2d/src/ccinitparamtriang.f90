@@ -66,7 +66,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,ilvmin,ilvmax
+  integer :: i,ilvmin,ilvmax,iconvertToTriangleMesh
   
     ! Variable for a filename:  
     character(LEN=SYS_STRLEN) :: sString
@@ -99,12 +99,20 @@ contains
                                  'sMesh',sString)
     read (sString,*) sTRIFile
     
+    call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
+                              'iconvertToTriangleMesh',iconvertToTriangleMesh,0)
+    
     ! Read in the parametrisation of the boundary and save it to rboundary.
     call boundary_read_prm(rproblem%rboundary, sPrmFile)
         
     ! Now read in the basic triangulation.
     call tria_readTriFile2D (rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation, &
         sTRIFile, rproblem%rboundary)
+        
+    ! Probably we convert the mesh to a pure triangular mesh.
+    if (iconvertToTriangleMesh .ne. 0) then
+      call tria_rawGridToTri(rproblem%RlevelInfo(rproblem%NLMIN)%rtriangulation)
+    end if
 
     ! Refine the mesh up to the minimum level
     call tria_quickRefine2LevelOrdering(rproblem%NLMIN-1,&
