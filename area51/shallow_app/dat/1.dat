@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 3
+nlmax = 2
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
@@ -127,7 +127,8 @@ gravconst = 9.81
 hstart  = 3
 hustart = 0
 hvstart = 0
-bottom  = if(x<5,0,0.5)
+bottom = if(x<5,0,0.5)
+#bottom  = if(x<1,0.1,if(x>9,0.9,0.1*x))
 absrel  = 0
 # 0 = absolute height value
 # 1 = relative height value
@@ -145,7 +146,7 @@ addbottomtoout = 1
 # Create files for video?
 # 0: No
 # 1: Yes
-makevideo = 0
+makevideo = 1
 
 # Make gmv snapshot every ... seconds (must be n*dt)
 videotimestep = 0.01
