@@ -7,20 +7,23 @@ module shallowwater2d_routines
   use linearsystemscalar
   use linearsystemblock
   use boundary
+  use shallowwater2d_callback
+  use collection
+  use linearformevaluation
 
   implicit none
   
-  integer :: scalardisstype = 1
-  ! 1 = my
-  ! 2 = rosanov
 
   type t_array
      ! Pointer to the double-valued matrix or vector data
      real(DP), dimension(:), pointer :: Da
   end type t_array
 
-
-  integer, parameter				:: nvar2d = 3
+integer, parameter :: scalardisstype = 1
+  ! integer, parameter				:: nvar2d = 3
+  
+  
+  integer, parameter :: deltabtype = 0
   
   ! Unity matrix
   real(DP), dimension(3,3) :: Eye = reshape((/1,0,0,0,1,0,0,0,1/),(/3,3/))
@@ -205,7 +208,7 @@ contains
         uRoe = Q(2)/Q(1) 
         vRoe = Q(3)/Q(1)
         lambda = sqrt((cxij/scalefactor*uRoe)**2.0_DP+(cyij/scalefactor*vRoe)**2.0_DP)+cRoe
-        scalarDissipation = scalefactor*lambda*2.0_dp
+        scalarDissipation = scalefactor*lambda
 
         Dij=scalarDissipation*Eye
 
@@ -801,14 +804,17 @@ contains
        deltaDj = -deltaDi
 
        ! Now we take care of the bottom profile
-       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-       
-!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-!        
-!        DeltaBi = 0.0_dp
-!        DeltaBj = 0.0_dp
+       select case (deltabtype)
+        case(0)
+          DeltaBi = 0.0_dp
+          DeltaBj = 0.0_dp
+        case(1)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+        case(2)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+        end select
 
        ! add deltaK, deltaD and deltaB to rhs
        ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
@@ -1165,16 +1171,17 @@ contains
        deltaDj = -deltaDi
        
        ! Now we take care of the bottom profile
-       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-       
-              
-!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-! 
-!        
-!        DeltaBi = 0.0_dp
-!        DeltaBj = 0.0_dp
+       select case (deltabtype)
+        case(0)
+          DeltaBi = 0.0_dp
+          DeltaBj = 0.0_dp
+        case(1)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+        case(2)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+        end select
        
        ! add deltaK, deltaD and deltaB to rstemp
        ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u - theta*dt*B
@@ -2552,16 +2559,17 @@ end if !dry or wet bed
        deltaDj = -deltaDi
 
        ! Now we take care of the bottom profile
-       DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-       DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-       
-              
-!        DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-!        DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-!        
-!               
-!        DeltaBi = 0.0_dp
-!        DeltaBj = 0.0_dp
+       select case (deltabtype)
+        case(0)
+          DeltaBi = 0.0_dp
+          DeltaBj = 0.0_dp
+        case(1)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+        case(2)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+        end select
 
        ! add deltaK and deltaD to SolDot
        ! SolDot = SolDot + 1/ML*(K*u + D*u + Sourceterm(B))
@@ -2833,26 +2841,21 @@ end if !dry or wet bed
   
   
   ! This routine can be used to add the bottom term to the rhs or the defect vector
-  subroutine addBottomTermToVec(rarraySol, rarrayVec, coefficient, gravconst,&
-                                neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
+  subroutine addBottomTermToVec(rSolBlock,rVecBlock,rsourceBlock,rbottomBlock, &
+                                Rcollection,coefficient,gravconst)
   
   ! Solution
-  type(t_array), dimension(nvar2d), intent(in) :: rarraySol
+  type(t_vectorBlock), intent(in), target :: rSolBlock
   
   ! Vector that is to be changed, i.e. rhs or defect
-  type(t_array), dimension(nvar2d), intent(inout) :: rarrayVec
+  type(t_vectorBlock), intent(inout) :: rVecBlock
   
-  ! number of equations
-  integer, intent(in) :: neq
+  type(t_vectorBlock), intent(inout) :: rsourceBlock
   
-  ! Pointer to the convection operator data
-  real(dp), dimension(:), pointer, intent(in) :: p_CXdata, p_CYdata
+  type(t_vectorBlock), intent(in), target :: rbottomBlock
   
-  ! Pointer to the matrix structure data
-  integer, dimension(:), pointer :: p_kld, p_kcol
-  
-  ! Pointer to the bottom heigth
-  real(dp), dimension(:), pointer :: p_bottom
+  ! The collection to give data to the callback routine
+  type(t_collection), intent(inout) :: Rcollection
   
   ! The coefficient before the source term, i.e. theta*dt
   real(dp), intent(in) :: coefficient
@@ -2860,33 +2863,68 @@ end if !dry or wet bed
   ! The gravitation constant
   real(dp), intent(in) :: gravconst
   
-  integer :: i,j,ivar,l
   
-  real(dp) ,dimension(3) :: Qi, Qj, S_i
   
-      ! Add bottom term
-    do i = 1, neq
+  !! Local variables
 
-      Qi = (/rarraySol(1)%Da(i),rarraySol(2)%Da(i),rarraySol(3)%Da(i)/)
-      S_i = 0
+  ! The linear form describing the source term
+    type(t_linearForm) :: rform
+  
+  ! New try :-) Integration of \int \phi_i S(Q(x)) dx
+  ! While S(Q(X)) = (0, -g h b_x, -g h b_y)
+  ! \int \phi_i S(Q(x)) dx = \int -g (0, \phi_i_x b h, \phi_i_y b h) dx
+  
+  
+  ! Build second component of the source term
+  
+  
+  ! Set up the corresponding linear form
+  rform%itermCount      = 1
+  rform%Idescriptors(1) = DER_FUNC
+  
+  ! Hang into the collection the pointer to the solution vector
+  Rcollection%p_rvectorQuickAccess1 => rsolBlock
+  
+  ! Hang into the collection the pointer to the bottom vector
+  Rcollection%p_rvectorQuickAccess2 => rbottomBlock
+  
+  ! Derivate the bottom profile in direction ...
+  Rcollection%IquickAccess(1) = DER_DERIV_X
+  
+  
+  ! Build the discretized target functional.
+  call linf_buildVectorScalar2(rform, .true., rsourceBlock&
+       %RvectorBlock(2), shlw_SourceTermCB, rcollection)
+  
+  
+  ! Build third component of the source term
+  
+  
+! Set up the corresponding linear form
+  rform%itermCount      = 1
+  rform%Idescriptors(1) = DER_FUNC
+  
+  ! Hang into the collection the pointer to the solution vector
+  Rcollection%p_rvectorQuickAccess1 => rsolBlock
+  
+  ! Hang into the collection the pointer to the bottom vector
+  Rcollection%p_rvectorQuickAccess2 => rbottomBlock
+  
+    ! Derivate the bottom profile in direction ...
+  Rcollection%IquickAccess(1) = DER_DERIV_Y
+  
+  
+  ! Build the discretized target functional.
+  call linf_buildVectorScalar2(rform, .true., rsourceBlock&
+       %RvectorBlock(3), shlw_SourceTermCB, rcollection)
 
-      do ivar = p_kld(i), p_kld(i+1)-1
 
-        j    = p_kcol(ivar)
-        Qj   = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
 
-        S_i(2) = S_i(2) - gravconst* p_CXdata(ivar)*p_bottom(j)*(Qj(1))
-        S_i(3) = S_i(3) - gravconst* p_CYdata(ivar)*p_bottom(j)*(Qj(1))
+  ! Add the calculated sourceterm to rhs/defect
+  call lsysbl_vectorLinearComb (rsourceBlock,rVecBlock,-gravconst*coefficient,1.0_DP)
 
-      end do ! ivar
-      
-      do l = 1, nvar2d
-          rarrayVec(l)%Da(i) = rarrayVec(l)%Da(i) + coefficient*S_i(l)
-      end do
-      
-    end do !i
-    
-    end subroutine
+
+  end subroutine
 
 
 end module shallowwater2d_routines

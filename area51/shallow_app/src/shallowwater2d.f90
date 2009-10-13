@@ -107,12 +107,15 @@ contains
 
     ! Array with pointers to the datas of the different components of the
     ! rhs, sol, temp, soldot, and defect
-    type(t_array), dimension(nvar2d)    :: rarrayRhs, rarraySol, rarrayRstemp, rarraySolDot, rarrayDef
+    type(t_array), dimension(nvar2d)    :: rarrayRhs, rarraySol, rarrayRstemp, rarraySolDot, rarrayDef, rarraySource
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlockP
-    type(t_vectorBlock) :: rrhsBlock, rsolBlock, rdefBlock, rstempBlock, rsolDotBlock
+    type(t_vectorBlock), target :: rrhsBlock, rsolBlock, rdefBlock, rstempBlock, rsolDotBlock, rsourceBlock, rBottomBlock
+    
+    ! Scalar vector to describe the bottom profile
+    type(t_vectorScalar), target :: rvectorbottom
 
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
@@ -120,6 +123,9 @@ contains
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
     type(t_matrixBlock), dimension(1) :: Rmatrices
+
+    ! The collection to give data to the callback routine
+    type(t_collection) :: Rcollection
 
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
@@ -151,7 +157,8 @@ contains
     integer, dimension(:), pointer     :: p_Ksep
     integer, dimension(:,:), pointer   :: p_Kedge
     real(dp), dimension(:), pointer	   :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
-    real(dp), dimension(:), pointer    :: p_BXdata, p_BYdata, P_Bottom
+    real(dp), dimension(:), pointer    :: p_BXdata, p_BYdata, p_Bottom
+    real(dp), dimension(:), pointer    :: p_bottomvector
 
     ! Size of the 2D-array Kedge
     integer, dimension(2)              :: iSize
@@ -232,11 +239,11 @@ contains
     ! 0 = no, 1 = yes
     integer :: alwaysupdatepreconditioner
 
-    ! String to read info from ini file
-    character (LEN=100) :: sstring
+    ! String to read info from ini file and the string of the function of the bottom profile
+    character (LEN=200) :: sstring, sbottomstring
     
     ! Name of output file
-    character (LEN=100) :: ofile
+    character (LEN=200) :: ofile
 
     ! The kind of used FE
     integer :: FEkind
@@ -272,8 +279,11 @@ contains
     ! Is the initial value given by absolute or relative value
     integer :: absrel
     
-    ! Add bottom profile to putput of h?
+    ! Add bottom profile to output of h?
     integer :: addbottomtoout
+    
+    ! Command line and name of the paramater file
+    character(LEN=SYS_STRLEN) :: cbuffer, sparameterfileName
 
     ! Function parser
     type(t_fparser) :: rfparser
@@ -285,13 +295,24 @@ contains
 
     ! Time measurement
     call cpu_time(dtime1)
-
-
+    
+    
+    ! Get command line arguments and extract name of parameter file
+    if (command_argument_count() .eq. 0) then
+      call output_lbrk()
+      call output_line('Using standart parameterfile: ./dat/1.dat')
+      call output_lbrk()
+      sparameterfileName = './dat/1.dat'
+    else
+      call get_command_argument(command_argument_count(), cbuffer)
+      sparameterfileName = adjustl(cbuffer)
+    end if
+  
 
     ! Initialise some values
     ! Read parameter file
     call parlst_init(rparlist)
-    call parlst_readFromFile(rparlist,'./dat/1.dat')
+    call parlst_readFromFile(rparlist,sparameterfileName)
 
     ! We want to solve our problem on level... Default=1
     call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)
@@ -411,6 +432,16 @@ contains
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
          celement,SPDISC_CUB_AUTOMATIC, rtriangulation, &
          rboundary)
+
+    ! Create bottom vector
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1), &
+                                  rvectorbottom,.true.,st_double)
+
+    ! and get the pointer to this vector
+    call lsyssc_getbase_double (rvectorbottom,p_bottomvector)
+    
+    ! and make it a blockvector
+    call lsysbl_createVecFromScalar (rvectorbottom,rbottomblock)
 
     ! Now copy this initialised block into the other ones
     ! But only create a derived copy, which shares the handles of the original one
@@ -604,7 +635,16 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolDotBlock,.true.,&
          ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsourceBlock,.true.,&
+         ST_DOUBLE)
 
+
+    ! Initialise the collection to later give the solution vector to the callback routine
+    ! that builds the source term and needs to evaluate the heigth field of the solution
+    call collct_init(Rcollection)
+
+    ! and hang in the pointer to the solution vector
+    Rcollection%p_rvectorQuickAccess1 => rsolBlock
 
 
     ! Get pointers to the components of P, rhs, sol, rstemp, rsolDotBlock
@@ -615,6 +655,7 @@ contains
        call lsyssc_getbase_double(rstempBlock%RvectorBlock(ivar), rarrayrstemp(ivar)%Da)	! Rstemp
        call lsyssc_getbase_double(rsolDotBlock%RvectorBlock(ivar), rarraysolDot(ivar)%Da)	! rsolDotBlock
        call lsyssc_getbase_double(rdefBlock%RvectorBlock(ivar), rarraydef(ivar)%Da)  ! Defect
+       call lsyssc_getbase_double(rSourceBlock%RvectorBlock(ivar), rarraySource(ivar)%Da)  ! Source
     end do
 
 
@@ -724,8 +765,8 @@ contains
     call fparser_parseFunction(rfparser, 3, trim(adjustl(sstring)), cvariables)
     
     ! Get function, that describes the bottom profile
-    call parlst_getvalue_string (rparlist, 'PROBLEM', 'bottom', sstring);
-    call fparser_parseFunction(rfparser, 4, trim(adjustl(sstring)), cvariables)
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'bottom', sbottomstring);
+    call fparser_parseFunction(rfparser, 4, trim(adjustl(sbottomstring)), cvariables)
 
     ! Fill in initialconditions for h, hu, hv and bottom
     do ieq = 1, rmatrixMC%neq
@@ -733,6 +774,7 @@ contains
        call fparser_evalFunction(rfparser, 2, p_DvertexCoords(:,ieq), rarraySol(2)%Da(ieq))
        call fparser_evalFunction(rfparser, 3, p_DvertexCoords(:,ieq), rarraySol(3)%Da(ieq))
        call fparser_evalFunction(rfparser, 4, p_DvertexCoords(:,ieq), p_bottom(ieq))
+       p_bottomvector(ieq) = p_bottom(ieq)
     end do
 
     ! Release the function parser
@@ -794,6 +836,13 @@ contains
        call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
        call ucd_addVariableVertexBased (rexport,'sol_vh',UCD_VAR_STANDARD, p_Ddata2)
        call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+       
+        call lsyssc_getbase_double (rsourceBlock%RvectorBlock(1),p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'Source_1',UCD_VAR_STANDARD, p_Ddata)
+        call lsyssc_getbase_double (rsourceBlock%RvectorBlock(2),p_Ddata1)
+        call ucd_addVariableVertexBased (rexport,'Source_2',UCD_VAR_STANDARD, p_Ddata1)
+        call lsyssc_getbase_double (rsourceBlock%RvectorBlock(3),p_Ddata2)
+        call ucd_addVariableVertexBased (rexport,'Source_3',UCD_VAR_STANDARD, p_Ddata2)
 
        ! Write the file to disc
        call ucd_write (rexport)
@@ -868,8 +917,9 @@ contains
             p_Kdiagonal, p_Kedge, NEQ, nedge, &
             theta, dt, gravconst, Method, limiter)
 
-       !call addBottomTermToVec(rarraySol, rarrayRhs, (1-theta)*dt, gravconst,&
-       !                         neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
+
+       call addBottomTermToVec(rSolBlock,rRhsBlock,rsourceBlock,rbottomBlock, &
+                                Rcollection,(1-theta)*dt,gravconst)
 
 
        ! Here starts the defect correction loop
@@ -891,9 +941,9 @@ contains
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                theta, dt, gravconst, Method, limiter)
-               
-          !call addBottomTermToVec(rarraySol, rarrayDef, -theta*dt, gravconst,&
-          !                      neq, p_bottom, p_CXdata, p_CYdata, p_kld, p_kcol)
+
+          call addBottomTermToVec(rSolBlock,rDefBlock,rsourceBlock,rbottomBlock, &
+                                  Rcollection,-theta*dt,gravconst)
 
           ! Take care of Boundary Conditions
           call ImplementShallowWaterBCs (&
@@ -1019,7 +1069,7 @@ contains
 
        ! As we now have a simple dry bed handling, we clip all height variables
        ! smaller than 1e-6
-       call ClipHeight (rarraySol, neq)
+       !call ClipHeight (rarraySol, neq)
        
 !       ! Add Sourceterm explicitely
 !       call AddExplicitSourceTerm(rarraySol,dt,neq,rtriangulation%h_DvertexCoords,gravconst)
@@ -1054,6 +1104,13 @@ contains
           call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
           call ucd_addVariableVertexBased (rexport,'sol_vh',UCD_VAR_STANDARD, p_Ddata2)
           call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+          
+          call lsyssc_getbase_double (rsourceBlock%RvectorBlock(1),p_Ddata)
+          call ucd_addVariableVertexBased (rexport,'Source_1',UCD_VAR_STANDARD, p_Ddata)
+          call lsyssc_getbase_double (rsourceBlock%RvectorBlock(2),p_Ddata1)
+          call ucd_addVariableVertexBased (rexport,'Source_2',UCD_VAR_STANDARD, p_Ddata1)
+          call lsyssc_getbase_double (rsourceBlock%RvectorBlock(3),p_Ddata2)
+          call ucd_addVariableVertexBased (rexport,'Source_3',UCD_VAR_STANDARD, p_Ddata2)
 
           ! Write the file to disc, that's it.
           call ucd_write (rexport)
@@ -1082,6 +1139,9 @@ contains
 
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
+
+    ! Release the collection
+    call collct_done(Rcollection)
 
 
 
@@ -1115,6 +1175,14 @@ contains
     call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
     call ucd_addVariableVertexBased (rexport,'sol_vh',UCD_VAR_STANDARD, p_Ddata2)
     call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+    
+    call lsyssc_getbase_double (rsourceBlock%RvectorBlock(1),p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'Source_1',UCD_VAR_STANDARD, p_Ddata)
+    call lsyssc_getbase_double (rsourceBlock%RvectorBlock(2),p_Ddata1)
+    call ucd_addVariableVertexBased (rexport,'Source_2',UCD_VAR_STANDARD, p_Ddata1)
+    call lsyssc_getbase_double (rsourceBlock%RvectorBlock(3),p_Ddata2)
+    call ucd_addVariableVertexBased (rexport,'Source_3',UCD_VAR_STANDARD, p_Ddata2)
+
 
     ! Write the file to disc, that's it.
     call ucd_write (rexport)
@@ -1135,7 +1203,10 @@ contains
     call lsysbl_releaseVector (rsolDotBlock)
     call lsysbl_releaseVector (rdefBlock)
     call lsysbl_releaseVector (rrhsBlock)
+    call lsysbl_releaseVector (rsourceblock)
+    call lsysbl_releaseVector (rbottomblock)
     call lsysbl_releaseMatrix (rmatrixBlockP)
+    
 
     ! Release the scalar matrix/rhs vector which were used to create
     ! the block matrices/vectors. These must exist as long as the
@@ -1152,6 +1223,7 @@ contains
     call lsyssc_releaseMatrix (rmatrixBY)
     call lsyssc_releaseMatrix (rmatrixMC)
     call lsyssc_releaseMatrix (rmatrixML)
+    call lsyssc_releaseVector (rvectorbottom)
 
     ! Release the memory associated to the parameter file
     call parlst_done (rparlist)
