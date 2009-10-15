@@ -545,8 +545,8 @@ H1-error: 2.6788335907E-01
 
 Calculating Poisson-3D-Problem with method 1 - EM30
 ---------------------------------------------------
-UMFPACK: !!Initial RES!! = 7.347758326273983E-03
-UMFPACK: !!solution!!    = 3.719143328884604E-01 Status = 0
+UMFPACK: !!Initial RES!! = 7.347758326273162E-03
+UMFPACK: !!solution!!    = 3.719143328884117E-01 Status = 0
 L2-error: 1.0895696482E-02
 H1-error: 4.2596145537E-01
 
