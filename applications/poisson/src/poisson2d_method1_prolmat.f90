@@ -476,7 +476,7 @@ contains
 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,&
-        Rlevels(NLMAX)%rtriangulation,TRIM(sucddir)//'/u2d_1_prolmat.gmv')
+        Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_prolmat.gmv')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

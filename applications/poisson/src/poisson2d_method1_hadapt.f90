@@ -401,7 +401,7 @@ contains
       if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
       ! Start UCD export to GMV file:
-      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,TRIM(sucddir)//'/error8.'//&
+      call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,trim(sucddir)//'/error8.'//&
           trim(sys_siL(rhadapt%nRefinementSteps,3))//'.gmv')
       call ucd_addVariableElementBased (rexport,'error',UCD_VAR_STANDARD, p_Ddata)
       call ucd_write (rexport)
@@ -463,7 +463,7 @@ contains
 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       TRIM(sucddir)//'/u2d_1_hadapt.gmv')
+                       trim(sucddir)//'/u2d_1_hadapt.gmv')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

@@ -339,7 +339,7 @@ contains
 
     ! Start UCD export to GMV file:
     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       TRIM(sucddir)//'/u2d_0_simple.gmv')
+                       trim(sucddir)//'/u2d_0_simple.gmv')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)

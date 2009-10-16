@@ -425,8 +425,8 @@ contains
 
       !    u(x,y,z) = SIN(PI * x) * SIN(PI * y) * SIN(PI * z)
       ! => f(x,y,z) = 3 * PI^2 * SIN(PI * x) * SIN(PI * y) * SIN(PI * z)
-      Dcoefficients(1,:,:) = 3.0_DP * SYS_PI**2 * SIN(SYS_PI*Dpoints(1,:,:))*&
-                       SIN(SYS_PI*Dpoints(2,:,:))*SIN(SYS_PI*Dpoints(3,:,:))
+      Dcoefficients(1,:,:) = 3.0_DP * SYS_PI**2 * sin(SYS_PI*Dpoints(1,:,:))*&
+                       sin(SYS_PI*Dpoints(2,:,:))*sin(SYS_PI*Dpoints(3,:,:))
 
   end subroutine
 
