@@ -1137,8 +1137,8 @@ contains
     ! We use the default initialisation of rfictBoundaryRegion and only
     ! change the name of the component.
     Iequations = (/1,2/)    ! 1=x, 2=y-velocity
-    ! CALL bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
-    !     rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
+    call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,&
+        rdynamicLevelInfo%rdiscreteFBC,getBoundaryValuesFBC,rcollection)
 
   end subroutine  
 
