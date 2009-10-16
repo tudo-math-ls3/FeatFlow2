@@ -3378,7 +3378,8 @@ contains
           
           ! -----
           ! Q1~, all implementations
-          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T) then
+          if (elem_getPrimaryElement(p_relementDist%celement) .eq. EL_Q1T .or.&
+              elem_getPrimaryElement(p_relementDist%celement) .eq. EL_P1T) then
 
             bok = .true.
 
