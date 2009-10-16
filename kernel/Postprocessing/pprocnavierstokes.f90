@@ -2949,7 +2949,7 @@ contains
       rvector%p_rblockDiscr%RspatialDiscr(3)%RelementDistr(icurrentElementDistr)
     
       ! Cancel if this element distribution is empty.
-      if (p_relementDistributionU%NEL .EQ. 0) cycle
+      if (p_relementDistributionU%NEL .eq. 0) cycle
 
       ! Get the number of local DOF's for trial functions
       indofTrial = elem_igetNDofLoc(p_relementDistributionU%celement)
@@ -2959,7 +2959,7 @@ contains
       ! Get the number of corner vertices of the element
       NVE = elem_igetNVE(p_relementDistributionU%celement)
       
-      if (NVE .NE. elem_igetNVE(p_relementDistributionA%celement)) then
+      if (NVE .ne. elem_igetNVE(p_relementDistributionA%celement)) then
         call output_line ('Element spaces incompatible!', &
                           OU_CLASS_ERROR,OU_MODE_STD, 'ppns2D_bdforces_vol')
         call sys_halt()
@@ -3025,7 +3025,7 @@ contains
       DintP = 0.0_DP
           
       ! Prepare the call to the evaluation routine of the analytic function.    
-      CALL elprep_init(revalElementSet)    
+      call elprep_init(revalElementSet)    
   
       ! Loop over the elements - blockwise.
       do IELset = 1, NEL, PPNS_NELEMSIM
@@ -3153,7 +3153,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1, ncubp
               
-              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
+              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
               
               ! get the pressure
               dpp  = Dcoefficients(icubp,iel,1)
@@ -3207,7 +3207,7 @@ contains
             ! Loop over all cubature points on the current element
             do icubp = 1, ncubp
               
-              OM = Domega(ICUBP)*ABS(p_Ddetj(ICUBP,IEL))
+              OM = Domega(ICUBP)*abs(p_Ddetj(ICUBP,IEL))
               
               ! get the pressure
               dpp  = Dcoefficients(icubp,iel,1)
