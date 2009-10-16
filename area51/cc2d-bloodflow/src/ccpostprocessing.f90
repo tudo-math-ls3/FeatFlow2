@@ -902,8 +902,10 @@ contains
         
       ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
                 RelementDistr(1)%celement
-                
-      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
+
+      select case (elem_getPrimaryElement(ieltype))
+
+      case (EL_Q1T, EL_P1T)
       
         ! Create a temporary vector 
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
@@ -926,7 +928,7 @@ contains
             
         call lsyssc_releaseVector (rtempVector)
       
-      end if
+      end select
       
     end if    
     
@@ -1177,7 +1179,7 @@ contains
     ! Then take our original solution vector and convert it according to the
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
-    
+
     if (present(dtime)) then
       ! Only for the postprocessing, switch to time dtime.
       dtimebackup = rproblem%rtimedependence%dtime
@@ -1330,7 +1332,7 @@ contains
       end if
       
     end if
-    
+   
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
