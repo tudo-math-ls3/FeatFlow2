@@ -259,11 +259,11 @@ module ccnonlinearcore
     
     ! Pointer to linear solver node if a linear solver is the preconditioner.
     ! (Thus, this applies for the defect correction and the Newton preconditioner).
-    type(t_linsolNode), pointer :: p_rsolverNode => NULL()
+    type(t_linsolNode), pointer :: p_rsolverNode => null()
 
     ! If the linerar solver contains a multigrid preconditioner, this is a pointer
     ! to the coarse grid solver. Otherwise, the pointer is not associated.
-    type(t_linsolNode), pointer :: p_rcgrSolver => NULL()
+    type(t_linsolNode), pointer :: p_rcgrSolver => null()
     
     ! Configuration block for the adaptive Newton preconditioner.
     ! Is only valid if ctypePreconditioning=CCPREC_NEWTONDYNAMIC!
@@ -271,11 +271,11 @@ module ccnonlinearcore
 
     ! Temporary scalar vector; used for calculating the nonlinear matrix
     ! on lower levels / projecting the solution from higher to lower levels.
-    type(t_vectorScalar), pointer :: p_rtempVectorSc => NULL()
+    type(t_vectorScalar), pointer :: p_rtempVectorSc => null()
 
     ! Temporary scalar vector; used for calculating the optimal damping
     ! parameter.
-    type(t_vectorScalar), pointer :: p_rtempVectorSc2 => NULL()
+    type(t_vectorScalar), pointer :: p_rtempVectorSc2 => null()
 
   end type
 
@@ -380,7 +380,7 @@ module ccnonlinearcore
     type(t_matrixBlock), pointer :: p_rmatrixPreconditioner => null()
   
     ! An interlevel projection structure for changing levels
-    type(t_interlevelProjectionBlock), pointer :: p_rprojection => NULL()
+    type(t_interlevelProjectionBlock), pointer :: p_rprojection => null()
 
   end type
 
@@ -1147,7 +1147,7 @@ contains
             
             if (bassembleNewton) then
               p_rsolverNode%depsAbs = &
-                  MIN(dtempDef**p_rnewton%dinexactNewtonExponent, &
+                  min(dtempDef**p_rnewton%dinexactNewtonExponent, &
                       p_rnewton%dinexactNewtonEpsRel*dtempdef) * dresInit
             else      
               p_rsolverNode%depsAbs = p_rnewton%dinexactNewtonEpsRel*dtempdef*dresInit
