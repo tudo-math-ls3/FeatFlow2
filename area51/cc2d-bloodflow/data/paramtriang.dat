@@ -9,7 +9,10 @@
 [PARAMTRIANG]
 
 # Filename of the parametrisation of the domain
-sParametrisation = '%{spredirectory}/bench3.prm'
+sParametrisation = '%{spredirectory}/circle.prm'
 
 # Filename of the coarse grid mesh
-sMesh = '%{spredirectory}/bench3.tri'
+sMesh = '%{spredirectory}/circle.tri'
+
+# Whether to convert the mesh into a pure triangular mesh or not
+iconvertToTriangleMesh = 1

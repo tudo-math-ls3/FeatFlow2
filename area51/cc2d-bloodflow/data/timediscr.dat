@@ -12,7 +12,7 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 1                       # ISTAT
+itimedependence = 0                       # ISTAT
 
 # ----------------------------------------------------------------------
 
@@ -28,28 +28,28 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 0.01                           # TIMEMX
+dtimeMax = 1.0                           # TIMEMX
 
 # Initial time step size
 
-dtimeStep = 0.01                          # DTSTEP
+dtimeStep = 0.1                           # DTSTEP
 
 # Lower limit for the time derivative to be treated as zero. (EPSNS)
 # Simulation stops if time derivative drops below this value.
 
-dminTimeDerivative = 0.0                  # EPSNS
+dminTimeDerivative = 0.00001              # EPSNS
 
 # ----------------------------------------------------------------------
 
 # Time-stepping scheme (IFRSTP);
 # 0=one step scheme, 1=fractional step
 
-itimeStepScheme = 1                       # IFRSTP
+itimeStepScheme = 0                       # IFRSTP
 
 # parameter for one step scheme (THETA) if itimeStepScheme=0;
 # =0:Forward Euler(instable), =1: Backward Euler, =0.5: Crank-Nicolson
 
-dtimeStepTheta = 0.5                      # THETA
+dtimeStepTheta = 1.0                      # THETA
 
 # ----------------------------------------------------------------------
 

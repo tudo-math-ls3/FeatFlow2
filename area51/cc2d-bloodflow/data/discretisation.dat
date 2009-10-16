@@ -98,7 +98,7 @@ NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 5
+NLMAX              = 3
 
 # ------------------------------------------------------------------------
 
@@ -137,7 +137,7 @@ RE                 = 1000
 # 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
 #   in every timestep of the simulation
 
-iRHS               = 0
+iRHS               = 2
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
@@ -233,32 +233,33 @@ iMassLumpType      = 0
 # =0: Create gradient matrix by weak derivative integral (standard, div=B^T)
 # =1: Create gradient matrix by strong derivative integral (div!=B^T).
 #     Only possible for non-constant pressure functions (e.g. Q2/QP1 discretisation)
+
 istrongDerivativeBmatrix = 0
 
-# cubature formula for Mass matrix
+# cubature formula for Mass matrix. 
+# ="": use default cubature formula.
 
-#scubMass           = G4X4
-scubMass           = G3_T
+scubMass           = 
 
-# cubature formula for Stokes/Laplacian matrix
+# cubature formula for Stokes/Laplacian matrix.
+# ="": use default cubature formula.
 
-#scubStokes         = G4X4
-scubStokes         = G3_T
+scubStokes         = 
 
-# cubature formula for Pressure matrices B
+# cubature formula for Pressure matrices B.
+# ="": use default cubature formula.
 
-#scubB              = G4X4
-scubB              = G3_T
+scubB              = 
 
+# cubature formula for RHS F.
+# ="": use default cubature formula.
 
-# cubature formula for RHS F
+scubF              = 
 
-#scubF              = G4X4
-scubF              = G3_T
+# cubature formula for the EOJ stabilisation (1D along edges).
+# ="": use default cubature formula.
 
-# cubature formula for the EOJ stabilisation (1D along edges)
-
-scubEOJ            = G4_1D
+scubEOJ            = 
 
 # ------------------------------------------------------------------------
 # Parameters to configure matrix generation on multiple levels.

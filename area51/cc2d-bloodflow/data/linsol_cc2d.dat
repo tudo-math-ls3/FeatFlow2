@@ -52,7 +52,7 @@ ssolverSection = 'CC-MULTIGRIDSOLVER'
 # = 201: SP-SOR, full version
 # = 202: SP-SOR, diagonal version
 
-ismootherType = 0 # was 3
+ismootherType = 3
 
 # Name of the section in this file which configures the smoother.
 
