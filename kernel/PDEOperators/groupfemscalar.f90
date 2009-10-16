@@ -286,8 +286,9 @@ contains
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
-    case (AFCSTAB_FEMFCT,&
-          AFCSTAB_FEMFCT_CLASSICAL,&
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_IMPLICIT,&
+          AFCSTAB_FEMFCT_ITERATIVE,&
           AFCSTAB_FEMGP,&
           AFCSTAB_FEMTVD)
       
@@ -2385,6 +2386,8 @@ contains
     !
     ! This subroutine provides different algorithms:
     !
+    ! Nonlinear FEM-FCT
+    ! ~~~~~~~~~~~~~~~~~
     ! 1. Semi-explicit FEM-FCT algorithm
     !
     !    This is the classical algorithm which makes use of Zalesak's
@@ -2396,7 +2399,18 @@ contains
     !    conservation laws", Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
-    ! 2. Semi-implicit FEM-FCT algorithm
+    ! 2. Iterative FEM-FCT algorithm
+    !
+    !    This is an extension of the classical algorithm which makes
+    !    use of Zalesak's flux limiter and tries to include the
+    !    amount of rejected antidiffusion in subsequent iteration
+    !    steps. The details of this method can be found in:
+    !
+    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
+    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    University of Dortmund, 2004.
+    !
+    ! 3. Semi-implicit FEM-FCT algorithm
     !
     !    This is the FCT algorithm that should be used by default. It
     !    is quite efficient since the nodal correction factors are
@@ -2410,6 +2424,9 @@ contains
     !    algorithm for efficient treatment of time-dependent
     !    problems", Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
+    !
+    ! Linearized FEM-FCT
+    ! ~~~~~~~~~~~~~~~~~~
     !
     ! 3. Linearized FEM-FCT algorithm
     !
@@ -2495,7 +2512,7 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_FEMFCT)
+    case (AFCSTAB_FEMFCT_IMPLICIT)
 
       ! Should we build up the initial residual?
       if (binit) then
@@ -2671,6 +2688,12 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       call sys_halt()
       
+
+    case (AFCSTAB_FEMFCT_ITERATIVE)
+      call output_line('The iterative FEM-FCT algorithm is not implemented yet!',&
+                       OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
+      call sys_halt()
+
 
     case DEFAULT
       call output_line('Invalid type of AFC stabilisation!',&
@@ -5744,7 +5767,7 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_FEMFCT)
+    case (AFCSTAB_FEMFCT_IMPLICIT)
       
       ! What kind of matrix are we?
       select case(rjacobianMatrix%cmatrixFormat)
@@ -7557,7 +7580,7 @@ contains
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
       
-    case (AFCSTAB_FEMFCT)
+    case (AFCSTAB_FEMFCT_IMPLICIT)
       
       ! What kind of matrix format are we?
       select case(rjacobianMatrix%cmatrixFormat)

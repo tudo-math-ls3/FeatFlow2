@@ -94,7 +94,7 @@ module afcstabilisation
   integer, parameter, public :: AFCSTAB_DMP               = 2
 
   ! Stabilisation of semi-implicit FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT            = 10
+  integer, parameter, public :: AFCSTAB_FEMFCT_IMPLICIT   = 10
 
   ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
   integer, parameter, public :: AFCSTAB_FEMFCT_CLASSICAL  = 11
@@ -102,48 +102,51 @@ module afcstabilisation
   ! Stabilisation of linearised FEM-FCT type for convection operators
   integer, parameter, public :: AFCSTAB_FEMFCT_LINEARIZED = 12
   
+  ! Stabilisation of iterative FEM-FCT type for convection operators
+  integer, parameter, public :: AFCSTAB_FEMFCT_ITERATIVE = 13
+  
   ! Stabilisation of FEM-TVD type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMTVD            = 20
+  integer, parameter, public :: AFCSTAB_FEMTVD           = 20
 
   ! Stabilisation of general purpose type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMGP             = 21
+  integer, parameter, public :: AFCSTAB_FEMGP            = 21
   
   ! Stabilisation of symmetric type for diffusion operators
-  integer, parameter, public :: AFCSTAB_SYMMETRIC         = 30
+  integer, parameter, public :: AFCSTAB_SYMMETRIC        = 30
   
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for state of stabilisation">
   
   ! Stabilisation is undefined
-  integer, parameter, public :: AFCSTAB_UNDEFINED         = 2**0
+  integer, parameter, public :: AFCSTAB_UNDEFINED        = 2**0
 
   ! Stabilisation has been initialised
-  integer, parameter, public :: AFCSTAB_INITIALISED       = 2**1
+  integer, parameter, public :: AFCSTAB_INITIALISED      = 2**1
 
   ! Edge-based structure generated: IverticesAtEdge
-  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE     = 2**2
+  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE    = 2**2
 
   ! Edge-based structure oriented: IverticesAtEdge
-  integer, parameter, public :: AFCSTAB_EDGEORIENTATION   = 2**3
+  integer, parameter, public :: AFCSTAB_EDGEORIENTATION  = 2**3
 
   ! Edge-based values computed from matrix: DcoefficientsAtEdge
-  integer, parameter, public :: AFCSTAB_EDGEVALUES        = 2**4
+  integer, parameter, public :: AFCSTAB_EDGEVALUES       = 2**4
 
   ! Nodal antidiffusion: PP,PM
-  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION     = 2**5
+  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION    = 2**5
 
   ! Nodal upper/lower bounds: QP,QM
-  integer, parameter, public :: AFCSTAB_BOUNDS            = 2**6
+  integer, parameter, public :: AFCSTAB_BOUNDS           = 2**6
   
   ! Nodal correction factors computed: RP,RM
-  integer, parameter, public :: AFCSTAB_LIMITER           = 2**7
+  integer, parameter, public :: AFCSTAB_LIMITER          = 2**7
 
   ! Antidiffusive fluxes precomputed
-  integer, parameter, public :: AFCSTAB_FLUXES            = 2**8
+  integer, parameter, public :: AFCSTAB_FLUXES           = 2**8
   
   ! Subdiagonal edge-based structure generated
-  integer, parameter, public :: AFCSTAB_OFFDIAGONALEDGES  = 2**9
+  integer, parameter, public :: AFCSTAB_OFFDIAGONALEDGES = 2**9
 !</constantblock>
 
 !</constants>
@@ -306,9 +309,10 @@ contains
       return   ! -> high-order Galerkin
       
     elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT)            .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARIZED) .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and. &
         (    istabilisation .ne. AFCSTAB_FEMTVD)            .and. &
         (    istabilisation .ne. AFCSTAB_FEMGP)             .and. &
         (    istabilisation .ne. AFCSTAB_DMP)               .and. &

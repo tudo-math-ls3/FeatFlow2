@@ -308,7 +308,8 @@ contains
       end do
       
 
-    case (AFCSTAB_FEMFCT,&
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_LINEARIZED)
 
       ! Handle for IverticesAtEdge
@@ -409,7 +410,8 @@ contains
       end do
 
 
-    case (AFCSTAB_FEMFCT,&
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_LINEARIZED)
 
       ! Handle for IverticesAtEdge
