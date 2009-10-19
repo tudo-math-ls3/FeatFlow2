@@ -1027,7 +1027,7 @@ contains
     if (rpostprocessing%rvectorVelY%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%rvectorVelY)
     if (rpostprocessing%rvectorPressure%NEQ .ne. 0) &
-      call lsyssc_releaseVector (rpostprocessing%rvectorPressure)
+      call lsyssc_releaseVector (rpostprocessing%rvectorPressure)  
     if (rpostprocessing%rvectorPressureCells%NEQ .ne. 0) &
       call lsyssc_releaseVector (rpostprocessing%rvectorPressureCells)
     if (rpostprocessing%rvectorStreamfunction%NEQ .ne. 0) &

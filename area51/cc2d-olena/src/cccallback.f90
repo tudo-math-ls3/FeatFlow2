@@ -1431,11 +1431,11 @@ contains
     
 
    
-     IF (cderivative .EQ. DER_FUNC) THEN
-      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(1./(Dpoints(1,:,:)+1.)) 
-     ELSE   
+!     IF (cderivative .EQ. DER_FUNC) THEN
+!      Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(1./(Dpoints(1,:,:)+1.)) 
+!     ELSE   
        Dvalues(:,:) = 1.0_DP
-    END IF
+!    end if
 
   end subroutine
 

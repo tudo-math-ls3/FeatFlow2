@@ -189,6 +189,7 @@ contains
     rnonlinearCCMatrix%dtheta = 1.0_DP   ! A velocity block
     rnonlinearCCMatrix%deta = 1.0_DP     ! A gradient block
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
+    rnonlinearCCMatrix%dthetaC = 1.0_DP  ! A concentration block
     rnonlinearCCMatrix%daconcentr = rproblem%daconcentr
     rnonlinearCCMatrix%dbconcentr = rproblem%dbconcentr
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
@@ -197,11 +198,13 @@ contains
     rnonlinearCCMatrix%p_rdiscretisation => rlevelInfo%rdiscretisation
     rnonlinearCCMatrix%p_rdiscretisationStabil => rlevelInfo%rdiscretisationStabil
     rnonlinearCCMatrix%p_rmatrixStokes => rlevelInfo%rmatrixStokes
+    rnonlinearCCMatrix%p_rmatrixStokesC => rlevelInfo%rmatrixStokesC
     rnonlinearCCMatrix%p_rmatrixB1 => rlevelInfo%rmatrixB1
     rnonlinearCCMatrix%p_rmatrixB2 => rlevelInfo%rmatrixB2
     rnonlinearCCMatrix%p_rmatrixD1 => rlevelInfo%rmatrixD1
     rnonlinearCCMatrix%p_rmatrixD2 => rlevelInfo%rmatrixD2
     rnonlinearCCMatrix%p_rmatrixMass => rlevelInfo%rmatrixMass
+    rnonlinearCCMatrix%p_rmatrixMassC => rlevelInfo%rmatrixMassC
     rnonlinearCCMatrix%p_rmatrixStabil => rlevelInfo%rmatrixStabil
 
     rnonlinearCCMatrix%p_rmatrixTemplateQ1 => rlevelInfo%rmatrixTemplateQ1
@@ -305,6 +308,9 @@ contains
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokes => &
         rproblem%RlevelInfo(ilevel)%rmatrixStokes
         
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixStokesC => &
+        rproblem%RlevelInfo(ilevel)%rmatrixStokesC
+          
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixB1 => &
         rproblem%RlevelInfo(ilevel)%rmatrixB1
         
@@ -323,6 +329,9 @@ contains
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMass => &
         rproblem%RlevelInfo(ilevel)%rmatrixMass
+        
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rmatrixMassC => &
+        rproblem%RlevelInfo(ilevel)%rmatrixMassC  
 
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
         rproblem%RlevelInfo(ilevel)%rtempVector

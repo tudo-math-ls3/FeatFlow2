@@ -157,13 +157,25 @@ module ccmatvecassembly
     ! core equation. =0.0 for stationary simulations.
     real(DP) :: dalpha = 0.0_DP
     
+    ! ALPHA-parameter that controls the weight of the mass matrix in the
+    ! concentration equation. =0.0 for stationary simulations.
+    real(DP) :: dalphaC = 0.0_DP
+    
     ! THETA-parameter that controls the weight of the Stokes matrix
     ! in the core equation. =1.0 for stationary simulations.
     real(DP) :: dtheta = 0.0_DP
     
+    ! THETA-parameter that controls the weight of the Stokes matrix
+    ! in the concentration equation. =1.0 for stationary simulations.
+    real(DP) :: dthetaC = 0.0_DP
+    
     ! GAMMA-parameter that controls the weight in front of the
     ! nonlinearity N(u). =1.0 for Navier-Stokes, =0.0 for Stokes equation.
     real(DP) :: dgamma = 0.0_DP
+    
+    ! GAMMA-parameter that controls the weight in front of the
+    ! nonlinearity N(u). =1.0 for Navier-Stokes, =0.0 for Stokes equation.
+    real(DP) :: dgammaC = 0.0_DP
 
     ! ETA-parameter that switch the B-term on/off in the matrix.
     real(DP) :: deta = 0.0_DP
@@ -195,6 +207,10 @@ module ccmatvecassembly
     ! 0.0 deactivates any stabilisation.
     real(DP) :: dupsam = 0.0_DP
     
+    ! Weight for the Newton matrix N*(u).
+    ! = 0.0 deactivates the Newton part.
+    real(DP) :: dnewtonC = 0.0_DP
+    
     ! MATRIX RESTRICTION: Parameter to activate matrix restriction.
     ! Can be used to generate parts of the matrices on coarse grids where the
     ! aspect ratio of the cells is large. Only applicable for $\tilde Q_1$
@@ -222,6 +238,9 @@ module ccmatvecassembly
 
     ! Pointer to Stokes matrix (=nu*Laplace). 
     type(t_matrixScalar), pointer :: p_rmatrixStokes => null()
+    
+    ! Pointer to Stokes matrix (=diffusion*Laplace). 
+    type(t_matrixScalar), pointer :: p_rmatrixStokesC => null()
 
     ! Pointer to a B1-matrix.
     type(t_matrixScalar), pointer :: p_rmatrixB1 => null()
@@ -242,6 +261,9 @@ module ccmatvecassembly
     ! Pointer to a Mass matrix.
     ! May point to NULL() during matrix creation.
     type(t_matrixScalar), pointer :: p_rmatrixMass => null()
+    
+    ! May point to NULL() during matrix creation.
+    type(t_matrixScalar), pointer :: p_rmatrixMassC => null()
     
     ! A template FEM matrix that defines the structure of the concentration
     ! matrix. 
@@ -403,10 +425,10 @@ contains
       
       !Assemble the concentration matrix
       !
-      CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,-1.0_DP)
+      CALL assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rvector,1.0_DP)
       
       call matio_writeMatrixHR (rmatrix%RmatrixBlock(4,4), 'bl44',&
-                                  .true., 0, 'mat44.txt', '(E20.5)')
+                                 .true., 0, 'mat44.txt', '(E20.5)')
       ! Assemble the gradient submatrices
       !          
       !    ( .    .    B1  ) 
@@ -444,13 +466,14 @@ contains
       rmatrix%RmatrixBlock(3,4)%dscaleFactor = rnonlinearCCMatrix%dbconcentr
       
       call matio_writeMatrixHR (rmatrix%RmatrixBlock(3,3), 'bl33',&
-                                  .true., 0, 'mat33', '(E20.5)')
+                                  .true., 0, 'mat33.txt', '(E20.5)')
   
   
       call matio_writeMatrixHR (rmatrix%RmatrixBlock(3,4), 'bl34',&
-                                  .true., 0, 'mat34', '(E20.5)')
+                                  .true., 0, 'mat34.txt', '(E20.5)')
 
-      
+      call matio_writeblockMatrixHR (rmatrix, 'blwhole',&
+                                  .true., 0, 'mat.txt', '(E20.5)')
       ! Matrix restriction
       ! ---------------------------------------------------
       !
@@ -501,7 +524,10 @@ contains
       ! A pointer to the system matrix and the RHS/solution vectors.
       type(t_matrixScalar), pointer :: p_rmatrixTemplateFEM
       
-      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1,p_rmatrixTemplatePMass,p_rmatrixTemplateCoupMass 
+      TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplateQ1,p_rmatrixTemplatePMass,p_rmatrixTemplateCoupMass
+      
+      TYPE(t_matrixScalar), POINTER :: p_rmatrixStokesC, p_matrixMassC
+      
       ! A pointer to the discretisation structure with the data.
       type(t_blockDiscretisation), pointer :: p_rdiscretisation
     
@@ -527,7 +553,14 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
         call sys_halt()
       end if
-      
+      p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixTemplateQ1
+          if (.not. associated(p_rmatrixTemplateQ1)) &
+            p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixStokesC
+          if (.not. associated(p_rmatrixTemplateQ1)) then
+            call output_line ('Cannot set up A(4,4) matrices in system matrix!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
+            call sys_halt()
+          end if      
  
       
       ! Initialise the block matrix with default values based on
@@ -582,9 +615,12 @@ contains
       call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(2,2),&
           p_rdiscretisation%RspatialDiscr(2))
 
-      p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixTemplateQ1
+!      p_rmatrixTemplateQ1 => rnonlinearCCMatrix%p_rmatrixTemplateQ1
       CALL lsyssc_duplicateMatrix (p_rmatrixTemplateQ1,&
                   rmatrix%RmatrixBlock(4,4),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+                  
+      call lsyssc_assignDiscrDirectMat (rmatrix%RmatrixBlock(4,4),&
+          p_rdiscretisation%RspatialDiscr(4))            
 
       ! A 'full tensor matrix' consists also of blocks A12 and A21.
       if (bfulltensor) then
@@ -1154,7 +1190,7 @@ contains
     end subroutine
       
       ! ***************************************************************************
-  SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,dvectorWeight)
+  SUBROUTINE assembleConcentrationBlock (rnonlinearCCMatrix,rmatrix,rvector,dvectorWeight)
         
     ! Assembles the concentration matrix in the block matrix rmatrix at position (4,4):
     !
@@ -1170,7 +1206,7 @@ contains
 
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
-    !TYPE(t_vectorScalar), OPTIONAL :: rconcentration
+    TYPE(t_vectorBlock), OPTIONAL :: rvector
     
     ! Weight for the velocity vector; standard = -1.
     REAL(DP), INTENT(IN), OPTIONAL :: dvectorWeight
@@ -1184,18 +1220,123 @@ contains
     REAL(DP) :: dvecWeight
     REAL(DP), DIMENSION(:), POINTER :: p_h_Da
    
-    IF  (.NOT. lsyssc_hasMatrixContent (rmatrix%rmatrixBlock(4,4))) THEN 
-      CALL lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)     
-    END IF
-    
-    !CALL lsyssc_initialiseIdentityMatrix (rmatrix%rmatrixBlock(4,4))
-    
-    CALL storage_new('assembleConcentrationBlock', 'rmatrix%rmatrixBlock(4,4)%h_DA', &
-          1, ST_DOUBLE, rmatrix%rmatrixBlock(4,4)%h_DA, ST_NEWBLOCK_ZERO)
+      ! Standard value for dvectorWeight is = -1.
+      dvecWeight = -1.0_DP
+      if (present(dvectorWeight)) dvecWeight = dvectorWeight
+      ! ---------------------------------------------------
+      ! Plug in the mass matrix?
+      if (rnonlinearCCMatrix%dalphaC .ne. 0.0_DP) then
+       
+        ! Allocate memory if necessary. Normally this should not be necessary...
+        if (.not. lsyssc_hasMatrixContent (rmatrix%rmatrixBlock(4,4))) then
+          call lsyssc_allocEmptyMatrix (rmatrix%rmatrixBlock(4,4),LSYSSC_SETM_UNDEFINED)
+        end if
+      
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rmatrixMassC, rnonlinearCCMatrix%dalphaC,&
+            rmatrix%RmatrixBlock(4,4),0.0_DP,&
+            rmatrix%RmatrixBlock(4,4),&
+            .false.,.false.,.true.,.true.)
+        call matio_writeMatrixHR (rmatrix%RmatrixBlock(4,4), 'bl44',&
+                                  .true., 0, 'mat44withstokes.txt', '(E20.5)')
+      else
+      
+        ! Otherwise, initialise the basic matrix with 0.0
+        call lsyssc_clearMatrix (rmatrix%RmatrixBlock(4,4))
+        
+      end if
+      
+      ! ---------------------------------------------------
+      ! Plug in the Stokes matrix?
+      if (rnonlinearCCMatrix%dthetaC .ne. 0.0_DP) then
+        call lsyssc_matrixLinearComb (&
+            rnonlinearCCMatrix%p_rmatrixStokesC     ,rnonlinearCCMatrix%dthetaC,&
+            rmatrix%RmatrixBlock(4,4),1.0_DP,&
+            rmatrix%RmatrixBlock(4,4),&
+            .false.,.false.,.true.,.true.)
+         call matio_writeMatrixHR (rmatrix%RmatrixBlock(4,4), 'bl44',&
+                                  .true., 0, 'mat44withmassandstokes.txt', '(E20.5)')   
+      end if
+      
+      ! ---------------------------------------------------
+      ! That was easy -- the adventure begins now... The nonlinearity!
+      if (rnonlinearCCMatrix%dgammaC .ne. 0.0_DP) then
+      
+        if (.not. present(rvector)) then
+          call output_line ('Velocity vector not present!', &
+                             OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
+          stop
+        end if
+      
+        select case (rnonlinearCCMatrix%iupwind)
+        case (CCMASM_STAB_STREAMLINEDIFF)
+          ! Streamline diffusion.
+
+          ! Set up the SD structure for the creation of the defect.
+          ! There's not much to do, only initialise the viscosity...
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
           
-      CALL storage_getbase_double(rmatrix%rmatrixBlock(4,4)%h_DA, p_h_Da)
-     p_h_Da(:) = 1.0_dp
-    
+          ! Set stabilisation parameter
+          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%dupsam
+          
+          ! Matrix weight for the nonlinearity
+          rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
+          
+          ! Weight for the Newton part; =0 deactivates Newton.
+          rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
+          
+          ! Call the SD method to calculate the nonlinearity.
+          call conv_streamlineDiffusion2d (&
+                              rvector, rvector, &
+                              dvecWeight, 0.0_DP,&
+                              rstreamlineDiffusion, CONV_MODMATRIX, &
+                              rmatrix%RmatrixBlock(4,4))
+
+          
+        case default
+          call output_line ('Don''t know how to set up nonlinearity!?!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'assembleVelocityBlocks')
+          call sys_halt()
+        
+        end select
+
+      else
+      
+        ! That's the Stokes-case. Jump stabilisation is possible...
+      
+        select case (rnonlinearCCMatrix%iupwind)
+        case (CCMASM_STAB_EDGEORIENTED)
+          ! Jump stabilisation.
+        
+          ! Set up the jump stabilisation structure.
+          ! There's not much to do, only initialise the viscosity...
+          rjumpStabil%dnu = rnonlinearCCMatrix%dnu
+          
+          ! Set stabilisation parameter
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rjumpStabil%dgammastar
+          
+          ! Matrix weight
+          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
+
+          ! Call the jump stabilisation technique to stabilise that stuff.   
+          ! We can assemble the jump part any time as it's independent of any
+          ! convective parts...
+          call conv_jumpStabilisation2d (&
+              rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(4,4),&
+              rdiscretisation=rnonlinearCCMatrix%p_rdiscretisationStabil%RspatialDiscr(4))
+
+       
+
+        
+
+        case default
+          ! No stabilisation
+        
+        end select
+      
+      end if ! gamma <> 0
+
     END SUBROUTINE  
     
     ! ***************************************************************************

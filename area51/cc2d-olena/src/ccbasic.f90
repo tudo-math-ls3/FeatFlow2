@@ -68,6 +68,9 @@ module ccbasic
     ! Stokes matrix for that specific level (=nu*Laplace)
     type(t_matrixScalar) :: rmatrixStokes
     
+    ! Stokes matrix for that specific level (=diffusion*Laplace)
+    type(t_matrixScalar) :: rmatrixStokesC
+    
     !for matrix TemplateQ1
     TYPE(t_matrixScalar) :: rmatrixTemplateQ1
     
@@ -104,6 +107,9 @@ module ccbasic
     
     ! Mass matrix for the velocity.
     type(t_matrixScalar) :: rmatrixMass
+    
+    ! Mass matrix for the concentration.
+    type(t_matrixScalar) :: rmatrixMassC
 
     ! Mass matrix for the pressure.
     type(t_matrixScalar) :: rmatrixMassPressure
@@ -111,6 +117,11 @@ module ccbasic
     ! A scalar discretisation structure that specifies how to generate 
     ! the mass matrix in the velocity FEM space.
     type(t_spatialDiscretisation) :: rdiscretisationMass
+    
+    ! A scalar discretisation structure that specifies how to generate 
+    ! the mass matrix in the concentration FEM space.
+    type(t_spatialDiscretisation) :: rdiscretisationMassC
+
 
     ! A scalar discretisation structure that specifies how to generate 
     ! the mass matrix in the pressure FEM space.

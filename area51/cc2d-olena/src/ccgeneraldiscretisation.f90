@@ -122,7 +122,8 @@ contains
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationMass
     type(t_spatialDiscretisation), pointer :: p_rdiscretisationMassPressure
-    
+    type(t_spatialDiscretisation), pointer :: p_rdiscretisationMassC
+
     ! Which discretisation is to use?
     ! Which cubature formula should be used?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -214,10 +215,13 @@ contains
           rproblem%RlevelInfo(i)%rdiscretisationMass,.true.)
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3), &
           rproblem%RlevelInfo(i)%rdiscretisationMassPressure,.true.)
-          
+      call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(4), &
+          rproblem%RlevelInfo(i)%rdiscretisationMassC,.true.)   
+    
       p_rdiscretisationMass => rproblem%RlevelInfo(i)%rdiscretisationMass
       p_rdiscretisationMassPressure => &
           rproblem%RlevelInfo(i)%rdiscretisationMassPressure
+      p_rdiscretisationMassC => rproblem%RlevelInfo(i)%rdiscretisationMassC
       
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'scubMass',sstr,'')
@@ -234,6 +238,8 @@ contains
       do k = 1,p_rdiscretisationMass%inumFESpaces
         p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
         p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
+        p_rdiscretisationMassC%RelementDistr(k)%ccubTypeBilForm = icubM
+
       end do
 
       ! Should we do mass lumping?
@@ -269,6 +275,7 @@ contains
             ! Set the cubature formula appropriately
             p_rdiscretisationMass%RelementDistr(k)%ccubTypeBilForm = icubM
             p_rdiscretisationMassPressure%RelementDistr(k)%ccubTypeBilForm = icubM
+            p_rdiscretisationMassC%RelementDistr(k)%ccubTypeBilForm = icubM
 
           end do
         
@@ -569,6 +576,7 @@ contains
       ! Release the mass matrix discretisation.
       call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMass)
       call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMassPressure)
+      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rdiscretisationMassC)
 
     end do
     
@@ -610,7 +618,7 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixTemplateFEM
     type(t_matrixScalar), pointer :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
     type(t_matrixScalar), pointer :: p_rmatrixTemplateFEMPressure
-    type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient,p_rmatrixTemplateQ1
+    type(t_matrixScalar), pointer :: p_rmatrixTemplateGradient,p_rmatrixTemplateQ1,p_rmatrixStokesC
     
     ! A pointer to the discretisation structure with the data.
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
@@ -719,6 +727,20 @@ contains
       ! Allocate memory for the entries; don't initialise the memory.
       call lsyssc_allocEmptyMatrix (p_rmatrixStokes,LSYSSC_SETM_UNDEFINED)
       
+      ! Get a pointer to the (scalar) Stokes matrix:
+      p_rmatrixStokesC => rproblem%RlevelInfo(i)%rmatrixStokesC
+      
+      ! Connect the Stokes matrix to the template FEM matrix such that they
+      ! use the same structure.
+      !
+      ! Don't create a content array yet, it will be created by 
+      ! the assembly routines later.
+      call lsyssc_duplicateMatrix (p_rmatrixTemplateQ1,&
+                  p_rmatrixStokesC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+      
+      ! Allocate memory for the entries; don't initialise the memory.
+      call lsyssc_allocEmptyMatrix (p_rmatrixStokesC,LSYSSC_SETM_UNDEFINED)
+      
       ! In the global system, there are two coupling matrices B1 and B2.
       ! Both have the structure of the template gradient matrix.
       ! So connect the two B-matrices to the template gradient matrix
@@ -825,7 +847,7 @@ contains
     integer :: j,istrongDerivativeBmatrix
 
     ! A pointer to the Stokes and mass matrix
-    type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixTemplateQ1
+    type(t_matrixScalar), pointer :: p_rmatrixStokes,p_rmatrixTemplateQ1,p_rmatrixStokesC
     
     ! A pointer to the PMass and masscoup matrix
     TYPE(t_matrixScalar), POINTER :: p_rmatrixTemplatePMass, p_rmatrixTemplateCoupMass
@@ -907,9 +929,9 @@ contains
     
     
     ! Get a pointer to the (scalar) concentration matrix:
-    p_rmatrixTemplateQ1=> rlevelInfo%rmatrixTemplateQ1
+    p_rmatrixStokesC=> rlevelInfo%rmatrixStokesC
     
-    call stdop_assembleLaplaceMatrix (p_rmatrixTemplateQ1,.true.,-0.0001_DP)
+    call stdop_assembleLaplaceMatrix (p_rmatrixStokesC,.true.,-0.0001_DP)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)
@@ -1019,6 +1041,7 @@ contains
     ! If there is an existing mass matrix, release it.
     call lsyssc_releaseMatrix (rlevelInfo%rmatrixMass)
     call lsyssc_releaseMatrix (rlevelInfo%rmatrixMassPressure)
+    call lsyssc_releaseMatrix (rlevelInfo%rmatrixMassC)
 
     ! Generate mass matrix. The matrix has basically the same structure as
     ! our template FEM matrix, so we can take that.
@@ -1026,7 +1049,9 @@ contains
                 rlevelInfo%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateFEMPressure,&
                 rlevelInfo%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-                
+    call lsyssc_duplicateMatrix (rlevelInfo%rmatrixTemplateQ1,&
+                rlevelInfo%rmatrixMassC,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)            
+            
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
@@ -1034,11 +1059,14 @@ contains
         rlevelInfo%rdiscretisationMass)
     call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMassPressure,&
         rlevelInfo%rdiscretisationMassPressure)
+    call lsyssc_assignDiscrDirectMat (rlevelInfo%rmatrixMassC,&
+        rlevelInfo%rdiscretisationMassC)
 
     ! Call the standard matrix setup routine to build the matrix.                    
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMass,DER_FUNC,DER_FUNC)
     call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
-                
+    call stdop_assembleSimpleMatrix (rlevelInfo%rmatrixMassC,DER_FUNC,DER_FUNC)
+            
     ! Should we do mass lumping?
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
                               'IMASS', j, 0)
@@ -1053,7 +1081,8 @@ contains
       ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
       call lsyssc_lumpMatrixScalar (rlevelInfo%rmatrixMass,j)
       call lsyssc_lumpMatrixScalar (rlevelInfo%rmatrixMassPressure,j)
-    
+      call lsyssc_lumpMatrixScalar (rlevelInfo%rmatrixMassC,j)
+
     end if
 
     ! Clean up the collection (as we are done with the assembly, that's it.
@@ -1349,11 +1378,11 @@ contains
                 rproblem%rcollection)
       
       ! Concentration:
-      !call linf_buildVectorScalar (&
-      !         p_rdiscretisation%RspatialDiscr(4),rlinform,.true.,&
-      !          rvector1%RvectorBlock(4),coeff_AnalyticSolution_C,&
-      !          rproblem%rcollection)                          
-      call anprj_discrDirect (rvector1%RvectorBlock(4),ffunction_TargetC)                          
+      call linf_buildVectorScalar (&
+               p_rdiscretisation%RspatialDiscr(4),rlinform,.true.,&
+                rvector1%RvectorBlock(4),coeff_AnalyticSolution_C,&
+                rproblem%rcollection)                          
+      !call anprj_discrDirect (rvector1%RvectorBlock(4),ffunction_TargetC)                          
       ! Clean up the collection (as we are done with the assembly.
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
@@ -1456,7 +1485,41 @@ contains
             call output_line(&
                 'Cannot compute L2 projection, solver broke down. Using zero!')
             call lsysbl_clearVector (rvector)
+                        else
+        
+        !release everything for the concentration part
+            call lsysbl_releaseVector (rsingleRHS)
+            call lsysbl_releaseVector (rsingleSol)
+            call lsysbl_releaseVector (rvector2)
+            call lsysbl_releaseMatrix (Rmatrices(1))     
             
+        ! And the concentration. For that one we have to reinitialise the solver,
+            ! the matrices,...
+        if (rproblem%MSHOW_Initialisation .ge. 1) &
+                call output_line('Solving L2 projection for C...')
+        call lsysbl_createMatFromScalar(&
+            rproblem%RlevelInfo(rproblem%NLMAX)%rmatrixMassC,Rmatrices(1))
+        call linsol_setMatrices (p_rsolverNode,Rmatrices)
+        call linsol_initStructure (p_rsolverNode,ierror)
+        call linsol_initData (p_rsolverNode,ierror)
+
+        ! -----
+        ! Solve for the concentration.
+        call lsysbl_createVecFromScalar(rvector1%RvectorBlock(4),rsingleRHS)
+        call lsysbl_createVecFromScalar(rvector%RvectorBlock(4),rsingleSol)
+        call lsysbl_duplicateVector (rsingleSol,rvector2,&
+            LSYSSC_DUP_COPY,LSYSSC_DUP_EMPTY)
+        
+        call linsol_solveAdaptively (p_rsolverNode,rsingleSol,rsingleRHS,rvector2)
+          
+        if (p_rsolverNode%iresult .ne. 0) then
+            ! Cancel, there is something wrong.
+            call output_line('Cannot compute L2 projection, solver broke down. Using zero!')
+            call lsysbl_clearVector (rvector)
+        end if  
+        
+         !
+
  
           end if
         end if
@@ -1602,12 +1665,14 @@ contains
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
       ! If there is an existing mass matrix, release it.
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMass)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMassC)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixMassPressure)
 
       ! Release Stokes, B1 and B2 matrix
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB2)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixB1)
       call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokes)
+      call lsyssc_releaseMatrix (rproblem%RlevelInfo(i)%rmatrixStokesC)
       
       ! Release the template matrices. This is the point, where the
       ! memory of the matrix structure is released.

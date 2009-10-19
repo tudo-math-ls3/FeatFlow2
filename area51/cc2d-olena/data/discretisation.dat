@@ -89,6 +89,7 @@ RE                 = 500
 #   in every timestep of the simulation
 
 iRHS               = 2
+iRHS               = 0
 
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 

@@ -1515,8 +1515,8 @@ contains
         else
           
           ! The 3,3-block must be a zero-matrix. So if it's present, clear it.
-   !       if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
-   !         call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
+          if (lsysbl_isSubmatrixPresent(p_rmatrix,3,3)) &
+            call lsyssc_clearMatrix (p_rmatrix%RmatrixBlock(3,3))
           
         end if        
 
