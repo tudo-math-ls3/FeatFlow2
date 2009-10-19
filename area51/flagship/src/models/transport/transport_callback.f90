@@ -1728,8 +1728,9 @@ contains
         if (present(fcb_calcMatrixPrimal)) then
           
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_FEMFCT,&
-                AFCSTAB_FEMFCT_CLASSICAL)
+          case (AFCSTAB_FEMFCT_CLASSICAL,&
+                AFCSTAB_FEMFCT_IMPLICIT,&
+                AFCSTAB_FEMFCT_ITERATIVE)
             
             call parlst_getvalue_int(p_rparlist,&
                 rcollection%SquickAccess(1),&
@@ -1878,8 +1879,9 @@ contains
         ! linear velocity
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-             AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -1919,8 +1921,9 @@ contains
         ! nonlinear Burgers` equation in space-time
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -1967,8 +1970,9 @@ contains
         ! nonlinear Buckley-Leverett equation in space-time
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -2015,8 +2019,9 @@ contains
         ! nonlinear Burgers` equation in 1D
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-            AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -2063,8 +2068,9 @@ contains
         ! nonlinear Burgers` equation in 2D
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -2111,8 +2117,9 @@ contains
         ! nonlinear Buckley-Leverett equation in 1D
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-              AFCSTAB_FEMFCT_CLASSICAL)
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
           
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
@@ -2171,8 +2178,9 @@ contains
         if (present(fcb_calcMatrixDual)) then
           
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-          case (AFCSTAB_FEMFCT,&
-                AFCSTAB_FEMFCT_CLASSICAL)
+          case (AFCSTAB_FEMFCT_CLASSICAL,&
+                AFCSTAB_FEMFCT_IMPLICIT,&
+                AFCSTAB_FEMFCT_ITERATIVE)
             
             call parlst_getvalue_int(p_rparlist,&
                 rcollection%SquickAccess(1),&
@@ -2320,9 +2328,10 @@ contains
         ! linear velocity
         
         select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-        case (AFCSTAB_FEMFCT,&
-             AFCSTAB_FEMFCT_CLASSICAL)
-          
+        case (AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
+              AFCSTAB_FEMFCT_ITERATIVE)
+
           call parlst_getvalue_int(p_rparlist,&
               rcollection%SquickAccess(1),&
               'imassantidiffusiontype', imassantidiffusiontype)
@@ -2495,8 +2504,9 @@ contains
     ! What kind of stabilisation should be applied?
     select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           
-    case (AFCSTAB_FEMFCT,&
-          AFCSTAB_FEMFCT_CLASSICAL)
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_IMPLICIT,&
+          AFCSTAB_FEMFCT_ITERATIVE)
 
       dweight = rtimestep%DmultistepWeights(istep)*rtimestep%dStep
       call parlst_getvalue_int(p_rparlist, rcollection&
@@ -2913,8 +2923,9 @@ contains
     if (convectionAFC > 0) then
       
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
-      case (AFCSTAB_FEMFCT,&
-            AFCSTAB_FEMFCT_CLASSICAL)
+      case (AFCSTAB_FEMFCT_CLASSICAL,&
+            AFCSTAB_FEMFCT_IMPLICIT,&
+            AFCSTAB_FEMFCT_ITERATIVE)
         
         call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
             'imassantidiffusiontype', imassantidiffusiontype)
