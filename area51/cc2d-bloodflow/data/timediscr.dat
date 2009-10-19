@@ -12,7 +12,7 @@
 
 # Type of problem (ISTAT): 0=steady,1=nonsteady
 
-itimedependence = 0                       # ISTAT
+itimedependence = 1                       # ISTAT
 
 # ----------------------------------------------------------------------
 
@@ -32,12 +32,12 @@ dtimeMax = 1.0                           # TIMEMX
 
 # Initial time step size
 
-dtimeStep = 0.1                           # DTSTEP
+dtimeStep = 0.01                         # DTSTEP
 
 # Lower limit for the time derivative to be treated as zero. (EPSNS)
 # Simulation stops if time derivative drops below this value.
 
-dminTimeDerivative = 0.00001              # EPSNS
+dminTimeDerivative = 0.0                 # EPSNS
 
 # ----------------------------------------------------------------------
 
