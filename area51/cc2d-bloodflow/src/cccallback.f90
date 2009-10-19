@@ -1023,7 +1023,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 0.0
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1121,7 +1121,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0_DP
+    Dvalues(:,:) = 0.0
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1386,12 +1386,21 @@ contains
     ! in cc_parseFBDconditions!!!
     
     ! local variables
-    real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
+    real(DP) :: dx, dy, dx0, dy0, dxRef, dyRef
+    real(DP) :: dtime, phi, width, height
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
     integer, dimension(:,:), pointer :: p_IverticesAtElement
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     type(t_triangulation), pointer :: p_rtriangulation
     integer :: ipoint,idx
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+    else
+      dtime = 0.0_DP
+    end if
     
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
@@ -1401,12 +1410,12 @@ contains
                                 p_IverticesAtElement)
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
-
-    ! Definition of the circle
-    dxcenter = 0.6
-    dycenter = 0.2
-    dradius  = 0.05
     
+    ! Definition of the flap
+    dx0 = 1.5; dy0 = 0.0_DP
+    width = 0.1; height = 0.6
+    phi = sin(2*SYS_PI*dtime)*SYS_PI/6.0
+
     ! Loop through the points where to evaluate:
     do idx = 1,Revaluation(1)%nvalues
     
@@ -1420,13 +1429,16 @@ contains
                         p_IverticesAtElement,p_IverticesAtEdge,&
                         p_rtriangulation%NVT,&
                         dx,dy)
+
+      ! Compute reference coordinates
+      dxRef = cos(phi)*(dx-dx0)-sin(phi)*(dy-dy0)
+      dyRef = sin(phi)*(dx-dx0)+cos(phi)*(dy-dy0)
       
-      ! Get the distance to the center
-      ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-      
-      ! Point inside?
-      if (ddistance .le. dradius) then
-      
+      if ((dxRef .ge.-width) .and.&
+          (dxRef .le. width) .and.&
+          (dyRef .le. height) .and.&
+          (dyRef .ge. 0)) then
+        
         ! Denote in the p_Iinside array that we prescribe a value here:
         Revaluation(1)%p_Iinside (idx) = 1
         Revaluation(2)%p_Iinside (idx) = 1
@@ -1438,43 +1450,6 @@ contains
       end if
       
     end do
-
-!    ! Definition of a 2nd circle
-!    dxcenter = 1.1
-!    dycenter = 0.31
-!    dradius  = 0.05
-!    
-!    ! Loop through the points where to evaluate:
-!    DO idx = 1,Revaluation(1)%nvalues
-!    
-!      ! Get the number of the point to process; may also be number of an
-!      ! edge or element...
-!      ipoint = Revaluation(1)%p_Iwhere(idx)
-!      
-!      ! Get x- and y-coordinate
-!      CALL getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-!                       p_DvertexCoordinates,&
-!                       p_IverticesAtElement,p_IverticesAtEdge,&
-!                       p_rtriangulation%NVT,&
-!                       dx,dy)
-!      
-!      ! Get the distance to the center
-!      ddistance = SQRT( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-!      
-!      ! Point inside?
-!      IF (ddistance .LE. dradius) THEN
-!      
-!        ! Denote in the p_Iinside array that we prescribe a value here:
-!        Revaluation(1)%p_Iinside (idx) = 1
-!        Revaluation(2)%p_Iinside (idx) = 1
-!        
-!        ! We prescribe 0.0 as Dirichlet value here - vor X- and Y-velocity
-!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_DP
-!      
-!      END IF
-!      
-!    END DO
     
   contains
   
@@ -1603,10 +1578,10 @@ contains
       dtime = 0.0_DP
     end if
 
-    ! Default implementation: Velocity and acceleration is zero in all dimensinons.
-    Dvelocity(:) = 0.0_DP
+    ! Velocity and acceleration is zero in both dimensinons.
+    Dvelocity(:) = 0.0
     
-    Dacceleration(:) = 0.0_DP
+    Dacceleration(:) = 0.0
 
   end subroutine
 
