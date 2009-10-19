@@ -18,7 +18,7 @@
 # =0: Gauss elimination (UMFPACK)
 # =1: Multigrid solver
 
-isolverType = 0
+isolverType = 1
 
 # Name of the section in this file which configures the solver.
 
