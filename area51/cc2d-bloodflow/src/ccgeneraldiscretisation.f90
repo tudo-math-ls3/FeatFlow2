@@ -2017,6 +2017,7 @@ contains
       ! That is it, cleanup.
       call lsysbl_releaseVector (rsingleRHS)
       call lsysbl_releaseVector (rsingleSol)
+      call lsysbl_releaseVector (rvector1)
       call lsysbl_releaseVector (rvector2)
       call lsysbl_releaseMatrix (Rmatrices(1))
       
