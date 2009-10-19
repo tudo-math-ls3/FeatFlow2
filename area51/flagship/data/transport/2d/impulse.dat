@@ -37,7 +37,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = pseudotransient_primaldual
+algorithm = pseudotransient_primal
 
 #-------------------------------------------------------------------------------
 
@@ -190,7 +190,7 @@ errorestimator = ErrorEstimator
 # 12 = linearized FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 11
 
 
 ################################################################################
@@ -252,7 +252,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1].
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 1
@@ -261,10 +261,10 @@ multisteps = 1
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 10.0
+dfinalTime = 2.0
 
 # initial time step size
-dinitialStep = 0.01
+dinitialStep = 0.001
 
 # lower bound for the admissible time step
 dminStep = 0.001
@@ -697,7 +697,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 3
+nadapt = 0
 
 # time for grid adaptivity
 dtimeadapt = 0.0
