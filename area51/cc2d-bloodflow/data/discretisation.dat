@@ -94,11 +94,11 @@ swriteSolutionFilename = ''
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 4
+NLMIN              = 3
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 4
+NLMAX              = 3
 
 # ------------------------------------------------------------------------
 

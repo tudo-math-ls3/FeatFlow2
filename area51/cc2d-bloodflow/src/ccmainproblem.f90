@@ -106,7 +106,8 @@ contains
     
     integer :: i
 
-    integer :: iiterations, niterations
+    integer :: iiteration, niterations
+    real(DP) :: dtimeInit, dtimeMax, dtimeStep
     
     ! Ok, let us start. 
     
@@ -119,7 +120,7 @@ contains
     ! Start the timer
     call stat_startTimer(rtimerTotal)
     
-    ! Allocate memory fo rthe problem structure -- it is rather large!
+    ! Allocate memory for the problem structure -- it is rather large!
     allocate (p_rproblem)
     
     ! Initialise the collection
@@ -271,80 +272,51 @@ contains
       call cc_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
       
     else
-    
-      ! Save maximum number of iterations
-      niterations = p_rproblem%rtimedependence%niterations
+      
+      ! Generate the RHS vector for the first time step.
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating RHS vector...')
+      end if
+      call cc_generateBasicRHS (p_rproblem,rrhs)
+      
+      ! Initialise the boundary conditions, but 
+      ! do not implement any boundary conditions as the nonstationary solver
+      ! does not like this.
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Generating discrete boundary conditions of first time step...')
+      end if
+      call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
+      
+      ! Call the nonstationary solver to solve the problem.
+      if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+        call output_separator (OU_SEP_MINUS)
+        call output_line('Invoking nonstationary solver...')
+        call output_separator (OU_SEP_MINUS)
+      end if
+      
+      ! First time step
+      dtimeInit = p_rproblem%rtimedependence%dtimeInit
+      dtimeMax  = p_rproblem%rtimedependence%dtimeMax
+      dtimeStep = p_rproblem%rtimedependence%dtimeStep
 
-      ! We perform adaptive mesh refinement every time step
-      p_rproblem%rtimedependence%niterations = 1
+      do while (p_rproblem%rtimedependence%dtime .le. dtimeMax)
+        
+        p_rproblem%rtimedependence%dtimeInit = dtimeInit
+        p_rproblem%rtimedependence%dtimeMax  = dtimeInit+dtimeStep
 
-      do iiterations = 1, niterations
-
-        ! Time dependent simulation with explicit time stepping.
-        !
-        ! Generate the RHS vector for the first time step.
-        if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-          call output_separator (OU_SEP_MINUS)
-          call output_line('Generating RHS vector...')
-        end if
-        call cc_generateBasicRHS (p_rproblem,rrhs)
-        
-        ! Initialise the boundary conditions, but 
-        ! do not implement any boundary conditions as the nonstationary solver
-        ! does not like this.
-        if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-          call output_separator (OU_SEP_MINUS)
-          call output_line('Generating discrete boundary conditions of first time step...')
-        end if
-        call cc_initDiscreteBC (p_rproblem,rvector,rrhs)
-        
-        ! Call the nonstationary solver to solve the problem.
-        if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-          call output_separator (OU_SEP_MINUS)
-          call output_line('Invoking nonstationary solver...')
-          call output_separator (OU_SEP_MINUS)
-        end if
-        
         call stat_startTimer(rtimerSolver)
-        
         call cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
-        
         call stat_stopTimer(rtimerSolver)
 
-        ! Gather statistics    
-        p_rproblem%rstatistics%dtimeSolver = &
-            p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
-
-
-        ! Cleanup
-!!$        call cc_doneMatVec (p_rproblem,rhs=rrhs)
-!!$        call cc_doneBC (p_rproblem)
-!!$        call cc_doneDiscretisation (p_rproblem)
-
-
-        ! Discretisation
-        if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-          call output_separator (OU_SEP_MINUS)
-          call output_line('Initialising discretisation...')
-        end if
-        call cc_initDiscretisation (p_rproblem)    
+        dtimeStep = p_rproblem%rtimedependence%dtimeStep
+        dtimeInit = p_rproblem%rtimedependence%dtimeMax
         
-        if (p_rproblem%MSHOW_Initialisation .ge. 2) then
-          call output_lbrk ()
-          call output_line ('Discretisation statistics:')
-          do i=p_rproblem%NLMIN,p_rproblem%NLMAX
-            call output_lbrk ()
-            call output_line ('Level '//sys_siL(i,5))
-            call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
-          end do
-        end if
-
-
-
       end do
-      
+
     end if
-    
+      
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
