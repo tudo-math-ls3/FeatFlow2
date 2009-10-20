@@ -51,7 +51,7 @@
 
 bdExpressions(2) =
   'Dirichlet0'     0    0.0
-  'ParProfExpr'   -1    '4.0*1.0*L*(1.0-L)'
+  'ParProfExpr'   -1    'tanh(TIME)*4.0*1.0*L*(1.0-L)'
   
 
 ##############

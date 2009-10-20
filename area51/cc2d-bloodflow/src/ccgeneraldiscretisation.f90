@@ -1285,11 +1285,11 @@ contains
   
   ! A vector structure for the solution vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  type(t_vectorBlock), intent(inout) :: rvector
+  type(t_vectorBlock), optional, intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The structure is initialised,
   ! memory is allocated for the data entries.
-  type(t_vectorBlock), intent(inout) :: rrhs
+  type(t_vectorBlock), optional, intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -1333,9 +1333,11 @@ contains
     ! the easiest way to set up the vector structure is
     ! to create it by using our matrix as template.
     ! Initialise the vectors with 0.
-    call lsysbl_createVecBlockByDiscr (&
+    if (present(rrhs))&
+        call lsysbl_createVecBlockByDiscr (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rrhs,.true.)
         
+    if (present(rvector))&
     call lsysbl_createVecBlockByDiscr (&
         rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation,rvector,.true.)
 
@@ -1397,11 +1399,11 @@ contains
 
   ! A vector structure for the solution vector. The structure is cleaned up,
   ! memory is released.
-  type(t_vectorBlock), intent(inout) :: rvector
+  type(t_vectorBlock), optional, intent(inout) :: rvector
 
   ! A vector structure for the RHS vector. The structure is cleaned up,
   ! memory is released.
-  type(t_vectorBlock), intent(inout) :: rrhs
+  type(t_vectorBlock), optional, intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
@@ -1422,8 +1424,8 @@ contains
     end do
 
     ! Delete solution/RHS vector
-    call lsysbl_releaseVector (rvector)
-    call lsysbl_releaseVector (rrhs)
+    if (present(rvector)) call lsysbl_releaseVector (rvector)
+    if (present(rrhs)) call lsysbl_releaseVector (rrhs)
 
   end subroutine
 
