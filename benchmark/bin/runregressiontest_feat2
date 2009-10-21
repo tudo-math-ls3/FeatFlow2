@@ -326,7 +326,7 @@ fb_readargs() {
 fb_customise() {
     case "$HOSTNAME" in
 	# LiDO-2
-	lido1|lido2)
+	lidong1|lidong2)
 	    # set various parameters
 	    ARCH=LiDO
 	    COMPILEWITHPROCS=2
