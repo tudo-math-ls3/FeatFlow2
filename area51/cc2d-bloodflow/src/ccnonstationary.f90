@@ -65,6 +65,7 @@ module ccnonstationary
   use ccgeneraldiscretisation
   use ccpostprocessing
   use ccboundarycondition
+  use ccmeshadaptivity
     
   implicit none
 
@@ -529,11 +530,12 @@ contains
 
     ! local variables
     integer :: i,j
+    type(t_vectorScalar) :: rmeshIndicator
     type(t_vectorBlock) :: rtempBlock1,rtempBlock2
     type(t_ccNonlinearIteration) :: rnonlinearIteration
     
     ! Configuration block of the time stepping scheme 
-    type(t_explicitTimeStepping)        :: rtimestepping,rtimesteppingPredictor
+    type(t_explicitTimeStepping) :: rtimestepping,rtimesteppingPredictor
 
     ! The nonlinear solver configuration
     type(t_nlsolNode) :: rnlSol
@@ -558,41 +560,19 @@ contains
     ! Backup postprocessing structure
     type(t_c2d2postprocessing) :: rpostprocessingBackup
 
+    ! Pointer to the top-level problem structure
+    type(t_problem_lvl), pointer :: p_rproblemMax => null()
+
+
     ! Some preparations for the nonlinear solver.
     !
     ! Initialise the nonlinear solver node rnlSol with parameters from
     ! the INI/DAT files.
     call cc_getNonlinearSolver (rnlSol, rproblem%rparamList, 'CC2D-NONLINEAR')
 
-    ! Initialise the nonlinear loop. This is to prepare everything for
-    ! our callback routines that are called from the nonlinear solver.
-    ! The preconditioner in that structure is initialised later.
-    call cc_initNonlinearLoop (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
-        rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
-    
     ! Initialise the time stepping scheme according to the problem configuration
     call cc_initTimeSteppingScheme (rproblem%rparamList,rtimestepping)
     
-    ! Initialise the preconditioner for the nonlinear iteration
-    call cc_initPreconditioner (rproblem,&
-        rnonlinearIteration,rvector,rrhs)
-
-    ! Create temporary vectors we need for the nonlinear iteration.
-    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .false.)
-    call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
-
-    ! Implement the initial boundary conditions into the solution vector.
-    ! Do not implement anything to matrices or RHS vector as these are
-    ! maintained in the timeloop.
-    ! Afterwards, we can start the timeloop.
-    call cc_implementBC (rproblem,rvector,rrhs,.true.,.false.)
-
-    ! Postprocessing. Write out the initial solution.
-    call output_line ('Starting postprocessing of initial solution...')
-    call cc_postprocessingNonstat (rproblem,&
-        rvector,rproblem%rtimedependence%dtimeInit,&
-        rvector,rproblem%rtimedependence%dtimeInit,rpostprocessing)
-
     ! First time step
     rproblem%rtimedependence%itimeStep = 1
     rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
@@ -600,7 +580,7 @@ contains
     
     ! Reset counter of current macro step repetitions.
     irepetition = 0
-    
+
     !----------------------------------------------------
     ! Timeloop
     !----------------------------------------------------
@@ -615,16 +595,69 @@ contains
                rproblem%rtimedependence%dtimemax) .and. &
               (dtimederivative .ge. &
                rproblem%rtimedependence%dminTimeDerivative))
-
+      
       ! Time counter
       call stat_clearTimer(rtimerTimestep)
       call stat_startTimer(rtimerTimestep)
-
+      
       ! The babortTimestep is normally FALSE. If set to TRUE, the computation
       ! of the next time step is aborted because of an error. 
       
       babortTimestep = .false.
       
+      ! Some initialisations need to be done only in the first
+      ! iteration of if the mesh is adapted in each time step
+
+      if (rproblem%bmeshAdaptation .or.&
+          rproblem%rtimedependence%itimeStep .eq. 1) then
+        
+        !----------------------------------------------------
+        ! Mesh adaptation step
+        !----------------------------------------------------
+        if (rproblem%bmeshAdaptation) then
+          
+          ! Generate the mesh indicator
+          call cc_generateMeshIndicator(rproblem,rmeshIndicator)
+          
+          ! Perform one step h-adaptivity
+          call cc_performMeshAdaptation(rproblem,rmeshIndicator,&
+              rvector,rrhs,rpostprocessing)
+          
+          ! Release temporal vector
+          call lsyssc_releaseVector(rmeshIndicator)
+        end if
+        
+        ! Initialise the nonlinear loop. This is to prepare everything for
+        ! our callback routines that are called from the nonlinear solver.
+        ! The preconditioner in that structure is initialised later.
+        call cc_initNonlinearLoop (rproblem,rproblem%NLMIN,rproblem%NLMAX,&
+            rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
+        
+        ! Initialise the preconditioner for the nonlinear iteration
+        call cc_initPreconditioner (rproblem,&
+            rnonlinearIteration,rvector,rrhs)
+        
+        ! Create temporary vectors we need for the nonlinear iteration.
+        call lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .false.)
+        call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
+        
+        ! Implement the initial boundary conditions into the solution vector.
+        ! Do not implement anything to matrices or RHS vector as these are
+        ! maintained in the timeloop.
+        ! Afterwards, we can start the timeloop.
+        call cc_implementBC (rproblem,rvector,rrhs,.true.,.false.)
+        
+        if (rproblem%rtimedependence%itimeStep .eq. 1) then
+
+          ! Postprocessing. Write out the initial solution.
+          call output_line ('Starting postprocessing of initial solution...')
+          call cc_postprocessingNonstat (rproblem,&
+              rvector,rproblem%rtimedependence%dtimeInit,&
+              rvector,rproblem%rtimedependence%dtimeInit,rpostprocessing)
+        end if
+        
+      end if
+
       !----------------------------------------------------
       ! Predictor step
       !----------------------------------------------------
@@ -1185,29 +1218,52 @@ contains
            
       rproblem%rtimedependence%itimeStep = rproblem%rtimedependence%itimeStep + 1
 
-      call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+      call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)     
+
+      ! Clean up the stuff of/for the nonlinear solver.
+      if (rproblem%bmeshAdaptation) then
+        
+        ! Release the temporary vectors
+        if (rpredictedSolution%NEQ .ne. 0) &
+            call lsysbl_releaseVector (rpredictedSolution)
+        if (roldSolution%NEQ .ne. 0) &
+            call lsysbl_releaseVector (roldSolution)
+        call lsysbl_releaseVector (rtempBlock2)
+        call lsysbl_releaseVector (rtempBlock1)
+        
+        ! Release existing snapshots
+        call cc_releaseSnapshop (rsnapshotLastMacrostep)
+        
+        ! Release the preconditioner
+        call cc_releasePreconditioner (rnonlinearIteration)
+        
+        ! Release parameters of the nonlinear loop, final clean up
+        call cc_doneNonlinearLoop (rnonlinearIteration)
+      end if
 
     end do
-
+    
     ! Clean up the stuff of/for the nonlinear solver.
-    !
-    ! Release the temporary vectors
-    if (rpredictedSolution%NEQ .ne. 0) &
-      call lsysbl_releaseVector (rpredictedSolution)
-    if (roldSolution%NEQ .ne. 0) &
-      call lsysbl_releaseVector (roldSolution)
-    call lsysbl_releaseVector (rtempBlock2)
-    call lsysbl_releaseVector (rtempBlock1)
+    if (.not.rproblem%bmeshAdaptation) then
+      
+      ! Release the temporary vectors
+      if (rpredictedSolution%NEQ .ne. 0) &
+          call lsysbl_releaseVector (rpredictedSolution)
+      if (roldSolution%NEQ .ne. 0) &
+          call lsysbl_releaseVector (roldSolution)
+      call lsysbl_releaseVector (rtempBlock2)
+      call lsysbl_releaseVector (rtempBlock1)
+      
+      ! Release existing snapshots
+      call cc_releaseSnapshop (rsnapshotLastMacrostep)
+      
+      ! Release the preconditioner
+      call cc_releasePreconditioner (rnonlinearIteration)
+      
+      ! Release parameters of the nonlinear loop, final clean up
+      call cc_doneNonlinearLoop (rnonlinearIteration)
+    end if
     
-    ! Release existing snapshots
-    call cc_releaseSnapshop (rsnapshotLastMacrostep)
-    
-    ! Release the preconditioner
-    call cc_releasePreconditioner (rnonlinearIteration)
-    
-    ! Release parameters of the nonlinear loop, final clean up
-    call cc_doneNonlinearLoop (rnonlinearIteration)
-             
   end subroutine
   
 end module

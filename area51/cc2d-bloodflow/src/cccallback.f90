@@ -92,6 +92,10 @@
 !#      -> If the moving frame formulation is activated, this routine
 !#         returns the velocity and acceleration of the moving frame.
 !#
+!# 15.) performAdaptation
+!#      -> Is called by the mesh adaptation procedure
+!#      -> Updates the solution vector as vertices are added/removed.
+!#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
 !# framework calls cc_initCollectForAssembly to stores the current point 
@@ -193,6 +197,7 @@ module cccallback
   use bcassembly
   use mprimitives
   use derivatives
+  use list
   
   use ccbasic
   
@@ -1449,12 +1454,12 @@ contains
 !!$          (dyRef .ge. 0)) then
       
       ! Compute reference coordinates for the rotor
-      dxRef1 = cos(phi1)*(dx-dx0)-sin(phi1)*(dy-dy0)
-      dyRef1 = sin(phi1)*(dx-dx0)+cos(phi1)*(dy-dy0)
-      dxRef2 = cos(phi2)*(dx-dx0)-sin(phi2)*(dy-dy0)
-      dyRef2 = sin(phi2)*(dx-dx0)+cos(phi2)*(dy-dy0)
-      dxRef3 = cos(phi3)*(dx-dx0)-sin(phi3)*(dy-dy0)
-      dyRef3 = sin(phi3)*(dx-dx0)+cos(phi3)*(dy-dy0)
+      dxRef1 =  cos(phi1)*(dx-dx0)+sin(phi1)*(dy-dy0)
+      dyRef1 = -sin(phi1)*(dx-dx0)+cos(phi1)*(dy-dy0)
+      dxRef2 =  cos(phi2)*(dx-dx0)+sin(phi2)*(dy-dy0)
+      dyRef2 = -sin(phi2)*(dx-dx0)+cos(phi2)*(dy-dy0)
+      dxRef3 =  cos(phi3)*(dx-dx0)+sin(phi3)*(dy-dy0)
+      dyRef3 = -sin(phi3)*(dx-dx0)+cos(phi3)*(dy-dy0)
 
       ! Definition of the rotor
       if ((dxRef1 .ge.-width)  .and. (dxRef1 .le. width) .and.&
@@ -1468,9 +1473,9 @@ contains
         Revaluation(1)%p_Iinside (idx) = 1
         Revaluation(2)%p_Iinside (idx) = 1
         
-        ! We prescribe 0.0 as Dirichlet value here - for x- and y-velocity
-        Revaluation(1)%p_Dvalues (idx,1) = dx
-        Revaluation(2)%p_Dvalues (idx,1) = dy
+        ! We prescribe Dirichlet value here - for x- and y-velocity
+        Revaluation(1)%p_Dvalues (idx,1) = -dy
+        Revaluation(2)%p_Dvalues (idx,1) =  dx
       
       end if
       
@@ -1607,6 +1612,65 @@ contains
     Dvelocity(:) = 0.0
     
     Dacceleration(:) = 0.0
+
+  end subroutine
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine performAdaptation(rcollection, iOperation,&
+      Ivertices, Ielements)
+    
+!<description>
+    ! This callback function is used to perform postprocessing tasks
+    ! such as insertion/removal of elements and or vertices in the
+    ! grid adaptivity procedure in 2D.
+!</description>
+
+!<input>
+    ! Identifier for the grid modification operation
+    integer, intent(in) :: iOperation
+
+    ! Array of vertices involved in the adaptivity step
+    integer, dimension(:), intent(in) :: Ivertices
+
+    ! Array of elements involved in the adaptivity step
+    integer, dimension(:), intent(in) :: Ielements
+!</input>
+
+!<inputoutput>
+    ! Collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! Linked list to store all mesh modifications
+    type(t_list), save :: rlist
+    integer, dimension(16) :: Idata
+    integer :: ipos
+
+    ! What operation should be performed
+    select case(iOperation)
+      
+    case(HADAPT_OPR_INITCALLBACK)
+      call list_createList(rlist,100,ST_INT,16,0,0,&
+          LIST_UNORDERED,1.5_DP,LIST_DOUBLELINKED)
+    
+    case(HADAPT_OPR_DONECALLBACK)
+      call list_releaseList(rlist)
+      
+    case default
+      
+      ! Prepare auxiliary integer data
+      Idata = 0
+      Idata(1:size(Ivertices))   = Ivertices
+      Idata(8:8+size(Ielements)) = Ielements
+
+      ! Append data to list
+      call list_appendToList(rlist,iOperation,ipos,IData=Idata)
+
+    print *, iOperation
 
   end subroutine
 

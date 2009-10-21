@@ -1157,17 +1157,17 @@ contains
     
     call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(1), &
-                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
+                 EL_P1, EL_Q1, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rprjDiscretisation%RspatialDiscr(1))
 
     call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(2), &
-                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
+                 EL_P1, EL_Q1, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rprjDiscretisation%RspatialDiscr(2))
 
     call spdiscr_deriveDiscr_triquad (&
                  rvector%p_rblockDiscr%RspatialDiscr(3), &
-                 EL_P0, EL_Q0, CUB_TRZ_T, CUB_G2X2, &
+                 EL_P0, EL_Q0, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rprjDiscretisation%RspatialDiscr(3))
                  
     ! The pressure discretisation substructure stays the old.
@@ -1527,21 +1527,21 @@ contains
     p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q0, CUB_G1X1, &
+                 EL_P0, EL_Q0, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q1, CUB_G2X2, &
+                 EL_P1, EL_Q1, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q2, CUB_G3X3, &
+                 EL_P2, EL_Q2, SPDISC_CUB_AUTOMATIC, SPDISC_CUB_AUTOMATIC, &
                  rpostprocessing%rdiscrQuadratic)
   
     ! Initialise the time/file suffix when the first UCD file is to be written out.

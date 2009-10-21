@@ -159,12 +159,17 @@ contains
 
 !<subroutine>
 
-  subroutine cc_initDiscretisation (rproblem)
+  subroutine cc_initDiscretisation (rproblem,nlminOpt,nlmaxOpt)
   
 !<description>
   ! This routine initialises the discretisation structure of the underlying
   ! problem and saves it to the problem structure.
 !</description>
+
+!<input>
+  ! OPTIONAL: Minimum/maximum multigrid levels
+  integer, intent(in), optional :: nlminOpt,nlmaxOpt
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -175,7 +180,7 @@ contains
 
   ! local variables
   integer :: i,j,k,ielementType,icubA,icubB,icubF, icubM
-  integer :: iElementTypeStabil
+  integer :: iElementTypeStabil,nlmin,nlmax
   character(LEN=SYS_NAMELEN) :: sstr
   
     ! An object for saving the domain:
@@ -246,7 +251,19 @@ contains
 
     ! Now set up discrezisation structures on all levels:
 
-    do i=rproblem%NLMIN,rproblem%NLMAX
+    if (present(nlminOpt)) then
+      nlmin = nlminOpt
+    else
+      nlmin = rproblem%NLMIN
+    end if
+
+    if (present(nlmaxOpt)) then
+      nlmax = nlmaxOpt
+    else
+      nlmax = rproblem%NLMAX
+    end if
+
+    do i=nlmin,nlmax
     
       ! Ask the problem structure to give us the boundary and triangulation.
       ! We need it for the discretisation.
@@ -678,12 +695,17 @@ contains
 
 !<subroutine>
 
-  subroutine cc_doneDiscretisation (rproblem)
+  subroutine cc_doneDiscretisation (rproblem,nlminOpt,nlmaxOpt)
   
 !<description>
   ! Releases the discretisation from the heap.
 !</description>
 
+!<input>
+  ! OPTIONAL: Minimum/maximum multigrid levels
+  integer, intent(in), optional :: nlminOpt,nlmaxOpt
+!</input>
+    
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
@@ -692,9 +714,21 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i
+  integer :: i,nlmin,nlmax
 
-    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+    if (present(nlminOpt)) then
+      nlmin = nlminOpt
+    else
+      nlmin = rproblem%NLMIN
+    end if
+
+    if (present(nlmaxOpt)) then
+      nlmax = nlmaxOpt
+    else
+      nlmax = rproblem%NLMAX
+    end if
+
+    do i=nlmax,nlmin,-1
       
       ! Remove the block discretisation structure and all substructures.
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
@@ -1269,7 +1303,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_allocMatVec (rproblem,rvector,rrhs)
+  subroutine cc_allocMatVec (rproblem,rvector,rrhs,nlminOpt,nlmaxOpt)
   
 !<description>
   ! Allocates memory for all matrices and vectors of the problem on the heap
@@ -1278,6 +1312,11 @@ contains
   ! structure of the problem, given in rproblem. Matrix/vector entries
   ! are not calculated, they are left uninitialised.
 !</description>
+
+!<input>
+  ! OPTIONAL: Minimum/maximum multigrid levels
+  integer, intent(in), optional :: nlminOpt,nlmaxOpt
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -1295,10 +1334,22 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
+    integer :: i,nlmin,nlmax
   
+    if (present(nlminOpt)) then
+      nlmin = nlminOpt
+    else
+      nlmin = rproblem%NLMIN
+    end if
+
+    if (present(nlmaxOpt)) then
+      nlmax = nlmaxOpt
+    else
+      nlmax = rproblem%NLMAX
+    end if
+
     ! Initialise all levels...
-    do i=rproblem%NLMIN,rproblem%NLMAX
+    do i=nlmin,nlmax
 
       ! Generate the matrices on this level.
       if (i .eq. rproblem%NLMIN) then
@@ -1347,7 +1398,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_generateBasicMat (rproblem)
+  subroutine cc_generateBasicMat (rproblem,nlminOpt,nlmaxOpt)
   
 !<description>
   ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
@@ -1355,6 +1406,11 @@ contains
   ! Memory for those matrices must have been allocated before with 
   ! allocMatVec!
 !</description>
+
+!<input>
+  ! OPTIONAL: Minimum/maximum multigrid levels
+  integer, intent(in), optional :: nlminOpt,nlmaxOpt
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -1364,17 +1420,29 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: i
+    integer :: i,nlmin,nlmax
+
+    if (present(nlminOpt)) then
+      nlmin = nlminOpt
+    else
+      nlmin = rproblem%NLMIN
+    end if
+
+    if (present(nlmaxOpt)) then
+      nlmax = nlmaxOpt
+    else
+      nlmax = rproblem%NLMAX
+    end if
 
     ! Assemble static system matrices
-    do i = rproblem%NLMIN, rproblem%NLMAX
+    do i = nlmin, nlmax
       call cc_generateStaticMatrices (rproblem,&
           rproblem%RlevelInfo(i)%rdiscretisation,&
           rproblem%RlevelInfo(i)%rstaticInfo)
     end do
     
     ! Assemble projection matrices
-    do i = rproblem%NLMIN+1, rproblem%NLMAX
+    do i = nlmin+1, nlmax
       call cc_generateProjectionMatrices(&
           rproblem%RlevelInfo(i-1)%rdiscretisation, &
           rproblem%RlevelInfo(i)%rdiscretisation, &
@@ -1387,11 +1455,16 @@ contains
 
 !<subroutine>
 
-  subroutine cc_doneMatVec (rproblem,rvector,rrhs)
+  subroutine cc_doneMatVec (rproblem,rvector,rrhs,nlminOpt,nlmaxOpt)
   
 !<description>
   ! Releases system matrix and vectors.
 !</description>
+
+!<input>
+  ! OPTIONAL: Minimum/maximum multigrid levels
+  integer, intent(in), optional :: nlminOpt,nlmaxOpt
+!</input>
 
 !<inputoutput>
   ! A problem structure saving problem-dependent information.
@@ -1408,10 +1481,22 @@ contains
 
 !</subroutine>
 
-    integer :: i
+    integer :: i,nlmin,nlmax
+
+    if (present(nlminOpt)) then
+      nlmin = nlminOpt
+    else
+      nlmin = rproblem%NLMIN
+    end if
+
+    if (present(nlmaxOpt)) then
+      nlmax = nlmaxOpt
+    else
+      nlmax = rproblem%NLMAX
+    end if
 
     ! Release matrices and vectors on all levels
-    do i=rproblem%NLMAX,rproblem%NLMIN,-1
+    do i=nlmax,nlmin,-1
       ! Release the static matrices.
       call cc_releaseStaticMatrices (rproblem%RlevelInfo(i)%rstaticInfo)
       

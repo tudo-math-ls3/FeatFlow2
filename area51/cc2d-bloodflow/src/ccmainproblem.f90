@@ -54,6 +54,7 @@ module ccmainproblem
   use ccstationary
   use ccnonstationary
   use ccboundarycondition
+  use ccmeshadaptivity
   
   implicit none
   
@@ -105,9 +106,6 @@ contains
     type(t_timer) :: rtimerSolver
     
     integer :: i
-
-    integer :: iiteration, niterations
-    real(DP) :: dtimeInit, dtimeMax, dtimeStep
     
     ! Ok, let us start. 
     
@@ -233,6 +231,14 @@ contains
     end if
     call cc_initInitialSolution (p_rproblem,rvector)
 
+    ! On finest level, initialise the adaptation structure from file.
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising mesh adaptation...')
+    end if
+    call cc_initAdaptation (p_rproblem)
+
+    
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     if (p_rproblem%itimedependence .eq. 0) then
     
@@ -296,25 +302,12 @@ contains
         call output_separator (OU_SEP_MINUS)
       end if
       
-      ! First time step
-      dtimeInit = p_rproblem%rtimedependence%dtimeInit
-      dtimeMax  = p_rproblem%rtimedependence%dtimeMax
-      dtimeStep = p_rproblem%rtimedependence%dtimeStep
+      call stat_startTimer(rtimerSolver)
+      
+      call cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
 
-      do while (p_rproblem%rtimedependence%dtime .le. dtimeMax)
-        
-        p_rproblem%rtimedependence%dtimeInit = dtimeInit
-        p_rproblem%rtimedependence%dtimeMax  = dtimeInit+dtimeStep
-
-        call stat_startTimer(rtimerSolver)
-        call cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
-        call stat_stopTimer(rtimerSolver)
-
-        dtimeStep = p_rproblem%rtimedependence%dtimeStep
-        dtimeInit = p_rproblem%rtimedependence%dtimeMax
-        
-      end do
-
+      call stat_stopTimer(rtimerSolver)
+      
     end if
       
     ! Gather statistics    

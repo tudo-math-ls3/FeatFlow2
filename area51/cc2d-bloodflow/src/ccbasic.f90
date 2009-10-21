@@ -33,6 +33,8 @@ module ccbasic
   use discretefbc
   use linearsystemscalar
   use linearsystemblock
+  use hadaptaux
+  use hadaptivity
   
   use collection
   
@@ -162,6 +164,9 @@ module ccbasic
 
   type t_problem_lvl
   
+    ! An object for saving the h-adaptation structure of the domain
+    type(t_hadapt) :: rhadapt
+
     ! An object for saving the triangulation of the domain
     type(t_triangulation) :: rtriangulation
 
@@ -317,6 +322,9 @@ module ccbasic
     ! =0: Stokes.
     ! =1: Navier-Stokes.
     integer :: iequation
+
+    ! Switch for mesh adaptation
+    integer :: bmeshAdaptation
     
     ! Type of subproblem of the main problem. Depending on iequationType.
     ! If iequationType=0 or =1:

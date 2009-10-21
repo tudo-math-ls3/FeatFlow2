@@ -172,6 +172,7 @@ contains
     ! Release the triangulation on all levels
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
       call tria_done (rproblem%RlevelInfo(i)%rtriangulation)
+      call hadapt_releaseAdaptation (rproblem%RlevelInfo(i)%rhadapt)
     end do
     
     ! Finally release the domain.
