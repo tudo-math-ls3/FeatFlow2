@@ -34,7 +34,7 @@ ilevelUCD = 0
 # Filename for UCD output.
 # In a nonstationary simulation, a number '.0001','.0002',... is appended
 # to this.
-sfilenameUCD = '%{spostdirectory}/u.gmv'
+sfilenameUCD = '%{spostdirectory}/u1.gmv'
 
 # ------------------------------------------------------------------------
 # Nonstationary UCD output parameters

@@ -16,3 +16,19 @@ sMesh = '%{spredirectory}/circle.tri'
 
 # Whether to convert the mesh into a pure triangular mesh or not
 iconvertToTriangleMesh = 1
+
+
+[MESHADAPTIVITY]
+
+# Maximum number of refinement levels
+nsubdividemax = 3
+
+# Adaptation strategy
+# 1 = red-green
+iadaptationStrategy = 0
+
+# Refinement tolerance
+drefinementTolerance = 0.5
+
+# Coarsening tolerance
+dcoarseningTolerance = 0.0

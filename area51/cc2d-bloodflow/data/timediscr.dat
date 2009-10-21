@@ -19,7 +19,7 @@ itimedependence = 1                       # ISTAT
 # Maximum number of macro time steps (TIMEMX).
 # Simulation stops if time > dtimemax or #iterations > niterations
 
-niterations = 1                       # NITNS 10000
+niterations = 10000                       # NITNS
 
 # Absolute start time of the simulation (TIMENS)
 
@@ -28,7 +28,7 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 0.05                           # TIMEMX
+dtimeMax = 6.283                         # TIMEMX
 
 # Initial time step size
 
@@ -91,7 +91,7 @@ dtimeStepFactor = 9.000000001             # DTFACT
 #  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep, 
 # the time step is repeated.
 
-depsAdaptiveRelTimeStep = 0.5             # EPSADU
+depsAdaptiveRelTimeStep = 1.0             # EPSADU
 
 # ----------------------------------------------------------------------
 

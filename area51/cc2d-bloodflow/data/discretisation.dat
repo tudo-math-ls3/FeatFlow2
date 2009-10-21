@@ -94,11 +94,11 @@ swriteSolutionFilename = ''
 
 # minimum mg-level; <=0: Use level (NLMAX - |NLMIN|) as coarse grid
 
-NLMIN              = 3
+NLMIN              = 1
 
 # maximum mg-level = level of computation of nonlinear iteration
 
-NLMAX              = 3
+NLMAX              = 4
 
 # ------------------------------------------------------------------------
 
@@ -128,7 +128,7 @@ dviscoEps = 0.01
 
 # Viscosity parmeter 1/NU if the viscosity is constant
 
-RE                 = 1000
+RE                 = 50
 
 # Type of right hand side. 
 # 0=zero
