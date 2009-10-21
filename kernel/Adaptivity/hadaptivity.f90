@@ -915,6 +915,9 @@ contains
 !</description>
 
 !<input>
+    ! Indicator vector for refinement
+    type(t_vectorScalar), intent(in) :: rindicator
+
     ! callback routines
     include 'intf_hadaptcallback.inc'
     optional :: fcb_hadaptCallback
@@ -923,9 +926,6 @@ contains
 !<inputoutput>
     ! Adaptivity structure
     type(t_hadapt), intent(inout) :: rhadapt
-
-    ! Indicator vector for refinement
-    type(t_vectorScalar), intent(inout) :: rindicator
 
     ! OPTIONAL: Collection
     type(t_collection), intent(inout), optional :: rcollection
