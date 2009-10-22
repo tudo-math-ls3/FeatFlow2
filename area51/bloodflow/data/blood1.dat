@@ -16,35 +16,36 @@ trifilename = grids/blood1.tri
 prmfilename = grids/blood1.prm
 
 # Number of global refinement levels
-iglobRefLevel = 3
+iglobRefLevel = 2
 
 ################################################################################
 [Output]
 ################################################################################
 
 # Name of UCD output file
-ucdfilename = out/blood2.gmv
+ucdfilename = out/blood1.gmv
 
 ################################################################################
 [Object]
 ################################################################################
 
-npoints = 10
+npoints = 20
+icase   = 1
 L       = 1.0
-c       = 1.0
+c       = 0.3
 
 ################################################################################
 [Timestepping]
 ################################################################################
 dtimeStart = 0.0
-dtimeStop  = 6.283185307179586477
-dtimestep  = 0.01
+dtimeStop  = 0.1 #6.283185307179586477
+dtimestep  = 0.1
 
 ################################################################################
 [Adaptation]
 ################################################################################
-nadapt               = 3
-nsubdividemax        = 3
+nadapt               = 5
+nsubdividemax        = 5
 iadaptationstrategy  = 1
 drefinementtolerance = 0.5
 dcoarseningtolerance = 0.0

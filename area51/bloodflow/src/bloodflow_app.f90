@@ -21,7 +21,7 @@ program bloodflow_app
   real(DP) :: dtime,dtimeStop,dtimeStep
 
   ! Initialization
-  call bloodflow_init(rbloodflow, 'blood1.dat', 'data')
+  call bloodflow_init(rbloodflow, 'box1.dat', 'data')
 
   ! Get time stepping values
   call parlst_getvalue_double(rbloodflow%rparlist, 'Timestepping', 'dtimeStart', dtime)
@@ -33,6 +33,8 @@ program bloodflow_app
   
     ! Update simulation time
     dtime = dtime+dtimeStep
+
+    print *, "Time:",dtime
 
     ! Evaluate the object location at simulation time
     call bloodflow_evalObject(rbloodflow, dtime)

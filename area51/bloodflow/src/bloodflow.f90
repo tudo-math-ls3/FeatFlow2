@@ -220,7 +220,7 @@ contains
 
     ! Initialize the output system
     call date_and_time(sdate, stime)
-    call output_init('./log/flagship_'//sdate//'_'//stime(1:4)//'.log')
+    call output_init('./log/bloodflow_'//sdate//'_'//stime(1:4)//'.log')
 
     ! Initialize storage subsystem. The initial number of handles is
     ! set to 500. If this is not enough, then it will be increased
@@ -388,9 +388,9 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DobjectCoords
-    real(DP) :: c,L
+    real(DP) :: a,b,c,L,t
     integer, dimension(2) :: Isize
-    integer :: ipoint, npoints
+    integer :: icase,ipoint, npoints
 
     ! Release thin object from previous evaluation
     if (rbloodflow%h_DobjectCoords .ne. ST_NOHANDLE) then
@@ -398,9 +398,8 @@ contains
     end if
 
     ! Get values from parameter list
-    call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'L',       L)
-    call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'c',       c)
-    call parlst_getvalue_int(rbloodflow%rparlist,    'Object', 'npoints', npoints)
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'npoints', npoints)
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'icase', icase)
 
     ! Generate list of vertices
     Isize = (/2, npoints/)
@@ -408,15 +407,44 @@ contains
                      ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
     
-    do ipoint = 0, npoints-1
+    select case(icase)
       
-      ! Compute x-coordinate
-      p_DobjectCoords(1,ipoint+1) = L*ipoint/real(npoints-1, DP)
+    case (1)
+      ! Thin object
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'L', L)
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'c', c)
+      
+      do ipoint = 0, npoints-1
+        ! Compute x-coordinate
+        p_DobjectCoords(1,ipoint+1) = L*ipoint/real(npoints-1, DP)
+        
+        ! Compute y-coordinate
+        p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*(3*L*p_DobjectCoords(1,ipoint+1)**2 -&
+                                                        p_DobjectCoords(1,ipoint+1)**3)
+      end do
 
-      ! Compute y-coordinate
-      p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*(3*L*p_DobjectCoords(1,ipoint+1)**2 -&
-                                                      p_DobjectCoords(1,ipoint+1)**3)
-    end do
+    case (2)
+      ! Rotating box
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'a', a)
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'b', b)
+
+      do ipoint = 0, npoints-1
+        
+        ! Compute parameter value
+        t = 2*SYS_PI*ipoint/real(npoints-1, DP)
+
+        ! Compute x-coordinate
+        p_DobjectCoords(1,ipoint+1) = cos(dtime)*a*cos(t)-sin(dtime)*b*sin(t)
+
+        ! Compute y-coordinate
+        p_DobjectCoords(2,ipoint+1) = sin(dtime)*a*cos(t)+cos(dtime)*b*sin(t)
+      end do
+      
+    case default
+      print *, 'Invalid test case!'
+      stop
+
+    end select
     
   end subroutine bloodflow_evalObject
 
@@ -467,7 +495,7 @@ contains
     end do
 
 
-    do iadapt = 1, 3
+    do iadapt = 1, 1
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
       
@@ -616,7 +644,7 @@ contains
     findElementsOfOtherVertices: do while (ipoint .le. size(p_DobjectCoords, 2))
       
       ! Get global coordinates of the endpoint
-      Dpoint1Coords =  p_DobjectCoords(:,ipoint)
+      Dpoint1Coords = p_DobjectCoords(:,ipoint)
 
       ! Create single element patch
       npatch = 1
@@ -629,7 +657,7 @@ contains
       end if
       
       ! Check status of starting point, aka, previous point
-      select case(istatus)       
+      select case(istatus)
       case (1:3)
         ! Previous point was one of the corner vertices
         i = p_IverticesAtElement(istatus, iel); ipatch = 0
@@ -694,7 +722,6 @@ contains
         end if
         
       end select
-      
       
       ! Loop over all elements in patch and try to find 
       ! element which contains the endpoint
