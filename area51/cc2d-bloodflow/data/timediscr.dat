@@ -28,11 +28,11 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 6.283                         # TIMEMX
+dtimeMax = 6.0                            # TIMEMX
 
 # Initial time step size
 
-dtimeStep = 0.01                         # DTSTEP
+dtimeStep = 0.005                         # DTSTEP
 
 # Lower limit for the time derivative to be treated as zero. (EPSNS)
 # Simulation stops if time derivative drops below this value.
