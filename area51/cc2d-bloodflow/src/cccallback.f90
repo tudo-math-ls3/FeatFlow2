@@ -1417,17 +1417,17 @@ contains
     call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
                                 p_IverticesAtEdge)
     
-!!$    ! Definition of the flap
-!!$    dx0 = 1.5_DP; dy0 = 0.0_DP
-!!$    width = 0.1; height = 0.6
-!!$    phi = sin(2*SYS_PI*dtime)*SYS_PI/6.0
-
-    ! Definition of the rotor
-    dx0 = 0.0_DP; dy0 = 0.0_DP
+    ! Definition of the flap
+    dx0 = 1.5_DP; dy0 = 0.0_DP
     width = 0.1; height = 0.6
-    phi1  = tanh(dtime)*2*SYS_PI*dtime
-    phi2  = tanh(dtime)*2*SYS_PI*dtime+2*SYS_PI/3.0
-    phi3  = tanh(dtime)*2*SYS_PI*dtime+4*SYS_PI/3.0
+    phi = sin(2*SYS_PI*dtime)*SYS_PI/6.0
+
+!!$    ! Definition of the rotor
+!!$    dx0 = 0.0_DP; dy0 = 0.0_DP
+!!$    width = 0.1; height = 0.6
+!!$    phi1  = tanh(dtime)*2*SYS_PI*dtime
+!!$    phi2  = tanh(dtime)*2*SYS_PI*dtime+2*SYS_PI/3.0
+!!$    phi3  = tanh(dtime)*2*SYS_PI*dtime+4*SYS_PI/3.0
 
     ! Loop through the points where to evaluate:
     do idx = 1,Revaluation(1)%nvalues
@@ -1443,39 +1443,43 @@ contains
                         p_rtriangulation%NVT,&
                         dx,dy)
 
-!!$      ! Compute reference coordinates for the flap
-!!$      dxRef = cos(phi)*(dx-dx0)-sin(phi)*(dy-dy0)
-!!$      dyRef = sin(phi)*(dx-dx0)+cos(phi)*(dy-dy0)
-!!$      
-!!$      ! Definition of the flap
-!!$      if ((dxRef .ge.-width) .and.&
-!!$          (dxRef .le. width) .and.&
-!!$          (dyRef .le. height) .and.&
-!!$          (dyRef .ge. 0)) then
+      ! Compute reference coordinates for the flap
+      dxRef = cos(phi)*(dx-dx0)-sin(phi)*(dy-dy0)
+      dyRef = sin(phi)*(dx-dx0)+cos(phi)*(dy-dy0)
       
-      ! Compute reference coordinates for the rotor
-      dxRef1 =  cos(phi1)*(dx-dx0)+sin(phi1)*(dy-dy0)
-      dyRef1 = -sin(phi1)*(dx-dx0)+cos(phi1)*(dy-dy0)
-      dxRef2 =  cos(phi2)*(dx-dx0)+sin(phi2)*(dy-dy0)
-      dyRef2 = -sin(phi2)*(dx-dx0)+cos(phi2)*(dy-dy0)
-      dxRef3 =  cos(phi3)*(dx-dx0)+sin(phi3)*(dy-dy0)
-      dyRef3 = -sin(phi3)*(dx-dx0)+cos(phi3)*(dy-dy0)
-
-      ! Definition of the rotor
-      if ((dxRef1 .ge.-width)  .and. (dxRef1 .le. width) .and.&
-          (dyRef1 .le. height) .and. (dyRef1 .ge. 0) .or.&
-          (dxRef2 .ge.-width)  .and. (dxRef2 .le. width) .and.&
-          (dyRef2 .le. height) .and. (dyRef2 .ge. 0) .or.&
-          (dxRef3 .ge.-width)  .and. (dxRef3 .le. width) .and.&
-          (dyRef3 .le. height) .and. (dyRef3 .ge. 0)) then
+      ! Definition of the flap
+      if ((dxRef .ge.-width) .and.&
+          (dxRef .le. width) .and.&
+          (dyRef .le. height) .and.&
+          (dyRef .ge. 0)) then
+      
+!!$      ! Compute reference coordinates for the rotor
+!!$      dxRef1 =  cos(phi1)*(dx-dx0)+sin(phi1)*(dy-dy0)
+!!$      dyRef1 = -sin(phi1)*(dx-dx0)+cos(phi1)*(dy-dy0)
+!!$      dxRef2 =  cos(phi2)*(dx-dx0)+sin(phi2)*(dy-dy0)
+!!$      dyRef2 = -sin(phi2)*(dx-dx0)+cos(phi2)*(dy-dy0)
+!!$      dxRef3 =  cos(phi3)*(dx-dx0)+sin(phi3)*(dy-dy0)
+!!$      dyRef3 = -sin(phi3)*(dx-dx0)+cos(phi3)*(dy-dy0)
+!!$
+!!$      ! Definition of the rotor
+!!$      if ((dxRef1 .ge.-width)  .and. (dxRef1 .le. width) .and.&
+!!$          (dyRef1 .le. height) .and. (dyRef1 .ge. 0) .or.&
+!!$          (dxRef2 .ge.-width)  .and. (dxRef2 .le. width) .and.&
+!!$          (dyRef2 .le. height) .and. (dyRef2 .ge. 0) .or.&
+!!$          (dxRef3 .ge.-width)  .and. (dxRef3 .le. width) .and.&
+!!$          (dyRef3 .le. height) .and. (dyRef3 .ge. 0)) then
         
         ! Denote in the p_Iinside array that we prescribe a value here:
         Revaluation(1)%p_Iinside (idx) = 1
         Revaluation(2)%p_Iinside (idx) = 1
         
+!!$        ! We prescribe Dirichlet value here - for x- and y-velocity
+!!$        Revaluation(1)%p_Dvalues (idx,1) = -dy
+!!$        Revaluation(2)%p_Dvalues (idx,1) =  dx
+
         ! We prescribe Dirichlet value here - for x- and y-velocity
-        Revaluation(1)%p_Dvalues (idx,1) = -dy
-        Revaluation(2)%p_Dvalues (idx,1) =  dx
+        Revaluation(1)%p_Dvalues (idx,1) =  sign(1.0,cos(2*SYS_PI*dtime))*(dy-dy0)
+        Revaluation(2)%p_Dvalues (idx,1) = -sign(1.0,cos(2*SYS_PI*dtime))*(dx-dx0)
       
       end if
       
@@ -1650,27 +1654,27 @@ contains
     integer, dimension(16) :: Idata
     integer :: ipos
 
-    ! What operation should be performed
-    select case(iOperation)
-      
-    case(HADAPT_OPR_INITCALLBACK)
-      call list_createList(rlist,100,ST_INT,16,0,0,&
-          LIST_UNORDERED,1.5_DP,LIST_DOUBLELINKED)
-    
-    case(HADAPT_OPR_DONECALLBACK)
-      call list_releaseList(rlist)
-      
-    case default
-      
-      ! Prepare auxiliary integer data
-      Idata = 0
-      Idata(1:size(Ivertices))   = Ivertices
-      Idata(8:8+size(Ielements)) = Ielements
-
-      ! Append data to list
-      call list_appendToList(rlist,iOperation,ipos,IData=Idata)
-
-    print *, iOperation
+!!$    ! What operation should be performed
+!!$    select case(iOperation)
+!!$      
+!!$    case(HADAPT_OPR_INITCALLBACK)
+!!$      call list_createList(rlist,100,ST_INT,16,0,0,&
+!!$          LIST_UNORDERED,1.5_DP,LIST_DOUBLELINKED)
+!!$    
+!!$    case(HADAPT_OPR_DONECALLBACK)
+!!$      call list_releaseList(rlist)
+!!$      
+!!$    case default
+!!$      
+!!$      ! Prepare auxiliary integer data
+!!$      Idata = 0
+!!$      Idata(1:size(Ivertices))   = Ivertices
+!!$      Idata(8:8+size(Ielements)) = Ielements
+!!$
+!!$      ! Append data to list
+!!$      call list_appendToList(rlist,iOperation,ipos,IData=Idata)
+!!$
+!!$    print *, iOperation
 
   end subroutine
 
