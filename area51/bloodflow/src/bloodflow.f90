@@ -312,7 +312,7 @@ contains
 
 !<subroutine>
 
-  subroutine bloodflow_outputStructure(rbloodflow)
+  subroutine bloodflow_outputStructure(rbloodflow, dtime)
 
 !<description>
 
@@ -325,6 +325,9 @@ contains
     ! Bloodflow structure
     type(t_bloodflow), intent(in) :: rbloodflow
 
+    ! Simulation time
+    real(DP), intent(in), optional :: dtime
+
 !</input>
 !</subroutine>
 
@@ -334,7 +337,7 @@ contains
     real(DP), dimension(:), pointer :: DtracerData
     integer, dimension(:), pointer :: p_Iindicator, p_IobjectCoordsIdx
     character(len=SYS_STRLEN) :: sucdfilename
-    integer :: iobj
+    integer :: i,iobj
 
     ! persistent variable
     integer, save :: ifilenumber = 1
@@ -352,22 +355,26 @@ contains
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
         p_DobjectCoords)
     
-    ! Loop over all objects
-    do iobj = 1, size(p_IobjectCoordsIdx)-1
+    ! Set tracers
+    call ucd_setTracers (rexport, p_DobjectCoords)
+
+    ! Set tracer data
+    allocate(DtracerData(size(p_DobjectCoords,2)))
     
-      ! Set tracer
-      call ucd_setTracers (rexport,&
-          p_DobjectCoords(:,p_IobjectCoordsIdx(iobj):&
-                            p_IobjectCoordsIdx(iobj+1)-1))
-      
-      ! Set tracer data
-      allocate(DtracerData(p_IobjectCoordsIdx(iobj+1)-p_IobjectCoordsIdx(iobj)))
-      call lalg_setVector(DtracerData, real(iobj, DP))
-      call ucd_addTracerVariable (rexport,&
-          'object'//sys_siL(iobj,3), DtracerData)
-      deallocate(DtracerData)
+    ! Loop over points of all objects
+    do iobj = 1, size(p_IobjectCoordsIdx)-1
+      do i = p_IobjectCoordsIdx(iobj), p_IobjectCoordsIdx(iobj+1)-1
+        DtracerData(i) = real(iobj, DP)
+      end do
     end do
     
+    call ucd_addTracerVariable (rexport, 'object', DtracerData)
+    deallocate(DtracerData)
+    
+    ! Attach simulation time
+    if (present(dtime))&
+        call ucd_setSimulationTime (rexport,dtime)
+
     ! Write UCD exporter to file
     call ucd_write(rexport)
     call ucd_release(rexport)
@@ -409,7 +416,7 @@ contains
     integer, dimension(:), pointer :: p_IobjectCoordsIdx
     real(DP) :: a,b,c,L,t,w
     integer, dimension(2) :: Isize
-    integer :: icase,ipoint, npoints
+    integer :: icase,ipoint,npoints,i,n
 
     ! Release object(s) from previous evaluation
     if (rbloodflow%h_IobjectCoordsIdx .ne. ST_NOHANDLE) then
@@ -435,23 +442,27 @@ contains
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'c', c)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'w', w)
 
-      ! Allocate storage
+      ! Allocate storage for the coordinates
       Isize = (/2, npoints/)
       call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
           ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
       call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
           p_DobjectCoords)
 
+      ! Allocate storage for the index
       call storage_new('bloodflow_evalObject', 'IobjectCoordsIdx', 2,&
           ST_INT, rbloodflow%h_IobjectCoordsIdx, ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
           p_IobjectCoordsIdx)
       
+      ! Initialize index
       p_IobjectCoordsIdx = (/1, npoints+1/)
       
       if (abs(w) .le. SYS_EPSREAL) then
         
+        ! Create a thin (quasi 1D) object
         do ipoint = 0, npoints-1
+          
           ! Compute x-coordinate
           p_DobjectCoords(1,ipoint+1) = L*ipoint/real(npoints-1, DP)
           
@@ -463,7 +474,9 @@ contains
         
       else
 
+        ! Create first part of the 2D object
         do ipoint = 0, int(npoints/2.0)-1
+          
           ! Compute x-coordinate
           p_DobjectCoords(1,ipoint+1) = L*ipoint/real(int(npoints/2.0)-1, DP)
          
@@ -473,8 +486,9 @@ contains
                    p_DobjectCoords(1,ipoint+1)**3)
         end do
           
+        ! Create second part of the 2D object
         do ipoint = int(npoints/2.0), npoints-1
-
+          
           ! Compute x-coordinate
           p_DobjectCoords(1,ipoint+1) = L*(npoints-ipoint-1)&
               /real(npoints-int(npoints/2.0)-1, DP)
@@ -483,11 +497,11 @@ contains
           p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*&
               (3*L*p_DobjectCoords(1,ipoint+1)**2 -&
                    p_DobjectCoords(1,ipoint+1)**3) + w
-
         end do
 
       end if
       
+
     case (2)
 
       !-------------------------------------------------------------------------
@@ -498,20 +512,23 @@ contains
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'a', a)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'b', b)
 
-      ! Allocate storage
+      ! Allocate storage for the coordinates
       Isize = (/2, npoints/)
       call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
           ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
       call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
           p_DobjectCoords)
       
+      ! Allocate storage for the index
       call storage_new('bloodflow_evalObject', 'IobjectCoordsIdx', 2,&
           ST_INT, rbloodflow%h_IobjectCoordsIdx, ST_NEWBLOCK_ZERO)
       call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
           p_IobjectCoordsIdx)
-      
+
+      ! Initialize index
       p_IobjectCoordsIdx = (/1, npoints+1/)
       
+      ! Create ellipse
       do ipoint = 0, npoints-1
         
         ! Compute parameter value
@@ -524,6 +541,55 @@ contains
         p_DobjectCoords(2,ipoint+1) = sin(dtime)*a*cos(t)+cos(dtime)*b*sin(t)
       end do
       
+    case (3)
+  
+      !-------------------------------------------------------------------------
+      ! Rotating rotor
+      !-------------------------------------------------------------------------
+
+      call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'n', n)
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'L', L)
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'w', w)
+
+      ! Allocate storage for the coordinates
+      Isize = (/2, 4*n/)
+      call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
+          ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
+      call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
+          p_DobjectCoords)
+      
+      ! Allocate storage for the index
+      call storage_new('bloodflow_evalObject', 'IobjectCoordsIdx', n+1,&
+          ST_INT, rbloodflow%h_IobjectCoordsIdx, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
+          p_IobjectCoordsIdx)
+
+      ! Create each blade separately
+      do i = 1, n
+        
+        ! Set position of first point of the object
+        p_IobjectCoordsIdx(i) = (i-1)*4+1
+        
+        ! Compute parameter value
+        t = 2*SYS_PI*(i-1)/real(n, DP)
+        
+        ! Compute x-coordinates
+        p_DobjectCoords(1,(i-1)*4+1) = -cos(dtime+t)*w
+        p_DobjectCoords(1,(i-1)*4+2) = -cos(dtime+t)*w-sin(dtime+t)*L
+        p_DobjectCoords(1,(i-1)*4+3) =  cos(dtime+t)*w-sin(dtime+t)*L
+        p_DobjectCoords(1,(i-1)*4+4) =  cos(dtime+t)*w
+        
+        ! Compute y-coordinate
+        p_DobjectCoords(2,(i-1)*4+1) = -sin(dtime+t)*w
+        p_DobjectCoords(2,(i-1)*4+2) = -sin(dtime+t)*w+cos(dtime+t)*L
+        p_DobjectCoords(2,(i-1)*4+3) =  sin(dtime+t)*w+cos(dtime+t)*L
+        p_DobjectCoords(2,(i-1)*4+4) =  sin(dtime+t)*w
+        
+      end do
+
+      p_IobjectCoordsIdx(n+1) = n*4+1
+
+
     case default
       call output_line('Invalid test case!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'bloodflow_evalObject')
@@ -624,12 +690,14 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
-    integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex, p_Iindicator
-    integer, dimension(:), pointer :: IelementPatch
+    integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
+    integer, dimension(:), pointer :: p_Iindicator, p_IobjectCoordsIdx
+    integer, dimension(:), pointer :: IelementPatch 
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
     real(DP) :: dscale, dscaleMax
-    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx,ipoint,ipatch,npatch,ipos
+    integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx
+    integer :: ipoint,ipatch,npatch,ipos,iobj
   
     
     ! Release the indicator vector (if any)
@@ -652,106 +720,321 @@ contains
 
     ! Set pointers
     call storage_getbase_int2d(&
-        rbloodflow%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+        rbloodflow%rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
     call storage_getbase_int2d(&
-        rbloodflow%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+        rbloodflow%rtriangulation%h_IneighboursAtElement,&
+        p_IneighboursAtElement)
     call storage_getbase_int(&
-        rbloodflow%rtriangulation%h_IelementsAtVertexIdx, p_IelementsAtVertexIdx)
+        rbloodflow%rtriangulation%h_IelementsAtVertexIdx,&
+        p_IelementsAtVertexIdx)
     call storage_getbase_int(&
-        rbloodflow%rtriangulation%h_IelementsAtVertex, p_IelementsAtVertex)
+        rbloodflow%rtriangulation%h_IelementsAtVertex,&
+        p_IelementsAtVertex)
     call storage_getbase_double2d(&
-        rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
-
-    !---------------------------------------------------------------------------
-    ! (1) Find element surrounding/meeting at first point of the object:
-    !
-    !     The algorithm is really simply. An extensive search over all
-    !     element of the triangulation is performed and the first
-    !     element which either surrounds the first point of the thin
-    !     object or is connected to this point via a corner certex or
-    !     an edge is selected.
-    !---------------------------------------------------------------------------
+        rbloodflow%rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+    call storage_getbase_double2d(&
+        rbloodflow%h_DobjectCoords,&
+        p_DobjectCoords)
+    call storage_getbase_int(&
+        rbloodflow%h_IobjectCoordsIdx,&
+        p_IobjectCoordsIdx)
     
-    ! Initialize point number
-    ipoint = 1
     
-    ! Get global coordinates of first point
-    Dpoint0Coords =  p_DobjectCoords(:,ipoint)
-
-    ! Loop over all elements in triangulation
-    findElementOfFirstVertex: do iel = 1, rbloodflow%rtriangulation%NEL
-
-      ! Get vertices at element
-      i1 = p_IverticesAtElement(1, iel)
-      i2 = p_IverticesAtElement(2, iel)
-      i3 = p_IverticesAtElement(3, iel)
-
-      ! Get global coordinates of corner vertices
-      DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-      DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-      DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+    ! Loop over all objects    
+    do iobj = 1, size(p_IobjectCoordsIdx)-1
       
-      ! Check if the point is 'inside' or on the boundary of the element
-      call PointInTriangleTest(DtriaCoords, Dpoint0Coords, POINT_EQUAL_TOLERANCE, istatus)
-      if (istatus .ge. 0) exit findElementOfFirstVertex
+      ! Initialize point number
+      ipoint = p_IobjectCoordsIdx(iobj)
       
-    end do findElementOfFirstVertex
-
-    ! Mark first element for potential refinement
-    p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
-
-    ! Update point number
-    ipoint = ipoint+1
-
-    !---------------------------------------------------------------------------
-    ! (2) Find elements surrounding/meeting at all others points of the object:
-    !
-    !     This algorithm is slightly more complicated. The list of
-    !     points on the thin object is visited segment-by-segment. If
-    !     the starting point (aka previous point) of the segment is
-    !     located inside an element, then nothing needs to be done. If
-    !     the previous point was located on an edge, then the opposite
-    !     element is also marked. Finally, if the previous point
-    !     coincides with some corner vertex, then all elements meeting
-    !     at that point are marked.
-    !
-    !     Next, we proceed to the endpoint of the segment. If it lies
-    !     inside the same element, then the above procedure applies to
-    !     the endpoint. Otherwise, the segment must either intersect
-    !     one edge of the current element or run through a corner
-    !     vertex. In any case, we compute the coordinates of the
-    !     intersection point which serves as new starting point of the
-    !     segment. In practice, the original starting point is still
-    !     used but the decision how to proceed is based on the
-    !     coordinates of the intersection point. This process
-    !     continues until the endpoint of the last segment is reached.
-    !
-    !---------------------------------------------------------------------------
-
-    ! Loop over all remaining points
-    findElementsOfOtherVertices: do while (ipoint .le. size(p_DobjectCoords, 2))
+      !-------------------------------------------------------------------------
+      ! (1) Find element surrounding/meeting at first point of the object:
+      !
+      !     The algorithm is really simply. An extensive search over all
+      !     element of the triangulation is performed and the first
+      !     element which either surrounds the first point of the thin
+      !     object or is connected to this point via a corner certex or
+      !     an edge is selected.
+      !-------------------------------------------------------------------------
       
-      ! Get global coordinates of the endpoint
-      Dpoint1Coords = p_DobjectCoords(:,ipoint)
+      ! Get global coordinates of first point
+      Dpoint0Coords =  p_DobjectCoords(:,ipoint)
+      
+      ! Loop over all elements in triangulation
+      findElementOfFirstVertex: do&
+          iel = 1, rbloodflow%rtriangulation%NEL
+        
+        ! Get vertices at element
+        i1 = p_IverticesAtElement(1, iel)
+        i2 = p_IverticesAtElement(2, iel)
+        i3 = p_IverticesAtElement(3, iel)
+        
+        ! Get global coordinates of corner vertices
+        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+        
+        ! Check if the point is 'inside' or on the boundary of the element
+        call PointInTriangleTest(DtriaCoords, Dpoint0Coords,&
+            POINT_EQUAL_TOLERANCE, istatus)
+        if (istatus .ge. 0) exit findElementOfFirstVertex
+        
+      end do findElementOfFirstVertex
+      
+      ! Mark first element for potential refinement
+      p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
+      
+      ! Update point number
+      ipoint = ipoint+1
+      
+      !-------------------------------------------------------------------------
+      ! (2) Find elements surrounding/meeting at all points of the object:
+      !
+      !     This algorithm is slightly more complicated. The list of
+      !     points on the thin object is visited segment-by-segment. If
+      !     the starting point (aka previous point) of the segment is
+      !     located inside an element, then nothing needs to be done. If
+      !     the previous point was located on an edge, then the opposite
+      !     element is also marked. Finally, if the previous point
+      !     coincides with some corner vertex, then all elements meeting
+      !     at that point are marked.
+      !
+      !     Next, we proceed to the endpoint of the segment. If it lies
+      !     inside the same element, then the above procedure applies to
+      !     the endpoint. Otherwise, the segment must either intersect
+      !     one edge of the current element or run through a corner
+      !     vertex. In any case, we compute the coordinates of the
+      !     intersection point which serves as new starting point of the
+      !     segment. In practice, the original starting point is still
+      !     used but the decision how to proceed is based on the
+      !     coordinates of the intersection point. This process
+      !     continues until the endpoint of the last segment is reached.
+      !-------------------------------------------------------------------------
 
-      ! Create single element patch
-      npatch = 1
-      IelementPatch(npatch) = iel
-
+      ! Loop over all remaining points
+      findElementsOfOtherVertices: do&
+          while (ipoint .le. p_IobjectCoordsIdx(iobj+1)-1)
+        
+        ! Get global coordinates of the endpoint
+        Dpoint1Coords = p_DobjectCoords(:,ipoint)
+        
+        ! Create single element patch
+        npatch = 1
+        IelementPatch(npatch) = iel
+        
+        ! Append element to the list of elements adjacent to the object
+        if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+          p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
+          call list_appendToList(rbloodflow%relementList, iel, ipos)
+        end if
+        
+        ! Check status of starting point, aka, previous point
+        select case(istatus)
+        case (1:3)
+          ! Previous point was one of the corner vertices
+          i = p_IverticesAtElement(istatus, iel); ipatch = 0
+          
+          ! Create local patch surrounding this point
+          do idx = p_IelementsAtVertexIdx(i),&
+                   p_IelementsAtVertexIdx(i+1)-1
+            
+            ! Get global element number
+            jel = p_IelementsAtVertex(idx)
+            
+            ! Check if we are at the boundary
+            if (jel .ne. 0) then
+              
+              ! Append element to the list of elements adjacent to the object
+              if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+                p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+                call list_appendToList(rbloodflow%relementList, jel, ipos)
+              end if
+              
+              ! Mark element for potential refinement
+              do jve = 1, TRIA_NVETRI2D
+                if (p_IverticesAtElement(jve, jel) .eq. i) then
+                  p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+                  exit
+                end if
+              end do
+              
+              ipatch = ipatch+1
+              IelementPatch(ipatch) = jel
+              
+            end if
+          end do
+          npatch = ipatch
+          
+        case (4:6)               
+          ! Previous point was located on the edge of the element
+          jel = p_IneighboursAtElement(istatus-3, iel)
+          
+          ! Create two element patch if there is an adjacent element
+          if (jel .ne. 0) then
+            
+            ! Append element to the list of elements adjacent to the object
+            if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+              call list_appendToList(rbloodflow%relementList, jel, ipos)
+            end if
+            
+            ! Mark element for potential refinement
+            do jve = 1, TRIA_NVETRI2D
+              if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+                
+                ! Check if edge has been intersected previously
+                if (btest(p_Iindicator(jel), jve+3))&
+                    p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
+                
+                ! Mark edge as intersected
+                p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
+                exit
+              end if
+            end do
+            
+            npatch = 2
+            IelementPatch(npatch) = jel
+            
+          end if
+          
+        end select
+        
+        ! Loop over all elements in patch and try to find 
+        ! element which contains the endpoint
+        findInPatchDirect: do ipatch = 1, npatch
+          
+          ! Get element number
+          iel = IelementPatch(ipatch)
+          
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(1, iel)
+          i2 = p_IverticesAtElement(2, iel)
+          i3 = p_IverticesAtElement(3, iel)
+          
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+          
+          ! Check if the endpoint is 'inside' or on the boundary of the current element
+          call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
+          if (istatus .ge. 0) then
+            
+            ! Check if edge has been intersected previously
+            if ((istatus .ge. 4) .and. btest(p_Iindicator(iel), istatus))&
+                p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
+            
+            ! Mark element for potential refinement
+            p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
+            
+            ! If so, use the current point as new starting point of the segment
+            Dpoint0Coords = Dpoint1Coords
+            
+            ! Update point number
+            ipoint = ipoint+1
+            
+            ! That's it, we can forget about the current patch of elements
+            cycle findElementsOfOtherVertices
+          end if
+          
+        end do findInPatchDirect
+        
+        
+        ! Ok, the endpoint was not in one of the elements belonging to
+        ! the current patch. Hence, the segment connecting the start and
+        ! endpoint must cross some boundary edge of the patch
+        
+        ! Initialize scaling parameter
+        dscaleMax = 0.0_DP
+        
+        ! Loop over all elements in patch and find the intersection
+        ! point of the current line segment with the patch
+        findInPatchIndirect: do ipatch = 1, npatch
+          
+          ! Get element number
+          iel = IelementPatch(ipatch)
+          
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(1, iel)
+          i2 = p_IverticesAtElement(2, iel)
+          i3 = p_IverticesAtElement(3, iel)
+          
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+          
+          ! Loop over all edges of the element
+          findIntersectionEdge: do ive = 1, TRIA_NVETRI2D
+            
+            ! Check if the edge intersects with the line between start
+            ! and endpoint and compute coordinates of intersection point
+            call LinesIntersectionTest(Dpoint0Coords, Dpoint1Coords,&
+                DtriaCoords(:,ive), DtriaCoords(:,mod(ive,3)+1),&
+                istatus, dscale)
+            if (istatus .eq. 0) then
+              
+              ! Check if the distance between the starting point and the
+              ! intersection point exceeds that of an intersection point
+              ! which may have been found previously for a different edge
+              if (dscale .gt. dscaleMax) then
+                ! Store parameter for new intersection point
+                dscaleMax = dscale
+                
+                ! Store element number and edge position
+                jel = iel; ipos = ive
+              end if
+              
+            end if
+            
+          end do findIntersectionEdge
+        end do findInPatchIndirect
+        
+        ! If we end up here, the scaling parameter for the "best"
+        ! intersection point has been determined and we can proceed
+        iel = jel
+        
+        ! Check if edge has been intersected previously
+        if (btest(p_Iindicator(iel), ipos+3))&
+            p_Iindicator(iel) = ior(p_Iindicator(iel),&
+            BITFIELD_MULTI_INTERSECTION)
+        
+        ! Mark element for potential refinement
+        p_Iindicator(iel) = ibset(p_Iindicator(iel), ipos+3)
+        
+        ! Get vertices at element
+        i1 = p_IverticesAtElement(1, iel)
+        i2 = p_IverticesAtElement(2, iel)
+        i3 = p_IverticesAtElement(3, iel)
+        
+        ! Get global coordinates of corner vertices
+        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+        
+        ! Compute intersection point
+        Daux = Dpoint0Coords + dscaleMax * (Dpoint1Coords-Dpoint0Coords)
+        
+        ! Perform point-in-triangle test for intersection point
+        call PointInTriangleTest(DtriaCoords, Daux, POINT_EQUAL_TOLERANCE, istatus)
+        
+      end do findElementsOfOtherVertices
+      
       ! Append element to the list of elements adjacent to the object
       if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
         p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
         call list_appendToList(rbloodflow%relementList, iel, ipos)
       end if
       
-      ! Check status of starting point, aka, previous point
+      ! Check status of previous point
       select case(istatus)
       case (1:3)
-        ! Previous point was one of the corner vertices
-        i = p_IverticesAtElement(istatus, iel); ipatch = 0
-
-        ! Create local patch surrounding this point
+        ! Previous point was one of the corner vertices, thus, mark
+        ! all elements meeting at that corner and create local patch
+        i = p_IverticesAtElement(istatus, iel)
+        
+        ! Mark elements surrounding this point
         do idx = p_IelementsAtVertexIdx(i),&
                  p_IelementsAtVertexIdx(i+1)-1
           
@@ -762,7 +1045,8 @@ contains
           if (jel .ne. 0) then
             
             ! Append element to the list of elements adjacent to the object
-            if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+            if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne.&
+                BITFIELD_INLIST) then
               p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
               call list_appendToList(rbloodflow%relementList, jel, ipos)
             end if
@@ -775,188 +1059,15 @@ contains
               end if
             end do
             
-            ipatch = ipatch+1
-            IelementPatch(ipatch) = jel
-            
           end if
-          
         end do
-        npatch = ipatch
         
-      case (4:6)               
-        ! Previous point was located on the edge of the element
+      case (4:6)
+        ! Previous point was located on the edge of the element, thus,
+        ! mark adjacent element and create two element patch
         jel = p_IneighboursAtElement(istatus-3, iel)
-
-        ! Create two element patch if there is an adjacent element
-        if (jel .ne. 0) then
-          
-          ! Append element to the list of elements adjacent to the object
-          if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-            p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-            call list_appendToList(rbloodflow%relementList, jel, ipos)
-          end if
-          
-          ! Mark element for potential refinement
-          do jve = 1, TRIA_NVETRI2D
-            if (p_IneighboursAtElement(jve, jel) .eq. iel) then
-
-              ! Check if edge has been intersected previously
-              if (btest(p_Iindicator(jel), jve+3))&
-                  p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
-
-              ! Mark edge as intersected
-              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
-              exit
-            end if
-          end do
-
-          npatch = 2
-          IelementPatch(npatch) = jel
-
-        end if
         
-      end select
-      
-      ! Loop over all elements in patch and try to find 
-      ! element which contains the endpoint
-      findInPatchDirect: do ipatch = 1, npatch
-        
-        ! Get element number
-        iel = IelementPatch(ipatch)
-        
-        ! Get vertices at element
-        i1 = p_IverticesAtElement(1, iel)
-        i2 = p_IverticesAtElement(2, iel)
-        i3 = p_IverticesAtElement(3, iel)
-        
-        ! Get global coordinates of corner vertices
-        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-        
-        ! Check if the endpoint is 'inside' or on the boundary of the current element
-        call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
-        if (istatus .ge. 0) then
-          
-          ! Check if edge has been intersected previously
-          if ((istatus .ge. 4) .and. btest(p_Iindicator(iel), istatus))&
-              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
-
-          ! Mark element for potential refinement
-          p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
-
-          ! If so, use the current point as new starting point of the segment
-          Dpoint0Coords = Dpoint1Coords
-          
-          ! Update point number
-          ipoint = ipoint+1
-
-          ! That's it, we can forget about the current patch of elements
-          cycle findElementsOfOtherVertices
-        end if
-
-      end do findInPatchDirect
-      
-
-      ! Ok, the endpoint was not in one of the elements belonging to
-      ! the current patch. Hence, the segment connecting the start and
-      ! endpoint must cross some boundary edge of the patch
-
-      ! Initialize scaling parameter
-      dscaleMax = 0.0_DP
-
-      ! Loop over all elements in patch and find the intersection
-      ! point of the current line segment with the patch
-      findInPatchIndirect: do ipatch = 1, npatch
-        
-        ! Get element number
-        iel = IelementPatch(ipatch)
-        
-        ! Get vertices at element
-        i1 = p_IverticesAtElement(1, iel)
-        i2 = p_IverticesAtElement(2, iel)
-        i3 = p_IverticesAtElement(3, iel)
-        
-        ! Get global coordinates of corner vertices
-        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-
-        ! Loop over all edges of the element
-        findIntersectionEdge: do ive = 1, TRIA_NVETRI2D
-          
-          ! Check if the edge intersects with the line between start
-          ! and endpoint and compute coordinates of intersection point
-          call LinesIntersectionTest(Dpoint0Coords, Dpoint1Coords, DtriaCoords(:,ive),&
-                                     DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
-          if (istatus .eq. 0) then
-            
-            ! Check if the distance between the starting point and the
-            ! intersection point exceeds that of an intersection point
-            ! which may have been found previously for a different edge
-            if (dscale .gt. dscaleMax) then
-              ! Store parameter for new intersection point
-              dscaleMax = dscale
-              
-              ! Store element number and edge position
-              jel = iel; ipos = ive
-            end if
-
-          end if
-          
-        end do findIntersectionEdge
-      end do findInPatchIndirect
-
-      ! If we end up here, the scaling parameter for the "best"
-      ! intersection point has been determined and we can proceed
-      iel = jel
-
-      ! Check if edge has been intersected previously
-      if (btest(p_Iindicator(iel), ipos+3))&
-          p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION)
-
-      ! Mark element for potential refinement
-      p_Iindicator(iel) = ibset(p_Iindicator(iel), ipos+3)
-      
-      ! Get vertices at element
-      i1 = p_IverticesAtElement(1, iel)
-      i2 = p_IverticesAtElement(2, iel)
-      i3 = p_IverticesAtElement(3, iel)
-      
-      ! Get global coordinates of corner vertices
-      DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-      DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-      DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-      
-      ! Compute intersection point
-      Daux = Dpoint0Coords + dscaleMax * (Dpoint1Coords-Dpoint0Coords)
-        
-      ! Perform point-in-triangle test for intersection point
-      call PointInTriangleTest(DtriaCoords, Daux, POINT_EQUAL_TOLERANCE, istatus)
-      
-    end do findElementsOfOtherVertices
-    
-    ! Append element to the list of elements adjacent to the object
-    if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-      p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
-      call list_appendToList(rbloodflow%relementList, iel, ipos)
-    end if
-    
-    ! Check status of previous point
-    select case(istatus)
-    case (1:3)
-      ! Previous point was one of the corner vertices, thus, mark
-      ! all elements meeting at that corner and create local patch
-      i = p_IverticesAtElement(istatus, iel)
-      
-      ! Mark elements surrounding this point
-      do idx = p_IelementsAtVertexIdx(i),&
-               p_IelementsAtVertexIdx(i+1)-1
-        
-        ! Get global element number
-        jel = p_IelementsAtVertex(idx)
-
-        ! Check if we are at the boundary
+        ! Mark adjacent element if it exists
         if (jel .ne. 0) then
           
           ! Append element to the list of elements adjacent to the object
@@ -968,49 +1079,24 @@ contains
           
           ! Mark element for potential refinement
           do jve = 1, TRIA_NVETRI2D
-            if (p_IverticesAtElement(jve, jel) .eq. i) then
-              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+            if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+              
+              ! Check if edge has been intersected previously
+              if (btest(p_Iindicator(jel), jve+3))&
+                  p_Iindicator(jel) = ior(p_Iindicator(jel),&
+                  BITFIELD_MULTI_INTERSECTION)
+              
+              ! Mark edge as intersected
+              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
               exit
             end if
           end do
           
         end if
-
-      end do
-      
-    case (4:6)
-      ! Previous point was located on the edge of the element, thus,
-      ! mark adjacent element and create two element patch
-      jel = p_IneighboursAtElement(istatus-3, iel)
-
-      ! Mark adjacent element if it exists
-      if (jel .ne. 0) then
         
-        ! Append element to the list of elements adjacent to the object
-        if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne.&
-            BITFIELD_INLIST) then
-          p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-          call list_appendToList(rbloodflow%relementList, jel, ipos)
-        end if
-        
-        ! Mark element for potential refinement
-        do jve = 1, TRIA_NVETRI2D
-          if (p_IneighboursAtElement(jve, jel) .eq. iel) then
-            
-            ! Check if edge has been intersected previously
-            if (btest(p_Iindicator(jel), jve+3))&
-                p_Iindicator(jel) = ior(p_Iindicator(jel),&
-                BITFIELD_MULTI_INTERSECTION)
-            
-            ! Mark edge as intersected
-            p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
-            exit
-          end if
-        end do
-
-      end if
+      end select
       
-    end select
+    end do
 
     ! Deallocate temporal memory
     deallocate(IelementPatch)
