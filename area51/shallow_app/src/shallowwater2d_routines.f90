@@ -104,8 +104,8 @@ contains
     hr=Qr(1)
 
     ! Test, if a dry bed state is present
-    if (hl<1e-6) hl=1e-6
-    if (hr<1e-6) hr=1e-6
+!     if (hl<1e-6) hl=1e-6
+!     if (hr<1e-6) hr=1e-6
 
     denom = sqrt(hl)+sqrt(hr)
     whl = 1.0_DP/sqrt(hl)
@@ -172,13 +172,13 @@ contains
 
   ! This routine builds the jacobi matrix in direction d
   ! d=1: x-direction, d=2: y-direction
-  function buildDissipation(Q,k,d,g,cxij,cyij) result(Dij)
+  function buildDissipation(Qi,Qj,k,d,g,cxij,cyij) result(Dij)
 
     ! The jacobi matrix in direction d
     real(DP), dimension(3,3)    :: Dij
 
     ! The solution components q1 = h, q2 = uh, q3 = vh of the Roe-values
-    real(DP), dimension(3), intent(IN)      :: Q
+    real(DP), dimension(3), intent(IN)      :: Qi,Qj
     
     ! The kind of dissipation (scalar, tensorial, ...)
     integer, intent(IN)                     :: k
@@ -190,9 +190,17 @@ contains
     real(DP), intent(IN)                    :: cxij, cyij
 
     integer, intent(IN)                     :: d
+    
+    ! The Roe-Mean-Values
+    real(DP), dimension(nvar2d)             :: Qroe
 
     ! local variables
     real(DP)                                :: scalefactor, cRoe, uRoe, vRoe, lambda, scalardissipation
+    
+    real(dp), dimension(3) :: v,w,diff
+    real(dp), dimension(3,3) :: A
+    integer :: l
+    real(dp) :: ci, cj, vi, vj, ui, uj
 
 
     select case (k)
@@ -202,23 +210,85 @@ contains
 
       case (1)! Here we use scalar dissipation
 
-        scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
-        cRoe = sqrt(g*Q(1))    ! c_Roe=sqrt(g*h)
-        ! cRoe = sqrt(0.5*gravconst*(Qi(1)+Qj(1)))
-        uRoe = Q(2)/Q(1) 
-        vRoe = Q(3)/Q(1)
-        lambda = sqrt((cxij/scalefactor*uRoe)**2.0_DP+(cyij/scalefactor*vRoe)**2.0_DP)+cRoe
-        scalarDissipation = scalefactor*lambda
+! !        scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
+! !        cRoe = sqrt(g*Q(1))    ! c_Roe=sqrt(g*h)
+! !        ! cRoe = sqrt(0.5*gravconst*(Qi(1)+Qj(1)))
+! !        uRoe = Q(2)/Q(1) 
+! !        vRoe = Q(3)/Q(1)
+! !        lambda = sqrt((cxij/scalefactor*uRoe)**2.0_DP+(cyij/scalefactor*vRoe)**2.0_DP)+cRoe
+! !        scalarDissipation = scalefactor*lambda
+! !
+! !        Dij=scalarDissipation*Eye
+!         
+!         Qroe = calculateQroe(Qi, Qj)
+!         cRoe = sqrt(0.5_DP*g*(Qi(1)+Qj(1)))
+!         uRoe = QRoe(2)/QRoe(1) 
+!         vRoe = QRoe(3)/QRoe(1)
+!         
+! !         if ((Qi(1)<1e-6_dp).or.(Qj(1)<1e-6_dp)) then
+! !           uRoe = max(Qi(2)/Qi(1),Qj(2)/Qj(1))
+! !           vRoe = max(Qi(3)/Qi(1),Qj(3)/Qj(1))
+! !           cRoe = 2.0_dp*max(sqrt(g*Qi(1)),sqrt(g*Qj(1)))
+! !         end if
+!         
+!         scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
+!         lambda = abs(cxij*uRoe+cyij*vRoe)/scalefactor+2.0_DP*cRoe
+!         scalarDissipation = scalefactor*lambda
+!         
+!         scalarDissipation = abs(cxij*uRoe) + cxij*cRoe + abs(cyij*vRoe) + cyij*cRoe
+!         
+!         Dij=scalarDissipation*Eye
+!         
+!         
+!         
+!         
+!         
+!         A=cxij*buildJacobi(Qroe,1,g)+cyij*buildJacobi(Qroe,2,g)
+!         v=(/1.0_dp,1.0_dp,1.0_dp/)
+!         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
+!         
+!         
+!         findeig: do l = 1, 100
+!           !w=A*v
+!           w=matmul(A,v)
+!           
+!           
+!            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig
+!           
+!           
+!           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
+!           !diff=v-w
+!           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
+!           v=w
+!         end do findeig
+!         !w=A*w
+!         w=matmul(A,w)
+!         
+!         scalarDissipation = (1.1_dp)*sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
+!         Dij=scalarDissipation*Eye
 
+
+        scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
+        ci = sqrt(g*Qi(1))
+        cj = sqrt(g*Qj(1))
+        ui = Qi(2)/Qi(1)
+        uj = Qj(2)/Qj(1)
+        vi = Qi(3)/Qi(1)
+        vj = Qj(3)/Qj(1)
+        scalarDissipation = max(abs(cxij*uj+cyij*vj)+scalefactor*cj,&
+                                abs(cxij*ui+cyij*vi)+scalefactor*ci)
         Dij=scalarDissipation*Eye
+        
 
       case (2)! Here we use tensorial dissipation in direction d
 
-        Dij = matmul(buildTrafo(Q,d,g),&
-               matmul(buildaLambda(Q,d,g),&
-               buildinvTrafo(Q,d,g)))
+        Qroe = calculateQroe(Qi, Qj)
+        
+        Dij = matmul(buildTrafo(Qroe,d,g),&
+               matmul(buildaLambda(Qroe,d,g),&
+               buildinvTrafo(Qroe,d,g)))
 
-    end select 
+    end select
 
 
 
@@ -555,10 +625,10 @@ contains
     !c = sqrt(g*h)
 
     ! Test for dry bed case
-    if (Q(1)<1e-6) then
-       !dry bed case
-       Flux=0
-    else
+!     if (Q(1)<1e-6) then
+!        !dry bed case
+!        Flux=0
+!     else
        !wet bed case
        if (d==1) then
           ! build Flux in x direction
@@ -571,7 +641,7 @@ contains
           Flux(2) = Q(2)*Q(3)/Q(1)
           Flux(3) = Q(3)*Q(3)/Q(1)+0.5_DP*g*Q(1)*Q(1)
        end if
-    end if ! dry or wet bed
+!     end if ! dry or wet bed
   end function buildFlux
 
 
@@ -667,8 +737,14 @@ contains
        ! Now we can compute Aij and Bij
        Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
 
+       ! Test, if a dry state is present
+       ! If so, then put a scaled unity matrix in the preconditioner
+!        if ((Qi(1)<1e-6_dp).or.(Qj(1)<1e-6_dp)) then
+!           Kij = (abs(p_CXdata(ij))+ abs(p_CYdata(ij)))*Eye
+!        end if
+
        ! Here we use scalar dissipation
-       Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+       Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
 
        ! Now add the entries of Aij and Dij to their corresponding entries in P
        ! P = M^L - theta*dt*L
@@ -792,11 +868,11 @@ contains
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
 
        ! deltaD
@@ -1018,8 +1094,8 @@ contains
 
 
              ! add the flux F to the rhs
-             ! rhs(i) = rhs(i) + (1-theta)*dt*deltaF(i)
-             ! rhs(j) = rhs(j) - (1-theta)*dt*deltaF(j)
+             ! rhs(i) = rhs(i) + (1-theta)*dt*deltaF_ij
+             ! rhs(j) = rhs(j) - (1-theta)*dt*deltaF_ij
              do l = 1, nvar2d
                 rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaFij(l)
                 rarrayRhs(l)%Da(j) = rarrayRhs(l)%Da(j) - (1-theta)*dt*deltaFij(l)
@@ -1159,11 +1235,11 @@ contains
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
 
        ! deltaD       
@@ -2122,11 +2198,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
 
        ! deltaD
@@ -2191,11 +2267,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
 
        ! get Udot at node i and j
@@ -2547,11 +2623,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
 
        ! deltaD
@@ -2615,11 +2691,11 @@ end if !dry or wet bed
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qroeij,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qroeij,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qroeij,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
        end select
        
        ! get Udot at node i and j

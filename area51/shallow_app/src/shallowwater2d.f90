@@ -272,6 +272,9 @@ contains
 
     ! Shall boundary conditions be applied in a corner?
     integer :: boundarycorner
+    
+    ! Shall reflecting boundary conditions be applied?
+    integer :: reflectingbcs
 
     ! Syncronisation method for FCT limiting
     integer :: syncromethod
@@ -281,6 +284,9 @@ contains
     
     ! Add bottom profile to output of h?
     integer :: addbottomtoout
+    
+    ! Use the bottom-sourceterm?
+    integer :: bottomterm
     
     ! Command line and name of the paramater file
     character(LEN=SYS_STRLEN) :: cbuffer, sparameterfileName
@@ -320,8 +326,14 @@ contains
     ! Is the water height given by absolute or relative value
     call parlst_getvalue_int(rparlist, 'PROBLEM', 'ABSREL', absrel, 0)
     
+    ! Use the bottom-sourceterm?
+    call parlst_getvalue_int(rparlist, 'PROBLEM', 'bottomterm', bottomterm, 0)
+    
     ! Add bottom profile to output to get position of the water surface, Default = Yes
     call parlst_getvalue_int(rparlist, 'OUTPUT', 'ADDBOTTOMTOOUT', addbottomtoout, 1)
+    
+    ! Apply reflecting boundary conditions?
+    call parlst_getvalue_int(rparlist, 'METHOD', 'REFLECTINGBCS', reflectingbcs, 1)
 
     ! And with timestepsize
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
@@ -917,9 +929,10 @@ contains
             p_Kdiagonal, p_Kedge, NEQ, nedge, &
             theta, dt, gravconst, Method, limiter)
 
-
-       call addBottomTermToVec(rSolBlock,rRhsBlock,rsourceBlock,rbottomBlock, &
+       if (bottomterm == 1) then
+        call addBottomTermToVec(rSolBlock,rRhsBlock,rsourceBlock,rbottomBlock, &
                                 Rcollection,(1-theta)*dt,gravconst)
+       end if
 
 
        ! Here starts the defect correction loop
@@ -942,15 +955,19 @@ contains
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                theta, dt, gravconst, Method, limiter)
 
-          call addBottomTermToVec(rSolBlock,rDefBlock,rsourceBlock,rbottomBlock, &
-                                  Rcollection,-theta*dt,gravconst)
+          if (bottomterm == 1) then
+           call addBottomTermToVec(rSolBlock,rDefBlock,rsourceBlock,rbottomBlock, &
+                                   Rcollection,-theta*dt,gravconst)
+          end if
 
           ! Take care of Boundary Conditions
+          if (reflectingbcs==1) then
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
                p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
+          end if
 
 
           ! Compute norm of defect
@@ -1023,11 +1040,13 @@ contains
                NEQ, nedge, theta, dt, gravconst)
 
           ! Take care of Boundary Conditions after this fct correction
+          if (reflectingbcs==1) then
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
                p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
+          end if
        end if
 
        if ((Method==6).or.(Method==7)) then
@@ -1059,11 +1078,13 @@ contains
                NEQ, nedge, theta, dt, gravconst)
 
           ! Take care of Boundary Conditions after this fct correction
+          if (reflectingbcs==1) then
           call ImplementShallowWaterBCs (&
                rboundary, rtriangulation, &
                rarrayP, rarraySol, rarrayDef, &
                p_Kdiagonal, p_Kld, p_Kcol, &
                gravconst, boundarycorner)
+          end if
        end if
 
 
