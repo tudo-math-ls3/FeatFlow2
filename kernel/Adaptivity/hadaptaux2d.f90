@@ -302,135 +302,135 @@ module hadaptaux2d
 
   ! Mark sub-element for generic recoarsening. Note that the detailed
   ! recoarsening strategy must be determined form the element state.
-  integer, parameter :: MARK_CRS_GENERIC            = -1
+  integer, parameter, public :: MARK_CRS_GENERIC            = -1
 
   ! Mark inner triangle of a 1-tria : 4-tria refinement for
   ! recoarsening into the macro element
-  integer, parameter :: MARK_CRS_4TRIA1TRIA         = -2
+  integer, parameter, public :: MARK_CRS_4TRIA1TRIA         = -2
 
   ! Mark inner triangle of a 1-tria : 4-tria refinement for
   ! recoarsening into two green triangles, whereby the first vertex
   ! if the inner triangle is connected to the opposite vertex
-  integer, parameter :: MARK_CRS_4TRIA2TRIA_1       = -3
+  integer, parameter, public :: MARK_CRS_4TRIA2TRIA_1       = -3
 
   ! Mark inner triangle of a 1-tria : 4-tria refinement for
   ! recoarsening into two green triangles, whereby the second vertex
   ! if the inner triangle is connected to the opposite vertex
-  integer, parameter :: MARK_CRS_4TRIA2TRIA_2       = -4
+  integer, parameter, public :: MARK_CRS_4TRIA2TRIA_2       = -4
 
   ! Mark inner triangle of a 1-tria : 4-tria refinement for
   ! recoarsening into two green triangles, whereby the third vertex
   ! if the inner triangle is connected to the opposite vertex
-  integer, parameter :: MARK_CRS_4TRIA2TRIA_3       = -5
+  integer, parameter, public :: MARK_CRS_4TRIA2TRIA_3       = -5
 
   ! Mark inner green triangle of a 1-quad : 3-tria refinement for
   ! recoarsening into the macro quadrilateral together with its neighbors
-  integer, parameter :: MARK_CRS_3TRIA1QUAD         = -6
+  integer, parameter, public :: MARK_CRS_3TRIA1QUAD         = -6
 
   ! Mark (left) green triangle of a 1-tria : 2-tria refinement for 
   ! recoarsening into the macro triangle together with its right neighbor
-  integer, parameter :: MARK_CRS_2TRIA1TRIA         = -7
+  integer, parameter, public :: MARK_CRS_2TRIA1TRIA         = -7
 
   ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
   ! recoarsening into the macro quadrilateral together with its three neighbors
-  integer, parameter :: MARK_CRS_4TRIA1QUAD         = -8
+  integer, parameter, public :: MARK_CRS_4TRIA1QUAD         = -8
 
   ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
   ! conversion into three triangles keeping the left neighboring triangle
-  integer, parameter :: MARK_CRS_4TRIA3TRIA_LEFT    = -9
+  integer, parameter, public :: MARK_CRS_4TRIA3TRIA_LEFT    = -9
 
   ! Mark "most inner" green triangle of a 1-quad : 4-tria refinement for
   ! conversion into three triangles keeping the right neighboring triangle
-  integer, parameter :: MARK_CRS_4TRIA3TRIA_RIGHT   = -10
+  integer, parameter, public :: MARK_CRS_4TRIA3TRIA_RIGHT   = -10
 
   ! Mark green quadrilateral of a 1-quad : 2-quad refinement for
   ! recoarsening into the macro quadrilateral together with its neighbor
-  integer, parameter :: MARK_CRS_2QUAD1QUAD         = -11
+  integer, parameter, public :: MARK_CRS_2QUAD1QUAD         = -11
   
   ! Mark green quadrilateral of a 1-quad : 2-quad refinement for
   ! conversion into three triangles keeping the second vertex
-  integer, parameter :: MARK_CRS_2QUAD3TRIA         = -12
+  integer, parameter, public :: MARK_CRS_2QUAD3TRIA         = -12
 
   ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
   ! recoarsening into the macro quadrilateral together with its neighbors
-  integer, parameter :: MARK_CRS_4QUAD1QUAD         = -13
+  integer, parameter, public :: MARK_CRS_4QUAD1QUAD         = -13
 
   ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
   ! recoarsening into two quadrilaterals
-  integer, parameter :: MARK_CRS_4QUAD2QUAD         = -14
+  integer, parameter, public :: MARK_CRS_4QUAD2QUAD         = -14
 
   ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
   ! recoarsening into three triangles
-  integer, parameter :: MARK_CRS_4QUAD3TRIA         = -15
+  integer, parameter, public :: MARK_CRS_4QUAD3TRIA         = -15
 
   ! Mark red quadrilateral of a 1-quad : 4-quad refinement for 
   ! recoarsening into four triangles
-  integer, parameter :: MARK_CRS_4QUAD4TRIA         = -16
+  integer, parameter, public :: MARK_CRS_4QUAD4TRIA         = -16
   
   ! Mark for keeping element 'as is'
-  integer, parameter :: MARK_ASIS                   = 0
-  integer, parameter :: MARK_ASIS_TRIA              = 0
-  integer, parameter :: MARK_ASIS_QUAD              = 1
+  integer, parameter, public :: MARK_ASIS                   = 0
+  integer, parameter, public :: MARK_ASIS_TRIA              = 0
+  integer, parameter, public :: MARK_ASIS_QUAD              = 1
 
   ! Mark element for 1-tria : 2-tria refinement along first edge
-  integer, parameter :: MARK_REF_TRIA2TRIA_1        = 2
+  integer, parameter, public :: MARK_REF_TRIA2TRIA_1        = 2
 
   ! Mark element for 1-tria : 2-tria refinement along second edge
-  integer, parameter :: MARK_REF_TRIA2TRIA_2        = 4
+  integer, parameter, public :: MARK_REF_TRIA2TRIA_2        = 4
 
   ! Mark element for 1-tria : 2-tria refinement along third edge
-  integer, parameter :: MARK_REF_TRIA2TRIA_3        = 8
+  integer, parameter, public :: MARK_REF_TRIA2TRIA_3        = 8
 
   ! Mark element for 1-tria : 3-tria refinement along first and second edge
-  integer, parameter :: MARK_REF_TRIA3TRIA_12       = 6
+  integer, parameter, public :: MARK_REF_TRIA3TRIA_12       = 6
 
   ! Mark element for 1-tria : 3-tria refinement along second and third edge
-  integer, parameter :: MARK_REF_TRIA3TRIA_23       = 12
+  integer, parameter, public :: MARK_REF_TRIA3TRIA_23       = 12
 
   ! Mark element for 1-tria : 3-tria refinement along first and third edge
-  integer, parameter :: MARK_REF_TRIA3TRIA_13       = 10
+  integer, parameter, public :: MARK_REF_TRIA3TRIA_13       = 10
 
   ! Mark element for 1-tria : 4-tria red refinement
-  integer, parameter :: MARK_REF_TRIA4TRIA          = 14
+  integer, parameter, public :: MARK_REF_TRIA4TRIA          = 14
 
   ! Mark element for 1-quad : 3-tria refinement along first edge
-  integer, parameter :: MARK_REF_QUAD3TRIA_1        = 3
+  integer, parameter, public :: MARK_REF_QUAD3TRIA_1        = 3
   
   ! Mark element for 1-quad : 3-tria refinement along second edge
-  integer, parameter :: MARK_REF_QUAD3TRIA_2        = 5
+  integer, parameter, public :: MARK_REF_QUAD3TRIA_2        = 5
   
   ! Mark element for 1-quad : 3-tria refinement along third edge
-  integer, parameter :: MARK_REF_QUAD3TRIA_3        = 9
+  integer, parameter, public :: MARK_REF_QUAD3TRIA_3        = 9
   
   ! Mark element for 1-quad : 3-tria refinement along fourth edge
-  integer, parameter :: MARK_REF_QUAD3TRIA_4        = 17
+  integer, parameter, public :: MARK_REF_QUAD3TRIA_4        = 17
 
   ! Mark element for 1-quad : 4-tria refinement along first and second edge
-  integer, parameter :: MARK_REF_QUAD4TRIA_12       = 7
+  integer, parameter, public :: MARK_REF_QUAD4TRIA_12       = 7
 
   ! Mark element for 1-quad : 4-tria refinement along second and third edge
-  integer, parameter :: MARK_REF_QUAD4TRIA_23       = 13
+  integer, parameter, public :: MARK_REF_QUAD4TRIA_23       = 13
 
   ! Mark element for 1-quad : 4-tria refinement along third and fourth edge
-  integer, parameter :: MARK_REF_QUAD4TRIA_34       = 25
+  integer, parameter, public :: MARK_REF_QUAD4TRIA_34       = 25
 
   ! Mark element for 1-quad : 4-tria refinement along first and fourth edge
-  integer, parameter :: MARK_REF_QUAD4TRIA_14       = 19
+  integer, parameter, public :: MARK_REF_QUAD4TRIA_14       = 19
 
   ! Mark element for 1-quad : 4-quad red refinement
-  integer, parameter :: MARK_REF_QUAD4QUAD          = 31
+  integer, parameter, public :: MARK_REF_QUAD4QUAD          = 31
 
   ! Mark element for 1-quad : 2-quad refinement along first and third edge
-  integer, parameter :: MARK_REF_QUAD2QUAD_13       = 11
+  integer, parameter, public :: MARK_REF_QUAD2QUAD_13       = 11
 
   ! Mark element for 1-quad : 2-quad refinement along second and fourth edge
-  integer, parameter :: MARK_REF_QUAD2QUAD_24       = 21
+  integer, parameter, public :: MARK_REF_QUAD2QUAD_24       = 21
 
   ! Mark element for 1-quad blue refinement
-  integer, parameter :: MARK_REF_QUADBLUE_412       = 23
-  integer, parameter :: MARK_REF_QUADBLUE_234       = 29
-  integer, parameter :: MARK_REF_QUADBLUE_123       = 15
-  integer, parameter :: MARK_REF_QUADBLUE_341       = 27
+  integer, parameter, public :: MARK_REF_QUADBLUE_412       = 23
+  integer, parameter, public :: MARK_REF_QUADBLUE_234       = 29
+  integer, parameter, public :: MARK_REF_QUADBLUE_123       = 15
+  integer, parameter, public :: MARK_REF_QUADBLUE_341       = 27
   
 !</constantblock>
 

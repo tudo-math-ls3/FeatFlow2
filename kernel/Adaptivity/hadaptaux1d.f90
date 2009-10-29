@@ -94,16 +94,16 @@ module hadaptaux1d
 !<constantblock description="Constants for element marker in 1D">
   
   ! Mark for keeping element 'as is'
-  integer, parameter :: MARK_ASIS                   = 0
+  integer, parameter, public :: MARK_ASIS                   = 0
 
   ! Mark element for 1-line : 2-lines refinement
-  integer, parameter :: MARK_REF_LINE2LINE          = 1
+  integer, parameter, public :: MARK_REF_LINE2LINE          = 1
 
   ! Mark element for recoarsening with right neighbor
-  integer, parameter :: MARK_CRS_LINE_RIGHT         = -1
+  integer, parameter, public :: MARK_CRS_LINE_RIGHT         = -1
 
   ! Mark element for recoarsening with left neighbor
-  integer, parameter :: MARK_CRS_LINE_LEFT          = -2
+  integer, parameter, public :: MARK_CRS_LINE_LEFT          = -2
 
 !</constantblock>
 
