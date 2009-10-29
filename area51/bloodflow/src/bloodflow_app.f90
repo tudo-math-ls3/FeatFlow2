@@ -12,16 +12,26 @@ program bloodflow_app
 
   use bloodflow
   use fsystem
+  use genoutput
   use paramlist
   use triangulation
   
   implicit none 
 
   type(t_bloodflow) :: rbloodflow
+  character(LEN=SYS_STRLEN) :: sparamfile
   real(DP) :: dtime,dtimeStop,dtimeStep
 
   ! Initialization
-  call bloodflow_init(rbloodflow, 'box1.dat', 'data')
+  if (command_argument_count() .eq. 0) then
+    call output_line('Missing parameter file!',&
+        OU_CLASS_ERROR, OU_MODE_STD, 'bloodflow')
+    call sys_halt()
+  else
+    call get_command_argument(command_argument_count(), sparamfile)
+    sparamfile = trim(adjustl(sparamfile))
+  end if
+  call bloodflow_init(rbloodflow, sparamfile, 'data')
 
   ! Get time stepping values
   call parlst_getvalue_double(rbloodflow%rparlist, 'Timestepping', 'dtimeStart', dtime)
@@ -34,7 +44,7 @@ program bloodflow_app
     ! Update simulation time
     dtime = dtime+dtimeStep
 
-    print *, "Time:",dtime
+    call output_line('Simulation time: '//sys_sdE(dtime,3))
 
     ! Evaluate the object location at simulation time
     call bloodflow_evalObject(rbloodflow, dtime)

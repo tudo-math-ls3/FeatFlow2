@@ -149,6 +149,9 @@ module bloodflow
     ! Adaptation structure
     type(t_hadapt) :: rhadapt
 
+    ! Handle to index array storing the first point of each object
+    integer :: h_IobjectCoordsIdx = ST_NOHANDLE
+
     ! Handle to array storing the points of the object
     integer :: h_DobjectCoords = ST_NOHANDLE
 
@@ -157,9 +160,6 @@ module bloodflow
 
     ! List of elements intersected by object
     type(t_list) :: relementList
-
-    ! Number of object points which have no corresponding mesh point
-    integer :: nunresolvedObjectPoints = 0
 
   end type t_bloodflow
 
@@ -287,6 +287,7 @@ contains
       call tria_done(rbloodflow%rtriangulation)
 
       ! Release the object coordinates
+      call storage_free(rbloodflow%h_IobjectCoordsIdx)
       call storage_free(rbloodflow%h_DobjectCoords)
 
       ! Release indicator vector
@@ -329,26 +330,43 @@ contains
 
     ! UCD export structure
     type(t_ucdExport) :: rexport
-    real(DP), dimension(:,:), pointer :: p_Ddata2d
-    real(DP), dimension(:), pointer :: Dtracer
+    real(DP), dimension(:,:), pointer :: p_DobjectCoords
+    real(DP), dimension(:), pointer :: DtracerData
+    integer, dimension(:), pointer :: p_Iindicator, p_IobjectCoordsIdx
     character(len=SYS_STRLEN) :: sucdfilename
+    integer :: iobj
 
     ! persistent variable
     integer, save :: ifilenumber = 1
 
     ! Get filename and start GMV output
-    call parlst_getvalue_string(rbloodflow%rparlist, 'Output', 'ucdfilename', sucdfilename)
-    call ucd_startGMV(rexport, UCD_FLAG_STANDARD, rbloodflow%rtriangulation,&
+    call parlst_getvalue_string(rbloodflow%rparlist,&
+        'Output', 'ucdfilename', sucdfilename)
+    call ucd_startGMV(rexport, UCD_FLAG_STANDARD,&
+        rbloodflow%rtriangulation,&
         trim(sucdfilename)//'.'//trim(sys_si0(ifilenumber,5)))
-
-    ! Attach the thin object as tracer
-    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_Ddata2d)
-    call ucd_setTracers (rexport, p_Ddata2d)
     
-    allocate(Dtracer(size(p_Ddata2d, 2)))
-    Dtracer = 1
-    call ucd_addTracerVariable (rexport,'objectpoints',Dtracer)
-    deallocate(Dtracer)
+    ! Attach the objects as tracers
+    call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
+        p_IobjectCoordsIdx)
+    call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
+        p_DobjectCoords)
+    
+    ! Loop over all objects
+    do iobj = 1, size(p_IobjectCoordsIdx)-1
+    
+      ! Set tracer
+      call ucd_setTracers (rexport,&
+          p_DobjectCoords(:,p_IobjectCoordsIdx(iobj):&
+                            p_IobjectCoordsIdx(iobj+1)-1))
+      
+      ! Set tracer data
+      allocate(DtracerData(p_IobjectCoordsIdx(iobj+1)-p_IobjectCoordsIdx(iobj)))
+      call lalg_setVector(DtracerData, real(iobj, DP))
+      call ucd_addTracerVariable (rexport,&
+          'object'//sys_siL(iobj,3), DtracerData)
+      deallocate(DtracerData)
+    end do
     
     ! Write UCD exporter to file
     call ucd_write(rexport)
@@ -388,62 +406,128 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DobjectCoords
-    real(DP) :: a,b,c,L,t
+    integer, dimension(:), pointer :: p_IobjectCoordsIdx
+    real(DP) :: a,b,c,L,t,w
     integer, dimension(2) :: Isize
     integer :: icase,ipoint, npoints
 
-    ! Release thin object from previous evaluation
+    ! Release object(s) from previous evaluation
+    if (rbloodflow%h_IobjectCoordsIdx .ne. ST_NOHANDLE) then
+      call storage_free(rbloodflow%h_IobjectCoordsIdx)
+    end if
+    
     if (rbloodflow%h_DobjectCoords .ne. ST_NOHANDLE) then
       call storage_free(rbloodflow%h_DobjectCoords)
     end if
-
-    ! Get values from parameter list
-    call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'npoints', npoints)
-    call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'icase', icase)
-
-    ! Generate list of vertices
-    Isize = (/2, npoints/)
-    call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
-                     ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
-    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
     
+    ! Get value from parameter list
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'icase', icase)
     select case(icase)
-      
+
     case (1)
+
+      !-------------------------------------------------------------------------
       ! Thin object
+      !-------------------------------------------------------------------------
+      
+      call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'npoints', npoints)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'L', L)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'c', c)
-      
-      do ipoint = 0, npoints-1
-        ! Compute x-coordinate
-        p_DobjectCoords(1,ipoint+1) = L*ipoint/real(npoints-1, DP)
-        
-        ! Compute y-coordinate
-        p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*(3*L*p_DobjectCoords(1,ipoint+1)**2 -&
-                                                        p_DobjectCoords(1,ipoint+1)**3)
-      end do
+      call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'w', w)
 
+      ! Allocate storage
+      Isize = (/2, npoints/)
+      call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
+          ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
+      call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
+          p_DobjectCoords)
+
+      call storage_new('bloodflow_evalObject', 'IobjectCoordsIdx', 2,&
+          ST_INT, rbloodflow%h_IobjectCoordsIdx, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
+          p_IobjectCoordsIdx)
+      
+      p_IobjectCoordsIdx = (/1, npoints+1/)
+      
+      if (abs(w) .le. SYS_EPSREAL) then
+        
+        do ipoint = 0, npoints-1
+          ! Compute x-coordinate
+          p_DobjectCoords(1,ipoint+1) = L*ipoint/real(npoints-1, DP)
+          
+          ! Compute y-coordinate
+          p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*&
+              (3*L*p_DobjectCoords(1,ipoint+1)**2 -&
+                   p_DobjectCoords(1,ipoint+1)**3)
+        end do
+        
+      else
+
+        do ipoint = 0, int(npoints/2.0)-1
+          ! Compute x-coordinate
+          p_DobjectCoords(1,ipoint+1) = L*ipoint/real(int(npoints/2.0)-1, DP)
+         
+          ! Compute y-coordinate
+          p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*&
+              (3*L*p_DobjectCoords(1,ipoint+1)**2 -&
+                   p_DobjectCoords(1,ipoint+1)**3)
+        end do
+          
+        do ipoint = int(npoints/2.0), npoints-1
+
+          ! Compute x-coordinate
+          p_DobjectCoords(1,ipoint+1) = L*(npoints-ipoint-1)&
+              /real(npoints-int(npoints/2.0)-1, DP)
+
+          ! Compute y-coordinate
+          p_DobjectCoords(2,ipoint+1) = c*sin(dtime)*&
+              (3*L*p_DobjectCoords(1,ipoint+1)**2 -&
+                   p_DobjectCoords(1,ipoint+1)**3) + w
+
+        end do
+
+      end if
+      
     case (2)
-      ! Rotating box
+
+      !-------------------------------------------------------------------------
+      ! Rotating ellipse
+      !-------------------------------------------------------------------------
+
+      call parlst_getvalue_int(rbloodflow%rparlist, 'Object', 'npoints', npoints)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'a', a)
       call parlst_getvalue_double(rbloodflow%rparlist, 'Object', 'b', b)
 
+      ! Allocate storage
+      Isize = (/2, npoints/)
+      call storage_new('bloodflow_evalObject', 'DobjectCoords', Isize,&
+          ST_DOUBLE, rbloodflow%h_DobjectCoords, ST_NEWBLOCK_ZERO)
+      call storage_getbase_double2d(rbloodflow%h_DobjectCoords,&
+          p_DobjectCoords)
+      
+      call storage_new('bloodflow_evalObject', 'IobjectCoordsIdx', 2,&
+          ST_INT, rbloodflow%h_IobjectCoordsIdx, ST_NEWBLOCK_ZERO)
+      call storage_getbase_int(rbloodflow%h_IobjectCoordsIdx,&
+          p_IobjectCoordsIdx)
+      
+      p_IobjectCoordsIdx = (/1, npoints+1/)
+      
       do ipoint = 0, npoints-1
         
         ! Compute parameter value
         t = 2*SYS_PI*ipoint/real(npoints-1, DP)
-
+        
         ! Compute x-coordinate
         p_DobjectCoords(1,ipoint+1) = cos(dtime)*a*cos(t)-sin(dtime)*b*sin(t)
-
+        
         ! Compute y-coordinate
         p_DobjectCoords(2,ipoint+1) = sin(dtime)*a*cos(t)+cos(dtime)*b*sin(t)
       end do
       
     case default
-      print *, 'Invalid test case!'
-      stop
-
+      call output_line('Invalid test case!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'bloodflow_evalObject')
+      call sys_halt()
     end select
     
   end subroutine bloodflow_evalObject
@@ -469,17 +553,18 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iadapt,nadapt
+    integer :: iadapt,npreadapt,npostadapt
     
     
-
     ! Initialize adaptation structure from triangulation
     call hadapt_initFromParameterlist(rbloodflow%rhadapt, rbloodflow%rparlist, 'Adaptation')
     call hadapt_initFromTriangulation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
+
     
     ! Perform prescribed number of standard h-adaptation steps
-    call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'nadapt', nadapt)    
-    do iadapt = 1, nadapt
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'npreadapt', npreadapt)
+
+    do iadapt = 1, npreadapt
       
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
@@ -495,7 +580,11 @@ contains
     end do
 
 
-    do iadapt = 1, 1
+    ! Perform prescribed number of h-adaptation steps, required to
+    ! adapt the computational mesh to the interface boundary
+    call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'npostadapt', npostadapt)
+
+    do iadapt = 1, npostadapt
       ! Evaluate the indicator
       call bloodflow_evalIndicator(rbloodflow)
       
@@ -669,23 +758,28 @@ contains
           ! Get global element number
           jel = p_IelementsAtVertex(idx)
           
-          ! Append element to the list of elements adjacent to the object
-          if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-            p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-            call list_appendToList(rbloodflow%relementList, jel, ipos)
-          end if
-
-          ! Mark element for potential refinement
-          do jve = 1, TRIA_NVETRI2D
-            if (p_IverticesAtElement(jve, jel) .eq. i) then
-              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
-              exit
+          ! Check if we are at the boundary
+          if (jel .ne. 0) then
+            
+            ! Append element to the list of elements adjacent to the object
+            if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
+              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+              call list_appendToList(rbloodflow%relementList, jel, ipos)
             end if
-          end do
+            
+            ! Mark element for potential refinement
+            do jve = 1, TRIA_NVETRI2D
+              if (p_IverticesAtElement(jve, jel) .eq. i) then
+                p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+                exit
+              end if
+            end do
+            
+            ipatch = ipatch+1
+            IelementPatch(ipatch) = jel
+            
+          end if
           
-          ipatch = ipatch+1
-          IelementPatch(ipatch) = jel
-
         end do
         npatch = ipatch
         
@@ -693,7 +787,7 @@ contains
         ! Previous point was located on the edge of the element
         jel = p_IneighboursAtElement(istatus-3, iel)
 
-        ! Create two element patch       
+        ! Create two element patch if there is an adjacent element
         if (jel .ne. 0) then
           
           ! Append element to the list of elements adjacent to the object
@@ -842,7 +936,6 @@ contains
       
     end do findElementsOfOtherVertices
     
-
     ! Append element to the list of elements adjacent to the object
     if (iand(p_Iindicator(iel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
       p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
@@ -856,24 +949,32 @@ contains
       ! all elements meeting at that corner and create local patch
       i = p_IverticesAtElement(istatus, iel)
       
+      ! Mark elements surrounding this point
       do idx = p_IelementsAtVertexIdx(i),&
                p_IelementsAtVertexIdx(i+1)-1
         
+        ! Get global element number
         jel = p_IelementsAtVertex(idx)
 
-        ! Append element to the list of elements adjacent to the object
-        if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-          p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-          call list_appendToList(rbloodflow%relementList, jel, ipos)
-        end if
-
-        ! Mark element for potential refinement
-        do jve = 1, TRIA_NVETRI2D
-          if (p_IverticesAtElement(jve, jel) .eq. i) then
-            p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
-            exit
+        ! Check if we are at the boundary
+        if (jel .ne. 0) then
+          
+          ! Append element to the list of elements adjacent to the object
+          if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne.&
+              BITFIELD_INLIST) then
+            p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+            call list_appendToList(rbloodflow%relementList, jel, ipos)
           end if
-        end do
+          
+          ! Mark element for potential refinement
+          do jve = 1, TRIA_NVETRI2D
+            if (p_IverticesAtElement(jve, jel) .eq. i) then
+              p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
+              exit
+            end if
+          end do
+          
+        end if
 
       end do
       
@@ -881,26 +982,33 @@ contains
       ! Previous point was located on the edge of the element, thus,
       ! mark adjacent element and create two element patch
       jel = p_IneighboursAtElement(istatus-3, iel)
-      
-      ! Append element to the list of elements adjacent to the object
-      if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-        p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
-        call list_appendToList(rbloodflow%relementList, jel, ipos)
-      end if
 
-      ! Mark element for potential refinement
-      do jve = 1, TRIA_NVETRI2D
-        if (p_IneighboursAtElement(jve, jel) .eq. iel) then
-
-          ! Check if edge has been intersected previously
-          if (btest(p_Iindicator(jel), jve+3))&
-              p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
-          
-          ! Mark edge as intersected
-          p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
-          exit
+      ! Mark adjacent element if it exists
+      if (jel .ne. 0) then
+        
+        ! Append element to the list of elements adjacent to the object
+        if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne.&
+            BITFIELD_INLIST) then
+          p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)
+          call list_appendToList(rbloodflow%relementList, jel, ipos)
         end if
-      end do
+        
+        ! Mark element for potential refinement
+        do jve = 1, TRIA_NVETRI2D
+          if (p_IneighboursAtElement(jve, jel) .eq. iel) then
+            
+            ! Check if edge has been intersected previously
+            if (btest(p_Iindicator(jel), jve+3))&
+                p_Iindicator(jel) = ior(p_Iindicator(jel),&
+                BITFIELD_MULTI_INTERSECTION)
+            
+            ! Mark edge as intersected
+            p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+3)
+            exit
+          end if
+        end do
+
+      end if
       
     end select
 
@@ -1042,7 +1150,7 @@ contains
                                   BITFIELD_MULTI_INTERSECTION) then
 
         ! Set the refinement indicator to unity
-        p_Imarker(iel) = 14
+        p_Imarker(iel) = MARK_REF_TRIA4TRIA
         print *, "Multiple intersection"
 
         ! Compute number of new vertices
@@ -1084,7 +1192,7 @@ contains
       case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
         ! All three edges are intersected!
         ! Set the refinement indicator to unity
-        p_Imarker(iel) = 14
+        p_Imarker(iel) = MARK_REF_TRIA4TRIA
         print *, "All three edges intersected"
 
         ! Compute number of new vertices
