@@ -10,30 +10,29 @@
 ################################################################################
 
 # Filename which contains the triangulation
-trifilename = grids/blood1.tri
+trifilename = grids/box.tri
 
 # Filename which contains the boundary parametrization
-prmfilename = grids/blood1.prm
+prmfilename = grids/box.prm
 
 # Number of global refinement levels
-iglobRefLevel = 2
+iglobRefLevel = 4
 
 ################################################################################
 [Output]
 ################################################################################
 
 # Name of UCD output file
-ucdfilename = out/blood.gmv
+ucdfilename = out/rotor.gmv
 
 ################################################################################
 [Object]
 ################################################################################
 
 npoints = 20
-icase   = 1
-L       = 1.5
-c       = 0.3
-w       = -0.1
+icase   = 2
+a       = 1.0
+b       = 0.5
 
 ################################################################################
 [Timestepping]
