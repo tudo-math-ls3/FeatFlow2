@@ -29,10 +29,11 @@ ucdfilename = out/rotor.gmv
 [Object]
 ################################################################################
 
+icase   = 3
 npoints = 20
-icase   = 2
-a       = 1.0
-b       = 0.5
+L       = 0.5
+w       = 0.1
+n       = 3
 
 ################################################################################
 [Timestepping]
@@ -45,7 +46,7 @@ dtimestep  = 0.1
 [Adaptation]
 ################################################################################
 npreadapt            = 0
-npostadapt           = 1
+npostadapt           = 0
 nsubdividemax        = 5
 iadaptationstrategy  = 1
 drefinementtolerance = 0.5
