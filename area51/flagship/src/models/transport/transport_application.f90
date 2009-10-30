@@ -2976,7 +2976,6 @@ contains
 
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(1) :: Ivalue = 0
 
 
     ! Check if adaptation structure has been prepared
@@ -2995,20 +2994,20 @@ contains
     ! How many spatial dimensions do we have?
     select case(rtriangulationSrc%ndim)
     case (NDIM1D)
-      call transp_hadaptCallback1D(rcollection,&
-          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call transp_hadaptCallback1D(&
+          HADAPT_OPR_INITCALLBACK, rcollection)
       call hadapt_performAdaptation(rhadapt, rindicator,&
           rcollection, transp_hadaptCallback1D)
       
     case (NDIM2D)
-      call transp_hadaptCallback2D(rcollection,&
-          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call transp_hadaptCallback2D(&
+          HADAPT_OPR_INITCALLBACK, rcollection)
       call hadapt_performAdaptation(rhadapt, rindicator,&
           rcollection, transp_hadaptCallback2D)
 
     case (NDIM3D)
-      call transp_hadaptCallback3D(rcollection,&
-          HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+      call transp_hadaptCallback3D(&
+          HADAPT_OPR_INITCALLBACK, rcollection)
       call hadapt_performAdaptation(rhadapt, rindicator,&
           rcollection, transp_hadaptCallback3D)
     end select

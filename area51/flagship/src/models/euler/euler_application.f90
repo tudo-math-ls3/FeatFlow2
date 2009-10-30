@@ -1966,7 +1966,6 @@ contains
 
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(1) :: Ivalue = 0
     integer :: isystemFormat
 
 
@@ -1995,20 +1994,20 @@ contains
       ! How many spatial dimensions do we have?
       select case(rtriangulationSrc%ndim)
       case (NDIM1D)
-        call euler_hadaptCallbackScalar1D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackScalar1D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackScalar1D)
         
       case (NDIM2D)
-        call euler_hadaptCallbackScalar2D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackScalar2D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackScalar2D)
         
       case (NDIM3D)
-        call euler_hadaptCallbackScalar3D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackScalar3D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackScalar3D)
       end select
@@ -2018,20 +2017,20 @@ contains
       ! How many spatial dimensions do we have?
       select case(rtriangulationSrc%ndim)
       case (NDIM1D)
-        call euler_hadaptCallbackBlock1D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackBlock1D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackBlock1D)
         
       case (NDIM2D)
-        call euler_hadaptCallbackBlock2D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackBlock2D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackBlock2D)
         
       case (NDIM3D)
-        call euler_hadaptCallbackBlock3D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call euler_hadaptCallbackBlock3D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, euler_hadaptCallbackBlock3D)
       end select

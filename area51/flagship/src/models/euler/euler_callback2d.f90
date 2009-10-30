@@ -2562,8 +2562,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackScalar2d(rcollection, iOperation,&
-      Ivertices, Ielements)
+  subroutine euler_hadaptCallbackScalar2d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2575,12 +2574,6 @@ contains
 !<input>
     ! Identifier for the grid modification operation
     integer, intent(in) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
@@ -2613,8 +2606,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -2622,79 +2614,74 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
-            .false., .true.)
+      if (rsolution%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
-            .false.)
+      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            NVAR2D*rcollection%IquickAccess(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       do ivar = 1, NVAR2D
-        p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
-            0.5_DP*(p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)+&
-                    p_Dsolution((Ivertices(3)-1)*NVAR2D+ivar))
+        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+            0.5_DP*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
+                    p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR2D+ivar))
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
-            .false.)
+      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            NVAR2D*rcollection%IquickAccess(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       do ivar = 1, NVAR2D
-        p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
-            0.25_DP*(p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)+&
-                     p_Dsolution((Ivertices(3)-1)*NVAR2D+ivar)+&
-                     p_Dsolution((Ivertices(4)-1)*NVAR2D+ivar)+&
-                     p_Dsolution((Ivertices(5)-1)*NVAR2D+ivar))
+        p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+            0.25_DP*(p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((rcollection%IquickAccess(3)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((rcollection%IquickAccess(4)-1)*NVAR2D+ivar)+&
+                     p_Dsolution((rcollection%IquickAccess(5)-1)*NVAR2D+ivar))
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
+      if (rcollection%IquickAccess(2) .ne. 0) then
         do ivar = 1, NVAR2D
-          p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = &
-              p_Dsolution((Ivertices(2)-1)*NVAR2D+ivar)
+          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = &
+              p_Dsolution((rcollection%IquickAccess(2)-1)*NVAR2D+ivar)
         end do
       else
         do ivar = 1, NVAR2D
-          p_Dsolution((Ivertices(1)-1)*NVAR2D+ivar) = 0.0_DP
+          p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
         end do
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
     
@@ -2704,8 +2691,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_hadaptCallbackBlock2d(rcollection, iOperation,&
-      Ivertices, Ielements)
+  subroutine euler_hadaptCallbackBlock2d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -2717,12 +2703,6 @@ contains
 !<input>
     ! Identifier for the grid modification operation
     integer, intent(in) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
@@ -2755,8 +2735,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -2764,83 +2743,78 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
-      if (rsolution%NEQ .ne. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
-            .false., .true.)
+      if (rsolution%NEQ .ne. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            NVAR2D*rcollection%IquickAccess(1), .false., .true.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
+      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*rcollection%IquickAccess(1),&
             .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       neq = rsolution%NEQ/NVAR2D
       do ivar = 1, NVAR2D
-        p_Dsolution((ivar-1)*neq+Ivertices(1)) = &
-            0.5_DP*(p_Dsolution((ivar-1)*neq+Ivertices(2))+&
-                    p_Dsolution((ivar-1)*neq+Ivertices(3)) )
+        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
+            0.5_DP*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
+                    p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3)) )
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
       
       
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. NVAR2D*Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, NVAR2D*Ivertices(1),&
-            .false.)
+      if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            NVAR2D*rcollection%IquickAccess(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       neq = rsolution%NEQ/NVAR2D
       do ivar = 1, NVAR2D
-        p_Dsolution((ivar-1)*neq+Ivertices(1)) =&
-            0.25_DP*(p_Dsolution((ivar-1)*neq+Ivertices(2))+&
-                     p_Dsolution((ivar-1)*neq+Ivertices(3))+&
-                     p_Dsolution((ivar-1)*neq+Ivertices(4))+&
-                     p_Dsolution((ivar-1)*neq+Ivertices(5)) )
+        p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) =&
+            0.25_DP*(p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))+&
+                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(3))+&
+                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(4))+&
+                     p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(5)) )
       end do
 
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
+      if (rcollection%IquickAccess(2) .ne. 0) then
         neq = rsolution%NEQ/NVAR2D
         do ivar = 1, NVAR2D
-          p_Dsolution((ivar-1)*neq+Ivertices(1)) = &
-              p_Dsolution((ivar-1)*neq+Ivertices(2))
+          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = &
+              p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(2))
         end do
       else
         neq = rsolution%NEQ/NVAR2D
         do ivar = 1, NVAR2D
-          p_Dsolution((ivar-1)*neq+Ivertices(1)) = 0.0_DP
+          p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback2d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
     

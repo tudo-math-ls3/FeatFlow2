@@ -1846,7 +1846,6 @@ contains
 
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
-    integer, dimension(1) :: Ivalue = 0
     integer :: isystemFormat
 
 
@@ -1873,8 +1872,8 @@ contains
     case (SYSTEM_INTERLEAVEFORMAT)
 
       if (rtriangulationSrc%ndim .eq. NDIM2D) then
-        call zpinch_hadaptCallbackScalar2D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call zpinch_hadaptCallbackScalar2D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, zpinch_hadaptCallbackScalar2D)
       else
@@ -1886,8 +1885,8 @@ contains
     case (SYSTEM_BLOCKFORMAT)
 
       if (rtriangulationSrc%ndim .eq. NDIM2D) then
-        call zpinch_hadaptCallbackBlock2D(rcollection,&
-            HADAPT_OPR_INITCALLBACK, Ivalue, Ivalue)
+        call zpinch_hadaptCallbackBlock2D(&
+            HADAPT_OPR_INITCALLBACK, rcollection)
         call hadapt_performAdaptation(rhadapt, rindicator,&
             rcollection, zpinch_hadaptCallbackBlock2D)
       else

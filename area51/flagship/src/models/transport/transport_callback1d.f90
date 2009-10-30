@@ -446,7 +446,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_hadaptCallback1d(rcollection, iOperation, Ivertices, Ielements)
+  subroutine transp_hadaptCallback1d(iOperation, rcollection)
 
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -457,12 +457,6 @@ contains
 !<input>
     ! Identifier for the grid modification operation
     integer, intent(in) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
@@ -485,8 +479,7 @@ contains
       call lsysbl_getbase_double(rsolution, p_Dsolution)
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback1d(iOperation, rcollection)
       
       
     case(HADAPT_OPR_DONECALLBACK)
@@ -494,49 +487,49 @@ contains
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback1d(iOperation, rcollection)
       
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
-      if (rsolution%NEQ .ne. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
+      if (rsolution%NEQ .ne. rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            rcollection%IquickAccess(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
 
 
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into solution vector
-      if (rsolution%NEQ .lt. Ivertices(1)) then
-        call lsysbl_resizeVectorBlock(rsolution, Ivertices(1), .false.)
+      if (rsolution%NEQ .lt. rcollection%IquickAccess(1)) then
+        call lsysbl_resizeVectorBlock(rsolution,&
+            rcollection%IquickAccess(1), .false.)
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
-      p_Dsolution(Ivertices(1)) = 0.5_DP*(p_Dsolution(Ivertices(2))+&
-                                           p_Dsolution(Ivertices(3)))
+      p_Dsolution(rcollection%IquickAccess(1)) = &
+          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&
+                  p_Dsolution(rcollection%IquickAccess(3)))
 
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback1d(iOperation, rcollection)
 
 
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from solution
-      if (Ivertices(2) .ne. 0) then
-        p_Dsolution(Ivertices(1)) = p_Dsolution(Ivertices(2))
+      if (rcollection%IquickAccess(2) .ne. 0) then
+        p_Dsolution(rcollection%IquickAccess(1)) = &
+            p_Dsolution(rcollection%IquickAccess(2))
       else
-        p_Dsolution(Ivertices(1)) = 0.0_DP
+        p_Dsolution(rcollection%IquickAccess(1)) = 0.0_DP
       end if
       
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback1d(iOperation, rcollection)
 
 
     case DEFAULT
       ! Call the general callback function
-      call flagship_hadaptCallback1d(rcollection, iOperation,&
-          Ivertices, Ielements)
+      call flagship_hadaptCallback1d(iOperation, rcollection)
 
     end select
     
