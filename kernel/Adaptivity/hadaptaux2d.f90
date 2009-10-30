@@ -1872,7 +1872,6 @@ contains
     ! local variables
     integer, dimension(:), pointer :: p_Imarker,p_Imodifier
     integer, dimension(TRIA_MAXNVE2D) :: IverticesAtElement
-    integer, dimension(1) :: Ielements,Ivertices
     integer :: nvt,ivt,nel,iel,jel,kel,lel,iel1,iel2
     integer :: ive,jve,nve,mve,istate,jstate,kstate
     integer :: h_Imodifier,imodifier
@@ -1932,10 +1931,8 @@ contains
 
       ! Adjust dimension of solution vector
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-        Ivertices = (/nvt/)
-        Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_ADJUSTVERTEXDIM,&
-                                Ivertices, Ielements)
+        rcollection%IquickAccess(1) = nvt
+        call fcb_hadaptCallback(HADAPT_OPR_ADJUSTVERTEXDIM, rcollection)
       end if
 
       ! Create new array for modifier
@@ -3311,8 +3308,6 @@ contains
 
     ! local variables
     integer,  dimension(:), pointer :: p_Imarker
-    integer, dimension(1) :: Ielements
-    integer, dimension(2) :: Ivertices
     integer :: ipos,iel,jel,ivt,ivtReplace,ive
 
     ! Check if dynamic data structures are o.k. and 
@@ -3478,9 +3473,8 @@ contains
             
       ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-        Ivertices = (/ivt,ivtReplace/); Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_REMOVEVERTEX,&
-                                Ivertices, Ielements)
+        rcollection%IquickAccess(1:2) = (/ivt,ivtReplace/)
+        call fcb_hadaptCallback(HADAPT_OPR_REMOVEVERTEX, rcollection)
       end if
     end do vertex
         
@@ -4161,8 +4155,6 @@ contains
     real(DP), dimension(NDIM2D) :: Dcoord
     real(DP), dimension(1) :: Ddata
     real(DP) :: x1,y1,x2,y2,dvbdp1,dvbdp2
-    integer, dimension(3) :: Ivertices
-    integer, dimension(1) :: Ielements
     integer, dimension(2) :: Idata
     integer :: inode,ipred,ipos,ibct
     
@@ -4246,10 +4238,8 @@ contains
 
       ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-        Ivertices = (/i12, i1, i2/)
-        Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXEDGE,&
-                                Ivertices, Ielements)
+        rcollection%IquickAccess(1:3) = (/i12, i1, i2/)
+        call fcb_hadaptCallback(HADAPT_OPR_INSERTVERTEXEDGE, rcollection)
       end if
 
     end if
@@ -4294,8 +4284,6 @@ contains
 
     ! local variables
     real(DP), dimension(NDIM2D) :: Dcoord
-    integer, dimension(1) :: Ielements
-    integer, dimension(5) :: Ivertices
     real(DP) :: x1,y1,x2,y2,x3,y3,x4,y4
     integer :: inode,ipos
     
@@ -4342,11 +4330,9 @@ contains
       rhadapt%p_InodalProperty(i5) = 0
       
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i5, i1, i2, i3, i4/)
-        Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXCENTR,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:5) = (/i5, i1, i2, i3, i4/)
+        call fcb_hadaptCallback(HADAPT_OPR_INSERTVERTEXCENTR, rcollection)
       end if
 
     end if
@@ -5304,8 +5290,6 @@ contains
 !</subroutine>
     
     ! local variables
-    integer, dimension(6) :: Ielements
-    integer, dimension(4) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4
@@ -5377,11 +5361,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices =(/i1,i2,i3,i4/)
-      Ielements = (/e1,e2,e3,e4,e5,e6/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA2TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:10) = (/i1, i2, i3, i4, &
+                                         e1, e2, e3, e4, e5, e6/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_TRIA2TRIA, rcollection)
     end if
 
   end subroutine refine_Tria2Tria
@@ -5443,8 +5426,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(5) :: Ielements
-    integer, dimension(5)  :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4,i5
@@ -5539,11 +5520,10 @@ contains
 
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,i5/)
-        Ielements = (/e1,e2,e3,e4,e5/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA3TRIA12,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:10) = (/i1, i2, i3, i4, i5, &
+                                           e1, e2, e3, e4, e5/)
+        call fcb_hadaptCallback(HADAPT_OPR_REF_TRIA3TRIA12, rcollection)
       end if
       
     else
@@ -5582,11 +5562,10 @@ contains
 
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,i5/)
-        Ielements = (/e1,e2,e3,e4,e5/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA3TRIA23,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:10) = (/i1, i2, i3, i4, i5,&
+                                           e1, e2, e3, e4, e5/)
+        call fcb_hadaptCallback(HADAPT_OPR_REF_TRIA3TRIA23, rcollection)
       end if
     end if
 
@@ -5643,8 +5622,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(6) :: Ielements
-    integer, dimension(6) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6
     integer :: i1,i2,i3,i4,i5,i6
@@ -5725,11 +5702,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6/)
-      Ielements = (/e1,e2,e3,e4,e5,e6/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_TRIA4TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:12) = (/i1, i2, i3, i4, i5, i6,&
+                                         e1, e2, e3, e4, e5, e6/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_TRIA4TRIA, rcollection)
     end if
 
   end subroutine refine_Tria4Tria
@@ -5790,8 +5766,6 @@ contains
 !</subroutine>    
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(6) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6
@@ -5874,11 +5848,10 @@ contains
     
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD2QUAD,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:14) = (/i1, i2, i3, i4, i5, i6,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_QUAD2QUAD, rcollection)
     end if
 
   end subroutine refine_Quad2Quad
@@ -5939,8 +5912,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(5) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5
@@ -6037,11 +6008,10 @@ contains
     
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD3TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:13) = (/i1, i2, i3, i4, i5,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_QUAD3TRIA, rcollection)
     end if
 
   end subroutine refine_Quad3Tria
@@ -6102,8 +6072,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(6) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6
@@ -6206,11 +6174,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD4TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:14) = (/i1, i2, i3, i4, i5, i6,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_QUAD4TRIA, rcollection)
     end if
 
   end subroutine refine_Quad4Tria
@@ -6267,8 +6234,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6363,11 +6328,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_QUAD4QUAD,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_QUAD4QUAD, rcollection)
     end if
 
   end subroutine refine_Quad4Quad
@@ -6424,8 +6388,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(6) :: Ivertices
     integer :: ipos
     integer :: i1,i2,i3,i4,i5,i6
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8
@@ -6499,11 +6461,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_TRIA2TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:14) = (/i1, i2, i3, i4, i5, i6,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CVT_TRIA2TRIA, rcollection)
     end if
 
   end subroutine convert_Tria2Tria
@@ -6561,8 +6522,6 @@ contains
 !</subroutine>
     
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e3,e4,e5,e7,e8,f1,f3,f4,f5,f7,f8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6662,11 +6621,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,f4,f1,e4,f3,f8,e3,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD2QUAD,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, f4, f1, e4, f3, f8, e3, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CVT_QUAD2QUAD, rcollection)
     end if
 
   end subroutine convert_Quad2Quad
@@ -6727,8 +6685,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: nel0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6829,11 +6785,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD3TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CVT_QUAD3TRIA, rcollection)
     end if
 
   end subroutine convert_Quad3Tria
@@ -6898,8 +6853,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -6995,11 +6948,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CVT_QUAD4TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CVT_QUAD4TRIA, rcollection)
     end if
 
   end subroutine convert_Quad4Tria
@@ -7063,7 +7015,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(4) :: Ielements,Ivertices
     integer, dimension(3) :: ImacroVertices
     integer, dimension(TRIA_NVETRI2D) :: IvertexAge
     integer :: ipos,istate
@@ -7110,7 +7061,7 @@ contains
     ! should not appear, that is, local numbering of the resulting triangle starts at the
     ! vertex which is opposite to the inner red triangle. To this end, we check the state of
     ! the provisional triangle (I1,I2,I3) and transform the orientation accordingly.
-    ImacroVertices = (/i1,i2,i3/)
+    ImacroVertices = (/i1, i2, i3/)
     IvertexAge = rhadapt%p_IvertexAge(ImacroVertices)
     istate     = redgreen_getstateTria(IvertexAge)
     
@@ -7189,11 +7140,10 @@ contains
     end if
     
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4/)
-      Ielements = (/e1,e2,e3,e4/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_2TRIA1TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:8) = (/i1, i2, i3, i4,&
+                                        e1, e2, e3, e4/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_2TRIA1TRIA, rcollection)
     end if
 
   end subroutine coarsen_2Tria1Tria
@@ -7247,7 +7197,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(6) :: Ielements,Ivertices
     integer, dimension(4) :: IsortedElements
     integer, dimension(3) :: ImacroVertices
     integer, dimension(TRIA_NVETRI2D) :: IvertexAge
@@ -7384,11 +7333,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6/)
-      Ielements = (/e1,e2,e3,e4,e5,e6/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4TRIA1TRIA,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:12) = (/i1, i2, i3, i4, i5, i6,&
+                                         e1, e2, e3, e4, e5, e6/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA1TRIA, rcollection)
     end if
 
   end subroutine coarsen_4Tria1Tria
@@ -7453,7 +7401,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(6) :: Ielements,Ivertices
     integer, dimension(4) :: IsortedElements
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,jel1,jel2,ielReplace
@@ -7577,11 +7524,10 @@ contains
 
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,i5,i6/)
-        Ielements = (/e1,e2,e3,e4,e5,e6/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4TRIA2TRIA1,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:12) = (/i1, i2, i3, i4, i5, i6,&
+                                           e1, e2, e3, e4, e5, e6/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA2TRIA1, rcollection)
       end if
 
 
@@ -7669,11 +7615,10 @@ contains
 
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,i5,i6/)
-        Ielements = (/e1,e2,e3,e4,e5,e6/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4TRIA2TRIA2,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:12) = (/i1, i2, i3, i4, i5, i6,&
+                                           e1, e2, e3, e4, e5, e6/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA2TRIA2, rcollection)
       end if
 
 
@@ -7763,11 +7708,10 @@ contains
       
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,i5,i6/) 
-        Ielements = (/e1,e2,e3,e4,e5,e6/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4TRIA2TRIA3,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:12) = (/i1, i2, i3, i4, i5, i6,&
+                                           e1, e2, e3, e4, e5, e6/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA2TRIA3, rcollection)
       end if
 
 
@@ -7832,9 +7776,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
     integer, dimension(4) :: IsortedElements
-    integer, dimension(9) :: Ivertices
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
     integer :: ipos,istate
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
@@ -7985,11 +7927,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_4QUAD1QUAD,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4QUAD1QUAD, rcollection)
     end if
 
   end subroutine coarsen_4Quad1Quad
@@ -8047,9 +7988,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
     integer, dimension(4) :: IsortedElements    
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel1,jel2,ielReplace
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -8185,11 +8124,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD2QUAD,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4QUAD2QUAD, rcollection)
     end if
 
   end subroutine coarsen_4Quad2Quad
@@ -8247,9 +8185,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
     integer, dimension(4) :: IsortedElements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: jel1,jel2,jel3,ielReplace
@@ -8372,11 +8308,10 @@ contains
     
     
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD3TRIA,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4QUAD3TRIA, rcollection)
     end if
 
   end subroutine coarsen_4Quad3Tria
@@ -8436,8 +8371,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
-    integer, dimension(9) :: Ivertices
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
@@ -8494,11 +8427,10 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-4
     
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,i6,i7,i8,i9/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4QUAD4TRIA,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:17) = (/i1, i2, i3, i4, i5, i6, i7, i8, i9,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4QUAD4TRIA, rcollection)
     end if
 
   end subroutine coarsen_4Quad4Tria
@@ -8556,8 +8488,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements,Ivertices
-    integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
+    integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices, IvertexAge
     integer :: ipos,istate
     integer :: iel1,e1,e2,e3,e4,e5,e6,e7,e8,ielReplace
     integer :: i1,i2,i3,i4,i5,i7
@@ -8727,11 +8658,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD1QUAD,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:16) = (/i1, i2, i3, i4, i5, 0, i7, 0,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_2QUAD1QUAD, rcollection)
     end if
 
   end subroutine coarsen_2Quad1Quad
@@ -8791,7 +8721,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements,Ivertices
     integer :: ipos
     integer :: iel1,nel0,e1,e2,e3,e4,e5,e6,e7,e8
     integer :: i1,i2,i3,i4,i5,i7
@@ -8843,11 +8772,10 @@ contains
     rhadapt%InelOfType(TRIA_NVEQUAD2D) = rhadapt%InelOfType(TRIA_NVEQUAD2D)-2
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5,0,i7,0/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_2QUAD3TRIA,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:16) = (/i1, i2, i3, i4, i5, 0, i7, 0,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_2QUAD3TRIA, rcollection)
     end if
 
   end subroutine coarsen_2Quad3Tria
@@ -8899,9 +8827,7 @@ contains
 !</subroutine>
     
     ! local variables
-    integer, dimension(8) :: Ielements
     integer, dimension(3) :: IsortedElements
-    integer, dimension(5) :: Ivertices
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
     integer :: ipos,istate
     integer :: iel1,iel2,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
@@ -9047,11 +8973,10 @@ contains
 
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,i5/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_3TRIA1QUAD,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:13) = (/i1, i2, i3, i4, i5,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_3TRIA1QUAD, rcollection)
     end if
 
   end subroutine coarsen_3Tria1Quad
@@ -9105,9 +9030,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements
     integer, dimension(4) :: IsortedElements
-    integer, dimension(8) :: Ivertices
     integer, dimension(TRIA_NVEQUAD2D) :: ImacroVertices,IvertexAge
     integer :: ipos,istate
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8,jel,ielReplace
@@ -9267,11 +9190,10 @@ contains
     
 
     ! Optionally, invoke callback function
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
-      Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-      call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA1QUAD,&
-                              Ivertices,Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:16) = (/i1, i2, i3, i4, 0, i6, i7, 0,&
+                                         e1, e2, e3, e4, e5, e6, e7, e8/)
+      call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA1QUAD, rcollection)
     end if
 
   end subroutine coarsen_4Tria1Quad
@@ -9325,7 +9247,6 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(8) :: Ielements,Ivertices
     integer, dimension(4) :: IsortedElements
     integer :: ipos
     integer :: iel1,iel2,iel3,e1,e2,e3,e4,e5,e6,e7,e8
@@ -9463,11 +9384,10 @@ contains
 
       
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
-        Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-        call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA2,&
-            Ivertices,Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:16) = (/i1, i2, i3, i4, 0, i6, i7, 0,&
+                                           e1, e2, e3, e4, e5, e6, e7, e8/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA3TRIA2, rcollection)
       end if
       
 
@@ -9566,11 +9486,10 @@ contains
       call arrlst_appendToArraylist(rhadapt%relementsAtVertex,i7,jel3,ipos)
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3,i4,0,i6,i7,0/)
-        Ielements = (/e1,e2,e3,e4,e5,e6,e7,e8/)
-        call fcb_hadaptCallback(rcollection,HADAPT_OPR_CRS_4TRIA3TRIA3,&
-            Ivertices,Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:16) = (/i1, i2, i3, i4, 0, i6, i7, 0,&
+                                           e1, e2, e3, e4, e5, e6, e7, e8/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_4TRIA3TRIA3, rcollection)
       end if
 
       

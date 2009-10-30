@@ -607,9 +607,8 @@ contains
 
       ! Optionally, invoke callback function
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-        Ivertices = (/ivt,ivtReplace/); Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_REMOVEVERTEX,&
-                                Ivertices, Ielements)
+        rcollection%IquickAccess(1:2) = (/ivt, ivtReplace/)
+        call fcb_hadaptCallback(HADAPT_OPR_REMOVEVERTEX, rcollection)
       end if
     end do vertex
     
@@ -694,10 +693,8 @@ contains
 
     ! Optionally, invoke callback function
     if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-      Ivertices = (/i12, i1, i2/)
-      Ielements = (/0/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_INSERTVERTEXEDGE,&
-                              Ivertices, Ielements)
+      rcollection%IquickAccess(1:3) = (/i12, i1, i2/)
+      call fcb_hadaptCallback(HADAPT_OPR_INSERTVERTEXEDGE, rcollection)
     end if
   end subroutine add_vertex1D
 
@@ -1122,10 +1119,9 @@ contains
     call arrlst_appendToArraylist(rhadapt%relementsAtVertex, i3, nel0+1, ipos)
     
     ! Optionally, invoke callback routine
-    if (present(fcb_hadaptCallback).and.present(rcollection)) then
-      Ivertices = (/i1,i2,i3/)
-      call fcb_hadaptCallback(rcollection, HADAPT_OPR_REF_LINE2LINE,&
-                              Ivertices, Ielements)
+    if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+      rcollection%IquickAccess(1:3) = (/i1, i2, i3/)
+      call fcb_hadaptCallback(HADAPT_OPR_REF_LINE2LINE, rcollection)
     end if
   end subroutine refine_Line2Line
   
@@ -1248,10 +1244,9 @@ contains
       end if
 
       ! Optionally, invoke callback function
-      if (present(fcb_hadaptCallback).and.present(rcollection)) then
-        Ivertices = (/i1,i2,i3/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_CRS_2LINE1LINE,&
-                                Ivertices, Ielements)
+      if (present(fcb_hadaptCallback) .and. present(rcollection)) then
+        rcollection%IquickAccess(1:3) = (/i1, i2, i3/)
+        call fcb_hadaptCallback(HADAPT_OPR_CRS_2LINE1LINE, rcollection)
       end if
             
     case DEFAULT

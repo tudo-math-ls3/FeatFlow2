@@ -1073,10 +1073,12 @@ contains
 
       ! Adjust dimension of solution vector
       if (present(fcb_hadaptCallback) .and. present(rcollection)) then
-        Ivertices = (/nvt/)
-        Ielements = (/0/)
-        call fcb_hadaptCallback(rcollection, HADAPT_OPR_ADJUSTVERTEXDIM,&
-                                Ivertices, Ielements)
+        rcollection%IquickAccess(1) = nvt
+        call fcb_hadaptCallback(HADAPT_OPR_ADJUSTVERTEXDIM, rcollection)
+!!$        Ivertices = (/nvt/)
+!!$        Ielements = (/0/)
+!!$        call fcb_hadaptCallback(HADAPT_OPR_ADJUSTVERTEXDIM,&
+!!$                                rcollection, Ivertices, Ielements)
       end if
 
 
