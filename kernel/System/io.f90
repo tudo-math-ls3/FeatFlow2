@@ -26,6 +26,9 @@
 !# 6.) io_pathConcat
 !#     -> Concatenates a filename to a path.
 !#
+!# 7.) io_isDirectory
+!#     -> Checks whether a given string is a directory
+!#
 !# </purpose>
 !##############################################################################
 
@@ -67,6 +70,7 @@ module io
   public :: io_deleteFile
   public :: io_pathExtract
   public :: io_pathConcat
+  public :: io_isDirectory
 
 contains
 
@@ -404,6 +408,56 @@ contains
   
     sfile = trim(spath)//"/"//trim(sfilename)
   
+  end function
+
+  ! ***************************************************************************
+
+  !<function>
+
+  function io_isDirectory (spath) result (bexists)
+  
+  !<description>
+    ! Checks whether a given string is a directory
+  !</description>
+  
+  !<input>
+    ! Path to the file.
+    character(len=*), intent(in) :: spath
+  !</input>
+  
+  !<result>
+    ! Is .TRUE. if the given string is an existing directory
+    logical :: bexists
+  !</result>
+  
+  !</function>
+  
+    ! local variables
+    integer :: iunit,ios
+    
+    iunit = sys_getFreeUnit()
+    
+    inquire(file=trim(spath), exist=bexists, iostat=ios)
+
+    if (bexists) then
+
+      ! A file exists with given name
+      bexists = .FALSE.
+
+    else
+
+      ! Try to open the 'non-existing' file
+      open(iunit, file=trim(spath), status='old',&
+          action='read', iostat=ios); close(iunit)
+
+      ! If we succeeded then the string is an existing directory
+      if (ios .eq. 0) bexists = .TRUE.
+
+      ! Otherwise, no further action is required as bexists is
+      ! already set to .FALSE.
+
+    end if
+
   end function
 
 end module io
