@@ -27,6 +27,9 @@ integer, parameter :: scalardisstype = 1
   
   ! Unity matrix
   real(DP), dimension(3,3) :: Eye = reshape((/1,0,0,0,1,0,0,0,1/),(/3,3/))
+  
+  ! If the water heigth should go under this level, the node will be considered as empty
+  real(dp), parameter :: clipwater = sys_epsreal
 
 
 contains
@@ -268,15 +271,31 @@ contains
 !         Dij=scalarDissipation*Eye
 
 
+        ! Test, if node i is dry and calculate the velocities
+        if (Qi(1)<clipwater) then
+          ci = 0.0_dp
+          ui = 0.0_dp
+          vi = 0.0_dp
+        else
+         ci = sqrt(g*Qi(1))
+         ui = Qi(2)/Qi(1)
+         vi = Qi(3)/Qi(1)
+        end if
+
+        ! Test, if node j is dry and calculate the velocities
+        if (Qj(1)<clipwater) then
+          cj = 0.0_dp
+          uj = 0.0_dp
+          vj = 0.0_dp
+        else
+          cj = sqrt(g*Qj(1))
+          uj = Qj(2)/Qj(1)
+          vj = Qj(3)/Qj(1)
+        end if
+
         scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
-        ci = sqrt(g*Qi(1))
-        cj = sqrt(g*Qj(1))
-        ui = Qi(2)/Qi(1)
-        uj = Qj(2)/Qj(1)
-        vi = Qi(3)/Qi(1)
-        vj = Qj(3)/Qj(1)
-        scalarDissipation = max(abs(cxij*uj+cyij*vj)+scalefactor*cj,&
-                                abs(cxij*ui+cyij*vi)+scalefactor*ci)
+        scalarDissipation = (1.0_dp+SYS_EPSREAL)*max(abs(cxij*uj+cyij*vj)+scalefactor*cj,&
+                                                     abs(cxij*ui+cyij*vi)+scalefactor*ci)
         Dij=scalarDissipation*Eye
         
 
@@ -625,10 +644,10 @@ contains
     !c = sqrt(g*h)
 
     ! Test for dry bed case
-!     if (Q(1)<1e-6) then
-!        !dry bed case
-!        Flux=0
-!     else
+     if (Q(1)<clipwater) then
+        !dry bed case
+        Flux=0
+     else
        !wet bed case
        if (d==1) then
           ! build Flux in x direction
@@ -641,7 +660,7 @@ contains
           Flux(2) = Q(2)*Q(3)/Q(1)
           Flux(3) = Q(3)*Q(3)/Q(1)+0.5_DP*g*Q(1)*Q(1)
        end if
-!     end if ! dry or wet bed
+     end if ! dry or wet bed
   end function buildFlux
 
 
@@ -660,7 +679,13 @@ contains
 
 
     do i = 1, NEQ
-       if(rarraySol(1)%Da(i)<1e-6) rarraySol(1)%Da(i) = 0
+       if(rarraySol(1)%Da(i)<clipwater) then
+        rarraySol(1)%Da(i) = 0.0_dp
+        rarraySol(2)%Da(i) = 0.0_dp
+        rarraySol(3)%Da(i) = 0.0_dp
+       end if
+
+
     end do
 
 
@@ -728,20 +753,23 @@ contains
        deltaQij = Qi - Qj
 
        ! Compute the Roe-meanvalue for this edge
-       Qroeij = calculateQroe(Qi, Qj)
+       !Qroeij = calculateQroe(Qi, Qj)
+       Qroeij = 0.5_dp*(Qi+Qj)
 
-       ! Compute the jacobi matrices for x- and y- direction
-       JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-       JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+       if (Qroeij(1) .ge. clipwater) then
 
-       ! Now we can compute Aij and Bij
-       Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
+        ! Compute the jacobi matrices for x- and y- direction
+        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
 
-       ! Test, if a dry state is present
-       ! If so, then put a scaled unity matrix in the preconditioner
-!        if ((Qi(1)<1e-6_dp).or.(Qj(1)<1e-6_dp)) then
-!           Kij = (abs(p_CXdata(ij))+ abs(p_CYdata(ij)))*Eye
-!        end if
+        ! Now we can compute the high order part
+        Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
+
+       else
+
+        Kij=0
+
+       end if
 
        ! Here we use scalar dissipation
        Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
@@ -832,26 +860,26 @@ contains
        ! compute deltaQij = Qi - Qj
        deltaQij = Qi - Qj
 
-       ! Compute the Roe-meanvalue for this edge
-       Qroeij = calculateQroe(Qi, Qj)
-
-       ! Compute the jacobi matrices for x- and y- direction
-       JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-       JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
-
-       ! Compute the coeffitients for the jacobi matrices
-       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
-
-       ! Now we can compute Aij and Bij
-       Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-       Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
-
-       ! deltaK = Aij*deltaQij
-       deltaKi = matmul(Aij+Bij,deltaQij)
-       deltaKj = matmul(Aij-Bij,deltaQij)
+!        ! Compute the Roe-meanvalue for this edge
+!        Qroeij = calculateQroe(Qi, Qj)
+! 
+!        ! Compute the jacobi matrices for x- and y- direction
+!        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+!        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+! 
+!        ! Compute the coeffitients for the jacobi matrices
+!        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+!        JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+! 
+!        ! Now we can compute Aij and Bij
+!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+! 
+!        ! deltaK = Aij*deltaQij
+!        deltaKi = matmul(Aij+Bij,deltaQij)
+!        deltaKj = matmul(Aij-Bij,deltaQij)
 
        ! Calculate this alternatively by calculating
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
@@ -1199,26 +1227,26 @@ contains
        ! compute deltaQij = Qi - Qj
        deltaQij = Qi - Qj
 
-       ! Compute the Roe-meanvalue for this edge
-       Qroeij = calculateQroe(Qi, Qj)
-
-       ! Compute the jacobi matrices for x- and y- direction
-       JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-       JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
-
-       ! Compute the coeffitients for the jacobi matrices
-       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
-
-       ! Now we can compute Aij and Bij
-       Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-       Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
-
-       ! deltaK
-       deltaKi = matmul(Aij+Bij,deltaQij)
-       deltaKj = matmul(Aij-Bij,deltaQij)
+!        ! Compute the Roe-meanvalue for this edge
+!        Qroeij = calculateQroe(Qi, Qj)
+! 
+!        ! Compute the jacobi matrices for x- and y- direction
+!        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+!        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+! 
+!        ! Compute the coeffitients for the jacobi matrices
+!        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+!        JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+! 
+!        ! Now we can compute Aij and Bij
+!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+! 
+!        ! deltaK
+!        deltaKi = matmul(Aij+Bij,deltaQij)
+!        deltaKj = matmul(Aij-Bij,deltaQij)
 
        ! Calculate this alternatively by calculating
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
@@ -2705,12 +2733,13 @@ end if !dry or wet bed
        end do
        
        ! compute antidiffusive flux
-       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+ matmul(Dij,(Qi-Qj))
+       !deltaFij = p_MCdata(ij)*(Udoti-Udotj)+ matmul(Dij,(Qi-Qj))
+       deltaFij = matmul(Dij,(Qi-Qj))
        
        ! prelimit antidiff flux
-       do ivar = 1, 3
-          if (deltaWij(ivar)*deltaFij(ivar).ge.0) deltaFij(ivar) = 0.0_dp
-       end do
+        do ivar = 1, 3
+           if (deltaWij(ivar)*deltaFij(ivar).ge.0) deltaFij(ivar) = 0.0_dp
+        end do
        
        ! and save
        deltaF(:,iedge) = deltaFij
@@ -2729,6 +2758,7 @@ end if !dry or wet bed
        
        lQp(ivar,j) = max(lQp(ivar,j), -deltaWij(ivar))
        lQm(ivar,j) = min(lQm(ivar,j), -deltaWij(ivar))
+       
        end do
      end do !iedge
      
@@ -2739,6 +2769,7 @@ end if !dry or wet bed
      do ivar = 1, 3
        lRp(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQp(ivar,i)/(lPp(ivar,i)+SYS_EPSREAL))! Ri+
        lRm(ivar,i) = min(1.0_DP,p_MLdata(i)/dt*lQm(ivar,i)/(lPm(ivar,i)-SYS_EPSREAL))! Ri-
+
      end do
      end do ! i
      

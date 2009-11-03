@@ -1000,10 +1000,104 @@ contains
 
           ! Add the solution update to the solution: rsol=rsol+rdef
           call lsysbl_vectorLinearComb (rdefBlock,rsolBlock,1.0_dp,1.0_dp)
+          
+          ! As we now have dry bed handling, we clip all height variables
+          ! smaller than eps
+          call ClipHeight (rarraySol, neq)
 
           ! If norm of solution update is small enough then leave the
           ! defect correction loop
           dcurrentDefect = lsysbl_vectorNorm (rdefBlock,LINALG_NORML2)
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+!           
+!           ! write gmvfiles for video (if needed)
+!        if (dcurrentDefect > 1000.0_dp*dinitialDefect) then
+! 
+!           write(*,*)
+!           write(*,*) 'Writing Videofile'
+!           write(*,*)
+!           
+!           write(*,*) dcurrentDefect , dinitialDefect
+!           pause
+! 
+!           ifilenumber = ifilenumber + 1
+! 
+!           write(sfilenumber,'(i0)') ifilenumber
+!           
+!           ! Before writing add the bottom profile
+!           if (addbottomtoout==1) then
+!             call AddBottomBeforeWrite(rarraySol,neq,h_bottom)
+!            end if
+!           
+!           call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+!                'gmv/error' // trim(sfilenumber) // '.gmv')
+! 
+!           call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
+!           call ucd_addVariableVertexBased (rexport,'sol_h',UCD_VAR_STANDARD, p_Ddata)
+!           call lsyssc_getbase_double (rsolBlock%RvectorBlock(2),p_Ddata1)
+!           call ucd_addVariableVertexBased (rexport,'sol_uh',UCD_VAR_STANDARD, p_Ddata1)
+!           call lsyssc_getbase_double (rsolBlock%RvectorBlock(3),p_Ddata2)
+!           call ucd_addVariableVertexBased (rexport,'sol_vh',UCD_VAR_STANDARD, p_Ddata2)
+!           call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1, p_Ddata2)
+!           
+!           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(1),p_Ddata)
+!           call ucd_addVariableVertexBased (rexport,'Source_1',UCD_VAR_STANDARD, p_Ddata)
+!           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(2),p_Ddata1)
+!           call ucd_addVariableVertexBased (rexport,'Source_2',UCD_VAR_STANDARD, p_Ddata1)
+!           call lsyssc_getbase_double (rsourceBlock%RvectorBlock(3),p_Ddata2)
+!           call ucd_addVariableVertexBased (rexport,'Source_3',UCD_VAR_STANDARD, p_Ddata2)
+! 
+!           ! Write the file to disc, that's it.
+!           call ucd_write (rexport)
+!           call ucd_release (rexport)
+!           
+!           ! After writing substract the bottom profile
+!           if (addbottomtoout==1) then
+!             call SubstractBottomAfterWrite(rarraySol,neq,h_bottom)
+!           end if
+!        end if
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
+          
           if (dcurrentDefect < nonlinsolup) exit def_corr
 
        end do def_corr ! This is the end of the defect correction loop
@@ -1089,8 +1183,8 @@ contains
 
 
        ! As we now have a simple dry bed handling, we clip all height variables
-       ! smaller than 1e-6
-       !call ClipHeight (rarraySol, neq)
+       ! smaller than eps
+       call ClipHeight (rarraySol, neq)
        
 !       ! Add Sourceterm explicitely
 !       call AddExplicitSourceTerm(rarraySol,dt,neq,rtriangulation%h_DvertexCoords,gravconst)
