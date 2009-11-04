@@ -30,9 +30,9 @@ ucdfilename = out/blood.gmv
 ################################################################################
 
 icase   = 1
-npoints = 4
+npoints = 25
 L       = 1.5
-w       = -0.1
+w       = 0.3
 c       = 0.3
 
 ################################################################################
@@ -45,9 +45,9 @@ dtimestep  = 0.1
 ################################################################################
 [Adaptation]
 ################################################################################
-npreadapt            = 0
-npostadapt           = 1
-nsubdividemax        = 5
+npreadapt            = 3
+npostadapt           = 2
+nsubdividemax        = 10
 iadaptationstrategy  = 1
 drefinementtolerance = 0.5
 dcoarseningtolerance = 0.0

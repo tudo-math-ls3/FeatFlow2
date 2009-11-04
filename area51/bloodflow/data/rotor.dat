@@ -45,8 +45,8 @@ dtimestep  = 0.1
 ################################################################################
 [Adaptation]
 ################################################################################
-npreadapt            = 5
-npostadapt           = 0
+npreadapt            = 4
+npostadapt           = 3
 nsubdividemax        = 5
 iadaptationstrategy  = 1
 drefinementtolerance = 0.5
