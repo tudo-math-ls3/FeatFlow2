@@ -73,9 +73,6 @@
 #      comma-separated list of execution modes. Valid values are 'mpi' and
 #      'serial'. We might add 'openmp' in future.
 #
-# Current version:
-# $Id$
-
 
 
 # Allow proper programming only
