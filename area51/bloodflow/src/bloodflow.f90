@@ -335,7 +335,7 @@ contains
     type(t_ucdExport) :: rexport
     real(DP), dimension(:,:), pointer :: p_DobjectCoords
     real(DP), dimension(:), pointer :: DtracerData
-    integer, dimension(:), pointer :: p_Iindicator, p_IobjectCoordsIdx
+    integer, dimension(:), pointer :: p_IobjectCoordsIdx
     character(len=SYS_STRLEN) :: sucdfilename
     integer :: i,iobj
 
@@ -1177,30 +1177,41 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
-    integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
-    integer, dimension(:), pointer :: p_Iindicator, p_Imarker
+    real(DP), dimension(:,:), pointer :: p_DobjectCoords,&
+        p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement,&
+        p_IneighboursAtElement
+    integer, dimension(:), pointer :: p_Iindicator, p_Imarker,&
+        p_IvertexAge, p_InodalProperty
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Daux
     real(DP) :: dscale
     integer, dimension(2) :: Isize
-    integer :: ive,jve,iel,i1,i2,i3,istatus,ipoint,ipos,iresult,nvt,nel
+    integer :: ive,jve,nve,iel,nel,ivt,jvt,nvt
+    integer :: i1,i2,i3,istatus,ipoint,ipos,iresult
+    
 
-
-    ! Initialize marker structure
+    ! Initialize marker structure (if required)
     if (rbloodflow%rhadapt%h_Imarker .ne. ST_NOHANDLE)&
         call storage_free(rbloodflow%rhadapt%h_Imarker)
-    call storage_new('bloodflow_convertMoveRefIndicator', 'Imarker',&
-        rbloodflow%rindicator%NEQ, ST_INT, rbloodflow%rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
-    call storage_getbase_int(rbloodflow%rhadapt%h_Imarker, p_Imarker)
+    call storage_new('bloodflow_convertMoveRefIndicator', &
+        'Imarker', rbloodflow%rindicator%NEQ, ST_INT,&
+        rbloodflow%rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
 
     ! Set pointers
+    call storage_getbase_int(&
+        rbloodflow%rhadapt%h_Imarker, p_Imarker)
+    call storage_getbase_int(&
+        rbloodflow%rhadapt%h_IvertexAge, p_IvertexAge)
+    call storage_getbase_int(&
+        rbloodflow%rhadapt%h_InodalProperty, p_InodalProperty)
     call storage_getbase_int2d(&
-        rbloodflow%rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+        rbloodflow%rhadapt%h_IverticesAtElement, p_IverticesAtElement)
     call storage_getbase_int2d(&
-        rbloodflow%rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
+        rbloodflow%rhadapt%h_IneighboursAtElement, p_IneighboursAtElement)
     call storage_getbase_double2d(&
         rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    
     call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
     call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
 
@@ -1216,6 +1227,43 @@ contains
     rbloodflow%rhadapt%NEL0        = rbloodflow%rhadapt%NEL
     rbloodflow%rhadapt%NVBD0       = rbloodflow%rhadapt%NVBD
     rbloodflow%rhadapt%increaseNVT = 0
+    
+    
+    ! Set state of all vertices to "free". Note that vertices of the
+    ! initial triangulation are always "locked", i.e. have no positive age.
+    do ivt = 1, size(p_IvertexAge, 1)
+      p_IvertexAge(ivt) = abs(p_IvertexAge(ivt))
+    end do
+
+    !---------------------------------------------------------------------------
+    ! (0) Loop over all elements of the triangulation and lock those
+    !     vertices which must not be repositioned, that is, vertices
+    !     which have a younger edge neighbor and/or belong to the
+    !     initial triangulation.
+    !---------------------------------------------------------------------------
+    
+    locking: do iel = 1, rbloodflow%rhadapt%NEL
+      
+      ! Get number of vertices per elements
+      nve = hadapt_getNVE(rbloodflow%rhadapt, iel)
+
+      ! Loop over all edges of the element
+      do ive = 1, nve
+        
+        ! Get global vertex numbers
+        ivt = p_IverticesAtElement(ive, iel)
+        jvt = p_IverticesAtElement(mod(ive, nve)+1, iel)
+        
+        ! Check if endpoints have different age and "lock" the older one
+        if (abs(p_IvertexAge(ivt)) .lt.&
+            abs(p_IvertexAge(jvt))) then
+          p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
+        elseif (abs(p_IvertexAge(jvt)) .lt.&
+                abs(p_IvertexAge(ivt))) then
+          p_IvertexAge(jvt) = -abs(p_IvertexAge(jvt))
+        end if
+      end do
+    end do locking
     
 
     !---------------------------------------------------------------------------
@@ -1235,17 +1283,36 @@ contains
       if (iand(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION) .eq.&
                                   BITFIELD_MULTI_INTERSECTION) then
 
-        ! Set the refinement indicator to unity
-        p_Imarker(iel) = MARK_REF_TRIA4TRIA
-        print *, "Multiple intersection"
+        ! One or more edges of the current element are intersected
+        ! multiple times so that repositioning vertices does not
+        ! suffice. Therefore, set the refinement indicator to
+        ! enforce regular subdivision of the elements.
+        nve = hadapt_getNVE(rbloodflow%rhadapt, iel)
 
-        ! Compute number of new vertices
-        do ive = 1, TRIA_NVETRI2D
+        select case(nve)
+        case (TRIA_NVETRI2D)
+          p_Imarker(iel) = MARK_REF_TRIA4TRIA
+          
+        case (TRIA_NVEQUAD2D)
+          p_Imarker(iel) = MARK_REF_QUAD4QUAD
+          
+          ! Increase number of vertices to be created by one to
+          ! account for the new vertex in the center of the quad
+          rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
+
+        case default
+          call output_line('Unsupported type of element!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'bloodflow_performAdaptation')
+          call sys_halt()
+        end select
+        
+        ! Compute number of new vertices to be created at edge midpoints
+        do ive = 1, nve
           if (p_IneighboursAtElement(ive, iel) .eq. 0) then
             
             ! Edge is adjacent to boundary
             rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-
+            
           elseif(p_Imarker(p_IneighboursAtElement(ive, iel)) .eq. 0) then
 
             ! Edge has not been marked in previous steps
@@ -1257,7 +1324,7 @@ contains
         ! That's it
         cycle list
       end if
-  
+      
       ! Remove "in list" flag from indicator
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
       
@@ -1269,7 +1336,7 @@ contains
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
 
-
+      
       ! Check status of intersected element edges
       select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
       case (0)
@@ -1277,9 +1344,8 @@ contains
         
       case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
         ! All three edges are intersected!
-        ! Set the refinement indicator to unity
+        ! Set the refinement indicator to regular refinement
         p_Imarker(iel) = MARK_REF_TRIA4TRIA
-        print *, "All three edges intersected"
 
         ! Compute number of new vertices
         do ive = 1, TRIA_NVETRI2D
