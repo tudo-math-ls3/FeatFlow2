@@ -190,6 +190,11 @@ contains
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
+    if(rproblem%iParticles .gt. 0)then    
+    ! Drag/Lift Calculation
+      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+    end if
+
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,rproblem)
     
@@ -2198,8 +2203,8 @@ contains
             ah2 = -dpp*dn2+dpf1*(du2x*dn1+du2y*dn2)
 
             ! deformation tensor
-            ah1 = -dpp*dn1+dpf1*(2.0_dp*du1x*dn1+(du1y+du2x)*dn2)
-            ah2 = -dpp*dn2+dpf1*((du1y+du2x)*dn1+2.0_dp*du2y*dn2)
+!            ah1 = -dpp*dn1+dpf1*(2.0_dp*du1x*dn1+(du1y+du2x)*dn2)
+!            ah2 = -dpp*dn2+dpf1*((du1y+du2x)*dn1+2.0_dp*du2y*dn2)
             
             Dfx = Dfx + ah1 * om         
             Dfy = Dfy + ah2 * om
@@ -2237,7 +2242,6 @@ contains
       ! assign the forces
       rproblem%DResForceX(1) = Dfx
       rproblem%DResForceY(1) = Dfy
-    
       ! Output some values to get some readable stuff on the
       ! the screen
       print *,"--------------------------"
