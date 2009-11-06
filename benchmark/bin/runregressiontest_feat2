@@ -790,7 +790,7 @@ fb_checkoutFromSVN() {
     if [ "$CHECKOUT""x" = "yesx" ]; then
 	cd $BASEDIR
 
-	test $DEBUG -gt 0 && echo "# Checking out FEAT2 from CVS"
+	test $DEBUG -gt 0 && echo "# Checking out FEAT2 from Subversion"
 
 	fb_banner "FETCH" >> $GLOBALLOG
 	fb_startTimer
