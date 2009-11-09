@@ -1,7 +1,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 2
+nlmax = 5
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
@@ -21,7 +21,7 @@ prmname = ./pre/tentimesone.prm
 #triname = ./pre/TRIA.tri
 #triname = ./pre/unstructured.tri
 #triname = ./pre/zwanzigm.tri
-#triname = ./pre/zehnm.tri
+triname = ./pre/zehnm.tri
 #triname = ./pre/damv1.tri
 #triname = ./pre/balken.tri
 #triname =./pre/zylinderusefein.tri
@@ -32,7 +32,7 @@ triname = ./pre/tentimesone.tri
 # What kind of finite elements do we use?
 # 0: linear conforming triangular FE, P1
 # 1: bilinear conforming quadrilateral FE, Q1
-FEkind = 1
+FEkind = 0
 #FEkind = 0
 
 
@@ -43,10 +43,10 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 5.0
+ttfinal = 0.001
 
 # Implicitness parameter
-theta = 0.5
+theta = 1.0
 
 
 
@@ -65,7 +65,7 @@ nonlinabsdef = 1e-11
 # Relative value of the norm of the defect
 nonlinreldef = 1e-20
 # Norm of solutionupdate
-nonlinsolup = 1e-12
+nonlinsolup = 1e-30
 
 # Stopping criterium for linear solver
 # (this is only for the inner defect correction loop - doesn't have to be too small)
@@ -113,7 +113,7 @@ syncromethod = 1
 # Apply reflecting boundaryconditions
 # 0 = no
 # 1 = yes
-reflectingbcs = 0
+reflectingbcs = 1
 
 
 
@@ -129,8 +129,8 @@ gravconst = 9.8
 # to not create negative heigth values
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-hstart  = 0.1
-hustart = if(x<5,-0.5,0.5)
+hstart  = if(x<5,2,1)
+hustart = 0
 hvstart = 0
 bottom = 0
 absrel  = 0
