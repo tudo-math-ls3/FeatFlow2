@@ -113,7 +113,7 @@ syncromethod = 1
 # Apply reflecting boundaryconditions
 # 0 = no
 # 1 = yes
-reflectingbcs = 1
+reflectingbcs = 0
 
 
 
