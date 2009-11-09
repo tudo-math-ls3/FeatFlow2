@@ -35,6 +35,7 @@ module shallowwater2d
   use linearformevaluation
   use filtersupport
   use linearsolver
+  use feevaluation
 
   use shallowwater2d_routines
 
@@ -115,7 +116,7 @@ contains
     type(t_vectorBlock), target :: rrhsBlock, rsolBlock, rdefBlock, rstempBlock, rsolDotBlock, rsourceBlock, rBottomBlock
     
     ! Scalar vector to describe the bottom profile
-    type(t_vectorScalar), target :: rvectorbottom
+    type(t_vectorScalar), target :: rvectorbottom, rvecBSX, rvecBSY
 
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
@@ -157,7 +158,7 @@ contains
     integer, dimension(:), pointer     :: p_Ksep
     integer, dimension(:,:), pointer   :: p_Kedge
     real(dp), dimension(:), pointer	   :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
-    real(dp), dimension(:), pointer    :: p_BXdata, p_BYdata, p_Bottom
+    real(dp), dimension(:), pointer    :: p_BXdata, p_BYdata, p_Bottom, p_BSXdata, p_BSYdata
     real(dp), dimension(:), pointer    :: p_bottomvector
 
     ! Size of the 2D-array Kedge
@@ -295,6 +296,10 @@ contains
     type(t_fparser) :: rfparser
     character(LEN=*), dimension(2), parameter ::&
          cvariables = (/ (/'x'/), (/'y'/) /)
+         
+    ! Some auxiliary values for the bottom source term
+    real(DP), dimension(2):: b_x, b_y
+    real(DP), dimension(2,2):: Dpoints
 
 
     ! OK, LET'S START
@@ -411,6 +416,8 @@ contains
     call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
          'triname', sstring)
     call tria_readTriFile2D (rtriangulation, sstring, rboundary, .true.)
+    
+    !call tria_rawGridToTri (rtriangulation)
 
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1, rtriangulation, rboundary)
@@ -454,6 +461,21 @@ contains
     
     ! and make it a blockvector
     call lsysbl_createVecFromScalar (rvectorbottom,rbottomblock)
+    
+    ! Create source vector with the non-conservative bottom-part
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1), &
+                                  rvecBSX,.true.,st_double)
+
+    ! and get the pointer to this vector
+    call lsyssc_getbase_double (rvecBSX,p_BSXdata)
+    
+    ! Create source vector with the non-conservative bottom-part
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1), &
+                                  rvecBSY,.true.,st_double)
+
+    ! and get the pointer to this vector
+    call lsyssc_getbase_double (rvecBSY,p_BSYdata)
+    
 
     ! Now copy this initialised block into the other ones
     ! But only create a derived copy, which shares the handles of the original one
@@ -813,12 +835,41 @@ contains
        ii = p_Kdiagonal(i)
        jj = p_Kdiagonal(j)
 
-       p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
-       p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
-       
-       p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
-       p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
+!        p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
+!        p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
+!        
+!        p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
+!        p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
 
+! Now evaluate the derivative of the bottom profile
+       Dpoints(:,1) = p_DvertexCoords(:,j)
+       Dpoints(:,2) = p_DvertexCoords(:,i)
+       call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
+       call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
+
+       p_BXdata(ij) = -gravconst*p_MCdata(ij)*b_x(1)
+       p_BYdata(ij) = -gravconst*p_MCdata(ij)*b_y(1)
+
+       p_BXdata(ji) = -gravconst*p_MCdata(ji)*b_x(2)
+       p_BYdata(ji) = -gravconst*p_MCdata(ji)*b_y(2)
+       
+       p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ij)*b_x(1)
+       p_BSXdata(j) = p_BSXdata(j)-gravconst*p_MCdata(ji)*b_x(2)
+       
+       p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ij)*b_y(1)
+       p_BSYdata(j) = p_BSYdata(j)-gravconst*p_MCdata(ji)*b_y(2)
+
+    end do
+    
+    do i = 1, neq
+      Dpoints(:,1) = p_DvertexCoords(:,j)
+      Dpoints(:,2) = p_DvertexCoords(:,i)
+      call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
+      call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
+      ii = p_Kdiagonal(i)
+      p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ii)*b_x(2)
+      p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ii)*b_y(2)
+    
     end do
     
     
@@ -924,7 +975,8 @@ contains
        ! Now assemble RHS
        call BuildShallowWaterRHS (&
             rarrayRhs, rarraySol, rrhsBlock, rsolBlock, &
-            rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
+            rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+            p_BXdata, p_BYdata, p_BSXdata, p_BSYdata, &
             h_fld1, p_fld1, p_fld2, &
             p_Kdiagonal, p_Kedge, NEQ, nedge, &
             theta, dt, gravconst, Method, limiter)
@@ -950,7 +1002,8 @@ contains
           call BuildShallowWaterDefect (&
                rdefBlock, rstempBlock, rrhsBlock, rsolBlock, &
                rarrayRhs, rarraySol, rarrayRstemp, &
-               rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
+               p_CXdata, p_CYdata, p_MLdata, rmatrixML, &
+               p_BXdata, p_BYdata,  p_BSXdata, p_BSYdata, &
                h_fld1, p_fld1, p_fld2, &
                p_Kdiagonal, p_Kedge, NEQ, nedge, &
                theta, dt, gravconst, Method, limiter)
@@ -1338,6 +1391,8 @@ contains
     call lsyssc_releaseMatrix (rmatrixBY)
     call lsyssc_releaseMatrix (rmatrixMC)
     call lsyssc_releaseMatrix (rmatrixML)
+    call lsyssc_releaseVector (rvecBSX)
+    call lsyssc_releaseVector (rvecBSY)
     call lsyssc_releaseVector (rvectorbottom)
 
     ! Release the memory associated to the parameter file

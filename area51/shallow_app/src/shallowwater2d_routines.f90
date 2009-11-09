@@ -23,7 +23,7 @@ integer, parameter :: scalardisstype = 1
   ! integer, parameter				:: nvar2d = 3
   
   
-  integer, parameter :: deltabtype = 0
+  integer, parameter :: deltabtype = 3
   
   ! Unity matrix
   real(DP), dimension(3,3) :: Eye = reshape((/1,0,0,0,1,0,0,0,1/),(/3,3/))
@@ -175,7 +175,7 @@ contains
 
   ! This routine builds the jacobi matrix in direction d
   ! d=1: x-direction, d=2: y-direction
-  function buildDissipation(Qi,Qj,k,d,g,cxij,cyij) result(Dij)
+  function buildDissipation(Qi,Qj,k,d,g,cxij,cyij,cxji,cyji) result(Dij)
 
     ! The jacobi matrix in direction d
     real(DP), dimension(3,3)    :: Dij
@@ -190,7 +190,7 @@ contains
     real(DP), intent(IN)                    :: g
     
     ! The coefficients of the jacobians
-    real(DP), intent(IN)                    :: cxij, cyij
+    real(DP), intent(IN)                    :: cxij, cyij,cxji,cyji
 
     integer, intent(IN)                     :: d
     
@@ -198,7 +198,7 @@ contains
     real(DP), dimension(nvar2d)             :: Qroe
 
     ! local variables
-    real(DP)                                :: scalefactor, cRoe, uRoe, vRoe, lambda, scalardissipation
+    real(DP)                                :: scalefactor1, scalefactor2, cRoe, uRoe, vRoe, lambda, scalardissipation
     
     real(dp), dimension(3) :: v,w,diff
     real(dp), dimension(3,3) :: A
@@ -293,9 +293,10 @@ contains
           vj = Qj(3)/Qj(1)
         end if
 
-        scalefactor = sqrt(cxij**2.0_DP+cyij**2.0_DP)
-        scalarDissipation = (1.0_dp+SYS_EPSREAL)*max(abs(cxij*uj+cyij*vj)+scalefactor*cj,&
-                                                     abs(cxij*ui+cyij*vi)+scalefactor*ci)
+        scalefactor1 = sqrt(cxij**2.0_DP+cyij**2.0_DP)
+        scalefactor2 = sqrt(cxji**2.0_DP+cyji**2.0_DP)
+        scalarDissipation = max(abs(cxij*uj+cyij*vj)+scalefactor1*cj,&
+                                abs(cxji*ui+cyji*vi)+scalefactor2*ci)
         Dij=scalarDissipation*Eye
         
 
@@ -678,15 +679,15 @@ contains
 
 
 
-    do i = 1, NEQ
-       if(rarraySol(1)%Da(i)<clipwater) then
-        rarraySol(1)%Da(i) = 0.0_dp
-        rarraySol(2)%Da(i) = 0.0_dp
-        rarraySol(3)%Da(i) = 0.0_dp
-       end if
-
-
-    end do
+!     do i = 1, NEQ
+!        if(rarraySol(1)%Da(i)<clipwater) then
+!         rarraySol(1)%Da(i) = 0.0_dp
+!         rarraySol(2)%Da(i) = 0.0_dp
+!         rarraySol(3)%Da(i) = 0.0_dp
+!        end if
+! 
+! 
+!     end do
 
 
   end subroutine ClipHeight
@@ -716,7 +717,7 @@ contains
     real(DP), dimension(nvar2d)         :: deltaQij, Qi, Qj, Qroeij
     real(DP), dimension(nvar2d,nvar2d)  :: JacobixRoeij, JacobiyRoeij
     real(DP)                            :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
-    real(DP), dimension(nvar2d,nvar2d)  :: Kij, Dij
+    real(DP), dimension(nvar2d,nvar2d)  :: Kij, Kji, Dij
     real(DP)                            :: scalarDissipation, scalefactor, lambda
     real(DP)                            :: cRoe, uRoe, vRoe
 
@@ -764,6 +765,7 @@ contains
 
         ! Now we can compute the high order part
         Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
+        Kji = p_CXdata(ji)*JacobixRoeij + p_CYdata(ji)*JacobiyRoeij
 
        else
 
@@ -772,15 +774,15 @@ contains
        end if
 
        ! Here we use scalar dissipation
-       Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+       Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
 
        ! Now add the entries of Aij and Dij to their corresponding entries in P
        ! P = M^L - theta*dt*L
        do l = 1, nvar2d
           rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Kij(l,l)-Dij(l,l))
           rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Kij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Kij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Kij(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Kji(l,l)+Dij(l,l))
+          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Kji(l,l)-Dij(l,l))
        end do
 
     end do
@@ -795,7 +797,8 @@ contains
   ! This routine builds the RHS for the shallow water system
   subroutine BuildShallowWaterRHS (&
        rarrayRhs, rarraySol, rrhsBlock, rsolBlock, &
-       rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
+       rmatrixML, p_CXdata, p_CYdata, p_MLdata, &
+       p_BXdata, p_BYdata, p_BSXdata, p_BSYdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
        theta, dt, gravconst, Method, limiter)
@@ -809,6 +812,7 @@ contains
     integer                                         :: h_fld1
     real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
     real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata
+    real(DP), dimension(:), pointer, intent(IN)     :: p_BSXdata, p_BSYdata
     integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
     integer, dimension(:,:), pointer                :: p_Kedge
     integer, intent(IN)                             :: NEQ,	nedge
@@ -884,10 +888,10 @@ contains
        ! Calculate this alternatively by calculating
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
        ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
-       deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
-            -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
-       deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
-            -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+       deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
+                 p_CYdata(ij)*(buildFlux(Qi,2,gravconst)-buildFlux(Qj,2,gravconst))
+       deltaKj = p_CXdata(ji)*(buildFlux(Qj,1,gravconst)-buildFlux(Qi,1,gravconst))+ &
+                 p_CYdata(ji)*(buildFlux(Qj,2,gravconst)-buildFlux(Qi,2,gravconst))
 
        ! Now choose the artificial diffusion method
        select case (Method)
@@ -896,11 +900,11 @@ contains
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
        ! deltaD
@@ -918,7 +922,16 @@ contains
         case(2)
           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+        case(3)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
         end select
+        
+        
+        
+        
+        
+        
 
        ! add deltaK, deltaD and deltaB to rhs
        ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
@@ -929,6 +942,15 @@ contains
                + (1-theta)*dt*deltaDj(l) + (1-theta)*dt*deltaBj(l)
        end do
 
+    end do
+
+
+    ! Add the non-conservative part of the bottom source term
+    do i = i, neq
+      DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
+      do l = 1, nvar2d
+         rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaBi(l)
+       end do
     end do
 
 
@@ -1153,7 +1175,8 @@ contains
   subroutine BuildShallowWaterDefect (&
        rdefBlock, rstempBlock, rrhsBlock, rsolBlock, &
        rarrayRhs, rarraySol, rarrayRstemp, &
-       rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, &
+       p_CXdata, p_CYdata, p_MLdata, rmatrixML, &
+       p_BXdata, p_BYdata,  p_BSXdata, p_BSYdata, &
        h_fld1, p_fld1, p_fld2, &
        p_Kdiagonal, p_Kedge, NEQ, nedge, &
        theta, dt, gravconst, Method, limiter)
@@ -1165,6 +1188,7 @@ contains
     type(t_vectorBlock), intent(IN)                 :: rsolBlock, rrhsBlock
     type(t_matrixScalar), intent(IN)                :: rmatrixML
     real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata
+    real(DP), dimension(:), pointer, intent(IN)     :: p_BSXdata, p_BSYdata
     integer                                         :: h_fld1
     real(DP), dimension(:,:), pointer               :: p_fld1, p_fld2
     integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
@@ -1251,10 +1275,10 @@ contains
        ! Calculate this alternatively by calculating
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
        ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
-       deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
-            -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
-       deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
-            -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+       deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
+                 p_CYdata(ij)*(buildFlux(Qi,2,gravconst)-buildFlux(Qj,2,gravconst))
+       deltaKj = p_CXdata(ji)*(buildFlux(Qj,1,gravconst)-buildFlux(Qi,1,gravconst))+ &
+                 p_CYdata(ji)*(buildFlux(Qj,2,gravconst)-buildFlux(Qi,2,gravconst))
 
        ! Now choose the artificial diffusion method
        select case (Method)
@@ -1263,11 +1287,11 @@ contains
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
        ! deltaD       
@@ -1285,6 +1309,9 @@ contains
         case(2)
           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+        case(3)
+          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
+          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
         end select
        
        ! add deltaK, deltaD and deltaB to rstemp
@@ -1299,6 +1326,14 @@ contains
     end do
 
 
+
+    ! Add the non-conservative part of the bottom source term
+    do i = i, neq
+      DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
+      do l = 1, nvar2d
+        rarrayRstemp(l)%Da(i) = rarrayRstemp(l)%Da(i) -theta*dt*deltaBi(l)
+      end do
+    end do
 
 
     ! If we use the TVD scheme, then add the limited diffusive flux to the Rstemp (defect)
@@ -2226,11 +2261,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
        ! deltaD
@@ -2295,11 +2330,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
        ! get Udot at node i and j
@@ -2651,11 +2686,11 @@ end if !dry or wet bed
        select case (Method)
         case (6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
        ! deltaD
@@ -2719,11 +2754,11 @@ end if !dry or wet bed
           Dij = 0
         case (1,4,6)
           ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
         case (2,5,7)
           ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij))
+          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
+                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
        
        ! get Udot at node i and j
