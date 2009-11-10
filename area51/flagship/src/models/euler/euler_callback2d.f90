@@ -1092,7 +1092,7 @@ contains
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     
-    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     
     aux = ui*C_ii(1)+vi*C_ii(2)
     
@@ -1212,7 +1212,7 @@ contains
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
 
-    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     uvj = uj*vj;   qj = uj*uj+vj*vj;   uPow2j = uj*uj;   vPow2j = vj*vj
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
@@ -1383,7 +1383,7 @@ contains
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
 
-    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     uvj = uj*vj;   qj = uj*uj+vj*vj;   uPow2j = uj*uj;   vPow2j = vj*vj
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
@@ -1655,7 +1655,7 @@ contains
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
 
-    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     uvj = uj*vj;   qj = uj*uj+vj*vj;   uPow2j = uj*uj;   vPow2j = vj*vj
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
@@ -1893,7 +1893,7 @@ contains
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
 
-    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   uPow2i = vi*vi
+    uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     uvj = uj*vj;   qj = uj*uj+vj*vj;   uPow2j = uj*uj;   vPow2j = vj*vj
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
