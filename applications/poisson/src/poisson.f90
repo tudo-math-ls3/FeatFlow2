@@ -33,6 +33,7 @@ program poisson
   use poisson2d_method0_simple
   use poisson2d_method1_mg
   use poisson2d_method1_em30
+  use poisson2d_method1_robin
   use poisson2d_method1_fbc
   use poisson2d_method1_hadapt
   use poisson2d_method1_l2prj
@@ -109,6 +110,12 @@ program poisson
   call output_line ('Calculating Poisson-2D-Problem with method 1 - EM30')
   call output_line ('---------------------------------------------------')
   call poisson2d_1_em30
+
+  ! Call the problem to solve. Poisson 1: Support for nonconforming elements
+  call output_lbrk ()
+  call output_line ('Calculating Poisson-2D-Problem with method 1 - Robin BC')
+  call output_line ('-------------------------------------------------------')
+  call poisson2d_1_robin
 
   ! Call the problem to solve. Poisson 1: Fictitious boundary support
   call output_lbrk ()
