@@ -442,7 +442,7 @@ contains
     if (bexists) then
 
       ! A file exists with given name
-      bexists = .FALSE.
+      bexists = .false.
 
     else
 
@@ -451,7 +451,7 @@ contains
           action='read', iostat=ios); close(iunit)
 
       ! If we succeeded then the string is an existing directory
-      if (ios .eq. 0) bexists = .TRUE.
+      if (ios .eq. 0) bexists = .true.
 
       ! Otherwise, no further action is required as bexists is
       ! already set to .FALSE.
