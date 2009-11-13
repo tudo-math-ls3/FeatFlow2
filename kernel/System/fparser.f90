@@ -1890,7 +1890,7 @@ contains
         end if
         
         ! Push counter for parenthesss to stack
-        call stack_pushback(rstack, iparenthCount+1)
+        call stack_push(rstack, iparenthCount+1)
       end if
       
       ! Check for opening parenthesis
@@ -1960,8 +1960,8 @@ contains
       ! Check for closing parenthesis
       do while (c .eq. ')')
         if (.not.stack_isempty(rstack)) then
-          if(stack_backInt(rstack) .eq. iparenthCount) &
-              idummy = stack_popbackInt(rstack)
+          call stack_top(rstack, idummy)
+          if(idummy .eq. iparenthCount) call stack_pop(rstack, idummy)
         end if
         iparenthCount = iparenthCount-1
         if (iparenthCount .lt. 0) then
@@ -1985,8 +1985,8 @@ contains
       ! Check operators
       iopSize = 0
       if (.not.stack_isempty(rstack)) then
-        if (c .eq. ',' .and. &
-            stack_backInt(rstack) .eq. iparenthCount) then
+        call stack_top(rstack, idummy)
+        if (c .eq. ',' .and. idummy .eq. iparenthCount) then
           iopSize = 1
         else
           iopSize = isOperator(sfunctionString(ifunctionIndex:))
