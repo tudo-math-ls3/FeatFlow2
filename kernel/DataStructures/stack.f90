@@ -26,18 +26,35 @@ module stack
   public :: stack_clear
   public :: stack_isempty
   public :: stack_size
-  public :: stack_pushback
-  public :: stack_backInt
-  public :: stack_backSngl
-  public :: stack_backDble
-  public :: stack_popbackInt
-  public :: stack_popbackSngl
-  public :: stack_popbackDble
+  public :: stack_top
+  public :: stack_topInt
+  public :: stack_topSngl
+  public :: stack_topDble
+  public :: stack_push
+  public :: stack_pushInt
+  public :: stack_pushSngl
+  public :: stack_pushDble
+  public :: stack_pop
+  public :: stack_popInt
+  public :: stack_popSngl
+  public :: stack_popDble
 
-  interface stack_pushback
-    module procedure stack_pushbackInt
-    module procedure stack_pushbackSngl
-    module procedure stack_pushbackDble
+  interface stack_top
+    module procedure stack_topInt
+    module procedure stack_topSngl
+    module procedure stack_topDble
+  end interface
+
+  interface stack_push
+    module procedure stack_pushInt
+    module procedure stack_pushSngl
+    module procedure stack_pushDble
+  end interface
+
+  interface stack_pop
+    module procedure stack_popInt
+    module procedure stack_popSngl
+    module procedure stack_popDble
   end interface
 
 !<types>
@@ -46,6 +63,8 @@ module stack
 
   ! Type block for holding a dynamic stack
   type t_stack
+    private
+
     ! Size of stack
     integer :: istackSize = 0
 
@@ -153,7 +172,7 @@ contains
 
 !<function>
 
-  function stack_isempty(rstack) result(bisempty)
+  function stack_isEmpty(rstack) result(bisempty)
 
 !<description>
     ! Returns TRUE if stack is empty
@@ -168,8 +187,8 @@ contains
 !</result>
 !</function>
 
-    bisempty=(rstack%istackPosition==0)
-  end function stack_isempty
+    bisempty=(rstack%istackPosition.eq.0)
+  end function stack_isEmpty
 
   !************************************************************************
 
@@ -197,7 +216,7 @@ contains
 
 !<subroutine>
   
-  subroutine stack_pushbackInt(rstack,idata)
+  subroutine stack_pushInt(rstack,idata)
 
 !<description>
     ! Add an integer value to the top of the stack
@@ -215,15 +234,15 @@ contains
     ! local variables
     integer, dimension(:), pointer :: StackData
     
-    if (rstack%h_StackData == ST_NOHANDLE) then
+    if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushInt')
       call sys_halt()
     end if
     
     ! Double storage for stack if required
-    if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackInt",2*rstack%istackSize,&
+    if (rstack%istackSize .eq. rstack%istackPosition) then
+      call storage_realloc("stack_pushInt",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -232,13 +251,13 @@ contains
     rstack%istackPosition=rstack%istackPosition+1
     call storage_getbase_int(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=idata
-  end subroutine stack_pushbackInt
+  end subroutine stack_pushInt
 
   !************************************************************************
 
 !<subroutine>
   
-  subroutine stack_pushbackSngl(rstack,sdata)
+  subroutine stack_pushSngl(rstack,sdata)
 
 !<description>
     ! Add a single value to the top of the stack
@@ -256,15 +275,15 @@ contains
     ! local variables
     real(SP), dimension(:), pointer :: StackData
 
-    if (rstack%h_StackData == ST_NOHANDLE) then
+    if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushSngl')
       call sys_halt()
     end if
 
     ! Double storage for stack if required
-    if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackSngl",2*rstack%istackSize,&
+    if (rstack%istackSize .eq. rstack%istackPosition) then
+      call storage_realloc("stack_pushSngl",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -273,13 +292,13 @@ contains
     rstack%istackPosition=rstack%istackPosition+1
     call storage_getbase_single(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=sdata
-  end subroutine stack_pushbackSngl
+  end subroutine stack_pushSngl
 
   !************************************************************************
 
 !<subroutine>
   
-  subroutine stack_pushbackDble(rstack,ddata)
+  subroutine stack_pushDble(rstack,ddata)
 
 !<description>
     ! Add a double value to the top of the stack
@@ -297,15 +316,15 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: StackData
 
-    if (rstack%h_StackData == ST_NOHANDLE) then
+    if (rstack%h_StackData .eq. ST_NOHANDLE) then
       call output_line('Invalid data type!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushbackDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_pushDble')
       call sys_halt()
     end if
 
     ! Double storage for stack if required
-    if (rstack%istackSize == rstack%istackPosition) then
-      call storage_realloc("stack_pushbackDble",2*rstack%istackSize,&
+    if (rstack%istackSize .eq. rstack%istackPosition) then
+      call storage_realloc("stack_pushDble",2*rstack%istackSize,&
           rstack%h_StackData,ST_NEWBLOCK_NOINIT,.true.)
       rstack%istackSize=2*rstack%istackSize
     end if
@@ -314,13 +333,13 @@ contains
     rstack%istackPosition=rstack%istackPosition+1
     call storage_getbase_double(rstack%h_StackData,StackData)
     StackData(rstack%istackPosition)=ddata
-  end subroutine stack_pushbackDble
+  end subroutine stack_pushDble
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_backInt(rstack) result(idata)
+  subroutine stack_topInt(rstack, idata)
 
 !<description>
     ! Return integer value from top of the stack
@@ -330,10 +349,10 @@ contains
     type(t_stack), intent(in) :: rstack
 !</input>
 
-!<result>
-    integer :: idata
-!</result>
-!</function>
+!<inputoutput>
+    integer, intent(inout) :: idata
+!</inputoutput>
+!</subroutine>
 
     integer, dimension(:), pointer :: StackData
     
@@ -342,17 +361,17 @@ contains
       idata=StackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_topInt')
       call sys_halt()
     end if
     
-  end function stack_backInt
+  end subroutine stack_topInt
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_backSngl(rstack) result(sdata)
+  subroutine stack_topSngl(rstack, sdata)
 
 !<description>
     ! Return single value from top of the stack
@@ -362,10 +381,10 @@ contains
     type(t_stack), intent(in) :: rstack
 !</input>
 
-!<result>
+!<inputoutput>
     real(SP) :: sdata
-!</result>
-!</function>
+!</inputoutput>
+!</subroutine>
 
     real(SP), dimension(:), pointer :: StackData
     
@@ -374,17 +393,17 @@ contains
       sdata=StackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_topSngl')
       call sys_halt()
     end if
     
-  end function stack_backSngl
+  end subroutine stack_topSngl
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_backDble(rstack) result(ddata)
+  subroutine stack_topDble(rstack, ddata)
 
 !<description>
     ! Return a single value from top of the stack
@@ -394,10 +413,10 @@ contains
     type(t_stack), intent(in) :: rstack
 !</input>
 
-!<result>
-    real(SP) :: ddata
-!</result>
-!</function>
+!<inputoutput>
+    real(DP) :: ddata
+!</inputoutput>
+!</subroutine>
 
     real(DP), dimension(:), pointer :: StackData
     
@@ -406,17 +425,17 @@ contains
       ddata=StackData(rstack%istackPosition)
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_backDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_topDble')
       call sys_halt()
     end if
     
-  end function stack_backDble
+  end subroutine stack_topDble
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_popbackInt(rstack) result(idata)
+  subroutine stack_popInt(rstack, idata)
 
 !<description>
     ! Remove an integer value from top of the stack
@@ -424,12 +443,9 @@ contains
 
 !<inputoutput>
     type(t_stack), intent(inout) :: rstack
+    integer, intent(inout) :: idata
 !</inputoutput>
-
-!<result>
-    integer :: idata
-!</result>
-!</function>
+!</subroutine>
 
     integer, dimension(:), pointer :: StackData
     
@@ -439,17 +455,17 @@ contains
       rstack%istackPosition=rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackInt')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popInt')
       call sys_halt()
     end if
     
-  end function stack_popbackInt
+  end subroutine stack_popInt
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_popbackSngl(rstack) result(sdata)
+  subroutine stack_popSngl(rstack, sdata)
 
 !<description>
     ! Remove a single value from top of the stack
@@ -457,12 +473,9 @@ contains
 
 !<inputoutput>
     type(t_stack), intent(inout) :: rstack
+    real(SP), intent(inout) :: sdata
 !</inputoutput>
-
-!<result>
-    real(SP) :: sdata
-!</result>
-!</function>
+!</subroutine>
 
     real(SP), dimension(:), pointer :: StackData
     
@@ -472,17 +485,17 @@ contains
       rstack%istackPosition=rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackSngl')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popSngl')
       call sys_halt()
     end if
     
-  end function stack_popbackSngl
+  end subroutine stack_popSngl
 
   !************************************************************************
 
-!<function>
+!<subroutine>
 
-  function stack_popbackDble(rstack) result(ddata)
+  subroutine stack_popDble(rstack, ddata)
 
 !<description>
     ! Remove a single value from top of the stack
@@ -490,11 +503,8 @@ contains
 
 !<inputoutput>
     type(t_stack), intent(inout) :: rstack
+    real(DP), intent(inout) :: ddata
 !</inputoutput>
-
-!<result>
-    real(SP) :: ddata
-!</result>
 !</function>
 
     real(DP), dimension(:), pointer :: StackData
@@ -505,9 +515,9 @@ contains
       rstack%istackPosition=rstack%istackPosition-1
     else
       call output_line('Stack empty!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popbackDble')
+                       OU_CLASS_ERROR,OU_MODE_STD,'stack_popDble')
       call sys_halt()
     end if
     
-  end function stack_popbackDble
+  end subroutine stack_popDble
 end module stack
