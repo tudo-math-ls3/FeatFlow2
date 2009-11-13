@@ -526,6 +526,90 @@ module storage
 
   public :: storage_getbase_char2D
 
+  interface storage_getbase
+    module procedure storage_getbase_intDefault
+    module procedure storage_getbase_intUBnd
+    module procedure storage_getbase_intLUBnd
+
+    module procedure storage_getbase_int8Default
+    module procedure storage_getbase_int8UBnd
+    module procedure storage_getbase_int8LUBnd
+
+    module procedure storage_getbase_int16Default
+    module procedure storage_getbase_int16UBnd
+    module procedure storage_getbase_int16LUBnd
+
+    module procedure storage_getbase_int32Default
+    module procedure storage_getbase_int32UBnd
+    module procedure storage_getbase_int32LUBnd
+
+    module procedure storage_getbase_int64Default
+    module procedure storage_getbase_int64UBnd
+    module procedure storage_getbase_int64LUBnd
+
+    module procedure storage_getbase_singleDefault
+    module procedure storage_getbase_singleUBnd
+    module procedure storage_getbase_singleLUBnd
+
+    module procedure storage_getbase_doubleDefault
+    module procedure storage_getbase_doubleUBnd
+    module procedure storage_getbase_doubleLUBnd
+
+    module procedure storage_getbase_quadDefault
+    module procedure storage_getbase_quadUBnd
+    module procedure storage_getbase_quadLUBnd
+
+    module procedure storage_getbase_logicalDefault
+    module procedure storage_getbase_logicalUBnd
+    module procedure storage_getbase_logicalLUBnd
+
+    module procedure storage_getbase_charDefault
+    module procedure storage_getbase_charUBnd
+    module procedure storage_getbase_charLUBnd
+
+    module procedure storage_getbase_int2DDef
+    module procedure storage_getbase_int2DUBnd
+    module procedure storage_getbase_int2DLUBnd
+
+    module procedure storage_getbase_int8_2DDef
+    module procedure storage_getbase_int8_2DUBnd
+    module procedure storage_getbase_int8_2DLUBnd
+
+    module procedure storage_getbase_int16_2DDef
+    module procedure storage_getbase_int16_2DUBnd
+    module procedure storage_getbase_int16_2DLUBnd
+
+    module procedure storage_getbase_int32_2DDef
+    module procedure storage_getbase_int32_2DUBnd
+    module procedure storage_getbase_int32_2DLUBnd
+
+    module procedure storage_getbase_int64_2DDef
+    module procedure storage_getbase_int64_2DUBnd
+    module procedure storage_getbase_int64_2DLUBnd
+
+    module procedure storage_getbase_single2DDef
+    module procedure storage_getbase_single2DUBnd
+    module procedure storage_getbase_single2DLUBnd
+
+    module procedure storage_getbase_double2DDef
+    module procedure storage_getbase_double2DUBnd
+    module procedure storage_getbase_double2DLUBnd
+
+    module procedure storage_getbase_quad2DDef
+    module procedure storage_getbase_quad2DUBnd
+    module procedure storage_getbase_quad2DLUBnd
+
+    module procedure storage_getbase_logical2DDef
+    module procedure storage_getbase_logical2DUBnd
+    module procedure storage_getbase_logical2DLUBnd
+
+    module procedure storage_getbase_char2DDef
+    module procedure storage_getbase_char2DUBnd
+    module procedure storage_getbase_char2DLUBnd
+  end interface
+
+  public :: storage_getbase
+
   interface storage_getsize
     module procedure storage_getsize1D
     module procedure storage_getsize2D
