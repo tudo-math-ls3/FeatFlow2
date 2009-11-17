@@ -5483,10 +5483,10 @@ END IF
     allocate (DvaluesFevl(3,npointsPerElement,nelements))
     ! Fetching the vector
 
-    !rvector_x = collct_getvalue_vecsca (rcollection, "rvector_x",0,'')
-    !rvector_y = collct_getvalue_vecsca (rcollection, "rvector_y",0,'')
-    !rvector_z = collct_getvalue_vecsca (rcollection, "rvector_z",0,'')
-    rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
+    rvector_x = collct_getvalue_vecsca (rcollection, "rvector_x",0,'')
+    rvector_y = collct_getvalue_vecsca (rcollection, "rvector_y",0,'')
+    rvector_z = collct_getvalue_vecsca (rcollection, "rvector_z",0,'')
+    !rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
     !rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
     CHI = rcollection%DquickAccess(2)
@@ -5496,18 +5496,18 @@ END IF
 
 
     ! Fetching the values of rvector_c in the cubature pts.
-    !call fevl_evaluate_sim4(rvector_x, &
-    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
-    !call fevl_evaluate_sim4(rvector_y, &
-    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 2)
-    !call fevl_evaluate_sim4(rvector_z, &
-    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
-    call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
-    call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
-    call fevl_evaluate_sim4(rvector_c, &
-                                 rdomainIntSubset, DER_DERIV3D_Z, DvaluesFevl, 3)
+    call fevl_evaluate_sim4(rvector_x, &
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
+    call fevl_evaluate_sim4(rvector_y, &
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 2)
+    call fevl_evaluate_sim4(rvector_z, &
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
+    !call fevl_evaluate_sim4(rvector_c, &
+    !                             rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
+    !call fevl_evaluate_sim4(rvector_c, &
+    !                             rdomainIntSubset, DER_DERIV3D_Y, DvaluesFevl, 2)
+    !call fevl_evaluate_sim4(rvector_c, &
+    !                             rdomainIntSubset, DER_DERIV3D_Z, DvaluesFevl, 3)
 
     ! These calls are neccessary to fit the signature of f_CHI
     !call fevl_evaluate_sim4(rvector_u, &
