@@ -827,50 +827,50 @@ contains
     call lsyssc_getbase_double(rmatrixBY,p_BYdata)
     
     ! Now fill the entries
-    do iedge = 1, nedge
-       i  = p_Kedge(1, iedge)
-       j  = p_Kedge(2, iedge)
-       ij = p_Kedge(3, iedge)
-       ji = p_Kedge(4, iedge)
-       ii = p_Kdiagonal(i)
-       jj = p_Kdiagonal(j)
-
-!        p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
-!        p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
+!     do iedge = 1, nedge
+!        i  = p_Kedge(1, iedge)
+!        j  = p_Kedge(2, iedge)
+!        ij = p_Kedge(3, iedge)
+!        ji = p_Kedge(4, iedge)
+!        ii = p_Kdiagonal(i)
+!        jj = p_Kdiagonal(j)
+! 
+! !        p_BXdata(ij) = -gravconst*p_CXdata(ij)*(p_bottom(j)-p_bottom(i))
+! !        p_BYdata(ij) = -gravconst*p_CYdata(ij)*(p_bottom(j)-p_bottom(i))
+! !        
+! !        p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
+! !        p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
+! 
+! ! Now evaluate the derivative of the bottom profile
+!        Dpoints(:,1) = p_DvertexCoords(:,j)
+!        Dpoints(:,2) = p_DvertexCoords(:,i)
+!        call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
+!        call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
+! 
+!        p_BXdata(ij) = -gravconst*p_MCdata(ij)*b_x(1)
+!        p_BYdata(ij) = -gravconst*p_MCdata(ij)*b_y(1)
+! 
+!        p_BXdata(ji) = -gravconst*p_MCdata(ji)*b_x(2)
+!        p_BYdata(ji) = -gravconst*p_MCdata(ji)*b_y(2)
 !        
-!        p_BXdata(ji) = -gravconst*p_CXdata(ji)*(p_bottom(i)-p_bottom(j))
-!        p_BYdata(ji) = -gravconst*p_CYdata(ji)*(p_bottom(i)-p_bottom(j))
-
-! Now evaluate the derivative of the bottom profile
-       Dpoints(:,1) = p_DvertexCoords(:,j)
-       Dpoints(:,2) = p_DvertexCoords(:,i)
-       call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
-       call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
-
-       p_BXdata(ij) = -gravconst*p_MCdata(ij)*b_x(1)
-       p_BYdata(ij) = -gravconst*p_MCdata(ij)*b_y(1)
-
-       p_BXdata(ji) = -gravconst*p_MCdata(ji)*b_x(2)
-       p_BYdata(ji) = -gravconst*p_MCdata(ji)*b_y(2)
-       
-       p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ij)*b_x(1)
-       p_BSXdata(j) = p_BSXdata(j)-gravconst*p_MCdata(ji)*b_x(2)
-       
-       p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ij)*b_y(1)
-       p_BSYdata(j) = p_BSYdata(j)-gravconst*p_MCdata(ji)*b_y(2)
-
-    end do
-    
-    do i = 1, neq
-      Dpoints(:,1) = p_DvertexCoords(:,j)
-      Dpoints(:,2) = p_DvertexCoords(:,i)
-      call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
-      call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
-      ii = p_Kdiagonal(i)
-      p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ii)*b_x(2)
-      p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ii)*b_y(2)
-    
-    end do
+!        p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ij)*b_x(1)
+!        p_BSXdata(j) = p_BSXdata(j)-gravconst*p_MCdata(ji)*b_x(2)
+!        
+!        p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ij)*b_y(1)
+!        p_BSYdata(j) = p_BSYdata(j)-gravconst*p_MCdata(ji)*b_y(2)
+! 
+!     end do
+!     
+!     do i = 1, neq
+!       Dpoints(:,1) = p_DvertexCoords(:,j)
+!       Dpoints(:,2) = p_DvertexCoords(:,i)
+!       call fevl_evaluate (der_deriv_x, b_x, rvectorbottom, Dpoints)
+!       call fevl_evaluate (der_deriv_y, b_y, rvectorbottom, Dpoints)
+!       ii = p_Kdiagonal(i)
+!       p_BSXdata(i) = p_BSXdata(i)-gravconst*p_MCdata(ii)*b_x(2)
+!       p_BSYdata(i) = p_BSYdata(i)-gravconst*p_MCdata(ii)*b_y(2)
+!     
+!     end do
     
     
     ! If the heigth values are given as relative values, then substract the bottom profile
@@ -1209,15 +1209,24 @@ contains
 !                p_Kdiagonal, p_Kedge, NEQ, nedge, &
 !                gravconst, dt, Method, prelimiting, syncromethod, &
 !                rtriangulation)
+!                
+!           call new_syncronized(&
+!                rarraySol, rarraySolDot, rarrayRhs,&
+!                rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
+!                rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, p_MCdata, &
+!                h_fld1, p_fld1, p_fld2, &
+!                p_Kdiagonal, p_Kedge, NEQ, nedge, &
+!                gravconst, dt, Method, prelimiting, syncromethod, &
+!                rtriangulation)
                
-          call new_syncronized(&
-               rarraySol, rarraySolDot, rarrayRhs,&
-               rdefBlock, rstempBlock, rsolBlock, rSolDotBlock, &
-               rmatrixML, p_CXdata, p_CYdata, p_BXdata, p_BYdata, p_MLdata, p_MCdata, &
-               h_fld1, p_fld1, p_fld2, &
-               p_Kdiagonal, p_Kedge, NEQ, nedge, &
-               gravconst, dt, Method, prelimiting, syncromethod, &
-               rtriangulation)
+          call lfctsync(rarraySol, rarraySolDot, rSolDotBlock, &
+                        p_Kedge, p_Kdiagonal, NEQ, nedge,&
+                        p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+                        gravconst, dt, syncromethod)
+               
+          ! As we now have a simple dry bed handling, we clip all height variables
+          ! smaller than eps
+          call ClipHeight (rarraySol, neq)
 
           call BuildShallowWaterPreconditioner (rmatrixBlockP, &
                rarrayP, rarraySol, p_CXdata, p_CYdata, &

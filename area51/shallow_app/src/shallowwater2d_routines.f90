@@ -142,8 +142,14 @@ contains
 
     ! Calculate primitive variables
     h=Q(1)
-    u=Q(2)/Q(1)
-    v=Q(3)/Q(1)
+    if (h<clipwater) then
+      h=0.0_dp
+      u=0.0_dp
+      v=0.0_dp
+    else
+      u=Q(2)/Q(1)
+      v=Q(3)/Q(1)
+    end if
 
     if (d==1) then
        ! build Jacobi matrix in x direction
@@ -195,15 +201,18 @@ contains
     integer, intent(IN)                     :: d
     
     ! The Roe-Mean-Values
-    real(DP), dimension(nvar2d)             :: Qroe
+    real(DP), dimension(nvar2d)             :: Qroe, Q, Qroeij
 
     ! local variables
-    real(DP)                                :: scalefactor1, scalefactor2, cRoe, uRoe, vRoe, lambda, scalardissipation
+    real(DP)                                :: scalefactor1, scalefactor2, cRoe, uRoe, vRoe, lambda, scalardissipation, scalefactor
     
     real(dp), dimension(3) :: v,w,diff
-    real(dp), dimension(3,3) :: A
+    real(dp), dimension(3,3) :: A, Aij, Bij
     integer :: l
     real(dp) :: ci, cj, vi, vj, ui, uj
+    real(dp) :: lambda1, lambda3
+    real(dp) :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
+    real(dp), dimension(nvar2d,nvar2d) :: JacobixRoeij, JacobiyRoeij
 
 
     select case (k)
@@ -267,8 +276,13 @@ contains
 !         !w=A*w
 !         w=matmul(A,w)
 !         
-!         scalarDissipation = (1.1_dp)*sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
+!         scalarDissipation = sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
+!         
+! 
+!         
 !         Dij=scalarDissipation*Eye
+
+
 
 
         ! Test, if node i is dry and calculate the velocities
@@ -280,6 +294,13 @@ contains
          ci = sqrt(g*Qi(1))
          ui = Qi(2)/Qi(1)
          vi = Qi(3)/Qi(1)
+!          if(ui/ci>0.8_dp) write(*,*)ui/ci
+!          ! Entropy Fix
+!          lambda1 = ui-ci
+!          if (abs(ui-ci)<0.1_dp) then
+!           
+!          end if
+         
         end if
 
         ! Test, if node j is dry and calculate the velocities
@@ -291,13 +312,138 @@ contains
           cj = sqrt(g*Qj(1))
           uj = Qj(2)/Qj(1)
           vj = Qj(3)/Qj(1)
+!           if(uj/cj>0.8_dp)write(*,*)uj/cj
         end if
 
         scalefactor1 = sqrt(cxij**2.0_DP+cyij**2.0_DP)
         scalefactor2 = sqrt(cxji**2.0_DP+cyji**2.0_DP)
         scalarDissipation = max(abs(cxij*uj+cyij*vj)+scalefactor1*cj,&
                                 abs(cxji*ui+cyji*vi)+scalefactor2*ci)
+!         scalarDissipation = max(abs(cxij*uj+cyij*vj)+scalefactor1*cj,&
+!                                 abs(cxji*ui+cyji*vi)+scalefactor2*ci,&
+!                                 abs(cxij*ui+cyij*vi)+scalefactor1*ci,&
+!                                 abs(cxji*uj+cyji*vj)+scalefactor2*cj)
+
+    
+
         Dij=scalarDissipation*Eye
+!         
+!         
+!         
+!         Qroe = calculateQroe(Qi,Qj)
+!         cRoe = sqrt(g/2.0_dp * ( Qi(1) + Qj(1)))
+!         lambda1=(cxij/scalefactor1*Qroe(2)/Qroe(1)+cyij/scalefactor1*Qroe(3)/Qroe(1))-cRoe
+!         lambda3=(cxij/scalefactor1*Qroe(2)/Qroe(1)+cyij/scalefactor1*Qroe(3)/Qroe(1))+cRoe
+! !write(*,*) lambda1, lambda3
+!         if(abs(lambda1)<0.1_dp) then
+!         write(*,*)'*'
+!          ! lambda1l=(cxij/scalefactor1*Qroe(2)/Qroe(1)+cyij/scalefactor1*Qroe(3)/Qroe(1))-cRoe
+!         
+!         end if
+!         
+        
+        
+        
+        
+        
+        
+        
+        
+        
+!         
+!         
+!         
+!               A=cxij*buildJacobi(Qroe,1,g)+cyij*buildJacobi(Qroe,2,g)
+!         v=(/1.0_dp,1.0_dp,1.0_dp/)
+!         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
+!         
+!         
+!         findeig1: do l = 1, 100
+!           !w=A*v
+!           w=matmul(A,v)
+!           
+!           
+!            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig1
+!           
+!           
+!           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
+!           !diff=v-w
+!           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
+!           v=w
+!         end do findeig1
+!         !w=A*w
+!         w=matmul(A,w)
+!         
+!         scalarDissipation = sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))
+!         
+!         A=cxji*buildJacobi(Qroe,1,g)+cyji*buildJacobi(Qroe,2,g)
+!         v=(/1.0_dp,1.0_dp,1.0_dp/)
+!         v=1.0_dp/sqrt(v(1)*v(1)+v(2)*v(2)+v(3)*v(3))*v
+!         
+!         
+!         findeig2: do l = 1, 100
+!           !w=A*v
+!           w=matmul(A,v)
+!           
+!           
+!            if (sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)).le.1e-12_dp) exit findeig2
+!           
+!           
+!           w=1.0_dp/sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3))*w
+!           !diff=v-w
+!           !if (sqrt(diff(1)*diff(1)+diff(2)*diff(2)+diff(3)*diff(3)).le.1e-3_dp) exit findeig
+!           v=w
+!         end do findeig2
+!         !w=A*w
+!         w=matmul(A,w)
+!         
+!         scalarDissipation = max(scalardissipation,sqrt(w(1)*w(1)+w(2)*w(2)+w(3)*w(3)))
+!         
+!         
+!         
+!         
+!         Dij=scalarDissipation*Eye
+        
+        
+        
+        
+        
+       Qroeij = 0.5_dp*(Qi+Qj)
+
+       JcoeffxA = (cxij-cxji)/2.0_DP
+       JcoeffyA = (cyij-cyji)/2.0_DP
+       JcoeffxB = (cxij+cxji)/2.0_DP
+       JcoeffyB = (cyij+cyji)/2.0_DP
+
+       scalarDissipation = &
+            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g))))
+
+       Dij = scalarDissipation*Eye
+       
+       
+       
+       
+       
+       
+       
+       
+!        ! Compute the jacobi matrices for x- and y- direction
+!        JacobixRoeij = buildJacobi(Qroeij,1,g)
+!        JacobiyRoeij = buildJacobi(Qroeij,2,g)
+! 
+!        ! Compute the coeffitients for the jacobi matrices
+!        JcoeffxA = (CXij-CXji)/2.0_DP
+!        JcoeffyA = (CYij-CYji)/2.0_DP
+!        JcoeffxB = (CXij+CXji)/2.0_DP
+!        JcoeffyB = (CYij+CYji)/2.0_DP
+! 
+!        ! Now we can compute Aij and Bij
+!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+!        
+!        Dij = Dij + Bij
+        
         
 
       case (2)! Here we use tensorial dissipation in direction d
@@ -592,8 +738,14 @@ contains
 
     ! Calculate primitive variables
     h=Q(1)
-    u=Q(2)/Q(1)
-    v=Q(3)/Q(1)
+    if (h<clipwater) then
+      h = 0.0_dp
+      u = 0.0_dp
+      v = 0.0_dp
+    else
+      u = Q(2)/Q(1)
+      v = Q(3)/Q(1)
+    end if
 
     ! compute c = sqrt(g*h)
     c = sqrt(g*h)
@@ -679,15 +831,15 @@ contains
 
 
 
-!     do i = 1, NEQ
-!        if(rarraySol(1)%Da(i)<clipwater) then
-!         rarraySol(1)%Da(i) = 0.0_dp
-!         rarraySol(2)%Da(i) = 0.0_dp
-!         rarraySol(3)%Da(i) = 0.0_dp
-!        end if
-! 
-! 
-!     end do
+    do i = 1, NEQ
+       if(rarraySol(1)%Da(i)<clipwater) then
+        rarraySol(1)%Da(i) = 0.0_dp
+        rarraySol(2)%Da(i) = 0.0_dp
+        rarraySol(3)%Da(i) = 0.0_dp
+       end if
+
+
+    end do
 
 
   end subroutine ClipHeight
@@ -720,6 +872,7 @@ contains
     real(DP), dimension(nvar2d,nvar2d)  :: Kij, Kji, Dij
     real(DP)                            :: scalarDissipation, scalefactor, lambda
     real(DP)                            :: cRoe, uRoe, vRoe
+    real(dp), dimension(3,3) :: Aij, Bij
 
 
     ! Assemble the preconditioner rmatrixBlockP: P = ML - theta*dt*L
@@ -755,23 +908,21 @@ contains
 
        ! Compute the Roe-meanvalue for this edge
        !Qroeij = calculateQroe(Qi, Qj)
-       Qroeij = 0.5_dp*(Qi+Qj)
+       Qroeij=0.5_dp*(Qi+Qj)
 
-       if (Qroeij(1) .ge. clipwater) then
+       ! Compute the jacobi matrices for x- and y- direction
+       JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+       JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
 
-        ! Compute the jacobi matrices for x- and y- direction
-        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+       ! Compute the coeffitients for the jacobi matrices
+       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
 
-        ! Now we can compute the high order part
-        Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
-        Kji = p_CXdata(ji)*JacobixRoeij + p_CYdata(ji)*JacobiyRoeij
-
-       else
-
-        Kij=0
-
-       end if
+       ! Now we can compute Aij and Bij
+       Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+       Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
 
        ! Here we use scalar dissipation
        Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
@@ -779,10 +930,10 @@ contains
        ! Now add the entries of Aij and Dij to their corresponding entries in P
        ! P = M^L - theta*dt*L
        do l = 1, nvar2d
-          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Kij(l,l)-Dij(l,l))
-          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Kij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Kji(l,l)+Dij(l,l))
-          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Kji(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)+Bij(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)-Bij(l,l)+Dij(l,l))
+          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)-Bij(l,l)+Dij(l,l))
+          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)+Bij(l,l)-Dij(l,l))
        end do
 
     end do
@@ -864,28 +1015,11 @@ contains
        ! compute deltaQij = Qi - Qj
        deltaQij = Qi - Qj
 
-!        ! Compute the Roe-meanvalue for this edge
-!        Qroeij = calculateQroe(Qi, Qj)
-! 
-!        ! Compute the jacobi matrices for x- and y- direction
-!        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-!        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
-! 
-!        ! Compute the coeffitients for the jacobi matrices
-!        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-!        JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
-! 
-!        ! Now we can compute Aij and Bij
-!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
-! 
-!        ! deltaK = Aij*deltaQij
-!        deltaKi = matmul(Aij+Bij,deltaQij)
-!        deltaKj = matmul(Aij-Bij,deltaQij)
+       ! Compute the Roe-meanvalue for this edge
+       !Qroeij = calculateQroe(Qi, Qj)
+       Qroeij=0.5_dp*(Qi+Qj)
 
-       ! Calculate this alternatively by calculating
+       ! Calculate the galerkin fluxes
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
        ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
        deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
@@ -907,51 +1041,62 @@ contains
                 abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
+!        ! deltaD
+!        deltaDi = matmul(Dij,-deltaQij)
+!        deltaDj = -deltaDi
+
+!        ! Now we take care of the bottom profile
+!        select case (deltabtype)
+!         case(0)
+!           DeltaBi = 0.0_dp
+!           DeltaBj = 0.0_dp
+!         case(1)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+!         case(2)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!         case(3)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
+!         end select
+
        ! deltaD
+       !deltaDi = matmul(Dij-Bij,-deltaQij)
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
 
-       ! Now we take care of the bottom profile
-       select case (deltabtype)
-        case(0)
-          DeltaBi = 0.0_dp
-          DeltaBj = 0.0_dp
-        case(1)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-        case(2)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-        case(3)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
-        end select
-        
-        
-        
-        
-        
-        
-
-       ! add deltaK, deltaD and deltaB to rhs
-       ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
+       ! add deltaK and deltaD to rhs
+       ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u
        do l = 1, nvar2d
           rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaKi(l) &
-               + (1-theta)*dt*deltaDi(l) + (1-theta)*dt*deltaBi(l)
+               + (1-theta)*dt*deltaDi(l) 
           rarrayRhs(l)%Da(j) = rarrayRhs(l)%Da(j) + (1-theta)*dt*deltaKj(l) &
-               + (1-theta)*dt*deltaDj(l) + (1-theta)*dt*deltaBj(l)
+               + (1-theta)*dt*deltaDj(l)
        end do
+        
+        
+       
+
+!        ! add deltaK, deltaD and deltaB to rhs
+!        ! rhs = rhs + (1-theta)*dt*K*u + (1-theta)*dt*D*u + (1-theta)*dt*S
+!        do l = 1, nvar2d
+!           rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaKi(l) &
+!                + (1-theta)*dt*deltaDi(l) !+ (1-theta)*dt*deltaBi(l)
+!           rarrayRhs(l)%Da(j) = rarrayRhs(l)%Da(j) + (1-theta)*dt*deltaKj(l) &
+!                + (1-theta)*dt*deltaDj(l) !+ (1-theta)*dt*deltaBj(l)
+!        end do
 
     end do
 
 
     ! Add the non-conservative part of the bottom source term
-    do i = i, neq
-      DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
-      do l = 1, nvar2d
-         rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaBi(l)
-       end do
-    end do
+!     do i = 1, neq
+!       DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
+!       do l = 1, nvar2d
+!          rarrayRhs(l)%Da(i) = rarrayRhs(l)%Da(i) + (1-theta)*dt*deltaBi(l)
+!        end do
+!     end do
 
 
     ! If we use the TVD scheme, then add the limited diffusive flux to the RHS
@@ -1251,28 +1396,7 @@ contains
        ! compute deltaQij = Qi - Qj
        deltaQij = Qi - Qj
 
-!        ! Compute the Roe-meanvalue for this edge
-!        Qroeij = calculateQroe(Qi, Qj)
-! 
-!        ! Compute the jacobi matrices for x- and y- direction
-!        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
-!        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
-! 
-!        ! Compute the coeffitients for the jacobi matrices
-!        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-!        JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
-! 
-!        ! Now we can compute Aij and Bij
-!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
-! 
-!        ! deltaK
-!        deltaKi = matmul(Aij+Bij,deltaQij)
-!        deltaKj = matmul(Aij-Bij,deltaQij)
-
-       ! Calculate this alternatively by calculating
+       ! Calculate the galerkin fluxes
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
        ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
        deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
@@ -1294,46 +1418,48 @@ contains
                 abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
        end select
 
-       ! deltaD       
+!        
+!        ! Now we take care of the bottom profile
+!        select case (deltabtype)
+!         case(0)
+!           DeltaBi = 0.0_dp
+!           DeltaBj = 0.0_dp
+!         case(1)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+!         case(2)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!         case(3)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
+!         end select
+
+       ! deltaD
+       !deltaDi = matmul(Dij-Bij,-deltaQij)
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
-       
-       ! Now we take care of the bottom profile
-       select case (deltabtype)
-        case(0)
-          DeltaBi = 0.0_dp
-          DeltaBj = 0.0_dp
-        case(1)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-        case(2)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-        case(3)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * (Qj(1)-Qi(1)), p_BYdata(ij) * (Qj(1)-Qi(1)) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * (Qi(1)-Qj(1)), p_BYdata(ji) * (Qi(1)-Qj(1)) /)
-        end select
-       
-       ! add deltaK, deltaD and deltaB to rstemp
-       ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u - theta*dt*B
+
+       ! add deltaK and deltaD to rstemp
+       ! rstemp = rstemp - theta*dt*K*u - theta*dt*D*u
        do l = 1, nvar2d
           rarrayRstemp(l)%Da(i) = rarrayRstemp(l)%Da(i) - theta*dt*deltaKi(l) &
-               - theta*dt*deltaDi(l) - theta*dt*deltaBi(l)
+               - theta*dt*deltaDi(l)
           rarrayRstemp(l)%Da(j) = rarrayRstemp(l)%Da(j) - theta*dt*deltaKj(l) &
-               - theta*dt*deltaDj(l) - theta*dt*deltaBj(l)
+               - theta*dt*deltaDj(l)
        end do
 
     end do
 
 
 
-    ! Add the non-conservative part of the bottom source term
-    do i = i, neq
-      DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
-      do l = 1, nvar2d
-        rarrayRstemp(l)%Da(i) = rarrayRstemp(l)%Da(i) -theta*dt*deltaBi(l)
-      end do
-    end do
+!     ! Add the non-conservative part of the bottom source term
+!     do i = 1, neq
+!       DeltaBi = (/ 0.0_DP, p_BSXdata(i) * Qi(1), p_BSYdata(i) * Qi(1) /)
+!       do l = 1, nvar2d
+!         rarrayRstemp(l)%Da(i) = rarrayRstemp(l)%Da(i) -theta*dt*deltaBi(l)
+!       end do
+!    end do
 
 
     ! If we use the TVD scheme, then add the limited diffusive flux to the Rstemp (defect)
@@ -2625,7 +2751,6 @@ end if !dry or wet bed
     real(dp), dimension(:,:), allocatable :: lPp, lQp, lRp
     real(dp), dimension(:,:), allocatable :: lPm, lQm, lRm
     real(dp), dimension(:,:), allocatable :: deltaF
-    
 
     !allocate P/Q/R_i^+/-
     allocate(lPp(3,NEQ),lQp(3,NEQ),lRp(3,NEQ))
@@ -2634,12 +2759,12 @@ end if !dry or wet bed
     ! allocate array for antidiff fluxes
     allocate(deltaF(3,nedge))
     
-    lPp = 0
-    lPm = 0
-    lQp = 0
-    lQm = 0
-    lRp = 1
-    lRm = 1
+    lPp(:,:) = 0
+    lPm(:,:) = 0
+    lQp(:,:) = 0
+    lQm(:,:) = 0
+    lRp(:,:) = 1
+    lRm(:,:) = 1
     
         ! Clear SolDot
     call lsysbl_clearVector (rSolDotBlock)
@@ -2666,59 +2791,43 @@ end if !dry or wet bed
        Qroeij = calculateQroe(Qi, Qj)
 
 
-       ! Now we can compute Aij and Bij
-       !Aij = scalefactor*buildJacobi(Qroeij,d,gravconst)
-
-       ! deltaK
-       !deltaKi = -matmul(Aij,deltaQij)
-       !deltaKj = deltaKi
-
-       ! Calculate this alternatively by calculating
+       ! Calculate the galerkin fluxes
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
        ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
-       deltaKi = p_CXdata(ij)*buildFlux(Qi,1,gravconst)+p_CYdata(ij)*buildFlux(Qi,2,gravconst) &
-            -p_CXdata(ij)*buildFlux(Qj,1,gravconst)-p_CYdata(ij)*buildFlux(Qj,2,gravconst)
-       deltaKj = p_CXdata(ji)*buildFlux(Qj,1,gravconst)+p_CYdata(ji)*buildFlux(Qj,2,gravconst) &
-            -p_CXdata(ji)*buildFlux(Qi,1,gravconst)-p_CYdata(ji)*buildFlux(Qi,2,gravconst)
+       deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
+                 p_CYdata(ij)*(buildFlux(Qi,2,gravconst)-buildFlux(Qj,2,gravconst))
+       deltaKj = p_CXdata(ji)*(buildFlux(Qj,1,gravconst)-buildFlux(Qi,1,gravconst))+ &
+                 p_CYdata(ji)*(buildFlux(Qj,2,gravconst)-buildFlux(Qi,2,gravconst))
 
        ! compute Dij
-       ! Now choose the artificial diffusion method
-       select case (Method)
-        case (6)
-          ! Here we use scalar dissipation
-          Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
-        case (7)
-          ! Here we use tensorial dissipation
-          Dij = abs(p_CXdata(ij))* buildDissipation(Qi,Qj,2,1,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))+&
-                abs(p_CYdata(ij))* buildDissipation(Qi,Qj,2,2,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
-       end select
+        Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
 
        ! deltaD
        deltaDi = matmul(Dij,-deltaQij)
        deltaDj = -deltaDi
 
-       ! Now we take care of the bottom profile
-       select case (deltabtype)
-        case(0)
-          DeltaBi = 0.0_dp
-          DeltaBj = 0.0_dp
-        case(1)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
-        case(2)
-          DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
-          DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
-        end select
+!        ! Now we take care of the bottom profile
+!        select case (deltabtype)
+!         case(0)
+!           DeltaBi = 0.0_dp
+!           DeltaBj = 0.0_dp
+!         case(1)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * Qi(1), p_BYdata(ij) * Qi(1) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * Qj(1), p_BYdata(ji) * Qj(1) /)
+!         case(2)
+!           DeltaBi = (/ 0.0_DP, p_BXdata(ij) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ij) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!           DeltaBj = (/ 0.0_DP, p_BXdata(ji) * 0.5_dp*(Qi(1)+Qj(1)), p_BYdata(ji) * 0.5_dp*(Qi(1)+Qj(1)) /)
+!         end select
 
        ! add deltaK and deltaD to SolDot
        ! SolDot = SolDot + 1/ML*(K*u + D*u + Sourceterm(B))
        do l = 1, nvar2d
           rarraySolDot(l)%Da(i) = rarraySolDot(l)%Da(i) &
                + 1.0_DP/p_MLdata(i)*&
-               (deltaKi(l) + deltaDi(l) + DeltaBi(l))
+               (deltaKi(l) + deltaDi(l))! + DeltaBi(l))
           rarraySolDot(l)%Da(j) = rarraySolDot(l)%Da(j) &
                + 1.0_DP/p_MLdata(j)*&
-               (deltaKj(l) + deltaDj(l) + DeltaBj(l))
+               (deltaKj(l) + deltaDj(l))! + DeltaBj(l))
           ! Save Qroe
           p_fld2(1+2*(l-1),iedge) = QRoeij(l)
        end do
@@ -2741,7 +2850,8 @@ end if !dry or wet bed
        Qj = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
        
        ! Compute the Roe-meanvalue for this edge
-       Qroeij = calculateQroe(Qi, Qj)
+       !Qroeij = calculateQroe(Qi, Qj)
+       Qroeij = 0.5_dp*(Qi+Qj)
        
        deltaWij = Qj - Qi
        
@@ -2767,14 +2877,25 @@ end if !dry or wet bed
           Udotj(ivar) = rarraySolDot(ivar)%Da(j)
        end do
        
+       
+       
+!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+!        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
+!        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
+!        ! Now we can compute Aij and Bij
+!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+       
+       
        ! compute antidiffusive flux
-       !deltaFij = p_MCdata(ij)*(Udoti-Udotj)+ matmul(Dij,(Qi-Qj))
-       deltaFij = matmul(Dij,(Qi-Qj))
+       deltaFij = p_MCdata(ij)*(Udoti-Udotj)+ matmul(Dij,(Qi-Qj))
+       !deltaFij = matmul(Dij+Bij,(Qi-Qj))
+!        deltaFij = matmul(Dij,(Qi-Qj))
        
        ! prelimit antidiff flux
-        do ivar = 1, 3
-           if (deltaWij(ivar)*deltaFij(ivar).ge.0) deltaFij(ivar) = 0.0_dp
-        end do
+!         do ivar = 1, 3
+!            if (deltaWij(ivar)*deltaFij(ivar).ge.0) deltaFij(ivar) = 0.0_dp
+!         end do
        
        ! and save
        deltaF(:,iedge) = deltaFij
@@ -3067,6 +3188,224 @@ end if !dry or wet bed
 
 
   end subroutine
+  
+  
+  
+  
+  
+  subroutine lfctsync(rarraySol, rarraySolDot, rSolDotBlock, &
+                      p_Kedge, p_Kdiagonal, NEQ, nedge,&
+                      p_CXdata, p_CYdata, p_MLdata, p_MCdata, &
+                      gravconst, dt, syncromethod)
+  
+  ! parameter values
+  type(t_array), dimension(nvar2d), intent(INOUT) :: rarraySol, rarraySolDot
+  type(t_vectorBlock), intent(INOUT)              :: rSolDotBlock
+  integer, dimension(:,:), pointer                :: p_Kedge
+  integer, dimension(:), pointer, intent(IN)      :: p_Kdiagonal
+  integer, intent(IN)                             :: NEQ, nedge
+  real(DP), dimension(:), pointer, intent(IN)     :: p_CXdata, p_CYdata, p_MLdata, p_MCdata
+  real(DP), intent(IN)                            :: gravconst, dt
+  integer, intent(IN)                             :: syncromethod
 
+  ! local variables
+  real(DP), dimension(:,:), allocatable           :: Pp, Pm, Qp, Qm, Rp, Rm
+  real(DP), dimension(:,:), allocatable           :: Fijs
+  real(DP), dimension(nvar2d)                     :: Qi, Qj, Udoti, Udotj
+  integer                                         :: i, j, ij, ji, ii, jj
+  integer                                         :: iedge, ivar, inode
+  real(DP), dimension(nvar2d, nvar2d)             :: Dij
+  real(dp), dimension(nvar2d)                     :: Fij
+  real(dp), dimension(nvar2d)                     :: deltaQji, deltaQij
+  real(dp)                                        :: alphaij
+  real(dp), dimension(nvar2d)                     :: deltaKi, deltaKj, deltaDi, deltaDj
+  
+  
+  ! function code
+  
+  ! Allocate memory for nodewise correction factors
+  allocate(Pp(nvar2d,neq),Pm(nvar2d,neq),Qp(nvar2d,neq),Qm(nvar2d,neq),Rp(nvar2d,neq),Rm(nvar2d,neq))
+  allocate(Fijs(nvar2d,nedge))
+  
+  ! Initialise the arrays
+  Pp = 0.0_dp
+  Pm = 0.0_dp
+  Qp = 0.0_dp
+  Qm = 0.0_dp
+  Rp = 1.0_dp
+  Rm = 1.0_dp
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ! Clear SolDot
+    call lsysbl_clearVector (rSolDotBlock)
+
+    ! First compute SolDot
+    do iedge = 1, nedge
+       i  = p_Kedge(1, iedge)
+       j  = p_Kedge(2, iedge)
+       ij = p_Kedge(3, iedge)
+       ji = p_Kedge(4, iedge)
+       ii = p_Kdiagonal(i)
+       jj = p_Kdiagonal(j)
+
+       ! get solution values at node i and j
+       do ivar = 1, nvar2d
+          Qi(ivar) = rarraySol(ivar)%Da(i)
+          Qj(ivar) = rarraySol(ivar)%Da(j)
+       end do
+
+       ! compute deltaQij = Qi - Qj
+       deltaQij = Qi - Qj
+
+       ! Calculate the galerkin fluxes
+       ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
+       ! deltaKj = c_{ji}*(F(Q_j)-F(Q_i))
+       deltaKi = p_CXdata(ij)*(buildFlux(Qi,1,gravconst)-buildFlux(Qj,1,gravconst))+ &
+                 p_CYdata(ij)*(buildFlux(Qi,2,gravconst)-buildFlux(Qj,2,gravconst))
+       deltaKj = p_CXdata(ji)*(buildFlux(Qj,1,gravconst)-buildFlux(Qi,1,gravconst))+ &
+                 p_CYdata(ji)*(buildFlux(Qj,2,gravconst)-buildFlux(Qi,2,gravconst))
+
+       ! compute Dij
+       Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
+
+       ! deltaD
+       deltaDi = matmul(Dij,-deltaQij)
+       deltaDj = -deltaDi
+
+
+       ! add deltaK and deltaD to SolDot
+       ! SolDot = SolDot + 1/ML*(K*u + D*u)
+       do ivar = 1, nvar2d
+          rarraySolDot(ivar)%Da(i) = rarraySolDot(ivar)%Da(i) &
+               + 1.0_DP/p_MLdata(i)*&
+               (deltaKi(ivar) + deltaDi(ivar))
+          rarraySolDot(ivar)%Da(j) = rarraySolDot(ivar)%Da(j) &
+               + 1.0_DP/p_MLdata(j)*&
+               (deltaKj(ivar) + deltaDj(ivar))
+       end do
+
+    end do
+    ! SolDot fertig!
+  
+  
+  
+  ! Walk over all edges
+  do iedge = 1, nedge
+    i  = p_Kedge(1, iedge)
+    j  = p_Kedge(2, iedge)
+    ij = p_Kedge(3, iedge)
+    ji = p_Kedge(4, iedge)
+    ii = p_Kdiagonal(i)
+    jj = p_Kdiagonal(j)
+    
+    ! Get values of the solution in node i and j
+    do ivar = 1, nvar2d
+      Qi(ivar) = rarraySol(ivar)%da(i)
+      Qj(ivar) = rarraySol(ivar)%da(j)
+    end do
+    
+    ! Get the diffusion matrix
+    Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
+    
+    ! get Udot at node i and j
+    do ivar = 1, 3
+      Udoti(ivar) = rarraySolDot(ivar)%Da(i)
+      Udotj(ivar) = rarraySolDot(ivar)%Da(j)
+    end do
+
+    ! Calculate the raw antidiffusion
+    Fij = matmul(Dij,Qi-Qj)
+    Fij = p_MCdata(ij)*(Udoti-Udotj)+matmul(Dij,Qi-Qj)
+    
+    ! Save the raw antidiffusive flux
+    Fijs(:,iedge) = Fij
+
+    ! Calculate the difference of the solution values in this node
+    deltaQji = Qj - Qi
+
+    do ivar = 1, nvar2d
+      ! Augment sum of positiv/negativ fluxes
+      Pp(ivar,i) = Pp(ivar,i) + max( Fij(ivar),0.0_dp)
+      Pp(ivar,j) = Pp(ivar,j) + max(-Fij(ivar),0.0_dp)
+      Pm(ivar,i) = Pm(ivar,i) + min( Fij(ivar),0.0_dp)
+      Pm(ivar,j) = Pm(ivar,j) + min(-Fij(ivar),0.0_dp)
+
+      ! Update the maximum/minimum admissible increment
+      Qp(ivar,i) = max(Qp(ivar,i), deltaQji(ivar))
+      Qp(ivar,j) = max(Qp(ivar,j),-deltaQji(ivar))
+      Qm(ivar,i) = min(Qm(ivar,i), deltaQji(ivar))
+      Qm(ivar,j) = min(Qm(ivar,j),-deltaQji(ivar))
+    end do
+
+  end do ! iedge
+
+  ! Loop over all nodes
+  do inode = 1, NEQ
+    do ivar = 1, nvar2d
+      ! Calculate nodal correction factors
+      if (Pp(ivar,inode)>0.0_dp) then
+        Rp(ivar,inode) = min(1.0_dp, p_MLdata(inode)/dt*Qp(ivar,inode)/(Pp(ivar,inode)+sys_epsreal))
+      else
+        Rp(ivar,inode) = 0.0_dp
+      end if
+      if (Pm(ivar,inode)<0.0_dp) then
+        Rm(ivar,inode) = min(1.0_dp, p_MLdata(inode)/dt*Qm(ivar,inode)/(Pm(ivar,inode)-sys_epsreal))
+      else
+        Rm(ivar,inode) = 0.0_dp
+      end if
+    end do
+  end do ! inode
+  
+    ! Walk over all edges
+  do iedge = 1, nedge
+    i  = p_Kedge(1, iedge)
+    j  = p_Kedge(2, iedge)
+    ij = p_Kedge(3, iedge)
+    ji = p_Kedge(4, iedge)
+    ii = p_Kdiagonal(i)
+    jj = p_Kdiagonal(j)
+    
+    ! Get values of the solution in node i and j
+    do ivar = 1, nvar2d
+      Qi(ivar) = rarraySol(ivar)%da(i)
+      Qj(ivar) = rarraySol(ivar)%da(j)
+    end do
+    
+    ! Get the raw antidiffusive flux
+    Fij = Fijs(:,iedge)
+    
+    ! Calculate limiting factor
+    if (Fij(1)>0.0_dp) then
+      alphaij = min(Rp(1,i),Rm(1,j))
+    elseif (Fij(1)<0.0_dp) then
+      alphaij = min(Rp(1,j),Rm(1,i))
+    else
+      alphaij = 0.0_dp
+    end if
+    
+    ! Limit the antidiffusive flux
+    Fij = alphaij*Fij
+    
+    ! Update the Solution with the limited antidiffusive flux
+    do ivar = 1, nvar2d
+      rarraySol(ivar)%da(i) = rarraySol(ivar)%da(i) + dt/p_MLdata(i)*Fij(ivar)
+      rarraySol(ivar)%da(j) = rarraySol(ivar)%da(j) - dt/p_MLdata(j)*Fij(ivar)
+    end do
+
+  end do ! iedge
+  
+  
+  ! Deallocate the memory used for the nodewise correction factors
+  deallocate(Pp,Pm,Qp,Qm,Rp,Rm)
+  deallocate(Fijs)
+  
+  end subroutine
 
 end module shallowwater2d_routines
