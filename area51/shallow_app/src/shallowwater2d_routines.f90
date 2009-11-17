@@ -417,10 +417,11 @@ contains
 
        scalarDissipation = max(scalardissipation,&
             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
-            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))) )
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))))
+       
+       scalardissipation = max(scalardissipation,SYS_EPSREAL)
 
        Dij = scalarDissipation*Eye
-       
        
        
        
@@ -930,10 +931,14 @@ contains
        ! Now add the entries of Aij and Dij to their corresponding entries in P
        ! P = M^L - theta*dt*L
        do l = 1, nvar2d
-          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)+Bij(l,l)-Dij(l,l))
-          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)-Bij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)-Bij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)+Bij(l,l)-Dij(l,l))
+!           rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)+Bij(l,l)-Dij(l,l))
+!           rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)-Bij(l,l)+Dij(l,l))
+!           rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)-Bij(l,l)+Dij(l,l))
+!           rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)+Bij(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)+Dij(l,l))
+          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)+Dij(l,l))
+          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)-Dij(l,l))
        end do
 
     end do
@@ -3390,8 +3395,7 @@ end if !dry or wet bed
       alphaij = 0.0_dp
     end if
     
-    if (( dt/p_MLdata(i)*Fij(1))/Qi(1)<-0.1_dp) alphaij = 0.0_dp
-    if ((-dt/p_MLdata(j)*Fij(1))/Qj(1)<-0.1_dp) alphaij = 0.0_dp
+
     
 !     ! We can even use the minimal limiting factor
 !     do ivar=2,nvar2d
@@ -3403,6 +3407,10 @@ end if !dry or wet bed
 !         alphaij = 0.0_dp
 !       end if
 !     end do
+
+    ! If we are near a dry bed occurence, use the low order method
+    if ((( dt/p_MLdata(i)*Fij(1))/Qi(1)<-0.1_dp).or.(Qi(1)<clipwater)) alphaij = 0.0_dp
+    if (((-dt/p_MLdata(j)*Fij(1))/Qj(1)<-0.1_dp).or.(Qj(1)<clipwater)) alphaij = 0.0_dp
     
     ! Limit the antidiffusive flux
     Fij = alphaij*Fij
