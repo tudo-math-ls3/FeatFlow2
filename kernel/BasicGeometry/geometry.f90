@@ -567,8 +567,12 @@ module geometry
     ! components of these forces.
     ! dTorque stores the torque forces of the
     ! current time step and of the previous time step
-    real(dp), dimension(6) :: rResForceX = 0
-    real(dp), dimension(6) :: rResForceY = 0
+    ! We save not only the forces from the current time
+    ! step, but also the forces from the previous time step
+    ! in rResForeX(1) are the current forces in (2) the old,
+    ! the same for the torque
+    real(dp), dimension(2) :: rResForceX = 0
+    real(dp), dimension(2) :: rResForceY = 0
     real(dp), dimension(2) :: dTorque = 0
   
   end type
@@ -618,12 +622,15 @@ module geometry
     !               in later versions we want this to be the radius
     !               of the smallest circumfering circle...
     !       [4,i]:= the density of the i-th particle
-    
+           
     ! the particle data
     real(DP), dimension(:,:), pointer :: pparameters
     
     ! the number of particles that will take part in the simulation
     integer :: iparticles = 0
+    
+    ! the shape id of the particle, initialized as a circle by default
+    integer :: ishape = GEOM_CIRCLE
     
   end type
 !</typeblock>
@@ -5337,7 +5344,7 @@ end subroutine
   ! according to the parameters iid,dx,dy,drad,drho
   ! The parameter iid should be one of the constants:
   ! GEOM_CIRCLE GEOM_ELLIPSE GEOM_SQUARE GEOM_RECT GEOM_POLYGON
-  ! So far ONLY GEOM_CIRCLE is supported!!!
+  ! So far ONLY GEOM_CIRCLE is fully supported!!!
   !
 !</description>
   
@@ -5400,7 +5407,7 @@ end subroutine
   
   ! assign the radius
   rParticle%drad = drad
-  ! the the physical parameters  
+  ! particle density
   rParticle%drho = drho
   
   end subroutine ! end geom_initParticle
@@ -5414,9 +5421,6 @@ end subroutine
 !<description>
   ! this routines initializes a Particle collection
   ! according to the parameters given in rparticleDescriptor
-  ! As we see in the moment only circles are initialized, we
-  ! will change this later when we are able to handle 
-  ! other geometries...
 !</description>
   
 !<inputoutput>
@@ -5446,7 +5450,7 @@ end subroutine
     drad  = rparticleDescriptor%pparameters(3,i1)
     drho  = rparticleDescriptor%pparameters(4,i1)
     ! call the routine to initialize the particle
-    call geom_initParticle(rparticleCollection%p_rParticles(i1),GEOM_CIRCLE,&
+    call geom_initParticle(rparticleCollection%p_rParticles(i1),rparticleDescriptor%ishape,&
                          dx,dy,drad,drho)
   end do
   
@@ -5476,7 +5480,9 @@ end subroutine
   if(rparticleCollection%nparticles .gt. 0) then 
   
     do i=1,rparticleCollection%nparticles
-      call lsyssc_releaseVector(rparticleCollection%p_rparticles(i)%rvectorScalarFB)
+      if(rparticleCollection%p_rparticles(i)%rvectorScalarFB%NEQ .ne. 0) then
+        call lsyssc_releaseVector(rparticleCollection%p_rparticles(i)%rvectorScalarFB)
+      end if
     end do
     deallocate(rparticleCollection%p_rparticles)
     
