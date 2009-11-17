@@ -300,12 +300,18 @@ contains
     ! Some auxiliary values for the bottom source term
     real(DP), dimension(2):: b_x, b_y
     real(DP), dimension(2,2):: Dpoints
+    
+    ! Counter for number of warnings
+    integer :: numwarnings
 
 
     ! OK, LET'S START
 
     ! Time measurement
     call cpu_time(dtime1)
+    
+    ! Reset the numer of warnings
+    numwarnings = 0
     
     
     ! Get command line arguments and extract name of parameter file
@@ -1162,6 +1168,8 @@ contains
           write(*,*) '* WARNING: Stopping criteria of the nonlinear solver were not reached *'
           write(*,*) '***********************************************************************'
           write(*,*) ''
+          ! increase the counter of the number of warnings
+          numwarnings = numwarnings +1
        end if
 
 
@@ -1421,6 +1429,15 @@ contains
     call cpu_time(dtime2)
     write(*,*) "Computational time used:", dtime2-dtime1
     write(*,*)
+
+    if (numwarnings>0) then
+          write(*,*) ''
+          write(*,*) '**********************************************************************'
+          write(*,*) '* WARNING: In',numwarnings, 'timesteps there where convergence problems *'
+          write(*,*) '**********************************************************************'
+          write(*,*) ''
+      
+    end if
 
   end subroutine shallowwater2d_0
 

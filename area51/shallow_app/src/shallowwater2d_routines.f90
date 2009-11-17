@@ -407,7 +407,7 @@ contains
         
         
         
-        
+       ! This one works for non dry bed
        Qroeij = 0.5_dp*(Qi+Qj)
 
        JcoeffxA = (cxij-cxji)/2.0_DP
@@ -415,9 +415,9 @@ contains
        JcoeffxB = (cxij+cxji)/2.0_DP
        JcoeffyB = (cyij+cyji)/2.0_DP
 
-       scalarDissipation = &
+       scalarDissipation = max(scalardissipation,&
             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
-            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g))))
+            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))) )
 
        Dij = scalarDissipation*Eye
        
@@ -3381,7 +3381,7 @@ end if !dry or wet bed
     ! Get the raw antidiffusive flux
     Fij = Fijs(:,iedge)
     
-    ! Calculate limiting factor
+    ! Calculate limiting factor by using water heigth as indicator variable
     if (Fij(1)>0.0_dp) then
       alphaij = min(Rp(1,i),Rm(1,j))
     elseif (Fij(1)<0.0_dp) then
@@ -3389,6 +3389,20 @@ end if !dry or wet bed
     else
       alphaij = 0.0_dp
     end if
+    
+    if (( dt/p_MLdata(i)*Fij(1))/Qi(1)<-0.1_dp) alphaij = 0.0_dp
+    if ((-dt/p_MLdata(j)*Fij(1))/Qj(1)<-0.1_dp) alphaij = 0.0_dp
+    
+!     ! We can even use the minimal limiting factor
+!     do ivar=2,nvar2d
+!       if (Fij(ivar)>0.0_dp) then
+!         alphaij = min(Rp(ivar,i),Rm(ivar,j),alphaij)
+!       elseif (Fij(ivar)<0.0_dp) then
+!         alphaij = min(Rp(ivar,j),Rm(ivar,i),alphaij)
+!       else
+!         alphaij = 0.0_dp
+!       end if
+!     end do
     
     ! Limit the antidiffusive flux
     Fij = alphaij*Fij
