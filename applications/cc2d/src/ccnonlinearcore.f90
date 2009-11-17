@@ -671,7 +671,7 @@ contains
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
       
-      call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
+      call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP,rproblem)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
       if (associated(p_RfilterChain)) then    
@@ -863,7 +863,7 @@ contains
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-          rmatrix,rnonlinearCCMatrix,rtemp1)
+          rmatrix,rnonlinearCCMatrix,rproblem,rtemp1)
       
       ! We do not have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
@@ -1421,10 +1421,10 @@ contains
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           if (ilev .eq. NLMAX) then
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rnonlinearCCMatrix,p_rvectorCoarse)
+                p_rmatrix,rnonlinearCCMatrix,rproblem,p_rvectorCoarse)
           else
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rnonlinearCCMatrix,p_rvectorCoarse,p_rmatrixFine)
+                p_rmatrix,rnonlinearCCMatrix,rproblem,p_rvectorCoarse,p_rmatrixFine)
           end if
 
           ! Boundary conditions

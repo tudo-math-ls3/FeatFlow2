@@ -123,7 +123,7 @@ contains
 
 !<input>
   ! A problem structure saving problem-dependent information.
-  type(t_problem), intent(in) :: rproblem
+  type(t_problem), intent(inout) :: rproblem
 
   ! Current assembly level.
   integer, intent(in) :: ilev
@@ -217,7 +217,7 @@ contains
     rnonlinearCCMatrix%dtau = 1.0_DP     ! A divergence block
 
     call cc_assembleMatrix (CCMASM_ALLOCMEM,cmatrixType,&
-        rmatrix,rnonlinearCCMatrix)
+        rmatrix,rnonlinearCCMatrix,rproblem)
                                   
     ! That is it, all submatrices are set up.
       

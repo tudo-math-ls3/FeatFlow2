@@ -89,6 +89,7 @@ module ccmatvecassembly
   use convection
   
   use ccbasic
+  use cccallback
   
   use pprocnavierstokes
   
@@ -293,6 +294,7 @@ contains
   ! DquickAccess(2) = dviscoexponent
   ! DquickAccess(3) = dviscoEps
   ! p_rvectorQuickAccess1 => evaluation velocity vector
+  ! p_rnextCollection => user defined collection structure
   !
 !</description>
   
@@ -371,7 +373,13 @@ contains
     ! The isubEquation defines the shape of the tensor, which may me
     !    D(u) = grad(u) 
     ! or D(u) = 1/2 ( grad(u) + grad(u)^T )
-    if (cviscoModel .ne. 0) then
+    select case (cviscoModel)
+    case (0)
+      ! Constant viscosity. This is actually not used as the routine is
+      ! not called if nu is constant.
+      Dcoefficients(:,:) = dnu
+      
+    case (1)
     
       ! Allocate memory do calculate D(u) in all points
       Ibounds = ubound(Dcoefficients)
@@ -424,13 +432,16 @@ contains
       ! Deallocate needed memory.
       deallocate(Ddata)
 
-    else
+    case default
     
-      ! Constant viscosity. This is actually not used as the routine is
-      ! not called if nu is constant.
-      Dcoefficients(:,:) = dnu
-      
-    end if
+      ! Viscosity specified by the callback function getNonconstantViscosity.
+      ! Call it and pass the user-defined collection.
+      call getNonconstantViscosity (cterm,rdiscretisation, &
+          nelements,npointsPerElement,Dpoints, &
+          IdofsTest,rdomainIntSubset, &
+          Dcoefficients,p_rvector,rcollection%p_rnextCollection)
+    
+    end select
 
   end subroutine
   
@@ -439,7 +450,7 @@ contains
 !<subroutine>
 
   subroutine cc_assembleMatrix (coperation,cmatrixType,rmatrix,&
-      rnonlinearCCMatrix,rvector,rfineMatrix)
+      rnonlinearCCMatrix,rproblem,rvector,rfineMatrix)
 
 !<description>
   ! This routine assembles a global matrix, i.e. it evaluates the nonlinear
@@ -506,6 +517,9 @@ contains
   ! p_rdiscretisation. Memory is allocated automatically if it is missing.
   type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
+  ! Standard problem structure that defines all underlying parameters.
+  type(t_problem), intent(inout), target :: rproblem
+
   ! OPTIONAL: If a nonlinearity is to be set up, this vector must be specified.
   ! It specifies where to evaluate the nonlinearity.
   type(t_vectorBlock), intent(in), optional :: rvector
@@ -548,7 +562,7 @@ contains
       call lsysbl_releaseMatrix (rmatrix)
     
       ! Create a complete new matrix. 
-      call allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
+      call allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix,rproblem)
     end if   
    
     if (iand(coperation,CCMASM_COMPUTE) .ne. 0) then
@@ -566,7 +580,7 @@ contains
       !    (  .    .    .  )
       
       call assembleVelocityBlocks (&
-          rnonlinearCCMatrix,rmatrix,rvector,1.0_DP)
+          rnonlinearCCMatrix,rmatrix,rproblem,rvector,1.0_DP)
       
       ! Assemble the gradient submatrices
       !          
@@ -575,7 +589,7 @@ contains
       !    ( D1   D2   .   ) 
       
       call assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,&
-        iand(coperation,CMASM_QUICKREFERENCES) .ne. 0)
+        iand(coperation,CMASM_QUICKREFERENCES) .ne. 0,rproblem)
 
       ! Assemble the pressure submatrix (if it exists)
       !          
@@ -583,7 +597,7 @@ contains
       !    ( .    .    .   ) 
       !    ( .    .    C   ) 
       
-      call assemblePressureMatrix (rnonlinearCCMatrix,rmatrix)
+      call assemblePressureMatrix (rnonlinearCCMatrix,rmatrix,rproblem)
 
       ! 2.) Initialise the weights for the B-matrices
       !
@@ -624,7 +638,7 @@ contains
   
     ! -----------------------------------------------------
   
-    subroutine allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix)
+    subroutine allocMatrix (cmatrixType,rnonlinearCCMatrix,rmatrix,rproblem)
     
     ! Allocates memory for the system matrix. rnonlinearCCMatrix provides information
     ! about the submatrices that are 'plugged into' rmatrix.
@@ -641,6 +655,9 @@ contains
     ! A block matrix that receives the basic system matrix.
     type(t_matrixBlock), intent(inout) :: rmatrix
     
+    ! Standard problem structure that defines all underlying parameters.
+    type(t_problem), intent(inout), target :: rproblem
+
       ! local variables
       logical :: bdecoupled, bfulltensor
 
@@ -831,7 +848,8 @@ contains
     
     ! -----------------------------------------------------
 
-    subroutine assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rvelocityvector,dvectorWeight)
+    subroutine assembleVelocityBlocks (rnonlinearCCMatrix,rmatrix,rproblem,&
+        rvelocityvector,dvectorWeight)
         
     ! Assembles the velocity matrix in the block matrix rmatrix at position (1,1):
     !
@@ -845,6 +863,9 @@ contains
     ! Block matrix where the 2x2-velocity submatrix should be assembled
     type(t_matrixBlock), intent(inout) :: rmatrix
     
+    ! Standard problem structure that defines all underlying parameters.
+    type(t_problem), intent(inout), target :: rproblem
+
     ! Velocity vector for the nonlinearity. Must be specified if
     ! GAMMA <> 0; can be omitted if GAMMA=0.
     type(t_vectorBlock), target, optional :: rvelocityvector
@@ -1050,6 +1071,9 @@ contains
             nullify(rcollection%p_rvectorQuickAccess1)
             if (present(rvelocityvector)) &
                 rcollection%p_rvectorQuickAccess1 => rvelocityvector
+                
+            ! The "next" collection points to the user defined collection.
+            rcollection%p_rnextCollection => rproblem%rcollection
             
           end if
           
@@ -1070,10 +1094,16 @@ contains
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
+          
+          ! Initialise the user defined collection for the assembly.
+          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
               ffunctionViscoModel,rcollection)
+              
+          ! That is it.
+          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
@@ -1287,6 +1317,9 @@ contains
             if (present(rvelocityvector)) &
                 rcollection%p_rvectorQuickAccess1 => rvelocityvector
             
+            ! The "next" collection points to the user defined collection.
+            rcollection%p_rnextCollection => rproblem%rcollection
+
           end if
           
           ! Set UPSAM=0 to deactivate the stabilisation
@@ -1303,6 +1336,9 @@ contains
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
+
+          ! Initialise the user defined collection for the assembly.
+          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
 
           ! Call the SD method to calculate the nonlinearity.
           call conv_streamDiff2Blk2dMat (rstreamlineDiffusion2,rmatrix,rvelocityvector,&
@@ -1354,6 +1390,9 @@ contains
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
+
+          ! That is it.
+          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
         case default
           call output_line ('Don''t know how to set up nonlinearity!?!', &
@@ -1479,7 +1518,7 @@ contains
       
     ! -----------------------------------------------------
     
-    subroutine assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,bsharedMatrix)
+    subroutine assembleGradientMatrices (rnonlinearCCMatrix,rmatrix,bsharedMatrix,rproblem)
     
     ! Initialises the gradient/divergence matrices with entries from
     ! the rnonlinearCCMatrix structure.
@@ -1518,6 +1557,9 @@ contains
     ! copied, so the caller can change rmatrix afterwards (e.g. to implement
     ! boundary conditions).
     logical, intent(in) :: bsharedMatrix
+
+    ! Standard problem structure that defines all underlying parameters.
+    type(t_problem), intent(inout), target :: rproblem
 
       ! local variables
       integer :: idubStructure,idubContent
@@ -1599,7 +1641,7 @@ contains
 
     ! -----------------------------------------------------
     
-    subroutine assemblePressureMatrix (rnonlinearCCMatrix,rmatrix)
+    subroutine assemblePressureMatrix (rnonlinearCCMatrix,rmatrix,rproblem)
     
     ! Initialises the pressure matrix with entries from
     ! the rnonlinearCCMatrix structure.
@@ -1610,6 +1652,9 @@ contains
 
     ! Block matrix where the C-matrix (3,3) should be set up
     type(t_matrixBlock), intent(inout) :: rmatrix
+
+    ! Standard problem structure that defines all underlying parameters.
+    type(t_problem), intent(inout), target :: rproblem
 
       ! For the moment, there cannot be found much in C. 
       ! If the matrix exists (scale factor <> 0), we clear the
@@ -1626,7 +1671,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,dcx,dcd,ry)
+  subroutine cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,dcx,dcd,rproblem,ry)
 
 !<description>
   ! This routine performs a matrix-vector multiplication with a nonlinear
@@ -1660,6 +1705,9 @@ contains
 
   ! Multiplication factor in front of the term 'rd'.
   real(DP), intent(in) :: dcd
+
+  ! Standard problem structure that defines all underlying parameters.
+  type(t_problem), intent(inout), target :: rproblem
 
   ! OPTIONAL: Point where to evaluate the nonlinearity. If not specified,
   ! ry=rx is assumed.
@@ -1735,7 +1783,7 @@ contains
     !
     ! assembleVelocityDefect handles exactly these submatices.
 
-    call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx)
+    call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx,rproblem)
     
     ! Now, we treat all the remaining blocks. Let us see what is missing:
     !
@@ -1771,7 +1819,7 @@ contains
   contains
 
     subroutine assembleVelocityDefect (rnonlinearCCMatrix,&
-        rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight)
+        rmatrix,rvector,rdefect,rvelocityVector,dvectorWeight,rproblem)
         
     ! Assembles the velocity defect in the block matrix rmatrix at position
     ! itop..itop+1 in the velocity vector. rdefect must have been initialised
@@ -1809,6 +1857,9 @@ contains
     ! nonlinearity. The first two blocks in that block vector are
     ! used as velocity field.
     type(t_vectorBlock), intent(in), target :: rvelocityVector
+
+    ! Standard problem structure that defines all underlying parameters.
+    type(t_problem), intent(inout), target :: rproblem
 
     ! local variables
     logical :: bshared
@@ -1941,6 +1992,9 @@ contains
             nullify(rcollection%p_rvectorQuickAccess1)
             rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
+            ! The "next" collection points to the user defined collection.
+            rcollection%p_rnextCollection => rproblem%rcollection
+
           end if
           
           ! Set stabilisation parameter
@@ -1961,10 +2015,16 @@ contains
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
 
+          ! Initialise the user defined collection for the assembly.
+          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+
           ! Call the SD method to assemble.
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
               rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
                               
+          ! That is it.
+          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
@@ -2118,6 +2178,9 @@ contains
             ! of the velocity -- if it exists.
             rcollection%p_rvectorQuickAccess1 => rvelocityVector
 
+            ! The "next" collection points to the user defined collection.
+            rcollection%p_rnextCollection => rproblem%rcollection
+
           end if
           
           ! Set stabilisation parameter to zero for central difference
@@ -2160,10 +2223,13 @@ contains
            
           end if
          
+          ! Initialise the user defined collection for the assembly.
+          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+
           ! Call the SD method to assemble.
           call conv_streamDiff2Blk2dDef (rstreamlineDiffusion2,rmatrix,&
               rvector,rdefect,rvelocityVector,ffunctionViscoModel,rcollection)
-          
+                              
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
@@ -2207,6 +2273,9 @@ contains
                 InodeList=p_IedgesDirichletBC)
           end if
 
+          ! That is it.
+          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+          
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
           
