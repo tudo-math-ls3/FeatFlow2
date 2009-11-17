@@ -3098,9 +3098,10 @@ END IF
     call fevl_evaluate_sim4(rvector, &
                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
-    DO icub = 1, npointsPerElement
-        DO iel = 1, nelements
-            Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel) 
+    
+   DO iel = 1, nelements
+        DO icub = 1, npointsPerElement
+            Dcoefficients(1,icub,iel) = PHI*DvaluesFevl(1,icub,iel) 
         END DO
     END DO
 
@@ -3110,6 +3111,247 @@ END IF
 
  ! ***************************************************************************
 
+ ! ***************************************************************************
+!<subroutine>
+    ! This routine is used for a generic chemoattractant equation, which is presented by Hillen and Painter
+    ! It specifies the dependency of the RHS to the cell distribution
+    ! The chemoattractant equation reads:
+    ! c_t = \Delta c + u*g(u) - c
+    ! So this callback function returns u*g(u) used by a linearform.
+  subroutine coeff_hillenX_RHS_rfu(rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration  
+    use feevaluation
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! NOTE: The current simulation time is available via the collection
+    ! rcollection in two ways:
+    !  a) Parameter "TIME"
+    !  b) Via the quick-access element Dquickaccess (1)
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT)     :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+!</subroutine>
+
+    ! local variables
+
+    ! constants of the PDE
+    real(DP) :: PHI
+    integer :: icub, iel
+    real(DP) :: x, y, z
+    
+    ! This array contains the output of the FE evaluations, e.g. the values which
+    ! we ' ll deriving the Dvalues with 
+    real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
+
+    ! This is the vector which is of interest
+    type(t_vectorScalar) :: rvector
+
+    real(DP) :: dtstep
+
+    dtstep = rcollection%DquickAccess(1)
+    
+    !coordinates: Dpoints(x,:,:)
+        ! laplacian
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+            ! laplacian
+            Dcoefficients(1,icub,iel) = - dtstep*( - 2_DP  &
+                                                   - 16_DP + 2*x ) 
+            !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
+            !                                    2*x*(x-16_DP)*z*(z-16_DP)+ & 
+            !                                    2*x*(x-16_DP)*y*(y-16_DP))!- &
+            ! chemo convective term 
+            !                                    (2*x-16)*y*(y-16_DP)*z*(z-16_DP) - &
+            !                                    (2*y-16)*x*(x-16_DP)*z*(z-16_DP) - &
+            !                                    (2*z-16)*y*(y-16_DP)*x*(x-16_DP) )
+            !Dcoefficients(1,icub,iel) = 0.0_DP
+            
+        END DO
+    END DO    
+    
+  end subroutine
+  !end of coeff_hillenX_RHS_rfu
+  
+ ! ***************************************************************************
+
+ ! ***************************************************************************
+!<subroutine>
+    ! This routine is used for a generic chemoattractant equation, which is presented by Hillen and Painter
+    ! It specifies the dependency of the RHS to the cell distribution
+    ! The chemoattractant equation reads:
+    ! c_t = \Delta c + u*g(u) - c
+    ! So this callback function returns u*g(u) used by a linearform.
+  subroutine coeff_hillenX_RHS_rfc(rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration  
+    use feevaluation
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! NOTE: The current simulation time is available via the collection
+    ! rcollection in two ways:
+    !  a) Parameter "TIME"
+    !  b) Via the quick-access element Dquickaccess (1)
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(IN)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(#local DOF's in test space,nelements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT)     :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+  !</output>
+    
+!</subroutine>
+
+    ! local variables
+
+    ! constants of the PDE    
+    integer :: icub, iel
+    real(DP) :: x, y, z
+    
+    ! This array contains the output of the FE evaluations, e.g. the values which
+    ! we ' ll deriving the Dvalues with 
+    real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
+
+    ! This is the vector which is of interest
+    type(t_vectorScalar) :: rvector
+
+    ! laplacian
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+            Dcoefficients(1,icub,iel) = - ( -(x + y + z) + x*(16_DP - x) )
+            !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 
+            !                            2*x*(x-16_DP)*z*(z-16_DP)- & 
+            !                            2*x*(x-16_DP)*y*(y-16_DP) + &
+            ! -1c                                        
+            !                            x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP))
+            !Dcoefficients(1,icub,iel) = x + y + z + x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)                                        
+        END DO
+    END DO
+ 
+  end subroutine
+  !end of coeff_hillenX_RHS_rfc
+
+ ! ***************************************************************************
+ 
  ! ***************************************************************************
 
 ! This callback routine is used for test-purpose. It simulates the source term f in the pattern model
@@ -3215,8 +3457,8 @@ END IF
     call fevl_evaluate_sim4(rcell, &
                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
 
-    DO icub = 1, npointsPerElement
-        DO iel = 1, nelements
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement
             Dcoefficients(1,icub,iel) = DvaluesFevl(1,icub,iel)**2 * ( 1.0_DP - DvaluesFevl(1,icub,iel)  )
         END DO
     END DO
@@ -5229,6 +5471,7 @@ END IF
 
     ! This is the vector which is of interest
     type(t_vectorScalar) :: rvector_c, rvector_u
+    type(t_vectorScalar) :: rvector_x, rvector_y, rvector_z
 
     ! Some params passed by the collection structure
     real(DP) :: dtstep, CHI, GAMMA, ALPHA
@@ -5240,8 +5483,11 @@ END IF
     allocate (DvaluesFevl(3,npointsPerElement,nelements))
     ! Fetching the vector
 
+    !rvector_x = collct_getvalue_vecsca (rcollection, "rvector_x",0,'')
+    !rvector_y = collct_getvalue_vecsca (rcollection, "rvector_y",0,'')
+    !rvector_z = collct_getvalue_vecsca (rcollection, "rvector_z",0,'')
     rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
-    rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
+    !rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
     CHI = rcollection%DquickAccess(2)
     GAMMA = rcollection%DquickAccess(3)
@@ -5250,6 +5496,12 @@ END IF
 
 
     ! Fetching the values of rvector_c in the cubature pts.
+    !call fevl_evaluate_sim4(rvector_x, &
+    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 1)
+    !call fevl_evaluate_sim4(rvector_y, &
+    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 2)
+    !call fevl_evaluate_sim4(rvector_z, &
+    !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 3)
     call fevl_evaluate_sim4(rvector_c, &
                                  rdomainIntSubset, DER_DERIV3D_X, DvaluesFevl, 1)
     call fevl_evaluate_sim4(rvector_c, &
@@ -5263,22 +5515,26 @@ END IF
     !call fevl_evaluate_sim4(rvector_c, &
     !                             rdomainIntSubset, DER_FUNC3D, DvaluesFevl, 5)
 
-
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
             Dcoefficients(1,icub,iel) =   CHI*DvaluesFevl(1,icub,iel) 
+            !Dcoefficients(1,icub,iel) =   CHI
             ! second term
             Dcoefficients(2,icub,iel) =   CHI*DvaluesFevl(2,icub,iel) 
+            !Dcoefficients(2,icub,iel) =   CHI
             ! third term
             Dcoefficients(3,icub,iel) =   CHI*DvaluesFevl(3,icub,iel)             
+            !Dcoefficients(3,icub,iel) =   CHI
         END DO
     END DO
 
+    !Dcoefficients(:,:,:) = 1.0_DP    
+        
     deallocate(DvaluesFevl)
 
   end subroutine
-
+  ! end of coeff_hillenX
  ! ***************************************************************************
 
 
@@ -5559,10 +5815,6 @@ END IF
   end subroutine
 
  ! ***************************************************************************
-
-
-
-
 
 
 
@@ -6280,6 +6532,7 @@ END IF
 
   end subroutine
 
+
   ! ***************************************************************************
 
        ! This should realize a small pertubation at the center of the domain
@@ -6313,12 +6566,17 @@ END IF
 	    ! function value
 		real(DP) :: func_result
 
+        ! setting for analytical solution
+        !func_result = 0.0_DP
+        func_result = x*(16_DP-x)
+        !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
+
         ! part of a user code: prescribe initial conditions for cells
-        if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 1.5_DP ) then
-           func_result = 1.0_DP + 0.2_DP
-        else
-           func_result = 1.0_DP + 0_DP     
-        endif 		
+        !if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 1.5_DP ) then
+        !   func_result = 1.0_DP + 0.2_DP
+        !else
+        !   func_result = 1.0_DP + 0_DP     
+        !endif 		
         
         !func_result = 0.0_DP 
         
@@ -6335,15 +6593,205 @@ END IF
 	    ! function value
 		real(DP) :: func_result
 
-        func_result = 1.0_DP / 32.0_DP
+        ! setting for analytical solution
+        !func_result = 0_DP
+        !func_result = 0.0_DP
+        func_result = x+y+z
+        !func_result = -x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
+        !func_result = x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
+        
+        !func_result = 1.0_DP / 32.0_DP
         !if(  sqrt((x-8)*(x-8) + (y-8)*(y-8) + (z-8)*(z-8)) < 3 ) then
         !    func_result = 1.0_DP + 0.2_DP
         !else
         !     func_result = 1.0_DP + 0_DP     
         !endif 		
-
         
 	end function userPresc_chemoattrInitCond 
    
+
+  !<subroutine>
+  ! cell
+  subroutine getBoundaryValuesMR_cell (Icomponents,rdiscretisation,rmeshRegion,&
+                                      cinfoNeeded,Iwhere,Dwhere,Dcoords,Dvalues,&
+                                      rcollection)
   
+  use collection
+  use spatialdiscretisation
+  use meshregion
+  
+!<description>
+  ! This subroutine is called during the assembly of boundary conditions which
+  ! are defined on mesh regions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary: 
+  !   Icomponents(1) defines the number of the solution component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   2=2nd solution component, e.g. Y-velocity,...,
+  !   3=3rd solution component, e.g. pressure)
+  ! For pressure drop boundary / normal stress:
+  !   Velocity components that are affected by the normal stress
+  integer, dimension(:), intent(in)              :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)      :: rdiscretisation
+  
+  ! Mesh region that is currently being processed.
+  type(t_meshRegion), intent(in)                 :: rmeshRegion
+
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in)                            :: cinfoNeeded
+  
+  ! An array holding information about what type of DOF is currently processed.
+  ! The information is build up as follows:
+  ! Iwhere(1) = vertice number of the DOF, if the DOF is vertice-based, otherwise 0
+  ! Iwhere(2) = edge number of the DOF, if the DOF is edge-based, otherwise 0
+  ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
+  ! Iwhere(4) = currently processed element number.
+  ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
+  integer, dimension(4), intent(in)              :: Iwhere
+  
+  ! The coordinates of the point which is currently processed, given in
+  ! reference coordinates of the currently processed cell type (edge,face,element).
+  ! If the DOF is vertice-based, then Dwhere is undefined.
+  ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
+  ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
+  ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
+  real(DP), dimension(:), intent(in)             :: Dwhere
+
+  ! The coordinates of the point for which the boundary values are to be
+  ! calculated.
+  real(DP), dimension(:), intent(in)             :: Dcoords
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional    :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1). 
+  ! If multiple values are needed, they are collected here (e.g. for 
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  !
+  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! node.
+  real(DP), dimension(:), intent(out)            :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! Return zero Dirichlet boundary values for all situations.
+    
+    !!!!! set boundary conditions to nothins !!!!!
+    !Dvalues(1) = 0.0_DP
+    Dvalues(1) = Dcoords(1)*( 16_DP - Dcoords(1) )
+    !Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
+
+  end subroutine    
+  !end of getBoundaryValuesMR_cell 
+   
+
+  !<subroutine>
+  ! chemo
+  subroutine getBoundaryValuesMR_chemo (Icomponents,rdiscretisation,rmeshRegion,&
+                                      cinfoNeeded,Iwhere,Dwhere,Dcoords,Dvalues,&
+                                      rcollection)
+  
+  use collection
+  use spatialdiscretisation
+  use meshregion
+  
+!<description>
+  ! This subroutine is called during the assembly of boundary conditions which
+  ! are defined on mesh regions.
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary: 
+  !   Icomponents(1) defines the number of the solution component, the value
+  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+  !   2=2nd solution component, e.g. Y-velocity,...,
+  !   3=3rd solution component, e.g. pressure)
+  ! For pressure drop boundary / normal stress:
+  !   Velocity components that are affected by the normal stress
+  integer, dimension(:), intent(in)              :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)      :: rdiscretisation
+  
+  ! Mesh region that is currently being processed.
+  type(t_meshRegion), intent(in)                 :: rmeshRegion
+
+  ! The type of information, the routine should calculate. One of the
+  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+  ! to return one or multiple information value in the result array.
+  integer, intent(in)                            :: cinfoNeeded
+  
+  ! An array holding information about what type of DOF is currently processed.
+  ! The information is build up as follows:
+  ! Iwhere(1) = vertice number of the DOF, if the DOF is vertice-based, otherwise 0
+  ! Iwhere(2) = edge number of the DOF, if the DOF is edge-based, otherwise 0
+  ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
+  ! Iwhere(4) = currently processed element number.
+  ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
+  integer, dimension(4), intent(in)              :: Iwhere
+  
+  ! The coordinates of the point which is currently processed, given in
+  ! reference coordinates of the currently processed cell type (edge,face,element).
+  ! If the DOF is vertice-based, then Dwhere is undefined.
+  ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
+  ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
+  ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
+  real(DP), dimension(:), intent(in)             :: Dwhere
+
+  ! The coordinates of the point for which the boundary values are to be
+  ! calculated.
+  real(DP), dimension(:), intent(in)             :: Dcoords
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional    :: rcollection
+
+!</input>
+
+!<output>
+  ! This array receives the calculated information. If the caller
+  ! only needs one value, the computed quantity is put into Dvalues(1). 
+  ! If multiple values are needed, they are collected here (e.g. for 
+  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+  !
+  ! The function may return SYS_INFINITY as a value. This indicates the
+  ! framework to ignore the node and treat it as 'natural boundary condition'
+  ! node.
+  real(DP), dimension(:), intent(out)            :: Dvalues
+  real(DP) :: x,y,z
+!</output>
+  
+!</subroutine>
+
+    ! Return zero Dirichlet boundary values for all situations.        
+    !!!!! set boundary conditions to nothins !!!!!
+    x=Dcoords(1)
+    y=Dcoords(2)
+    z=Dcoords(3)
+    !Dvalues(1) = 0.0_DP
+    Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)    
+    !Dvalues(1)=x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
+
+  end subroutine
+  !end of getBoundaryValuesMR_chemo   
+    
 end module
