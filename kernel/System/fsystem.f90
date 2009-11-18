@@ -115,11 +115,13 @@ module fsystem
   ! kind value for 64 bit float (double precision)
   integer, parameter :: DP = selected_real_kind(15,307)
 
+#ifdef ENABLE_QUADPREC
   ! kind value for 80/128 bit float (quad precision)
-  !integer, parameter :: QP = selected_real_kind(18,4931)
-  
-  ! Temporarily QP is equal to DP to avoid compiler problems
+  integer, parameter :: QP = selected_real_kind(18,4931)
+#else
+  ! set QP equal to DP to avoid compiler problems
   integer, parameter :: QP = DP
+#endif
   
   ! Note: Depending on the platform and the compiler, QP is either an 80
   ! or an 128 bit float. The g95 and gfortran compilers use 80 floats

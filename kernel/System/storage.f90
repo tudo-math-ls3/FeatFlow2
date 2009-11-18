@@ -555,9 +555,11 @@ module storage
     module procedure storage_getbase_doubleUBnd
     module procedure storage_getbase_doubleLUBnd
 
+#ifdef ENABLE_QUADPREC
     module procedure storage_getbase_quadDefault
     module procedure storage_getbase_quadUBnd
     module procedure storage_getbase_quadLUBnd
+#endif
 
     module procedure storage_getbase_logicalDefault
     module procedure storage_getbase_logicalUBnd
@@ -595,9 +597,11 @@ module storage
     module procedure storage_getbase_double2DUBnd
     module procedure storage_getbase_double2DLUBnd
 
+#ifdef ENABLE_QUADPREC
     module procedure storage_getbase_quad2DDef
     module procedure storage_getbase_quad2DUBnd
     module procedure storage_getbase_quad2DLUBnd
+#endif
 
     module procedure storage_getbase_logical2DDef
     module procedure storage_getbase_logical2DUBnd

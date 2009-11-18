@@ -98,13 +98,15 @@ module linearalgebra
   interface lalg_copyVectorReal
     module procedure lalg_copyVectorSngl
     module procedure lalg_copyVectorDble
-    !module procedure lalg_copyVectorQuad
     module procedure lalg_copyVectorSnglDbl
-    !module procedure lalg_copyVectorSnglQuad
     module procedure lalg_copyVectorDblSngl
-    !module procedure lalg_copyVectorDblQuad
-    !module procedure lalg_copyVectorQuadSngl
-    !module procedure lalg_copyVectorQuadDbl
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_copyVectorQuad
+    module procedure lalg_copyVectorSnglQuad
+    module procedure lalg_copyVectorDblQuad
+    module procedure lalg_copyVectorQuadSngl
+    module procedure lalg_copyVectorQuadDbl
+#endif
   end interface
   
   public :: lalg_copyVectorReal
@@ -112,13 +114,15 @@ module linearalgebra
   interface lalg_copyVectorReal2D
     module procedure lalg_copyVectorSngl2D
     module procedure lalg_copyVectorDble2D
-    !module procedure lalg_copyVectorQuad2D
     module procedure lalg_copyVectorSnglDbl2D
-    !module procedure lalg_copyVectorSnglQuad2D
     module procedure lalg_copyVectorDblSngl2D
-    !module procedure lalg_copyVectorDblQuad2D
-    !module procedure lalg_copyVectorQuadSngl2D
-    !module procedure lalg_copyVectorQuadDbl2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_copyVectorQuad2D
+    module procedure lalg_copyVectorSnglQuad2D
+    module procedure lalg_copyVectorDblQuad2D
+    module procedure lalg_copyVectorQuadSngl2D
+    module procedure lalg_copyVectorQuadDbl2D
+#endif
   end interface
   
   public :: lalg_copyVectorReal2D
@@ -126,13 +130,8 @@ module linearalgebra
   interface lalg_copyVector
     module procedure lalg_copyVectorSngl
     module procedure lalg_copyVectorDble
-    !module procedure lalg_copyVectorQuad
     module procedure lalg_copyVectorSnglDbl
-    !module procedure lalg_copyVectorSnglQuad
     module procedure lalg_copyVectorDblSngl
-    !module procedure lalg_copyVectorDblQuad
-    !module procedure lalg_copyVectorQuadSngl
-    !module procedure lalg_copyVectorQuadDbl
     module procedure lalg_copyVectorI8
     module procedure lalg_copyVectorI8I16
     module procedure lalg_copyVectorI8I32
@@ -153,13 +152,8 @@ module linearalgebra
     module procedure lalg_copyVectorChar
     module procedure lalg_copyVectorSngl2D
     module procedure lalg_copyVectorDble2D
-    !module procedure lalg_copyVectorQuad2D
     module procedure lalg_copyVectorSnglDbl2D
-    !module procedure lalg_copyVectorSnglQuad2D
     module procedure lalg_copyVectorDblSngl2D
-    !module procedure lalg_copyVectorDblQuad2D
-    !module procedure lalg_copyVectorQuadSngl2D
-    !module procedure lalg_copyVectorQuadDbl2D
     module procedure lalg_copyVectorI8_2D
     module procedure lalg_copyVectorI8I16_2D
     module procedure lalg_copyVectorI8I32_2D
@@ -178,6 +172,18 @@ module linearalgebra
     module procedure lalg_copyVectorI64I32_2D
     module procedure lalg_copyVectorLogical2D
     module procedure lalg_copyVectorChar2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_copyVectorQuad
+    module procedure lalg_copyVectorSnglQuad
+    module procedure lalg_copyVectorDblQuad
+    module procedure lalg_copyVectorQuadSngl
+    module procedure lalg_copyVectorQuadDbl
+    module procedure lalg_copyVectorQuad2D
+    module procedure lalg_copyVectorSnglQuad2D
+    module procedure lalg_copyVectorDblQuad2D
+    module procedure lalg_copyVectorQuadSngl2D
+    module procedure lalg_copyVectorQuadDbl2D
+#endif
   end interface
   
   public :: lalg_copyVector
@@ -239,10 +245,12 @@ module linearalgebra
   interface lalg_scaleVector
     module procedure lalg_scaleVectorSngl
     module procedure lalg_scaleVectorDble
-    !module procedure lalg_scaleVectorQuad
     module procedure lalg_scaleVectorSngl2D
     module procedure lalg_scaleVectorDble2D
-    !module procedure lalg_scaleVectorQuad2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_scaleVectorQuad
+    module procedure lalg_scaleVectorQuad2D
+#endif
   end interface
   
   public :: lalg_scaleVector
@@ -274,18 +282,20 @@ module linearalgebra
   interface lalg_clearVector
     module procedure lalg_clearVectorSngl
     module procedure lalg_clearVectorDble
-    !module procedure lalg_clearVectorQuad
     module procedure lalg_clearVectorI8
     module procedure lalg_clearVectorI16
     module procedure lalg_clearVectorI32
     module procedure lalg_clearVectorI64
     module procedure lalg_clearVectorSngl2D
     module procedure lalg_clearVectorDble2D
-    !module procedure lalg_clearVectorQuad2D
     module procedure lalg_clearVectorI8_2D
     module procedure lalg_clearVectorI16_2D
     module procedure lalg_clearVectorI32_2D
     module procedure lalg_clearVectorI64_2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_clearVectorQuad
+    module procedure lalg_clearVectorQuad2D
+#endif
   end interface
   
   public :: lalg_clearVector
@@ -317,7 +327,6 @@ module linearalgebra
   interface lalg_setVector
     module procedure lalg_setVectorSngl
     module procedure lalg_setVectorDble
-    !module procedure lalg_setVectorQuad
     module procedure lalg_setVectorI8
     module procedure lalg_setVectorI16
     module procedure lalg_setVectorI32
@@ -326,13 +335,16 @@ module linearalgebra
     module procedure lalg_setVectorChar
     module procedure lalg_setVectorSngl2D
     module procedure lalg_setVectorDble2D
-    !module procedure lalg_setVectorQuad2D
     module procedure lalg_setVectorI8_2D
     module procedure lalg_setVectorI16_2D
     module procedure lalg_setVectorI32_2D
     module procedure lalg_setVectorI64_2D
     module procedure lalg_setVectorLogical2D
     module procedure lalg_setVectorChar2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_setVectorQuad
+    module procedure lalg_setVectorQuad2D
+#endif
   end interface
   
   public :: lalg_setVector
@@ -351,16 +363,18 @@ module linearalgebra
   interface lalg_vectorLinearComb
     module procedure lalg_vectorLinearCombSngl
     module procedure lalg_vectorLinearCombDble
-    !module procedure lalg_vectorLinearCombQuad
     module procedure lalg_vectorLinearCombSnglDble
-    !module procedure lalg_vectorLinearCombSnglQuad
-    !module procedure lalg_vectorLinearCombDblQuad
     module procedure lalg_vectorLinearCombSngl2D
     module procedure lalg_vectorLinearCombDble2D
-    !module procedure lalg_vectorLinearCombQuad2D
     module procedure lalg_vectorLinearCombSnglDble2D
-    !module procedure lalg_vectorLinearCombSnglQuad2D
-    !module procedure lalg_vectorLinearCombDblQuad2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_vectorLinearCombQuad
+    module procedure lalg_vectorLinearCombSnglQuad
+    module procedure lalg_vectorLinearCombDblQuad
+    module procedure lalg_vectorLinearCombQuad2D
+    module procedure lalg_vectorLinearCombSnglQuad2D
+    module procedure lalg_vectorLinearCombDblQuad2D
+#endif
   end interface
   
   public :: lalg_vectorLinearComb
@@ -380,10 +394,12 @@ module linearalgebra
   interface lalg_scalarProduct
     module procedure lalg_scalarProductSngl
     module procedure lalg_scalarProductDble
-    !module procedure lalg_scalarProductQuad
     module procedure lalg_scalarProductSngl2D
     module procedure lalg_scalarProductDble2D
-    !module procedure lalg_scalarProductQuad2D
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_scalarProductQuad
+    module procedure lalg_scalarProductQuad2D
+#endif
   end interface
   
   public :: lalg_scalarProduct
@@ -397,7 +413,9 @@ module linearalgebra
   interface lalg_norm
     module procedure lalg_normSngl
     module procedure lalg_normDble
-    !module procedure lalg_normQuad
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_normQuad
+#endif
   end interface
   
   public :: lalg_norm,lalg_normSngl,lalg_normDble,lalg_normQuad
@@ -405,7 +423,9 @@ module linearalgebra
   interface lalg_errorNorm
     module procedure lalg_errorNormSngl
     module procedure lalg_errorNormDble
-    !module procedure lalg_errorNormQuad
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_errorNormQuad
+#endif
   end interface
   
   public :: lalg_errorNorm
@@ -423,9 +443,11 @@ module linearalgebra
   interface lalg_vectorSort
     module procedure lalg_vectorSortSngl
     module procedure lalg_vectorSortDble
-    !module procedure lalg_vectorSortQuad
     module procedure lalg_vectorSortI32
     module procedure lalg_vectorSortI64
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_vectorSortQuad
+#endif
   end interface
   
   public :: lalg_vectorSort
@@ -447,14 +469,16 @@ module linearalgebra
   interface lalg_vectorAddScalar
     module procedure lalg_vectorAddScalarSngl
     module procedure lalg_vectorAddScalarDble
-    !module procedure lalg_vectorAddScalarQuad
     module procedure lalg_vectorAddScalarSngl2D
     module procedure lalg_vectorAddScalarDble2D
-    !module procedure lalg_vectorAddScalarQuad2D
     module procedure lalg_vectorAddScalarI8
     module procedure lalg_vectorAddScalarI16
     module procedure lalg_vectorAddScalarI32
     module procedure lalg_vectorAddScalarI64
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_vectorAddScalarQuad
+    module procedure lalg_vectorAddScalarQuad2D
+#endif
   end interface
   
   public :: lalg_vectorAddScalar
