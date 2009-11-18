@@ -527,9 +527,9 @@ module storage
   public :: storage_getbase_char2D
 
   interface storage_getbase
-    module procedure storage_getbase_intDefault
-    module procedure storage_getbase_intUBnd
-    module procedure storage_getbase_intLUBnd
+!!$    module procedure storage_getbase_intDefault
+!!$    module procedure storage_getbase_intUBnd
+!!$    module procedure storage_getbase_intLUBnd
 
     module procedure storage_getbase_int8Default
     module procedure storage_getbase_int8UBnd
@@ -569,9 +569,9 @@ module storage
     module procedure storage_getbase_charUBnd
     module procedure storage_getbase_charLUBnd
 
-    module procedure storage_getbase_int2DDef
-    module procedure storage_getbase_int2DUBnd
-    module procedure storage_getbase_int2DLUBnd
+!!$    module procedure storage_getbase_int2DDef
+!!$    module procedure storage_getbase_int2DUBnd
+!!$    module procedure storage_getbase_int2DLUBnd
 
     module procedure storage_getbase_int8_2DDef
     module procedure storage_getbase_int8_2DUBnd
