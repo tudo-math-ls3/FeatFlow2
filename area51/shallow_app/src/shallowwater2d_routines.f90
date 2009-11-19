@@ -102,21 +102,31 @@ contains
     ! temp variables
     real(DP)		:: whl, whr, denom, hl, hr
 
-    ! Set the height variables
-    hl=Ql(1)
-    hr=Qr(1)
+    ! Choose kind of mean value
+    integer, parameter :: mvk = 1
 
-    ! Test, if a dry bed state is present
-!     if (hl<1e-6) hl=1e-6
-!     if (hr<1e-6) hr=1e-6
 
-    denom = sqrt(hl)+sqrt(hr)
-    whl = 1.0_DP/sqrt(hl)
-    whr = 1.0_DP/sqrt(hr)
+    select case (mvk)
 
-    Qroe(1) = sqrt(hl*hr)
-    Qroe(2) = Qroe(1)*(whl*Ql(2)+whr*Qr(2))/denom
-    Qroe(3) = Qroe(1)*(whl*Ql(3)+whr*Qr(3))/denom
+      case (0) ! Roe-meanvalues
+
+        ! Set the height variables
+        hl=Ql(1)
+        hr=Qr(1)
+
+        denom = sqrt(hl)+sqrt(hr)
+        whl = 1.0_DP/sqrt(hl)
+        whr = 1.0_DP/sqrt(hr)
+
+        Qroe(1) = sqrt(hl*hr)
+        Qroe(2) = Qroe(1)*(whl*Ql(2)+whr*Qr(2))/denom
+        Qroe(3) = Qroe(1)*(whl*Ql(3)+whr*Qr(3))/denom
+
+      case (1) ! Artihmetic mean
+
+        Qroe = 0.5_dp*(Ql+Qr)
+
+      end select
 
   end function calculateQroe
 
@@ -206,13 +216,14 @@ contains
     ! local variables
     real(DP)                                :: scalefactor1, scalefactor2, cRoe, uRoe, vRoe, lambda, scalardissipation, scalefactor
     
-    real(dp), dimension(3) :: v,w,diff
+    real(dp), dimension(3) :: w,diff
     real(dp), dimension(3,3) :: A, Aij, Bij
     integer :: l
     real(dp) :: ci, cj, vi, vj, ui, uj
     real(dp) :: lambda1, lambda3
     real(dp) :: JcoeffxA, JcoeffyA, JcoeffxB, JcoeffyB
     real(dp), dimension(nvar2d,nvar2d) :: JacobixRoeij, JacobiyRoeij
+    real(dp)::h,u,v
 
 
     select case (k)
@@ -408,20 +419,20 @@ contains
         
         
        ! This one works for non dry bed
-       Qroeij = 0.5_dp*(Qi+Qj)
-
-       JcoeffxA = (cxij-cxji)/2.0_DP
-       JcoeffyA = (cyij-cyji)/2.0_DP
-       JcoeffxB = (cxij+cxji)/2.0_DP
-       JcoeffyB = (cyij+cyji)/2.0_DP
-
-       scalarDissipation = max(scalardissipation,&
-            abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
-            abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))))
-       
-       scalardissipation = max(scalardissipation,SYS_EPSREAL)
-
-       Dij = scalarDissipation*Eye
+!        Qroeij = calculateQroe(Qi,Qj)
+! 
+!        JcoeffxA = (cxij-cxji)/2.0_DP
+!        JcoeffyA = (cyij-cyji)/2.0_DP
+!        JcoeffxB = (cxij+cxji)/2.0_DP
+!        JcoeffyB = (cyij+cyji)/2.0_DP
+! 
+!        scalarDissipation = max(scalardissipation,&
+!             abs(JcoeffxA*maxval(abs(buildeigenvalues(Qroeij,1,g))))+ &
+!             abs(JcoeffyA*maxval(abs(buildeigenvalues(Qroeij,2,g)))))
+!        
+!        scalardissipation = max(scalardissipation,SYS_EPSREAL)
+! 
+!        Dij = scalarDissipation*Eye
        
        
        
@@ -444,7 +455,23 @@ contains
 !        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
 !        
 !        Dij = Dij + Bij
-        
+
+ Qroe = calculateQroe(Qi, Qj)
+ h=Qroe(1)
+ if(h<clipwater)then
+  h=0.0_dp
+  u=0.0_dp
+  v=0.0_dp
+ else
+  u=Qroe(2)/Qroe(1)
+  v=Qroe(3)/Qroe(1)
+ end if
+ cRoe = sqrt(g/2.0_dp * ( Qi(1) + Qj(1)))
+ scalefactor1 = sqrt(cxij**2.0_DP+cyij**2.0_DP)
+ scalefactor2 = sqrt(cxji**2.0_DP+cyji**2.0_DP)
+ scalarDissipation = max(scalardissipation, &
+  max( (abs(-cxij*u-cyij*v)+scalefactor1*cRoe), (abs(-cxji*u-cyji*v)+scalefactor2*cRoe) )       )
+ Dij = scalarDissipation*Eye
         
 
       case (2)! Here we use tensorial dissipation in direction d
@@ -908,22 +935,26 @@ contains
        deltaQij = Qi - Qj
 
        ! Compute the Roe-meanvalue for this edge
-       !Qroeij = calculateQroe(Qi, Qj)
-       Qroeij=0.5_dp*(Qi+Qj)
+       Qroeij = calculateQroe(Qi, Qj)
+       !Qroeij = 0.5_dp*(Qi+Qj)
 
        ! Compute the jacobi matrices for x- and y- direction
        JacobixRoeij = buildJacobi(Qroeij,1,gravconst)
        JacobiyRoeij = buildJacobi(Qroeij,2,gravconst)
 
        ! Compute the coeffitients for the jacobi matrices
-       JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
-       JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
-       JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
-       JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
+!        JcoeffxA = (p_CXdata(ij)-p_CXdata(ji))/2.0_DP
+!        JcoeffyA = (p_CYdata(ij)-p_CYdata(ji))/2.0_DP
+!        JcoeffxB = (p_CXdata(ij)+p_CXdata(ji))/2.0_DP
+!        JcoeffyB = (p_CYdata(ij)+p_CYdata(ji))/2.0_DP
 
        ! Now we can compute Aij and Bij
-       Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
-       Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+!        Aij = JcoeffxA*JacobixRoeij + JcoeffyA*JacobiyRoeij
+!        Bij = JcoeffxB*JacobixRoeij + JcoeffyB*JacobiyRoeij
+
+       ! Compute the high order Matrizes
+       Kij = p_CXdata(ij)*JacobixRoeij + p_CYdata(ij)*JacobiyRoeij
+       Kji = p_CXdata(ji)*JacobixRoeij + p_CYdata(ji)*JacobiyRoeij
 
        ! Here we use scalar dissipation
        Dij = buildDissipation(Qi,Qj,1,0,gravconst,p_CXdata(ij),p_CYdata(ij),p_CXdata(ji),p_CYdata(ji))
@@ -935,10 +966,16 @@ contains
 !           rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)-Bij(l,l)+Dij(l,l))
 !           rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)-Bij(l,l)+Dij(l,l))
 !           rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)+Bij(l,l)-Dij(l,l))
-          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)-Dij(l,l))
-          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)+Dij(l,l))
-          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)-Dij(l,l))
+          
+!           rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) - dt*theta*(+Aij(l,l)-Dij(l,l))
+!           rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) - dt*theta*(-Aij(l,l)+Dij(l,l))
+!           rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) - dt*theta*(+Aij(l,l)+Dij(l,l))
+!           rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) - dt*theta*(-Aij(l,l)-Dij(l,l))
+
+          rarrayP(l)%Da(ii) = rarrayP(l)%Da(ii) + dt*theta*(-Kij(l,l)+Dij(l,l))
+          rarrayP(l)%Da(ij) = rarrayP(l)%Da(ij) + dt*theta*(+Kij(l,l)-Dij(l,l))
+          rarrayP(l)%Da(ji) = rarrayP(l)%Da(ji) + dt*theta*(+Kji(l,l)-Dij(l,l))
+          rarrayP(l)%Da(jj) = rarrayP(l)%Da(jj) + dt*theta*(-Kji(l,l)+Dij(l,l))
        end do
 
     end do
@@ -1021,8 +1058,8 @@ contains
        deltaQij = Qi - Qj
 
        ! Compute the Roe-meanvalue for this edge
-       !Qroeij = calculateQroe(Qi, Qj)
-       Qroeij=0.5_dp*(Qi+Qj)
+       Qroeij = calculateQroe(Qi, Qj)
+       !Qroeij=0.5_dp*(Qi+Qj)
 
        ! Calculate the galerkin fluxes
        ! deltaKi = c_{ij}*(F(Q_i)-F(Q_j))
@@ -2855,8 +2892,8 @@ end if !dry or wet bed
        Qj = (/rarraySol(1)%Da(j),rarraySol(2)%Da(j),rarraySol(3)%Da(j)/)
        
        ! Compute the Roe-meanvalue for this edge
-       !Qroeij = calculateQroe(Qi, Qj)
-       Qroeij = 0.5_dp*(Qi+Qj)
+       Qroeij = calculateQroe(Qi, Qj)
+       !Qroeij = 0.5_dp*(Qi+Qj)
        
        deltaWij = Qj - Qi
        
@@ -3397,7 +3434,7 @@ end if !dry or wet bed
     
 
     
-!     ! We can even use the minimal limiting factor
+    ! We can even use the minimal limiting factor
 !     do ivar=2,nvar2d
 !       if (Fij(ivar)>0.0_dp) then
 !         alphaij = min(Rp(ivar,i),Rm(ivar,j),alphaij)
