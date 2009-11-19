@@ -517,7 +517,7 @@ contains
       e5 = rcollection%IquickAccess(11)
       e6 = rcollection%IquickAccess(12)
       e7 = rcollection%IquickAccess(13)
-      e8 = rcollection%IquickAccess(174)
+      e8 = rcollection%IquickAccess(14)
       
       ! Delete broken edge (I2,I3) and add new edges (I2,I5),(I3,I5)
       if (e2 .eq. e5) then
