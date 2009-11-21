@@ -806,7 +806,7 @@ contains
           
           ! Test if line segment intersects with triangle edges
           call TestTriangleLineIntersection2D(DtriaCoords,&
-              p_DobjectCoords(:,ipoint:ipoint+1), .FALSE., Iedgestatus)
+              p_DobjectCoords(:,ipoint:ipoint+1), .false., Iedgestatus)
           
           do ive = 1, TRIA_NVETRI2D
             if (Iedgestatus(ive) .ne. 0 ) then
