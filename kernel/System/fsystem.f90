@@ -64,18 +64,18 @@
 !# 15.) sys_str2Single
 !#      -> Convert string to single value
 !#
-!# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP,sys_sdL ,sys_sdEL, 
-!#      sys_r   ,sys_s3  ,sys_s5   ,sys_s6  ,sys_s14 ,sys_s18 ,sys_s32,
-!#      sys_s54 ,sys_s61 ,sys_s63  ,sys_s84,
+!# 16.) sys_d   ,sys_sd  ,sys_sdP  ,sys_sdE ,sys_sdEP ,sys_sdL ,sys_sdEL, 
+!#      sys_r   ,sys_s3  ,sys_s5   ,sys_s6  ,sys_s14  ,sys_s18 ,sys_s32,
+!#      sys_s54 ,sys_s61 ,sys_s63  ,sys_s84 ,
 !#      sys_s2E ,sys_s4E ,sys_s6E  ,sys_s10E
 !#      -> String routines to convert double precision numbers to strings
 !#
-!# 17.) sys_si  ,sys_si0 ,sys_sli ,sys_sli0,sys_siL ,sys_si0L,
-!#      sys_i03 ,sys_i04 ,sys_i05 ,sys_i1  ,sys_i2  ,sys_i3  ,sys_i4,
-!#      sys_i6  ,sys_i8  ,sys_i10 ,sys_i12 ,sys_i16 ,sys_i64  
+!# 17.) sys_si  ,sys_si0 ,sys_sli ,sys_sli0 ,sys_siL ,sys_si0L ,
+!#      sys_i03 ,sys_i04 ,sys_i05 ,sys_i1   ,sys_i2  ,sys_i3   ,sys_i4,
+!#      sys_i6  ,sys_i8  ,sys_i10 ,sys_i12  ,sys_i16 ,sys_i64  
 !#      -> String routines to convert integer numbers to strings
 !#
-!# 18.) sys_sliL,sys_sli0L,sys_li12
+!# 18.) sys_sliL, sys_sli0L, sys_li12
 !#      -> String routines to convert long integer numbers to strings
 !#
 !# 19.) sys_sl  
@@ -88,6 +88,9 @@
 !# 21.) sys_getenv_string
 !#      -> Retrieves an environment variable from the system
 !#
+!# 22.) sys_silsb32, sys_iimsb32
+!#      -> String routine to convert integer numbers to string in bis
+!#         representation (LSB/MSB)
 !# </purpose>
 !##############################################################################
 
@@ -2180,5 +2183,81 @@ contains
     endif
 
   end subroutine
+
+!<function>
+
+  character (len=32) function sys_ilsb(ivalue) result(soutput)
+
+!<description>
+    ! This routine converts an integer value to a string of length 32
+    ! using LSB representation
+!</description>
+
+!<result>
+    ! LSB Bit representation of the integer value with 32 bits.
+!</result>
+
+!<input>
+
+    ! value to be converted
+    integer, intent(in) :: ivalue
+
+!</input>
+!</function>
+
+    ! local variables
+    integer :: i
+    
+    do i = 1, min(32, bit_size(ivalue))
+      if (btest(ivalue, i)) then
+        soutput(i:i) = '1'
+      else
+        soutput(i:i) = '0'
+      end if
+    end do
+
+    do i = min(32, bit_size(ivalue))+1, 16
+      soutput(i:i) = '0'
+    end do
+
+  end function
+
+!<function>
+
+  character (len=32) function sys_imsb(ivalue) result(soutput)
+
+!<description>
+    ! This routine converts an integer value to a string of length 32
+    ! using MSB representation
+!</description>
+
+!<result>
+    ! MSB Bit representation of the integer value with 32 bits.
+!</result>
+
+!<input>
+
+    ! value to be converted
+    integer, intent(in) :: ivalue
+
+!</input>
+!</function>
+
+    ! local variables
+    integer :: i
+    
+    do i = 1, min(32, bit_size(ivalue))
+      if (btest(ivalue, i)) then
+        soutput(32+i-1:32+i-1) = '1'
+      else
+        soutput(32+i-1:32+i-1) = '0'
+      end if
+    end do
+
+    do i = min(32, bit_size(ivalue))+1, 16
+      soutput(32+i-1:32+i-1) = '0'
+    end do
+
+  end function
 
 end module fsystem
