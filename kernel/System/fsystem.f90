@@ -88,7 +88,7 @@
 !# 21.) sys_getenv_string
 !#      -> Retrieves an environment variable from the system
 !#
-!# 22.) sys_silsb32, sys_iimsb32
+!# 22.) sys_silsb, sys_simsb
 !#      -> String routine to convert integer numbers to string in bis
 !#         representation (LSB/MSB)
 !# </purpose>
@@ -2184,9 +2184,11 @@ contains
 
   end subroutine
 
+! ****************************************************************************************
+
 !<function>
 
-  character (len=32) function sys_ilsb(ivalue) result(soutput)
+  character (len=32) function sys_silsb(ivalue) result(soutput)
 
 !<description>
     ! This routine converts an integer value to a string of length 32
@@ -2209,22 +2211,24 @@ contains
     integer :: i
     
     do i = 1, min(32, bit_size(ivalue))
-      if (btest(ivalue, i)) then
+      if (btest(ivalue, i-1)) then
         soutput(i:i) = '1'
       else
         soutput(i:i) = '0'
       end if
     end do
 
-    do i = min(32, bit_size(ivalue))+1, 16
+    do i = min(32, bit_size(ivalue))+1, 32
       soutput(i:i) = '0'
     end do
 
   end function
 
+! ****************************************************************************************
+
 !<function>
 
-  character (len=32) function sys_imsb(ivalue) result(soutput)
+  character (len=32) function sys_simsb(ivalue) result(soutput)
 
 !<description>
     ! This routine converts an integer value to a string of length 32
@@ -2247,15 +2251,15 @@ contains
     integer :: i
     
     do i = 1, min(32, bit_size(ivalue))
-      if (btest(ivalue, i)) then
-        soutput(32+i-1:32+i-1) = '1'
+      if (btest(ivalue, i-1)) then
+        soutput(32-i+1:32-i+1) = '1'
       else
-        soutput(32+i-1:32+i-1) = '0'
+        soutput(32-i+1:32-i+1) = '0'
       end if
     end do
 
-    do i = min(32, bit_size(ivalue))+1, 16
-      soutput(32+i-1:32+i-1) = '0'
+    do i = min(32, bit_size(ivalue))+1, 32
+      soutput(32-i+1:32-i+1) = '0'
     end do
 
   end function

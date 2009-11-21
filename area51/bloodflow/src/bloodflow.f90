@@ -1401,28 +1401,17 @@ contains
         cycle list
       end if
       
-
-      print *, "Original intecator",p_Iindicator(iel)
-      
       ! Remove "in list" flag from indicator
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
       
-      print *, "Modified intecator",p_Iindicator(iel)
-
       ! Remove "corner vertices" flags from indicator (if any).
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_POINT_INTERSECTION))
       
-      print *, "Modified intecator",p_Iindicator(iel)
-
       ! Remove "interior vertex" flag from indicator (if any).
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
       
-      print *, "Modified intecator",p_Iindicator(iel)
-      pause
-      cycle
-
       ! Check status of intersected element edges
       if (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .eq.&
           (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3) ) then
