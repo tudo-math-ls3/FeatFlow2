@@ -82,7 +82,7 @@ module bloodflow
 !<constantblock description="Global constants for mesh spacing tolerances">
 
   ! Tolerance for considering two points as equivalent
-  real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-6_DP
+  real(DP), parameter :: POINT_EQUAL_TOLERANCE = sqrt(SYS_EPSREAL)
 
   ! Tolerance for considering two points as equivalent
   real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/3.0
@@ -98,27 +98,31 @@ module bloodflow
   integer, parameter :: BITFIELD_POINT1 = ibset(0,1)
   integer, parameter :: BITFIELD_POINT2 = ibset(0,2)
   integer, parameter :: BITFIELD_POINT3 = ibset(0,3)
+  integer, parameter :: BITFIELD_POINT4 = ibset(0,4)
 
   ! Bitfield to identify the edges
-  integer, parameter :: BITFIELD_EDGE1 = ibset(0,4)
-  integer, parameter :: BITFIELD_EDGE2 = ibset(0,5)
-  integer, parameter :: BITFIELD_EDGE3 = ibset(0,6)
+  integer, parameter :: BITFIELD_EDGE1 = ibset(0,5)
+  integer, parameter :: BITFIELD_EDGE2 = ibset(0,6)
+  integer, parameter :: BITFIELD_EDGE3 = ibset(0,7)
+  integer, parameter :: BITFIELD_EDGE4 = ibset(0,8)
 
   ! Bitfield to identify elements in list
-  integer, parameter :: BITFIELD_INLIST = ibset(0,7)
+  integer, parameter :: BITFIELD_INLIST = ibset(0,9)
 
   ! Bitfield to identify multi-intersected edges
-  integer, parameter :: BITFIELD_MULTI_INTERSECTION = ibset(0,8)
+  integer, parameter :: BITFIELD_MULTI_INTERSECTION = ibset(0,10)
 
   ! Bitfield used to check point intersection
   integer, parameter :: BITFIELD_POINT_INTERSECTION = BITFIELD_POINT1 +&
                                                       BITFIELD_POINT2 +&
-                                                      BITFIELD_POINT3
+                                                      BITFIELD_POINT3 +&
+                                                      BITFIELD_POINT4
 
   ! Bitfield used to check edge intersection
   integer, parameter :: BITFIELD_EDGE_INTERSECTION = BITFIELD_EDGE1 +&
                                                      BITFIELD_EDGE2 +&
-                                                     BITFIELD_EDGE3
+                                                     BITFIELD_EDGE3 +&
+                                                     BITFIELD_EDGE4
 
 !</constantblock>
 
@@ -695,7 +699,9 @@ contains
     integer, dimension(:), pointer :: IelementPatch 
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Dpoint0Coords, Dpoint1Coords,Daux
+    real(DP), dimension(TRIA_NVETRI2D) :: Dparam
     real(DP) :: dscale, dscaleMax
+    integer, dimension(TRIA_NVETRI2D) :: Iedgestatus
     integer :: ive,jve,iel,jel,i,i1,i2,i3,istatus,idx
     integer :: ipoint,ipatch,npatch,ipos,iobj
   
@@ -745,43 +751,92 @@ contains
     ! Loop over all objects    
     do iobj = 1, size(p_IobjectCoordsIdx)-1
       
+!!$      ! Initialize point number
+!!$      ipoint = p_IobjectCoordsIdx(iobj)
+!!$      
+!!$      !-------------------------------------------------------------------------
+!!$      ! (1) Find element surrounding/meeting at first point of the object:
+!!$      !
+!!$      !     The algorithm is really simply. An extensive search over all
+!!$      !     element of the triangulation is performed and the first
+!!$      !     element which either surrounds the first point of the thin
+!!$      !     object or is connected to this point via a corner certex or
+!!$      !     an edge is selected.
+!!$      !-------------------------------------------------------------------------
+!!$      
+!!$      ! Get global coordinates of first point
+!!$      Dpoint0Coords =  p_DobjectCoords(:,ipoint)
+!!$      
+!!$      ! Loop over all elements in triangulation
+!!$      findElementOfFirstVertex: do&
+!!$          iel = 1, rbloodflow%rtriangulation%NEL
+!!$        
+!!$        ! Get vertices at element
+!!$        i1 = p_IverticesAtElement(1, iel)
+!!$        i2 = p_IverticesAtElement(2, iel)
+!!$        i3 = p_IverticesAtElement(3, iel)
+!!$        
+!!$        ! Get global coordinates of corner vertices
+!!$        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+!!$        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+!!$        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+!!$        
+!!$        ! Check if the point is 'inside' or on the boundary of the element
+!!$        call PointInTriangleTest(DtriaCoords, Dpoint0Coords,&
+!!$            POINT_EQUAL_TOLERANCE, istatus)
+!!$        if (istatus .ge. 0) exit findElementOfFirstVertex
+!!$        
+!!$      end do findElementOfFirstVertex
+
       ! Initialize point number
-      ipoint = p_IobjectCoordsIdx(iobj)
+      do ipoint = p_IobjectCoordsIdx(iobj),&
+                  p_IobjectCoordsIdx(iobj+1)-2
+
+        do iel = 1, rbloodflow%rtriangulation%NEL
+          
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(1, iel)
+          i2 = p_IverticesAtElement(2, iel)
+          i3 = p_IverticesAtElement(3, iel)
+          
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+          
+          ! Test if line segment intersects with triangle edges
+          call TestTriangleLineIntersection2D(DtriaCoords,&
+              p_DobjectCoords(:,ipoint:ipoint+1), .FALSE., Iedgestatus)
+          
+          do ive = 1, TRIA_NVETRI2D
+            if (Iedgestatus(ive) .ne. 0 ) then
+              
+              ! Check if edge has been intersected previously
+              if (btest(p_Iindicator(iel), ive+4))&
+                  p_Iindicator(iel) = ior(p_Iindicator(iel),&
+                                          BITFIELD_MULTI_INTERSECTION)
+              
+              ! Append element to the list of elements adjacent to the object
+              if (iand(p_Iindicator(iel), BITFIELD_INLIST)&
+                  .ne. BITFIELD_INLIST) then
+                p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
+                call list_appendToList(rbloodflow%relementList, iel, ipos)
+              end if
+              
+              ! Mark element for potential refinement
+              p_Iindicator(iel) = ibset(p_Iindicator(iel), ive+4)
+            end if
+          end do
+        end do
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(IelementPatch)
       
-      !-------------------------------------------------------------------------
-      ! (1) Find element surrounding/meeting at first point of the object:
-      !
-      !     The algorithm is really simply. An extensive search over all
-      !     element of the triangulation is performed and the first
-      !     element which either surrounds the first point of the thin
-      !     object or is connected to this point via a corner certex or
-      !     an edge is selected.
-      !-------------------------------------------------------------------------
-      
-      ! Get global coordinates of first point
-      Dpoint0Coords =  p_DobjectCoords(:,ipoint)
-      
-      ! Loop over all elements in triangulation
-      findElementOfFirstVertex: do&
-          iel = 1, rbloodflow%rtriangulation%NEL
-        
-        ! Get vertices at element
-        i1 = p_IverticesAtElement(1, iel)
-        i2 = p_IverticesAtElement(2, iel)
-        i3 = p_IverticesAtElement(3, iel)
-        
-        ! Get global coordinates of corner vertices
-        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-        
-        ! Check if the point is 'inside' or on the boundary of the element
-        call PointInTriangleTest(DtriaCoords, Dpoint0Coords,&
-            POINT_EQUAL_TOLERANCE, istatus)
-        if (istatus .ge. 0) exit findElementOfFirstVertex
-        
-      end do findElementOfFirstVertex
-      
+      ! The above algorithm is increadibly inefficient but it serves
+      ! as proof-of-concept, if the new intersection test works
+      return
+
       ! Mark first element for potential refinement
       p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
       
@@ -792,13 +847,13 @@ contains
       ! (2) Find elements surrounding/meeting at all points of the object:
       !
       !     This algorithm is slightly more complicated. The list of
-      !     points on the thin object is visited segment-by-segment. If
-      !     the starting point (aka previous point) of the segment is
-      !     located inside an element, then nothing needs to be done. If
-      !     the previous point was located on an edge, then the opposite
-      !     element is also marked. Finally, if the previous point
-      !     coincides with some corner vertex, then all elements meeting
-      !     at that point are marked.
+      !     points on the object is visited segment-by-segment. If the
+      !     starting point (aka previous point) of the segment is
+      !     located inside an element, then nothing needs to be
+      !     done. If the previous point was located on an edge, then
+      !     the opposite element is also marked. Finally, if the
+      !     previous point coincides with some corner vertex, then all
+      !     elements meeting at that point are marked.
       !
       !     Next, we proceed to the endpoint of the segment. If it lies
       !     inside the same element, then the above procedure applies to
@@ -831,6 +886,14 @@ contains
         
         ! Check status of starting point, aka, previous point
         select case(istatus)
+        case (0)
+          ! Previous point was inside the element. In fact, we could
+          ! generate a very large patch consisting of all elements
+          ! meeting at all vertices. However, this is not necessary
+          ! since the test performed below on the single element patch
+          ! will provide information to decide in which direction the
+          ! search for the next element should be extended.
+
         case (1:3)
           ! Previous point was one of the corner vertices
           i = p_IverticesAtElement(istatus, iel); ipatch = 0
@@ -852,12 +915,12 @@ contains
               end if
               
               ! Mark element for potential refinement
-              do jve = 1, TRIA_NVETRI2D
+              mark1: do jve = 1, tria_getNVE(p_IverticesAtElement, jel)
                 if (p_IverticesAtElement(jve, jel) .eq. i) then
                   p_Iindicator(jel) = ibset(p_Iindicator(jel), jve)
-                  exit
+                  exit mark1
                 end if
-              end do
+              end do mark1
               
               ipatch = ipatch+1
               IelementPatch(ipatch) = jel
@@ -900,33 +963,44 @@ contains
           
         end select
         
+        print *, "Created patch surrounding vertex",ipoint-1
+        print *, IelementPatch(1:npatch)
+        print *, "--------------------"
+        pause
+
         ! Loop over all elements in patch and try to find 
         ! element which contains the endpoint
         findInPatchDirect: do ipatch = 1, npatch
           
           ! Get element number
-          iel = IelementPatch(ipatch)
+          jel = IelementPatch(ipatch)
           
           ! Get vertices at element
-          i1 = p_IverticesAtElement(1, iel)
-          i2 = p_IverticesAtElement(2, iel)
-          i3 = p_IverticesAtElement(3, iel)
+          i1 = p_IverticesAtElement(1, jel)
+          i2 = p_IverticesAtElement(2, jel)
+          i3 = p_IverticesAtElement(3, jel)
           
           ! Get global coordinates of corner vertices
           DtriaCoords(:,1) = p_DvertexCoords(:,i1)
           DtriaCoords(:,2) = p_DvertexCoords(:,i2)
           DtriaCoords(:,3) = p_DvertexCoords(:,i3)
           
-          ! Check if the endpoint is 'inside' or on the boundary of the current element
-          call PointInTriangleTest(DtriaCoords, Dpoint1Coords, POINT_EQUAL_TOLERANCE, istatus)
+          ! Check if the endpoint is 'inside' or 
+          ! on the boundary of the current element
+          call PointInTriangleTest(DtriaCoords, Dpoint1Coords,&
+              POINT_EQUAL_TOLERANCE, istatus)
+
+          print *, "Point-in-triangle test for", jel,"returns",istatus
+          pause
+
           if (istatus .ge. 0) then
             
             ! Check if edge has been intersected previously
-            if ((istatus .ge. 4) .and. btest(p_Iindicator(iel), istatus))&
+            if ((istatus .ge. 4) .and. btest(p_Iindicator(jel), istatus))&
                 p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_MULTI_INTERSECTION)
             
             ! Mark element for potential refinement
-            p_Iindicator(iel) = ibset(p_Iindicator(iel), istatus)
+            p_Iindicator(jel) = ibset(p_Iindicator(jel), istatus)
             
             ! If so, use the current point as new starting point of the segment
             Dpoint0Coords = Dpoint1Coords
@@ -1185,7 +1259,9 @@ contains
         p_IvertexAge, p_InodalProperty
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(NDIM2D) :: Daux
+    real(DP), dimension(TRIA_NVETRI2D) :: Dparam
     real(DP) :: dscale
+    integer, dimension(TRIA_NVETRI2D) :: Iedgestatus
     integer, dimension(2) :: Isize
     integer :: ive,jve,nve,iel,nel,ivt,jvt,nvt
     integer :: i1,i2,i3,istatus,ipoint,ipos,iresult
@@ -1325,24 +1401,31 @@ contains
         cycle list
       end if
       
+
+      print *, "Original intecator",p_Iindicator(iel)
+      
       ! Remove "in list" flag from indicator
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
       
-      ! Remove "corner vertices" flags from indicator.
+      print *, "Modified intecator",p_Iindicator(iel)
+
+      ! Remove "corner vertices" flags from indicator (if any).
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_POINT_INTERSECTION))
       
-      ! Remove "interior vertex" flag from indicator.
+      print *, "Modified intecator",p_Iindicator(iel)
+
+      ! Remove "interior vertex" flag from indicator (if any).
       ! This may be used in future versions of this code.
       p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
-
       
+      print *, "Modified intecator",p_Iindicator(iel)
+      pause
+      cycle
+
       ! Check status of intersected element edges
-      select case(iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
-      case (0)
-        ! No edge is intersected, hence, do nothing
-        
-      case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
+      if (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .eq.&
+          (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3) ) then
         ! All three edges are intersected!
         ! Set the refinement indicator to regular refinement
         p_Imarker(iel) = MARK_REF_TRIA4TRIA
@@ -1358,12 +1441,56 @@ contains
 
             ! Edge has not been marked in previous steps
             rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-
+            
           end if
         end do
+
+      elseif (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .eq.&
+              (BITFIELD_EDGE1 + BITFIELD_EDGE2)) then
+
+        print *, "12"
+
+      elseif (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .eq.&
+              (BITFIELD_EDGE2 + BITFIELD_EDGE3)) then
+
+        print *, "23"
+
+      elseif (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .eq.&
+              (BITFIELD_EDGE1 + BITFIELD_EDGE3)) then
+
+        print *, "13"
         
-      case default
+!!$      case (BITFIELD_EDGE1 + BITFIELD_EDGE3)
+!!$        ! Two edges, (1,2) and (2,3)  are intersected!
+!!$        
+!!$        ! Get vertices at element
+!!$        i1 = p_IverticesAtElement(1, iel)
+!!$        i2 = p_IverticesAtElement(2, iel)
+!!$        i3 = p_IverticesAtElement(3, iel)
+!!$
+!!$        ! Get global coordinates of corner vertices
+!!$        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+!!$        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+!!$        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+!!$
+!!$        ! Loop over all segments and check intersection point
+!!$        do ipoint = 1, size(p_DobjectCoords,2)-1
+!!$          
+!!$          ! Test if line segment intersects with triangle edges
+!!$          call TestTriangleLineIntersection2D(DtriaCoords,&
+!!$              p_DobjectCoords(:,ipoint:ipoint+1), .FALSE.,&
+!!$              Iedgestatus, Dparam)
+!!$
+!!$          print *, iel, ipoint
+!!$          print *, Dparam
+!!$          stop
+!!$
+!!$        end do
+
+      elseif (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .ne. 0) then
         
+        print *, "KKKK",p_Iindicator(iel)
+
         ! Get vertices at element
         i1 = p_IverticesAtElement(1, iel)
         i2 = p_IverticesAtElement(2, iel)
@@ -1384,8 +1511,9 @@ contains
             point: do ipoint = 1, size(p_DobjectCoords,2)-1
               
               ! Perform line intersection test
-              call LinesIntersectionTest(p_DobjectCoords(:,ipoint), p_DobjectCoords(:,ipoint+1),&
-                                         DtriaCoords(:,ive), DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
+              call LinesIntersectionTest(p_DobjectCoords(:,ipoint),&
+                  p_DobjectCoords(:,ipoint+1), DtriaCoords(:,ive),&
+                  DtriaCoords(:,mod(ive,3)+1), istatus, dscale)
               if (istatus .eq. 1) then
                 
                 ! Remove the refinement indicator for current edge
@@ -1435,6 +1563,7 @@ contains
                   ! Remove the refinement indicator for current edge
                   p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
 
+
                 case default
                   p_Imarker(iel) = ibset(p_Imarker(iel), ive)
 
@@ -1460,14 +1589,14 @@ contains
               end if
               
             end do point
-
+            
             ! Marker for this edge can be removed
             p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+3)
 
           end if
         end do edge
 
-      end select
+      end if
     end do list
     
     !---------------------------------------------------------------------------
@@ -1542,6 +1671,272 @@ contains
 
 !<subroutine>
   
+  subroutine TestTriangleLineIntersection2D(TriaCoords,&
+      LineCoords, bquicktest, Istatus, Dparam, PointCoords)
+
+!<description>
+    
+    ! This subroutine test if the given line intersects with the edges
+    ! of the given triangle. If this is the case, than Istatus(ive)=1
+    ! is returned, where ive=1,2,3 is the local edge number. If the
+    ! edge is parallel to the line or if there is no common point then
+    ! Istatus(ive)=0 is returned. If present the parameter value
+    ! Dparam(ive) is calculated as follows:
+    !
+    ! $ P = P1 + dparam * (P2-P1) $
+    !
+    ! where P is the intersection point and P1 and P2 denote the start
+    ! and endpoint of the line, respectively. If present then the
+    ! coordinates of the intersection point PointCoords(ive)=P are
+    ! returned.
+
+!</description>
+    
+!<input>
+    
+    ! Coordinates of the triangle
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(in) :: TriaCoords
+
+    ! Coordinates of the line
+    real(DP), dimension(NDIM2D,TRIA_NVELINE1D), intent(in) :: LineCoords
+
+    ! Flag: If .TRUE. then all edges are tested
+    logical, intent(in) :: bquicktest
+!</input>
+
+!<output>
+
+    ! Status of the intersection test
+    integer, dimension(TRIA_NVETRI2D), intent(out) :: Istatus
+    
+    ! OPTIONAL: Parameter value of the intersection point
+    real(DP), dimension(TRIA_NVETRI2D), intent(out), optional :: Dparam
+
+    ! OPTIONAL: Coordinates of the intersection point
+    real(DP), dimension(NDIM2D,TRIA_NVETRI2D), intent(out), optional :: PointCoords
+    
+!</output>
+
+!</subroutine>
+
+    ! Description of the algorith: Given the three vertices A,B and C
+    ! of the triangle, each point X in the 2D-plane can be uniquely
+    ! described by the barycentric coordinates (u,v):
+    !
+    ! $ X = u*A+v*B+(1-u-v)*C $
+    !
+    ! The line between two points P and Q is parametrized as follows:
+    !
+    ! $ X = P + t*(Q-P) $
+    ! 
+    ! with parameter value $0\le t\le 1$. A necessary condition for
+    ! intersection of the line with the triangle is
+    !
+    ! $(A-C)*u + (B-C)*v + (Q-O)*t = P-C $
+    !
+    ! which yields two equations (for x- and y-components) for the
+    ! three unknowns u,v and t. In addition to the inequalities
+    ! 0\le t\le 1$, the third equality which ensures that the
+    ! intersection point is located on an edge of the triangle reads
+    !
+    ! $ u=0$   or   $v=0$   or   $1-u-v=0$, that is, $u+v=1$
+    !
+    ! In other word, the three linear systems to be solved are
+    !
+    ! |A-C  B-C  P-Q| |u| |P-C|
+    ! |             |*|v|=|   |   (1)
+    ! | 1    0    0 | |t| | 0 |
+    !
+    ! |A-C  B-C  P-Q| |u| |P-C|
+    ! |             |*|v|=|   |   (2)
+    ! | 0    1    0 | |t| | 0 |
+    !
+    ! |A-C  B-C  P-Q| |u| |P-C|
+    ! |             |*|v|=|   |   (3)
+    ! | 1    1    0 | |t| | 1 |
+    !
+    
+    ! local variables
+    real(DP) :: detu,detv,detuv,detaux,dpar,dbaryc
+    
+    ! Initialize status flags
+    Istatus = 0
+
+    ! Compute determinate for the second edge BC
+    !  (B.x-C.x)*(P.y-Q.y)-(B.y-C.y)*(P.x-Q.x)
+    detu = (TriaCoords(1,2)-TriaCoords(1,3))&
+         * (LineCoords(2,1)-LineCoords(2,2))&
+         - (TriaCoords(2,2)-TriaCoords(2,3))&
+         * (LineCoords(1,1)-LineCoords(1,2))
+
+    ! Intersection test for the second edge BC
+    if (abs(detu) .gt. SYS_EPSREAL) then
+      
+      ! Compute auxiliary determinant with third column replaced by
+      ! the right-hand side (B.x-C.x)*(P.y-C.y)-(B.y-C.y)*(P.x-C.x)
+      detaux = (TriaCoords(1,2)-TriaCoords(1,3))&
+             * (LineCoords(2,1)-TriaCoords(2,3))&
+             - (TriaCoords(2,2)-TriaCoords(2,3))&
+             * (LineCoords(1,1)-TriaCoords(1,3))
+      
+      ! Compute parameter value of the intersection point 
+      ! located on the line through points P and Q
+      dpar = detaux/detu
+
+      ! Check if parameter value is bounded by 0 and 1
+      if (dpar .ge. 0 .and. dpar .le. 1) then
+        
+        ! Compute auxiliary determinant with second column replaced by
+        ! the right-hand side (P.x-C.x)*(P.y-Q.y)-(P.y-C.y)*(P.x-Q.x)
+        detaux = (LineCoords(1,1)-TriaCoords(1,3))&
+               * (LineCoords(2,1)-LineCoords(2,2))&
+               - (LineCoords(2,1)-TriaCoords(2,3))&
+               * (LineCoords(1,1)-LineCoords(1,2))
+
+        ! Compute barycentric coordinate of the intersection point
+        dbaryc = detaux/detu
+        
+        ! Check if intersection point is "inside" the triangle, that
+        ! is, if the barycentric coordinate v satisfies 0 <= v <= 1
+        if (dbaryc .ge. 0 .and. dbaryc .le. 1) then
+
+          ! Segments PQ and BC intersect
+          Istatus(2) = 0
+          if (present(Dparam)) Dparam(2) = dpar
+          if (present(PointCoords)) PointCoords(:,2)=&
+              LineCoords(:,1)+dpar*(LineCoords(:,2)-LineCoords(:,1))
+
+          ! Return, if we only need to find any intersection point
+          if (bquicktest) return
+        end if
+        
+      end if
+    end if
+    
+    
+    ! Compute determinate for the third edge CA
+    !  -(A.x-C.x)*(P.y-Q.y)+(A.y-C.y)*(P.x-Q.x)
+    detv = -(TriaCoords(1,1)-TriaCoords(1,3))&
+         *  (LineCoords(2,1)-LineCoords(2,2))&
+         +  (TriaCoords(2,1)-TriaCoords(2,3))&
+         *  (LineCoords(1,1)-LineCoords(1,2))
+
+    ! Intersection test for the third edge CA
+    if (abs(detv) .gt. SYS_EPSREAL) then
+      
+      ! Compute auxiliary determinan twith third column replaced by
+      ! the right-hand side -(A.x-C.x)*(P.y-C.y)+(A.y-C.y)*(P.x-C.x)
+      detaux = -(TriaCoords(1,1)-TriaCoords(1,3))&
+             *  (LineCoords(2,1)-TriaCoords(2,3))&
+             +  (TriaCoords(2,1)-TriaCoords(2,3))&
+             *  (LineCoords(1,1)-TriaCoords(1,3))
+
+      ! Compute parameter value of intersection point
+      ! located on the line through points P and Q
+      dpar = detaux/detv
+
+      ! Check if parameter value is bounded by 0 and 1
+      if (dpar .ge. 0 .and. dpar .le. 1) then
+        
+        ! Compute auxiliary determinant with first column replaced by
+        ! the right-hand side -(P.x-C.x)*(P.y-Q.y)+(P.y-C.y)*(P.x-Q.x)
+        detaux = -(LineCoords(1,1)-TriaCoords(1,3))&
+               *  (LineCoords(2,1)-LineCoords(2,2))&
+               +  (LineCoords(2,1)-TriaCoords(2,3))&
+               *  (LineCoords(1,1)-LineCoords(1,2))
+      
+        ! Compute barycentric coordinate of the intersection point
+        dbaryc = detaux/detv
+        
+        ! Check if intersection point is "inside" the triangle, that
+        ! is, if the barycentric coordinate u satisfies 0 <= u <= 1
+        if (dbaryc .ge. 0 .and. dbaryc .le. 1) then
+
+          ! Segments PQ and AC intersect
+          Istatus(3)=1
+          if (present(Dparam)) Dparam(3) = dpar
+          if (present(PointCoords)) PointCoords(:,3)=&
+              LineCoords(:,1)+dpar*(LineCoords(:,2)-LineCoords(:,1))
+
+          ! Return, if we only need to find any intersection point
+          if (bquicktest) return
+        end if
+        
+      end if
+    end if
+    
+    
+    ! The treatment of the first edge AB requires most computational
+    ! work, and hence, it is checked after the computationally less
+    ! expensive tests for the second and third edge.
+    
+    ! Compute determinate for the first edge AB 
+    detuv = detu + detv
+    
+    ! Intersection test for the first edge AB. 
+    if (abs(detuv) .gt. SYS_EPSREAL) then
+      
+      ! Compute auxiliary determinant with third column
+      ! replaced by the right-hand side
+      !  (B.x-C.x)*(P.y-C.y)-(B.y-C.y)*(P.x-C.x)
+      ! -(A.x-C.x)*(P.y-C.y)+(A.y-C.y)*(P.x-C.x)
+      ! +(A.x-C.x)*(B.y-C.y)-(A.y-C.y)*(B.x-C.x)
+      detaux = (TriaCoords(1,2)-TriaCoords(1,3))&
+             * (LineCoords(2,1)-TriaCoords(2,3))&
+             - (TriaCoords(2,2)-TriaCoords(2,3))&
+             * (LineCoords(1,1)-TriaCoords(1,3))&
+             - (TriaCoords(1,1)-TriaCoords(1,3))&
+             * (LineCoords(2,1)-TriaCoords(2,3))&
+             + (TriaCoords(2,1)-TriaCoords(2,3))&
+             * (LineCoords(1,1)-TriaCoords(1,3))&
+             + (TriaCoords(1,1)-TriaCoords(1,3))&
+             * (TriaCoords(2,2)-TriaCoords(2,3))&
+             - (TriaCoords(2,1)-TriaCoords(2,3))&
+             * (TriaCoords(1,2)-TriaCoords(1,3))
+
+      ! Compute parameter value of intersection point
+      ! located on the line through points P and Q
+      dpar = detaux/detuv
+
+      ! Check if parameter value is bounded by 0 and 1
+      if (dpar .ge. 0 .and. dpar .le. 1) then
+
+        ! Compute auxiliary determinant with first column replaced by
+        ! the right-hand side
+        !  (P.x-C.x)*(P.y-Q.y)-(P.y-C.y)*(P.x-Q.x)
+        ! -(A.x-C.x)*(P.y-Q.y)+(A.y-C.y)*(P.x-Q.x)
+        detaux = (LineCoords(1,1)-TriaCoords(1,3))&
+               * (LineCoords(2,1)-LineCoords(2,2))&
+               - (LineCoords(2,1)-TriaCoords(2,3))&
+               * (LineCoords(1,1)-LineCoords(1,2))&
+               - (TriaCoords(1,1)-TriaCoords(1,3))&
+               * (LineCoords(2,1)-LineCoords(2,2))&
+               + (TriaCoords(2,1)-TriaCoords(2,3))&
+               * (LineCoords(1,1)-LineCoords(1,2))
+        
+        ! Compute barycentric coordinate of the intersection point
+        dbaryc = detaux/detuv
+        
+        ! Check if intersection point is "inside" the triangle, that
+        ! is, if the barycentric coordinate u satisfies 0 <= u <= 1
+        if (dbaryc .ge. 0 .and. dbaryc .le. 1) then
+          
+          ! Segments PQ and AB intersect
+          Istatus(1) = 1
+          if (present(Dparam)) Dparam(1) = dpar
+          if (present(PointCoords)) PointCoords(:,1)=&
+              LineCoords(:,1)+dpar*(LineCoords(:,2)-LineCoords(:,1))
+        end if
+
+      end if
+    end if
+    
+  end subroutine TestTriangleLineIntersection2D
+
+  !*****************************************************************************
+
+!<subroutine>
+  
   pure subroutine PointInTriangleTest(TriaCoords, P, dtolerance, istatus)
 
 !<description>
@@ -1583,25 +1978,27 @@ contains
 !</output>
 
 !</subroutine>
-        
+    
     ! local variables
-    real(DP) :: area,area1,area2,area3,u,v,w
+    real(DP) :: area,area1,area2,area3
+    real(DP) :: baryc1,baryc2,baryc3
     
     ! Compute area of global and sub-triangles
     area  = signedArea(TriaCoords(:,1), TriaCoords(:,2), TriaCoords(:,3))
-    area1 = signedArea(P,               TriaCoords(:,2), TriaCoords(:,3))
-    area2 = signedArea(P,               TriaCoords(:,3), TriaCoords(:,1))
-    area3 = signedArea(P,               TriaCoords(:,1), TriaCoords(:,2))
+
+    area1 = signedArea(P, TriaCoords(:,2), TriaCoords(:,3))
+    area2 = signedArea(P, TriaCoords(:,3), TriaCoords(:,1))
+    area3 = signedArea(P, TriaCoords(:,1), TriaCoords(:,2))
     
     ! Compute barycentric coordinates
-    u = area1/area                             
-    v = area2/area
-    w = area3/area
-    
+    baryc1 = area1/area
+    baryc2 = area2/area
+    baryc3 = area3/area
+
     ! Determine status
-    if ((u .lt. -dtolerance) .or. (v .lt. -dtolerance) .or.&
-        (w .lt. -dtolerance) .or. (u+v+w .gt. 1+dtolerance)) then
-      ! If the barycentric coordinates are negative of larger than
+    if ((baryc1 .lt. -dtolerance) .or. (baryc2 .lt. -dtolerance) .or.&
+        (baryc3 .lt. -dtolerance) .or. (baryc1+baryc2+baryc3 .gt. 1+dtolerance)) then
+      ! If the barycentric coordinates are negative or larger than
       ! one then the point is located outside of the triangle
       istatus = -1
       
@@ -1609,22 +2006,22 @@ contains
       ! Otherwise, the point is located inside the triangle. We have
       ! to considere several cases, e.g., the point is close to an
       ! edge or it is close to a vertex and collapses
-      if (u .ge. 1-dtolerance) then
+      if (baryc1 .ge. 1-dtolerance) then
         ! Point P collapses with point A
         istatus = 1
-      elseif (v .ge. 1-dtolerance) then
+      elseif (baryc2 .ge. 1-dtolerance) then
         ! Point P collapses with point B
         istatus = 2
-      elseif (w .ge. 1-dtolerance) then
+      elseif (baryc3 .ge. 1-dtolerance) then
         ! Point P collapses with point C
         istatus = 3
-      elseif (w .le. 0.5*dtolerance) then
+      elseif (baryc3 .le. 0.5*dtolerance) then
         ! Point P collapses with edge AB
         istatus = 4
-      elseif (u .le. 0.5*dtolerance) then
+      elseif (baryc1 .le. 0.5*dtolerance) then
         ! Point P collapses with edge BC
         istatus = 5
-      elseif (v .le. 0.5*dtolerance) then
+      elseif (baryc2 .le. 0.5*dtolerance) then
         ! Point P collapses with edge AC
         istatus = 6
       else
@@ -1811,7 +2208,7 @@ contains
 !</function>
     
     area = 0.5 * ( (P2(1)-P1(1))*(P3(2)-P1(2)) -&
-        (P3(1)-P1(1))*(P2(2)-P1(2)) )
+                   (P3(1)-P1(1))*(P2(2)-P1(2)) )
     
   end function signedArea
 
